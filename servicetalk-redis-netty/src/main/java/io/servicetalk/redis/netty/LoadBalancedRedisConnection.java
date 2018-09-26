@@ -39,8 +39,8 @@ final class LoadBalancedRedisConnection extends ReservedRedisConnection
     }
 
     @Override
-    public <T> Publisher<T> getSettingStream(SettingKey<T> settingKey) {
-        return delegate.getSettingStream(settingKey);
+    public <T> Publisher<T> settingStream(SettingKey<T> settingKey) {
+        return delegate.settingStream(settingKey);
     }
 
     @Override
@@ -49,13 +49,13 @@ final class LoadBalancedRedisConnection extends ReservedRedisConnection
     }
 
     @Override
-    public ExecutionContext getExecutionContext() {
-        return delegate.getExecutionContext();
+    public ExecutionContext executionContext() {
+        return delegate.executionContext();
     }
 
     @Override
-    public ConnectionContext getConnectionContext() {
-        return delegate.getConnectionContext();
+    public ConnectionContext connectionContext() {
+        return delegate.connectionContext();
     }
 
     @Override

@@ -251,7 +251,7 @@ public final class DefaultRedisClientBuilder<ResolvedAddress>
         }
 
         @Override
-        public ExecutionContext getExecutionContext() {
+        public ExecutionContext executionContext() {
             return executionContext;
         }
 

@@ -95,7 +95,7 @@ abstract class AbstractRedisConnection extends RedisConnection {
     public final Publisher<RedisData> request(final RedisRequest request) {
         // We are writing request content on the connection. control path will be on the EventLoop, so offload to the
         // provided Executor.
-        return handleRequest(request.transformContent(c -> c.subscribeOn(getExecutionContext().executor())))
+        return handleRequest(request.transformContent(c -> c.subscribeOn(executionContext().executor())))
                 // Since data will be emitted on the EventLoop, offload the data path to avoid blocking EventLoop
                 .publishOn(executionContext.executor());
     }
@@ -103,13 +103,13 @@ abstract class AbstractRedisConnection extends RedisConnection {
     abstract Publisher<RedisData> handleRequest(RedisRequest request);
 
     @Override
-    public final ExecutionContext getExecutionContext() {
+    public final ExecutionContext executionContext() {
         return executionContext;
     }
 
     @SuppressWarnings("unchecked")
     @Override
-    public final <T> Publisher<T> getSettingStream(SettingKey<T> settingKey) {
+    public final <T> Publisher<T> settingStream(SettingKey<T> settingKey) {
         if (settingKey == MAX_CONCURRENCY) {
             return (Publisher<T>) maxConcurrencySetting;
         }

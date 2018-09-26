@@ -39,7 +39,7 @@ public abstract class HttpClientAdapter extends HttpClient {
      * Get the {@link HttpClient} that this class delegates to.
      * @return the {@link HttpClient} that this class delegates to.
      */
-    protected final HttpClient getDelegate() {
+    protected final HttpClient delegate() {
         return delegate;
     }
 
@@ -59,8 +59,8 @@ public abstract class HttpClientAdapter extends HttpClient {
     }
 
     @Override
-    public ExecutionContext getExecutionContext() {
-        return delegate.getExecutionContext();
+    public ExecutionContext executionContext() {
+        return delegate.executionContext();
     }
 
     @Override

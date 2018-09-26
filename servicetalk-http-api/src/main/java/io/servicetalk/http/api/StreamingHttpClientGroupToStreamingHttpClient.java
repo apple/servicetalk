@@ -96,7 +96,7 @@ final class StreamingHttpClientGroupToStreamingHttpClient<UnresolvedAddress> ext
     }
 
     @Override
-    public ExecutionContext getExecutionContext() {
+    public ExecutionContext executionContext() {
         return executionContext;
     }
 

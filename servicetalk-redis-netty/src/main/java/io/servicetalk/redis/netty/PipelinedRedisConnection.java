@@ -119,7 +119,7 @@ final class PipelinedRedisConnection extends AbstractRedisConnection {
     }
 
     @Override
-    public ConnectionContext getConnectionContext() {
+    public ConnectionContext connectionContext() {
         return connection;
     }
 

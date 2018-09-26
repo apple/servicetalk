@@ -46,7 +46,7 @@ final class NonPipelinedLBHttpConnectionFactory<ResolvedAddress>
                                                               final ConnectionFilterFunction connectionFilterFunction) {
         return buildForNonPipelined(executionContext, resolvedAddress, config, connectionFilterFunction, reqRespFactory)
                 .map(filteredConnection -> new LoadBalancedStreamingHttpConnection(filteredConnection,
-                        newSingleController(filteredConnection.getSettingStream(MAX_CONCURRENCY),
+                        newSingleController(filteredConnection.settingStream(MAX_CONCURRENCY),
                                 filteredConnection.onClose())));
     }
 }

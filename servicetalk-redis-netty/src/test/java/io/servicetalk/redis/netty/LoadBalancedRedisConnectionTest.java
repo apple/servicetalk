@@ -44,7 +44,7 @@ public class LoadBalancedRedisConnectionTest {
         RedisConnection delegate = mock(RedisConnection.class);
         when(delegate.onClose()).thenReturn(never());
         when(delegate.closeAsync()).thenReturn(completed());
-        when(delegate.getSettingStream(any(SettingKey.class))).thenReturn(maxRequestsPublisher);
+        when(delegate.settingStream(any(SettingKey.class))).thenReturn(maxRequestsPublisher);
         when(delegate.request(any(RedisRequest.class))).thenReturn(just(PONG));
         LoadBalancedRedisConnection connection = new LoadBalancedRedisConnection(delegate,
                 ReservableRequestConcurrencyControllers.newController(just(1), never(), 1));

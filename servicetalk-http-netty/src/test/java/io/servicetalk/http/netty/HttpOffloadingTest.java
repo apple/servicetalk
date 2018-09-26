@@ -106,7 +106,7 @@ public class HttpOffloadingTest {
         client = forSingleAddress(HostAndPort.of(LOOPBACK_ADDRESS.getHostName(), socketAddress.getPort()))
                 .buildStreaming(CLIENT_CTX);
         httpConnection = awaitIndefinitelyNonNull(client.reserveConnection(client.get("/")));
-        connectionContext = httpConnection.getConnectionContext();
+        connectionContext = httpConnection.connectionContext();
     }
 
     @After
@@ -117,7 +117,7 @@ public class HttpOffloadingTest {
     @Test
     public void requestResponseIsOffloaded() throws Exception {
         final Publisher<Buffer> reqPayload =
-                just(httpConnection.getConnectionContext().executionContext().bufferAllocator()
+                just(httpConnection.connectionContext().executionContext().bufferAllocator()
                         .fromAscii("Hello"))
                         .doBeforeRequest(n -> {
                             if (inEventLoopOrTestThread().test(currentThread())) {
@@ -232,7 +232,7 @@ public class HttpOffloadingTest {
     @Test
     public void clientSettingsStreamIsOffloaded() throws Exception {
         subscribeTo(inEventLoop(), errors,
-                httpConnection.getSettingStream(MAX_CONCURRENCY).doAfterFinally(terminated::countDown),
+                httpConnection.settingStream(MAX_CONCURRENCY).doAfterFinally(terminated::countDown),
                 "Client settings stream: ");
         awaitIndefinitely(httpConnection.closeAsyncGracefully());
         terminated.await();

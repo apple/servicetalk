@@ -39,7 +39,7 @@ public abstract class StreamingHttpClientAdapter extends StreamingHttpClient {
      * Get the {@link StreamingHttpClient} that this class delegates to.
      * @return the {@link StreamingHttpClient} that this class delegates to.
      */
-    protected final StreamingHttpClient getDelegate() {
+    protected final StreamingHttpClient delegate() {
         return delegate;
     }
 
@@ -59,8 +59,8 @@ public abstract class StreamingHttpClientAdapter extends StreamingHttpClient {
     }
 
     @Override
-    public ExecutionContext getExecutionContext() {
-        return delegate.getExecutionContext();
+    public ExecutionContext executionContext() {
+        return delegate.executionContext();
     }
 
     @Override

@@ -39,7 +39,7 @@ public abstract class BlockingStreamingHttpClient extends BlockingStreamingHttpR
      * Create a new instance.
      *
      * @param reqRespFactory The {@link BlockingStreamingHttpRequestResponseFactory} used to
-     * {@link #newRequest(HttpRequestMethod, String) create new requests} and {@link #getHttpResponseFactory()}.
+     * {@link #newRequest(HttpRequestMethod, String) create new requests} and {@link #httpResponseFactory()}.
      */
     protected BlockingStreamingHttpClient(final BlockingStreamingHttpRequestResponseFactory reqRespFactory) {
         super(reqRespFactory);
@@ -64,7 +64,7 @@ public abstract class BlockingStreamingHttpClient extends BlockingStreamingHttpR
      * cannot be any pipelined requests pending or any pipeline requests issued during the upgrade process. That means
      * the {@link BlockingStreamingHttpConnection} associated with the {@link UpgradableBlockingStreamingHttpResponse}
      * will be reserved for exclusive use. The code responsible for determining the result of the upgrade attempt is
-     * responsible for calling {@link UpgradableBlockingStreamingHttpResponse#getHttpConnection(boolean)}.
+     * responsible for calling {@link UpgradableBlockingStreamingHttpResponse#httpConnection(boolean)}.
      *
      * @param request the request which initiates the upgrade.
      * @return An object that provides the {@link StreamingHttpResponse} for the upgrade attempt and also contains the
@@ -125,7 +125,7 @@ public abstract class BlockingStreamingHttpClient extends BlockingStreamingHttpR
          * Create a new instance.
          *
          * @param reqRespFactory The {@link BlockingStreamingHttpRequestResponseFactory} used to
-         * {@link #newRequest(HttpRequestMethod, String) create new requests} and {@link #getHttpResponseFactory()}.
+         * {@link #newRequest(HttpRequestMethod, String) create new requests} and {@link #httpResponseFactory()}.
          */
         protected ReservedBlockingStreamingHttpConnection(
                 final BlockingStreamingHttpRequestResponseFactory reqRespFactory) {
@@ -219,7 +219,7 @@ public abstract class BlockingStreamingHttpClient extends BlockingStreamingHttpR
          * {@link BlockingStreamingHttpConnection} used for the upgrade attempt, and controls the lifetime of the
          * {@link BlockingStreamingHttpConnection} relative to this {@link BlockingStreamingHttpClient}.
          */
-        ReservedBlockingStreamingHttpConnection getHttpConnection(boolean releaseReturnsToClient);
+        ReservedBlockingStreamingHttpConnection httpConnection(boolean releaseReturnsToClient);
 
         @Override
         UpgradableBlockingStreamingHttpResponse payloadBody(Iterable<Buffer> payloadBody);

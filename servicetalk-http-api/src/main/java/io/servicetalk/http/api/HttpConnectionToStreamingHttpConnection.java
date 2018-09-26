@@ -32,13 +32,13 @@ final class HttpConnectionToStreamingHttpConnection extends StreamingHttpConnect
     }
 
     @Override
-    public ConnectionContext getConnectionContext() {
-        return connection.getConnectionContext();
+    public ConnectionContext connectionContext() {
+        return connection.connectionContext();
     }
 
     @Override
-    public <T> Publisher<T> getSettingStream(final SettingKey<T> settingKey) {
-        return connection.getSettingStream(settingKey);
+    public <T> Publisher<T> settingStream(final SettingKey<T> settingKey) {
+        return connection.settingStream(settingKey);
     }
 
     @Override
@@ -47,8 +47,8 @@ final class HttpConnectionToStreamingHttpConnection extends StreamingHttpConnect
     }
 
     @Override
-    public ExecutionContext getExecutionContext() {
-        return connection.getExecutionContext();
+    public ExecutionContext executionContext() {
+        return connection.executionContext();
     }
 
     @Override

@@ -90,6 +90,6 @@ public final class StreamingHttpConnectionHostHeaderFilter extends StreamingHttp
         if (request.version() == HTTP_1_1 && !request.headers().contains(HOST)) {
             request.headers().set(HOST, fallbackHost);
         }
-        return getDelegate().request(request);
+        return delegate().request(request);
     }
 }

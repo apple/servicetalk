@@ -58,6 +58,6 @@ final class LoadBalancedStreamingHttpConnection extends ReservedFromStreamingHtt
 
     @Override
     public String toString() {
-        return LoadBalancedStreamingHttpConnection.class.getSimpleName() + "(" + getDelegate() + ")";
+        return LoadBalancedStreamingHttpConnection.class.getSimpleName() + "(" + delegate() + ")";
     }
 }

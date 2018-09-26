@@ -46,8 +46,8 @@ final class RedisConnectionConcurrentRequestsFilter extends RedisConnection {
                                             int defaultMaxPipelinedRequests) {
         this.next = requireNonNull(next);
         limiter = defaultMaxPipelinedRequests == 1 ?
-                newSingleController(next.getSettingStream(MAX_CONCURRENCY), next.onClose()) :
-                newController(next.getSettingStream(MAX_CONCURRENCY), next.onClose(), defaultMaxPipelinedRequests);
+                newSingleController(next.settingStream(MAX_CONCURRENCY), next.onClose()) :
+                newController(next.settingStream(MAX_CONCURRENCY), next.onClose(), defaultMaxPipelinedRequests);
     }
 
     @Override
@@ -82,18 +82,18 @@ final class RedisConnectionConcurrentRequestsFilter extends RedisConnection {
     }
 
     @Override
-    public ExecutionContext getExecutionContext() {
-        return next.getExecutionContext();
+    public ExecutionContext executionContext() {
+        return next.executionContext();
     }
 
     @Override
-    public ConnectionContext getConnectionContext() {
-        return next.getConnectionContext();
+    public ConnectionContext connectionContext() {
+        return next.connectionContext();
     }
 
     @Override
-    public <T> Publisher<T> getSettingStream(SettingKey<T> settingKey) {
-        return next.getSettingStream(settingKey);
+    public <T> Publisher<T> settingStream(SettingKey<T> settingKey) {
+        return next.settingStream(settingKey);
     }
 
     @Override

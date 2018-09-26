@@ -74,7 +74,7 @@ final class RedisIdleConnectionReaper implements UnaryOperator<RedisConnection> 
     @Override
     public RedisConnection apply(final RedisConnection redisConnection) {
         Completable timer = toNettyIoExecutor(
-                redisConnection.getConnectionContext().executionContext().ioExecutor())
+                redisConnection.connectionContext().executionContext().ioExecutor())
                         .asExecutor().timer(idleTimeoutNanos, NANOSECONDS);
         return new IdleAwareRedisConnection(redisConnection, timer::subscribe);
     }
@@ -130,13 +130,13 @@ final class RedisIdleConnectionReaper implements UnaryOperator<RedisConnection> 
         }
 
         @Override
-        public <T> Publisher<T> getSettingStream(SettingKey<T> settingKey) {
-            return delegate.getSettingStream(settingKey);
+        public <T> Publisher<T> settingStream(SettingKey<T> settingKey) {
+            return delegate.settingStream(settingKey);
         }
 
         @Override
-        public ConnectionContext getConnectionContext() {
-            return delegate.getConnectionContext();
+        public ConnectionContext connectionContext() {
+            return delegate.connectionContext();
         }
 
         @Override
@@ -162,8 +162,8 @@ final class RedisIdleConnectionReaper implements UnaryOperator<RedisConnection> 
         }
 
         @Override
-        public ExecutionContext getExecutionContext() {
-            return delegate.getExecutionContext();
+        public ExecutionContext executionContext() {
+            return delegate.executionContext();
         }
 
         @Override

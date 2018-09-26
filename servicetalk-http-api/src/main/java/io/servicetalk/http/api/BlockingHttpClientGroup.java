@@ -32,7 +32,7 @@ public abstract class BlockingHttpClientGroup<UnresolvedAddress> implements Http
     /**
      * Create a new instance.
      * @param reqRespFactory The {@link HttpRequestResponseFactory} used to
-     * {@link #newRequest(HttpRequestMethod, String) create new requests} and {@link #getHttpResponseFactory()}.
+     * {@link #newRequest(HttpRequestMethod, String) create new requests} and {@link #httpResponseFactory()}.
      */
     protected BlockingHttpClientGroup(final HttpRequestResponseFactory reqRespFactory) {
         this.reqRespFactory = requireNonNull(reqRespFactory);
@@ -91,7 +91,7 @@ public abstract class BlockingHttpClientGroup<UnresolvedAddress> implements Http
      * Get a {@link HttpResponseFactory}.
      * @return a {@link HttpResponseFactory}.
      */
-    public final HttpResponseFactory getHttpResponseFactory() {
+    public final HttpResponseFactory httpResponseFactory() {
         return reqRespFactory;
     }
 

@@ -103,8 +103,8 @@ public class RedisIdleConnectionReaperTest {
         when(delegateConnection.closeAsync()).thenReturn(delegateConnectionOnCloseCompletable);
         when(delegateConnection.onClose()).thenReturn(delegateConnectionOnCloseCompletable);
         when(delegateConnection.request(any(RedisRequest.class))).thenReturn(just(NULL));
-        when(delegateConnection.getConnectionContext()).thenReturn(connectionContext);
-        when(delegateConnection.getExecutionContext()).thenReturn(mockExecutionCtx);
+        when(delegateConnection.connectionContext()).thenReturn(connectionContext);
+        when(delegateConnection.executionContext()).thenReturn(mockExecutionCtx);
         when(mockExecutionCtx.bufferAllocator()).thenReturn(DEFAULT_ALLOCATOR);
         when(connectionContext.executionContext()).thenReturn(mockExecutionCtx);
         when(mockExecutionCtx.ioExecutor()).thenReturn(ioExecutor);
@@ -121,7 +121,7 @@ public class RedisIdleConnectionReaperTest {
 
         verify(delegateConnection).onClose();
         verify(mockExecutor).schedule(any(Runnable.class), eq(1_000_000_000L), eq(NANOSECONDS));
-        verify(delegateConnection).getConnectionContext();
+        verify(delegateConnection).connectionContext();
         verify(mockExecutionCtx).ioExecutor();
         verify(connectionContext).executionContext();
     }
@@ -161,7 +161,7 @@ public class RedisIdleConnectionReaperTest {
         completeTimer();
         completeTimer();
         verify(mockExecutor, times(3)).schedule(any(Runnable.class), eq(1_000_000_000L), eq(NANOSECONDS));
-        verify(delegateConnection, times(1)).getConnectionContext();
+        verify(delegateConnection, times(1)).connectionContext();
         verify(mockExecutionCtx, times(1)).ioExecutor();
         assertThat("Unexpected timer subscriptions.", timerSubscribed.get(), is(3));
         verify(delegateConnection).request(any(RedisRequest.class));
@@ -177,7 +177,7 @@ public class RedisIdleConnectionReaperTest {
         completeTimer();
         completeTimer();
         verify(mockExecutor, times(2)).schedule(any(Runnable.class), eq(1_000_000_000L), eq(NANOSECONDS));
-        verify(delegateConnection, times(1)).getConnectionContext();
+        verify(delegateConnection, times(1)).connectionContext();
         verify(mockExecutionCtx, times(1)).ioExecutor();
         assertThat("Unexpected timer subscriptions.", timerSubscribed.get(), is(2));
         verify(delegateConnection).request(any(RedisRequest.class));
@@ -193,8 +193,8 @@ public class RedisIdleConnectionReaperTest {
 
         completeTimer();
         verify(mockExecutor, times(2)).schedule(any(Runnable.class), eq(1_000_000_000L), eq(NANOSECONDS));
-        verify(delegateConnection, times(1)).getExecutionContext();
-        verify(delegateConnection, times(1)).getConnectionContext();
+        verify(delegateConnection, times(1)).executionContext();
+        verify(delegateConnection, times(1)).connectionContext();
         verify(mockExecutionCtx, times(1)).ioExecutor();
         assertThat("Unexpected timer subscriptions.", timerSubscribed.get(), is(2));
         verify(delegateConnection).request(any(RedisRequest.class), eq(String.class));

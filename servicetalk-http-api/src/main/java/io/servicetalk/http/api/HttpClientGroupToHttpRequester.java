@@ -59,7 +59,7 @@ final class HttpClientGroupToHttpRequester<UnresolvedAddress> extends HttpReques
     }
 
     @Override
-    public ExecutionContext getExecutionContext() {
+    public ExecutionContext executionContext() {
         return executionContext;
     }
 

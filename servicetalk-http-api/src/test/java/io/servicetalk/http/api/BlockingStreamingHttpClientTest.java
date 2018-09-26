@@ -90,7 +90,7 @@ public class BlockingStreamingHttpClientTest extends AbstractBlockingStreamingHt
         }
 
         @Override
-        public ExecutionContext getExecutionContext() {
+        public ExecutionContext executionContext() {
             return executionContext;
         }
 

@@ -42,7 +42,7 @@ public abstract class HttpClientGroupAdapter<UnresolvedAddress> extends HttpClie
      * Get the {@link HttpClientGroup} that this class delegates to.
      * @return the {@link HttpClientGroup} that this class delegates to.
      */
-    protected final HttpClientGroup<UnresolvedAddress> getDelegate() {
+    protected final HttpClientGroup<UnresolvedAddress> delegate() {
         return delegate;
     }
 

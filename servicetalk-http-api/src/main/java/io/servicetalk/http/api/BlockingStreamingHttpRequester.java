@@ -28,7 +28,7 @@ public abstract class BlockingStreamingHttpRequester implements BlockingStreamin
     /**
      * Create a new instance.
      * @param reqRespFactory The {@link BlockingStreamingHttpRequestResponseFactory} used to
-     * {@link #newRequest(HttpRequestMethod, String) create new requests} and {@link #getHttpResponseFactory()}.
+     * {@link #newRequest(HttpRequestMethod, String) create new requests} and {@link #httpResponseFactory()}.
      */
     protected BlockingStreamingHttpRequester(final BlockingStreamingHttpRequestResponseFactory reqRespFactory) {
         this.reqRespFactory = requireNonNull(reqRespFactory);
@@ -62,7 +62,7 @@ public abstract class BlockingStreamingHttpRequester implements BlockingStreamin
      * Get a {@link BlockingStreamingHttpResponseFactory}.
      * @return a {@link BlockingStreamingHttpResponseFactory}.
      */
-    public final BlockingStreamingHttpResponseFactory getHttpResponseFactory() {
+    public final BlockingStreamingHttpResponseFactory httpResponseFactory() {
         return reqRespFactory;
     }
 

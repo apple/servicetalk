@@ -156,7 +156,7 @@ final class RedisRequesterUtils {
                         aggregator = null;
                     } else if (aggregator == null) {
                         if (redisData instanceof RedisData.SimpleString) {
-                            aggregator = requester.getExecutionContext().bufferAllocator()
+                            aggregator = requester.executionContext().bufferAllocator()
                                     .fromUtf8(redisData.getCharSequenceValue());
                         } else if (redisData instanceof RedisData.BulkStringChunk) {
                             aggregator = redisData.getBufferValue();
@@ -198,7 +198,7 @@ final class RedisRequesterUtils {
 
                 private void reallocateAggregator(int extraBytes) {
                     assert aggregator != null;
-                    aggregator = requester.getExecutionContext().bufferAllocator()
+                    aggregator = requester.executionContext().bufferAllocator()
                             .newBuffer(extraBytes + aggregator.getReadableBytes()).writeBytes(aggregator);
                 }
             });
@@ -305,7 +305,7 @@ final class RedisRequesterUtils {
                         if (aggregator == null) {
                             aggregator = redisData.getBufferValue();
                             if (!aggregator.tryEnsureWritable(bulkStringSize - aggregator.getReadableBytes(), false)) {
-                                aggregator = requester.getExecutionContext().bufferAllocator()
+                                aggregator = requester.executionContext().bufferAllocator()
                                         .newBuffer(bulkStringSize).writeBytes(aggregator);
                             }
                         } else {

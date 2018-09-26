@@ -71,7 +71,7 @@ final class DefaultStreamingHttpClientGroup<UnresolvedAddress> extends Streaming
         }
 
         @Override
-        public ExecutionContext getExecutionContext() {
+        public ExecutionContext executionContext() {
             throw new UnsupportedOperationException(PLACEHOLDER_EXCEPTION_MSG);
         }
 

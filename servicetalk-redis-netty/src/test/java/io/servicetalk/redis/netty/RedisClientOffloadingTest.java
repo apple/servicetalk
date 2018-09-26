@@ -89,7 +89,7 @@ public class RedisClientOffloadingTest {
         errors = new ConcurrentLinkedQueue<>();
         terminated = new CountDownLatch(1);
         connectionContext = awaitIndefinitelyNonNull(getEnv().client.reserveConnection(newRequest(PING)))
-                .getConnectionContext();
+                .connectionContext();
     }
 
     @Test
@@ -151,7 +151,7 @@ public class RedisClientOffloadingTest {
         final ReservedRedisConnection connection =
                 awaitIndefinitelyNonNull(getEnv().client.reserveConnection(newRequest(PING)));
         subscribeTo(getEnv()::isInClientEventLoop, errors,
-                connection.getSettingStream(MAX_CONCURRENCY).doAfterFinally(terminated::countDown),
+                connection.settingStream(MAX_CONCURRENCY).doAfterFinally(terminated::countDown),
                 "Client settings stream: ");
         awaitIndefinitely(connection.closeAsyncGracefully());
         terminated.await();

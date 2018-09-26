@@ -35,7 +35,7 @@ public abstract class HttpClient extends HttpRequester {
      * Create a new instance.
      *
      * @param reqRespFactory The {@link HttpRequestResponseFactory} used to
-     * {@link #newRequest(HttpRequestMethod, String) create new requests} and {@link #getHttpResponseFactory()}.
+     * {@link #newRequest(HttpRequestMethod, String) create new requests} and {@link #httpResponseFactory()}.
      */
     protected HttpClient(final HttpRequestResponseFactory reqRespFactory) {
         super(reqRespFactory);
@@ -56,7 +56,7 @@ public abstract class HttpClient extends HttpRequester {
      * cannot be any pipelined requests pending or any pipeline requests issued during the upgrade process. That means
      * the {@link HttpConnection} associated with the {@link UpgradableHttpResponse} will be
      * reserved for exclusive use. The code responsible for determining the result of the upgrade attempt is responsible
-     * for calling {@link UpgradableHttpResponse#getHttpConnection(boolean)}.
+     * for calling {@link UpgradableHttpResponse#httpConnection(boolean)}.
      *
      * @param request the request which initiates the upgrade.
      * @return An object that provides the {@link UpgradableHttpResponse} for the upgrade attempt and also
@@ -109,7 +109,7 @@ public abstract class HttpClient extends HttpRequester {
          * Create a new instance.
          *
          * @param reqRespFactory The {@link HttpRequestResponseFactory} used to
-         * {@link #newRequest(HttpRequestMethod, String) create new requests} and {@link #getHttpResponseFactory()}.
+         * {@link #newRequest(HttpRequestMethod, String) create new requests} and {@link #httpResponseFactory()}.
          */
         protected ReservedHttpConnection(final HttpRequestResponseFactory reqRespFactory) {
             super(reqRespFactory);
@@ -195,7 +195,7 @@ public abstract class HttpClient extends HttpRequester {
          * for the upgrade attempt, and controls the lifetime of the {@link HttpConnection} relative to this
          * {@link HttpClient}.
          */
-        ReservedHttpConnection getHttpConnection(boolean releaseReturnsToClient);
+        ReservedHttpConnection httpConnection(boolean releaseReturnsToClient);
 
         @Override
         UpgradableHttpResponse payloadBody(Buffer payloadBody);

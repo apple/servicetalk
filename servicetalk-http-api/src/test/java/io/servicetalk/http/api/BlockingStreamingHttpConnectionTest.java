@@ -73,12 +73,12 @@ public class BlockingStreamingHttpConnectionTest extends AbstractBlockingStreami
         }
 
         @Override
-        public final ConnectionContext getConnectionContext() {
+        public final ConnectionContext connectionContext() {
             return connectionContext;
         }
 
         @Override
-        public final <T> Publisher<T> getSettingStream(final SettingKey<T> settingKey) {
+        public final <T> Publisher<T> settingStream(final SettingKey<T> settingKey) {
             return Publisher.error(new IllegalStateException("unsupported"));
         }
 
@@ -101,7 +101,7 @@ public class BlockingStreamingHttpConnectionTest extends AbstractBlockingStreami
         }
 
         @Override
-        public ExecutionContext getExecutionContext() {
+        public ExecutionContext executionContext() {
             return executionContext;
         }
 
@@ -126,7 +126,7 @@ public class BlockingStreamingHttpConnectionTest extends AbstractBlockingStreami
         }
 
         @Override
-        public ConnectionContext getConnectionContext() {
+        public ConnectionContext connectionContext() {
             return connectionContext;
         }
 
@@ -136,7 +136,7 @@ public class BlockingStreamingHttpConnectionTest extends AbstractBlockingStreami
         }
 
         @Override
-        public <T> BlockingIterable<T> getSettingIterable(final StreamingHttpConnection.SettingKey<T> settingKey) {
+        public <T> BlockingIterable<T> settingIterable(final StreamingHttpConnection.SettingKey<T> settingKey) {
             throw new UnsupportedOperationException();
         }
 

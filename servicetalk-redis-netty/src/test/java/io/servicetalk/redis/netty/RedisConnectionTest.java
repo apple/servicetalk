@@ -83,7 +83,7 @@ public class RedisConnectionTest extends BaseRedisClientTest {
 
     @Test
     public void unrecoverableError() throws Exception {
-        final Buffer reqBuf = getEnv().client.getExecutionContext().bufferAllocator().fromAscii("*1\r\n+PING\r\n");
+        final Buffer reqBuf = getEnv().client.executionContext().bufferAllocator().fromAscii("*1\r\n+PING\r\n");
 
         thrown.expect(ExecutionException.class);
         thrown.expectCause(is(instanceOf(RedisServerException.class)));
@@ -119,7 +119,7 @@ public class RedisConnectionTest extends BaseRedisClientTest {
 
         getEnv().client.reserveConnection(pingRequest)
                 .flatMapPublisher(cnx -> {
-                    cnx.getConnectionContext().onClose().subscribe(new Completable.Subscriber() {
+                    cnx.connectionContext().onClose().subscribe(new Completable.Subscriber() {
                         @Override
                         public void onSubscribe(final Cancellable cancellable) {
                         }
@@ -319,13 +319,13 @@ public class RedisConnectionTest extends BaseRedisClientTest {
         }
 
         @Override
-        public ConnectionContext getConnectionContext() {
-            return delegate.getConnectionContext();
+        public ConnectionContext connectionContext() {
+            return delegate.connectionContext();
         }
 
         @Override
-        public <T> Publisher<T> getSettingStream(SettingKey<T> settingKey) {
-            return delegate.getSettingStream(settingKey);
+        public <T> Publisher<T> settingStream(SettingKey<T> settingKey) {
+            return delegate.settingStream(settingKey);
         }
 
         @Override
@@ -335,8 +335,8 @@ public class RedisConnectionTest extends BaseRedisClientTest {
         }
 
         @Override
-        public ExecutionContext getExecutionContext() {
-            return delegate.getExecutionContext();
+        public ExecutionContext executionContext() {
+            return delegate.executionContext();
         }
 
         @Override

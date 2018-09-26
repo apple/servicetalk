@@ -84,7 +84,7 @@ final class InternalSubscribedRedisConnection extends AbstractRedisConnection {
     }
 
     @Override
-    public ConnectionContext getConnectionContext() {
+    public ConnectionContext connectionContext() {
         return connection;
     }
 

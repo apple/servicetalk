@@ -65,8 +65,8 @@ final class StreamingHttpClientToHttpClient extends HttpClient {
     }
 
     @Override
-    public ExecutionContext getExecutionContext() {
-        return client.getExecutionContext();
+    public ExecutionContext executionContext() {
+        return client.executionContext();
     }
 
     @Override
@@ -104,13 +104,13 @@ final class StreamingHttpClientToHttpClient extends HttpClient {
         }
 
         @Override
-        public ConnectionContext getConnectionContext() {
-            return reservedConnection.getConnectionContext();
+        public ConnectionContext connectionContext() {
+            return reservedConnection.connectionContext();
         }
 
         @Override
-        public <T> Publisher<T> getSettingStream(final StreamingHttpConnection.SettingKey<T> settingKey) {
-            return reservedConnection.getSettingStream(settingKey);
+        public <T> Publisher<T> settingStream(final StreamingHttpConnection.SettingKey<T> settingKey) {
+            return reservedConnection.settingStream(settingKey);
         }
 
         @Override
@@ -120,8 +120,8 @@ final class StreamingHttpClientToHttpClient extends HttpClient {
         }
 
         @Override
-        public ExecutionContext getExecutionContext() {
-            return reservedConnection.getExecutionContext();
+        public ExecutionContext executionContext() {
+            return reservedConnection.executionContext();
         }
 
         @Override
@@ -162,9 +162,9 @@ final class StreamingHttpClientToHttpClient extends HttpClient {
         }
 
         @Override
-        public ReservedHttpConnection getHttpConnection(final boolean releaseReturnsToClient) {
+        public ReservedHttpConnection httpConnection(final boolean releaseReturnsToClient) {
             return new ReservedStreamingHttpConnectionToReservedHttpConnection(
-                    upgradableResponse.getHttpConnection(releaseReturnsToClient));
+                    upgradableResponse.httpConnection(releaseReturnsToClient));
         }
 
         @Override

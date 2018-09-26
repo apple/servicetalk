@@ -35,8 +35,8 @@ final class StreamingHttpConnectionConcurrentRequestsFilter extends StreamingHtt
                                                     int defaultMaxPipelinedRequests) {
         super(next);
         limiter = defaultMaxPipelinedRequests == 1 ?
-                newSingleController(next.getSettingStream(MAX_CONCURRENCY), next.onClose()) :
-                newController(next.getSettingStream(MAX_CONCURRENCY), next.onClose(), defaultMaxPipelinedRequests);
+                newSingleController(next.settingStream(MAX_CONCURRENCY), next.onClose()) :
+                newController(next.settingStream(MAX_CONCURRENCY), next.onClose(), defaultMaxPipelinedRequests);
     }
 
     @Override
@@ -45,7 +45,7 @@ final class StreamingHttpConnectionConcurrentRequestsFilter extends StreamingHtt
             @Override
             protected void handleSubscribe(final Subscriber<? super StreamingHttpResponse> subscriber) {
                 if (limiter.tryRequest()) {
-                    getDelegate().request(request).liftSynchronous(new ConcurrencyControlSingleOperator(limiter))
+                    delegate().request(request).liftSynchronous(new ConcurrencyControlSingleOperator(limiter))
                             .subscribe(subscriber);
                 } else {
                     subscriber.onSubscribe(IGNORE_CANCEL);

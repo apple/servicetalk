@@ -31,7 +31,7 @@ public abstract class HttpRequester implements HttpRequestFactory, ListenableAsy
     /**
      * Create a new instance.
      * @param reqRespFactory The {@link HttpRequestResponseFactory} used to
-     * {@link #newRequest(HttpRequestMethod, String) create new requests} and {@link #getHttpResponseFactory()}.
+     * {@link #newRequest(HttpRequestMethod, String) create new requests} and {@link #httpResponseFactory()}.
      */
     protected HttpRequester(final HttpRequestResponseFactory reqRespFactory) {
         this.reqRespFactory = requireNonNull(reqRespFactory);
@@ -53,7 +53,7 @@ public abstract class HttpRequester implements HttpRequestFactory, ListenableAsy
      *
      * @return the {@link ExecutionContext} used during construction of this object.
      */
-    public abstract ExecutionContext getExecutionContext();
+    public abstract ExecutionContext executionContext();
 
     @Override
     public final HttpRequest newRequest(HttpRequestMethod method, String requestTarget) {
@@ -64,7 +64,7 @@ public abstract class HttpRequester implements HttpRequestFactory, ListenableAsy
      * Get a {@link HttpResponseFactory}.
      * @return a {@link HttpResponseFactory}.
      */
-    public final HttpResponseFactory getHttpResponseFactory() {
+    public final HttpResponseFactory httpResponseFactory() {
         return reqRespFactory;
     }
 

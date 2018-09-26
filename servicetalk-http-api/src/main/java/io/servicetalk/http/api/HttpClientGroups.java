@@ -33,7 +33,7 @@ public final class HttpClientGroups {
      * to buildStreaming inner {@link StreamingHttpClient}s.
      * @param reqRespFactory The {@link StreamingHttpRequestFactory} used by the returned
      * {@link StreamingHttpClientGroup#newRequest(HttpRequestMethod, String)} and
-     * {@link StreamingHttpClientGroup#getHttpResponseFactory()}.
+     * {@link StreamingHttpClientGroup#httpResponseFactory()}.
      * @param clientFactory A factory to create a {@link StreamingHttpClient} for the passed {@link GroupKey}.
      * @param <UnresolvedAddress> The address type used to create new {@link StreamingHttpClient}s.
      * @return A new {@link StreamingHttpClientGroup}.

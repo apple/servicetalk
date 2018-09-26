@@ -57,18 +57,18 @@ final class RedisSubscribedConcurrencyLimitingFilter extends RedisConnection {
     }
 
     @Override
-    public ExecutionContext getExecutionContext() {
-        return next.getExecutionContext();
+    public ExecutionContext executionContext() {
+        return next.executionContext();
     }
 
     @Override
-    public ConnectionContext getConnectionContext() {
-        return next.getConnectionContext();
+    public ConnectionContext connectionContext() {
+        return next.connectionContext();
     }
 
     @Override
-    public <T> Publisher<T> getSettingStream(RedisConnection.SettingKey<T> settingKey) {
-        return next.getSettingStream(settingKey);
+    public <T> Publisher<T> settingStream(RedisConnection.SettingKey<T> settingKey) {
+        return next.settingStream(settingKey);
     }
 
     @Override

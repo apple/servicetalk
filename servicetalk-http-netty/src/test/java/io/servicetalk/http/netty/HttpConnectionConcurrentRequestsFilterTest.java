@@ -76,8 +76,8 @@ public class HttpConnectionConcurrentRequestsFilterTest {
                 connectionContext) {
             private final AtomicInteger reqCount = new AtomicInteger(0);
             @Override
-            public <T> Publisher<T> getSettingStream(final SettingKey<T> settingKey) {
-                return settingKey == MAX_CONCURRENCY ? (Publisher<T>) just(2) : super.getSettingStream(settingKey);
+            public <T> Publisher<T> settingStream(final SettingKey<T> settingKey) {
+                return settingKey == MAX_CONCURRENCY ? (Publisher<T>) just(2) : super.settingStream(settingKey);
             }
 
             @Override

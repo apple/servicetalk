@@ -74,8 +74,8 @@ public class RedisRequesterUtilsTest {
         requestor = mock(RedisRequester.class);
         request = mock(RedisRequest.class);
         allocator = DEFAULT_ALLOCATOR;
-        when(requestor.getExecutionContext()).thenReturn(executionContext);
-        when(requestor.getExecutionContext().bufferAllocator()).thenReturn(allocator);
+        when(requestor.executionContext()).thenReturn(executionContext);
+        when(requestor.executionContext().bufferAllocator()).thenReturn(allocator);
         when(requestor.request(any())).thenReturn(publisher.getPublisher());
     }
 

@@ -152,7 +152,7 @@ public final class AbstractRedisConnectionTest {
         }
 
         @Override
-        public ConnectionContext getConnectionContext() {
+        public ConnectionContext connectionContext() {
             return context;
         }
 

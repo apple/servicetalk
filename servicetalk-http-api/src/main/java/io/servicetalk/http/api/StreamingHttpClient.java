@@ -43,7 +43,7 @@ public abstract class StreamingHttpClient extends StreamingHttpRequester {
      * Create a new instance.
      *
      * @param reqRespFactory The {@link StreamingHttpRequestResponseFactory} used to
-     * {@link #newRequest(HttpRequestMethod, String) create new requests} and {@link #getHttpResponseFactory()}.
+     * {@link #newRequest(HttpRequestMethod, String) create new requests} and {@link #httpResponseFactory()}.
      */
     protected StreamingHttpClient(final StreamingHttpRequestResponseFactory reqRespFactory) {
         super(reqRespFactory);
@@ -64,7 +64,7 @@ public abstract class StreamingHttpClient extends StreamingHttpRequester {
      * cannot be any pipelined requests pending or any pipeline requests issued during the upgrade process. That means
      * the {@link StreamingHttpConnection} associated with the {@link UpgradableStreamingHttpResponse} will be reserved
      * for exclusive use. The code responsible for determining the result of the upgrade attempt is responsible for
-     * calling {@link UpgradableStreamingHttpResponse#getHttpConnection(boolean)}.
+     * calling {@link UpgradableStreamingHttpResponse#httpConnection(boolean)}.
      * @param request the request which initiates the upgrade.
      * @return An object that provides the {@link StreamingHttpResponse} for the upgrade attempt and also contains the
      * {@link StreamingHttpConnection} used for the upgrade.
@@ -125,7 +125,7 @@ public abstract class StreamingHttpClient extends StreamingHttpRequester {
          * Create a new instance.
          *
          * @param reqRespFactory The {@link StreamingHttpRequestResponseFactory} used to
-         * {@link #newRequest(HttpRequestMethod, String) create new requests} and {@link #getHttpResponseFactory()}.
+         * {@link #newRequest(HttpRequestMethod, String) create new requests} and {@link #httpResponseFactory()}.
          */
         protected ReservedStreamingHttpConnection(final StreamingHttpRequestResponseFactory reqRespFactory) {
             super(reqRespFactory);
@@ -222,7 +222,7 @@ public abstract class StreamingHttpClient extends StreamingHttpRequester {
          * the upgrade attempt, and controls the lifetime of the {@link StreamingHttpConnection} relative to this
          * {@link StreamingHttpClient}.
          */
-        ReservedStreamingHttpConnection getHttpConnection(boolean releaseReturnsToClient);
+        ReservedStreamingHttpConnection httpConnection(boolean releaseReturnsToClient);
 
         @Override
         UpgradableStreamingHttpResponse payloadBody(Publisher<Buffer> payloadBody);

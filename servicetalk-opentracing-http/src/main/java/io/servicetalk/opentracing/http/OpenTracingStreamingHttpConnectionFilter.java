@@ -93,7 +93,7 @@ public class OpenTracingStreamingHttpConnectionFilter extends StreamingHttpConne
 
                 Scope childScope = spanBuilder.startActive(true);
                 tracer.inject(childScope.span().context(), formatter, request.headers());
-                getDelegate().request(request).map(resp -> resp.transformRawPayloadBody(pub ->
+                delegate().request(request).map(resp -> resp.transformRawPayloadBody(pub ->
                         pub.doOnError(cause -> tagErrorAndClose(childScope))
                            .doOnCancel(() -> tagErrorAndClose(childScope))
                            .doOnComplete(() -> {

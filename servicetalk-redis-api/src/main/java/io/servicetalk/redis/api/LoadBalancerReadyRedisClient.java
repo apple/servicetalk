@@ -68,8 +68,8 @@ public final class LoadBalancerReadyRedisClient extends RedisClient {
     }
 
     @Override
-    public ExecutionContext getExecutionContext() {
-        return next.getExecutionContext();
+    public ExecutionContext executionContext() {
+        return next.executionContext();
     }
 
     @Override

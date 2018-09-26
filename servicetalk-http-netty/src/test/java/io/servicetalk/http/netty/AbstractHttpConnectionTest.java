@@ -108,7 +108,7 @@ public final class AbstractHttpConnectionTest {
 
     @Test
     public void shouldEmitMaxConcurrencyInSettingStream() throws ExecutionException, InterruptedException {
-        Integer max = awaitIndefinitely(http.getSettingStream(MAX_CONCURRENCY).first());
+        Integer max = awaitIndefinitely(http.settingStream(MAX_CONCURRENCY).first());
         assertThat(max, equalTo(101));
     }
 

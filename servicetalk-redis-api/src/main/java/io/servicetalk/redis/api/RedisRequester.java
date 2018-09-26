@@ -74,7 +74,7 @@ public abstract class RedisRequester implements ListenableAsyncCloseable {
      *
      * @return the {@link ExecutionContext} used during construction of this object.
      */
-    public abstract ExecutionContext getExecutionContext();
+    public abstract ExecutionContext executionContext();
 
     /**
      * Send a {@code request} which expects the specified response type.
