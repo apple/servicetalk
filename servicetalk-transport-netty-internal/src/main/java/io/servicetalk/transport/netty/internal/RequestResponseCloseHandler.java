@@ -279,17 +279,19 @@ class RequestResponseCloseHandler extends CloseHandler {
             closeChannel(channel, evt);
         } else if (isClient) {
             if (evt == CHANNEL_CLOSED_INBOUND) {
-                // abort if we can't read the current response to completion
-                // continue writing current request if read response completed
-                // READ == true => current request is cut off, abort
-                // pending > 0 + WRITE | !READ => next request for which we can't respond, abort
-                if (has(state, READ) || pending != 0) {
+                // pending > 0 + WRITE => next request for which we can't respond, abort
+                if (pending != 0) {
                     if (has(state, WRITE)) {
                         closeAndResetChannel(channel, evt);
                     } else {
                         closeChannel(channel, evt);
                     }
-                } // else pending == 0 + WRITE == true => current request still ongoing, defer close
+                } else { // current request still ongoing, defer close, but unset READ flag
+                    state = unset(state, READ);
+                    if (idle(pending, state)) {
+                        closeChannel(channel, evt);
+                    }
+                }
             } else if (has(state, WRITE)) { // evt == CHANNEL_CLOSED_OUTBOUND
                 // ensure we finish reading pending responses, abort others
                 setSocketResetOnClose(channel);
@@ -302,20 +304,17 @@ class RequestResponseCloseHandler extends CloseHandler {
             }
         } else if (evt == CHANNEL_CLOSED_INBOUND) { // Server
             if (has(state, READ)) {
-                // don't prematurely close to allow server error response, but unset READ flag
+                // defer close to allow server error response, but unset READ flag
                 state = unset(state, READ);
                 setSocketResetOnClose(channel);
                 if (idle(pending, state)) {
                     closeChannel(channel, evt);
                 }
             }
-        } else if (pending != 0 || has(state, WRITE)) { // Server && CHANNEL_CLOSED_OUTBOUND
-            // ensure we finish reading pending request, abort others
-            // WRITE == true => current response is cut off, abort
-            // pending > 0 => none of the pending requests can be responded to, abort
+        } else if (pending != 0) { // Server && CHANNEL_CLOSED_OUTBOUND
+            // pending > 0 => ensures we finish reading current request, abort others we can't respond to anyway
             closeAndResetChannel(channel, evt);
-        } // else if (!has(state, READ)) no branch needed, same as idle(pending, sate)
-        //        pending == 0 + READ = true => current request still ongoing, defer close
+        }
     }
 
     private void closeChannel(final Channel channel, @Nullable final CloseEvent evt) {
