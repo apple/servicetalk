@@ -42,7 +42,7 @@ public final class HelloWorldJaxRsServer {
      */
     public static void main(String[] args) throws Exception {
         // Create configurable starter for HTTP server.
-        ServerContext serverContext = HttpServers.newHttpServerBuilder(808)
+        ServerContext serverContext = HttpServers.newHttpServerBuilder(8080)
                 .listenStreamingAndAwait(new HttpJerseyRouterBuilder().build(new HelloWorldJaxrsApplication()));
 
         LOGGER.info("listening on {}", serverContext.getListenAddress());
