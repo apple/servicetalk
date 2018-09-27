@@ -74,6 +74,14 @@ final class DefaultContainerResponseWriter implements ContainerResponseWriter {
 
     private static final int UNKNOWN_RESPONSE_LENGTH = -1;
 
+    private static final int STATE_REQUEST_HANDLING = 0;
+    private static final int STATE_RESPONSE_WRITING = 1;
+    private static final int STATE_RESPONSE_WRITTEN = 2;
+    private static final int STATE_REQUEST_CANCELLED = 3;
+
+    private static final AtomicIntegerFieldUpdater<DefaultContainerResponseWriter> stateUpdater =
+            newUpdater(DefaultContainerResponseWriter.class, "state");
+
     private final ContainerRequest request;
     private final HttpProtocolVersion protocolVersion;
     private final HttpServiceContext serviceCtx;
@@ -86,15 +94,7 @@ final class DefaultContainerResponseWriter implements ContainerResponseWriter {
     @Nullable
     private volatile Runnable suspendedTimeoutRunnable;
 
-    private static final AtomicIntegerFieldUpdater<DefaultContainerResponseWriter> stateUpdater =
-            newUpdater(DefaultContainerResponseWriter.class, "state");
-
     private volatile int state;
-
-    private static final int STATE_REQUEST_HANDLONG = 0;
-    private static final int STATE_RESPONSE_WRITING = 1;
-    private static final int STATE_RESPONSE_WRITTEN = 2;
-    private static final int STATE_REQUEST_CANCELLED = 3;
 
     DefaultContainerResponseWriter(final ContainerRequest request,
                                    final HttpProtocolVersion protocolVersion,
@@ -113,7 +113,7 @@ final class DefaultContainerResponseWriter implements ContainerResponseWriter {
     public OutputStream writeResponseStatusAndHeaders(final long contentLength, final ContainerResponse responseContext)
             throws ContainerException {
 
-        if (!stateUpdater.compareAndSet(this, STATE_REQUEST_HANDLONG, STATE_RESPONSE_WRITING)) {
+        if (!stateUpdater.compareAndSet(this, STATE_REQUEST_HANDLING, STATE_RESPONSE_WRITING)) {
             // Request has been cancelled so we do not send a response and return no OutputStream for Jersey to write to
             return null;
         }
@@ -145,11 +145,7 @@ final class DefaultContainerResponseWriter implements ContainerResponseWriter {
         // the response has resumed, it will actually be a NOOP.
         // So there's no strong requirement for cancelling timer on commit/failure (below)
         // besides cleaning up our resources.
-        final Runnable r = () -> {
-            if (timeoutHandler != null) {
-                timeoutHandler.onTimeout(this);
-            }
-        };
+        final Runnable r = timeoutHandler != null ? () -> timeoutHandler.onTimeout(this) : () -> { };
 
         suspendedTimeoutRunnable = r;
         scheduleSuspendedTimer(timeOut, timeUnit, r);
@@ -189,7 +185,7 @@ final class DefaultContainerResponseWriter implements ContainerResponseWriter {
     }
 
     void cancelRequest() {
-        if (stateUpdater.compareAndSet(this, STATE_REQUEST_HANDLONG, STATE_REQUEST_CANCELLED)) {
+        if (stateUpdater.compareAndSet(this, STATE_REQUEST_HANDLING, STATE_REQUEST_CANCELLED)) {
             // Cancel any internally created request-handling subscription
             getRequestCancellable(request).cancel();
 
@@ -245,7 +241,7 @@ final class DefaultContainerResponseWriter implements ContainerResponseWriter {
             final Executor executor = getResponseExecutorOffloader(request);
             // TODO(scott): use request factory methods that accept a payload body to avoid overhead of payloadBody.
             Publisher<Buffer> payloadBody = (executor != null ? content.subscribeOn(executor) : content)
-                    .doBeforeComplete(() -> state = STATE_RESPONSE_WRITTEN)
+                    .doBeforeComplete(() -> state = STATE_RESPONSE_WRITTEN) // Makes cancelResponse a no-op
                     .doAfterCancel(this::cancelResponse);  // Cleanup internal state here after ST is done cancelling
 
             response = responseFactory.newResponse(status)
