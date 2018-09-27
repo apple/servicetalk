@@ -13,19 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.redis.utils;
+package io.servicetalk.http.utils;
 
 import io.servicetalk.client.api.RetryableException;
 import io.servicetalk.concurrent.api.BiIntFunction;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Executor;
-import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.concurrent.api.RetryStrategies;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.redis.api.RedisClient;
-import io.servicetalk.redis.api.RedisData;
-import io.servicetalk.redis.api.RedisProtocolSupport.Command;
-import io.servicetalk.redis.api.RedisRequest;
+import io.servicetalk.http.api.HttpRequestMetaData;
+import io.servicetalk.http.api.HttpResponseMetaData;
+import io.servicetalk.http.api.StreamingHttpClient;
+import io.servicetalk.http.api.StreamingHttpClientAdapter;
+import io.servicetalk.http.api.StreamingHttpRequest;
+import io.servicetalk.http.api.StreamingHttpResponse;
 
 import java.time.Duration;
 import java.util.function.Predicate;
@@ -34,80 +34,74 @@ import javax.annotation.Nullable;
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Completable.error;
 import static io.servicetalk.concurrent.api.RetryStrategies.retryWithConstantBackoff;
+import static io.servicetalk.concurrent.api.RetryStrategies.retryWithConstantBackoffAndJitter;
 import static io.servicetalk.concurrent.api.RetryStrategies.retryWithExponentialBackoff;
 import static io.servicetalk.concurrent.api.RetryStrategies.retryWithExponentialBackoffAndJitter;
-import static io.servicetalk.redis.api.RedisProtocolSupport.CommandFlag.READONLY;
 import static java.util.Objects.requireNonNull;
 
 /**
- * A {@link RedisClient} wrapper that applies a retry strategy to its {@link RetryingRedisClient#request(RedisRequest)}
- * {@link RetryingRedisClient#request(RedisRequest, Class)} and {@link RetryingRedisClient#reserveConnection(RedisRequest)} methods.
- *
- * @see RedisRequestAwareRetryStrategy
- * @see RetryStrategies
+ * A {@link StreamingHttpClient} to enable retries for requests. Use {@link #asBlockingClient()},
+ * {@link #asBlockingStreamingClient()} or {@link #asClient()} to use this filter with other programming models.
  */
-public final class RetryingRedisClient extends DelegatingRedisClient {
+public final class RetryingStreamingHttpClient extends StreamingHttpClientAdapter {
 
     private final BiIntFunction<Throwable, Completable> strategy;
-    private final Predicate<Command> isRetryable;
+    private final Predicate<HttpRequestMetaData> isRetryable;
 
-    private RetryingRedisClient(final RedisClient delegate, final BiIntFunction<Throwable, Completable> strategy,
-                                final Predicate<Command> isRetryable) {
+    private RetryingStreamingHttpClient(final StreamingHttpClient delegate,
+                                        final BiIntFunction<Throwable, Completable> strategy,
+                                        final Predicate<HttpRequestMetaData> isRetryable) {
         super(delegate);
         this.strategy = requireNonNull(strategy);
         this.isRetryable = requireNonNull(isRetryable);
     }
 
     @Override
-    public Publisher<RedisData> request(final RedisRequest request) {
-        if (!isRetryable.test(request.command())) {
-            return super.request(request);
+    public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
+        if (isRetryable.test(request)) {
+            return delegate().request(request).retryWhen(strategy);
         }
-        return super.request(request).retryWhen(strategy);
+        return delegate().request(request);
     }
 
     @Override
-    public <R> Single<R> request(final RedisRequest request, final Class<R> responseType) {
-        if (!isRetryable.test(request.command())) {
-            return super.request(request, responseType);
+    public Single<? extends ReservedStreamingHttpConnection> reserveConnection(final StreamingHttpRequest request) {
+        if (isRetryable.test(request)) {
+            return delegate().reserveConnection(request).retryWhen(strategy);
         }
-        return super.request(request, responseType).retryWhen(strategy);
+        return delegate().reserveConnection(request);
     }
 
     @Override
-    public Single<? extends ReservedRedisConnection> reserveConnection(final RedisRequest request) {
-        if (!isRetryable.test(request.command())) {
-            return super.reserveConnection(request);
+    public Single<? extends UpgradableStreamingHttpResponse> upgradeConnection(final StreamingHttpRequest request) {
+        if (isRetryable.test(request)) {
+            return delegate().upgradeConnection(request).retryWhen(strategy);
         }
-        return super.reserveConnection(request).retryWhen(strategy);
+        return delegate().upgradeConnection(request);
     }
 
     /**
-     * Create a new {@link Builder} to build a new {@link RetryingRedisClient} for the passed {@link RedisClient}.
-     *
-     * @param delegate {@link RetryingRedisClient} to which retries have to be applied.
-     * @return A new {@link Builder} to build this filter.
-     */
-    public static Builder newBuilder(RedisClient delegate) {
-        return new Builder(delegate);
-    }
-
-    /**
-     * A builder for {@link RetryingRedisClient}.
+     * A builder for {@link RetryingStreamingHttpClient}.
      */
     public static final class Builder {
 
-        private final RedisClient delegate;
+        private final StreamingHttpClient delegate;
         private Executor executor;
         private boolean jitter;
         private boolean exponential;
         @Nullable
         private Duration initialDelay;
         private Predicate<Throwable> causeFilter = throwable -> throwable instanceof RetryableException;
-        private Predicate<Command> retryableFilter = meta -> meta.hasFlag(READONLY);
+        private Predicate<HttpRequestMetaData> retryableFilter =
+                meta -> meta.method().getMethodProperties().isIdempotent();
 
-        Builder(final RedisClient delegate) {
-            this.delegate = delegate;
+        /**
+         * New instance.
+         *
+         * @param delegate {@link StreamingHttpClient} to wrap with retries.
+         */
+        public Builder(final StreamingHttpClient delegate) {
+            this.delegate = requireNonNull(delegate);
             executor = delegate.executionContext().executor();
         }
 
@@ -126,7 +120,7 @@ public final class RetryingRedisClient extends DelegatingRedisClient {
          * Adds a delay between retries. For first retry, the delay is {@code initialDelay} which is increased
          * exponentially for subsequent retries.
          * <p>
-         * The resulting {@link RetryingRedisClient} from {@link #build(int)} may not attempt to check for
+         * The resulting {@link RetryingStreamingHttpClient} from {@link #build(int)} may not attempt to check for
          * overflow if the retry count is high enough that an exponential delay causes {@link Long} overflow.
          *
          * @param initialDelay Delay {@link Duration} for the first retry and increased exponentially with each retry.
@@ -151,8 +145,8 @@ public final class RetryingRedisClient extends DelegatingRedisClient {
         }
 
         /**
-         * When {@link #exponentialBackoff(Duration)} is used, adding jitter will randomize the delays between the
-         * retries.
+         * When {@link #exponentialBackoff(Duration)} or {@link #backoff(Duration)} is used, adding jitter will
+         * randomize the delays between the retries.
          *
          * @return {@code this}
          */
@@ -176,23 +170,23 @@ public final class RetryingRedisClient extends DelegatingRedisClient {
         /**
          * Overrides the default criterion for determining which requests should be retried.
          *
-         * @param retryableFilter {@link Predicate} that checks whether a given {@link Command command} should be
-         * retried.
+         * @param retryableFilter {@link Predicate} that checks whether a given {@link HttpResponseMetaData request}
+         * should be retried.
          * @return {@code this}.
          */
-        public Builder retryForRequest(Predicate<Command> retryableFilter) {
+        public Builder retryForRequest(Predicate<HttpRequestMetaData> retryableFilter) {
             this.retryableFilter = retryableFilter;
             return this;
         }
 
         /**
-         * Builds a {@link RetryingRedisClient}.
+         * Builds a {@link RetryingStreamingHttpClient}.
          *
          * @param retryCount Maximum number of retries.
-         * @return A new {@link RetryingRedisClient}.
+         * @return A new {@link RetryingStreamingHttpClient}.
          */
-        public RetryingRedisClient build(int retryCount) {
-            Predicate<Throwable> causeFilter = this.causeFilter; // Copy since accessed lazily.
+        public RetryingStreamingHttpClient build(int retryCount) {
+            Predicate<Throwable> causeFilter = this.causeFilter; // Save reference since accessed lazily.
             final BiIntFunction<Throwable, Completable> strategy;
             if (initialDelay == null) {
                 strategy = (count, throwable) -> causeFilter.test(throwable) && count <= retryCount ?
@@ -206,10 +200,14 @@ public final class RetryingRedisClient extends DelegatingRedisClient {
                         strategy = retryWithExponentialBackoff(retryCount, causeFilter, initialDelay, executor);
                     }
                 } else {
-                    strategy = retryWithConstantBackoff(retryCount, causeFilter, initialDelay, executor);
+                    if (jitter) {
+                        strategy = retryWithConstantBackoffAndJitter(retryCount, causeFilter, initialDelay, executor);
+                    } else {
+                        strategy = retryWithConstantBackoff(retryCount, causeFilter, initialDelay, executor);
+                    }
                 }
             }
-            return new RetryingRedisClient(delegate, strategy, retryableFilter);
+            return new RetryingStreamingHttpClient(delegate, strategy, retryableFilter);
         }
     }
 }

@@ -21,6 +21,7 @@ import java.time.Duration;
 
 import static io.servicetalk.concurrent.api.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.concurrent.api.RetryStrategies.retryWithConstantBackoff;
+import static io.servicetalk.concurrent.api.RetryStrategies.retryWithConstantBackoffAndJitter;
 import static io.servicetalk.concurrent.api.RetryStrategies.retryWithExponentialBackoff;
 import static io.servicetalk.concurrent.api.RetryStrategies.retryWithExponentialBackoffAndJitter;
 import static java.time.Duration.ofSeconds;
@@ -37,6 +38,18 @@ public class RetryStrategiesTest extends RedoStrategiesTest {
                 timerExecutor));
         MockedCompletableListenerRule signalListener = strategy.invokeAndListen(DELIBERATE_EXCEPTION);
         verify(timerExecutor).timer(backoff.toNanos(), NANOSECONDS);
+        timers.take().verifyListenCalled().onComplete();
+        signalListener.verifyCompletion();
+        verifyNoMoreInteractions(timerExecutor);
+    }
+
+    @Test
+    public void testBackoffWithJitter() throws Exception {
+        Duration backoff = ofSeconds(1);
+        RetryStrategy strategy = new RetryStrategy(retryWithConstantBackoffAndJitter(2, cause -> true,
+                backoff, timerExecutor));
+        MockedCompletableListenerRule signalListener = strategy.invokeAndListen(DELIBERATE_EXCEPTION);
+        verifyDelayWithJitter(backoff.toNanos(), 1);
         timers.take().verifyListenCalled().onComplete();
         signalListener.verifyCompletion();
         verifyNoMoreInteractions(timerExecutor);

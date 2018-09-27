@@ -28,6 +28,7 @@ import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.http.netty.HttpClients;
 import io.servicetalk.http.netty.HttpServers;
 import io.servicetalk.http.router.predicate.HttpPredicateRouterBuilder;
+import io.servicetalk.http.utils.RetryingStreamingHttpClient;
 import io.servicetalk.transport.api.DefaultExecutionContext;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.HostAndPort;
@@ -45,6 +46,7 @@ import static io.servicetalk.examples.http.service.composition.backends.PortRegi
 import static io.servicetalk.examples.http.service.composition.backends.PortRegistry.RATINGS_BACKEND_ADDRESS;
 import static io.servicetalk.examples.http.service.composition.backends.PortRegistry.RECOMMENDATIONS_BACKEND_ADDRESS;
 import static io.servicetalk.examples.http.service.composition.backends.PortRegistry.USER_BACKEND_ADDRESS;
+import static io.servicetalk.http.api.ClientFilterFunction.from;
 import static io.servicetalk.http.api.HttpSerializationProviders.jsonSerializer;
 import static io.servicetalk.transport.netty.NettyIoExecutors.createIoExecutor;
 import static java.time.Duration.ofMillis;
@@ -131,16 +133,18 @@ public final class GatewayServer {
         return resources.prepend(
                 HttpClients.forSingleAddress(serviceAddress)
                         // Set retry and timeout filters for all clients.
-                        .appendClientFilter((client, lbEventStream) -> {
-                            // Apply a timeout filter for the client to guard against latent clients.
-                            return new StreamingHttpClientAdapter(client) {
-                                @Override
-                                public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
-                                    return super.request(request).timeout(ofMillis(100),
-                                            executionContext.executor());
-                                }
-                            };
-                        })
+                        .appendClientFilter(from(client ->
+                                new RetryingStreamingHttpClient.Builder(client).exponentialBackoff(ofMillis(100))
+                                        .addJitter().build(3)))
+                        // Apply a timeout filter for the client to guard against latent clients.
+                        .appendClientFilter(from(client -> new StreamingHttpClientAdapter(client) {
+                                    @Override
+                                    public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
+                                        return super.request(request).timeout(ofMillis(500),
+                                                client.executionContext().executor());
+                                    }
+                                })
+                        )
                         .buildStreaming(executionContext));
     }
 }
