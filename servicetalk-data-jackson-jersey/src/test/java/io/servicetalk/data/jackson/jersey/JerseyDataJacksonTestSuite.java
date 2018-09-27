@@ -17,9 +17,13 @@ package io.servicetalk.data.jackson.jersey;
 
 import io.servicetalk.http.router.jersey.BaseJerseyRouterTestSuite;
 
+import org.junit.BeforeClass;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 import org.junit.runners.Suite.SuiteClasses;
+
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assume.assumeThat;
 
 @RunWith(Suite.class)
 @SuiteClasses({
@@ -31,5 +35,16 @@ import org.junit.runners.Suite.SuiteClasses;
         BaseJerseyRouterTestSuite.class
 })
 public class JerseyDataJacksonTestSuite {
-    // NOOP
+    @BeforeClass
+    public static void wap() {
+        boolean jerseyJacksonOnClasspath = false;
+        try {
+            Class.forName("org.glassfish.jersey.jackson.JacksonFeature");
+            jerseyJacksonOnClasspath = true;
+        } catch (Throwable t) {
+            // NOOP
+        }
+        assumeThat("Test suite disabled because Jersey's Jackson serializer is on the classpath",
+                jerseyJacksonOnClasspath, is(false));
+    }
 }

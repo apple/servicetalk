@@ -26,6 +26,8 @@ import org.gradle.api.tasks.bundling.Jar
 import org.gradle.api.tasks.javadoc.Javadoc
 import org.gradle.plugins.ide.eclipse.EclipsePlugin
 import org.gradle.plugins.ide.idea.IdeaPlugin
+import org.gradle.plugins.ide.idea.model.Module
+import org.gradle.plugins.ide.idea.model.ModuleDependency
 
 import static ProjectUtils.addManifestAttributes
 import static ProjectUtils.appendNodes
@@ -144,6 +146,13 @@ class ServiceTalkLibraryPlugin extends ServiceTalkCorePlugin {
         }
         idea.workspace.iws.withXml { XmlProvider provider ->
           appendNodes(provider, getClass().getResourceAsStream("idea/iws-components.xml"))
+        }
+        idea.module.iml {
+          whenMerged { Module module ->
+            // BOM projects are broken dependencies in IDEA
+            module.dependencies = module.dependencies
+                .findAll { dep -> !(dep instanceof ModuleDependency && dep.name.contains("-bom")) }
+          }
         }
       }
     }
