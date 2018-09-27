@@ -29,30 +29,27 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
-import org.mockito.stubbing.Answer;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.api.DeliberateException.DELIBERATE_EXCEPTION;
-import static io.servicetalk.concurrent.internal.PlatformDependent.throwException;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.testng.Assert.assertNull;
 
 public class TimeoutPublisherTest {
     @Rule
@@ -199,6 +196,15 @@ public class TimeoutPublisherTest {
     @Test
     public void concurrentTimeoutInvocation() throws InterruptedException {
         CountDownLatch latch = new CountDownLatch(2);
+        AtomicReference<Throwable> causeRef = new AtomicReference<>();
+
+        // The timeout operator doesn't expose a way to control the underlying time source and always uses
+        // System.nanoTime(). This was intentional to avoid expanding public API surface when the majority of the time
+        // System.nanoTime() is the correct choice. However that makes testing a bit more challenging here and we resort
+        // to sleep/approximations.
+        // 10 ms -> long enough for the first timeout runnable to first without timing out, so that the second time out
+        // runnable will fire and result in a timeout. This doesn't always work so we just fallback and drain the
+        // CountDownLatch if not.
         subscriberRule.subscribe(publisherRule.getPublisher().timeout(10, MILLISECONDS, new AbstractTestExecutor() {
             private final AtomicInteger timerCount = new AtomicInteger();
             @Override
@@ -206,40 +212,53 @@ public class TimeoutPublisherTest {
                 int count = timerCount.incrementAndGet();
                 if (count <= 2) {
                     if (count == 1) {
-                        final Future<?> f = timerSimulator.submit(task);
                         try {
-                            f.get();
-                        } catch (Exception e) {
-                            throwException(e);
+                            timerSimulator.submit(task).get();
+                        } catch (Throwable cause) {
+                            causeRef.compareAndSet(null, cause);
+                            countDownToZero(latch);
                         }
                         latch.countDown();
                     } else {
-                        timerSimulator.execute(() -> {
-                            try {
-                                // Sleep for at least enough time for the expiration time to fire before invoking the
-                                // run() method.
-                                Thread.sleep(20);
-                            } catch (InterruptedException e) {
-                                throwException(e);
-                            }
-                            task.run();
-                            latch.countDown();
-                        });
+                        try {
+                            timerSimulator.execute(() -> {
+                                try {
+                                    // Sleep for at least enough time for the expiration time to fire before invoking
+                                    // the run() method.
+                                    Thread.sleep(100);
+                                    task.run();
+                                } catch (Throwable cause) {
+                                    causeRef.compareAndSet(null, cause);
+                                    countDownToZero(latch);
+                                }
+                                latch.countDown();
+                            });
+                        } catch (Throwable cause) {
+                            causeRef.compareAndSet(null, cause);
+                            countDownToZero(latch);
+                        }
                     }
                 }
                 return IGNORE_CANCEL;
             }
-        }));
-
-        doAnswer((Answer<Void>) invocationOnMock -> {
+        }).doOnError(cause -> {
             // Just in case the timer fires earlier than expected (after the first timer) we countdown the latch so the
             // test won't fail.
-            latch.countDown();
-            return null;
-        }).when(subscriberRule.getSubscriber()).onError(any());
+            if (!(cause instanceof TimeoutException)) {
+                causeRef.compareAndSet(null, cause);
+            }
+            countDownToZero(latch);
+        }));
 
         latch.await();
+        assertNull(causeRef.get());
         subscriberRule.verifyFailure(TimeoutException.class);
+    }
+
+    private static void countDownToZero(CountDownLatch latch) {
+        while (latch.getCount() > 0) {
+            latch.countDown(); // count down an extra time to complete the test early.
+        }
     }
 
     private ScheduleEvent initSubscriber() {
