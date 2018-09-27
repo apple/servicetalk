@@ -36,13 +36,14 @@ public abstract class AbstractContextFilterAwareChannelReadHandler<T> extends Ab
 
     /**
      * New instance.
-     * See {@link AbstractChannelReadHandler#AbstractChannelReadHandler(Predicate)}.
+     * See {@link AbstractChannelReadHandler#AbstractChannelReadHandler(Predicate, CloseHandler)}.
      *
      * @param isTerminal {@link Predicate} for detecting terminal events per {@link Subscriber} of the emitted
      * {@link Publisher}.
+     * @param closeHandler {@link CloseHandler} used for this channel.
      */
-    protected AbstractContextFilterAwareChannelReadHandler(Predicate<T> isTerminal) {
-        super(isTerminal);
+    protected AbstractContextFilterAwareChannelReadHandler(Predicate<T> isTerminal, final CloseHandler closeHandler) {
+        super(isTerminal, closeHandler);
     }
 
     @Override

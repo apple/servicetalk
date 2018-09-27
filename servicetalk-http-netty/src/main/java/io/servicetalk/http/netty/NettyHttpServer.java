@@ -132,7 +132,7 @@ final class NettyHttpServer {
 
         HttpChannelReadHandler(final CloseHandler closeHandler,
                                final DefaultHttpServiceContext context, final StreamingHttpService service) {
-            super(LAST_HTTP_PAYLOAD_CHUNK_OBJECT_PREDICATE);
+            super(LAST_HTTP_PAYLOAD_CHUNK_OBJECT_PREDICATE, closeHandler);
             this.closeHandler = closeHandler;
             this.context = context;
             this.service = service;
