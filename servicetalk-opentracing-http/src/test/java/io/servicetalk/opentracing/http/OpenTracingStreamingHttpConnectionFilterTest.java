@@ -20,7 +20,7 @@ import io.servicetalk.data.jackson.JacksonSerializationProvider;
 import io.servicetalk.http.api.HttpClient;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.HttpSerializationProvider;
-import io.servicetalk.http.netty.DefaultHttpServerStarter;
+import io.servicetalk.http.netty.HttpServers;
 import io.servicetalk.opentracing.core.AsyncContextInMemoryScopeManager;
 import io.servicetalk.opentracing.core.internal.DefaultInMemoryTracer;
 import io.servicetalk.opentracing.core.internal.InMemoryScope;
@@ -31,7 +31,6 @@ import org.junit.Test;
 import org.junit.rules.Timeout;
 
 import java.net.InetSocketAddress;
-import java.util.concurrent.ExecutionException;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.AsyncContextMap.Key.newKeyWithDebugToString;
@@ -57,7 +56,7 @@ public class OpenTracingStreamingHttpConnectionFilterTest {
     private static final HttpSerializationProvider httpSerializer = jsonSerializer(new JacksonSerializationProvider());
 
     @Test
-    public void testInjectWithNoParent() throws ExecutionException, InterruptedException {
+    public void testInjectWithNoParent() throws Exception {
         DefaultInMemoryTracer tracer = new DefaultInMemoryTracer.Builder(
                 new AsyncContextInMemoryScopeManager(newKeyWithDebugToString("tracer"))).build();
         try (ServerContext context = buildServer()) {
@@ -79,7 +78,7 @@ public class OpenTracingStreamingHttpConnectionFilterTest {
     }
 
     @Test
-    public void testInjectWithParent() throws ExecutionException, InterruptedException {
+    public void testInjectWithParent() throws Exception {
         DefaultInMemoryTracer tracer = new DefaultInMemoryTracer.Builder(
                 new AsyncContextInMemoryScopeManager(newKeyWithDebugToString("tracer"))).build();
         try (ServerContext context = buildServer()) {
@@ -105,15 +104,15 @@ public class OpenTracingStreamingHttpConnectionFilterTest {
         }
     }
 
-    private ServerContext buildServer() throws ExecutionException, InterruptedException {
-        return new DefaultHttpServerStarter()
-                .startStreaming(0, (ctx, request, responseFactory) ->
+    private ServerContext buildServer() throws Exception {
+        return HttpServers.newHttpServerBuilder(0)
+                .listenStreamingAndAwait((ctx, request, responseFactory) ->
                         success(responseFactory.ok().payloadBody(just(new TestSpanState(
                         valueOf(request.headers().get(TRACE_ID)),
                         valueOf(request.headers().get(SPAN_ID)),
                         toStringOrNull(request.headers().get(PARENT_SPAN_ID)),
                         "1".equals(valueOf(request.headers().get(SAMPLED)))
-                )), httpSerializer.serializerFor(TestSpanState.class)))).toFuture().get();
+                )), httpSerializer.serializerFor(TestSpanState.class))));
     }
 
     @Nullable

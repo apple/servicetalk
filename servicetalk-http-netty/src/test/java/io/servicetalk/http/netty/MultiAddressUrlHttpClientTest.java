@@ -67,6 +67,7 @@ import static io.servicetalk.http.api.HttpResponseStatuses.OK;
 import static io.servicetalk.http.api.HttpResponseStatuses.PERMANENT_REDIRECT;
 import static io.servicetalk.http.api.HttpResponseStatuses.SEE_OTHER;
 import static io.servicetalk.http.api.HttpResponseStatuses.UNAUTHORIZED;
+import static io.servicetalk.http.netty.HttpServers.newHttpServerBuilder;
 import static io.servicetalk.transport.netty.internal.ExecutionContextRule.immediate;
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
@@ -273,7 +274,8 @@ public class MultiAddressUrlHttpClientTest {
 
     private static ServerContext startNewLocalServer(final StreamingHttpService httpService,
                                                      final CompositeCloseable closeables) throws Exception {
-        return closeables.append(awaitIndefinitelyNonNull(new DefaultHttpServerStarter()
-                .startStreaming(CTX, new InetSocketAddress(HOSTNAME, 0), httpService)));
+        return closeables.append(newHttpServerBuilder(new InetSocketAddress(HOSTNAME, 0))
+                .executionContext(CTX)
+                .listenStreamingAndAwait(httpService));
     }
 }

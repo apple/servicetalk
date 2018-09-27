@@ -15,7 +15,7 @@
  */
 package io.servicetalk.examples.http.jaxrs;
 
-import io.servicetalk.http.netty.DefaultHttpServerStarter;
+import io.servicetalk.http.netty.HttpServers;
 import io.servicetalk.http.router.jersey.HttpJerseyRouterBuilder;
 import io.servicetalk.transport.api.ServerContext;
 
@@ -23,7 +23,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
-import static io.servicetalk.concurrent.internal.Await.awaitIndefinitelyNonNull;
 
 /**
  * A hello world JAX-RS server starter.
@@ -43,8 +42,8 @@ public final class HelloWorldJaxRsServer {
      */
     public static void main(String[] args) throws Exception {
         // Create configurable starter for HTTP server.
-        ServerContext serverContext = awaitIndefinitelyNonNull(new DefaultHttpServerStarter().startStreaming(
-                8080, new HttpJerseyRouterBuilder().build(new HelloWorldJaxrsApplication())));
+        ServerContext serverContext = HttpServers.newHttpServerBuilder(808)
+                .listenStreamingAndAwait(new HttpJerseyRouterBuilder().build(new HelloWorldJaxrsApplication()));
 
         LOGGER.info("listening on {}", serverContext.getListenAddress());
 

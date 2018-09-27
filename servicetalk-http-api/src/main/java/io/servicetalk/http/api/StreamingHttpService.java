@@ -33,7 +33,7 @@ public abstract class StreamingHttpService implements AsyncCloseable, StreamingH
     }
 
     @Override
-    public final StreamingHttpService asStreamingHttpService() {
+    public final StreamingHttpService asStreamingService() {
         return this;
     }
 

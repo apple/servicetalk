@@ -22,7 +22,7 @@ import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.HttpSerializationProvider;
 import io.servicetalk.http.api.StreamingHttpRequestHandler;
-import io.servicetalk.http.netty.DefaultHttpServerStarter;
+import io.servicetalk.http.netty.HttpServers;
 import io.servicetalk.opentracing.core.AsyncContextInMemoryScopeManager;
 import io.servicetalk.opentracing.core.internal.DefaultInMemoryTracer;
 import io.servicetalk.opentracing.core.internal.InMemorySpan;
@@ -33,7 +33,6 @@ import org.junit.Test;
 import org.junit.rules.Timeout;
 
 import java.net.InetSocketAddress;
-import java.util.concurrent.ExecutionException;
 
 import static io.servicetalk.concurrent.api.AsyncContextMap.Key.newKeyWithDebugToString;
 import static io.servicetalk.concurrent.api.Publisher.just;
@@ -61,12 +60,11 @@ public class OpenTracingStreamingHttpServiceFilterTest {
     public final Timeout timeout = new ServiceTalkTestTimeout();
     private static final HttpSerializationProvider httpSerializer = jsonSerializer(new JacksonSerializationProvider());
 
-    private ServerContext buildServer() throws ExecutionException, InterruptedException {
+    private ServerContext buildServer() throws Exception {
         DefaultInMemoryTracer tracer = new DefaultInMemoryTracer.Builder(
                 new AsyncContextInMemoryScopeManager(newKeyWithDebugToString("tracer"))).build();
-        return new DefaultHttpServerStarter()
-                .startStreaming(0,
-                new OpenTracingStreamingHttpServiceFilter(tracer, "testServer",
+        return HttpServers.newHttpServerBuilder(0)
+                .listenStreamingAndAwait(new OpenTracingStreamingHttpServiceFilter(tracer, "testServer",
                         ((StreamingHttpRequestHandler) (ctx, request, responseFactory) -> {
                     InMemorySpan span = tracer.activeSpan();
                     if (span == null) {
@@ -79,11 +77,11 @@ public class OpenTracingStreamingHttpServiceFilterTest {
                                     span.parentSpanIdHex(),
                                     span.isSampled())),
                             httpSerializer.serializerFor(TestSpanState.class)));
-                }).asStreamingHttpService())).toFuture().get();
+                }).asStreamingService()));
     }
 
     @Test
-    public void testRequestWithTraceKey() throws ExecutionException, InterruptedException {
+    public void testRequestWithTraceKey() throws Exception {
         try (ServerContext context = buildServer()) {
             try (HttpClient client = forSingleAddress(of((InetSocketAddress) context.getListenAddress())).build()) {
                 String traceId = randomHexId();
@@ -106,7 +104,7 @@ public class OpenTracingStreamingHttpServiceFilterTest {
     }
 
     @Test
-    public void testRequestWithoutTraceKey() throws ExecutionException, InterruptedException {
+    public void testRequestWithoutTraceKey() throws Exception {
         try (ServerContext context = buildServer()) {
             try (HttpClient client = forSingleAddress(of((InetSocketAddress) context.getListenAddress())).build()) {
                 HttpRequest request = client.get("/");

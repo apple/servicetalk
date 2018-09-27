@@ -18,7 +18,6 @@ package io.servicetalk.examples.http.service.composition.backends;
 import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.http.api.HttpService;
 import io.servicetalk.http.api.StreamingHttpService;
-import io.servicetalk.http.netty.DefaultHttpServerStarter;
 import io.servicetalk.transport.api.DefaultExecutionContext;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.IoExecutor;
@@ -27,11 +26,9 @@ import io.servicetalk.transport.api.ServerContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.concurrent.ExecutionException;
-
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
-import static io.servicetalk.concurrent.internal.Await.awaitIndefinitelyNonNull;
+import static io.servicetalk.http.netty.HttpServers.newHttpServerBuilder;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -43,28 +40,25 @@ final class BackendStarter {
 
     private final IoExecutor ioExecutor;
     private final CompositeCloseable resources;
-    private final DefaultHttpServerStarter starter;
 
     BackendStarter(IoExecutor ioExecutor, CompositeCloseable resources) {
         this.ioExecutor = requireNonNull(ioExecutor);
         this.resources = requireNonNull(resources);
-        // Create configurable starter for HTTP server.
-        starter = new DefaultHttpServerStarter();
     }
 
-    ServerContext start(int listenPort, String name, StreamingHttpService service)
-            throws ExecutionException, InterruptedException {
+    ServerContext start(int listenPort, String name, StreamingHttpService service) throws Exception {
         // Create ExecutionContext for this ServerContext with new Executor.
         final ExecutionContext executionContext = new DefaultExecutionContext(DEFAULT_ALLOCATOR,
                 ioExecutor, resources.prepend(newCachedThreadExecutor()));
         // Starting the server will start listening for incoming client requests.
-        final ServerContext ctx = awaitIndefinitelyNonNull(starter.startStreaming(executionContext, listenPort, service));
+        final ServerContext ctx = newHttpServerBuilder(listenPort)
+                .executionContext(executionContext)
+                .listenStreamingAndAwait(service);
         LOGGER.info("Started {} listening on {}.", name, ctx.getListenAddress());
         return ctx;
     }
 
-    ServerContext start(int listenPort, String name, HttpService service)
-            throws ExecutionException, InterruptedException {
+    ServerContext start(int listenPort, String name, HttpService service) throws Exception {
         return start(listenPort, name, service.asStreamingService());
     }
 }

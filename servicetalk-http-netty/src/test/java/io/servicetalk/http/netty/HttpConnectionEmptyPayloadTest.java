@@ -33,7 +33,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
 
-import java.net.InetSocketAddress;
 import java.util.concurrent.ThreadLocalRandom;
 
 import static io.servicetalk.buffer.api.EmptyBuffer.EMPTY_BUFFER;
@@ -44,6 +43,7 @@ import static io.servicetalk.concurrent.internal.Await.awaitIndefinitelyNonNull;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpRequestMethods.HEAD;
 import static io.servicetalk.http.api.HttpResponseStatuses.OK;
+import static io.servicetalk.http.netty.HttpServers.newHttpServerBuilder;
 import static io.servicetalk.transport.netty.internal.ExecutionContextRule.immediate;
 import static java.lang.Integer.parseInt;
 import static org.junit.Assert.assertArrayEquals;
@@ -62,8 +62,9 @@ public class HttpConnectionEmptyPayloadTest {
             final int expectedContentLength = 128;
             byte[] expectedPayload = new byte[expectedContentLength];
             ThreadLocalRandom.current().nextBytes(expectedPayload);
-            ServerContext serverContext = closeable.merge(awaitIndefinitelyNonNull(new DefaultHttpServerStarter()
-                    .startStreaming(executionContextRule, new InetSocketAddress(0),
+            ServerContext serverContext = closeable.merge(newHttpServerBuilder(0)
+                    .executionContext(executionContextRule)
+                    .listenStreamingAndAwait(
                             new StreamingHttpService() {
                                 @Override
                                 public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
@@ -76,7 +77,7 @@ public class HttpConnectionEmptyPayloadTest {
                                     resp.headers().add(CONTENT_LENGTH, String.valueOf(expectedContentLength));
                                     return success(resp);
                                 }
-                            })));
+                            }));
 
             StreamingHttpConnection connection = closeable.merge(awaitIndefinitelyNonNull(new DefaultHttpConnectionBuilder<>()
                     .setMaxPipelinedRequests(3)

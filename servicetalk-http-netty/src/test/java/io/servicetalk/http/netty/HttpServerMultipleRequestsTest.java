@@ -55,6 +55,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 public class HttpServerMultipleRequestsTest {
+    private static final InetSocketAddress LOCAL_0 = new InetSocketAddress(getLoopbackAddress(), 0);
     private static final CharSequence REQUEST_ID_HEADER = newAsciiString("request-id");
     @Rule
     public final ExecutionContextRule serverExecution =
@@ -87,9 +88,9 @@ public class HttpServerMultipleRequestsTest {
         final int concurrency = 10;
         final int numRequests = 10;
         CompositeCloseable compositeCloseable = AsyncCloseables.newCompositeCloseable();
-        ServerContext ctx = compositeCloseable.append(new DefaultHttpServerStarter()
-                .startStreaming(serverExecution, new InetSocketAddress(getLoopbackAddress(), 0), service)
-                .toFuture().get());
+        ServerContext ctx = compositeCloseable.append(HttpServers.newHttpServerBuilder(LOCAL_0)
+                .executionContext(serverExecution)
+                .listenStreamingAndAwait(service));
         ExecutorService executorService = Executors.newCachedThreadPool();
         try {
             AtomicReference<Throwable> causeRef = new AtomicReference<>();

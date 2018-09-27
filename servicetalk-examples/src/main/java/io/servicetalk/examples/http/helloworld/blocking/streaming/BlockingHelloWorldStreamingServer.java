@@ -15,18 +15,18 @@
  */
 package io.servicetalk.examples.http.helloworld.blocking.streaming;
 
-import io.servicetalk.http.netty.DefaultHttpServerStarter;
+import io.servicetalk.http.api.BlockingStreamingHttpRequestHandler;
 
 import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
+import static io.servicetalk.http.netty.HttpServers.newHttpServerBuilder;
 import static java.util.Arrays.asList;
 
 public final class BlockingHelloWorldStreamingServer {
     public static void main(String[] args) throws Exception {
-        new DefaultHttpServerStarter()
-                .startBlockingStreaming(8080, (ctx, request, responseFactory) ->
-                        responseFactory.ok()
-                                .payloadBody(asList("Hello\n", "World\n", "From\n", "ServiceTalk\n"),
-                                        textSerializer()))
+        newHttpServerBuilder(8080)
+                .listenBlockingStreamingAndAwait((ctx, request, responseFactory) ->
+                        responseFactory.ok().payloadBody(
+                                asList("Hello\n", "World\n", "From\n", "ServiceTalk\n"), textSerializer()))
                 .awaitShutdown();
     }
 }

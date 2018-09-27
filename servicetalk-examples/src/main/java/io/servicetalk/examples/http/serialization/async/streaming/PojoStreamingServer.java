@@ -19,22 +19,23 @@ import io.servicetalk.data.jackson.JacksonSerializationProvider;
 import io.servicetalk.examples.http.serialization.MyPojo;
 import io.servicetalk.examples.http.serialization.PojoRequest;
 import io.servicetalk.http.api.HttpSerializationProvider;
-import io.servicetalk.http.netty.DefaultHttpServerStarter;
+import io.servicetalk.http.api.StreamingHttpRequestHandler;
 
 import static io.servicetalk.concurrent.api.Single.success;
 import static io.servicetalk.http.api.HttpSerializationProviders.jsonSerializer;
+import static io.servicetalk.http.netty.HttpServers.newHttpServerBuilder;
 
 public class PojoStreamingServer {
 
     public static void main(String[] args) throws Exception {
         HttpSerializationProvider serializer = jsonSerializer(new JacksonSerializationProvider());
-        new DefaultHttpServerStarter()
-                .startStreaming(8080, (ctx, request, responseFactory) ->
+        newHttpServerBuilder(8080)
+                .listenStreamingAndAwait((ctx, request, responseFactory) ->
                         success(responseFactory.ok()
                                 .payloadBody(request.payloadBody(serializer.deserializerFor(PojoRequest.class))
                                                 .map(req -> new MyPojo(req.getId(), "foo")),
                                         serializer.serializerFor(MyPojo.class))))
-                .toFuture().get()
+
                 .awaitShutdown();
     }
 }

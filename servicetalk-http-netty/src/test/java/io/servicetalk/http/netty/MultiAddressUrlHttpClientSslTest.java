@@ -50,11 +50,11 @@ import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Single.success;
 import static io.servicetalk.concurrent.internal.Await.await;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
-import static io.servicetalk.concurrent.internal.Await.awaitIndefinitelyNonNull;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderNames.HOST;
 import static io.servicetalk.http.api.HttpHeaderValues.ZERO;
 import static io.servicetalk.http.api.HttpResponseStatuses.OK;
+import static io.servicetalk.http.netty.HttpServers.newHttpServerBuilder;
 import static io.servicetalk.http.netty.SslConfigProviders.plainByDefault;
 import static io.servicetalk.http.netty.SslConfigProviders.secureByDefault;
 import static io.servicetalk.test.resources.DefaultTestCerts.loadMutualAuthCaPem;
@@ -112,27 +112,26 @@ public class MultiAddressUrlHttpClientSslTest {
         });
         when(STREAMING_HTTP_SERVICE.closeAsync()).thenReturn(completed());
         when(STREAMING_HTTP_SERVICE.closeAsyncGracefully()).thenReturn(completed());
-        serverCtx = awaitIndefinitelyNonNull(new DefaultHttpServerStarter()
-                .startStreaming(CTX, new InetSocketAddress(HOSTNAME, 0), STREAMING_HTTP_SERVICE));
+        serverCtx = newHttpServerBuilder(new InetSocketAddress(HOSTNAME, 0))
+                .executionContext(CTX)
+                .listenStreamingAndAwait(STREAMING_HTTP_SERVICE);
         serverHostHeader = HostAndPort.of(HOSTNAME,
                 ((InetSocketAddress) serverCtx.getListenAddress()).getPort()).toString();
 
         // Configure HTTPS server
         when(SECURE_STREAMING_HTTP_SERVICE.handle(any(), any(), any())).thenAnswer(
-                new Answer<Single<StreamingHttpResponse>>() {
-            @Override
-            public Single<StreamingHttpResponse> answer(final InvocationOnMock invocation) throws Throwable {
-                StreamingHttpResponseFactory factory = invocation.getArgument(2);
-                StreamingHttpResponse resp = factory.ok();
-                resp.headers().set(httpHeaders);
-                return success(resp);
-            }
-        });
+                invocation -> {
+                    StreamingHttpResponseFactory factory = invocation.getArgument(2);
+                    StreamingHttpResponse resp = factory.ok();
+                    resp.headers().set(httpHeaders);
+                    return success(resp);
+                });
         when(SECURE_STREAMING_HTTP_SERVICE.closeAsync()).thenReturn(completed());
         when(SECURE_STREAMING_HTTP_SERVICE.closeAsyncGracefully()).thenReturn(completed());
-        secureServerCtx = awaitIndefinitelyNonNull(new DefaultHttpServerStarter()
+        secureServerCtx = newHttpServerBuilder(new InetSocketAddress(HOSTNAME, 0))
                 .sslConfig(SslConfigBuilder.forServer(() -> loadServerPem(), () -> loadServerKey()).build())
-                .startStreaming(CTX, new InetSocketAddress(HOSTNAME, 0), SECURE_STREAMING_HTTP_SERVICE));
+                .executionContext(CTX)
+                .listenStreamingAndAwait(SECURE_STREAMING_HTTP_SERVICE);
         secureServerHostHeader = HostAndPort.of(HOSTNAME,
                 ((InetSocketAddress) secureServerCtx.getListenAddress()).getPort()).toString();
     }

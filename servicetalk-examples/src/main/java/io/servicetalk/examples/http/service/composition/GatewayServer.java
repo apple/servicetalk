@@ -25,8 +25,8 @@ import io.servicetalk.http.api.StreamingHttpClientAdapter;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpService;
-import io.servicetalk.http.netty.DefaultHttpServerStarter;
 import io.servicetalk.http.netty.HttpClients;
+import io.servicetalk.http.netty.HttpServers;
 import io.servicetalk.http.router.predicate.HttpPredicateRouterBuilder;
 import io.servicetalk.transport.api.DefaultExecutionContext;
 import io.servicetalk.transport.api.ExecutionContext;
@@ -41,7 +41,6 @@ import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
-import static io.servicetalk.concurrent.internal.Await.awaitIndefinitelyNonNull;
 import static io.servicetalk.examples.http.service.composition.backends.PortRegistry.METADATA_BACKEND_ADDRESS;
 import static io.servicetalk.examples.http.service.composition.backends.PortRegistry.RATINGS_BACKEND_ADDRESS;
 import static io.servicetalk.examples.http.service.composition.backends.PortRegistry.RECOMMENDATIONS_BACKEND_ADDRESS;
@@ -109,10 +108,10 @@ public final class GatewayServer {
                             .buildStreaming();
 
             // Create configurable starter for HTTP server.
-            DefaultHttpServerStarter starter = new DefaultHttpServerStarter();
             // Starting the server will start listening for incoming client requests.
-            ServerContext serverContext = awaitIndefinitelyNonNull(
-                    starter.startStreaming(executionContext, 8080, gatewayService));
+            ServerContext serverContext = HttpServers.newHttpServerBuilder(8080)
+                    .executionContext(executionContext)
+                    .listenStreamingAndAwait(gatewayService);
 
             LOGGER.info("listening on {}", serverContext.getListenAddress());
 
