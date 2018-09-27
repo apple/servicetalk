@@ -323,8 +323,7 @@ public final class TcpConnector<Read, Write> {
                     String msg = resolvedAddress instanceof FileDescriptorSocketAddress ? "Failed to register: " +
                             resolvedAddress : "Failed to connect: " + resolvedAddress + " (local: " + local + ")";
                     cause = new io.servicetalk.client.api.ConnectTimeoutException(msg, cause);
-                }
-                if (cause instanceof ConnectException) {
+                } else if (cause instanceof ConnectException) {
                     cause = new io.servicetalk.client.api.ConnectException((ConnectException) cause);
                 }
                 subscriber.onError(cause);

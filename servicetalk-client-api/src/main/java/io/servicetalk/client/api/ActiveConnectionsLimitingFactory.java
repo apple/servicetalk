@@ -27,8 +27,9 @@ import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 
 /**
- * A {@link ConnectionFactory} that limits the total number of connections created using this {@link ConnectionFactory}
- * and are active, i.e. {@link ListenableAsyncCloseable#onClose()} for the connection has not yet terminated.
+ * A {@link ConnectionFactory} that limits the total number of active connections created using this
+ * {@link ConnectionFactory}. A connection is considered active if {@link ListenableAsyncCloseable#onClose()} has
+ * not yet terminated.
  *
  * @param <ResolvedAddress> The type of a resolved address that can be used for connecting.
  * @param <C> The type of connections created by this factory.
@@ -179,7 +180,8 @@ public final class ActiveConnectionsLimitingFactory<ResolvedAddress, C extends L
         }
     }
 
-    private static class CountingSubscriber<A, C extends ListenableAsyncCloseable> implements Single.Subscriber<C> {
+    private static final class CountingSubscriber<A, C extends ListenableAsyncCloseable>
+            implements Single.Subscriber<C> {
 
         private static final AtomicIntegerFieldUpdater<CountingSubscriber> doneUpdater =
                 newUpdater(CountingSubscriber.class, "done");
@@ -200,8 +202,11 @@ public final class ActiveConnectionsLimitingFactory<ResolvedAddress, C extends L
         @Override
         public void onSubscribe(final Cancellable cancellable) {
             original.onSubscribe(() -> {
-                sendCloseCallback();
-                cancellable.cancel();
+                try {
+                    sendCloseCallback();
+                } finally {
+                    cancellable.cancel();
+                }
             });
         }
 
@@ -229,7 +234,7 @@ public final class ActiveConnectionsLimitingFactory<ResolvedAddress, C extends L
         }
 
         private void sendCloseCallback() {
-            if (doneUpdater.compareAndSet(CountingSubscriber.this, 0, 1)) {
+            if (doneUpdater.compareAndSet(this, 0, 1)) {
                 limiter.onConnectionClose(address);
             }
         }

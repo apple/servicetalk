@@ -34,6 +34,7 @@ import javax.annotation.Nullable;
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Completable.error;
 import static io.servicetalk.concurrent.api.RetryStrategies.retryWithConstantBackoff;
+import static io.servicetalk.concurrent.api.RetryStrategies.retryWithConstantBackoffAndJitter;
 import static io.servicetalk.concurrent.api.RetryStrategies.retryWithExponentialBackoff;
 import static io.servicetalk.concurrent.api.RetryStrategies.retryWithExponentialBackoffAndJitter;
 import static java.util.Objects.requireNonNull;
@@ -46,13 +47,11 @@ public final class RetryingStreamingHttpClient extends StreamingHttpClientAdapte
 
     private final BiIntFunction<Throwable, Completable> strategy;
     private final Predicate<HttpRequestMetaData> isRetryable;
-    private final StreamingHttpClient delegate;
 
     private RetryingStreamingHttpClient(final StreamingHttpClient delegate,
                                         final BiIntFunction<Throwable, Completable> strategy,
                                         final Predicate<HttpRequestMetaData> isRetryable) {
         super(delegate);
-        this.delegate = requireNonNull(delegate);
         this.strategy = requireNonNull(strategy);
         this.isRetryable = requireNonNull(isRetryable);
     }
@@ -60,33 +59,25 @@ public final class RetryingStreamingHttpClient extends StreamingHttpClientAdapte
     @Override
     public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
         if (isRetryable.test(request)) {
-            return super.request(request).retryWhen(strategy);
+            return delegate().request(request).retryWhen(strategy);
         }
-        return delegate.request(request);
+        return delegate().request(request);
     }
 
     @Override
     public Single<? extends ReservedStreamingHttpConnection> reserveConnection(final StreamingHttpRequest request) {
         if (isRetryable.test(request)) {
-            return super.reserveConnection(request).retryWhen(strategy);
+            return delegate().reserveConnection(request).retryWhen(strategy);
         }
-        return delegate.reserveConnection(request);
+        return delegate().reserveConnection(request);
     }
 
     @Override
     public Single<? extends UpgradableStreamingHttpResponse> upgradeConnection(final StreamingHttpRequest request) {
-        return super.upgradeConnection(request);
-    }
-
-    /**
-     * Create a new {@link Builder} to build a new {@link RetryingStreamingHttpClient} for the passed
-     * {@link StreamingHttpClient}.
-     *
-     * @param delegate {@link StreamingHttpClient} to which retries have to be applied.
-     * @return A new {@link Builder} to build this filter.
-     */
-    public static Builder newBuilder(StreamingHttpClient delegate) {
-        return new Builder(delegate);
+        if (isRetryable.test(request)) {
+            return delegate().upgradeConnection(request).retryWhen(strategy);
+        }
+        return delegate().upgradeConnection(request);
     }
 
     /**
@@ -104,8 +95,13 @@ public final class RetryingStreamingHttpClient extends StreamingHttpClientAdapte
         private Predicate<HttpRequestMetaData> retryableFilter =
                 meta -> meta.method().getMethodProperties().isIdempotent();
 
-        Builder(final StreamingHttpClient delegate) {
-            this.delegate = delegate;
+        /**
+         * New instance.
+         *
+         * @param delegate {@link StreamingHttpClient} to wrap with retries.
+         */
+        public Builder(final StreamingHttpClient delegate) {
+            this.delegate = requireNonNull(delegate);
             executor = delegate.executionContext().executor();
         }
 
@@ -149,8 +145,8 @@ public final class RetryingStreamingHttpClient extends StreamingHttpClientAdapte
         }
 
         /**
-         * When {@link #exponentialBackoff(Duration)} is used, adding jitter will randomize the delays between the
-         * retries.
+         * When {@link #exponentialBackoff(Duration)} or {@link #backoff(Duration)} is used, adding jitter will
+         * randomize the delays between the retries.
          *
          * @return {@code this}
          */
@@ -190,7 +186,7 @@ public final class RetryingStreamingHttpClient extends StreamingHttpClientAdapte
          * @return A new {@link RetryingStreamingHttpClient}.
          */
         public RetryingStreamingHttpClient build(int retryCount) {
-            Predicate<Throwable> causeFilter = this.causeFilter; // Copy since accessed lazily.
+            Predicate<Throwable> causeFilter = this.causeFilter; // Save reference since accessed lazily.
             final BiIntFunction<Throwable, Completable> strategy;
             if (initialDelay == null) {
                 strategy = (count, throwable) -> causeFilter.test(throwable) && count <= retryCount ?
@@ -204,7 +200,11 @@ public final class RetryingStreamingHttpClient extends StreamingHttpClientAdapte
                         strategy = retryWithExponentialBackoff(retryCount, causeFilter, initialDelay, executor);
                     }
                 } else {
-                    strategy = retryWithConstantBackoff(retryCount, causeFilter, initialDelay, executor);
+                    if (jitter) {
+                        strategy = retryWithConstantBackoffAndJitter(retryCount, causeFilter, initialDelay, executor);
+                    } else {
+                        strategy = retryWithConstantBackoff(retryCount, causeFilter, initialDelay, executor);
+                    }
                 }
             }
             return new RetryingStreamingHttpClient(delegate, strategy, retryableFilter);
