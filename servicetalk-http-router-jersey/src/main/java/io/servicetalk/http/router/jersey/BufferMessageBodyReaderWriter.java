@@ -16,7 +16,6 @@
 package io.servicetalk.http.router.jersey;
 
 import io.servicetalk.buffer.api.Buffer;
-import io.servicetalk.buffer.api.CompositeBuffer;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.transport.api.ConnectionContext;
 
@@ -40,9 +39,10 @@ import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.ext.MessageBodyReader;
 import javax.ws.rs.ext.MessageBodyWriter;
 
+import static io.servicetalk.http.router.jersey.AbstractMessageBodyReaderWriter.getRequestContentLength;
+import static io.servicetalk.http.router.jersey.AbstractMessageBodyReaderWriter.newBufferForRequestContent;
 import static io.servicetalk.http.router.jersey.BufferPublisherInputStream.handleEntityStream;
 import static io.servicetalk.http.router.jersey.internal.RequestProperties.setResponseBufferPublisher;
-import static java.lang.Integer.MAX_VALUE;
 import static javax.ws.rs.Priorities.ENTITY_CODER;
 import static javax.ws.rs.core.HttpHeaders.CONTENT_LENGTH;
 import static javax.ws.rs.core.MediaType.WILDCARD;
@@ -81,13 +81,12 @@ final class BufferMessageBodyReaderWriter implements MessageBodyReader<Buffer>, 
 
         return handleEntityStream(entityStream, ctxRefProvider.get().get().executionContext().bufferAllocator(),
                 (p, a) -> {
-                    // FIXME use Buffer aggregator helper when ready
-                    final CompositeBuffer cb = a.newCompositeBuffer(MAX_VALUE);
-                    p.toIterable().forEach(cb::addBuffer);
-                    return cb;
+                    final Buffer buf = newBufferForRequestContent(getRequestContentLength(requestCtxProvider), a);
+                    p.toIterable().forEach(buf::writeBytes);
+                    return buf;
                 },
                 (is, a) -> {
-                    final int contentLength = requestCtxProvider.get().getLength();
+                    final int contentLength = getRequestContentLength(requestCtxProvider);
                     final Buffer buf = contentLength == -1 ? a.newBuffer() : a.newBuffer(contentLength);
                     try {
                         // Configured via the org.glassfish.jersey.message.MessageProperties#IO_BUFFER_SIZE property

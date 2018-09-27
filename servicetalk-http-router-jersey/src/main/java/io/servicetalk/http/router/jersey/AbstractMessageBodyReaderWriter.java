@@ -123,6 +123,15 @@ abstract class AbstractMessageBodyReaderWriter<Source, T, SourceOfT, WrappedSour
                 contentClass.isAssignableFrom((Class<?>) typeArgument);
     }
 
+    static int getRequestContentLength(final Provider<ContainerRequestContext> requestCtxProvider) {
+        return requestCtxProvider.get().getLength();
+    }
+
+    static Buffer newBufferForRequestContent(final int contentLength,
+                                             final BufferAllocator allocator) {
+        return contentLength == -1 ? allocator.newBuffer() : allocator.newBuffer(contentLength);
+    }
+
     @Nullable
     private static Type getSingleTypeArgumentOrNull(final ParameterizedType parameterizedType) {
         final Type[] typeArguments = parameterizedType.getActualTypeArguments();
