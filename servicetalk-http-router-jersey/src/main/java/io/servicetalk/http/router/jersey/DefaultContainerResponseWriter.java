@@ -242,7 +242,7 @@ final class DefaultContainerResponseWriter implements ContainerResponseWriter {
             // TODO(scott): use request factory methods that accept a payload body to avoid overhead of payloadBody.
             Publisher<Buffer> payloadBody = (executor != null ? content.subscribeOn(executor) : content)
                     .doBeforeComplete(() -> state = STATE_RESPONSE_WRITTEN) // Makes cancelResponse a no-op
-                    .doAfterCancel(this::cancelResponse);  // Cleanup internal state here after ST is done cancelling
+                    .doBeforeCancel(this::cancelResponse);  // Cleanup internal state here after ST is done cancelling
 
             response = responseFactory.newResponse(status)
                     .version(protocolVersion)
