@@ -29,57 +29,29 @@ import static io.servicetalk.http.api.BlockingUtils.blockingInvocation;
 public interface HttpConnectionBuilder<ResolvedAddress> {
 
     /**
-     * Create a new {@link StreamingHttpConnection}.
+     * Sets an {@link ExecutionContext} for all connections created from this {@link HttpClientBuilder}.
      *
-     * @param executionContext {@link ExecutionContext} when building {@link StreamingHttpConnection}s.
-     * @param resolvedAddress a resolved address to use when connecting
-     * @return A single that will complete with the {@link StreamingHttpConnection}
+     * @param context {@link ExecutionContext} to use.
+     * @return {@code this}.
      */
-    Single<StreamingHttpConnection> buildStreaming(ExecutionContext executionContext, ResolvedAddress resolvedAddress);
+    HttpConnectionBuilder<ResolvedAddress> executionContext(ExecutionContext context);
 
     /**
      * Create a new {@link StreamingHttpConnection}, using a default {@link ExecutionContext}.
      *
      * @param resolvedAddress a resolved address to use when connecting
      * @return A single that will complete with the {@link StreamingHttpConnection}
-     * @see #buildStreaming(ExecutionContext, Object)
      */
     Single<StreamingHttpConnection> buildStreaming(ResolvedAddress resolvedAddress);
-
-    /**
-     * Create a new {@link HttpConnection}.
-     *
-     * @param executionContext {@link ExecutionContext} when building {@link HttpConnection}s.
-     * @param resolvedAddress a resolved address to use when connecting
-     * @return A single that will complete with the {@link HttpConnection}
-     */
-    default Single<HttpConnection> build(ExecutionContext executionContext,
-                                         ResolvedAddress resolvedAddress) {
-        return buildStreaming(executionContext, resolvedAddress).map(StreamingHttpConnection::asConnection);
-    }
 
     /**
      * Create a new {@link HttpConnection}, using a default {@link ExecutionContext}.
      *
      * @param resolvedAddress a resolved address to use when connecting
      * @return A single that will complete with the {@link HttpConnection}
-     * @see #build(ExecutionContext, Object)
      */
     default Single<HttpConnection> build(ResolvedAddress resolvedAddress) {
         return buildStreaming(resolvedAddress).map(StreamingHttpConnection::asConnection);
-    }
-
-    /**
-     * Create a new {@link BlockingStreamingHttpConnection} and waits till it is created.
-     *
-     * @param executionContext {@link ExecutionContext} when building {@link BlockingStreamingHttpConnection}s.
-     * @param resolvedAddress a resolved address to use when connecting
-     * @return {@link BlockingStreamingHttpConnection}
-     * @throws Exception If the connection can not be created.
-     */
-    default BlockingStreamingHttpConnection buildBlockingStreaming(ExecutionContext executionContext,
-                                                                   ResolvedAddress resolvedAddress) throws Exception {
-        return blockingInvocation(buildStreaming(executionContext, resolvedAddress)).asBlockingStreamingConnection();
     }
 
     /**
@@ -89,23 +61,9 @@ public interface HttpConnectionBuilder<ResolvedAddress> {
      * @param resolvedAddress a resolved address to use when connecting
      * @return {@link BlockingStreamingHttpConnection}
      * @throws Exception If the connection can not be created.
-     * @see #buildBlockingStreaming(ExecutionContext, Object)
      */
     default BlockingStreamingHttpConnection buildBlockingStreaming(ResolvedAddress resolvedAddress) throws Exception {
         return blockingInvocation(buildStreaming(resolvedAddress)).asBlockingStreamingConnection();
-    }
-
-    /**
-     * Create a new {@link BlockingHttpConnection} and waits till it is created.
-     *
-     * @param executionContext {@link ExecutionContext} when building {@link BlockingHttpConnection}s.
-     * @param resolvedAddress a resolved address to use when connecting
-     * @return {@link BlockingHttpConnection}
-     * @throws Exception If the connection can not be created.
-     */
-    default BlockingHttpConnection buildBlocking(ExecutionContext executionContext,
-                                                 ResolvedAddress resolvedAddress) throws Exception {
-        return blockingInvocation(buildStreaming(executionContext, resolvedAddress)).asBlockingConnection();
     }
 
     /**
@@ -115,24 +73,9 @@ public interface HttpConnectionBuilder<ResolvedAddress> {
      * @param resolvedAddress a resolved address to use when connecting
      * @return {@link BlockingHttpConnection}
      * @throws Exception If the connection can not be created.
-     * @see #buildBlocking(ExecutionContext, Object)
      */
     default BlockingHttpConnection buildBlocking(ResolvedAddress resolvedAddress) throws Exception {
         return blockingInvocation(buildStreaming(resolvedAddress)).asBlockingConnection();
-    }
-
-    /**
-     * Convert this {@link HttpConnectionBuilder} to a {@link ConnectionFactory}.
-     * <p>
-     * This can be useful to take advantage of connection filters targeted at the {@link ConnectionFactory} API.
-     *
-     * @param executionContext {@link ExecutionContext} to use for the connections.
-     * @return A {@link ConnectionFactory} that will use the {@link #buildStreaming(ExecutionContext, Object)}
-     * method to create new {@link StreamingHttpConnection} objects.
-     */
-    default ConnectionFactory<ResolvedAddress, StreamingHttpConnection> asConnectionFactory(
-            ExecutionContext executionContext) {
-        return new EmptyCloseConnectionFactory<>(ra -> buildStreaming(executionContext, ra));
     }
 
     /**
@@ -143,7 +86,6 @@ public interface HttpConnectionBuilder<ResolvedAddress> {
      *
      * @return A {@link ConnectionFactory} that will use the {@link #buildStreaming(Object)}
      * method to create new {@link StreamingHttpConnection} objects.
-     * @see #asConnectionFactory(ExecutionContext)
      */
     default ConnectionFactory<ResolvedAddress, StreamingHttpConnection> asConnectionFactory() {
         return new EmptyCloseConnectionFactory<>(this::buildStreaming);

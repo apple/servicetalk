@@ -84,7 +84,8 @@ public class HttpAuthConnectionFactoryClientTest {
                         });
         client = HttpClients.forSingleAddress("localhost",
                 ((InetSocketAddress) serverContext.getListenAddress()).getPort())
-                .buildStreaming(CTX);
+                .executionContext(CTX)
+                .buildStreaming();
 
         StreamingHttpResponse response = awaitIndefinitely(client.request(newTestRequest(client, "/foo")));
         assertEquals(OK, response.status());

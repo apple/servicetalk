@@ -54,6 +54,7 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress> implements Http
 
     private final HttpClientConfig config;
     private ConnectionFilterFunction connectionFilterFunction = ConnectionFilterFunction.identity();
+    private ExecutionContext executionContext = globalExecutionContext();
 
     /**
      * Create a new builder.
@@ -67,8 +68,13 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress> implements Http
     }
 
     @Override
-    public Single<StreamingHttpConnection> buildStreaming(final ExecutionContext executionContext,
-                                                          final ResolvedAddress resolvedAddress) {
+    public DefaultHttpConnectionBuilder<ResolvedAddress> executionContext(final ExecutionContext context) {
+        executionContext = requireNonNull(context);
+        return this;
+    }
+
+    @Override
+    public Single<StreamingHttpConnection> buildStreaming(final ResolvedAddress resolvedAddress) {
         ReadOnlyHttpClientConfig roConfig = config.asReadOnly();
 
         final StreamingHttpRequestResponseFactory reqRespFactory =
@@ -82,11 +88,6 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress> implements Http
                 reqRespFactory))
                     .map(filteredConnection -> new StreamingHttpConnectionConcurrentRequestsFilter(filteredConnection,
                             roConfig.getMaxPipelinedRequests()));
-    }
-
-    @Override
-    public Single<StreamingHttpConnection> buildStreaming(final ResolvedAddress resolvedAddress) {
-        return buildStreaming(globalExecutionContext(), resolvedAddress);
     }
 
     static <ResolvedAddress> Single<StreamingHttpConnection> buildForPipelined(
@@ -255,8 +256,8 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress> implements Http
     /**
      * Set the filter that is used to decorate {@link StreamingHttpConnection} created by this builder.
      * <p>
-     * Note this method will be used to decorate the result of {@link #buildStreaming(ExecutionContext, Object)} before it is
-     * returned to the user.
+     * Note this method will be used to decorate the result of {@link #buildStreaming(Object)} before it is returned to
+     * the user.
      *
      * @param function decorates a {@link StreamingHttpConnection} for the purpose of filtering
      * @return {@code this}

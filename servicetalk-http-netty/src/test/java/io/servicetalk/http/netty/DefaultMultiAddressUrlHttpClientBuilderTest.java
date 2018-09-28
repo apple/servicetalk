@@ -49,7 +49,8 @@ public class DefaultMultiAddressUrlHttpClientBuilderTest {
     @Test
     public void buildWithDefaults() throws Exception {
         StreamingHttpRequester newRequester = HttpClients.forMultiAddressUrl()
-                .buildStreaming(CTX);
+                .executionContext(CTX)
+                .buildStreaming();
         assertNotNull(newRequester);
         awaitIndefinitely(newRequester.closeAsync());
     }
@@ -57,7 +58,8 @@ public class DefaultMultiAddressUrlHttpClientBuilderTest {
     @Test
     public void buildAggregatedWithDefaults() throws Exception {
         HttpRequester newAggregatedRequester = HttpClients.forMultiAddressUrl()
-                .build(CTX);
+                .executionContext(CTX)
+                .build();
         assertNotNull(newAggregatedRequester);
         awaitIndefinitely(newAggregatedRequester.closeAsync());
     }
@@ -65,7 +67,8 @@ public class DefaultMultiAddressUrlHttpClientBuilderTest {
     @Test
     public void buildBlockingWithDefaults() throws Exception {
         BlockingStreamingHttpRequester newBlockingRequester = HttpClients.forMultiAddressUrl()
-                .buildBlockingStreaming(CTX);
+                .executionContext(CTX)
+                .buildBlockingStreaming();
         assertNotNull(newBlockingRequester);
         newBlockingRequester.close();
     }
@@ -73,7 +76,8 @@ public class DefaultMultiAddressUrlHttpClientBuilderTest {
     @Test
     public void buildBlockingAggregatedWithDefaults() throws Exception {
         BlockingHttpRequester newBlockingAggregatedRequester = HttpClients.forMultiAddressUrl()
-                .buildBlocking(CTX);
+                .executionContext(CTX)
+                .buildBlocking();
         assertNotNull(newBlockingAggregatedRequester);
         newBlockingAggregatedRequester.close();
     }
@@ -82,7 +86,9 @@ public class DefaultMultiAddressUrlHttpClientBuilderTest {
     @SuppressWarnings("unchecked")
     public void buildWithProvidedServiceDiscoverer() throws Exception {
         ServiceDiscoverer<HostAndPort, InetSocketAddress> mockedServiceDiscoverer = mock(ServiceDiscoverer.class);
-        StreamingHttpRequester newRequester = HttpClients.forMultiAddressUrl().serviceDiscoverer(mockedServiceDiscoverer).buildStreaming(CTX);
+        StreamingHttpRequester newRequester = HttpClients.forMultiAddressUrl()
+                .serviceDiscoverer(mockedServiceDiscoverer).executionContext(CTX)
+                .buildStreaming();
         awaitIndefinitely(newRequester.closeAsync());
         verify(mockedServiceDiscoverer, never()).closeAsync();
     }

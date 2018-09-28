@@ -99,7 +99,8 @@ public class MultiAddressUrlHttpClientTest {
     public static void beforeClass() throws Exception {
         afterClassCloseables = newCompositeCloseable();
 
-        requester = afterClassCloseables.append(HttpClients.forMultiAddressUrl().buildStreaming(CTX));
+        requester = afterClassCloseables.append(HttpClients.forMultiAddressUrl().executionContext(CTX)
+                .buildStreaming());
 
         final HttpHeaders httpHeaders = DefaultHttpHeadersFactory.INSTANCE.newHeaders().set(CONTENT_LENGTH, ZERO);
         httpService = new StreamingHttpService() {

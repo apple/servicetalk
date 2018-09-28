@@ -25,6 +25,7 @@ import io.servicetalk.http.api.HttpRequester;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.api.StreamingHttpService;
+import io.servicetalk.test.resources.DefaultTestCerts;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.api.SslConfig;
@@ -38,7 +39,6 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
-import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
 import java.net.InetSocketAddress;
@@ -57,9 +57,6 @@ import static io.servicetalk.http.api.HttpResponseStatuses.OK;
 import static io.servicetalk.http.netty.HttpServers.newHttpServerBuilder;
 import static io.servicetalk.http.netty.SslConfigProviders.plainByDefault;
 import static io.servicetalk.http.netty.SslConfigProviders.secureByDefault;
-import static io.servicetalk.test.resources.DefaultTestCerts.loadMutualAuthCaPem;
-import static io.servicetalk.test.resources.DefaultTestCerts.loadServerKey;
-import static io.servicetalk.test.resources.DefaultTestCerts.loadServerPem;
 import static io.servicetalk.transport.api.SslConfigBuilder.forClient;
 import static io.servicetalk.transport.netty.internal.ExecutionContextRule.immediate;
 import static java.lang.String.format;
@@ -101,15 +98,12 @@ public class MultiAddressUrlHttpClientSslTest {
 
         // Configure HTTP server
         when(STREAMING_HTTP_SERVICE.handle(any(), any(), any())).thenAnswer(
-                new Answer<Single<StreamingHttpResponse>>() {
-            @Override
-            public Single<StreamingHttpResponse> answer(final InvocationOnMock invocation) throws Throwable {
-                StreamingHttpResponseFactory factory = invocation.getArgument(2);
-                StreamingHttpResponse resp = factory.ok();
-                resp.headers().set(httpHeaders);
-                return success(resp);
-            }
-        });
+                (Answer<Single<StreamingHttpResponse>>) invocation -> {
+                    StreamingHttpResponseFactory factory = invocation.getArgument(2);
+                    StreamingHttpResponse resp = factory.ok();
+                    resp.headers().set(httpHeaders);
+                    return success(resp);
+                });
         when(STREAMING_HTTP_SERVICE.closeAsync()).thenReturn(completed());
         when(STREAMING_HTTP_SERVICE.closeAsyncGracefully()).thenReturn(completed());
         serverCtx = newHttpServerBuilder(new InetSocketAddress(HOSTNAME, 0))
@@ -129,7 +123,8 @@ public class MultiAddressUrlHttpClientSslTest {
         when(SECURE_STREAMING_HTTP_SERVICE.closeAsync()).thenReturn(completed());
         when(SECURE_STREAMING_HTTP_SERVICE.closeAsyncGracefully()).thenReturn(completed());
         secureServerCtx = newHttpServerBuilder(new InetSocketAddress(HOSTNAME, 0))
-                .sslConfig(SslConfigBuilder.forServer(() -> loadServerPem(), () -> loadServerKey()).build())
+                .sslConfig(SslConfigBuilder.forServer(DefaultTestCerts::loadServerPem,
+                        DefaultTestCerts::loadServerKey).build())
                 .executionContext(CTX)
                 .listenStreamingAndAwait(SECURE_STREAMING_HTTP_SERVICE);
         secureServerHostHeader = HostAndPort.of(HOSTNAME,
@@ -153,8 +148,7 @@ public class MultiAddressUrlHttpClientSslTest {
 
     @Test(expected = ExecutionException.class)
     public void nonSecureClientToSecureServer() throws Exception {
-        HttpRequester requester = HttpClients.forMultiAddressUrl()
-                .build(CTX);
+        HttpRequester requester = HttpClients.forMultiAddressUrl().executionContext(CTX).build();
 
         HttpRequest request = requester.get("/");
         request.headers().add(HOST, secureServerHostHeader);
@@ -165,7 +159,7 @@ public class MultiAddressUrlHttpClientSslTest {
     @Test(expected = TimeoutException.class)
     public void secureClientToNonSecureServer() throws Exception {
         HttpRequester requester = HttpClients.forMultiAddressUrl().sslConfigProvider(secureByDefault())
-                .build(CTX);
+                .executionContext(CTX).build();
 
         HttpRequest request = requester.get("/");
         request.headers().add(HOST, serverHostHeader);
@@ -176,7 +170,7 @@ public class MultiAddressUrlHttpClientSslTest {
     @Test
     public void requesterWithDefaultSslConfigProvider() throws Exception {
         try (BlockingHttpRequester requester = HttpClients.forMultiAddressUrl()
-                .buildBlocking(CTX)) {
+                .executionContext(CTX).buildBlocking()) {
             testOnlyNonSecureRequestTargets(requester);
         }
     }
@@ -184,7 +178,7 @@ public class MultiAddressUrlHttpClientSslTest {
     @Test
     public void requesterWithPlainSslConfigProvider() throws Exception {
         try (BlockingHttpRequester requester = HttpClients.forMultiAddressUrl().sslConfigProvider(plainByDefault())
-                .buildBlocking(CTX)) {
+                .executionContext(CTX).buildBlocking()) {
             testOnlyNonSecureRequestTargets(requester);
         }
     }
@@ -201,12 +195,12 @@ public class MultiAddressUrlHttpClientSslTest {
             public SslConfig forHostAndPort(final HostAndPort hostAndPort) {
                 return forClient(hostAndPort)
                         // required for generated certificates
-                        .trustManager(() -> loadMutualAuthCaPem())
+                        .trustManager(DefaultTestCerts::loadMutualAuthCaPem)
                         .build();
             }
         };
         try (BlockingHttpRequester requester = HttpClients.forMultiAddressUrl().sslConfigProvider(sslConfigProvider)
-                .buildBlocking(CTX)) {
+                .executionContext(CTX).buildBlocking()) {
             testAllFormsOfRequestTargetWithSecureByDefault(requester);
         }
     }

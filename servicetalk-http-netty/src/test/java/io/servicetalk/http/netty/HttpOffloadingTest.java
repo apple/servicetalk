@@ -106,7 +106,8 @@ public class HttpOffloadingTest {
         errors = new ConcurrentLinkedQueue<>();
         terminated = new CountDownLatch(1);
         client = forSingleAddress(HostAndPort.of(LOOPBACK_ADDRESS.getHostName(), socketAddress.getPort()))
-                .buildStreaming(CLIENT_CTX);
+                .executionContext(CLIENT_CTX)
+                .buildStreaming();
         httpConnection = awaitIndefinitelyNonNull(client.reserveConnection(client.get("/")));
         connectionContext = httpConnection.connectionContext();
     }

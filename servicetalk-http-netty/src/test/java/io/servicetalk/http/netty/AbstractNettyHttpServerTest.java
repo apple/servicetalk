@@ -161,8 +161,9 @@ public abstract class AbstractNettyHttpServerTest {
                     .trustManager(DefaultTestCerts::loadMutualAuthCaPem).build();
             httpConnectionBuilder.setSslConfig(sslConfig);
         }
-        httpConnection = awaitIndefinitelyNonNull(httpConnectionBuilder.buildStreaming(
-                new DefaultExecutionContext(DEFAULT_ALLOCATOR, clientIoExecutor, clientExecutor), socketAddress));
+        DefaultExecutionContext context = new DefaultExecutionContext(DEFAULT_ALLOCATOR, clientIoExecutor, clientExecutor);
+        httpConnection = awaitIndefinitelyNonNull(httpConnectionBuilder.executionContext(context)
+                .buildStreaming(socketAddress));
     }
 
     protected void ignoreTestWhen(ExecutorSupplier clientExecutorSupplier, ExecutorSupplier serverExecutorSupplier) {
@@ -200,10 +201,6 @@ public abstract class AbstractNettyHttpServerTest {
 
     ServerContext getServerContext() {
         return serverContext;
-    }
-
-    Function<StreamingHttpRequest, Publisher<Buffer>> getPublisherSupplier() {
-        return publisherSupplier;
     }
 
     StreamingHttpResponse makeRequest(final StreamingHttpRequest request)

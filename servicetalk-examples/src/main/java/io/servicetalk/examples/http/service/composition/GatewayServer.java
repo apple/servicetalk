@@ -145,6 +145,7 @@ public final class GatewayServer {
                                     }
                                 })
                         )
-                        .buildStreaming(executionContext));
+                        .executionContext(executionContext)
+                        .buildStreaming());
     }
 }
