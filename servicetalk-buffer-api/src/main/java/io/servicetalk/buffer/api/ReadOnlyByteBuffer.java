@@ -57,28 +57,28 @@ final class ReadOnlyByteBuffer extends AbstractBuffer {
     }
 
     @Override
-    public int getCapacity() {
+    public int capacity() {
         return buffer.capacity();
     }
 
     @Override
-    public Buffer setCapacity(int newCapacity) {
+    public Buffer capacity(int newCapacity) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public int getMaxCapacity() {
-        return getCapacity();
+    public int maxCapacity() {
+        return capacity();
     }
 
     @Override
-    public int getWritableBytes() {
+    public int writableBytes() {
         // TODO(scott): this buffer is not writable, so returning 0 seems more correct, but Netty doesn't do this
         return 0;
     }
 
     @Override
-    public int getMaxWritableBytes() {
+    public int maxWritableBytes() {
         // TODO(scott): this buffer is not writable, so returning 0 seems more correct, but Netty doesn't do this
         return 0;
     }
@@ -118,10 +118,10 @@ final class ReadOnlyByteBuffer extends AbstractBuffer {
 
     @Override
     public Buffer getBytes(int index, Buffer dst, int dstIndex, int length) {
-        checkDstIndex(index, length, dstIndex, dst.getCapacity());
+        checkDstIndex(index, length, dstIndex, dst.capacity());
         if (dst.hasArray()) {
-            getBytes(index, dst.getArray(), dst.getArrayOffset() + dstIndex, length);
-        } else if (dst.getNioBufferCount() > 0) {
+            getBytes(index, dst.array(), dst.arrayOffset() + dstIndex, length);
+        } else if (dst.nioBufferCount() > 0) {
             for (ByteBuffer bb : dst.toNioBuffers(dstIndex, length)) {
                 int bbLen = bb.remaining();
                 getBytes(index, bb);
@@ -155,7 +155,7 @@ final class ReadOnlyByteBuffer extends AbstractBuffer {
             throw new NullPointerException("dst");
         }
 
-        int bytesToCopy = Math.min(getCapacity() - index, dst.remaining());
+        int bytesToCopy = Math.min(capacity() - index, dst.remaining());
         ByteBuffer tmpBuf = buffer.duplicate();
         tmpBuf.position(index).limit(index + bytesToCopy);
         dst.put(tmpBuf);
@@ -388,7 +388,7 @@ final class ReadOnlyByteBuffer extends AbstractBuffer {
             return EMPTY_BUFFER;
         }
         checkReadableBytes0(length);
-        Buffer buf = new ReadOnlyByteBuffer(sliceByteBuffer0(getReaderIndex(), length));
+        Buffer buf = new ReadOnlyByteBuffer(sliceByteBuffer0(readerIndex(), length));
         skipBytes0(length);
         return buf;
     }
@@ -420,17 +420,17 @@ final class ReadOnlyByteBuffer extends AbstractBuffer {
 
     @Override
     public Buffer duplicate() {
-        return new ReadOnlyByteBuffer(sliceByteBuffer0(0, getCapacity()));
+        return new ReadOnlyByteBuffer(sliceByteBuffer0(0, capacity()));
     }
 
     @Override
-    public int getNioBufferCount() {
+    public int nioBufferCount() {
         return 1;
     }
 
     @Override
     public ByteBuffer toNioBuffer() {
-        return sliceByteBuffer0(getReaderIndex(), getReadableBytes());
+        return sliceByteBuffer0(readerIndex(), readableBytes());
     }
 
     @Override
@@ -464,12 +464,12 @@ final class ReadOnlyByteBuffer extends AbstractBuffer {
     }
 
     @Override
-    public byte[] getArray() {
+    public byte[] array() {
         return buffer.array();
     }
 
     @Override
-    public int getArrayOffset() {
+    public int arrayOffset() {
         return buffer.arrayOffset();
     }
 

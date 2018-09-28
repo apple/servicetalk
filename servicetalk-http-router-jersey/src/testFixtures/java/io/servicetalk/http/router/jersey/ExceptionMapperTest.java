@@ -78,7 +78,7 @@ public class ExceptionMapperTest extends AbstractJerseyStreamingHttpServiceTest 
                 final Buffer buf = DEFAULT_ALLOCATOR.fromAscii(exception.getClass().getName());
                 return status(555)
                         .header(CONTENT_TYPE, TEXT_PLAIN)
-                        .header(CONTENT_LENGTH, buf.getReadableBytes())
+                        .header(CONTENT_LENGTH, buf.readableBytes())
                         .entity(buf)
                         .build();
             }
@@ -89,7 +89,7 @@ public class ExceptionMapperTest extends AbstractJerseyStreamingHttpServiceTest 
                 final Buffer buf = DEFAULT_ALLOCATOR.fromAscii(exception.getClass().getName());
                 return status(555)
                         .header(CONTENT_TYPE, TEXT_PLAIN)
-                        .header(CONTENT_LENGTH, buf.getReadableBytes())
+                        .header(CONTENT_LENGTH, buf.readableBytes())
                         .entity(new GenericEntity<Single<Buffer>>(success(buf)) { })
                         .build();
             }

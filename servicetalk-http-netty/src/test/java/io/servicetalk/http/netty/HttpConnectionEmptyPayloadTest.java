@@ -105,7 +105,7 @@ public class HttpConnectionEmptyPayloadTest {
             Buffer buffer = awaitIndefinitelyNonNull(response.payloadBody().reduce(
                     () -> connection.connectionContext().executionContext().bufferAllocator().newBuffer(),
                     Buffer::writeBytes));
-            byte[] actualBytes = new byte[buffer.getReadableBytes()];
+            byte[] actualBytes = new byte[buffer.readableBytes()];
             buffer.readBytes(actualBytes);
             assertArrayEquals(expectedPayload, actualBytes);
 

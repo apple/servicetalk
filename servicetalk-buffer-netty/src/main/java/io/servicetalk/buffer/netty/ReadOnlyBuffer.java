@@ -56,48 +56,48 @@ final class ReadOnlyBuffer extends WrappedBuffer {
     }
 
     @Override
-    public byte[] getArray() {
+    public byte[] array() {
         throw new ReadOnlyBufferException();
     }
 
     @Override
-    public int getArrayOffset() {
+    public int arrayOffset() {
         throw new ReadOnlyBufferException();
     }
 
     @Override
-    public int getWritableBytes() {
+    public int writableBytes() {
         return 0;
     }
 
     @Override
-    public int getMaxWritableBytes() {
+    public int maxWritableBytes() {
         return 0;
     }
 
     @Override
-    public int getWriterIndex() {
-        return getReaderIndex();
+    public int writerIndex() {
+        return readerIndex();
     }
 
     @Override
-    public Buffer setWriterIndex(int writerIndex) {
+    public Buffer writerIndex(int writerIndex) {
         throw new ReadOnlyBufferException();
     }
 
     @Override
-    public Buffer setCapacity(int newCapacity) {
+    public Buffer capacity(int newCapacity) {
         throw new ReadOnlyBufferException();
     }
 
     @Override
-    public int getCapacity() {
-        return getWriterIndex();
+    public int capacity() {
+        return writerIndex();
     }
 
     @Override
-    public int getMaxCapacity() {
-        return getCapacity();
+    public int maxCapacity() {
+        return capacity();
     }
 
     @Override

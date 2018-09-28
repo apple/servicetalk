@@ -90,7 +90,7 @@ public class JacksonSerializationProviderTest {
         TestPojo expected = new TestPojo(true, (byte) -2, (short) -3, 'a', 2, 5, 3.2f, -8.5, null, new String[] {"bar"},
                 null);
         final Buffer serialized = serializePojo(expected);
-        serialized.setByte(serialized.getWriterIndex() - 1, serialized.getByte(serialized.getWriterIndex() - 1) + 1);
+        serialized.setByte(serialized.writerIndex() - 1, serialized.getByte(serialized.writerIndex() - 1) + 1);
 
         final StreamingDeserializer<TestPojo> deserializer = serializationProvider.getDeserializer(TestPojo.class);
         try {
@@ -153,7 +153,7 @@ public class JacksonSerializationProviderTest {
         final Buffer buffer1 = serializePojo(expected1);
         final Buffer buffer2 = serializePojo(expected2);
 
-        Buffer composite = DEFAULT_ALLOCATOR.newBuffer(buffer1.getReadableBytes() + buffer2.getReadableBytes());
+        Buffer composite = DEFAULT_ALLOCATOR.newBuffer(buffer1.readableBytes() + buffer2.readableBytes());
         composite.writeBytes(buffer1).writeBytes(buffer2);
 
         final StreamingDeserializer<TestPojo> deserializer = serializationProvider.getDeserializer(TestPojo.class);
@@ -193,7 +193,7 @@ public class JacksonSerializationProviderTest {
                 null);
         final Buffer buffer = serializePojo(expected);
         final StreamingDeserializer<TestPojo> deSerializer = serializationProvider.getDeserializer(TestPojo.class);
-        deSerializer.deserialize(buffer.readBytes(buffer.getReadableBytes() - 1));
+        deSerializer.deserialize(buffer.readBytes(buffer.readableBytes() - 1));
         try {
             deSerializer.close();
             fail();
@@ -249,10 +249,10 @@ public class JacksonSerializationProviderTest {
 
     private void deserializeChunks(final TestPojo expected1, final Buffer req1Buffer,
                                    final StreamingDeserializer<TestPojo> deSerializer) {
-        for (int i = req1Buffer.getReaderIndex(); i < req1Buffer.getWriterIndex(); ++i) {
+        for (int i = req1Buffer.readerIndex(); i < req1Buffer.writerIndex(); ++i) {
             Buffer buffer = DEFAULT_ALLOCATOR.newBuffer(1).writeByte(req1Buffer.getByte(i));
             final Iterator<TestPojo> iter = deSerializer.deserialize(buffer).iterator();
-            if (i == req1Buffer.getWriterIndex() - 1) {
+            if (i == req1Buffer.writerIndex() - 1) {
                 assertTrue(iter.hasNext());
                 assertEquals(expected1, iter.next());
             } else {

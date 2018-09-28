@@ -43,21 +43,21 @@ final class DefaultHttpProtocolVersion implements HttpProtocolVersion {
     DefaultHttpProtocolVersion(final Buffer httpVersion) {
         // We could delay the parsing of major/minor but this is currently used during decode to validate the
         // correct form of the request.
-        if (httpVersion.getReadableBytes() < 8) {
+        if (httpVersion.readableBytes() < 8) {
             throw new IllegalArgumentException("Incorrect httpVersion: " + httpVersion.toString(US_ASCII) +
                     ". Too small, expected 8 or more bytes.");
         }
-        if (httpVersion.getByte(httpVersion.getReaderIndex() + 6) != (byte) '.') {
-            char ch = (char) httpVersion.getByte(httpVersion.getReaderIndex() + 6);
+        if (httpVersion.getByte(httpVersion.readerIndex() + 6) != (byte) '.') {
+            char ch = (char) httpVersion.getByte(httpVersion.readerIndex() + 6);
             throw new IllegalArgumentException("Incorrect httpVersion: " + httpVersion.toString(US_ASCII) +
                     ". Invalid character found '" + ch + "' at position 6 (expected '.')");
         }
-        this.major = httpVersion.getByte(httpVersion.getReaderIndex() + 5) - '0';
+        this.major = httpVersion.getByte(httpVersion.readerIndex() + 5) - '0';
         if (major < 0 || major > 9) {
             throw new IllegalArgumentException("Incorrect httpVersion: " + httpVersion.toString(US_ASCII) +
                     ". Illegal major version: " + major + ", (expected [0-9])");
         }
-        this.minor = httpVersion.getByte(httpVersion.getReaderIndex() + 7) - '0';
+        this.minor = httpVersion.getByte(httpVersion.readerIndex() + 7) - '0';
         if (minor < 0 || minor > 9) {
             throw new IllegalArgumentException("Incorrect httpVersion: " + httpVersion.toString(US_ASCII) +
                     ". Illegal minor version: " + minor + ", (expected [0-9])");
@@ -77,7 +77,7 @@ final class DefaultHttpProtocolVersion implements HttpProtocolVersion {
 
     @Override
     public void writeHttpVersionTo(final Buffer buffer) {
-        buffer.writeBytes(httpVersion, httpVersion.getReaderIndex(), httpVersion.getReadableBytes());
+        buffer.writeBytes(httpVersion, httpVersion.readerIndex(), httpVersion.readableBytes());
     }
 
     @Override

@@ -145,7 +145,7 @@ abstract class HttpObjectEncoder<T extends HttpMetaData> extends ChannelOutbound
             ctx.write(byteBuf, promise);
         } else if (msg instanceof Buffer) {
             final Buffer stBuffer = (Buffer) msg;
-            if (stBuffer.getReadableBytes() == 0) {
+            if (stBuffer.readableBytes() == 0) {
                 // Bypass the encoder in case of an empty buffer, so that the following idiom works:
                 //
                 //     ch.write(Unpooled.EMPTY_BUFFER).addListener(ChannelFutureListener.CLOSE);
@@ -324,7 +324,7 @@ abstract class HttpObjectEncoder<T extends HttpMetaData> extends ChannelOutbound
 
     private static long contentLength(Buffer msg) {
         // TODO(scott): add support for file region
-        return msg.getReadableBytes();
+        return msg.readableBytes();
     }
 
     private static ByteBuf encodeAndRetain(Buffer msg) {

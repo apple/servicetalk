@@ -32,7 +32,7 @@ public interface Buffer {
      *
      * @return the number of bytes (octets) this buffer can contain.
      */
-    int getCapacity();
+    int capacity();
 
     /**
      * Sets the capacity of this buffer.  If the {@code newCapacity} is less than the current
@@ -43,23 +43,23 @@ public interface Buffer {
      * @param newCapacity the new capacity.
      * @return itself.
      */
-    Buffer setCapacity(int newCapacity);
+    Buffer capacity(int newCapacity);
 
     /**
      * Returns the maximum allowed capacity of this buffer.  If a user attempts to increase the
-     * capacity of this buffer beyond the maximum capacity using {@link #setCapacity(int)}, those methods will raise an
+     * capacity of this buffer beyond the maximum capacity using {@link #capacity(int)}, those methods will raise an
      * {@link IllegalArgumentException}.
      *
      * @return the max capacity of this buffer.
      */
-    int getMaxCapacity();
+    int maxCapacity();
 
     /**
      * Returns the {@code readerIndex} of this buffer.
      *
      * @return the {@code readerIndex} of this buffer.
      */
-    int getReaderIndex();
+    int readerIndex();
 
     /**
      * Sets the {@code readerIndex} of this buffer.
@@ -71,14 +71,14 @@ public interface Buffer {
      *            less than {@code 0} or
      *            greater than {@code this.writerIndex}
      */
-    Buffer setReaderIndex(int readerIndex);
+    Buffer readerIndex(int readerIndex);
 
     /**
      * Returns the {@code writerIndex} of this buffer.
      *
      * @return the {@code writerIndex} of this buffer.
      */
-    int getWriterIndex();
+    int writerIndex();
 
     /**
      * Sets the {@code writerIndex} of this buffer.
@@ -90,7 +90,7 @@ public interface Buffer {
      *            less than {@code this.readerIndex} or
      *            greater than {@code this.capacity}
      */
-    Buffer setWriterIndex(int writerIndex);
+    Buffer writerIndex(int writerIndex);
 
     /**
      * Returns the number of readable bytes which is equal to
@@ -98,7 +98,7 @@ public interface Buffer {
      *
      * @return the number of readables bytes in this buffer.
      */
-    int getReadableBytes();
+    int readableBytes();
 
     /**
      * Returns the number of writable bytes which is equal to
@@ -106,7 +106,7 @@ public interface Buffer {
      *
      * @return the number of writable bytes in this buffer.
      */
-    int getWritableBytes();
+    int writableBytes();
 
     /**
      * Returns the maximum possible number of writable bytes, which is equal to
@@ -114,10 +114,10 @@ public interface Buffer {
      *
      * @return the maximum possible number of writable bytes in this buffer.
      */
-    int getMaxWritableBytes();
+    int maxWritableBytes();
 
     /**
-     * Makes sure the number of {@linkplain #getWritableBytes() the writable bytes}
+     * Makes sure the number of {@linkplain #writableBytes() the writable bytes}
      * is equal to or greater than the specified value. If there is enough
      * writable bytes in this buffer, this method returns with no side effect.
      * Otherwise, it raises an {@link IllegalArgumentException}.
@@ -126,21 +126,21 @@ public interface Buffer {
      *        the expected minimum number of writable bytes
      * @return this object.
      * @throws IndexOutOfBoundsException
-     *         if {@link #getWriterIndex()} + {@code minWritableBytes} &gt; {@link #getMaxCapacity()}
+     *         if {@link #writerIndex()} + {@code minWritableBytes} &gt; {@link #maxCapacity()}
      */
     Buffer ensureWritable(int minWritableBytes);
 
     /**
-     * Tries to make sure the number of {@linkplain #getWritableBytes() the writable bytes}
+     * Tries to make sure the number of {@linkplain #writableBytes() the writable bytes}
      * is equal to or greater than the specified value. Unlike {@link #ensureWritable(int)},
      * this method does not raise an exception but returns a code.
      *
      * @param minWritableBytes
      *        the expected minimum number of writable bytes
      * @param force
-     *        When {@link #getWriterIndex()} + {@code minWritableBytes} &gt; {@link #getMaxCapacity()}:
+     *        When {@link #writerIndex()} + {@code minWritableBytes} &gt; {@link #maxCapacity()}:
      *        <ul>
-     *        <li>{@code true} - the capacity of the buffer is expanded to {@link #getMaxCapacity()}</li>
+     *        <li>{@code true} - the capacity of the buffer is expanded to {@link #maxCapacity()}</li>
      *        <li>{@code false} - the capacity of the buffer is unchanged</li>
      *        </ul>
      * @return {@code 0} if the buffer has enough writable bytes, and its capacity is unchanged.
@@ -152,16 +152,16 @@ public interface Buffer {
     int ensureWritable(int minWritableBytes, boolean force);
 
     /**
-     * Tries to make sure the number of {@linkplain #getWritableBytes() the writable bytes}
+     * Tries to make sure the number of {@linkplain #writableBytes() the writable bytes}
      * is equal to or greater than the specified value. Unlike {@link #ensureWritable(int)},
      * this method does not raise an exception but returns a code.
      *
      * @param minWritableBytes
      *        the expected minimum number of writable bytes
      * @param force
-     *        When {@link #getWriterIndex()} + {@code minWritableBytes} &gt; {@link #getMaxCapacity()}:
+     *        When {@link #writerIndex()} + {@code minWritableBytes} &gt; {@link #maxCapacity()}:
      *        <ul>
-     *        <li>{@code true} - the capacity of the buffer is expanded to {@link #getMaxCapacity()}</li>
+     *        <li>{@code true} - the capacity of the buffer is expanded to {@link #maxCapacity()}</li>
      *        <li>{@code false} - the capacity of the buffer is unchanged</li>
      *        </ul>
      * @return {@code true} if this {@link Buffer} has at least {@code minWritableBytes} writable bytes after this call.
@@ -1713,7 +1713,7 @@ public interface Buffer {
      * @see #toNioBuffers()
      * @see #toNioBuffers(int, int)
      */
-    int getNioBufferCount();
+    int nioBufferCount();
 
     /**
      * Exposes this buffer's readable bytes as an NIO {@link ByteBuffer}.  The returned buffer
@@ -1728,7 +1728,7 @@ public interface Buffer {
      * @throws UnsupportedOperationException
      *         if this buffer cannot create a {@link ByteBuffer} that shares the content with itself
      *
-     * @see #getNioBufferCount()
+     * @see #nioBufferCount()
      * @see #toNioBuffers()
      * @see #toNioBuffers(int, int)
      */
@@ -1748,7 +1748,7 @@ public interface Buffer {
      * @throws UnsupportedOperationException
      *         if this buffer cannot create a {@link ByteBuffer} that shares the content with itself
      *
-     * @see #getNioBufferCount()
+     * @see #nioBufferCount()
      * @see #toNioBuffers()
      * @see #toNioBuffers(int, int)
      */
@@ -1767,7 +1767,7 @@ public interface Buffer {
      * @throws UnsupportedOperationException
      *         if this buffer cannot create a {@link ByteBuffer} that shares the content with itself
      *
-     * @see #getNioBufferCount()
+     * @see #nioBufferCount()
      * @see #toNioBuffer()
      * @see #toNioBuffer(int, int)
      */
@@ -1787,7 +1787,7 @@ public interface Buffer {
      * @throws UnsupportedOperationException
      *         if this buffer cannot create a {@link ByteBuffer} that shares the content with itself
      *
-     * @see #getNioBufferCount()
+     * @see #nioBufferCount()
      * @see #toNioBuffer()
      * @see #toNioBuffer(int, int)
      */
@@ -1814,8 +1814,8 @@ public interface Buffer {
 
     /**
      * Returns {@code true} if and only if this buffer has a backing byte array.
-     * If this method returns true, you can safely call {@link #getArray()} and
-     * {@link #getArrayOffset()}.
+     * If this method returns true, you can safely call {@link #array()} and
+     * {@link #arrayOffset()}.
      *
      * @return {@code true} if backed by an byte array.
      */
@@ -1828,7 +1828,7 @@ public interface Buffer {
      * @throws UnsupportedOperationException
      *         if there no accessible backing byte array
      */
-    byte[] getArray();
+    byte[] array();
 
     /**
      * Returns the offset of the first byte within the backing byte array of
@@ -1838,7 +1838,7 @@ public interface Buffer {
      * @throws UnsupportedOperationException
      *         if there no accessible backing byte array
      */
-    int getArrayOffset();
+    int arrayOffset();
 
     /**
      * Iterates over the readable bytes of this buffer with the specified {@code processor} in ascending order.
@@ -1898,8 +1898,8 @@ public interface Buffer {
      * <li>the size of the contents of the two buffers are same and</li>
      * <li>every single byte of the content of the two buffers are same.</li>
      * </ul>
-     * Please note that it does not compare {@link #getReaderIndex()} nor
-     * {@link #getWriterIndex()}.  This method also returns {@code false} for
+     * Please note that it does not compare {@link #readerIndex()} nor
+     * {@link #writerIndex()}.  This method also returns {@code false} for
      * {@code null} and an object which is not an instance of
      * {@link Buffer} type.
      */
@@ -1909,8 +1909,8 @@ public interface Buffer {
     /**
      * Returns the string representation of this buffer.  This method does not
      * necessarily return the whole content of the buffer but returns
-     * the values of the key properties such as {@link #getReaderIndex()},
-     * {@link #getWriterIndex()} and {@link #getCapacity()}.
+     * the values of the key properties such as {@link #readerIndex()},
+     * {@link #writerIndex()} and {@link #capacity()}.
      */
     @Override
     String toString();

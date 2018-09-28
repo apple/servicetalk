@@ -63,7 +63,7 @@ public final class RedisUtils {
      * @return {@link Buffer} containing the array size.
      */
     public static Buffer toRespBulkString(final Buffer buf, final BufferAllocator allocator) {
-        final byte[] size = toAsciiBytes(buf.getReadableBytes());
+        final byte[] size = toAsciiBytes(buf.readableBytes());
         return allocator.newBuffer(1 + size.length + TWICE_EOL_LENGTH)
                 .writeByte('$')
                 .writeBytes(size)

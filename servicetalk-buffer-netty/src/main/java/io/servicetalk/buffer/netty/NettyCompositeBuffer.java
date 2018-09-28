@@ -53,20 +53,20 @@ final class NettyCompositeBuffer extends NettyBuffer<CompositeByteBuf> implement
     }
 
     @Override
-    public CompositeBuffer setCapacity(int newCapacity) {
-        super.setCapacity(newCapacity);
+    public CompositeBuffer capacity(int newCapacity) {
+        super.capacity(newCapacity);
         return this;
     }
 
     @Override
-    public CompositeBuffer setReaderIndex(int readerIndex) {
-        super.setReaderIndex(readerIndex);
+    public CompositeBuffer readerIndex(int readerIndex) {
+        super.readerIndex(readerIndex);
         return this;
     }
 
     @Override
-    public CompositeBuffer setWriterIndex(int writerIndex) {
-        super.setWriterIndex(writerIndex);
+    public CompositeBuffer writerIndex(int writerIndex) {
+        super.writerIndex(writerIndex);
         return this;
     }
 

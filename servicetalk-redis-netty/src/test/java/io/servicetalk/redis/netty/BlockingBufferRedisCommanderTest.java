@@ -200,7 +200,7 @@ public class BlockingBufferRedisCommanderTest extends BaseRedisClientTest {
 
     @Test
     public void infoWithAggregationDoesNotThrow() throws Exception {
-        assertThat(commandClient.info().getReadableBytes(), is(greaterThan(0)));
+        assertThat(commandClient.info().readableBytes(), is(greaterThan(0)));
     }
 
     @SuppressWarnings("unchecked")

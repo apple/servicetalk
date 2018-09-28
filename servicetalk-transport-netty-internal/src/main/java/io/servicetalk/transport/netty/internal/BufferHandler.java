@@ -70,7 +70,7 @@ public final class BufferHandler extends RefCountedTrapper {
         if (msg instanceof Buffer) {
             ctx.write(extractByteBufOrCreate((Buffer) msg), promise);
         } else if (msg instanceof BufferHolder) {
-            ctx.write(extractByteBufOrCreate(((BufferHolder) msg).getContent()), promise);
+            ctx.write(extractByteBufOrCreate(((BufferHolder) msg).content()), promise);
         } else {
             ctx.write(msg, promise);
         }

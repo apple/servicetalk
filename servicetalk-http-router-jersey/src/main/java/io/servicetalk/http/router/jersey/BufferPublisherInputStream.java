@@ -148,14 +148,14 @@ public final class BufferPublisherInputStream extends InputStream {
 
     @Nullable
     private static byte[] getBytes(final Buffer content) {
-        final int readableBytes = content.getReadableBytes();
+        final int readableBytes = content.readableBytes();
 
         if (readableBytes == 0) {
             return null;
         }
 
-        if (content.hasArray() && content.getArrayOffset() == 0 && content.getArray().length == readableBytes) {
-            return content.getArray();
+        if (content.hasArray() && content.arrayOffset() == 0 && content.array().length == readableBytes) {
+            return content.array();
         }
 
         final byte[] bytes = new byte[readableBytes];

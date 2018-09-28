@@ -39,10 +39,10 @@ final class ByteArrayJacksonDeserializer<T> extends AbstractJacksonDeserializer<
     @Nonnull
     Iterable<T> doDeserialize(final Buffer buffer, @Nullable List<T> resultHolder) throws IOException {
         if (buffer.hasArray()) {
-            feeder.feedInput(buffer.getArray(), buffer.getArrayOffset(),
-                    buffer.getArrayOffset() + buffer.getReadableBytes());
+            feeder.feedInput(buffer.array(), buffer.arrayOffset(),
+                    buffer.arrayOffset() + buffer.readableBytes());
         } else {
-            int readableBytes = buffer.getReadableBytes();
+            int readableBytes = buffer.readableBytes();
             if (readableBytes != 0) {
                 byte[] copy = new byte[readableBytes];
                 buffer.readBytes(copy);

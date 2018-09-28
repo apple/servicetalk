@@ -329,10 +329,10 @@ public abstract class AbstractFilterInterceptorTest extends AbstractJerseyStream
     }
 
     private static Buffer oTo0(final Buffer buf) {
-        for (int i = 0; i < buf.getReadableBytes(); i++) {
-            final byte b = buf.getByte(buf.getReaderIndex() + i);
+        for (int i = 0; i < buf.readableBytes(); i++) {
+            final byte b = buf.getByte(buf.readerIndex() + i);
             if (b == 'o' || b == 'O') {
-                buf.setByte(buf.getReaderIndex() + i, '0');
+                buf.setByte(buf.readerIndex() + i, '0');
             }
         }
         return buf;

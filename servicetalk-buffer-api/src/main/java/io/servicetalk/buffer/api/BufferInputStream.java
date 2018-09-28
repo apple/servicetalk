@@ -29,7 +29,7 @@ final class BufferInputStream extends InputStream {
 
     @Override
     public int read() {
-        if (buffer.getReadableBytes() == 0) {
+        if (buffer.readableBytes() == 0) {
             return -1;
         }
         return buffer.readByte() & 0xff;
@@ -37,7 +37,7 @@ final class BufferInputStream extends InputStream {
 
     @Override
     public int read(byte[] b, int off, int len) {
-        int readableBytes = buffer.getReadableBytes();
+        int readableBytes = buffer.readableBytes();
         if (readableBytes == 0) {
             return -1;
         }
@@ -48,13 +48,13 @@ final class BufferInputStream extends InputStream {
 
     @Override
     public long skip(long n) {
-        int skipped = min(buffer.getReadableBytes(), (int) min(Integer.MAX_VALUE, n));
+        int skipped = min(buffer.readableBytes(), (int) min(Integer.MAX_VALUE, n));
         buffer.skipBytes(skipped);
         return skipped;
     }
 
     @Override
     public int available() {
-        return buffer.getReadableBytes();
+        return buffer.readableBytes();
     }
 }

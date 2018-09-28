@@ -23,7 +23,7 @@ public interface BufferHolder {
      * The buffer contained by this object.
      * @return The buffer contained by this object.
      */
-    Buffer getContent();
+    Buffer content();
 
     /**
      * Duplicates this {@link BufferHolder}.
@@ -33,7 +33,7 @@ public interface BufferHolder {
 
     /**
      * Returns a new {@link BufferHolder} which contains the specified {@code content}.
-     * @param content The {@link Buffer} to replace what is currently returned by {@link #getContent()}.
+     * @param content The {@link Buffer} to replace what is currently returned by {@link #content()}.
      * @return a new {@link BufferHolder} which contains the specified {@code content}.
      */
     BufferHolder replace(Buffer content);

@@ -39,54 +39,54 @@ public final class EmptyBuffer implements Buffer {
     }
 
     @Override
-    public int getCapacity() {
+    public int capacity() {
         return 0;
     }
 
     @Override
-    public Buffer setCapacity(int newCapacity) {
+    public Buffer capacity(int newCapacity) {
         throw new ReadOnlyBufferException();
     }
 
     @Override
-    public int getMaxCapacity() {
+    public int maxCapacity() {
         return 0;
     }
 
     @Override
-    public int getReaderIndex() {
+    public int readerIndex() {
         return 0;
     }
 
     @Override
-    public Buffer setReaderIndex(int readerIndex) {
+    public Buffer readerIndex(int readerIndex) {
         checkIndex(readerIndex);
         return this;
     }
 
     @Override
-    public int getWriterIndex() {
+    public int writerIndex() {
         return 0;
     }
 
     @Override
-    public Buffer setWriterIndex(int writerIndex) {
+    public Buffer writerIndex(int writerIndex) {
         checkIndex(writerIndex);
         return this;
     }
 
     @Override
-    public int getReadableBytes() {
+    public int readableBytes() {
         return 0;
     }
 
     @Override
-    public int getWritableBytes() {
+    public int writableBytes() {
         return 0;
     }
 
     @Override
-    public int getMaxWritableBytes() {
+    public int maxWritableBytes() {
         return 0;
     }
 
@@ -318,7 +318,7 @@ public final class EmptyBuffer implements Buffer {
 
     @Override
     public Buffer setBytes(int index, Buffer src) {
-        checkIndex(index, src.getReadableBytes());
+        checkIndex(index, src.readableBytes());
         return this;
     }
 
@@ -478,20 +478,20 @@ public final class EmptyBuffer implements Buffer {
 
     @Override
     public Buffer readBytes(Buffer dst) {
-        checkLength(dst.getWritableBytes());
+        checkLength(dst.writableBytes());
         return this;
     }
 
     @Override
     public Buffer readBytes(Buffer dst, int length) {
-        checkLength(dst.getWritableBytes());
+        checkLength(dst.writableBytes());
         checkLength(length);
         return this;
     }
 
     @Override
     public Buffer readBytes(Buffer dst, int dstIndex, int length) {
-        checkLength(dst.getWritableBytes());
+        checkLength(dst.writableBytes());
         checkLength(length);
         return this;
     }
@@ -588,20 +588,20 @@ public final class EmptyBuffer implements Buffer {
 
     @Override
     public Buffer writeBytes(Buffer src) {
-        checkLength(src.getReadableBytes());
+        checkLength(src.readableBytes());
         return this;
     }
 
     @Override
     public Buffer writeBytes(Buffer src, int length) {
-        checkLength(src.getReadableBytes());
+        checkLength(src.readableBytes());
         checkLength(length);
         return this;
     }
 
     @Override
     public Buffer writeBytes(Buffer src, int srcIndex, int length) {
-        checkLength(src.getReadableBytes());
+        checkLength(src.readableBytes());
         checkLength(length);
         return this;
     }
@@ -698,7 +698,7 @@ public final class EmptyBuffer implements Buffer {
     }
 
     @Override
-    public int getNioBufferCount() {
+    public int nioBufferCount() {
         return 1;
     }
 
@@ -746,12 +746,12 @@ public final class EmptyBuffer implements Buffer {
     }
 
     @Override
-    public byte[] getArray() {
+    public byte[] array() {
         return EMPTY_BYTES;
     }
 
     @Override
-    public int getArrayOffset() {
+    public int arrayOffset() {
         return 0;
     }
 

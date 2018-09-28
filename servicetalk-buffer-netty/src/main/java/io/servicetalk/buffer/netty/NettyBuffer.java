@@ -40,55 +40,55 @@ class NettyBuffer<T extends ByteBuf> implements Buffer {
     }
 
     @Override
-    public int getCapacity() {
+    public int capacity() {
         return buffer.capacity();
     }
 
     @Override
-    public Buffer setCapacity(int newCapacity) {
+    public Buffer capacity(int newCapacity) {
         buffer.capacity(newCapacity);
         return this;
     }
 
     @Override
-    public int getMaxCapacity() {
+    public int maxCapacity() {
         return buffer.maxCapacity();
     }
 
     @Override
-    public int getReaderIndex() {
+    public int readerIndex() {
         return buffer.readerIndex();
     }
 
     @Override
-    public Buffer setReaderIndex(int readerIndex) {
+    public Buffer readerIndex(int readerIndex) {
         buffer.readerIndex(readerIndex);
         return this;
     }
 
     @Override
-    public int getWriterIndex() {
+    public int writerIndex() {
         return buffer.writerIndex();
     }
 
     @Override
-    public Buffer setWriterIndex(int writerIndex) {
+    public Buffer writerIndex(int writerIndex) {
         buffer.writerIndex(writerIndex);
         return this;
     }
 
     @Override
-    public int getReadableBytes() {
+    public int readableBytes() {
         return buffer.readableBytes();
     }
 
     @Override
-    public int getWritableBytes() {
+    public int writableBytes() {
         return buffer.writableBytes();
     }
 
     @Override
-    public int getMaxWritableBytes() {
+    public int maxWritableBytes() {
         return buffer.maxWritableBytes();
     }
 
@@ -211,14 +211,14 @@ class NettyBuffer<T extends ByteBuf> implements Buffer {
 
     @Override
     public Buffer getBytes(int index, Buffer dst) {
-        getBytes(index, dst, dst.getWritableBytes());
+        getBytes(index, dst, dst.writableBytes());
         return this;
     }
 
     @Override
     public Buffer getBytes(int index, Buffer dst, int length) {
-        getBytes(index, dst, dst.getWriterIndex(), length);
-        dst.setWriterIndex(dst.getWriterIndex() + length);
+        getBytes(index, dst, dst.writerIndex(), length);
+        dst.writerIndex(dst.writerIndex() + length);
         return this;
     }
 
@@ -331,14 +331,14 @@ class NettyBuffer<T extends ByteBuf> implements Buffer {
 
     @Override
     public Buffer setBytes(int index, Buffer src) {
-        setBytes(index, src, src.getReadableBytes());
+        setBytes(index, src, src.readableBytes());
         return this;
     }
 
     @Override
     public Buffer setBytes(int index, Buffer src, int length) {
-        setBytes(index, src, src.getReaderIndex(), length);
-        src.setReaderIndex(src.getReaderIndex() + length);
+        setBytes(index, src, src.readerIndex(), length);
+        src.readerIndex(src.readerIndex() + length);
         return this;
     }
 
@@ -516,7 +516,7 @@ class NettyBuffer<T extends ByteBuf> implements Buffer {
 
     @Override
     public Buffer readBytes(Buffer dst, int length) {
-        readBytes(dst, dst.getReaderIndex(), length);
+        readBytes(dst, dst.readerIndex(), length);
         return this;
     }
 
@@ -636,13 +636,13 @@ class NettyBuffer<T extends ByteBuf> implements Buffer {
 
     @Override
     public Buffer writeBytes(Buffer src) {
-        writeBytes(src, src.getReadableBytes());
+        writeBytes(src, src.readableBytes());
         return this;
     }
 
     @Override
     public Buffer writeBytes(Buffer src, int length) {
-        writeBytes(src, src.getReaderIndex(), length);
+        writeBytes(src, src.readerIndex(), length);
         return this;
     }
 
@@ -747,7 +747,7 @@ class NettyBuffer<T extends ByteBuf> implements Buffer {
     }
 
     @Override
-    public int getNioBufferCount() {
+    public int nioBufferCount() {
         return buffer.nioBufferCount();
     }
 
@@ -792,12 +792,12 @@ class NettyBuffer<T extends ByteBuf> implements Buffer {
     }
 
     @Override
-    public byte[] getArray() {
+    public byte[] array() {
         return buffer.array();
     }
 
     @Override
-    public int getArrayOffset() {
+    public int arrayOffset() {
         return buffer.arrayOffset();
     }
 

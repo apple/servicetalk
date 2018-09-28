@@ -39,7 +39,7 @@ final class DefaultHttpRequestMethod implements HttpRequestMethod {
 
     @Override
     public void writeNameTo(final Buffer buffer) {
-        buffer.writeBytes(name, name.getReaderIndex(), name.getReadableBytes());
+        buffer.writeBytes(name, name.readerIndex(), name.readableBytes());
     }
 
     @Override
