@@ -75,7 +75,7 @@ final class DefaultContainerResponseWriter implements ContainerResponseWriter {
 
     private static final int STATE_REQUEST_HANDLING = 0;
     private static final int STATE_RESPONSE_WRITING = 1;
-    private static final int STATE_REQUEST_CANCELLED = 3;
+    private static final int STATE_REQUEST_CANCELLED = 2;
 
     private static final AtomicIntegerFieldUpdater<DefaultContainerResponseWriter> stateUpdater =
             newUpdater(DefaultContainerResponseWriter.class, "state");
