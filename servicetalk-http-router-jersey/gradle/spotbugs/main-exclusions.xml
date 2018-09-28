@@ -41,4 +41,11 @@
       <Field name="requestScope"/>
     </Or>
   </Match>
+
+  <!-- False positive. Everything involved has a default @NonNull from the package-info.java -->
+  <Match>
+    <Class name="io.servicetalk.http.router.jersey.DefaultContainerResponseWriter"/>
+    <Bug pattern="NP_PARAMETER_MUST_BE_NONNULL_BUT_MARKED_AS_NULLABLE"/>
+    <Local name="timeoutHandler"/>
+  </Match>
 </FindBugsFilter>
