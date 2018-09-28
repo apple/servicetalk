@@ -329,9 +329,7 @@ class ServiceTalkLibraryPlugin extends ServiceTalkCorePlugin {
         }
       }
 
-      if (project.hasProperty("releaseBuild") &&
-          System.getenv("BINTRAY_USER") && System.getenv("BINTRAY_KEY")) {
-
+      if (bintray.publications) {
         bintray {
           publications = ["mavenJava", "testFixtures"]
         }
