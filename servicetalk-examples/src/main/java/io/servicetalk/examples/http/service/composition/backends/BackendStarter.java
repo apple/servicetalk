@@ -54,7 +54,7 @@ final class BackendStarter {
         final ServerContext ctx = newHttpServerBuilder(listenPort)
                 .executionContext(executionContext)
                 .listenStreamingAndAwait(service);
-        LOGGER.info("Started {} listening on {}.", name, ctx.getListenAddress());
+        LOGGER.info("Started {} listening on {}.", name, ctx.listenAddress());
         return ctx;
     }
 

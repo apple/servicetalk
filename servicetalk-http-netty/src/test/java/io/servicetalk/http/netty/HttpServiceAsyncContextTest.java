@@ -99,8 +99,8 @@ public class HttpServiceAsyncContextTest {
                                 .setMaxPipelinedRequests(numRequests);
                         StreamingHttpConnection connection = (useImmediate ?
                                 connectionBuilder.executionContext(immediateExecutor)
-                                        .buildStreaming(ctx.getListenAddress()) :
-                                connectionBuilder.buildStreaming(ctx.getListenAddress())).toFuture().get();
+                                        .buildStreaming(ctx.listenAddress()) :
+                                connectionBuilder.buildStreaming(ctx.listenAddress())).toFuture().get();
                         barrier.await();
                         for (int x = 0; x < numRequests; ++x) {
                             makeClientRequestWithId(connection, "thread=" + finalI + " request=" + x);
@@ -155,7 +155,7 @@ public class HttpServiceAsyncContextTest {
                 .listenStreamingAndAwait(filter));
         try {
             StreamingHttpConnection connection = compositeCloseable.append(new DefaultHttpConnectionBuilder<SocketAddress>()
-                    .buildStreaming(ctx.getListenAddress()).toFuture().get());
+                    .buildStreaming(ctx.listenAddress()).toFuture().get());
             makeClientRequestWithId(connection, "1");
         } finally {
             compositeCloseable.close();
@@ -174,7 +174,7 @@ public class HttpServiceAsyncContextTest {
                 .listenStreamingAndAwait(service));
         try {
             StreamingHttpConnection connection = compositeCloseable.append(
-                    new DefaultHttpConnectionBuilder<SocketAddress>().buildStreaming(ctx.getListenAddress())
+                    new DefaultHttpConnectionBuilder<SocketAddress>().buildStreaming(ctx.listenAddress())
                             .toFuture().get());
             makeClientRequestWithId(connection, "1");
         } finally {

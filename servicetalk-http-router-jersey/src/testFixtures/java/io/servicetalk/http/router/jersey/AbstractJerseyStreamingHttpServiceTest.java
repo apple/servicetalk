@@ -106,7 +106,7 @@ public abstract class AbstractJerseyStreamingHttpServiceTest {
                 .executionContext(getServerExecutionContext())
                 .listenStreamingAndAwait(router);
 
-        final InetSocketAddress serverAddress = (InetSocketAddress) serverContext.getListenAddress();
+        final InetSocketAddress serverAddress = (InetSocketAddress) serverContext.listenAddress();
         httpClient = HttpClients.forSingleAddress(of(serverAddress)).buildStreaming();
     }
 
@@ -131,7 +131,7 @@ public abstract class AbstractJerseyStreamingHttpServiceTest {
     protected abstract Application getApplication();
 
     protected String host() {
-        return "localhost:" + ((InetSocketAddress) serverContext.getListenAddress()).getPort();
+        return "localhost:" + ((InetSocketAddress) serverContext.listenAddress()).getPort();
     }
 
     protected boolean isStreamingJsonEnabled() {

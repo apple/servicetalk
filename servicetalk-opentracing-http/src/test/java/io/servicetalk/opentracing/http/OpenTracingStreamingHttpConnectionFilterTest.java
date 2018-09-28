@@ -60,7 +60,7 @@ public class OpenTracingStreamingHttpConnectionFilterTest {
         DefaultInMemoryTracer tracer = new DefaultInMemoryTracer.Builder(
                 new AsyncContextInMemoryScopeManager(newKeyWithDebugToString("tracer"))).build();
         try (ServerContext context = buildServer()) {
-            try (HttpClient client = forSingleAddress(of((InetSocketAddress) context.getListenAddress()))
+            try (HttpClient client = forSingleAddress(of((InetSocketAddress) context.listenAddress()))
                     .appendConnectionFilter(conn -> new OpenTracingStreamingHttpConnectionFilter(
                             tracer, "testClient", conn)).build()) {
                 HttpResponse response = client.request(client.get("/")).toFuture().get();
@@ -82,7 +82,7 @@ public class OpenTracingStreamingHttpConnectionFilterTest {
         DefaultInMemoryTracer tracer = new DefaultInMemoryTracer.Builder(
                 new AsyncContextInMemoryScopeManager(newKeyWithDebugToString("tracer"))).build();
         try (ServerContext context = buildServer()) {
-            try (HttpClient client = forSingleAddress(of((InetSocketAddress) context.getListenAddress()))
+            try (HttpClient client = forSingleAddress(of((InetSocketAddress) context.listenAddress()))
                     .appendConnectionFilter(conn -> new OpenTracingStreamingHttpConnectionFilter(
                             tracer, "testClient", conn)).build()) {
                 try (InMemoryScope clientScope = tracer.buildSpan("test").startActive(true)) {

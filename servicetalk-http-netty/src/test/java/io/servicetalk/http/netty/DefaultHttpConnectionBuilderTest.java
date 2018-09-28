@@ -52,7 +52,7 @@ public class DefaultHttpConnectionBuilderTest extends AbstractEchoServerBasedHtt
         ConnectionFactory<SocketAddress, StreamingHttpConnection> cf =
                 prepareBuilder(1).executionContext(CTX).asConnectionFactory();
         Single<StreamingHttpConnection> connectionSingle =
-                cf.newConnection(serverContext.getListenAddress());
+                cf.newConnection(serverContext.listenAddress());
         makeRequestValidateResponseAndClose(awaitIndefinitelyNonNull(connectionSingle));
     }
 
@@ -86,7 +86,7 @@ public class DefaultHttpConnectionBuilderTest extends AbstractEchoServerBasedHtt
         Single<DummyFanoutFilter> connectionSingle = prepareBuilder(10)
                 .executionContext(CTX)
                 .asConnectionFactory()
-                .newConnection(serverContext.getListenAddress())
+                .newConnection(serverContext.listenAddress())
                 .map(DummyFanoutFilter::new);
 
         DummyFanoutFilter connection = awaitIndefinitelyNonNull(connectionSingle);
@@ -101,7 +101,7 @@ public class DefaultHttpConnectionBuilderTest extends AbstractEchoServerBasedHtt
         DefaultHttpConnectionBuilder<SocketAddress> defaultBuilder = prepareBuilder(pipelinedRequests);
 
         Single<StreamingHttpConnection> connectionSingle =
-                defaultBuilder.executionContext(CTX).buildStreaming(serverContext.getListenAddress());
+                defaultBuilder.executionContext(CTX).buildStreaming(serverContext.listenAddress());
 
         makeRequestValidateResponseAndClose(awaitIndefinitelyNonNull(connectionSingle));
     }

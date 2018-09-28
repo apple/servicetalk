@@ -74,7 +74,7 @@ public final class NettyServerContext implements ServerContext {
     }
 
     @Override
-    public SocketAddress getListenAddress() {
+    public SocketAddress listenAddress() {
         return listenChannel.localAddress();
     }
 

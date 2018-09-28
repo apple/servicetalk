@@ -45,7 +45,7 @@ public final class HelloWorldJaxRsServer {
         ServerContext serverContext = HttpServers.newHttpServerBuilder(8080)
                 .listenStreamingAndAwait(new HttpJerseyRouterBuilder().build(new HelloWorldJaxrsApplication()));
 
-        LOGGER.info("listening on {}", serverContext.getListenAddress());
+        LOGGER.info("listening on {}", serverContext.listenAddress());
 
         // Stop listening/accepting more sockets and gracefully shutdown all open sockets.
         awaitIndefinitely(serverContext.onClose());

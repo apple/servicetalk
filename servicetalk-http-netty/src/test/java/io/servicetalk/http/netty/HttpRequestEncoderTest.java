@@ -443,7 +443,7 @@ public class HttpRequestEncoderTest {
 
             Connection<Object, Object> conn = resources.prepend(awaitIndefinitelyNonNull(
                     new TcpConnector<>(cConfig.getTcpClientConfig().asReadOnly(), initializer, () -> predicate, null,
-                            closeHandler).connect(CEC, serverContext.getListenAddress(), false)));
+                            closeHandler).connect(CEC, serverContext.listenAddress(), false)));
 
             // The server needs to wait to close the conneciton until after the client has established the connection.
             serverChannelLatch.await();
