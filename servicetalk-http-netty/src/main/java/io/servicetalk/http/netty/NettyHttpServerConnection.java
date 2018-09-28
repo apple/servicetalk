@@ -40,6 +40,7 @@ import io.servicetalk.transport.netty.internal.Connection;
 import io.servicetalk.transport.netty.internal.FlushStrategy;
 import io.servicetalk.transport.netty.internal.NettyConnection;
 import io.servicetalk.transport.netty.internal.NettyConnectionContext;
+import io.servicetalk.transport.netty.internal.NoOpWriteEventsListener;
 
 import io.netty.channel.Channel;
 import org.reactivestreams.Subscriber;
@@ -69,17 +70,17 @@ final class NettyHttpServerConnection extends HttpServiceContext implements Nett
     private final StreamingHttpService service;
     private final NettyConnection<Object, Object> connection;
     private BiFunction<HttpRequestMetaData, Publisher<Object>, StreamingHttpRequest> packer;
-    private final CompositeFlushStrategy flushStrategy;
+    private final CompositeFlushStrategy compositeFlushStrategy;
 
     NettyHttpServerConnection(final NettyConnection<Object, Object> connection, final StreamingHttpService service,
-                              final CompositeFlushStrategy flushStrategy, final HttpHeadersFactory headersFactory,
-                              final BufferAllocator allocator) {
+                              final CompositeFlushStrategy compositeFlushStrategy,
+                              final HttpHeadersFactory headersFactory, final BufferAllocator allocator) {
         super(new DefaultHttpResponseFactory(headersFactory, allocator),
                 new DefaultStreamingHttpResponseFactory(headersFactory, allocator),
                 new DefaultBlockingStreamingHttpResponseFactory(headersFactory, allocator));
         this.connection = connection;
         this.service = service;
-        this.flushStrategy = flushStrategy;
+        this.compositeFlushStrategy = compositeFlushStrategy;
         final BufferAllocator alloc = connection.executionContext().bufferAllocator();
         packer = (HttpRequestMetaData hdr, Publisher<Object> pandt) -> spliceRequest(alloc, hdr, pandt);
     }
@@ -98,7 +99,7 @@ final class NettyHttpServerConnection extends HttpServiceContext implements Nett
 
     @Override
     public Cancellable updateFlushStrategy(final UnaryOperator<FlushStrategy> strategyProvider) {
-        return flushStrategy.updateFlushStrategy(strategyProvider);
+        return compositeFlushStrategy.updateFlushStrategy(strategyProvider);
     }
 
     @Override
@@ -189,7 +190,7 @@ final class NettyHttpServerConnection extends HttpServiceContext implements Nett
                     public void onNext(final Object o) {
                         if (o instanceof HttpResponseMetaData) {
                             try {
-                                flushStrategy.beforeEmitMetadata();
+                                compositeFlushStrategy.beforeEmitMetadata();
                             } finally {
                                 subscriber.onNext(o);
                             }
@@ -198,7 +199,7 @@ final class NettyHttpServerConnection extends HttpServiceContext implements Nett
                             // If subscriber throws from onNext, connection should get closed and hence flushStrategy
                             // should get the terminal notification. Any further changes are insignificant, so we do
                             // not care to send the following callback.
-                            flushStrategy.afterEmitTrailers();
+                            compositeFlushStrategy.afterEmitTrailers();
                         } else {
                             subscriber.onNext(o);
                         }
@@ -302,9 +303,9 @@ final class NettyHttpServerConnection extends HttpServiceContext implements Nett
      */
     private static final class CompositeFlushStrategy implements FlushStrategy, FlushStrategy.WriteEventsListener {
 
-        private static final WriteEventsListener INIT = new NoopWriteEventsListener();
-        private static final WriteEventsListener CANCELLED = new NoopWriteEventsListener();
-        private static final WriteEventsListener TERMINATED = new NoopWriteEventsListener();
+        private static final WriteEventsListener INIT = new NoOpWriteEventsListener() { };
+        private static final WriteEventsListener CANCELLED = new NoOpWriteEventsListener() { };
+        private static final WriteEventsListener TERMINATED = new NoOpWriteEventsListener() { };
 
         private static final AtomicReferenceFieldUpdater<CompositeFlushStrategy, FlushStrategy> flushStrategyUpdater =
                 newUpdater(CompositeFlushStrategy.class, FlushStrategy.class, "flushStrategy");
@@ -338,7 +339,7 @@ final class NettyHttpServerConnection extends HttpServiceContext implements Nett
             /*
              * FlushStrategy#apply() MUST be called before any item is written on the connection. Since, we
              * read-transform-write for Http server, it means this method MUST be called before we start reading data.
-             * Since, there is no way to update FLushStrategy for the connection before we read the first request, this
+             * Since, there is no way to update FlushStrategy for the connection before we read the first request, this
              * method MUST be called before FlushStrategy is updated. So, we simply use the originalStrategy here.
              */
             updateListener(originalStrategy.apply(sender));
@@ -347,7 +348,7 @@ final class NettyHttpServerConnection extends HttpServiceContext implements Nett
 
         @Override
         public void writeStarted() {
-            // Noop. We eagerly send writeStarted to the listener in apply() or in updateFlushStrategy().
+            // Noop. We eagerly send writeStarted to any new listener.
         }
 
         @Override
@@ -403,28 +404,6 @@ final class NettyHttpServerConnection extends HttpServiceContext implements Nett
                     return;
                 }
             }
-        }
-    }
-
-    private static final class NoopWriteEventsListener implements FlushStrategy.WriteEventsListener {
-        @Override
-        public void writeStarted() {
-            // noop
-        }
-
-        @Override
-        public void itemWritten() {
-            // noop
-        }
-
-        @Override
-        public void writeTerminated() {
-            // noop
-        }
-
-        @Override
-        public void writeCancelled() {
-            // noop
         }
     }
 }

@@ -71,8 +71,9 @@ public class FlushStrategyOverrideTest {
     @Before
     public void setUp() throws Exception {
         service = new FlushingService();
-        serverCtx = new DefaultHttpServerStarter()
-                .startStreaming(ctx, 0, service)
+        serverCtx = HttpServers.newHttpServerBuilder(0)
+                .executionContext(ctx)
+                .listenStreaming(service)
                 .toFuture().get();
         InetSocketAddress serverAddr = (InetSocketAddress) serverCtx.getListenAddress();
         client = forSingleAddress(new NoopSD(serverAddr), serverAddr)

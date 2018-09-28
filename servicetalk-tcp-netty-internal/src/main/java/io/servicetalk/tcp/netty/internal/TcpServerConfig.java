@@ -30,6 +30,7 @@ import java.util.Map;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.transport.netty.internal.SSLContextFactory.forServer;
+import static java.util.Objects.requireNonNull;
 
 /**
  * Configuration for TCP based servers. <p>Internal use only.</p>
@@ -155,7 +156,7 @@ public final class TcpServerConfig extends ReadOnlyTcpServerConfig {
      * @return {@code this}.
      */
     public TcpServerConfig setFlushStrategy(FlushStrategy flushStrategy) {
-        this.flushStrategy = flushStrategy;
+        this.flushStrategy = requireNonNull(flushStrategy);
         return this;
     }
 

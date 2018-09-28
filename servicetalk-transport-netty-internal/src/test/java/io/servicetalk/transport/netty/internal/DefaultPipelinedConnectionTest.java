@@ -33,7 +33,7 @@ import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.Publisher.just;
 import static io.servicetalk.concurrent.api.Single.success;
 import static io.servicetalk.transport.netty.internal.CloseHandler.NOOP_CLOSE_HANDLER;
-import static io.servicetalk.transport.netty.internal.FlushStrategy.defaultFlushStrategy;
+import static io.servicetalk.transport.netty.internal.FlushStrategies.defaultFlushStrategy;
 import static java.lang.Integer.MAX_VALUE;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;

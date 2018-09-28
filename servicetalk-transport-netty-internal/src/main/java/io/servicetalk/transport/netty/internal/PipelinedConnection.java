@@ -33,8 +33,9 @@ import java.util.function.Supplier;
 public interface PipelinedConnection<Req, Resp> extends NettyConnectionContext {
 
     /**
-     * Writes a {@link Req} object on this connection.<p>
-     *     Use {@link #request(Object, Supplier)} to override the predicate used to mark the end of response.
+     * Writes a {@link Req} object on this connection.
+     * <p>
+     * Use {@link #request(Object, Supplier)} to override the predicate used to mark the end of response.
      *
      * @param request to write.
      * @return Response {@link Publisher} for this request.
@@ -42,8 +43,9 @@ public interface PipelinedConnection<Req, Resp> extends NettyConnectionContext {
     Publisher<Resp> request(Req request);
 
     /**
-     * Writes on this connection a request encapsulated in the passed {@link Writer}.<p>
-     *     Use {@link #request(Writer, Supplier)} to override the predicate used to mark the end of response.
+     * Writes on this connection a request encapsulated in the passed {@link Writer}.
+     * <p>
+     * Use {@link #request(Writer, Supplier)} to override the predicate used to mark the end of response.
      *
      * @param writer to write the request.
      * @return Response {@link Publisher} for this request.
@@ -51,7 +53,7 @@ public interface PipelinedConnection<Req, Resp> extends NettyConnectionContext {
     Publisher<Resp> request(Writer writer);
 
     /**
-     * Writes on this connection a request encapsulated in the passed {@link Writer}.<p>
+     * Writes on this connection a request encapsulated in the passed {@link Writer}.
      *
      * @param writer to write the request.
      * @param terminalMsgPredicateSupplier {@link Supplier} of a dynamic {@link Predicate} for this request that will
@@ -73,7 +75,7 @@ public interface PipelinedConnection<Req, Resp> extends NettyConnectionContext {
     /**
      * Send request produced by a {@link Single} on this connection.
      * <p>
-     *     Use {@link #request(Single, Supplier)} to override the predicate used to mark the end of response.
+     * Use {@link #request(Single, Supplier)} to override the predicate used to mark the end of response.
      *
      * @param request to write.
      * @return Response {@link Publisher} for this request.
@@ -93,7 +95,7 @@ public interface PipelinedConnection<Req, Resp> extends NettyConnectionContext {
     /**
      * Send request(s) produced by a {@link Publisher} on this connection.
      * <p>
-     *     Use {@link #request(Publisher, Supplier)} to override the predicate used to mark the end of response.
+     * Use {@link #request(Publisher, Supplier)} to override the predicate used to mark the end of response.
      *
      * @param request {@link Publisher} producing the request(s) to write.
      * @return Response {@link Publisher} for this request.
@@ -113,8 +115,8 @@ public interface PipelinedConnection<Req, Resp> extends NettyConnectionContext {
     /**
      * Send request(s) produced by a {@link Publisher} on this connection.
      * <p>
-     *     Use {@link #request(Publisher, Supplier, Supplier)} to override the predicate used to mark the end of
-     *     response.
+     * Use {@link #request(Publisher, Supplier, Supplier)} to override the predicate used to mark the end of
+     * response.
      *
      * @param request {@link Publisher} producing the request(s) to write.
      * @param requestNSupplierFactory A {@link Supplier} of {@link RequestNSupplier} for this request.
@@ -135,9 +137,11 @@ public interface PipelinedConnection<Req, Resp> extends NettyConnectionContext {
                             Supplier<Predicate<Resp>> terminalMsgPredicateSupplier);
 
     /**
-     * A writer to write a request on a connection. <p>
-     *     The order in which {@link #write()} is invoked is the order in which the items will be written on the
-     *     connection, so, this can be used to make decisions based on ordering, if required.
+     * A writer to write a request on a connection.
+     * <p>
+     * The order in which {@link #write()} is invoked is the order in which the items will be written on the
+     * connection, so, this can be used to make decisions based on ordering, if required.
+     *
      * <h2>Thread safety.</h2>
      * {@link #write()} will never be invoked concurrently. Any state only visible to this method over multiple
      * invocations can assume memory visibility.

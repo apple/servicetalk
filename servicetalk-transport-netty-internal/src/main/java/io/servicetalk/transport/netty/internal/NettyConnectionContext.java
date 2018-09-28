@@ -44,9 +44,9 @@ public interface NettyConnectionContext extends ConnectionContext {
     /**
      * Returns a {@link Publisher} that emits various {@link ConnectionEvent}s happening on this connection.
      * <p>
-     *     <b>All methods of a {@link Subscriber} to this {@link Publisher} will be invoked on the event loop.
-     *     Presence of blocking operations within these methods will negatively impact responsiveness of that event
-     *     loop.</b>
+     * <b>All methods of a {@link Subscriber} to this {@link Publisher} will be invoked on the event loop.
+     * Presence of blocking operations within these methods will negatively impact responsiveness of that event
+     * loop.</b>
      *
      * <h2>Flow control</h2>
      * Typically consuming {@link ConnectionEvent}s from the returned {@link Publisher} is not expected to be flow

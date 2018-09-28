@@ -27,6 +27,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+import java.util.stream.Stream;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.internal.EmptySubscription.EMPTY_SUBSCRIPTION;
@@ -42,20 +43,18 @@ final class ConnectionEventPublisher extends Publisher<ConnectionEvent> implemen
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ConnectionEventPublisher.class);
     private static final SubscriberHolder[] CLOSED = new SubscriberHolder[0];
-    private static final AtomicReferenceFieldUpdater<ConnectionEventPublisher, Object> subscribersUpdater =
-            newUpdater(ConnectionEventPublisher.class, Object.class, "subscribers");
+    private static final AtomicReferenceFieldUpdater<ConnectionEventPublisher, SubscriberHolder[]> subscribersUpdater =
+            newUpdater(ConnectionEventPublisher.class, SubscriberHolder[].class, "subscribers");
 
     private final EventLoop eventLoop;
 
     /**
-     * Always an array of {@link SubscriberHolder}. Raw type in order to use {@link AtomicReferenceFieldUpdater}.
-     * <p>
-     *     If {@link Subscriber}s are {@link Subscription#cancel() cancelled} then it will be removed from the array
-     *     when a new {@link Subscriber} arrives.
+     * If {@link Subscriber}s are {@link Subscription#cancel() cancelled} then it will be removed from the array
+     * when a new {@link Subscriber} arrives.
      */
     @SuppressWarnings("unused")
     @Nullable
-    private volatile Object subscribers;
+    private volatile SubscriberHolder[] subscribers;
 
     /**
      * For delayed Subscribers that arrive after a ReadComplete event is received, we should send one such event.
@@ -86,21 +85,11 @@ final class ConnectionEventPublisher extends Publisher<ConnectionEvent> implemen
             if (current == null) {
                 next = new SubscriberHolder[]{holder};
             } else {
-                int nextLength = 1;
                 // Remove terminated (cancelled) subscribers while copying.
-                for (final SubscriberHolder h : current) {
-                    if (h.isActive()) {
-                        nextLength++;
-                    }
-                }
-                next = new SubscriberHolder[nextLength];
-                next[--nextLength] = holder;
-                for (int i = current.length - 1; i >= 0; i--) {
-                    final SubscriberHolder h = current[i];
-                    if (h.isActive()) {
-                        next[--nextLength] = h;
-                    }
-                }
+                next = Stream.of(current)
+                        .filter(SubscriberHolder::isActive)
+                        .toArray(length -> new SubscriberHolder[length + 1]);
+                next[next.length - 1] = holder;
             }
             if (casSubscribers(current, next)) {
                 break;
@@ -116,7 +105,7 @@ final class ConnectionEventPublisher extends Publisher<ConnectionEvent> implemen
      * Publishes {@link ConnectionEvent#ReadComplete} to all active {@link Subscriber}s having sufficient demand.
      */
     void publishReadComplete() {
-        assert eventLoop.inEventLoop();
+        assert eventLoop.inEventLoop() : "Must be called from the eventloop";
         if (!oneReadCompleteReceived) {
             oneReadCompleteReceived = true;
         }
@@ -131,8 +120,8 @@ final class ConnectionEventPublisher extends Publisher<ConnectionEvent> implemen
 
     @Override
     public void close() {
-        assert eventLoop.inEventLoop();
-        SubscriberHolder[] subscribers = (SubscriberHolder[]) subscribersUpdater.getAndSet(this, CLOSED);
+        assert eventLoop.inEventLoop() : "Must be called from the eventloop";
+        SubscriberHolder[] subscribers = subscribersUpdater.getAndSet(this, CLOSED);
         if (subscribers == null || subscribers == CLOSED) {
             return;
         }
@@ -143,7 +132,7 @@ final class ConnectionEventPublisher extends Publisher<ConnectionEvent> implemen
 
     @Nullable
     private SubscriberHolder[] getSubscribers() {
-        return (SubscriberHolder[]) subscribers;
+        return subscribers;
     }
 
     private boolean casSubscribers(@Nullable SubscriberHolder[] expected, SubscriberHolder[] newValue) {

@@ -26,6 +26,7 @@ import java.net.SocketOption;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.transport.netty.internal.SSLContextFactory.forClient;
+import static java.util.Objects.requireNonNull;
 
 /**
  * Configuration for TCP based servers. <p>Internal use only.</p>
@@ -120,7 +121,7 @@ public final class TcpClientConfig extends ReadOnlyTcpClientConfig {
      * @return {@code this}.
      */
     public TcpClientConfig setFlushStrategy(FlushStrategy flushStrategy) {
-        this.flushStrategy = flushStrategy;
+        this.flushStrategy = requireNonNull(flushStrategy);
         return this;
     }
 

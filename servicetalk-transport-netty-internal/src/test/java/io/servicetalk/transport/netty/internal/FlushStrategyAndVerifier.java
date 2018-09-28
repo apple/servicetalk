@@ -33,17 +33,17 @@ final class FlushStrategyAndVerifier {
     }
 
     static FlushStrategyAndVerifier flushOnEach() {
-        return new FlushStrategyAndVerifier("flush-on-each", FlushStrategy.flushOnEach(),
+        return new FlushStrategyAndVerifier("flush-on-each", FlushStrategies.flushOnEach(),
                 index -> (index + 1) % 2 == 0);
     }
 
     static FlushStrategyAndVerifier flushBeforeEnd(int dataLength) {
-        return new FlushStrategyAndVerifier("flush-before-end", FlushStrategy.flushOnEnd(),
+        return new FlushStrategyAndVerifier("flush-before-end", FlushStrategies.flushOnEnd(),
                 index -> index == dataLength);
     }
 
     static FlushStrategyAndVerifier batchFlush(int batchSize) {
-        return new FlushStrategyAndVerifier("batch-flush", FlushStrategy.batchFlush(batchSize, never()),
+        return new FlushStrategyAndVerifier("batch-flush", FlushStrategies.batchFlush(batchSize, never()),
                 index -> (index + 1) % (batchSize + 1) == 0);
     }
 

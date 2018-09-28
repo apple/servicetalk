@@ -27,7 +27,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.transport.netty.internal.FlushStrategy.defaultFlushStrategy;
+import static io.servicetalk.transport.netty.internal.FlushStrategies.defaultFlushStrategy;
 import static java.util.Collections.unmodifiableMap;
 
 /**

@@ -58,7 +58,7 @@ import static io.servicetalk.transport.netty.internal.BuilderUtils.toNettyAddres
 import static io.servicetalk.transport.netty.internal.CloseHandler.NOOP_CLOSE_HANDLER;
 import static io.servicetalk.transport.netty.internal.DefaultNettyConnectionContext.newContext;
 import static io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutors.toEventLoopAwareNettyIoExecutor;
-import static io.servicetalk.transport.netty.internal.FlushStrategy.defaultFlushStrategy;
+import static io.servicetalk.transport.netty.internal.FlushStrategies.defaultFlushStrategy;
 import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 

@@ -23,9 +23,9 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
 
-import static io.servicetalk.transport.netty.internal.FlushStrategy.flushOnEach;
-import static io.servicetalk.transport.netty.internal.FlushStrategy.flushOnEnd;
-import static io.servicetalk.transport.netty.internal.FlushStrategy.flushWith;
+import static io.servicetalk.transport.netty.internal.FlushStrategies.flushOnEach;
+import static io.servicetalk.transport.netty.internal.FlushStrategies.flushOnEnd;
+import static io.servicetalk.transport.netty.internal.FlushStrategies.flushWith;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
@@ -161,7 +161,7 @@ public class FlushStrategiesTest {
     }
 
     private void setupForBatch(int batchSize) {
-        setupFor(FlushStrategy.batchFlush(batchSize, durationSource.map(s -> 1L)));
+        setupFor(FlushStrategies.batchFlush(batchSize, durationSource.map(s -> 1L)));
     }
 
     private void testBatch(int batchSize, int sendItemCount) {

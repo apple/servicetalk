@@ -49,7 +49,7 @@ import static io.netty.channel.ChannelOption.AUTO_CLOSE;
 import static io.servicetalk.transport.netty.internal.BuilderUtils.toNettyAddress;
 import static io.servicetalk.transport.netty.internal.DefaultNettyConnectionContext.newContext;
 import static io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutors.toEventLoopAwareNettyIoExecutor;
-import static io.servicetalk.transport.netty.internal.FlushStrategy.defaultFlushStrategy;
+import static io.servicetalk.transport.netty.internal.FlushStrategies.defaultFlushStrategy;
 import static io.servicetalk.transport.netty.internal.NettyIoExecutors.fromNettyEventLoop;
 import static java.util.Objects.requireNonNull;
 
