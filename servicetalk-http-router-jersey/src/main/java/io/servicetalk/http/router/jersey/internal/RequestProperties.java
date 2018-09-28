@@ -16,8 +16,10 @@
 package io.servicetalk.http.router.jersey.internal;
 
 import io.servicetalk.buffer.api.Buffer;
+import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.concurrent.internal.DelayedCancellable;
 import io.servicetalk.http.router.jersey.BufferPublisherInputStream;
 
 import javax.annotation.Nullable;
@@ -32,6 +34,9 @@ import static java.util.Objects.requireNonNull;
 public final class RequestProperties {
     private static final String REQUEST_BUFFER_PUBLISHER_IS =
             new GenericType<BufferPublisherInputStream>() { }.getType().getTypeName();
+
+    private static final String REQUEST_CANCELLABLE =
+            new GenericType<DelayedCancellable>() { }.getType().getTypeName();
 
     private static final String RESPONSE_BUFFER_PUBLISHER =
             new GenericType<Publisher<Buffer>>() { }.getType().getTypeName();
@@ -52,6 +57,7 @@ public final class RequestProperties {
     public static void initRequestProperties(final BufferPublisherInputStream entityStream,
                                              final ContainerRequestContext reqCtx) {
         reqCtx.setProperty(REQUEST_BUFFER_PUBLISHER_IS, requireNonNull(entityStream));
+        reqCtx.setProperty(REQUEST_CANCELLABLE, new DelayedCancellable());
         reqCtx.setProperty(RESPONSE_BUFFER_PUBLISHER, null);
         reqCtx.setProperty(RESPONSE_EXEC_OFFLOADER, null);
     }
@@ -65,6 +71,28 @@ public final class RequestProperties {
     public static BufferPublisherInputStream getRequestBufferPublisherInputStream(
             final ContainerRequestContext reqCtx) {
         return (BufferPublisherInputStream) reqCtx.getProperty(REQUEST_BUFFER_PUBLISHER_IS);
+    }
+
+    /**
+     * Get the request {@link Cancellable}.
+     *
+     * @param reqCtx the {@link ContainerRequestContext} for the request
+     * @return the request {@link Cancellable}.
+     */
+    public static Cancellable getRequestCancellable(final ContainerRequestContext reqCtx) {
+        return (DelayedCancellable) reqCtx.getProperty(REQUEST_CANCELLABLE);
+    }
+
+    /**
+     * Set the request {@link Cancellable}.
+     *
+     * @param cancellable request {@link Cancellable}.
+     * @param reqCtx the {@link ContainerRequestContext} for the request
+     */
+    public static void setRequestCancellable(final Cancellable cancellable,
+                                             final ContainerRequestContext reqCtx) {
+        ((DelayedCancellable) reqCtx.getProperty(REQUEST_CANCELLABLE))
+                .setDelayedCancellable(requireNonNull(cancellable));
     }
 
     /**

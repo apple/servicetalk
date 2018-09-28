@@ -25,6 +25,7 @@ import static io.servicetalk.http.api.HttpResponseStatuses.ACCEPTED;
 import static io.servicetalk.http.api.HttpResponseStatuses.OK;
 import static io.servicetalk.http.api.HttpResponseStatuses.PARTIAL_CONTENT;
 import static io.servicetalk.http.api.HttpResponseStatuses.getResponseStatus;
+import static io.servicetalk.http.router.jersey.TestUtils.newLargePayload;
 import static io.servicetalk.http.router.jersey.resources.SynchronousResources.PATH;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
 import static org.hamcrest.Matchers.is;
