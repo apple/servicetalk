@@ -118,7 +118,7 @@ final class BufferMessageBodyReaderWriter implements MessageBodyReader<Buffer>, 
                         final MediaType mediaType,
                         final MultivaluedMap<String, Object> httpHeaders,
                         final OutputStream entityStream) {
-        httpHeaders.putSingle(CONTENT_LENGTH, buffer.getReadableBytes());
+        httpHeaders.putSingle(CONTENT_LENGTH, buffer.readableBytes());
         setResponseBufferPublisher(Publisher.from(buffer), requestCtxProvider.get());
     }
 }

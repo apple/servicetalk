@@ -57,7 +57,7 @@ final class AsciiBuffer implements CharSequence {
 
     @Override
     public int length() {
-        return buffer.getReadableBytes();
+        return buffer.readableBytes();
     }
 
     @Override
@@ -79,7 +79,7 @@ final class AsciiBuffer implements CharSequence {
     public int hashCode() {
         int h = hash;
         if (h == 0) {
-            hash = h = hashCodeAscii(buffer, buffer.getReaderIndex(), buffer.getReadableBytes());
+            hash = h = hashCodeAscii(buffer, buffer.readerIndex(), buffer.readableBytes());
         }
         return h;
     }
@@ -118,7 +118,7 @@ final class AsciiBuffer implements CharSequence {
      * @throws NullPointerException if {@code subString} is {@code null}.
      */
     int indexOf(char ch, int start) {
-        return buffer.indexOf(start, buffer.getWriterIndex(), (byte) ch);
+        return buffer.indexOf(start, buffer.writerIndex(), (byte) ch);
     }
 
     /**

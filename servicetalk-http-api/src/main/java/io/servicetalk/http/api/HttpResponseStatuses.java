@@ -338,12 +338,12 @@ public enum HttpResponseStatuses implements HttpResponseStatus {
 
     @Override
     public void writeCodeTo(final Buffer buffer) {
-        buffer.writeBytes(statusCodeBuffer, statusCodeBuffer.getReaderIndex(), statusCodeBuffer.getReadableBytes());
+        buffer.writeBytes(statusCodeBuffer, statusCodeBuffer.readerIndex(), statusCodeBuffer.readableBytes());
     }
 
     @Override
     public void writeReasonPhraseTo(final Buffer buffer) {
-        buffer.writeBytes(reasonPhrase, reasonPhrase.getReaderIndex(), reasonPhrase.getReadableBytes());
+        buffer.writeBytes(reasonPhrase, reasonPhrase.readerIndex(), reasonPhrase.readableBytes());
     }
 
     /**
@@ -360,7 +360,7 @@ public enum HttpResponseStatuses implements HttpResponseStatus {
     public static HttpResponseStatus getResponseStatus(final int statusCode, final Buffer reasonPhrase) {
         final HttpResponseStatuses responseStatus = valueOf(statusCode);
         if (responseStatus != null &&
-                (reasonPhrase.getReadableBytes() == 0 || responseStatus.reasonPhrase.equals(reasonPhrase))) {
+                (reasonPhrase.readableBytes() == 0 || responseStatus.reasonPhrase.equals(reasonPhrase))) {
             return responseStatus;
         }
         return new DefaultHttpResponseStatus(statusCode, reasonPhrase);

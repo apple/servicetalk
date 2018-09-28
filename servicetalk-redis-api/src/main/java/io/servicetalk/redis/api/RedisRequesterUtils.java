@@ -171,7 +171,7 @@ final class RedisRequesterUtils {
                         }
                         aggregator.writeUtf8(redisData.getCharSequenceValue());
                     } else if (redisData instanceof RedisData.BulkStringChunk) {
-                        int redisDataBytes = redisData.getBufferValue().getReadableBytes();
+                        int redisDataBytes = redisData.getBufferValue().readableBytes();
                         if (!aggregator.tryEnsureWritable(redisDataBytes, false)) {
                             reallocateAggregator(redisDataBytes);
                         }
@@ -199,7 +199,7 @@ final class RedisRequesterUtils {
                 private void reallocateAggregator(int extraBytes) {
                     assert aggregator != null;
                     aggregator = requester.executionContext().bufferAllocator()
-                            .newBuffer(extraBytes + aggregator.getReadableBytes()).writeBytes(aggregator);
+                            .newBuffer(extraBytes + aggregator.readableBytes()).writeBytes(aggregator);
                 }
             });
         }
@@ -304,7 +304,7 @@ final class RedisRequesterUtils {
                     } else if (RedisData.BulkStringChunk.class.equals(redisData.getClass())) {
                         if (aggregator == null) {
                             aggregator = redisData.getBufferValue();
-                            if (!aggregator.tryEnsureWritable(bulkStringSize - aggregator.getReadableBytes(), false)) {
+                            if (!aggregator.tryEnsureWritable(bulkStringSize - aggregator.readableBytes(), false)) {
                                 aggregator = requester.executionContext().bufferAllocator()
                                         .newBuffer(bulkStringSize).writeBytes(aggregator);
                             }

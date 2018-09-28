@@ -72,7 +72,7 @@ public abstract class BaseRedisClientTest {
             @Override
             public boolean matches(final Object argument) {
                 return argument instanceof Buffer &&
-                        ((Buffer) argument).slice(0, buf.getReadableBytes()).equals(buf);
+                        ((Buffer) argument).slice(0, buf.readableBytes()).equals(buf);
             }
 
             @Override

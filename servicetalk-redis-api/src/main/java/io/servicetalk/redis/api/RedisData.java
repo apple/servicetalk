@@ -228,7 +228,7 @@ public interface RedisData {
 
         @Override
         public Buffer toRESPArgument(final BufferAllocator allocator) {
-            return allocator.newBuffer(getValue().getReadableBytes() + EOL_LENGTH)
+            return allocator.newBuffer(getValue().readableBytes() + EOL_LENGTH)
                     .writeBytes(getValue())
                     .writeShort(EOL_SHORT);
         }

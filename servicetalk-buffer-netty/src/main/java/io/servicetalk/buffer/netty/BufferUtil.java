@@ -64,14 +64,14 @@ public final class BufferUtil {
         ByteBuf buf = toByteBufNoThrow(buffer);
         if (buf == null) {
             if (buffer.hasArray()) {
-                ByteBuf byteBuf = Unpooled.wrappedBuffer(buffer.getArray(), buffer.getArrayOffset(), buffer.getCapacity());
-                byteBuf.readerIndex(buffer.getReaderIndex()).writerIndex(buffer.getWriterIndex());
+                ByteBuf byteBuf = Unpooled.wrappedBuffer(buffer.array(), buffer.arrayOffset(), buffer.capacity());
+                byteBuf.readerIndex(buffer.readerIndex()).writerIndex(buffer.writerIndex());
                 return byteBuf;
             } else {
-                byte[] data = new byte[buffer.getCapacity()];
+                byte[] data = new byte[buffer.capacity()];
                 buffer.getBytes(0, data, 0, data.length);
                 ByteBuf byteBuf = Unpooled.wrappedBuffer(data);
-                byteBuf.readerIndex(buffer.getReaderIndex()).writerIndex(buffer.getWriterIndex());
+                byteBuf.readerIndex(buffer.readerIndex()).writerIndex(buffer.writerIndex());
                 return byteBuf;
             }
         }

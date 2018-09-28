@@ -296,7 +296,7 @@ final class SubscribedChannelReadStream extends Publisher<SubscribedChannelReadS
             }
 
             if (data instanceof CompleteRedisData) {
-                if (currentDataBuffer != null && currentDataBuffer.getReadableBytes() > 0) {
+                if (currentDataBuffer != null && currentDataBuffer.readableBytes() > 0) {
                     throw new IllegalStateException("Incomplete buffer exists " + currentDataBuffer.toString(defaultCharset())
                             + " but got " + data.getClass().getSimpleName() + ", current state: " + aggregationState);
                 }

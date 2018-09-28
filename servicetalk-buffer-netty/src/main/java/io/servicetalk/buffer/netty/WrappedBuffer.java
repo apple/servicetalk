@@ -34,56 +34,56 @@ class WrappedBuffer implements Buffer {
     }
 
     @Override
-    public int getCapacity() {
-        return buffer.getCapacity();
+    public int capacity() {
+        return buffer.capacity();
     }
 
     @Override
-    public Buffer setCapacity(int newCapacity) {
-        buffer.setCapacity(newCapacity);
+    public Buffer capacity(int newCapacity) {
+        buffer.capacity(newCapacity);
         return this;
     }
 
     @Override
-    public int getMaxCapacity() {
-        return buffer.getMaxCapacity();
+    public int maxCapacity() {
+        return buffer.maxCapacity();
     }
 
     @Override
-    public int getReaderIndex() {
-        return buffer.getReaderIndex();
+    public int readerIndex() {
+        return buffer.readerIndex();
     }
 
     @Override
-    public Buffer setReaderIndex(int readerIndex) {
-        buffer.setReaderIndex(readerIndex);
+    public Buffer readerIndex(int readerIndex) {
+        buffer.readerIndex(readerIndex);
         return this;
     }
 
     @Override
-    public int getWriterIndex() {
-        return buffer.getWriterIndex();
+    public int writerIndex() {
+        return buffer.writerIndex();
     }
 
     @Override
-    public Buffer setWriterIndex(int writerIndex) {
-        buffer.setWriterIndex(writerIndex);
+    public Buffer writerIndex(int writerIndex) {
+        buffer.writerIndex(writerIndex);
         return this;
     }
 
     @Override
-    public int getReadableBytes() {
-        return buffer.getReadableBytes();
+    public int readableBytes() {
+        return buffer.readableBytes();
     }
 
     @Override
-    public int getWritableBytes() {
-        return buffer.getWritableBytes();
+    public int writableBytes() {
+        return buffer.writableBytes();
     }
 
     @Override
-    public int getMaxWritableBytes() {
-        return buffer.getMaxWritableBytes();
+    public int maxWritableBytes() {
+        return buffer.maxWritableBytes();
     }
 
     @Override
@@ -698,8 +698,8 @@ class WrappedBuffer implements Buffer {
     }
 
     @Override
-    public int getNioBufferCount() {
-        return buffer.getNioBufferCount();
+    public int nioBufferCount() {
+        return buffer.nioBufferCount();
     }
 
     @Override
@@ -743,13 +743,13 @@ class WrappedBuffer implements Buffer {
     }
 
     @Override
-    public byte[] getArray() {
-        return buffer.getArray();
+    public byte[] array() {
+        return buffer.array();
     }
 
     @Override
-    public int getArrayOffset() {
-        return buffer.getArrayOffset();
+    public int arrayOffset() {
+        return buffer.arrayOffset();
     }
 
     @Override

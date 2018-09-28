@@ -178,7 +178,7 @@ public class HttpRequestEncoderTest {
         assertTrue("unexpected metadata: " + actualMetaData, actualMetaData.contains(
                 "  " + USER_AGENT + "   :     unit-test   " + "\r\n"));
         assertTrue("unexpected metadata: " + actualMetaData, actualMetaData.contains(
-                CONTENT_LENGTH + ": " + valueOf(buffer.getReadableBytes()) + "\r\n"));
+                CONTENT_LENGTH + ": " + valueOf(buffer.readableBytes()) + "\r\n"));
         assertTrue("unexpected metadata: " + actualMetaData, actualMetaData.endsWith("\r\n" + "\r\n"));
         byteBuf = channel.readOutbound();
         assertEquals(buffer.toNioBuffer(), byteBuf.nioBuffer());
@@ -339,9 +339,9 @@ public class HttpRequestEncoderTest {
             case Chunked:
                 assertTrue("unexpected metadata: " + actualMetaData, actualMetaData.contains(
                         TRANSFER_ENCODING + ": " + CHUNKED + "\r\n"));
-                if (buffer.getReadableBytes() != 0) {
+                if (buffer.readableBytes() != 0) {
                     byteBuf = channel.readOutbound();
-                    assertEquals(toHexString(buffer.getReadableBytes()) + "\r\n", byteBuf.toString(US_ASCII));
+                    assertEquals(toHexString(buffer.readableBytes()) + "\r\n", byteBuf.toString(US_ASCII));
                     byteBuf.release();
 
                     byteBuf = channel.readOutbound();
@@ -369,7 +369,7 @@ public class HttpRequestEncoderTest {
                 break;
             case ContentLength:
                 assertTrue("unexpected metadata: " + actualMetaData, actualMetaData.contains(
-                        CONTENT_LENGTH + ": " + valueOf(buffer.getReadableBytes()) + "\r\n"));
+                        CONTENT_LENGTH + ": " + valueOf(buffer.readableBytes()) + "\r\n"));
                 byteBuf = channel.readOutbound();
                 assertEquals(buffer.toNioBuffer(), byteBuf.nioBuffer());
                 consumeEmptyBufferFromTrailers(channel);

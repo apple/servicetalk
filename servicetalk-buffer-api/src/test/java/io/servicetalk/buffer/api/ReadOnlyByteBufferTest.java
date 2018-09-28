@@ -36,12 +36,12 @@ public class ReadOnlyByteBufferTest {
         assertEquals(buffer1, buffer2);
         assertEquals(expectedBuffer, buffer1.toNioBuffer());
         assertEquals(expectedBuffer, buffer2.toNioBuffer());
-        assertEquals(expectedBuffer, buffer1.toNioBuffer(buffer1.getReaderIndex(), buffer1.getWriterIndex()));
-        assertEquals(expectedBuffer, buffer2.toNioBuffer(buffer2.getReaderIndex(), buffer2.getWriterIndex()));
+        assertEquals(expectedBuffer, buffer1.toNioBuffer(buffer1.readerIndex(), buffer1.writerIndex()));
+        assertEquals(expectedBuffer, buffer2.toNioBuffer(buffer2.readerIndex(), buffer2.writerIndex()));
         assertEquals(expectedBuffer, buffer1.toNioBuffers()[0]);
         assertEquals(expectedBuffer, buffer2.toNioBuffers()[0]);
-        assertEquals(expectedBuffer, buffer1.toNioBuffers(buffer1.getReaderIndex(), buffer1.getWriterIndex())[0]);
-        assertEquals(expectedBuffer, buffer2.toNioBuffers(buffer2.getReaderIndex(), buffer2.getWriterIndex())[0]);
+        assertEquals(expectedBuffer, buffer1.toNioBuffers(buffer1.readerIndex(), buffer1.writerIndex())[0]);
+        assertEquals(expectedBuffer, buffer2.toNioBuffers(buffer2.readerIndex(), buffer2.writerIndex())[0]);
         assertEquals("testing", buffer1.toString(US_ASCII));
     }
 
@@ -51,6 +51,6 @@ public class ReadOnlyByteBufferTest {
         expectedBuffer.putLong(Long.MAX_VALUE);
         expectedBuffer.flip();
         Buffer buffer1 = DEFAULT_RO_ALLOCATOR.wrap(expectedBuffer);
-        assertEquals(Long.MAX_VALUE, buffer1.getLong(buffer1.getReaderIndex()));
+        assertEquals(Long.MAX_VALUE, buffer1.getLong(buffer1.readerIndex()));
     }
 }

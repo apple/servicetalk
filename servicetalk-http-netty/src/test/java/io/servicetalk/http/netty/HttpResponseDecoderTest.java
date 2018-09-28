@@ -342,7 +342,7 @@ public class HttpResponseDecoderTest {
         if (expectedContentLength >= 0) {
             assertSingleHeaderValue(response.headers(), CONTENT_LENGTH, String.valueOf(expectedContentLength));
             Buffer chunk = channel.readInbound();
-            assertEquals(expectedContentLength, chunk.getReadableBytes());
+            assertEquals(expectedContentLength, chunk.readableBytes());
             HttpHeaders trailers = channel.readInbound();
             assertTrue(trailers.isEmpty());
         } else {
@@ -356,7 +356,7 @@ public class HttpResponseDecoderTest {
                     break;
                 }
             }
-            assertEquals(-expectedContentLength, actual.getReadableBytes());
+            assertEquals(-expectedContentLength, actual.readableBytes());
             HttpHeaders lastChunk = (HttpHeaders) chunk;
             if (containsTrailers) {
                 assertSingleHeaderValue(lastChunk, "TrailerStatus", "good");

@@ -64,13 +64,13 @@ public interface CompositeBuffer extends Buffer {
     CompositeBuffer discardSomeReadBytes();
 
     @Override
-    CompositeBuffer setCapacity(int newCapacity);
+    CompositeBuffer capacity(int newCapacity);
 
     @Override
-    CompositeBuffer setReaderIndex(int readerIndex);
+    CompositeBuffer readerIndex(int readerIndex);
 
     @Override
-    CompositeBuffer setWriterIndex(int writerIndex);
+    CompositeBuffer writerIndex(int writerIndex);
 
     @Override
     CompositeBuffer clear();

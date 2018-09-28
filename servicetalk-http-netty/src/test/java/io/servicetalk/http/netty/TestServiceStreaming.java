@@ -162,7 +162,7 @@ final class TestServiceStreaming extends StreamingHttpService {
                                                    final StreamingHttpResponseFactory factory) {
         final Publisher<Buffer> responseBody = req.payloadBody().map(buffer -> {
             // Do an ASCII-only ROT13
-            for (int i = buffer.getReaderIndex(); i < buffer.getWriterIndex(); i++) {
+            for (int i = buffer.readerIndex(); i < buffer.writerIndex(); i++) {
                 final byte c = buffer.getByte(i);
                 if (c >= 'a' && c <= 'm' || c >= 'A' && c <= 'M') {
                     buffer.setByte(i, c + 13);

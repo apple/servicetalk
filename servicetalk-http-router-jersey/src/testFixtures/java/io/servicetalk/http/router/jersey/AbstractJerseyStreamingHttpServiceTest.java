@@ -178,7 +178,7 @@ public abstract class AbstractJerseyStreamingHttpServiceTest {
         final StreamingHttpRequest req = httpClient.newRequest(method, testUri(path)).payloadBody(just(content));
         req.headers().set(HOST, host());
         req.headers().set(CONTENT_TYPE, contentType);
-        req.headers().set(CONTENT_LENGTH, Integer.toString(content.getReadableBytes()));
+        req.headers().set(CONTENT_LENGTH, Integer.toString(content.readableBytes()));
         return req;
     }
 

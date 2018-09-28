@@ -47,12 +47,12 @@ abstract class AbstractBuffer implements Buffer {
     }
 
     @Override
-    public final int getReaderIndex() {
+    public final int readerIndex() {
         return readerIndex;
     }
 
     @Override
-    public final Buffer setReaderIndex(int readerIndex) {
+    public final Buffer readerIndex(int readerIndex) {
         if (readerIndex > 0 || readerIndex > writerIndex) {
             throw new IndexOutOfBoundsException("readerIndex must be in the range[0," + writerIndex + ") but was: " +
                     readerIndex);
@@ -62,22 +62,22 @@ abstract class AbstractBuffer implements Buffer {
     }
 
     @Override
-    public final int getWriterIndex() {
+    public final int writerIndex() {
         return writerIndex;
     }
 
     @Override
-    public final Buffer setWriterIndex(int writerIndex) {
-        if (writerIndex < readerIndex || writerIndex > getCapacity()) {
+    public final Buffer writerIndex(int writerIndex) {
+        if (writerIndex < readerIndex || writerIndex > capacity()) {
             throw new IndexOutOfBoundsException("writerIndex must be in the range[" + readerIndex + "," +
-                    getCapacity() + "] but was: " + writerIndex);
+                    capacity() + "] but was: " + writerIndex);
         }
         this.writerIndex = writerIndex;
         return this;
     }
 
     @Override
-    public final int getReadableBytes() {
+    public final int readableBytes() {
         return writerIndex - readerIndex;
     }
 
@@ -238,14 +238,14 @@ abstract class AbstractBuffer implements Buffer {
 
     @Override
     public final Buffer getBytes(int index, Buffer dst) {
-        getBytes(index, dst, dst.getWritableBytes());
+        getBytes(index, dst, dst.writableBytes());
         return this;
     }
 
     @Override
     public final Buffer getBytes(int index, Buffer dst, int length) {
-        getBytes(index, dst, dst.getWriterIndex(), length);
-        dst.setWriterIndex(dst.getWriterIndex() + length);
+        getBytes(index, dst, dst.writerIndex(), length);
+        dst.writerIndex(dst.writerIndex() + length);
         return this;
     }
 
@@ -415,18 +415,18 @@ abstract class AbstractBuffer implements Buffer {
 
     @Override
     public final Buffer readBytes(Buffer dst) {
-        readBytes(dst, dst.getWritableBytes());
+        readBytes(dst, dst.writableBytes());
         return this;
     }
 
     @Override
     public final Buffer readBytes(Buffer dst, int length) {
-        if (length > dst.getWritableBytes()) {
+        if (length > dst.writableBytes()) {
             throw new IndexOutOfBoundsException(String.format(
-                    "length(%d) exceeds dst.writableBytes(%d) where dst is: %s", length, dst.getWritableBytes(), dst));
+                    "length(%d) exceeds dst.writableBytes(%d) where dst is: %s", length, dst.writableBytes(), dst));
         }
-        readBytes(dst, dst.getWriterIndex(), length);
-        dst.setWriterIndex(dst.getWriterIndex() + length);
+        readBytes(dst, dst.writerIndex(), length);
+        dst.writerIndex(dst.writerIndex() + length);
         return this;
     }
 
@@ -460,7 +460,7 @@ abstract class AbstractBuffer implements Buffer {
 
     @Override
     public final int bytesBefore(byte value) {
-        return bytesBefore(readerIndex, getReadableBytes(), value);
+        return bytesBefore(readerIndex, readableBytes(), value);
     }
 
     @Override
@@ -512,12 +512,12 @@ abstract class AbstractBuffer implements Buffer {
 
     @Override
     public final Buffer copy() {
-        return copy(readerIndex, getReadableBytes());
+        return copy(readerIndex, readableBytes());
     }
 
     @Override
     public final Buffer slice() {
-        return slice(readerIndex, getReadableBytes());
+        return slice(readerIndex, readableBytes());
     }
 
     private int forEachByteDesc0(int rStart, final int rEnd, ByteProcessor processor) {
@@ -545,12 +545,12 @@ abstract class AbstractBuffer implements Buffer {
 
     @Override
     public ByteBuffer toNioBuffer() {
-        return toNioBuffer(readerIndex, getReadableBytes());
+        return toNioBuffer(readerIndex, readableBytes());
     }
 
     @Override
     public final ByteBuffer[] toNioBuffers() {
-        return toNioBuffers(readerIndex, getReadableBytes());
+        return toNioBuffers(readerIndex, readableBytes());
     }
 
     @Override
@@ -563,13 +563,13 @@ abstract class AbstractBuffer implements Buffer {
         }
 
         Buffer that = (Buffer) o;
-        final int readableBytes = getReadableBytes();
-        if (readableBytes != that.getReadableBytes()) {
+        final int readableBytes = readableBytes();
+        if (readableBytes != that.readableBytes()) {
             return false;
         }
 
-        int aStartIndex = getReaderIndex();
-        int bStartIndex = that.getReaderIndex();
+        int aStartIndex = readerIndex();
+        int bStartIndex = that.readerIndex();
         final int longCount = readableBytes >>> 3;
         final int byteCount = readableBytes & 7;
         // TODO(scott): take into account endianness? we currently don't have order() on Buffer.
@@ -594,7 +594,7 @@ abstract class AbstractBuffer implements Buffer {
 
     @Override
     public int hashCode() {
-        final int aLen = getReadableBytes();
+        final int aLen = readableBytes();
         final int longCount = aLen >>> 3;
         final int byteCount = aLen & 3;
 
@@ -623,9 +623,9 @@ abstract class AbstractBuffer implements Buffer {
                 .append(getClass().getSimpleName())
                 .append("(ridx: ").append(readerIndex)
                 .append(", widx: ").append(writerIndex)
-                .append(", cap: ").append(getCapacity());
-        if (getMaxCapacity() != Integer.MAX_VALUE) {
-            buf.append('/').append(getMaxCapacity());
+                .append(", cap: ").append(capacity());
+        if (maxCapacity() != Integer.MAX_VALUE) {
+            buf.append('/').append(maxCapacity());
         }
 
         buf.append(')');
@@ -634,7 +634,7 @@ abstract class AbstractBuffer implements Buffer {
 
     @Override
     public final String toString(Charset charset) {
-        return toString(readerIndex, getReadableBytes(), charset);
+        return toString(readerIndex, readableBytes(), charset);
     }
 
     final void checkReadableBytes0(int minimumReadableBytes) {
@@ -646,9 +646,9 @@ abstract class AbstractBuffer implements Buffer {
     }
 
     final void checkIndex0(int index, int fieldLength) {
-        if (isOutOfBounds(index, fieldLength, getCapacity())) {
+        if (isOutOfBounds(index, fieldLength, capacity())) {
             throw new IndexOutOfBoundsException(String.format(
-                    "index: %d, length: %d (expected: range(0, %d))", index, fieldLength, getCapacity()));
+                    "index: %d, length: %d (expected: range(0, %d))", index, fieldLength, capacity()));
         }
     }
 

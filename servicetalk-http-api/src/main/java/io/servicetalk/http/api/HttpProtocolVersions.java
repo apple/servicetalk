@@ -77,7 +77,7 @@ public enum HttpProtocolVersions implements HttpProtocolVersion {
 
     @Override
     public void writeHttpVersionTo(final Buffer buffer) {
-        buffer.writeBytes(httpVersion, httpVersion.getReaderIndex(), httpVersion.getReadableBytes());
+        buffer.writeBytes(httpVersion, httpVersion.readerIndex(), httpVersion.readableBytes());
     }
 
     @Override
