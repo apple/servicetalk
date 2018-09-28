@@ -69,7 +69,7 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress> implements Http
 
     @Override
     public DefaultHttpConnectionBuilder<ResolvedAddress> executionContext(final ExecutionContext context) {
-        executionContext = context;
+        executionContext = requireNonNull(context);
         return this;
     }
 
