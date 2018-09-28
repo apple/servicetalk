@@ -219,7 +219,7 @@ final class DefaultJerseyStreamingHttpRouter extends StreamingHttpService {
             injectionManager.<Ref<StreamingHttpRequest>>getInstance(HTTP_REQUEST_REF_TYPE).set(req);
         });
 
-        delayedCancellable.setDelayedCancellable(responseWriter::cancelRequest);
+        delayedCancellable.setDelayedCancellable(responseWriter::dispose);
 
         applicationHandler.handle(containerRequest);
     }

@@ -184,7 +184,7 @@ final class DefaultContainerResponseWriter implements ContainerResponseWriter {
         responseSubscriber.onError(error);
     }
 
-    void cancelRequest() {
+    void dispose() {
         if (stateUpdater.compareAndSet(this, STATE_REQUEST_HANDLING, STATE_REQUEST_CANCELLED)) {
             // Cancel any internally created request-handling subscription
             getRequestCancellable(request).cancel();
