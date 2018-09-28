@@ -19,5 +19,6 @@
     "http://checkstyle.sourceforge.net/dtds/suppressions_1_2.dtd">
 
 <suppressions>
+  <!-- CheckStyle wrongly thinks a Junit TestSuite is a utility class -->
   <suppress checks="HideUtilityClassConstructor" files="io/servicetalk/data/jackson/jersey/JerseyDataJacksonTestSuite.java"/>
 </suppressions>
