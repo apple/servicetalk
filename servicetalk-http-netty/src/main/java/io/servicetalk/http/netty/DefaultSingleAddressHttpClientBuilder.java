@@ -44,6 +44,7 @@ import javax.annotation.Nullable;
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.http.netty.GlobalDnsServiceDiscoverer.globalDnsServiceDiscoverer;
 import static io.servicetalk.loadbalancer.RoundRobinLoadBalancer.newRoundRobinFactory;
+import static io.servicetalk.transport.netty.internal.GlobalExecutionContext.globalExecutionContext;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -65,6 +66,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
 
     private final U address;
     private final HttpClientConfig config;
+    private ExecutionContext executionContext = globalExecutionContext();
     private LoadBalancerFactory<R, StreamingHttpConnection> loadBalancerFactory;
     private ServiceDiscoverer<U, R> serviceDiscoverer;
     private Function<U, ConnectionFilterFunction> hostHeaderFilterFunction =
@@ -115,10 +117,10 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
 
     @SuppressWarnings("unchecked")
     @Override
-    public StreamingHttpClient buildStreaming(final ExecutionContext exec) {
-        requireNonNull(exec);
+    public StreamingHttpClient buildStreaming() {
         assert UNKNOWN != address : "Attempted to buildStreaming with an unknown address";
         final ReadOnlyHttpClientConfig roConfig = config.asReadOnly();
+        final ExecutionContext exec = executionContext;
         // Track resources that potentially need to be closed when an exception is thrown during buildStreaming
         final CompositeCloseable closeOnException = newCompositeCloseable();
         try {
@@ -157,6 +159,12 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
             return c -> new StreamingHttpConnectionHostHeaderFilter((HostAndPort) address, c);
         }
         throw new IllegalArgumentException("Unsupported host header address type, provide an override");
+    }
+
+    @Override
+    public SingleAddressHttpClientBuilder<U, R> executionContext(final ExecutionContext context) {
+        this.executionContext = requireNonNull(context);
+        return this;
     }
 
     @Override

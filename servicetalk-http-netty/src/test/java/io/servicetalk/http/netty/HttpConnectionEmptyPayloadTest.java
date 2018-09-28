@@ -80,8 +80,9 @@ public class HttpConnectionEmptyPayloadTest {
                             }));
 
             StreamingHttpConnection connection = closeable.merge(awaitIndefinitelyNonNull(new DefaultHttpConnectionBuilder<>()
+                    .executionContext(executionContextRule)
                     .setMaxPipelinedRequests(3)
-                    .buildStreaming(executionContextRule, serverContext.getListenAddress())));
+                    .buildStreaming(serverContext.getListenAddress())));
 
             // Request HEAD, GET, HEAD to verify that we can keep reading data despite a HEAD request providing a hint
             // about content-length (and not actually providing the content).

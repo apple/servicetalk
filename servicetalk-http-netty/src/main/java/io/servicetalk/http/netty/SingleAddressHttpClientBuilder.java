@@ -20,7 +20,6 @@ import io.servicetalk.http.api.ClientFilterFunction;
 import io.servicetalk.http.api.HttpHeaderNames;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpRequest;
-import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.SslConfig;
 
@@ -54,7 +53,7 @@ public interface SingleAddressHttpClientBuilder<U, R>
     /**
      * Appends the filter to the chain of filters used to decorate the {@link StreamingHttpClient} created by this builder.
      * <p>
-     * Note this method will be used to decorate the result of {@link #buildStreaming(ExecutionContext)} before it is
+     * Note this method will be used to decorate the result of {@link #buildStreaming()} before it is
      * returned to the user.
      * <p>
      * The order of execution of these filters are in order of append. If 3 filters are added as follows:

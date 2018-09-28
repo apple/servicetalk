@@ -23,78 +23,42 @@ import io.servicetalk.transport.api.ExecutionContext;
 public interface HttpClientBuilder {
 
     /**
-     * Build a new {@link StreamingHttpClient}.
+     * Sets an {@link ExecutionContext} for all clients created from this {@link HttpClientBuilder}.
      *
-     * @param executionContext {@link ExecutionContext} used for {@link StreamingHttpClient#executionContext()} and to buildStreaming
-     * new {@link StreamingHttpConnection}s.
-     * @return A new {@link StreamingHttpClient}
+     * @param context {@link ExecutionContext} to use.
+     * @return {@code this}.
      */
-    StreamingHttpClient buildStreaming(ExecutionContext executionContext);
+    HttpClientBuilder executionContext(ExecutionContext context);
 
     /**
      * Build a new {@link StreamingHttpClient}, using a default {@link ExecutionContext}.
      *
      * @return A new {@link StreamingHttpClient}
-     * @see #buildStreaming(ExecutionContext)
      */
     StreamingHttpClient buildStreaming();
-
-    /**
-     * Build a new {@link HttpClient}.
-     *
-     * @param executionContext {@link ExecutionContext} used for {@link HttpClient#executionContext()} and
-     * to buildStreaming new {@link StreamingHttpConnection}s.
-     * @return A new {@link HttpClient}
-     */
-    default HttpClient build(ExecutionContext executionContext) {
-        return buildStreaming(executionContext).asClient();
-    }
 
     /**
      * Build a new {@link HttpClient}, using a default {@link ExecutionContext}.
      *
      * @return A new {@link HttpClient}
-     * @see #build(ExecutionContext)
      */
     default HttpClient build() {
         return buildStreaming().asClient();
     }
 
     /**
-     * Create a new {@link BlockingStreamingHttpClient}.
-     *
-     * @param executionContext {@link ExecutionContext} when building {@link BlockingStreamingHttpConnection}s.
-     * @return {@link BlockingStreamingHttpClient}
-     */
-    default BlockingStreamingHttpClient buildBlockingStreaming(ExecutionContext executionContext) {
-        return buildStreaming(executionContext).asBlockingStreamingClient();
-    }
-
-    /**
      * Create a new {@link BlockingStreamingHttpClient}, using a default {@link ExecutionContext}.
      *
      * @return {@link BlockingStreamingHttpClient}
-     * @see #buildBlockingStreaming(ExecutionContext)
      */
     default BlockingStreamingHttpClient buildBlockingStreaming() {
         return buildStreaming().asBlockingStreamingClient();
     }
 
     /**
-     * Create a new {@link BlockingHttpClient}.
-     *
-     * @param executionContext {@link ExecutionContext} when building {@link BlockingHttpConnection}s.
-     * @return {@link BlockingHttpClient}
-     */
-    default BlockingHttpClient buildBlocking(ExecutionContext executionContext) {
-        return buildStreaming(executionContext).asBlockingClient();
-    }
-
-    /**
      * Create a new {@link BlockingHttpClient}, using a default {@link ExecutionContext}.
      *
      * @return {@link BlockingHttpClient}
-     * @see #buildBlocking(ExecutionContext)
      */
     default BlockingHttpClient buildBlocking() {
         return buildStreaming().asBlockingClient();

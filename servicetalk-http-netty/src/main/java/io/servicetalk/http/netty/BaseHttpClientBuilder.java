@@ -25,12 +25,11 @@ import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpRequest;
+import io.servicetalk.transport.api.ExecutionContext;
 
 import java.net.SocketOption;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
-
-import static io.servicetalk.transport.netty.internal.GlobalExecutionContext.globalExecutionContext;
 
 /**
  * A builder for instances of {@link StreamingHttpClient}.
@@ -42,9 +41,7 @@ import static io.servicetalk.transport.netty.internal.GlobalExecutionContext.glo
 interface BaseHttpClientBuilder<U, R, BuilderType extends BaseHttpClientBuilder> extends HttpClientBuilder {
 
     @Override
-    default StreamingHttpClient buildStreaming() {
-        return buildStreaming(globalExecutionContext());
-    }
+    BuilderType executionContext(ExecutionContext context);
 
     /**
      * Add a {@link SocketOption} for all connections created by this client.
