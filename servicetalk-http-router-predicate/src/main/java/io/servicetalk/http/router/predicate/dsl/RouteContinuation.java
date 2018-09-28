@@ -15,12 +15,16 @@
  */
 package io.servicetalk.http.router.predicate.dsl;
 
+import io.servicetalk.http.api.BlockingHttpRequestHandler;
 import io.servicetalk.http.api.BlockingHttpService;
+import io.servicetalk.http.api.BlockingStreamingHttpRequestHandler;
 import io.servicetalk.http.api.BlockingStreamingHttpService;
 import io.servicetalk.http.api.HttpCookie;
+import io.servicetalk.http.api.HttpRequestHandler;
 import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.HttpService;
 import io.servicetalk.http.api.StreamingHttpRequest;
+import io.servicetalk.http.api.StreamingHttpRequestHandler;
 import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.transport.api.ConnectionContext;
 
@@ -153,21 +157,21 @@ public interface RouteContinuation {
      * Completes the route by specifying the {@link StreamingHttpService} to route requests to that match the previously
      * specified criteria. Each call to {@code thenRouteTo} resets the criteria, prior to building the next route.
      *
-     * @param service the {@link StreamingHttpService} to route requests to.
+     * @param handler the {@link StreamingHttpRequestHandler} to route requests to.
      * @return {@link RouteStarter} for building another route.
      */
-    RouteStarter thenRouteTo(StreamingHttpService service);
+    RouteStarter thenRouteTo(StreamingHttpRequestHandler handler);
 
     /**
      * Completes the route by specifying the {@link HttpService} to route requests to that match the
      * previously specified criteria. Each call to {@code thenRouteTo} resets the criteria, prior to building the next
      * route.
      *
-     * @param service the {@link HttpService} to route requests to.
+     * @param handler the {@link HttpRequestHandler} to route requests to.
      * @return {@link RouteStarter} for building another route.
      */
-    default RouteStarter thenRouteTo(HttpService service) {
-        return thenRouteTo(service.asStreamingService());
+    default RouteStarter thenRouteTo(HttpRequestHandler handler) {
+        return thenRouteTo(handler.asService().asStreamingService());
     }
 
     /**
@@ -175,21 +179,21 @@ public interface RouteContinuation {
      * previously specified criteria. Each call to {@code thenRouteTo} resets the criteria, prior to building the next
      * route.
      *
-     * @param service the {@link BlockingHttpService} to route requests to.
+     * @param handler the {@link BlockingHttpRequestHandler} to route requests to.
      * @return {@link RouteStarter} for building another route.
      */
-    default RouteStarter thenRouteTo(BlockingHttpService service) {
-        return thenRouteTo(service.asStreamingService());
+    default RouteStarter thenRouteTo(BlockingHttpRequestHandler handler) {
+        return thenRouteTo(handler.asBlockingService().asStreamingService());
     }
 
     /**
      * Completes the route by specifying the {@link BlockingStreamingHttpService} to route requests to that match the previously
      * specified criteria. Each call to {@code thenRouteTo} resets the criteria, prior to building the next route.
      *
-     * @param service the {@link BlockingStreamingHttpService} to route requests to.
+     * @param handler the {@link BlockingStreamingHttpRequestHandler} to route requests to.
      * @return {@link RouteStarter} for building another route.
      */
-    default RouteStarter thenRouteTo(BlockingStreamingHttpService service) {
-        return thenRouteTo(service.asStreamingService());
+    default RouteStarter thenRouteTo(BlockingStreamingHttpRequestHandler handler) {
+        return thenRouteTo(handler.asBlockingStreamingService().asStreamingService());
     }
 }

@@ -18,6 +18,7 @@ package io.servicetalk.http.router.predicate;
 import io.servicetalk.http.api.HttpCookie;
 import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.StreamingHttpRequest;
+import io.servicetalk.http.api.StreamingHttpRequestHandler;
 import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.http.router.predicate.dsl.CookieMatcher;
 import io.servicetalk.http.router.predicate.dsl.RouteContinuation;
@@ -236,9 +237,9 @@ public final class HttpPredicateRouterBuilder implements RouteStarter {
         }
 
         @Override
-        public RouteStarter thenRouteTo(final StreamingHttpService service) {
+        public RouteStarter thenRouteTo(final StreamingHttpRequestHandler handler) {
             assert predicate != null;
-            predicateServicePairs.add(new PredicateServicePair(predicate, service));
+            predicateServicePairs.add(new PredicateServicePair(predicate, handler.asStreamingService()));
             predicate = null;
             return HttpPredicateRouterBuilder.this;
         }
