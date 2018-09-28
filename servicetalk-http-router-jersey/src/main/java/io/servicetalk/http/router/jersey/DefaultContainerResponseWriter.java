@@ -35,7 +35,6 @@ import org.glassfish.jersey.server.spi.ContainerResponseWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -76,7 +75,6 @@ final class DefaultContainerResponseWriter implements ContainerResponseWriter {
 
     private static final int STATE_REQUEST_HANDLING = 0;
     private static final int STATE_RESPONSE_WRITING = 1;
-    private static final int STATE_RESPONSE_WRITTEN = 2;
     private static final int STATE_REQUEST_CANCELLED = 3;
 
     private static final AtomicIntegerFieldUpdater<DefaultContainerResponseWriter> stateUpdater =
@@ -186,30 +184,26 @@ final class DefaultContainerResponseWriter implements ContainerResponseWriter {
 
     void dispose() {
         if (stateUpdater.compareAndSet(this, STATE_REQUEST_HANDLING, STATE_REQUEST_CANCELLED)) {
-            // Cancel any internally created request-handling subscription
-            getRequestCancellable(request).cancel();
-
-            // Close inbound entity stream
-            closeEntityStream();
-
-            cancelSuspendedTimer();
+            try {
+                // Cancel any internally created request-handling subscription
+                getRequestCancellable(request).cancel();
+                request.close();
+                cancelSuspendedTimer();
+            } catch (Throwable t) {
+                LOGGER.debug("Failed to dispose during request handling phase", t);
+            }
         }
     }
 
     private void cancelResponse() {
         if (stateUpdater.compareAndSet(this, STATE_RESPONSE_WRITING, STATE_REQUEST_CANCELLED)) {
-            // Close inbound entity stream which might still be read as part of a streaming response
-            closeEntityStream();
-
-            cancelSuspendedTimer();
-        }
-    }
-
-    private void closeEntityStream() {
-        try {
-            request.getEntityStream().close();
-        } catch (final IOException e) {
-            LOGGER.debug("Failed to close input stream during cancel", e);
+            try {
+                // Close inbound entity stream which might still be read as part of a streaming response
+                request.close();
+                cancelSuspendedTimer();
+            } catch (Throwable t) {
+                LOGGER.debug("Failed to cancel during response writing phase", t);
+            }
         }
     }
 
@@ -241,8 +235,7 @@ final class DefaultContainerResponseWriter implements ContainerResponseWriter {
             final Executor executor = getResponseExecutorOffloader(request);
             // TODO(scott): use request factory methods that accept a payload body to avoid overhead of payloadBody.
             Publisher<Buffer> payloadBody = (executor != null ? content.subscribeOn(executor) : content)
-                    .doBeforeComplete(() -> state = STATE_RESPONSE_WRITTEN) // Makes cancelResponse a no-op
-                    .doBeforeCancel(this::cancelResponse);  // Cleanup internal state here after ST is done cancelling
+                    .doBeforeCancel(this::cancelResponse);  // Cleanup internal state if server cancels response body
 
             response = responseFactory.newResponse(status)
                     .version(protocolVersion)
