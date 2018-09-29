@@ -29,7 +29,7 @@ public final class HelloWorldClient {
             // before the response has been processed. This isn't typical usage for a streaming API but is useful for
             // demonstration purposes.
             CountDownLatch responseProcessedLatch = new CountDownLatch(1);
-            client.request(client.get("sayHello"))
+            client.request(client.get("/sayHello"))
                     .doFinally(responseProcessedLatch::countDown)
                     .subscribe(resp -> {
                         System.out.println(resp.toString((name, value) -> value));
