@@ -122,11 +122,11 @@ public class TcpServer {
      *
      * @param context for the server.
      * @return Listening port.
-     * @throws ClassCastException If the {@link SocketAddress} returned by {@link ServerContext#getListenAddress()} is
+     * @throws ClassCastException If the {@link SocketAddress} returned by {@link ServerContext#listenAddress()} is
      * not an {@link InetSocketAddress}.
      */
     public static int getServerPort(ServerContext context) {
-        return ((InetSocketAddress) context.getListenAddress()).getPort();
+        return ((InetSocketAddress) context.listenAddress()).getPort();
     }
 
     private static class TcpServerChannelReadHandler extends AbstractContextFilterAwareChannelReadHandler<Buffer> {

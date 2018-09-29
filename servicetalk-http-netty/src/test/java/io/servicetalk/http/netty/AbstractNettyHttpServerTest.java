@@ -149,11 +149,11 @@ public abstract class AbstractNettyHttpServerTest {
                 DEFAULT_ALLOCATOR, serverIoExecutor, serverExecutor))
                 .contextFilter(contextFilter)
                 .listenStreaming(service)
-                .doBeforeSuccess(ctx -> LOGGER.debug("Server started on {}.", ctx.getListenAddress()))
+                .doBeforeSuccess(ctx -> LOGGER.debug("Server started on {}.", ctx.listenAddress()))
                 .doBeforeError(throwable -> LOGGER.debug("Failed starting server on {}.", bindAddress)));
 
         final InetSocketAddress socketAddress = new InetSocketAddress(LOOPBACK_ADDRESS,
-                ((InetSocketAddress) serverContext.getListenAddress()).getPort());
+                ((InetSocketAddress) serverContext.listenAddress()).getPort());
 
         final DefaultHttpConnectionBuilder<Object> httpConnectionBuilder = new DefaultHttpConnectionBuilder<>();
         if (sslEnabled) {

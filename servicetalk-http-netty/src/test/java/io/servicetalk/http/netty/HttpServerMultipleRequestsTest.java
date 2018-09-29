@@ -104,7 +104,7 @@ public class HttpServerMultipleRequestsTest {
                                 new DefaultHttpConnectionBuilder<SocketAddress>()
                                         .setMaxPipelinedRequests(numRequests)
                                         .executionContext(clientExecution)
-                                        .buildStreaming(ctx.getListenAddress()).toFuture().get());
+                                        .buildStreaming(ctx.listenAddress()).toFuture().get());
                         barrier.await();
                         for (int x = 0; x < numRequests; ++x) {
                             makeClientRequestWithId(connection, "thread=" + finalI + " request=" + x);

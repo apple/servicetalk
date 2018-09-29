@@ -136,7 +136,7 @@ public class MultiAddressUrlHttpClientTest {
             }
         };
         serverCtx = startNewLocalServer(httpService, afterClassCloseables);
-        serverPort = ((InetSocketAddress) serverCtx.getListenAddress()).getPort();
+        serverPort = ((InetSocketAddress) serverCtx.listenAddress()).getPort();
         hostHeader = HOSTNAME + ':' + serverPort;
     }
 
@@ -263,7 +263,7 @@ public class MultiAddressUrlHttpClientTest {
 
     private static void makeGetRequestAndValidate(ServerContext serverCtx, HttpResponseStatus status) throws Exception {
         final StreamingHttpRequest request =
-                requester.get(format("http:/%s/%s?param=value#tag", serverCtx.getListenAddress(), status));
+                requester.get(format("http:/%s/%s?param=value#tag", serverCtx.listenAddress(), status));
         requestAndValidate(request, status);
     }
 

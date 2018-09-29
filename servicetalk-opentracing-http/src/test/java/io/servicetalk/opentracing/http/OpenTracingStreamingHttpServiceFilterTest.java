@@ -83,7 +83,7 @@ public class OpenTracingStreamingHttpServiceFilterTest {
     @Test
     public void testRequestWithTraceKey() throws Exception {
         try (ServerContext context = buildServer()) {
-            try (HttpClient client = forSingleAddress(of((InetSocketAddress) context.getListenAddress())).build()) {
+            try (HttpClient client = forSingleAddress(of((InetSocketAddress) context.listenAddress())).build()) {
                 String traceId = randomHexId();
                 String spanId = randomHexId();
                 String parentSpanId = randomHexId();
@@ -106,7 +106,7 @@ public class OpenTracingStreamingHttpServiceFilterTest {
     @Test
     public void testRequestWithoutTraceKey() throws Exception {
         try (ServerContext context = buildServer()) {
-            try (HttpClient client = forSingleAddress(of((InetSocketAddress) context.getListenAddress())).build()) {
+            try (HttpClient client = forSingleAddress(of((InetSocketAddress) context.listenAddress())).build()) {
                 HttpRequest request = client.get("/");
                 HttpResponse response = client.request(request).toFuture().get();
                 TestSpanState serverSpanState = response.payloadBody(httpSerializer.deserializerFor(

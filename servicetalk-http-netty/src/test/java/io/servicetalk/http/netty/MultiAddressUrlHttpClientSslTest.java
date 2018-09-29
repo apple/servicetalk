@@ -110,7 +110,7 @@ public class MultiAddressUrlHttpClientSslTest {
                 .executionContext(CTX)
                 .listenStreamingAndAwait(STREAMING_HTTP_SERVICE);
         serverHostHeader = HostAndPort.of(HOSTNAME,
-                ((InetSocketAddress) serverCtx.getListenAddress()).getPort()).toString();
+                ((InetSocketAddress) serverCtx.listenAddress()).getPort()).toString();
 
         // Configure HTTPS server
         when(SECURE_STREAMING_HTTP_SERVICE.handle(any(), any(), any())).thenAnswer(
@@ -128,7 +128,7 @@ public class MultiAddressUrlHttpClientSslTest {
                 .executionContext(CTX)
                 .listenStreamingAndAwait(SECURE_STREAMING_HTTP_SERVICE);
         secureServerHostHeader = HostAndPort.of(HOSTNAME,
-                ((InetSocketAddress) secureServerCtx.getListenAddress()).getPort()).toString();
+                ((InetSocketAddress) secureServerCtx.listenAddress()).getPort()).toString();
     }
 
     @AfterClass

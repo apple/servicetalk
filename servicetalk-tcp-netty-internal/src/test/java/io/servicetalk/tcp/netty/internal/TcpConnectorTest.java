@@ -76,7 +76,7 @@ public final class TcpConnectorTest extends AbstractTcpServerTest {
 
     @Test
     public void testConnectWithFD() throws Exception {
-        testWriteAndRead(client.connectWithFdBlocking(CLIENT_CTX, serverContext.getListenAddress()));
+        testWriteAndRead(client.connectWithFdBlocking(CLIENT_CTX, serverContext.listenAddress()));
     }
 
     @Test
@@ -102,7 +102,7 @@ public final class TcpConnectorTest extends AbstractTcpServerTest {
                     return context;
                 }, () -> v -> true);
         Connection<Buffer, Buffer> connection = awaitIndefinitely(connector.connect(CLIENT_CTX,
-                serverContext.getListenAddress()));
+                serverContext.listenAddress()));
         assert connection != null;
         awaitIndefinitely(connection.closeAsync());
 

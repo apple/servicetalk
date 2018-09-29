@@ -100,7 +100,7 @@ public class HttpOffloadingTest {
                 .executionContext(SERVER_CTX)
                 .listenStreamingAndAwait(service);
 
-        final InetSocketAddress socketAddress = (InetSocketAddress) serverContext.getListenAddress();
+        final InetSocketAddress socketAddress = (InetSocketAddress) serverContext.listenAddress();
 
         testThread = currentThread();
         errors = new ConcurrentLinkedQueue<>();

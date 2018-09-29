@@ -83,7 +83,7 @@ public class HttpAuthConnectionFactoryClientTest {
                             }
                         });
         client = HttpClients.forSingleAddress("localhost",
-                ((InetSocketAddress) serverContext.getListenAddress()).getPort())
+                ((InetSocketAddress) serverContext.listenAddress()).getPort())
                 .executionContext(CTX)
                 .buildStreaming();
 

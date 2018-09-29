@@ -38,7 +38,7 @@ public class HttpClientBuilderTest extends AbstractEchoServerBasedHttpRequesterT
     public void httpClientWithStaticLoadBalancing() throws ExecutionException, InterruptedException {
 
         DefaultServiceDiscovererEvent<InetSocketAddress> sdEvent = new DefaultServiceDiscovererEvent<>(
-                (InetSocketAddress) serverContext.getListenAddress(), true);
+                (InetSocketAddress) serverContext.listenAddress(), true);
 
         sendRequestAndValidate(Publisher.just(sdEvent));
     }
@@ -50,7 +50,7 @@ public class HttpClientBuilderTest extends AbstractEchoServerBasedHttpRequesterT
         sdPub.sendOnSubscribe();
 
         DefaultServiceDiscovererEvent<InetSocketAddress> sdEvent = new DefaultServiceDiscovererEvent<>(
-                (InetSocketAddress) serverContext.getListenAddress(), true);
+                (InetSocketAddress) serverContext.listenAddress(), true);
 
         // Simulate delayed discovery
         CTX.executor().schedule(() -> {
@@ -65,7 +65,7 @@ public class HttpClientBuilderTest extends AbstractEchoServerBasedHttpRequesterT
             throws ExecutionException, InterruptedException {
         ServiceDiscoverer<HostAndPort, InetSocketAddress> disco = mock(ServiceDiscoverer.class);
         when(disco.discover(any())).thenReturn(sdPub);
-        int port = ((InetSocketAddress) serverContext.getListenAddress()).getPort();
+        int port = ((InetSocketAddress) serverContext.listenAddress()).getPort();
         StreamingHttpClient requester = HttpClients.forSingleAddress("localhost", port)
                 .serviceDiscoverer(disco)
                 .executionContext(CTX)
