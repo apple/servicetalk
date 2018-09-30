@@ -20,9 +20,11 @@ import io.servicetalk.concurrent.BlockingIterable;
 import io.servicetalk.concurrent.CloseableIterable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.concurrent.internal.CloseableIteratorBufferAsInputStream;
 
 import org.reactivestreams.Subscriber;
 
+import java.io.InputStream;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -34,9 +36,17 @@ import java.util.function.UnaryOperator;
 public interface BlockingStreamingHttpRequest extends HttpRequestMetaData {
     /**
      * Get the underlying payload as a {@link Publisher} of {@link Buffer}s.
-     * @return The {@link Publisher} of {@link Buffer} representation of the underlying
+     * @return The {@link Publisher} of {@link Buffer} representation of the underlying payload body.
      */
     BlockingIterable<Buffer> payloadBody();
+
+    /**
+     * Get the underlying payload as a {@link InputStream}.
+     * @return The {@link InputStream} representation of the underlying payload body.
+     */
+    default InputStream payloadBodyInputStream() {
+        return new CloseableIteratorBufferAsInputStream(payloadBody().iterator());
+    }
 
     /**
      * Get and deserialize the payload body.

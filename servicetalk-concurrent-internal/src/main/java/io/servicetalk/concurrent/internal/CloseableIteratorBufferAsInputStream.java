@@ -13,38 +13,36 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.concurrent.api;
+package io.servicetalk.concurrent.internal;
 
-import io.servicetalk.concurrent.BlockingIterator;
+import io.servicetalk.buffer.api.Buffer;
+import io.servicetalk.concurrent.CloseableIterator;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.function.Function;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.concurrent.api.AutoClosableUtils.closeAndReThrowIoException;
+import static io.servicetalk.buffer.api.ReadOnlyBufferAllocators.DEFAULT_RO_ALLOCATOR;
+import static io.servicetalk.concurrent.internal.AutoClosableUtils.closeAndReThrowIoException;
 import static java.lang.Math.min;
-import static java.lang.System.arraycopy;
 import static java.util.Objects.requireNonNull;
 
 /**
- * As returned by {@link Publisher#toInputStream(Function)} and {@link Publisher#toInputStream(Function, int)}.
- *
- * @param <T> Type of items emitted by the {@link Publisher} from which this {@link InputStream} is created.
+ * Conversion from a {@link CloseableIterator} of {@link Buffer}s to a {@link InputStream}.
+ * @see CloseableIteratorAsInputStream
  */
-final class PublisherAsInputStream<T> extends InputStream {
-
-    private static final byte[] CLOSED = new byte[0];
-    private final Function<T, byte[]> serializer;
-    private final BlockingIterator<T> iterator;
-
+public final class CloseableIteratorBufferAsInputStream extends InputStream {
+    private static final Buffer CLOSED = DEFAULT_RO_ALLOCATOR.fromAscii("");
+    private final CloseableIterator<Buffer> iterator;
     @Nullable
-    private byte[] leftover;
-    private int leftoverReadIndex;
+    private Buffer leftover;
 
-    PublisherAsInputStream(final BlockingIterator<T> source, final Function<T, byte[]> serializer) {
-        this.serializer = requireNonNull(serializer);
-        iterator = source;
+    /**
+     * Create a new instance.
+     * @param iterator The {@link CloseableIterator} providing data.
+     */
+    public CloseableIteratorBufferAsInputStream(CloseableIterator<Buffer> iterator) {
+        this.iterator = requireNonNull(iterator);
     }
 
     @Override
@@ -60,14 +58,13 @@ final class PublisherAsInputStream<T> extends InputStream {
         for (;;) {
             if (leftover != null) {
                 // We have leftOver bytes from a previous read, so try to satisfy read from leftOver.
-                final int toRead = min(len, (leftover.length - leftoverReadIndex));
-                arraycopy(leftover, leftoverReadIndex, b, off, toRead);
+                final int toRead = min(len, leftover.readableBytes());
+                leftover.readBytes(b, off, toRead);
                 if (toRead != len) { // drained left over.
                     resetLeftover();
                     off += toRead;
                     len -= toRead;
                 } else { // toRead == len, i.e. we filled the buffer.
-                    leftoverReadIndex += toRead;
                     checkResetLeftover(leftover);
                     return initialLen - (len - toRead);
                 }
@@ -81,13 +78,13 @@ final class PublisherAsInputStream<T> extends InputStream {
                 final int bytesRead = initialLen - len;
                 return bytesRead == 0 ? -1 : bytesRead;
             }
-            leftover = serializer.apply(iterator.next());
+            leftover = iterator.next();
         }
     }
 
     @Override
     public int available() {
-        return leftover == null ? 0 : leftover.length - leftoverReadIndex;
+        return leftover == null ? 0 : leftover.readableBytes();
     }
 
     @Override
@@ -113,9 +110,9 @@ final class PublisherAsInputStream<T> extends InputStream {
             if (!iterator.hasNext()) {
                 return -1;
             }
-            leftover = serializer.apply(iterator.next());
+            leftover = iterator.next();
             if (leftover != null) {
-                if (leftover.length != 0) {
+                if (leftover.readableBytes() != 0) {
                     return readSingleByteFromLeftover(leftover);
                 }
                 resetLeftover();
@@ -123,21 +120,20 @@ final class PublisherAsInputStream<T> extends InputStream {
         }
     }
 
-    private int readSingleByteFromLeftover(byte[] leftover) {
-        final int value = leftover[leftoverReadIndex++];
+    private int readSingleByteFromLeftover(Buffer leftover) {
+        final int value = leftover.readByte();
         checkResetLeftover(leftover);
         return value;
     }
 
-    private void checkResetLeftover(byte[] leftover) {
-        if (leftoverReadIndex == leftover.length) {
+    private void checkResetLeftover(Buffer leftover) {
+        if (leftover.readableBytes() == 0) {
             resetLeftover();
         }
     }
 
     private void resetLeftover() {
         leftover = null;
-        leftoverReadIndex = 0;
     }
 
     private void checkAlreadyClosed() throws IOException {

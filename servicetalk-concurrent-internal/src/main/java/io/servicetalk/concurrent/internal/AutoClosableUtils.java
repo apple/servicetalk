@@ -13,16 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.concurrent.api;
+package io.servicetalk.concurrent.internal;
 
 import java.io.IOException;
 
-final class AutoClosableUtils {
+/**
+ * Utilities for {@link AutoCloseable}.
+ */
+public final class AutoClosableUtils {
     private AutoClosableUtils() {
         // no instances
     }
 
-    static void closeAndReThrowUnchecked(AutoCloseable closeable) {
+    /**
+     * Call {@link AutoCloseable#close()} and re-throw any exceptions as an unchecked exception.
+     * @param closeable The object to close.
+     */
+    public static void closeAndReThrowUnchecked(AutoCloseable closeable) {
         try {
             closeable.close();
         } catch (Exception e) {
@@ -30,7 +37,12 @@ final class AutoClosableUtils {
         }
     }
 
-    static void closeAndReThrowIoException(AutoCloseable closeable) throws IOException {
+    /**
+     * Call {@link AutoCloseable#close()} and re-throw any exceptions as a {@link IOException}.
+     * @param closeable The object to close.
+     * @throws IOException if an exception occurs during {@link AutoCloseable#close()}.
+     */
+    public static void closeAndReThrowIoException(AutoCloseable closeable) throws IOException {
         try {
             closeable.close();
         } catch (Exception e) {

@@ -38,6 +38,8 @@ dependencies {
   implementation "io.servicetalk:servicetalk-annotations:$project.version"
   implementation "org.jctools:jctools-core"
   implementation "org.slf4j:slf4j-api"
+  // Buffer based Concurrent conversions
+  implementation "io.servicetalk:servicetalk-buffer-api:$project.version"
 
   testImplementation "io.servicetalk:servicetalk-test-resources:$project.version"
   testImplementation "org.mockito:mockito-core"
