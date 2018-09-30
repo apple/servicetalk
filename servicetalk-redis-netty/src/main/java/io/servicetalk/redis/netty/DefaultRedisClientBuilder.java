@@ -36,12 +36,11 @@ import java.io.InputStream;
 import java.net.SocketOption;
 import java.time.Duration;
 import java.util.function.Function;
-import java.util.function.UnaryOperator;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.redis.netty.RedisConnectionFilterFactory.identity;
 import static io.servicetalk.redis.netty.RedisUtils.isSubscribeModeCommand;
 import static java.util.Objects.requireNonNull;
-import static java.util.function.UnaryOperator.identity;
 
 /**
  * A builder for instances of {@link RedisClient}.
@@ -61,7 +60,7 @@ public final class DefaultRedisClientBuilder<ResolvedAddress>
 
     private final LoadBalancerFactory<ResolvedAddress, RedisConnection> loadBalancerFactory;
     private final RedisClientConfig config;
-    private UnaryOperator<RedisConnection> connectionFilterFactory = identity();
+    private RedisConnectionFilterFactory connectionFilterFactory = identity();
     private RedisClientFilterFactory clientFilterFactory = DEFAULT_CLIENT_FILTER_FACTORY;
 
     /**
@@ -169,13 +168,13 @@ public final class DefaultRedisClientBuilder<ResolvedAddress>
      * <p>
      * Filtering allows you to wrap a {@link RedisConnection} and modify behavior during request/response processing.
      * Some potential candidates for filtering include logging, metrics, and decorating responses.
-     * @param connectionFilterFunction {@link UnaryOperator} to decorate a {@link RedisConnection} for the purpose of
-     * filtering.
+     * @param connectionFilterFactory {@link RedisConnectionFilterFactory} to decorate a {@link RedisConnection} for the
+     * purpose of filtering.
      * @return {@code this}.
      */
-    public DefaultRedisClientBuilder<ResolvedAddress> connectionFilterFactory(
-            UnaryOperator<RedisConnection> connectionFilterFunction) {
-        this.connectionFilterFactory = requireNonNull(connectionFilterFunction);
+    public DefaultRedisClientBuilder<ResolvedAddress> appendConnectionFilter(
+            RedisConnectionFilterFactory connectionFilterFactory) {
+        this.connectionFilterFactory = requireNonNull(connectionFilterFactory);
         return this;
     }
 
@@ -187,7 +186,7 @@ public final class DefaultRedisClientBuilder<ResolvedAddress>
      * @param clientFilterFactory factory to decorate a {@link RedisClient} for the purpose of filtering.
      * @return {@code this}
      */
-    public DefaultRedisClientBuilder<ResolvedAddress> clientFilterFactory(
+    public DefaultRedisClientBuilder<ResolvedAddress> appendClientFilter(
             RedisClientFilterFactory clientFilterFactory) {
         this.clientFilterFactory = requireNonNull(clientFilterFactory);
         return this;
@@ -202,7 +201,7 @@ public final class DefaultRedisClientBuilder<ResolvedAddress>
 
     static <ResolvedAddress, EventType extends Event<ResolvedAddress>> RedisClient newRedisClient(
             ExecutionContext executionContext, Publisher<EventType> addressEventStream,
-            ReadOnlyRedisClientConfig roConfig, Function<RedisConnection, RedisConnection> connectionFilterFactory,
+            ReadOnlyRedisClientConfig roConfig, RedisConnectionFilterFactory connectionFilterFactory,
             RedisClientFilterFactory clientFilterFactory,
             LoadBalancerFactory<ResolvedAddress, RedisConnection> loadBalancerFactory) {
         final Publisher<EventType> multicastAddressEventStream = addressEventStream.multicast(2);
@@ -210,10 +209,12 @@ public final class DefaultRedisClientBuilder<ResolvedAddress>
         LoadBalancer<? extends RedisConnection> lbfUntypedForCast =
                 loadBalancerFactory.newLoadBalancer(multicastAddressEventStream,
                         new SubscribedLBRedisConnectionFactory<>(roConfig, executionContext, connectionFilterFactory));
+        @SuppressWarnings("unchecked")
         LoadBalancer<LoadBalancedRedisConnection> subscribeLb =
                 (LoadBalancer<LoadBalancedRedisConnection>) lbfUntypedForCast;
         lbfUntypedForCast = loadBalancerFactory.newLoadBalancer(multicastAddressEventStream,
                 new PipelinedLBRedisConnectionFactory<>(roConfig, executionContext, connectionFilterFactory));
+        @SuppressWarnings("unchecked")
         LoadBalancer<LoadBalancedRedisConnection> pipelineLb =
                 (LoadBalancer<LoadBalancedRedisConnection>) lbfUntypedForCast;
 

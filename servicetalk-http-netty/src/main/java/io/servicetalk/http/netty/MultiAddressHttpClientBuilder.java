@@ -16,7 +16,7 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.http.api.ClientGroupFilterFunction;
-import io.servicetalk.http.api.GroupedClientFilterFunction;
+import io.servicetalk.http.api.HttpClientGroupFilterFactory;
 import io.servicetalk.http.api.HttpHeaderNames;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpClientGroup;
@@ -67,11 +67,11 @@ public interface MultiAddressHttpClientBuilder<U, R>
      * <pre>
      *     filter1 =&gt; filter2 =&gt; filter3 =&gt; client
      * </pre>
-     * @param function {@link GroupedClientFilterFunction} to decorate a {@link StreamingHttpClient} for the purpose
+     * @param function {@link HttpClientGroupFilterFactory} to decorate a {@link StreamingHttpClient} for the purpose
      * of filtering.
      * @return {@code this}
      */
-    MultiAddressHttpClientBuilder<U, R> appendClientFilter(GroupedClientFilterFunction<U> function);
+    MultiAddressHttpClientBuilder<U, R> appendClientFilter(HttpClientGroupFilterFactory<U> function);
 
     /**
      * Appends the filter to the chain of filters used to decorate the {@link StreamingHttpClientGroup} created by this builder.

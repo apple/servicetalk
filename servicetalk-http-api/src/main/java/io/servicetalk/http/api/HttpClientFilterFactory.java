@@ -21,10 +21,10 @@ import io.servicetalk.concurrent.api.Publisher;
 import java.util.function.UnaryOperator;
 
 /**
- * Function to filter an {@link StreamingHttpClient}.
+ * A factory which filters the behavior of {@link StreamingHttpClient} instances.
  */
 @FunctionalInterface
-public interface ClientFilterFunction {
+public interface HttpClientFilterFactory {
     /**
      * Function that allows to filter an {@link StreamingHttpClient}.
      * @param client the {@link StreamingHttpClient} to filter
@@ -49,7 +49,7 @@ public interface ClientFilterFunction {
      * @return a composed function that first applies the {@code before}
      * function and then applies this function
      */
-    default ClientFilterFunction append(ClientFilterFunction before) {
+    default HttpClientFilterFactory append(HttpClientFilterFactory before) {
         return (client, lbEvents) -> apply(before.apply(client, lbEvents), lbEvents);
     }
 
@@ -58,18 +58,18 @@ public interface ClientFilterFunction {
      *
      * @return a function that always returns its input {@link StreamingHttpClient}.
      */
-    static ClientFilterFunction identity() {
+    static HttpClientFilterFactory identity() {
         return (client, lbEvents) -> client;
     }
 
     /**
-     * Returns a function that adapts from the {@link UnaryOperator}&lt;{@link StreamingHttpClient}&gt; function type to the
-     * {@link ClientFilterFunction}.
+     * Returns a function that adapts from the {@link UnaryOperator}&lt;{@link StreamingHttpClient}&gt; function type to
+     * the {@link HttpClientFilterFactory}.
      *
      * @param function the function that is applied to the input {@link StreamingHttpClient}
      * @return the filtered {@link StreamingHttpClient}
      */
-    static ClientFilterFunction from(UnaryOperator<StreamingHttpClient> function) {
+    static HttpClientFilterFactory from(UnaryOperator<StreamingHttpClient> function) {
         return (client, lbEvents) -> function.apply(client);
     }
 }

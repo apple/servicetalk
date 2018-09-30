@@ -16,7 +16,7 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.client.api.LoadBalancer;
-import io.servicetalk.http.api.ClientFilterFunction;
+import io.servicetalk.http.api.HttpClientFilterFactory;
 import io.servicetalk.http.api.HttpHeaderNames;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpRequest;
@@ -64,14 +64,14 @@ public interface SingleAddressHttpClientBuilder<U, R>
      * <pre>
      *     filter1 =&gt; filter2 =&gt; filter3 =&gt; client
      * </pre>
-     * @param function {@link ClientFilterFunction} to decorate a {@link StreamingHttpClient} for the purpose of filtering.
+     * @param function {@link HttpClientFilterFactory} to decorate a {@link StreamingHttpClient} for the purpose of filtering.
      * The signature of the {@link BiFunction} is as follows:
      * <pre>
      *     PostFilteredHttpClient func(PreFilteredHttpClient, {@link LoadBalancer#getEventStream()})
      * </pre>
      * @return {@code this}
      */
-    SingleAddressHttpClientBuilder<U, R> appendClientFilter(ClientFilterFunction function);
+    SingleAddressHttpClientBuilder<U, R> appendClientFilter(HttpClientFilterFactory function);
 
     /**
      * Enable SSL/TLS using the provided {@link SslConfig}. To disable it pass in {@code null}.

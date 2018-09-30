@@ -29,18 +29,18 @@ import io.servicetalk.opentracing.core.internal.InMemoryTraceStateFormat;
 import io.opentracing.Scope;
 import io.opentracing.SpanContext;
 import io.opentracing.Tracer;
+import org.reactivestreams.Subscription;
 
 import javax.annotation.Nullable;
 
 import static io.opentracing.Tracer.SpanBuilder;
-import static io.opentracing.tag.Tags.ERROR;
 import static io.opentracing.tag.Tags.HTTP_METHOD;
 import static io.opentracing.tag.Tags.HTTP_STATUS;
 import static io.opentracing.tag.Tags.HTTP_URL;
 import static io.opentracing.tag.Tags.SPAN_KIND;
 import static io.opentracing.tag.Tags.SPAN_KIND_SERVER;
-import static io.servicetalk.opentracing.http.OpenTracingHttpHeadersFormatter.FORMATTER_NO_VALIDATION;
-import static io.servicetalk.opentracing.http.OpenTracingHttpHeadersFormatter.FORMATTER_VALIDATION;
+import static io.servicetalk.opentracing.http.OpenTracingHttpHeadersFormatter.traceStateFormatter;
+import static io.servicetalk.opentracing.http.TracingUtils.tagErrorAndClose;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -78,7 +78,7 @@ public class OpenTracingStreamingHttpServiceFilter extends StreamingHttpService 
         this.tracer = requireNonNull(tracer);
         this.componentName = requireNonNull(componentName);
         this.next = requireNonNull(next);
-        formatter = validateTraceKeyFormat ? FORMATTER_VALIDATION : FORMATTER_NO_VALIDATION;
+        formatter = traceStateFormatter(validateTraceKeyFormat);
     }
 
     @Override
@@ -103,15 +103,29 @@ public class OpenTracingStreamingHttpServiceFilter extends StreamingHttpService 
                         tracer.inject(currentScope.span().context(), formatter, resp.headers());
                     }
                     return resp.transformRawPayloadBody(pub ->
-                            pub.doOnError(cause -> tagErrorAndClose(currentScope))
-                               .doOnCancel(() -> tagErrorAndClose(currentScope))
-                               .doOnComplete(() -> {
-                                   HTTP_STATUS.set(currentScope.span(), resp.status().code());
-                                   currentScope.close();
-                               }));
+                            pub.doAfterSubscriber(() -> new org.reactivestreams.Subscriber<Object>() {
+                                @Override
+                                public void onSubscribe(final Subscription s) {
+                                }
+
+                                @Override
+                                public void onNext(final Object o) {
+                                }
+
+                                @Override
+                                public void onError(final Throwable t) {
+                                    tagErrorAndClose(currentScope);
+                                }
+
+                                @Override
+                                public void onComplete() {
+                                    HTTP_STATUS.set(currentScope.span(), resp.status().code());
+                                    currentScope.close();
+                                }
+                            }).doOnCancel(() -> tagErrorAndClose(currentScope)));
                 }).doOnError(cause -> tagErrorAndClose(currentScope))
-                .doOnCancel(() -> tagErrorAndClose(currentScope))
-                .subscribe(subscriber);
+                  .doOnCancel(() -> tagErrorAndClose(currentScope))
+                  .subscribe(subscriber);
             }
         };
     }
@@ -138,10 +152,5 @@ public class OpenTracingStreamingHttpServiceFilter extends StreamingHttpService 
      */
     protected boolean injectSpanContextIntoResponse(@Nullable SpanContext parentSpanContext) {
         return parentSpanContext == null;
-    }
-
-    static void tagErrorAndClose(Scope currentScope) {
-        ERROR.set(currentScope.span(), true);
-        currentScope.close();
     }
 }

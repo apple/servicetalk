@@ -27,6 +27,7 @@ import io.servicetalk.opentracing.core.internal.InMemoryTraceStateFormat;
 import io.opentracing.Scope;
 import io.opentracing.Tracer;
 import io.opentracing.Tracer.SpanBuilder;
+import org.reactivestreams.Subscription;
 
 import static io.opentracing.tag.Tags.ERROR;
 import static io.opentracing.tag.Tags.HTTP_METHOD;
@@ -35,9 +36,8 @@ import static io.opentracing.tag.Tags.HTTP_URL;
 import static io.opentracing.tag.Tags.SPAN_KIND;
 import static io.opentracing.tag.Tags.SPAN_KIND_CLIENT;
 import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.SERVER_ERROR_5XX;
-import static io.servicetalk.opentracing.http.OpenTracingHttpHeadersFormatter.FORMATTER_NO_VALIDATION;
-import static io.servicetalk.opentracing.http.OpenTracingHttpHeadersFormatter.FORMATTER_VALIDATION;
-import static io.servicetalk.opentracing.http.OpenTracingStreamingHttpServiceFilter.tagErrorAndClose;
+import static io.servicetalk.opentracing.http.OpenTracingHttpHeadersFormatter.traceStateFormatter;
+import static io.servicetalk.opentracing.http.TracingUtils.tagErrorAndClose;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -52,12 +52,12 @@ public class OpenTracingStreamingHttpConnectionFilter extends StreamingHttpConne
      * Create a new instance.
      * @param tracer The {@link Tracer}.
      * @param componentName The component name used during building new spans.
-     * @param delegate The {@link StreamingHttpConnection} to delegate all calls to.
+     * @param next The next {@link StreamingHttpConnection} in the filter chain.
      */
     public OpenTracingStreamingHttpConnectionFilter(Tracer tracer,
                                                     String componentName,
-                                                    StreamingHttpConnection delegate) {
-        this(tracer, componentName, delegate, true);
+                                                    StreamingHttpConnection next) {
+        this(tracer, componentName, next, true);
     }
 
     /**
@@ -74,7 +74,7 @@ public class OpenTracingStreamingHttpConnectionFilter extends StreamingHttpConne
         super(next);
         this.tracer = requireNonNull(tracer);
         this.componentName = requireNonNull(componentName);
-        formatter = validateTraceKeyFormat ? FORMATTER_VALIDATION : FORMATTER_NO_VALIDATION;
+        this.formatter = traceStateFormatter(validateTraceKeyFormat);
     }
 
     @Override
@@ -94,21 +94,35 @@ public class OpenTracingStreamingHttpConnectionFilter extends StreamingHttpConne
                 Scope childScope = spanBuilder.startActive(true);
                 tracer.inject(childScope.span().context(), formatter, request.headers());
                 delegate().request(request).map(resp -> resp.transformRawPayloadBody(pub ->
-                        pub.doOnError(cause -> tagErrorAndClose(childScope))
-                           .doOnCancel(() -> tagErrorAndClose(childScope))
-                           .doOnComplete(() -> {
-                               HTTP_STATUS.set(childScope.span(), resp.status().code());
-                               try {
-                                   if (isError(resp)) {
-                                       ERROR.set(childScope.span(), true);
-                                   }
-                               } finally {
-                                   childScope.close();
-                               }
-                           }))
+                        pub.doAfterSubscriber(() -> new org.reactivestreams.Subscriber<Object>() {
+                            @Override
+                            public void onSubscribe(final Subscription s) {
+                            }
+
+                            @Override
+                            public void onNext(final Object o) {
+                            }
+
+                            @Override
+                            public void onError(final Throwable t) {
+                                tagErrorAndClose(childScope);
+                            }
+
+                            @Override
+                            public void onComplete() {
+                                HTTP_STATUS.set(childScope.span(), resp.status().code());
+                                try {
+                                    if (isError(resp)) {
+                                        ERROR.set(childScope.span(), true);
+                                    }
+                                } finally {
+                                    childScope.close();
+                                }
+                            }
+                        }).doOnCancel(() -> tagErrorAndClose(childScope)))
                 ).doOnError(cause -> tagErrorAndClose(childScope))
-                .doOnCancel(() -> tagErrorAndClose(childScope))
-                .subscribe(subscriber);
+                 .doOnCancel(() -> tagErrorAndClose(childScope))
+                 .subscribe(subscriber);
             }
         };
     }

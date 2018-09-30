@@ -16,10 +16,7 @@
 package io.servicetalk.redis.netty;
 
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.redis.api.RedisConnection;
 import io.servicetalk.transport.api.ExecutionContext;
-
-import java.util.function.Function;
 
 import static io.servicetalk.client.internal.ReservableRequestConcurrencyControllers.newController;
 import static io.servicetalk.redis.api.RedisConnection.SettingKey.MAX_CONCURRENCY;
@@ -32,7 +29,7 @@ final class PipelinedLBRedisConnectionFactory<ResolvedAddress> extends AbstractL
 
     PipelinedLBRedisConnectionFactory(final ReadOnlyRedisClientConfig config,
                                       final ExecutionContext executionContext,
-                                      final Function<RedisConnection, RedisConnection> connectionFilterFactory) {
+                                      final RedisConnectionFilterFactory connectionFilterFactory) {
         super(connectionFilterFactory);
         this.config = requireNonNull(config);
         this.executionContext = requireNonNull(executionContext);
@@ -40,7 +37,7 @@ final class PipelinedLBRedisConnectionFactory<ResolvedAddress> extends AbstractL
 
     @Override
     Single<LoadBalancedRedisConnection> newConnection(final ResolvedAddress resolvedAddress,
-                                          final Function<RedisConnection, RedisConnection> connectionFilterFactory) {
+                                          final RedisConnectionFilterFactory connectionFilterFactory) {
         return buildForPipelined(executionContext, resolvedAddress, config, connectionFilterFactory)
                 .map(filteredConnection -> new LoadBalancedRedisConnection(filteredConnection,
                         newController(filteredConnection.settingStream(MAX_CONCURRENCY),

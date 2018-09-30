@@ -58,7 +58,6 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.function.UnaryOperator;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
@@ -66,8 +65,8 @@ import static io.servicetalk.concurrent.api.Publisher.error;
 import static io.servicetalk.concurrent.internal.EmptySubscription.EMPTY_SUBSCRIPTION;
 import static io.servicetalk.redis.netty.DefaultRedisClientBuilder.DEFAULT_CLIENT_FILTER_FACTORY;
 import static io.servicetalk.redis.netty.DefaultRedisClientBuilder.newRedisClient;
+import static io.servicetalk.redis.netty.PartitionedRedisClientFilterFactory.identity;
 import static java.util.Objects.requireNonNull;
-import static java.util.function.UnaryOperator.identity;
 
 /**
  * A builder for instances of {@link PartitionedRedisClient}.
@@ -85,8 +84,8 @@ public class DefaultPartitionedRedisClientBuilder<ResolvedAddress>
     private final RedisClientConfig config;
     private int serviceDiscoveryMaxQueueSize = 32;
     private RedisClientFilterFactory clientFilterFactory = DEFAULT_CLIENT_FILTER_FACTORY;
-    private UnaryOperator<RedisConnection> connectionFilterFactory = identity();
-    private UnaryOperator<PartitionedRedisClient> partitionedClientFilterFactory = identity();
+    private RedisConnectionFilterFactory connectionFilterFactory = RedisConnectionFilterFactory.identity();
+    private PartitionedRedisClientFilterFactory partitionedClientFilterFactory = identity();
 
     /**
      * Create a new instance.
@@ -240,11 +239,11 @@ public class DefaultPartitionedRedisClientBuilder<ResolvedAddress>
      * Filtering allows you to wrap a {@link RedisConnection} and modify behavior during request/response processing.
      * Some potential candidates for filtering include logging, metrics, and decorating responses.
      *
-     * @param connectionFilterFactory {@link UnaryOperator} to filter the used {@link RedisConnection}.
+     * @param connectionFilterFactory {@link RedisConnectionFilterFactory} to filter the used {@link RedisConnection}.
      * @return {@code this}.
      */
-    public DefaultPartitionedRedisClientBuilder<ResolvedAddress> connectionFilterFactory(
-            UnaryOperator<RedisConnection> connectionFilterFactory) {
+    public DefaultPartitionedRedisClientBuilder<ResolvedAddress> appendConnectionFilter(
+            RedisConnectionFilterFactory connectionFilterFactory) {
         this.connectionFilterFactory = requireNonNull(connectionFilterFactory);
         return this;
     }
@@ -255,11 +254,12 @@ public class DefaultPartitionedRedisClientBuilder<ResolvedAddress>
      * Note this method will be used to decorate the result of {@link #build(ExecutionContext, Publisher)} before it is
      * returned to the user.
      *
-     * @param partitionedClientFilterFactory {@link UnaryOperator} to filter the used {@link PartitionedRedisClient}.
+     * @param partitionedClientFilterFactory {@link PartitionedRedisClientFilterFactory} to filter the used
+     * {@link PartitionedRedisClient}.
      * @return {@code this}.
      */
-    public DefaultPartitionedRedisClientBuilder<ResolvedAddress> partitionedClientFilterFactory(
-            UnaryOperator<PartitionedRedisClient> partitionedClientFilterFactory) {
+    public DefaultPartitionedRedisClientBuilder<ResolvedAddress> appendPartitionedFilter(
+            PartitionedRedisClientFilterFactory partitionedClientFilterFactory) {
         this.partitionedClientFilterFactory = requireNonNull(partitionedClientFilterFactory);
         return this;
     }
@@ -301,7 +301,7 @@ public class DefaultPartitionedRedisClientBuilder<ResolvedAddress>
                                       Publisher<PartitionedEvent<ResolvedAddress>> addressEventStream,
                                       RedisClientFilterFactory clientFilterFactory,
                                       RedisClientConfig config,
-                                      Function<RedisConnection, RedisConnection> connectionFilterFactory,
+                                      RedisConnectionFilterFactory connectionFilterFactory,
                                       LoadBalancerFactory<ResolvedAddress, RedisConnection> loadBalancerFactory,
                                       Function<Command, RedisPartitionAttributesBuilder> redisPartitionAttributesBuilderFactory,
                                       PartitionMap<Partition> partitionMap,

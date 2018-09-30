@@ -18,8 +18,8 @@ package io.servicetalk.http.netty;
 import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.api.LoadBalancerFactory;
 import io.servicetalk.client.api.ServiceDiscoverer;
-import io.servicetalk.http.api.ConnectionFilterFunction;
 import io.servicetalk.http.api.HttpClientBuilder;
+import io.servicetalk.http.api.HttpConnectionFilterFactory;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.api.StreamingHttpClient;
@@ -142,7 +142,7 @@ interface BaseHttpClientBuilder<U, R, BuilderType extends BaseHttpClientBuilder>
      * @param function {@link UnaryOperator} to decorate a {@link StreamingHttpConnection} for the purpose of filtering.
      * @return {@code this}
      */
-    BuilderType appendConnectionFilter(ConnectionFilterFunction function);
+    BuilderType appendConnectionFilter(HttpConnectionFilterFactory function);
 
     /**
      * Disable automatically setting {@code Host} headers by inferring from the address or {@link StreamingHttpRequest}.
