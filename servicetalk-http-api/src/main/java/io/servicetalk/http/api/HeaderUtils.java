@@ -84,7 +84,7 @@ final class HeaderUtils {
 
         // The regular iterator is not suitable for equality comparisons because the overall ordering is not
         // in any specific order relative to the content of this MultiMap.
-        for (final CharSequence name : lhs.getNames()) {
+        for (final CharSequence name : lhs.names()) {
             final Iterator<? extends CharSequence> valueItr = lhs.getAll(name);
             final Iterator<? extends CharSequence> h2ValueItr = rhs.getAll(name);
             while (valueItr.hasNext() && h2ValueItr.hasNext()) {
@@ -100,11 +100,11 @@ final class HeaderUtils {
     }
 
     static int hashCode(final HttpHeaders headers) {
-        if (headers.isEmpty()) {
+        if (headers.empty()) {
             return 0;
         }
         int result = HASH_CODE_SEED;
-        for (final CharSequence key : headers.getNames()) {
+        for (final CharSequence key : headers.names()) {
             result = 31 * result + caseInsensitiveHashCode(key);
             final Iterator<? extends CharSequence> valueItr = headers.getAll(key);
             while (valueItr.hasNext()) {

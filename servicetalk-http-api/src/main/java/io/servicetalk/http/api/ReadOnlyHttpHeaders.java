@@ -128,12 +128,12 @@ final class ReadOnlyHttpHeaders implements HttpHeaders {
     }
 
     @Override
-    public boolean isEmpty() {
+    public boolean empty() {
         return keyValuePairs.length == 0;
     }
 
     @Override
-    public Set<? extends CharSequence> getNames() {
+    public Set<? extends CharSequence> names() {
         final Set<CharSequence> nameSet = new HashSet<>(size());
         final int end = keyValuePairs.length - 1;
         for (int i = 0; i < end; i += 2) {
@@ -371,7 +371,7 @@ final class ReadOnlyHttpHeaders implements HttpHeaders {
                 // In the future we could attempt to delay full parsing of the cookie until after the domain/path have
                 // been matched, but for simplicity just do the parsing ahead of time.
                 HttpCookie cookie = parseCookie(currentValue, validateCookies);
-                if (domainMatches(domain, cookie.getDomain()) && pathMatches(path, cookie.getPath())) {
+                if (domainMatches(domain, cookie.domain()) && pathMatches(path, cookie.path())) {
                     return new ReadOnlyCookieNameDomainPathIterator(i, nameHash, cookieHeaderName, cookie, cookieName,
                             domain, path, validateCookies);
                 }
@@ -508,7 +508,7 @@ final class ReadOnlyHttpHeaders implements HttpHeaders {
                     // In the future we could attempt to delay full parsing of the cookie until after the domain/path
                     // have been matched, but for simplicity just do the parsing ahead of time.
                     HttpCookie tmp = parseCookie(currentValue, validate);
-                    if (domainMatches(domain, tmp.getDomain()) && pathMatches(path, tmp.getPath())) {
+                    if (domainMatches(domain, tmp.domain()) && pathMatches(path, tmp.path())) {
                         cookie = tmp;
                         break;
                     }

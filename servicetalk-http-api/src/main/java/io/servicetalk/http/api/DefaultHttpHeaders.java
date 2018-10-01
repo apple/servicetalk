@@ -163,32 +163,32 @@ final class DefaultHttpHeaders extends MultiMap<CharSequence, CharSequence> impl
 
     private void encodeAndAddCookie(CharSequence cookieHeaderName, HttpCookie cookie) {
         StringBuilder sb = new StringBuilder(64);
-        sb.append(cookie.getName()).append('=');
-        if (cookie.isWrapped()) {
-            sb.append('"').append(cookie.getValue()).append('"');
+        sb.append(cookie.name()).append('=');
+        if (cookie.wrapped()) {
+            sb.append('"').append(cookie.value()).append('"');
         } else {
-            sb.append(cookie.getValue());
+            sb.append(cookie.value());
         }
-        if (cookie.getDomain() != null) {
+        if (cookie.domain() != null) {
             sb.append("; domain=");
-            sb.append(cookie.getDomain());
+            sb.append(cookie.domain());
         }
-        if (cookie.getPath() != null) {
+        if (cookie.path() != null) {
             sb.append("; path=");
-            sb.append(cookie.getPath());
+            sb.append(cookie.path());
         }
-        if (cookie.getExpires() != null) {
+        if (cookie.expires() != null) {
             sb.append("; expires=");
-            sb.append(cookie.getExpires());
+            sb.append(cookie.expires());
         }
-        if (cookie.getMaxAge() != null) {
+        if (cookie.maxAge() != null) {
             sb.append("; max-age=");
-            sb.append(cookie.getMaxAge());
+            sb.append(cookie.maxAge());
         }
-        if (cookie.isHttpOnly()) {
+        if (cookie.httpOnly()) {
             sb.append("; httponly");
         }
-        if (cookie.isSecure()) {
+        if (cookie.secure()) {
             sb.append("; secure");
         }
         // We could return sb.toString() but for now we avoid the intermediate copy operation until we can demonstrate
@@ -234,7 +234,7 @@ final class DefaultHttpHeaders extends MultiMap<CharSequence, CharSequence> impl
                 // In the future we could attempt to delay full parsing of the cookie until after the domain/path have
                 // been matched, but for simplicity just do the parsing ahead of time.
                 HttpCookie cookie = parseCookie(e.value, false);
-                if (domainMatches(domain, cookie.getDomain()) && pathMatches(path, cookie.getPath())) {
+                if (domainMatches(domain, cookie.domain()) && pathMatches(path, cookie.path())) {
                     final MultiMapEntry<CharSequence, CharSequence> tmpEntry = e;
                     e = e.bucketNext;
                     removeEntry(bucketHead, tmpEntry, bucketIndex);
@@ -281,7 +281,7 @@ final class DefaultHttpHeaders extends MultiMap<CharSequence, CharSequence> impl
                 // In the future we could attempt to delay full parsing of the cookie until after the domain/path have
                 // been matched, but for simplicity just do the parsing ahead of time.
                 HttpCookie cookie = parseCookie(e.value, validateCookies);
-                if (domainMatches(domain, cookie.getDomain()) && pathMatches(path, cookie.getPath())) {
+                if (domainMatches(domain, cookie.domain()) && pathMatches(path, cookie.path())) {
                     return new CookiesByNameDomainPathIterator(keyHash, cookieHeaderName,
                             validateCookies, name, domain, path, cookie, e);
                 }
@@ -506,7 +506,7 @@ final class DefaultHttpHeaders extends MultiMap<CharSequence, CharSequence> impl
                     // In the future we could attempt to delay full parsing of the cookie until after the domain/path
                     // have been matched, but for simplicity just do the parsing ahead of time.
                     HttpCookie tmp = parseCookie(e.value, validateCookies);
-                    if (domainMatches(cookieDomain, tmp.getDomain()) && pathMatches(cookiePath, tmp.getPath())) {
+                    if (domainMatches(cookieDomain, tmp.domain()) && pathMatches(cookiePath, tmp.path())) {
                         cookie = tmp;
                         return e;
                     }
@@ -554,7 +554,7 @@ final class DefaultHttpHeaders extends MultiMap<CharSequence, CharSequence> impl
     }
 
     @Override
-    public Set<? extends CharSequence> getNames() {
+    public Set<? extends CharSequence> names() {
         return getKeys();
     }
 

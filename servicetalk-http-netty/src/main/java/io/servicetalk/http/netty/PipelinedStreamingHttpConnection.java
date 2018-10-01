@@ -40,8 +40,8 @@ final class PipelinedStreamingHttpConnection extends AbstractStreamingHttpConnec
     @Override
     public Single<StreamingHttpResponse> request(StreamingHttpRequest request) {
         HttpProtocolVersion version = request.version();
-        if (version != HTTP_1_1 && (version.getMajorVersion() != HTTP_1_1.getMajorVersion()
-                || version.getMinorVersion() != HTTP_1_1.getMinorVersion())) {
+        if (version != HTTP_1_1 && (version.majorVersion() != HTTP_1_1.majorVersion()
+                || version.minorVersion() != HTTP_1_1.minorVersion())) {
             return Single.error(new IllegalArgumentException(
                     "Pipelining unsupported in protocol version: " + request.version()));
         }

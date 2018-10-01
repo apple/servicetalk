@@ -260,7 +260,7 @@ abstract class HttpObjectEncoder<T extends HttpMetaData> extends ChannelOutbound
     }
 
     private void encodeAndWriteTrailers(ChannelHandlerContext ctx, HttpHeaders headers, ChannelPromise promise) {
-        if (headers.isEmpty()) {
+        if (headers.empty()) {
             ctx.write(ZERO_CRLF_CRLF_BUF.duplicate(), promise);
         } else {
             ByteBuf buf = ctx.alloc().buffer((int) trailersEncodedSizeAccumulator);

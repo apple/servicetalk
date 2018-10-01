@@ -291,11 +291,11 @@ public abstract class AbstractHttpRequestMetaDataTest<T extends HttpRequestMetaD
         createFixture("/some/path?foo=bar&abc=def&foo=baz");
         final HttpQuery query = fixture.parseQuery();
 
-        assertEquals(asList("foo", "abc"), iteratorAsList(query.getKeys().iterator()));
+        assertEquals(asList("foo", "abc"), iteratorAsList(query.keys().iterator()));
         assertEquals("bar", query.get("foo"));
-        assertEquals(asList("bar", "baz"), iteratorAsList(query.getAll("foo")));
+        assertEquals(asList("bar", "baz"), iteratorAsList(query.all("foo")));
         assertEquals("def", query.get("abc"));
-        assertEquals(singletonList("def"), iteratorAsList(query.getAll("abc")));
+        assertEquals(singletonList("def"), iteratorAsList(query.all("abc")));
     }
 
     @Test
@@ -340,8 +340,8 @@ public abstract class AbstractHttpRequestMetaDataTest<T extends HttpRequestMetaD
         assertEquals("/some/path", fixture.path());
         assertEquals("foo=bar&abc=def&foo=baz", fixture.rawQuery());
         final HttpQuery query = fixture.parseQuery();
-        assertEquals(asList("bar", "baz"), iteratorAsList(query.getAll("foo")));
-        assertEquals(singletonList("def"), iteratorAsList(query.getAll("abc")));
+        assertEquals(asList("bar", "baz"), iteratorAsList(query.all("foo")));
+        assertEquals(singletonList("def"), iteratorAsList(query.all("abc")));
 
         // change it
         fixture.requestTarget("/new/%24path%24?another=bar");
@@ -352,7 +352,7 @@ public abstract class AbstractHttpRequestMetaDataTest<T extends HttpRequestMetaD
         assertEquals("/new/$path$", fixture.path());
         assertEquals("another=bar", fixture.rawQuery());
         final HttpQuery newQuery = fixture.parseQuery();
-        assertEquals(singletonList("bar"), iteratorAsList(newQuery.getAll("another")));
+        assertEquals(singletonList("bar"), iteratorAsList(newQuery.all("another")));
     }
 
     @Test
@@ -365,8 +365,8 @@ public abstract class AbstractHttpRequestMetaDataTest<T extends HttpRequestMetaD
         assertEquals("/some/path", fixture.path());
         assertEquals("foo=bar&abc=def&foo=baz", fixture.rawQuery());
         final HttpQuery query = fixture.parseQuery();
-        assertEquals(asList("bar", "baz"), iteratorAsList(query.getAll("foo")));
-        assertEquals(singletonList("def"), iteratorAsList(query.getAll("abc")));
+        assertEquals(asList("bar", "baz"), iteratorAsList(query.all("foo")));
+        assertEquals(singletonList("def"), iteratorAsList(query.all("abc")));
 
         // change it
         fixture.path("/new/$path$");
@@ -377,8 +377,8 @@ public abstract class AbstractHttpRequestMetaDataTest<T extends HttpRequestMetaD
         assertEquals("/new/$path$", fixture.path());
         assertEquals("foo=bar&abc=def&foo=baz", fixture.rawQuery());
         final HttpQuery newQuery = fixture.parseQuery();
-        assertEquals(asList("bar", "baz"), iteratorAsList(newQuery.getAll("foo")));
-        assertEquals(singletonList("def"), iteratorAsList(newQuery.getAll("abc")));
+        assertEquals(asList("bar", "baz"), iteratorAsList(newQuery.all("foo")));
+        assertEquals(singletonList("def"), iteratorAsList(newQuery.all("abc")));
     }
 
     @Test
@@ -391,8 +391,8 @@ public abstract class AbstractHttpRequestMetaDataTest<T extends HttpRequestMetaD
         assertEquals("/some/path", fixture.path());
         assertEquals("foo=bar&abc=def&foo=baz", fixture.rawQuery());
         final HttpQuery query = fixture.parseQuery();
-        assertEquals(asList("bar", "baz"), iteratorAsList(query.getAll("foo")));
-        assertEquals(singletonList("def"), iteratorAsList(query.getAll("abc")));
+        assertEquals(asList("bar", "baz"), iteratorAsList(query.all("foo")));
+        assertEquals(singletonList("def"), iteratorAsList(query.all("abc")));
 
         // change it
         fixture.rawQuery("abc=new");
@@ -403,8 +403,8 @@ public abstract class AbstractHttpRequestMetaDataTest<T extends HttpRequestMetaD
         assertEquals("/some/path", fixture.path());
         assertEquals("abc=new", fixture.rawQuery());
         final HttpQuery newQuery = fixture.parseQuery();
-        assertEquals(singleton("abc"), newQuery.getKeys());
-        assertEquals(singletonList("new"), iteratorAsList(newQuery.getAll("abc")));
+        assertEquals(singleton("abc"), newQuery.keys());
+        assertEquals(singletonList("new"), iteratorAsList(newQuery.all("abc")));
     }
 
     @Test

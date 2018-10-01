@@ -73,51 +73,51 @@ final class DefaultHttpCookie implements HttpCookie {
     }
 
     @Override
-    public CharSequence getName() {
+    public CharSequence name() {
         return name;
     }
 
     @Override
-    public CharSequence getValue() {
+    public CharSequence value() {
         return value;
     }
 
     @Override
-    public boolean isWrapped() {
+    public boolean wrapped() {
         return wrapped;
     }
 
     @Nullable
     @Override
-    public CharSequence getDomain() {
+    public CharSequence domain() {
         return domain;
     }
 
     @Nullable
     @Override
-    public CharSequence getPath() {
+    public CharSequence path() {
         return path;
     }
 
     @Nullable
     @Override
-    public Long getMaxAge() {
+    public Long maxAge() {
         return maxAge;
     }
 
     @Nullable
     @Override
-    public CharSequence getExpires() {
+    public CharSequence expires() {
         return expires;
     }
 
     @Override
-    public boolean isSecure() {
+    public boolean secure() {
         return secure;
     }
 
     @Override
-    public boolean isHttpOnly() {
+    public boolean httpOnly() {
         return httpOnly;
     }
 
@@ -132,9 +132,9 @@ final class DefaultHttpCookie implements HttpCookie {
         // if equals(a) == equals(b) then a.hasCode() == b.hashCode()
         // [1] https://tools.ietf.org/html/rfc6265#section-5.1.3
         // [2] https://tools.ietf.org/html/rfc6265#section-5.1.4
-        return contentEqualsIgnoreCase(name, rhs.getName()) &&
-                contentEqualsIgnoreCase(domain, rhs.getDomain()) &&
-                Objects.equals(path, rhs.getPath());
+        return contentEqualsIgnoreCase(name, rhs.name()) &&
+                contentEqualsIgnoreCase(domain, rhs.domain()) &&
+                Objects.equals(path, rhs.path());
     }
 
     @Override

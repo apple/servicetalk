@@ -25,7 +25,7 @@ final class HttpProtocolVersionUtils {
 
     static boolean isSameVersion(final HttpProtocolVersion version1, final HttpProtocolVersion version2) {
         return version1 == version2 ||
-                version1.getMajorVersion() == version2.getMajorVersion() &&
-                        version1.getMinorVersion() == version2.getMinorVersion();
+                version1.majorVersion() == version2.majorVersion() &&
+                        version1.minorVersion() == version2.minorVersion();
     }
 }

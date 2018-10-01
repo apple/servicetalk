@@ -250,7 +250,7 @@ public class HttpResponseDecoderTest {
         HttpResponseMetaData response = channel.readInbound();
         assertStandardHeaders(response.headers());
         HttpHeaders lastChunk = channel.readInbound();
-        assertTrue(lastChunk.isEmpty());
+        assertTrue(lastChunk.empty());
         assertFalse(channel.finishAndReleaseAll());
     }
 
@@ -268,7 +268,7 @@ public class HttpResponseDecoderTest {
         HttpResponseMetaData response = channel.readInbound();
         assertStandardHeaders(response.headers());
         HttpHeaders lastChunk = channel.readInbound();
-        assertTrue(lastChunk.isEmpty());
+        assertTrue(lastChunk.empty());
         assertFalse(channel.finishAndReleaseAll());
     }
 
@@ -344,7 +344,7 @@ public class HttpResponseDecoderTest {
             Buffer chunk = channel.readInbound();
             assertEquals(expectedContentLength, chunk.readableBytes());
             HttpHeaders trailers = channel.readInbound();
-            assertTrue(trailers.isEmpty());
+            assertTrue(trailers.empty());
         } else {
             Buffer actual = DEFAULT_ALLOCATOR.newBuffer(-expectedContentLength);
             Object chunk;
@@ -361,7 +361,7 @@ public class HttpResponseDecoderTest {
             if (containsTrailers) {
                 assertSingleHeaderValue(lastChunk, "TrailerStatus", "good");
             } else {
-                assertTrue(lastChunk.isEmpty());
+                assertTrue(lastChunk.empty());
             }
         }
     }

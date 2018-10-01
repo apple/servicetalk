@@ -132,7 +132,7 @@ abstract class MultiMap<K, V> {
     protected abstract boolean equalsForValue(V value1, V value2);
 
     final Set<? extends K> getKeys() {
-        if (isEmpty()) {
+        if (empty()) {
             return emptySet();
         }
         // Overall iteration order does not need to be preserved.
@@ -154,7 +154,7 @@ abstract class MultiMap<K, V> {
         return size;
     }
 
-    public final boolean isEmpty() {
+    public final boolean empty() {
         return lastBucketHead == null;
     }
 
@@ -429,7 +429,7 @@ abstract class MultiMap<K, V> {
 
     @Override
     public int hashCode() {
-        if (isEmpty()) {
+        if (empty()) {
             return 0;
         }
         int result = HASH_CODE_SEED;

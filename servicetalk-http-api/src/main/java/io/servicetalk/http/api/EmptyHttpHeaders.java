@@ -72,12 +72,12 @@ public final class EmptyHttpHeaders implements HttpHeaders {
     }
 
     @Override
-    public boolean isEmpty() {
+    public boolean empty() {
         return true;
     }
 
     @Override
-    public Set<? extends CharSequence> getNames() {
+    public Set<? extends CharSequence> names() {
         return emptySet();
     }
 
@@ -163,7 +163,7 @@ public final class EmptyHttpHeaders implements HttpHeaders {
         }
 
         HttpHeaders rhs = (HttpHeaders) o;
-        return isEmpty() && rhs.isEmpty();
+        return empty() && rhs.empty();
     }
 
     @Override

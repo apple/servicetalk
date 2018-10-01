@@ -74,14 +74,14 @@ public class DefaultHttpQueryTest {
         params.put("foo", newList("bar", "baz"));
         final DefaultHttpQuery query = new DefaultHttpQuery(params, queryParamsUpdater);
 
-        assertEquals(asList("bar", "baz"), iteratorAsList(query.getAll("foo")));
+        assertEquals(asList("bar", "baz"), iteratorAsList(query.all("foo")));
     }
 
     @Test
     public void testGetAllEmpty() {
         final DefaultHttpQuery query = new DefaultHttpQuery(params, queryParamsUpdater);
 
-        assertFalse(query.getAll("foo").hasNext());
+        assertFalse(query.all("foo").hasNext());
     }
 
     @Test
@@ -89,7 +89,7 @@ public class DefaultHttpQueryTest {
         params.put("foo", newList("bar", "baz"));
         final DefaultHttpQuery query = new DefaultHttpQuery(params, queryParamsUpdater);
 
-        assertEquals(asList("bar", "baz"), iteratorAsList(query.getAll("foo")));
+        assertEquals(asList("bar", "baz"), iteratorAsList(query.all("foo")));
     }
 
     @Test
@@ -99,8 +99,8 @@ public class DefaultHttpQueryTest {
         final DefaultHttpQuery query = new DefaultHttpQuery(params, queryParamsUpdater);
         query.set("abc", "new");
 
-        assertEquals(singletonList("new"), iteratorAsList(query.getAll("abc")));
-        assertEquals(asList("bar", "baz"), iteratorAsList(query.getAll("foo")));
+        assertEquals(singletonList("new"), iteratorAsList(query.all("abc")));
+        assertEquals(asList("bar", "baz"), iteratorAsList(query.all("foo")));
     }
 
     @Test
@@ -110,8 +110,8 @@ public class DefaultHttpQueryTest {
         final DefaultHttpQuery query = new DefaultHttpQuery(params, queryParamsUpdater);
         query.set("abc", newList("new1", "new2"));
 
-        assertEquals(asList("new1", "new2"), iteratorAsList(query.getAll("abc")));
-        assertEquals(asList("bar", "baz"), iteratorAsList(query.getAll("foo")));
+        assertEquals(asList("new1", "new2"), iteratorAsList(query.all("abc")));
+        assertEquals(asList("bar", "baz"), iteratorAsList(query.all("foo")));
     }
 
     @Test
@@ -121,8 +121,8 @@ public class DefaultHttpQueryTest {
         final DefaultHttpQuery query = new DefaultHttpQuery(params, queryParamsUpdater);
         query.add("abc", "new");
 
-        assertEquals(asList("def", "new"), iteratorAsList(query.getAll("abc")));
-        assertEquals(asList("bar", "baz"), iteratorAsList(query.getAll("foo")));
+        assertEquals(asList("def", "new"), iteratorAsList(query.all("abc")));
+        assertEquals(asList("bar", "baz"), iteratorAsList(query.all("foo")));
     }
 
     @Test
@@ -133,8 +133,8 @@ public class DefaultHttpQueryTest {
         query.add("abc", newList("new1", "new2"));
         query.encodeToRequestTarget();
 
-        assertEquals(asList("def", "new1", "new2"), iteratorAsList(query.getAll("abc")));
-        assertEquals(asList("bar", "baz"), iteratorAsList(query.getAll("foo")));
+        assertEquals(asList("def", "new1", "new2"), iteratorAsList(query.all("abc")));
+        assertEquals(asList("bar", "baz"), iteratorAsList(query.all("foo")));
     }
 
     @Test
@@ -178,7 +178,7 @@ public class DefaultHttpQueryTest {
         assertFalse(query.remove("foo", "bar"));
 
         assertEquals("baz", query.get("foo"));
-        assertEquals(singletonList("baz"), iteratorAsList(query.getAll("foo")));
+        assertEquals(singletonList("baz"), iteratorAsList(query.all("foo")));
     }
 
     @Test
@@ -292,7 +292,7 @@ public class DefaultHttpQueryTest {
         assertFalse(iterator.hasNext());
 
         assertEquals(2, query.size());
-        assertEquals(asList("def", "123"), iteratorAsList(query.getAll("abc")));
+        assertEquals(asList("def", "123"), iteratorAsList(query.all("abc")));
         assertNull(query.get("foo"));
 
         expected.expect(NoSuchElementException.class);

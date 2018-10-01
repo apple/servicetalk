@@ -45,13 +45,13 @@ public interface HttpQuery extends Iterable<Map.Entry<String, String>> {
      * @param key the key of the query parameter to retrieve.
      * @return a {@link Iterator} of query parameter values or an empty {@link Iterator} if no values are found.
      */
-    Iterator<String> getAll(String key);
+    Iterator<String> all(String key);
 
     /**
      * Returns a {@link Set} of all query parameter keys in this object. The returned {@link Set} cannot be modified.
      * @return a {@link Set} of all query parameter keys in this object. The returned {@link Set} cannot be modified.
      */
-    Set<String> getKeys();
+    Set<String> keys();
 
     /**
      * Adds a new query parameter with the specified {@code key} and {@code value}.
@@ -182,7 +182,7 @@ public interface HttpQuery extends Iterable<Map.Entry<String, String>> {
      * Returns {@code true} if {@link #size()} equals {@code 0}.
      * @return {@code true} if {@link #size()} equals {@code 0}.
      */
-    boolean isEmpty();
+    boolean empty();
 
     /**
      * Sets the <a href="https://tools.ietf.org/html/rfc3986#section-3.4">query component</a> on the request that this
