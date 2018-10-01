@@ -96,11 +96,12 @@ final class Flush {
 
         @Override
         public void onNext(T t) {
-            // We do a volatile load on enqueueFlush because for users on the "slow path" (writing off the event loop thread)
-            // we can avoid the volatile store on each onNext operation. Note since we only store to enqueueFlush in this
-            // Subscriber method there will be no concurrency so we don't have to use any atomic operations.
-            // We check the enqueueFlush after inEventLoop because for users which want the "fast path" (writing on event loop thread)
-            // we short circuit on the "in event loop check".
+            // We do a volatile load on enqueueFlush because for users on the "slow path" (writing off the event loop
+            // thread) we can avoid the volatile store on each onNext operation. Note since we only store to
+            // enqueueFlush in this Subscriber method there will be no concurrency so we don't have to use any atomic
+            // operations.
+            // We check the enqueueFlush after inEventLoop because for users which want the "fast path" (writing on
+            // event loop thread) we short circuit on the "in event loop check".
             if (!eventLoop.inEventLoop() && !enqueueFlush) {
                 enqueueFlush = true;
             }

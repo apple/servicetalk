@@ -25,7 +25,7 @@ final class FlushOnEnd implements FlushStrategy {
 
     @Override
     public WriteEventsListener apply(final FlushSender sender) {
-        return new NoOpWriteEventsListener() {
+        return new WriteEventsListenerAdapter() {
             @Override
             public void writeTerminated() {
                 sender.flush();

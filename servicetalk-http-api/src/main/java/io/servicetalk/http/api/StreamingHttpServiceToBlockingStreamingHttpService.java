@@ -32,7 +32,7 @@ final class StreamingHttpServiceToBlockingStreamingHttpService extends BlockingS
             throws Exception {
         // It is assumed that users will always apply timeouts at the StreamingHttpService layer (e.g. via filter). So
         // we don't apply any explicit timeout here and just wait forever.
-        return blockingInvocation(service.handle(ctx, request.toStreamingRequest(), ctx.getStreamingResponseFactory()))
+        return blockingInvocation(service.handle(ctx, request.toStreamingRequest(), ctx.streamingResponseFactory()))
                 .toBlockingStreamingResponse();
     }
 

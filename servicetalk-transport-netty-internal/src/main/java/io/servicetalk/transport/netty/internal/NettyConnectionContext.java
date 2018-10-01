@@ -33,8 +33,8 @@ public interface NettyConnectionContext extends ConnectionContext {
      * subsequent writes on this connection.
      *
      * @param strategyProvider {@link UnaryOperator} that given the current {@link FlushStrategy}, returns the
-     * {@link FlushStrategy} to be updated. This {@link UnaryOperator} <em>MAY</em> be invoked multiple times for a
-     * single call to this method.
+     * new {@link FlushStrategy}. This {@link UnaryOperator} <strong>MAY</strong> be invoked multiple times for a single
+     * call to this method and is expected to be idempotent.
      *
      * @return A {@link Cancellable} that will cancel this update and revert the {@link FlushStrategy} for this
      * connection to a default value.
@@ -50,12 +50,12 @@ public interface NettyConnectionContext extends ConnectionContext {
      *
      * <h2>Flow control</h2>
      * Typically consuming {@link ConnectionEvent}s from the returned {@link Publisher} is not expected to be flow
-     * controlled (i.e. there should always be sufficient demand). However, if there is not enough demand to
-     * publishReadComplete generated {@link ConnectionEvent}s, they will be dropped.
+     * controlled (i.e. there should always be sufficient demand). However, if there is not enough demand generated
+     * {@link ConnectionEvent}s may be dropped.
      *
      * @return {@link Publisher} that emits various {@link ConnectionEvent}s happening on this connection.
      */
-    Publisher<ConnectionEvent> getConnectionEvents();
+    Publisher<ConnectionEvent> connectionEvents();
 
     /**
      * Events happening on a connection.
@@ -67,6 +67,6 @@ public interface NettyConnectionContext extends ConnectionContext {
          * this connection. If reads are done in batches, this event indicates, that such a batch has now ended.
          * One may see zero or more occurrences of this event on any connection.
          */
-        ReadComplete,
+        ReadComplete
    }
 }

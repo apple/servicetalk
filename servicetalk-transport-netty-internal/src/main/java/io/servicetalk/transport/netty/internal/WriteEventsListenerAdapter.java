@@ -18,10 +18,10 @@ package io.servicetalk.transport.netty.internal;
 import io.servicetalk.transport.netty.internal.FlushStrategy.WriteEventsListener;
 
 /**
- * A noop {@link WriteEventsListener} that by default does nothing for all method. This can be used to selectively
- * implement relevant methods.
+ * A {@link WriteEventsListener} that by default does nothing for all method. This can be used to selectively implement
+ * relevant methods.
  */
-public abstract class NoOpWriteEventsListener implements WriteEventsListener {
+public abstract class WriteEventsListenerAdapter implements WriteEventsListener {
 
     @Override
     public void writeStarted() {

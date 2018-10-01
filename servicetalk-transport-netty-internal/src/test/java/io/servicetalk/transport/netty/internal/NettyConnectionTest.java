@@ -134,7 +134,7 @@ public class NettyConnectionTest {
 
     @Test
     public void testAsPipelinedConnection() {
-        final PipelinedConnection<Buffer, Buffer> c = new DefaultPipelinedConnection<>(conn, 2);
+        final NettyPipelinedConnection<Buffer, Buffer> c = new DefaultNettyPipelinedConnection<>(conn, 2);
         subscriberRule.subscribe(c.request(newBuffer("Hello"))).request(1);
         readPublisher.onComplete();
         subscriberRule.verifySuccess();
@@ -300,7 +300,7 @@ public class NettyConnectionTest {
 
     @Test
     public void testFlushOnReadComplete() {
-        conn.updateFlushStrategy(old -> flushWith(conn.getConnectionEvents().filter(evt -> evt == ReadComplete)));
+        conn.updateFlushStrategy(old -> flushWith(conn.connectionEvents().filter(evt -> evt == ReadComplete)));
         writeListener.listen(conn.write(publisher));
         channel.pipeline().fireChannelRead("ReadingMessage");
         publisher.sendItems(newBuffer("Hello"));

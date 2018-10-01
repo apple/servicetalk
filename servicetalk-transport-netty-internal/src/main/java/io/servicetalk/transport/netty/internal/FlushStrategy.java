@@ -33,12 +33,12 @@ public interface FlushStrategy {
     WriteEventsListener apply(FlushSender sender);
 
     /**
-     * Returns {@code true} if pending writes, if any, MUST be flushed when the connection write buffer is full. <p>
-     *     This method is expected to be idempotent.
+     * Returns {@code true} if pending writes, if any, MUST be flushed when the connection is not writable. <p>
+     * This method is expected to be idempotent.
      *
-     * @return {@code true} if pending writes, if any, MUST be flushed when the connection write buffer is full.
+     * @return {@code true} if pending writes, if any, MUST be flushed when the connection is not writable.
      */
-    default boolean flushOnWriteBufferFull() {
+    default boolean flushOnUnwritable() {
         return true;
     }
 

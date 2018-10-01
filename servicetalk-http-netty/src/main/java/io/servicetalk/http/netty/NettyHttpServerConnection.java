@@ -40,7 +40,7 @@ import io.servicetalk.transport.netty.internal.Connection;
 import io.servicetalk.transport.netty.internal.FlushStrategy;
 import io.servicetalk.transport.netty.internal.NettyConnection;
 import io.servicetalk.transport.netty.internal.NettyConnectionContext;
-import io.servicetalk.transport.netty.internal.NoOpWriteEventsListener;
+import io.servicetalk.transport.netty.internal.WriteEventsListenerAdapter;
 
 import io.netty.channel.Channel;
 import org.reactivestreams.Subscriber;
@@ -81,8 +81,9 @@ final class NettyHttpServerConnection extends HttpServiceContext implements Nett
         this.connection = connection;
         this.service = service;
         this.compositeFlushStrategy = compositeFlushStrategy;
-        final BufferAllocator alloc = connection.executionContext().bufferAllocator();
-        packer = (HttpRequestMetaData hdr, Publisher<Object> pandt) -> spliceRequest(alloc, hdr, pandt);
+        packer = (HttpRequestMetaData hdr, Publisher<Object> pandt) ->
+                spliceRequest(NettyHttpServerConnection.this.connection.executionContext().bufferAllocator(), hdr,
+                        pandt);
     }
 
     Completable process() {
@@ -103,8 +104,8 @@ final class NettyHttpServerConnection extends HttpServiceContext implements Nett
     }
 
     @Override
-    public Publisher<ConnectionEvent> getConnectionEvents() {
-        return connection.getConnectionEvents();
+    public Publisher<ConnectionEvent> connectionEvents() {
+        return connection.connectionEvents();
     }
 
     static NettyHttpServerConnection newConnection(final Channel channel,
@@ -177,7 +178,7 @@ final class NettyHttpServerConnection extends HttpServiceContext implements Nett
         }).subscribeOn(executionContext().executor());
         return connection.write(responseObjectPublisher.repeat(val -> true)
                 // We generate synthetic callbacks to WriteEventsListener as there is a single write per connection but
-                // FlushStrategy may be implemented considering individual responses.
+                // FlushStrategy are implemented considering individual responses.
                 // Since this operator is present on the flattened single write stream, with or without pipelined
                 // requests processed in parallel, we can send WriteEventsListener callbacks per response.
                 .liftSynchronous(subscriber -> new Subscriber<Object>() {
@@ -189,11 +190,10 @@ final class NettyHttpServerConnection extends HttpServiceContext implements Nett
                     @Override
                     public void onNext(final Object o) {
                         if (o instanceof HttpResponseMetaData) {
-                            try {
-                                compositeFlushStrategy.beforeEmitMetadata();
-                            } finally {
-                                subscriber.onNext(o);
-                            }
+                            compositeFlushStrategy.beforeEmitMetadata();
+                            // If beforeEmitMetadata() throws we will get terminated since we are inside onNext, in
+                            // which case we do not need to call onNext to the subscriber.
+                            subscriber.onNext(o);
                         } else if (o instanceof HttpHeaders) { // trailers
                             subscriber.onNext(o);
                             // If subscriber throws from onNext, connection should get closed and hence flushStrategy
@@ -228,7 +228,7 @@ final class NettyHttpServerConnection extends HttpServiceContext implements Nett
                     Single<StreamingHttpResponse> source;
                     try {
                         source = service.handle(NettyHttpServerConnection.this,
-                                request.transformPayloadBody(bdy -> bdy.publishOn(exec)), getStreamingResponseFactory())
+                                request.transformPayloadBody(bdy -> bdy.publishOn(exec)), streamingResponseFactory())
                                 .onErrorResume(cause -> newErrorResponse(cause, request));
                     } catch (final Throwable cause) {
                         source = newErrorResponse(cause, request);
@@ -254,7 +254,7 @@ final class NettyHttpServerConnection extends HttpServiceContext implements Nett
     private Single<StreamingHttpResponse> newErrorResponse(final Throwable cause,
                                                            final StreamingHttpRequest request) {
         LOGGER.error("internal server error service={} connection={}", service, this, cause);
-        StreamingHttpResponse resp = getStreamingResponseFactory().internalServerError().version(request.version());
+        StreamingHttpResponse resp = streamingResponseFactory().internalServerError().version(request.version());
         resp.headers().set(CONTENT_LENGTH, ZERO);
         return success(resp);
     }
@@ -303,9 +303,9 @@ final class NettyHttpServerConnection extends HttpServiceContext implements Nett
      */
     private static final class CompositeFlushStrategy implements FlushStrategy, FlushStrategy.WriteEventsListener {
 
-        private static final WriteEventsListener INIT = new NoOpWriteEventsListener() { };
-        private static final WriteEventsListener CANCELLED = new NoOpWriteEventsListener() { };
-        private static final WriteEventsListener TERMINATED = new NoOpWriteEventsListener() { };
+        private static final WriteEventsListener INIT = new WriteEventsListenerAdapter() { };
+        private static final WriteEventsListener CANCELLED = new WriteEventsListenerAdapter() { };
+        private static final WriteEventsListener TERMINATED = new WriteEventsListenerAdapter() { };
 
         private static final AtomicReferenceFieldUpdater<CompositeFlushStrategy, FlushStrategy> flushStrategyUpdater =
                 newUpdater(CompositeFlushStrategy.class, FlushStrategy.class, "flushStrategy");
@@ -328,21 +328,20 @@ final class NettyHttpServerConnection extends HttpServiceContext implements Nett
             // We always revert to the original strategy specified for the connection. If a user wishes to create a
             // hierarchical strategy, they have to do it by themselves.
             return () -> {
+                WriteEventsListener current = CompositeFlushStrategy.this.currentListener;
                 updateFlushStrategy(__ -> originalStrategy);
-                updateListener(originalStrategy.apply(flushSender));
+                casListener(current, originalStrategy.apply(flushSender));
             };
         }
 
         @Override
         public WriteEventsListener apply(final FlushSender sender) {
             flushSender = sender;
-            /*
-             * FlushStrategy#apply() MUST be called before any item is written on the connection. Since, we
-             * read-transform-write for Http server, it means this method MUST be called before we start reading data.
-             * Since, there is no way to update FlushStrategy for the connection before we read the first request, this
-             * method MUST be called before FlushStrategy is updated. So, we simply use the originalStrategy here.
-             */
-            updateListener(originalStrategy.apply(sender));
+            // FlushStrategy#apply() MUST be called before any item is written on the connection. Since, we
+            // read-transform-write for Http server, it means this method MUST be called before we start reading data.
+            // Since, there is no way to update FlushStrategy for the connection before we read the first request, this
+            // method MUST be called before FlushStrategy is updated. So, we simply use the originalStrategy here.
+            casListener(currentListener, originalStrategy.apply(sender));
             return this;
         }
 
@@ -369,40 +368,33 @@ final class NettyHttpServerConnection extends HttpServiceContext implements Nett
         }
 
         void beforeEmitMetadata() {
-            /*
-             * We do not need any extra visibility guarantees for flushSender as there is a happens-before relationship
-             * between apply() (where flushSender is assigned) and beforeEmitMetadata() (where flushSender is used).
-             *
-             * We know that apply() should happen-before we subscribe to the Publisher that is written to the
-             * connection. Since read-transform-write for Http server, subscribe to write Publisher MUST happen-before
-             * reading of the first request. This means that apply() should happen-before any metadata is emitted.
-             */
-            updateListener(flushStrategy.apply(flushSender));
+            // We do not need any extra visibility guarantees for flushSender as there is a happens-before relationship
+            // between apply() (where flushSender is assigned) and beforeEmitMetadata() (where flushSender is used).
+            //
+            // We know that apply() should happen-before we subscribe to the Publisher that is written to the
+            // connection. Since read-transform-write for Http server, subscribe to write Publisher MUST happen-before
+            // reading of the first request. This means that apply() should happen-before any metadata is emitted.
+            casListener(currentListener, flushStrategy.apply(flushSender));
         }
 
         void afterEmitTrailers() {
-            updateListener(INIT);
+            casListener(currentListener, INIT);
         }
 
-        private void updateListener(WriteEventsListener newListener) {
+        private void casListener(final WriteEventsListener current, final WriteEventsListener newListener) {
             // We only do a single write on a connection and create synthetic callbacks for any subsequent listeners,
             // resulting from the update to the FlushStrategy.
             newListener.writeStarted();
-            for (;;) {
-                WriteEventsListener current = currentListener;
-                if (current == CANCELLED) {
-                    newListener.writeCancelled();
-                    return;
-                }
-                if (current == TERMINATED) {
-                    newListener.writeTerminated();
-                    return;
-                }
-                if (currentListenerUpdater.compareAndSet(this, current, newListener)) {
-                    // Old listener will not be invoked any more, so send a terminal signal.
-                    current.writeTerminated();
-                    return;
-                }
+            if (currentListenerUpdater.compareAndSet(this, current, newListener)) {
+                // Old listener will not be invoked any more, so send a terminal signal.
+                current.writeTerminated();
+            } else if (currentListener == CANCELLED) {
+                newListener.writeCancelled();
+            } else {
+                // Either we were concurrently terminated or there was a concurrent update. If there was a concurrent
+                // update, then we do not override the winning update as that could cause out-of-order update of the
+                // listener.
+                newListener.writeTerminated();
             }
         }
     }

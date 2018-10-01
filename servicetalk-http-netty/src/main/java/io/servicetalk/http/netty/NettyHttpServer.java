@@ -49,6 +49,7 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.concurrent.api.AsyncCloseables.toListenableAsyncCloseable;
+import static io.servicetalk.http.netty.NettyHttpServerConnection.newConnection;
 import static io.servicetalk.transport.netty.internal.CloseHandler.forPipelinedRequestResponse;
 
 final class NettyHttpServer {
@@ -148,8 +149,7 @@ final class NettyHttpServer {
         @Override
         protected void onPublisherCreation(final ChannelHandlerContext channelHandlerContext,
                                            final Publisher<Object> requestObjectPublisher) {
-            connection = NettyHttpServerConnection.newConnection(
-                    channelHandlerContext.channel(), requestObjectPublisher,
+            connection = newConnection(channelHandlerContext.channel(), requestObjectPublisher,
                     new TerminalPredicate<>(LAST_HTTP_PAYLOAD_CHUNK_OBJECT_PREDICATE), closeHandler, context, service,
                     flushStrategy, headersFactory);
         }

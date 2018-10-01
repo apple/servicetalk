@@ -42,7 +42,7 @@ public class ConnectionEventPublisherTest {
     @Before
     public void setUp() {
         EmbeddedChannel channel = new EmbeddedChannel();
-        publisher = new ConnectionEventPublisher(channel);
+        publisher = new ConnectionEventPublisher(channel.eventLoop());
     }
 
     @Test
@@ -84,6 +84,14 @@ public class ConnectionEventPublisherTest {
         subscriberRule.subscribe(publisher).verifyNoEmissions().request(2).verifyItems(ReadComplete);
         publisher.publishReadComplete();
         subscriberRule.verifyItems(sub -> verify(sub, times(2)), ReadComplete);
+    }
+
+    @Test
+    public void delayedDemandEmitsEventsAndThenDrops() {
+        publisher.publishReadComplete();
+        subscriberRule.subscribe(publisher).verifyNoEmissions().request(1).verifyItems(ReadComplete);
+        publisher.publishReadComplete();
+        subscriberRule.verifyNoEmissions();
     }
 
     @Test

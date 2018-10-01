@@ -32,12 +32,14 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.internal.EmptySubscription.EMPTY_SUBSCRIPTION;
 import static io.servicetalk.concurrent.internal.FlowControlUtil.addWithOverflowProtection;
+import static io.servicetalk.concurrent.internal.SubscriberUtils.isRequestNValid;
+import static io.servicetalk.concurrent.internal.SubscriberUtils.newExceptionForInvalidRequestN;
 import static io.servicetalk.transport.netty.internal.NettyConnectionContext.ConnectionEvent.ReadComplete;
 import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater;
 
 /**
  * A {@link Publisher} of {@link ConnectionEvent}s for a {@link Channel} as returned from
- * {@link Connection#getConnectionEvents()}.
+ * {@link Connection#connectionEvents()}.
  */
 final class ConnectionEventPublisher extends Publisher<ConnectionEvent> implements AutoCloseable {
 
@@ -65,17 +67,17 @@ final class ConnectionEventPublisher extends Publisher<ConnectionEvent> implemen
     /**
      * New instance.
      *
-     * @param channel {@link Channel} for which {@link ConnectionEvent}s will be emitted.
+     * @param eventLoop {@link EventLoop} for which {@link ConnectionEvent}s will be emitted.
      */
-    ConnectionEventPublisher(final Channel channel) {
-        this.eventLoop = channel.eventLoop();
+    ConnectionEventPublisher(final EventLoop eventLoop) {
+        this.eventLoop = eventLoop;
     }
 
     @Override
     protected void handleSubscribe(final Subscriber<? super ConnectionEvent> subscriber) {
         final SubscriberHolder holder = new SubscriberHolder(subscriber);
         for (;;) {
-            final SubscriberHolder[] current = getSubscribers();
+            final SubscriberHolder[] current = subscribers;
             if (current == CLOSED) {
                 subscriber.onSubscribe(EMPTY_SUBSCRIPTION);
                 subscriber.onComplete();
@@ -91,7 +93,7 @@ final class ConnectionEventPublisher extends Publisher<ConnectionEvent> implemen
                         .toArray(length -> new SubscriberHolder[length + 1]);
                 next[next.length - 1] = holder;
             }
-            if (casSubscribers(current, next)) {
+            if (subscribersUpdater.compareAndSet(this, current, next)) {
                 break;
             }
         }
@@ -109,7 +111,7 @@ final class ConnectionEventPublisher extends Publisher<ConnectionEvent> implemen
         if (!oneReadCompleteReceived) {
             oneReadCompleteReceived = true;
         }
-        SubscriberHolder[] subscribers = getSubscribers();
+        SubscriberHolder[] subscribers = this.subscribers;
         if (subscribers == null) {
             return;
         }
@@ -130,15 +132,6 @@ final class ConnectionEventPublisher extends Publisher<ConnectionEvent> implemen
         }
     }
 
-    @Nullable
-    private SubscriberHolder[] getSubscribers() {
-        return subscribers;
-    }
-
-    private boolean casSubscribers(@Nullable SubscriberHolder[] expected, SubscriberHolder[] newValue) {
-        return subscribersUpdater.compareAndSet(this, expected, newValue);
-    }
-
     private static final class SubscriberHolder implements Subscription, AutoCloseable {
         private static final int TERMINATED = -2;
         private static final int PENDING_READ_COMPLETE = -1;
@@ -149,7 +142,7 @@ final class ConnectionEventPublisher extends Publisher<ConnectionEvent> implemen
         private volatile long state;
         private final Subscriber<? super ConnectionEvent> subscriber;
 
-        private SubscriberHolder(final Subscriber<? super ConnectionEvent> subscriber) {
+        SubscriberHolder(final Subscriber<? super ConnectionEvent> subscriber) {
             this.subscriber = subscriber;
         }
 
@@ -179,12 +172,16 @@ final class ConnectionEventPublisher extends Publisher<ConnectionEvent> implemen
 
         @Override
         public void request(final long n) {
+            if (!isRequestNValid(n)) {
+                subscriber.onError(newExceptionForInvalidRequestN(n));
+                return;
+            }
             for (;;) {
                 final long s = state;
                 if (s == TERMINATED) {
                     return;
                 }
-                if (s == PENDING_READ_COMPLETE && stateUpdater.compareAndSet(this, PENDING_READ_COMPLETE, n)) {
+                if (s == PENDING_READ_COMPLETE && stateUpdater.compareAndSet(this, PENDING_READ_COMPLETE, n - 1)) {
                     subscriber.onNext(ReadComplete);
                     return;
                 }

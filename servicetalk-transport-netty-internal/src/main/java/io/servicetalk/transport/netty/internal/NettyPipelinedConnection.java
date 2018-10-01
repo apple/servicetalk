@@ -24,13 +24,14 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 /**
- * Contract for using a {@link Connection} to make pipelined requests, typically for a client. <p>
- *     Pipelining allows to have concurrent requests processed on the server but still deliver responses in order.
- *     This eliminates the need for request-response correlation, at the cost of head-of-line blocking.
+ * Contract for using a {@link Connection} to make pipelined requests, typically for a client.
+ * <p>
+ * Pipelining allows to have concurrent requests processed on the server but still deliver responses in order.
+ * This eliminates the need for request-response correlation, at the cost of head-of-line blocking.
  * @param <Req> Type of requests sent on this connection.
  * @param <Resp> Type of responses read from this connection.
  */
-public interface PipelinedConnection<Req, Resp> extends NettyConnectionContext {
+public interface NettyPipelinedConnection<Req, Resp> extends NettyConnectionContext {
 
     /**
      * Writes a {@link Req} object on this connection.

@@ -15,10 +15,8 @@
  */
 package io.servicetalk.transport.netty.internal;
 
-import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.api.Publisher;
-
-import javax.annotation.Nullable;
+import io.servicetalk.concurrent.internal.DelayedCancellable;
 
 import static java.util.Objects.requireNonNull;
 
@@ -40,13 +38,12 @@ final class BatchFlush implements FlushStrategy {
         return new BatchFlushListener(boundaries, batchSize, sender);
     }
 
-    static final class BatchFlushListener extends NoOpWriteEventsListener {
+    static final class BatchFlushListener implements WriteEventsListener {
 
         private final Publisher<?> boundaries;
         private final int batchSize;
         private final FlushSender sender;
-        @Nullable
-        private Cancellable boundariesCancellable;
+        private final DelayedCancellable boundariesCancellable = new DelayedCancellable();
         private int unflushedCount;
 
         BatchFlushListener(final Publisher<?> boundaries, final int batchSize, final FlushSender sender) {
@@ -57,7 +54,7 @@ final class BatchFlush implements FlushStrategy {
 
         @Override
         public void writeStarted() {
-            boundariesCancellable = boundaries.forEach(__ -> sender.flush());
+            boundariesCancellable.setDelayedCancellable(boundaries.forEach(__ -> sender.flush()));
         }
 
         @Override
@@ -70,17 +67,16 @@ final class BatchFlush implements FlushStrategy {
 
         @Override
         public void writeTerminated() {
-            assert boundariesCancellable != null; // Guaranteed to be called after writeStarted()
             boundariesCancellable.cancel();
             if (unflushedCount > 0) {
-                unflushedCount = 0;
+                // Since this is a terminal call and no other method apart from writeCancelled can be called, do not
+                // reset state.
                 sender.flush();
             }
         }
 
         @Override
         public void writeCancelled() {
-            assert boundariesCancellable != null; // Guaranteed to be called after writeStarted()
             boundariesCancellable.cancel();
         }
     }

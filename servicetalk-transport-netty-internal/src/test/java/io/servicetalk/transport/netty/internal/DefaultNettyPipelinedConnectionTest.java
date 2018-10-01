@@ -40,7 +40,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class DefaultPipelinedConnectionTest {
+public class DefaultNettyPipelinedConnectionTest {
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
     @Rule
@@ -53,7 +53,7 @@ public class DefaultPipelinedConnectionTest {
     private TestPublisher<Integer> writePublisher1;
     private TestPublisher<Integer> writePublisher2;
     private int requestNext = MAX_VALUE;
-    private DefaultPipelinedConnection<Integer, Integer> requester;
+    private DefaultNettyPipelinedConnection<Integer, Integer> requester;
     private NettyConnection<Integer, Integer> connection;
 
     @Before
@@ -75,7 +75,7 @@ public class DefaultPipelinedConnectionTest {
         when(requestNSupplier.getRequestNFor(anyLong())).then(invocation1 -> requestNext);
         connection = new NettyConnection<>(channel, context, readPublisher,
                 new Connection.TerminalPredicate<>(integer -> true), NOOP_CLOSE_HANDLER, defaultFlushStrategy());
-        requester = new DefaultPipelinedConnection<>(connection, MAX_PENDING_REQUESTS);
+        requester = new DefaultNettyPipelinedConnection<>(connection, MAX_PENDING_REQUESTS);
     }
 
     @Test
@@ -152,7 +152,7 @@ public class DefaultPipelinedConnectionTest {
 
     @Test
     public void testWriter() {
-        PipelinedConnection.Writer writer = mock(PipelinedConnection.Writer.class);
+        NettyPipelinedConnection.Writer writer = mock(NettyPipelinedConnection.Writer.class);
         when(writer.write()).then((Answer<Completable>) invocation -> connection.writeAndFlush(1));
         readSubscriber.subscribe(requester.request(writer)).request(1);
         verify(writer).write();

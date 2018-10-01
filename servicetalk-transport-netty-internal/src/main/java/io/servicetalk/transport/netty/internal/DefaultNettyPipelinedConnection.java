@@ -39,14 +39,14 @@ import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 
 /**
- * Implementation of {@link PipelinedConnection} using a {@link Connection}.
+ * Implementation of {@link NettyPipelinedConnection} using a {@link Connection}.
  *
  * @param <Req> Type of requests sent on this connection.
  * @param <Resp> Type of responses read from this connection.
  */
-public final class DefaultPipelinedConnection<Req, Resp> implements PipelinedConnection<Req, Resp> {
+public final class DefaultNettyPipelinedConnection<Req, Resp> implements NettyPipelinedConnection<Req, Resp> {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(DefaultPipelinedConnection.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(DefaultNettyPipelinedConnection.class);
 
     private final Connection<Resp, Req> connection;
     private final Connection.TerminalPredicate<Resp> terminalMsgPredicate;
@@ -57,7 +57,7 @@ public final class DefaultPipelinedConnection<Req, Resp> implements PipelinedCon
      *
      * @param connection {@link Connection} requests to which are to be pipelined.
      */
-    public DefaultPipelinedConnection(Connection<Resp, Req> connection) {
+    public DefaultNettyPipelinedConnection(Connection<Resp, Req> connection) {
         this(connection, 2);
     }
 
@@ -67,7 +67,7 @@ public final class DefaultPipelinedConnection<Req, Resp> implements PipelinedCon
      * @param connection {@link Connection} requests to which are to be pipelined.
      * @param initialQueueSize Initial size for the write and read queues.
      */
-    public DefaultPipelinedConnection(Connection<Resp, Req> connection, int initialQueueSize) {
+    public DefaultNettyPipelinedConnection(Connection<Resp, Req> connection, int initialQueueSize) {
         this.connection = requireNonNull(connection);
         this.terminalMsgPredicate = connection.getTerminalMsgPredicate();
         writeQueue = new WriteQueue<>(terminalMsgPredicate, initialQueueSize);
@@ -200,7 +200,7 @@ public final class DefaultPipelinedConnection<Req, Resp> implements PipelinedCon
 
     @Override
     public String toString() {
-        return DefaultPipelinedConnection.class.getSimpleName() + "(" + connection + ")";
+        return DefaultNettyPipelinedConnection.class.getSimpleName() + "(" + connection + ")";
     }
 
     @Override
@@ -209,8 +209,8 @@ public final class DefaultPipelinedConnection<Req, Resp> implements PipelinedCon
     }
 
     @Override
-    public Publisher<ConnectionEvent> getConnectionEvents() {
-        return connection.getConnectionEvents();
+    public Publisher<ConnectionEvent> connectionEvents() {
+        return connection.connectionEvents();
     }
 
     private static final class WriteQueue<Resp> extends SequentialTaskQueue<Task<Resp>> {

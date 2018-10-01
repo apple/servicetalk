@@ -138,7 +138,7 @@ public final class DefaultNettyConnectionContext implements NettyConnectionConte
     }
 
     @Override
-    public Publisher<ConnectionEvent> getConnectionEvents() {
+    public Publisher<ConnectionEvent> connectionEvents() {
         // This context does not know of any events, connection implementations should implement this method, if
         // required.
         return empty();

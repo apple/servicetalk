@@ -75,10 +75,11 @@ public class FlushStrategyOverrideTest {
                 .executionContext(ctx)
                 .listenStreaming(service)
                 .toFuture().get();
-        InetSocketAddress serverAddr = (InetSocketAddress) serverCtx.getListenAddress();
+        InetSocketAddress serverAddr = (InetSocketAddress) serverCtx.listenAddress();
         client = forSingleAddress(new NoopSD(serverAddr), serverAddr)
                 .disableHostHeaderFallback()
-                .buildStreaming(ctx);
+                .executionContext(ctx)
+                .buildStreaming();
         conn = client.reserveConnection(client.get("/")).toFuture().get();
     }
 

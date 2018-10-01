@@ -146,13 +146,13 @@ public class NettyConnection<Read, Write> implements Connection<Read, Write> {
         } else {
             onClosing = null;
         }
-        eventPublisher = new ConnectionEventPublisher(channel);
+        eventPublisher = new ConnectionEventPublisher(channel.eventLoop());
         channel.pipeline().addLast(new ChannelInboundHandler() {
             @Override
             public void channelWritabilityChanged(ChannelHandlerContext ctx) {
                 if (ctx.channel().isWritable()) {
                     writableListener.channelWritable();
-                } else if (NettyConnection.this.flushStrategy.flushOnWriteBufferFull()) {
+                } else if (NettyConnection.this.flushStrategy.flushOnUnwritable()) {
                     channel.flush();
                 }
             }
@@ -378,7 +378,7 @@ public class NettyConnection<Read, Write> implements Connection<Read, Write> {
     }
 
     @Override
-    public Publisher<ConnectionEvent> getConnectionEvents() {
+    public Publisher<ConnectionEvent> connectionEvents() {
         return eventPublisher;
     }
 

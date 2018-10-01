@@ -23,8 +23,8 @@ import io.servicetalk.redis.api.RedisRequest;
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.netty.internal.Connection;
-import io.servicetalk.transport.netty.internal.DefaultPipelinedConnection;
-import io.servicetalk.transport.netty.internal.PipelinedConnection;
+import io.servicetalk.transport.netty.internal.DefaultNettyPipelinedConnection;
+import io.servicetalk.transport.netty.internal.NettyPipelinedConnection;
 
 import io.netty.buffer.ByteBuf;
 import org.reactivestreams.Subscriber;
@@ -60,7 +60,7 @@ final class PipelinedRedisConnection extends AbstractRedisConnection {
 
     private static final AtomicIntegerFieldUpdater<PipelinedRedisConnection> skipQuitWhenClosedUpdater =
             newUpdater(PipelinedRedisConnection.class, "skipQuitWhenClosed");
-    private final PipelinedConnection<ByteBuf, RedisData> connection;
+    private final NettyPipelinedConnection<ByteBuf, RedisData> connection;
     private final Connection<RedisData, ByteBuf> rawConnection;
 
     /**
@@ -85,7 +85,7 @@ final class PipelinedRedisConnection extends AbstractRedisConnection {
                                      ReadOnlyRedisClientConfig roConfig) {
         super(toNettyIoExecutor(connection.executionContext().ioExecutor()).asExecutor(), connection.onClosing(),
                 executionContext, roConfig);
-        this.connection = new DefaultPipelinedConnection<>(connection, maxPendingRequests);
+        this.connection = new DefaultNettyPipelinedConnection<>(connection, maxPendingRequests);
         rawConnection = connection;
     }
 

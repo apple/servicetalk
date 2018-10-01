@@ -23,17 +23,17 @@ import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.netty.internal.Connection;
-import io.servicetalk.transport.netty.internal.DefaultPipelinedConnection;
+import io.servicetalk.transport.netty.internal.DefaultNettyPipelinedConnection;
 
 import static io.servicetalk.http.api.HttpProtocolVersions.HTTP_1_1;
 
-final class PipelinedStreamingHttpConnection extends AbstractStreamingHttpConnection<DefaultPipelinedConnection<Object, Object>> {
+final class PipelinedStreamingHttpConnection extends AbstractStreamingHttpConnection<DefaultNettyPipelinedConnection<Object, Object>> {
 
     PipelinedStreamingHttpConnection(final Connection<Object, Object> connection,
                                      final ReadOnlyHttpClientConfig config,
                                      final ExecutionContext executionContext,
                                      final StreamingHttpRequestResponseFactory reqRespFactor) {
-        super(new DefaultPipelinedConnection<>(connection, config.getMaxPipelinedRequests()),
+        super(new DefaultNettyPipelinedConnection<>(connection, config.getMaxPipelinedRequests()),
                 connection.onClosing(), config, executionContext, reqRespFactor);
     }
 
