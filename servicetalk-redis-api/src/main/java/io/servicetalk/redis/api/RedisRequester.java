@@ -31,6 +31,7 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Single.error;
+import static io.servicetalk.redis.api.RedisExecutionStrategies.defaultStrategy;
 
 /**
  * Provides a means to make a redis request.
@@ -64,7 +65,18 @@ public abstract class RedisRequester implements ListenableAsyncCloseable {
      * @param request the {@link RedisRequest} to send.
      * @return the response as a {@link Publisher}.
      */
-    public abstract Publisher<RedisData> request(RedisRequest request);
+    public Publisher<RedisData> request(RedisRequest request) {
+        return request(executionStrategy(), request);
+    }
+
+    /**
+     * Send a {@code request}.
+     *
+     * @param strategy {@link RedisExecutionStrategy} to use.
+     * @param request the {@link RedisRequest} to send.
+     * @return the response as a {@link Publisher}.
+     */
+    public abstract Publisher<RedisData> request(RedisExecutionStrategy strategy, RedisRequest request);
 
     /**
      * Get the {@link ExecutionContext} used during construction of this object.
@@ -85,20 +97,34 @@ public abstract class RedisRequester implements ListenableAsyncCloseable {
      * @return the response as a {@link Single}.
      */
     public <R> Single<R> request(final RedisRequest request, final Class<R> responseType) {
+        return request(executionStrategy(), request, responseType);
+    }
+
+    /**
+     * Send a {@code request} which expects the specified response type.
+     *
+     * @param strategy {@link RedisExecutionStrategy} to use.
+     * @param request      the {@link RedisRequest} to send.
+     * @param responseType the {@link Class} to coerce the response to.
+     * @param <R>          the type of the response.
+     * @return the response as a {@link Single}.
+     */
+    public <R> Single<R> request(final RedisExecutionStrategy strategy, final RedisRequest request,
+                                 final Class<R> responseType) {
         if (CharSequence.class.isAssignableFrom(responseType)) {
-            return new ToStringSingle<>(this, request);
+            return new ToStringSingle<>(strategy, this, request);
         }
         if (Buffer.class.isAssignableFrom(responseType)) {
-            return new ToBufferSingle<>(this, request);
+            return new ToBufferSingle<>(strategy, this, request);
         }
         if (Long.class.isAssignableFrom(responseType)) {
-            return new ToLongSingle<>(this, request);
+            return new ToLongSingle<>(strategy, this, request);
         }
         if (ListWithBuffersCoercedToCharSequences.class.isAssignableFrom(responseType)) {
-            return new ToListSingle<>(this, request, true);
+            return new ToListSingle<>(strategy, this, request, true);
         }
         if (List.class.isAssignableFrom(responseType)) {
-            return new ToListSingle<>(this, request, false);
+            return new ToListSingle<>(strategy, this, request, false);
         }
         return error(new IllegalArgumentException("Unsupported type: " + responseType));
     }
@@ -187,5 +213,9 @@ public abstract class RedisRequester implements ListenableAsyncCloseable {
             }
         }
         return blockingRedisBufferCommander;
+    }
+
+    RedisExecutionStrategy executionStrategy() {
+        return defaultStrategy();
     }
 }

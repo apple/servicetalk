@@ -123,7 +123,7 @@ public final class TcpConnector<Read, Write> {
                 connectFutureToListener(connect0(remote, executionContext, subscriber, true),
                         subscriber, remote);
             }
-        }.publishOn(executionContext.executor());
+        };
     }
 
     /**
@@ -143,7 +143,7 @@ public final class TcpConnector<Read, Write> {
                 connectFutureToListener(connect0(remote, executionContext, subscriber,
                         checkForRefCountedTrapper), subscriber, remote);
             }
-        }.publishOn(executionContext.executor());
+        };
     }
 
     private Future<?> connect0(Object resolvedAddress, ExecutionContext executionContext,

@@ -53,8 +53,9 @@ final class HttpClientToStreamingHttpClient extends StreamingHttpClient {
     }
 
     @Override
-    public Single<? extends ReservedStreamingHttpConnection> reserveConnection(final StreamingHttpRequest request) {
-        return request.toRequest().flatMap(client::reserveConnection)
+    public Single<? extends ReservedStreamingHttpConnection> reserveConnection(final HttpExecutionStrategy strategy,
+                                                                               final StreamingHttpRequest request) {
+        return request.toRequest().flatMap(r -> client.reserveConnection(strategy, r))
                 .map(ReservedHttpConnectionToReservedStreamingHttpConnection::new);
     }
 
@@ -65,8 +66,9 @@ final class HttpClientToStreamingHttpClient extends StreamingHttpClient {
     }
 
     @Override
-    public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
-        return request.toRequest().flatMap(client::request).map(HttpResponse::toStreamingResponse);
+    public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
+                                                 final StreamingHttpRequest request) {
+        return request.toRequest().flatMap(r -> client.request(strategy, r)).map(HttpResponse::toStreamingResponse);
     }
 
     @Override
@@ -119,8 +121,10 @@ final class HttpClientToStreamingHttpClient extends StreamingHttpClient {
         }
 
         @Override
-        public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
-            return request.toRequest().flatMap(reservedConnection::request).map(HttpResponse::toStreamingResponse);
+        public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
+                                                     final StreamingHttpRequest request) {
+            return request.toRequest().flatMap(r -> reservedConnection.request(strategy, r))
+                    .map(HttpResponse::toStreamingResponse);
         }
 
         @Override

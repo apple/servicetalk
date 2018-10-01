@@ -55,17 +55,20 @@ final class RedisRequesterUtils {
     }
 
     static final class ToStringSingle<R> extends Single<R> {
+        private final RedisExecutionStrategy strategy;
         private final RedisRequester requester;
         private final RedisRequest request;
 
-        ToStringSingle(final RedisRequester requester, final RedisRequest request) {
+        ToStringSingle(final RedisExecutionStrategy strategy, final RedisRequester requester,
+                       final RedisRequest request) {
+            this.strategy = strategy;
             this.requester = requester;
             this.request = request;
         }
 
         @Override
         protected void handleSubscribe(final Subscriber<? super R> subscriber) {
-            requester.request(request).subscribe(new AggregatingSubscriber<R>(subscriber) {
+            requester.request(strategy, request).subscribe(new AggregatingSubscriber<R>(subscriber) {
                 @Nullable
                 private CharSequence lastMessage;
                 @Nullable
@@ -129,17 +132,20 @@ final class RedisRequesterUtils {
     }
 
     static final class ToBufferSingle<R> extends Single<R> {
+        private final RedisExecutionStrategy strategy;
         private final RedisRequester requester;
         private final RedisRequest request;
 
-        ToBufferSingle(final RedisRequester requester, final RedisRequest request) {
+        ToBufferSingle(final RedisExecutionStrategy strategy, final RedisRequester requester,
+                       final RedisRequest request) {
+            this.strategy = strategy;
             this.requester = requester;
             this.request = request;
         }
 
         @Override
         protected void handleSubscribe(final Subscriber<? super R> subscriber) {
-            requester.request(request).subscribe(new AggregatingSubscriber<R>(subscriber) {
+            requester.request(strategy, request).subscribe(new AggregatingSubscriber<R>(subscriber) {
                 @Nullable
                 private Buffer aggregator;
                 @Nullable
@@ -206,17 +212,20 @@ final class RedisRequesterUtils {
     }
 
     static final class ToLongSingle<R> extends Single<R> {
+        private final RedisExecutionStrategy strategy;
         private final RedisRequester requester;
         private final RedisRequest request;
 
-        ToLongSingle(final RedisRequester requester, final RedisRequest request) {
+        ToLongSingle(final RedisExecutionStrategy strategy, final RedisRequester requester,
+                     final RedisRequest request) {
+            this.strategy = strategy;
             this.requester = requester;
             this.request = request;
         }
 
         @Override
         protected void handleSubscribe(final Subscriber<? super R> subscriber) {
-            requester.request(request).subscribe(new AggregatingSubscriber<R>(subscriber) {
+            requester.request(strategy, request).subscribe(new AggregatingSubscriber<R>(subscriber) {
                 @Nullable
                 private Long answer;
                 @Nullable
@@ -261,11 +270,14 @@ final class RedisRequesterUtils {
     }
 
     static final class ToListSingle<R> extends Single<R> {
+        private final RedisExecutionStrategy strategy;
         private final boolean coerceBuffersToCharSequences;
         private final RedisRequester requester;
         private final RedisRequest request;
 
-        ToListSingle(final RedisRequester requester, final RedisRequest request, final boolean coerceBuffersToCharSequences) {
+        ToListSingle(final RedisExecutionStrategy strategy, final RedisRequester requester, final RedisRequest request,
+                     final boolean coerceBuffersToCharSequences) {
+            this.strategy = strategy;
             this.coerceBuffersToCharSequences = coerceBuffersToCharSequences;
             this.requester = requester;
             this.request = request;
@@ -273,7 +285,7 @@ final class RedisRequesterUtils {
 
         @Override
         protected void handleSubscribe(final Subscriber<? super R> subscriber) {
-            requester.request(request).subscribe(new AggregatingSubscriber<R>(subscriber) {
+            requester.request(strategy, request).subscribe(new AggregatingSubscriber<R>(subscriber) {
                 @Nullable
                 private RedisServerException redisError;
                 @Nullable

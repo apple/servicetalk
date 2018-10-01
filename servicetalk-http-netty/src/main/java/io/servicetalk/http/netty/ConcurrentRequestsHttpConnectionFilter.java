@@ -18,6 +18,7 @@ package io.servicetalk.http.netty;
 import io.servicetalk.client.internal.MaxRequestLimitExceededRejectedSubscribeException;
 import io.servicetalk.client.internal.RequestConcurrencyController;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.StreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpConnectionAdapter;
 import io.servicetalk.http.api.StreamingHttpRequest;
@@ -40,12 +41,13 @@ final class ConcurrentRequestsHttpConnectionFilter extends StreamingHttpConnecti
     }
 
     @Override
-    public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
+    public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
+                                                 final StreamingHttpRequest request) {
         return new Single<StreamingHttpResponse>() {
             @Override
             protected void handleSubscribe(final Subscriber<? super StreamingHttpResponse> subscriber) {
                 if (limiter.tryRequest()) {
-                    delegate().request(request).liftSynchronous(new ConcurrencyControlSingleOperator(limiter))
+                    delegate().request(strategy, request).liftSynchronous(new ConcurrencyControlSingleOperator(limiter))
                             .subscribe(subscriber);
                 } else {
                     subscriber.onSubscribe(IGNORE_CANCEL);

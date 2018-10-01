@@ -22,6 +22,7 @@ import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.HttpConnectionBuilder;
+import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpServerBuilder;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StreamingHttpConnection;
@@ -48,6 +49,8 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static io.servicetalk.concurrent.api.Single.success;
 import static io.servicetalk.http.api.CharSequences.newAsciiString;
+import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
+import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
 import static io.servicetalk.http.api.HttpResponseStatuses.BAD_REQUEST;
 import static io.servicetalk.http.api.HttpResponseStatuses.INTERNAL_SERVER_ERROR;
 import static io.servicetalk.http.api.HttpResponseStatuses.OK;
@@ -76,11 +79,10 @@ public class HttpServiceAsyncContextTest {
     }
 
     private void newRequestsGetFreshContext(boolean useImmediate) throws Exception {
-        StreamingHttpService service = newEmptyAsyncContextService();
+        StreamingHttpService service = newEmptyAsyncContextService(useImmediate);
         CompositeCloseable compositeCloseable = AsyncCloseables.newCompositeCloseable();
         HttpServerBuilder serverBuilder = HttpServers.forAddress(LOCAL_0);
-        ServerContext ctx = (useImmediate ? serverBuilder.executor(immediateExecutor.executor()) : serverBuilder)
-                .listenStreamingAndAwait(service);
+        ServerContext ctx = serverBuilder.listenStreamingAndAwait(service);
 
         ExecutorService executorService = Executors.newCachedThreadPool();
         final int concurrency = 10;
@@ -164,7 +166,7 @@ public class HttpServiceAsyncContextTest {
 
     @Test
     public void connectionContextFilterContextDoesNotLeak() throws Exception {
-        StreamingHttpService service = newEmptyAsyncContextService();
+        StreamingHttpService service = newEmptyAsyncContextService(false);
         CompositeCloseable compositeCloseable = AsyncCloseables.newCompositeCloseable();
         ServerContext ctx = compositeCloseable.append(HttpServers.forAddress(LOCAL_0)
                 .contextFilter(context -> {
@@ -192,7 +194,8 @@ public class HttpServiceAsyncContextTest {
         response.payloadBody().ignoreElements().subscribe();
     }
 
-    private static StreamingHttpService newEmptyAsyncContextService() {
+    private static StreamingHttpService newEmptyAsyncContextService(final boolean useImmediate) {
+        HttpExecutionStrategy strategy = useImmediate ? noOffloadsStrategy() : defaultStrategy();
         return new StreamingHttpService() {
             @Override
             public Single<StreamingHttpResponse> handle(
@@ -212,6 +215,11 @@ public class HttpServiceAsyncContextTest {
                 } else {
                     return success(factory.newResponse(BAD_REQUEST));
                 }
+            }
+
+            @Override
+            public HttpExecutionStrategy executionStrategy() {
+                return strategy;
             }
         };
     }

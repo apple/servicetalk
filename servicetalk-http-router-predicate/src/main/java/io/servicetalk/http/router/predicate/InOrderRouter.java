@@ -18,6 +18,7 @@ package io.servicetalk.http.router.predicate;
 import io.servicetalk.concurrent.api.AsyncCloseable;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
@@ -27,6 +28,7 @@ import io.servicetalk.http.api.StreamingHttpService;
 import java.util.List;
 
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
+import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toList;
 
@@ -64,10 +66,18 @@ final class InOrderRouter extends StreamingHttpService {
                                                 final StreamingHttpResponseFactory factory) {
         for (final PredicateServicePair pair : predicateServicePairs) {
             if (pair.getPredicate().test(ctx, request)) {
-                return pair.getService().handle(ctx, request, factory);
+                StreamingHttpService service = pair.getService();
+                return service.executionStrategy().wrap(ctx.executionContext().executor(), service)
+                        .handle(ctx, request, factory);
             }
         }
         return fallbackService.handle(ctx, request, factory);
+    }
+
+    @Override
+    public HttpExecutionStrategy executionStrategy() {
+        // Do not offload this service so we can support other non-offloaded services.
+        return noOffloadsStrategy();
     }
 
     @Override

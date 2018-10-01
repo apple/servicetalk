@@ -20,6 +20,7 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.transport.api.ExecutionContext;
 
 import static io.servicetalk.concurrent.internal.FutureUtils.awaitTermination;
+import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -32,6 +33,7 @@ public abstract class StreamingHttpRequester implements
 
     /**
      * Create a new instance.
+     *
      * @param reqRespFactory The {@link StreamingHttpRequestResponseFactory} used to
      * {@link #newRequest(HttpRequestMethod, String) create new requests} and {@link #httpResponseFactory()}.
      */
@@ -41,19 +43,36 @@ public abstract class StreamingHttpRequester implements
 
     /**
      * Send a {@code request}.
+     *
      * @param request the request to send.
      * @return The response.
      */
-    public abstract Single<StreamingHttpResponse> request(StreamingHttpRequest request);
+    public Single<StreamingHttpResponse> request(StreamingHttpRequest request) {
+        return request(executionStrategy(), request);
+    }
+
+    /**
+     * Send a {@code request} using the specified {@link HttpExecutionStrategy strategy}.
+     *
+     * @param strategy {@link HttpExecutionStrategy} to use for executing the request.
+     * @param request the request to send.
+     * @return The response.
+     */
+    public abstract Single<StreamingHttpResponse> request(HttpExecutionStrategy strategy, StreamingHttpRequest request);
 
     /**
      * Get the {@link ExecutionContext} used during construction of this object.
      * <p>
      * Note that the {@link ExecutionContext#ioExecutor()} will not necessarily be associated with a specific thread
      * unless that was how this object was built.
+     *
      * @return the {@link ExecutionContext} used during construction of this object.
      */
     public abstract ExecutionContext executionContext();
+
+    HttpExecutionStrategy executionStrategy() {
+        return defaultStrategy();
+    }
 
     @Override
     public final StreamingHttpRequest newRequest(HttpRequestMethod method, String requestTarget) {
@@ -62,6 +81,7 @@ public abstract class StreamingHttpRequester implements
 
     /**
      * Get a {@link StreamingHttpResponseFactory}.
+     *
      * @return a {@link StreamingHttpResponseFactory}.
      */
     public final StreamingHttpResponseFactory httpResponseFactory() {
@@ -73,6 +93,7 @@ public abstract class StreamingHttpRequester implements
      * <p>
      * This API is provided for convenience for a more familiar sequential programming model. It is recommended that
      * filters are implemented using the {@link StreamingHttpRequester} asynchronous API for maximum portability.
+     *
      * @return a {@link BlockingStreamingHttpRequester} representation of this {@link StreamingHttpRequester}.
      */
     public final BlockingStreamingHttpRequester asBlockingStreamingRequester() {
@@ -84,6 +105,7 @@ public abstract class StreamingHttpRequester implements
      * <p>
      * This API is provided for convenience. It is recommended that
      * filters are implemented using the {@link StreamingHttpRequester} asynchronous API for maximum portability.
+     *
      * @return a {@link HttpRequester} representation of this {@link StreamingHttpRequester}.
      */
     public final HttpRequester asRequester() {

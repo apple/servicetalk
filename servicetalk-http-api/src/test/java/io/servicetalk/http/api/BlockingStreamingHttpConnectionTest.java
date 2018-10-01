@@ -24,7 +24,7 @@ import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ExecutionContext;
 
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Function;
+import java.util.function.BiFunction;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -35,11 +35,13 @@ public class BlockingStreamingHttpConnectionTest extends AbstractBlockingStreami
     @Override
     protected <T extends StreamingHttpRequester & TestHttpRequester> T newAsyncRequester(
             StreamingHttpRequestResponseFactory factory,
-            final ExecutionContext ctx, final Function<StreamingHttpRequest, Single<StreamingHttpResponse>> doRequest) {
+            final ExecutionContext ctx,
+            final BiFunction<HttpExecutionStrategy, StreamingHttpRequest, Single<StreamingHttpResponse>> doRequest) {
         return (T) new TestStreamingHttpConnection(factory, ctx) {
             @Override
-            public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
-                return doRequest.apply(request);
+            public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
+                                                         final StreamingHttpRequest request) {
+                return doRequest.apply(strategy, request);
             }
         };
     }
@@ -49,11 +51,12 @@ public class BlockingStreamingHttpConnectionTest extends AbstractBlockingStreami
     protected <T extends BlockingStreamingHttpRequester & TestHttpRequester> T newBlockingRequester(
             BlockingStreamingHttpRequestResponseFactory factory,
             final ExecutionContext ctx,
-            final Function<BlockingStreamingHttpRequest, BlockingStreamingHttpResponse> doRequest) {
+            final BiFunction<HttpExecutionStrategy, BlockingStreamingHttpRequest, BlockingStreamingHttpResponse> doRequest) {
         return (T) new TestBlockingStreamingHttpConnection(factory, ctx) {
             @Override
-            public BlockingStreamingHttpResponse request(final BlockingStreamingHttpRequest request) {
-                return doRequest.apply(request);
+            public BlockingStreamingHttpResponse request(final HttpExecutionStrategy strategy,
+                                                         final BlockingStreamingHttpRequest request) {
+                return doRequest.apply(strategy, request);
             }
         };
     }

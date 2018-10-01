@@ -18,6 +18,8 @@ package io.servicetalk.http.api;
 import io.servicetalk.concurrent.api.AsyncCloseable;
 import io.servicetalk.concurrent.api.Completable;
 
+import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
+
 /**
  * Same as {@link StreamingHttpService} but that accepts {@link HttpRequest} and returns {@link HttpResponse}.
  */
@@ -63,6 +65,15 @@ public abstract class HttpService implements HttpRequestHandler, AsyncCloseable 
      */
     public final BlockingHttpService asBlockingService() {
         return asBlockingServiceInternal();
+    }
+
+    /**
+     * Returns the {@link HttpExecutionStrategy}.
+     *
+     * @return The {@link HttpExecutionStrategy} for this {@link HttpService}.
+     */
+    public HttpExecutionStrategy executionStrategy() {
+        return defaultStrategy();
     }
 
     StreamingHttpService asStreamingServiceInternal() {

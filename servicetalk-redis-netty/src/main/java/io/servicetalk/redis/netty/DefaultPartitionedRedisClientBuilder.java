@@ -27,7 +27,6 @@ import io.servicetalk.client.api.partition.UnknownPartitionException;
 import io.servicetalk.client.internal.partition.PowerSetPartitionMapFactory;
 import io.servicetalk.concurrent.api.AsyncCloseable;
 import io.servicetalk.concurrent.api.Completable;
-import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.GroupedPublisher;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Publisher;
@@ -42,6 +41,7 @@ import io.servicetalk.redis.api.RedisClientFilterFactory;
 import io.servicetalk.redis.api.RedisConnection;
 import io.servicetalk.redis.api.RedisConnectionFilterFactory;
 import io.servicetalk.redis.api.RedisData;
+import io.servicetalk.redis.api.RedisExecutionStrategy;
 import io.servicetalk.redis.api.RedisPartitionAttributesBuilder;
 import io.servicetalk.redis.api.RedisProtocolSupport.Command;
 import io.servicetalk.redis.api.RedisRequest;
@@ -98,8 +98,8 @@ final class DefaultPartitionedRedisClientBuilder<U, R> implements PartitionedRed
     }
 
     @Override
-    public PartitionedRedisClientBuilder<U, R> executor(final Executor executor) {
-        builderTemplate.executor(executor);
+    public PartitionedRedisClientBuilder<U, R> executionStrategy(final RedisExecutionStrategy strategy) {
+        builderTemplate.executionStrategy(strategy);
         return this;
     }
 
@@ -495,12 +495,13 @@ final class DefaultPartitionedRedisClientBuilder<U, R> implements PartitionedRed
         }
 
         @Override
-        public Single<? extends ReservedRedisConnection> reserveConnection(Command command) {
+        public Single<? extends ReservedRedisConnection> reserveConnection(RedisExecutionStrategy strategy,
+                                                                           Command command) {
             return Single.error(new IllegalStateException("Partition is closed."));
         }
 
         @Override
-        public Publisher<RedisData> request(RedisRequest request) {
+        public Publisher<RedisData> request(RedisExecutionStrategy strategy, RedisRequest request) {
             return error(new IllegalStateException("Partition is closed."));
         }
 

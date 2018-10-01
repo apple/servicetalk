@@ -18,10 +18,14 @@ package io.servicetalk.http.api;
 import io.servicetalk.concurrent.api.AsyncCloseable;
 import io.servicetalk.concurrent.api.Completable;
 
+import static io.servicetalk.concurrent.api.Completable.completed;
+import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
+
 /**
  * A service contract for the HTTP protocol.
  */
 public abstract class StreamingHttpService implements AsyncCloseable, StreamingHttpRequestHandler {
+
     /**
      * Closes this {@link StreamingHttpService} asynchronously.
      *
@@ -29,7 +33,7 @@ public abstract class StreamingHttpService implements AsyncCloseable, StreamingH
      */
     @Override
     public Completable closeAsync() {
-        return Completable.completed();
+        return completed();
     }
 
     @Override
@@ -66,6 +70,15 @@ public abstract class StreamingHttpService implements AsyncCloseable, StreamingH
      */
     public final BlockingHttpService asBlockingService() {
         return asBlockingServiceInternal();
+    }
+
+    /**
+     * Returns the {@link HttpExecutionStrategy} for this {@link StreamingHttpService}.
+     *
+     * @return The {@link HttpExecutionStrategy} for this {@link StreamingHttpService}.
+     */
+    public HttpExecutionStrategy executionStrategy() {
+        return defaultStrategy();
     }
 
     HttpService asServiceInternal() {

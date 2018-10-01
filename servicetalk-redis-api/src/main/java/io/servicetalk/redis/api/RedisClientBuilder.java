@@ -22,7 +22,6 @@ import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.api.LoadBalancerFactory;
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
-import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.SslConfig;
 
@@ -49,12 +48,12 @@ public interface RedisClientBuilder<U, R> {
     RedisClientBuilder<U, R> ioExecutor(IoExecutor ioExecutor);
 
     /**
-     * Sets the {@link Executor} for all clients created from this {@link RedisClientBuilder}.
+     * Sets the {@link RedisExecutionStrategy} for all clients created from this {@link RedisClientBuilder}.
      *
-     * @param executor {@link Executor} to use.
+     * @param strategy {@link RedisExecutionStrategy} to use.
      * @return {@code this}.
      */
-    RedisClientBuilder<U, R> executor(Executor executor);
+    RedisClientBuilder<U, R> executionStrategy(RedisExecutionStrategy strategy);
 
     /**
      * Sets the {@link BufferAllocator} for all clients created from this {@link RedisClientBuilder}.

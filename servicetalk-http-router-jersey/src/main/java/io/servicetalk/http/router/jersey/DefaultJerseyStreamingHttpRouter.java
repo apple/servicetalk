@@ -20,6 +20,7 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.DelayedCancellable;
+import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
@@ -83,28 +84,33 @@ final class DefaultJerseyStreamingHttpRouter extends StreamingHttpService {
     private final int publisherInputStreamQueueCapacity;
     private final BiFunction<ConnectionContext, StreamingHttpRequest, String> baseUriFunction;
     private final Container container;
+    private final HttpExecutionStrategy strategy;
 
     DefaultJerseyStreamingHttpRouter(final Application application,
                                      final int publisherInputStreamQueueCapacity,
                                      final BiFunction<ConnectionContext, StreamingHttpRequest, String> baseUriFunction,
-                                     final Function<String, Executor> executorFactory) {
+                                     final Function<String, Executor> executorFactory,
+                                     final HttpExecutionStrategy strategy) {
         this(new ApplicationHandler(application), publisherInputStreamQueueCapacity, baseUriFunction,
-                executorFactory);
+                executorFactory, strategy);
     }
 
     DefaultJerseyStreamingHttpRouter(final Class<? extends Application> applicationClass,
                                      final int publisherInputStreamQueueCapacity,
                                      final BiFunction<ConnectionContext, StreamingHttpRequest, String> baseUriFunction,
-                                     final Function<String, Executor> executorFactory) {
+                                     final Function<String, Executor> executorFactory,
+                                     final HttpExecutionStrategy strategy) {
         this(new ApplicationHandler(applicationClass), publisherInputStreamQueueCapacity, baseUriFunction,
-                executorFactory);
+                executorFactory, strategy);
     }
 
     private DefaultJerseyStreamingHttpRouter(final ApplicationHandler applicationHandler,
                                              final int publisherInputStreamQueueCapacity,
                                              final BiFunction<ConnectionContext, StreamingHttpRequest,
                                                      String> baseUriFunction,
-                                             final Function<String, Executor> executorFactory) {
+                                             final Function<String, Executor> executorFactory,
+                                             final HttpExecutionStrategy strategy) {
+        this.strategy = strategy;
 
         if (!applicationHandler.getConfiguration().isEnabled(ServiceTalkFeature.class)) {
             throw new IllegalStateException("The " + ServiceTalkFeature.class.getSimpleName()
@@ -166,6 +172,11 @@ final class DefaultJerseyStreamingHttpRouter extends StreamingHttpService {
                 }
             }
         };
+    }
+
+    @Override
+    public HttpExecutionStrategy executionStrategy() {
+        return strategy;
     }
 
     private void handle0(final HttpServiceContext serviceCtx, final StreamingHttpRequest req,

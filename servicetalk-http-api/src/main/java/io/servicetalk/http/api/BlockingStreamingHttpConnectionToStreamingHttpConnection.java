@@ -46,8 +46,9 @@ final class BlockingStreamingHttpConnectionToStreamingHttpConnection extends Str
     }
 
     @Override
-    public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
-        return BlockingUtils.request(blockingConnection, request);
+    public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
+                                                 final StreamingHttpRequest request) {
+        return BlockingUtils.request(blockingConnection, strategy, request);
     }
 
     @Override

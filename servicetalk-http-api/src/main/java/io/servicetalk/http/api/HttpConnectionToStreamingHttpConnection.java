@@ -42,8 +42,10 @@ final class HttpConnectionToStreamingHttpConnection extends StreamingHttpConnect
     }
 
     @Override
-    public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
-        return request.toRequest().flatMap(connection::request).map(HttpResponse::toStreamingResponse);
+    public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
+                                                 final StreamingHttpRequest request) {
+        return request.toRequest().flatMap(r -> connection.request(strategy, r))
+                .map(HttpResponse::toStreamingResponse);
     }
 
     @Override

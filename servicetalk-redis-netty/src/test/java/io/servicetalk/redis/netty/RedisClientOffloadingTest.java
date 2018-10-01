@@ -50,6 +50,7 @@ import static io.servicetalk.concurrent.internal.Await.awaitIndefinitelyNonNull;
 import static io.servicetalk.redis.api.RedisConnection.SettingKey.MAX_CONCURRENCY;
 import static io.servicetalk.redis.api.RedisProtocolSupport.Command.PING;
 import static io.servicetalk.redis.api.RedisRequests.newRequest;
+import static io.servicetalk.redis.netty.RedisTestEnvironment.isInClientEventLoop;
 import static java.lang.Long.MAX_VALUE;
 import static java.lang.Thread.currentThread;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -149,7 +150,7 @@ public class RedisClientOffloadingTest {
     public void settingsStreamIsOffloaded() throws Exception {
         final ReservedRedisConnection connection =
                 awaitIndefinitelyNonNull(getEnv().client.reserveConnection(PING));
-        subscribeTo(getEnv()::isInClientEventLoop, errors,
+        subscribeTo(RedisTestEnvironment::isInClientEventLoop, errors,
                 connection.settingStream(MAX_CONCURRENCY).doAfterFinally(terminated::countDown),
                 "Client settings stream: ");
         awaitIndefinitely(connection.closeAsyncGracefully());
@@ -159,7 +160,7 @@ public class RedisClientOffloadingTest {
 
     @Test
     public void closeAsyncIsOffloaded() throws Exception {
-        subscribeTo(getEnv()::isInClientEventLoop, errors,
+        subscribeTo(RedisTestEnvironment::isInClientEventLoop, errors,
                 connectionContext.closeAsync().doAfterFinally(terminated::countDown));
         terminated.await();
         assertThat("Unexpected errors.", errors, is(empty()));
@@ -167,7 +168,7 @@ public class RedisClientOffloadingTest {
 
     @Test
     public void closeAsyncGracefullyIsOffloaded() throws Exception {
-        subscribeTo(getEnv()::isInClientEventLoop, errors,
+        subscribeTo(RedisTestEnvironment::isInClientEventLoop, errors,
                 connectionContext.closeAsyncGracefully().doAfterFinally(terminated::countDown));
         terminated.await();
         assertThat("Unexpected errors.", errors, is(empty()));
@@ -176,14 +177,14 @@ public class RedisClientOffloadingTest {
     @Test
     public void onCloseIsOffloaded() throws Exception {
         awaitIndefinitely(connectionContext.closeAsync());
-        subscribeTo(getEnv()::isInClientEventLoop, errors,
+        subscribeTo(RedisTestEnvironment::isInClientEventLoop, errors,
                 connectionContext.onClose().doAfterFinally(terminated::countDown));
         terminated.await();
         assertThat("Unexpected errors.", errors, is(empty()));
     }
 
     private Predicate<Thread> inClientEventLoopOrTestThread() {
-        return thread -> getEnv().isInClientEventLoop(thread) || thread == testThread;
+        return thread -> isInClientEventLoop(thread) || thread == testThread;
     }
 
     private void subscribeTo(Predicate<Thread> notExpectedThread, Collection<Throwable> errors, Completable source) {

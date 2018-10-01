@@ -44,8 +44,9 @@ public abstract class HttpClientAdapter extends HttpClient {
     }
 
     @Override
-    public Single<? extends ReservedHttpConnection> reserveConnection(final HttpRequest request) {
-        return delegate.reserveConnection(request);
+    public Single<? extends ReservedHttpConnection> reserveConnection(final HttpExecutionStrategy strategy,
+                                                                      final HttpRequest request) {
+        return delegate.reserveConnection(strategy, request);
     }
 
     @Override
@@ -54,8 +55,8 @@ public abstract class HttpClientAdapter extends HttpClient {
     }
 
     @Override
-    public Single<? extends HttpResponse> request(final HttpRequest request) {
-        return delegate.request(request);
+    public Single<? extends HttpResponse> request(final HttpExecutionStrategy strategy, final HttpRequest request) {
+        return delegate.request(strategy, request);
     }
 
     @Override

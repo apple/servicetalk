@@ -41,12 +41,14 @@ final class StreamingHttpClientGroupToStreamingHttpClient<UnresolvedAddress> ext
     }
 
     @Override
-    public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
+    public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
+                                                 final StreamingHttpRequest request) {
         return new Single<StreamingHttpResponse>() {
             @Override
             protected void handleSubscribe(final Subscriber<? super StreamingHttpResponse> subscriber) {
                 final Single<? extends StreamingHttpResponse> response;
                 try {
+                    // TODO: Add strategy to group
                     response = clientGroup.request(requestToGroupKeyFunc.apply(request), request);
                 } catch (final Throwable t) {
                     subscriber.onSubscribe(IGNORE_CANCEL);
@@ -59,7 +61,8 @@ final class StreamingHttpClientGroupToStreamingHttpClient<UnresolvedAddress> ext
     }
 
     @Override
-    public Single<? extends ReservedStreamingHttpConnection> reserveConnection(final StreamingHttpRequest request) {
+    public Single<? extends ReservedStreamingHttpConnection> reserveConnection(final HttpExecutionStrategy strategy,
+                                                                               final StreamingHttpRequest request) {
         return new Single<ReservedStreamingHttpConnection>() {
             @Override
             protected void handleSubscribe(final Subscriber<? super ReservedStreamingHttpConnection> subscriber) {

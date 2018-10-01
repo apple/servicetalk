@@ -28,6 +28,7 @@ import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.HttpClientFilterFactory;
 import io.servicetalk.http.api.HttpConnectionFilterFactory;
+import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.api.LoadBalancerReadyStreamingHttpClient;
 import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
@@ -47,6 +48,7 @@ import java.util.function.Function;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
+import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.netty.GlobalDnsServiceDiscoverer.globalDnsServiceDiscoverer;
 import static io.servicetalk.loadbalancer.RoundRobinLoadBalancer.newRoundRobinFactory;
 import static java.util.Objects.requireNonNull;
@@ -80,6 +82,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
     private HttpClientFilterFactory lbReadyFilter = LB_READY_FILTER;
     private ConnectionFactoryFilter<R, StreamingHttpConnection> connectionFactoryFilter =
             ConnectionFactoryFilter.identity();
+    private HttpExecutionStrategy strategy = defaultStrategy();
 
     DefaultSingleAddressHttpClientBuilder(
             final ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>> serviceDiscoverer, final U address) {
@@ -151,7 +154,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
                     (LoadBalancer<LoadBalancedStreamingHttpConnection>) lbfUntypedForCast;
 
             return clientFilterFunction.append(lbReadyFilter).apply(closeOnException.prepend(
-                    new DefaultStreamingHttpClient(exec, lb, reqRespFactory)), lb.eventStream());
+                    new DefaultStreamingHttpClient(exec, strategy, lb, reqRespFactory)), lb.eventStream());
         } catch (final Throwable t) {
             closeOnException.closeAsync().subscribe();
             throw t;
@@ -179,8 +182,13 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
     }
 
     @Override
-    public DefaultSingleAddressHttpClientBuilder<U, R> executor(final Executor executor) {
-        executionContextBuilder.executor(executor);
+    public SingleAddressHttpClientBuilder<U, R> executionStrategy(final HttpExecutionStrategy strategy) {
+        this.strategy = strategy;
+        @Nullable
+        Executor executor = strategy.executor();
+        if (executor != null) {
+            executionContextBuilder.executor(executor);
+        }
         return this;
     }
 

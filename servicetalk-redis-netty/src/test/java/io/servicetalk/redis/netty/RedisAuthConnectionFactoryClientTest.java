@@ -32,8 +32,8 @@ import org.junit.rules.Timeout;
 import java.util.function.Consumer;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
+import static io.servicetalk.redis.api.RedisExecutionStrategies.noOffloadsStrategy;
 import static io.servicetalk.redis.utils.RetryingRedisClient.newBuilder;
 import static io.servicetalk.transport.netty.NettyIoExecutors.createIoExecutor;
 import static io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutors.toEventLoopAwareNettyIoExecutor;
@@ -146,7 +146,7 @@ public class RedisAuthConnectionFactoryClientTest {
                                 .fromAscii(password)))
                 .maxPipelinedRequests(10)
                 .ioExecutor(ioExecutor)
-                .executor(immediate())
+                .executionStrategy(noOffloadsStrategy())
                 .idleConnectionTimeout(ofSeconds(2))
                 .build();
         client = newBuilder(rawClient).exponentialBackoff(ofMillis(10)).build(10);

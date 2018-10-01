@@ -66,12 +66,13 @@ public class LoadBalancerReadyHttpClientTest {
 
     private StreamingHttpClient client = new TestStreamingHttpClient(reqRespFactory, mockExecutionCtx) {
         @Override
-        public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
+        public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
+                                                     final StreamingHttpRequest request) {
             return defer(new DeferredSuccessSupplier<>(newOkResponse()));
         }
 
         @Override
-        public Single<? extends ReservedStreamingHttpConnection> reserveConnection(
+        public Single<? extends ReservedStreamingHttpConnection> reserveConnection(final HttpExecutionStrategy strategy,
                 final StreamingHttpRequest request) {
             return defer(new DeferredSuccessSupplier<>(mockReservedConnection));
         }

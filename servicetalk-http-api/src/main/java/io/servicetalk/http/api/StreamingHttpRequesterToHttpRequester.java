@@ -30,8 +30,8 @@ final class StreamingHttpRequesterToHttpRequester extends HttpRequester {
     }
 
     @Override
-    public Single<? extends HttpResponse> request(final HttpRequest request) {
-        return requester.request(request.toStreamingRequest()).flatMap(StreamingHttpResponse::toResponse);
+    public Single<? extends HttpResponse> request(final HttpExecutionStrategy strategy, final HttpRequest request) {
+        return requester.request(strategy, request.toStreamingRequest()).flatMap(StreamingHttpResponse::toResponse);
     }
 
     @Override

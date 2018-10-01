@@ -59,13 +59,14 @@ public final class LoadBalancerReadyRedisClient extends RedisClient {
     }
 
     @Override
-    public Single<? extends ReservedRedisConnection> reserveConnection(Command command) {
-        return next.reserveConnection(command).retryWhen(retryWhenFunction());
+    public Single<? extends ReservedRedisConnection> reserveConnection(RedisExecutionStrategy strategy,
+                                                                       Command command) {
+        return next.reserveConnection(strategy, command).retryWhen(retryWhenFunction());
     }
 
     @Override
-    public Publisher<RedisData> request(final RedisRequest request) {
-        return next.request(request).retryWhen(retryWhenFunction());
+    public Publisher<RedisData> request(final RedisExecutionStrategy strategy, final RedisRequest request) {
+        return next.request(strategy, request).retryWhen(retryWhenFunction());
     }
 
     @Override

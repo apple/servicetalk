@@ -46,7 +46,23 @@ public abstract class BlockingHttpClient extends BlockingHttpRequester {
      * @throws Exception if a exception occurs during the reservation process.
      * @see StreamingHttpClient#reserveConnection(StreamingHttpRequest)
      */
-    public abstract ReservedBlockingHttpConnection reserveConnection(HttpRequest request) throws Exception;
+    public ReservedBlockingHttpConnection reserveConnection(HttpRequest request) throws Exception {
+        return reserveConnection(executionStrategy(), request);
+    }
+
+    /**
+     * Reserve a {@link ReservedBlockingHttpConnection} for handling the provided
+     * {@link HttpRequest} but <b>does not execute it</b>!
+     *
+     * @param strategy {@link HttpExecutionStrategy} to use.
+     * @param request Allows the underlying layers to know what {@link BlockingHttpConnection}s are valid to
+     * reserve. For example this may provide some insight into shard or other info.
+     * @return a {@link ReservedBlockingHttpConnection}.
+     * @throws Exception if a exception occurs during the reservation process.
+     * @see StreamingHttpClient#reserveConnection(HttpExecutionStrategy, StreamingHttpRequest)
+     */
+    public abstract ReservedBlockingHttpConnection reserveConnection(HttpExecutionStrategy strategy,
+                                                                     HttpRequest request) throws Exception;
 
     /**
      * Attempt a <a href="https://tools.ietf.org/html/rfc7230.html#section-6.7">protocol upgrade</a>.

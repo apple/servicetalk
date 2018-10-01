@@ -20,6 +20,7 @@ import io.servicetalk.concurrent.api.AsyncCloseables;
 import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
+import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpRequest;
@@ -40,6 +41,7 @@ import static io.servicetalk.concurrent.api.Publisher.just;
 import static io.servicetalk.concurrent.api.Single.success;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitelyNonNull;
+import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpRequestMethods.HEAD;
 import static io.servicetalk.http.api.HttpResponseStatuses.OK;
@@ -63,7 +65,6 @@ public class HttpConnectionEmptyPayloadTest {
             ThreadLocalRandom.current().nextBytes(expectedPayload);
             ServerContext serverContext = closeable.merge(HttpServers.forPort(0)
                     .ioExecutor(executionContextRule.ioExecutor())
-                    .executor(executionContextRule.executor())
                     .listenStreamingAndAwait(
                             new StreamingHttpService() {
                                 @Override
@@ -76,6 +77,11 @@ public class HttpConnectionEmptyPayloadTest {
                                                     .newBuffer(expectedContentLength).writeBytes(expectedPayload)));
                                     resp.addHeader(CONTENT_LENGTH, String.valueOf(expectedContentLength));
                                     return success(resp);
+                                }
+
+                                @Override
+                                public HttpExecutionStrategy executionStrategy() {
+                                    return noOffloadsStrategy();
                                 }
                             }));
 

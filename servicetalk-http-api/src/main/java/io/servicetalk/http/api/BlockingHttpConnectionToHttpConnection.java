@@ -46,8 +46,8 @@ final class BlockingHttpConnectionToHttpConnection extends HttpConnection {
     }
 
     @Override
-    public Single<HttpResponse> request(final HttpRequest request) {
-        return BlockingUtils.request(connection, request);
+    public Single<HttpResponse> request(final HttpExecutionStrategy strategy, final HttpRequest request) {
+        return BlockingUtils.request(connection, strategy, request);
     }
 
     @Override

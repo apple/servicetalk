@@ -21,7 +21,6 @@ import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.api.LoadBalancerFactory;
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
-import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.SslConfig;
@@ -45,7 +44,7 @@ public interface SingleAddressHttpClientBuilder<U, R> extends HttpClientBuilder<
     SingleAddressHttpClientBuilder<U, R> ioExecutor(IoExecutor ioExecutor);
 
     @Override
-    SingleAddressHttpClientBuilder<U, R> executor(Executor executor);
+    SingleAddressHttpClientBuilder<U, R> executionStrategy(HttpExecutionStrategy strategy);
 
     @Override
     SingleAddressHttpClientBuilder<U, R> bufferAllocator(BufferAllocator allocator);

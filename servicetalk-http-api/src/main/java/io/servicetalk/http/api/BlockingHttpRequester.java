@@ -17,6 +17,7 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.transport.api.ExecutionContext;
 
+import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -41,7 +42,19 @@ public abstract class BlockingHttpRequester implements HttpRequestFactory, AutoC
      * @return The response.
      * @throws Exception if an exception occurs during the request processing.
      */
-    public abstract HttpResponse request(HttpRequest request) throws Exception;
+    public HttpResponse request(HttpRequest request) throws Exception {
+        return request(executionStrategy(), request);
+    }
+
+    /**
+     * Send a {@code request} using the passed {@link HttpExecutionStrategy strategy}.
+     *
+     * @param strategy {@link HttpExecutionStrategy} to use.
+     * @param request the request to send.
+     * @return The response.
+     * @throws Exception if an exception occurs during the request processing.
+     */
+    public abstract HttpResponse request(HttpExecutionStrategy strategy, HttpRequest request) throws Exception;
 
     /**
      * Get the {@link ExecutionContext} used during construction of this object.
@@ -100,6 +113,15 @@ public abstract class BlockingHttpRequester implements HttpRequestFactory, AutoC
      */
     public final BlockingStreamingHttpRequester asBlockingStreamingRequester() {
         return asStreamingRequester().asBlockingStreamingRequester();
+    }
+
+    /**
+     * Returns the default {@link HttpExecutionStrategy} for this {@link BlockingHttpRequester}.
+     *
+     * @return Default {@link HttpExecutionStrategy} for this {@link BlockingHttpRequester}.
+     */
+    HttpExecutionStrategy executionStrategy() {
+        return defaultStrategy();
     }
 
     StreamingHttpRequester asStreamingRequesterInternal() {

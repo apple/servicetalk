@@ -55,8 +55,9 @@ final class StreamingHttpClientToBlockingStreamingHttpClient extends BlockingStr
     }
 
     @Override
-    public BlockingStreamingHttpResponse request(final BlockingStreamingHttpRequest request) throws Exception {
-        return BlockingUtils.request(client, request);
+    public BlockingStreamingHttpResponse request(final HttpExecutionStrategy strategy,
+                                                 final BlockingStreamingHttpRequest request) throws Exception {
+        return blockingInvocation(client.request(strategy, request.toStreamingRequest())).toBlockingStreamingResponse();
     }
 
     @Override
@@ -65,12 +66,13 @@ final class StreamingHttpClientToBlockingStreamingHttpClient extends BlockingStr
     }
 
     @Override
-    public ReservedBlockingStreamingHttpConnection reserveConnection(final BlockingStreamingHttpRequest request)
+    public ReservedBlockingStreamingHttpConnection reserveConnection(final HttpExecutionStrategy strategy,
+                                                                     final BlockingStreamingHttpRequest request)
             throws Exception {
         // It is assumed that users will always apply timeouts at the StreamingHttpService layer (e.g. via filter).
         // So we don't apply any explicit timeout here and just wait forever.
         return new ReservedStreamingHttpConnectionToBlockingStreaming(
-                blockingInvocation(client.reserveConnection(request.toStreamingRequest())));
+                blockingInvocation(client.reserveConnection(strategy, request.toStreamingRequest())));
     }
 
     @Override
@@ -122,8 +124,10 @@ final class StreamingHttpClientToBlockingStreamingHttpClient extends BlockingStr
         }
 
         @Override
-        public BlockingStreamingHttpResponse request(final BlockingStreamingHttpRequest request) throws Exception {
-            return BlockingUtils.request(connection, request);
+        public BlockingStreamingHttpResponse request(final HttpExecutionStrategy strategy,
+                                                     final BlockingStreamingHttpRequest request) throws Exception {
+            return blockingInvocation(connection.request(strategy, request.toStreamingRequest()))
+                    .toBlockingStreamingResponse();
         }
 
         @Override

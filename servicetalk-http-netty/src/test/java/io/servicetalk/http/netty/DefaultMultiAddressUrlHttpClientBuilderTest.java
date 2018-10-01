@@ -33,6 +33,7 @@ import org.junit.rules.Timeout;
 import java.net.InetSocketAddress;
 
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
+import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.transport.netty.internal.ExecutionContextRule.immediate;
 import static org.junit.Assert.assertNotNull;
 import static org.mockito.Mockito.mock;
@@ -51,7 +52,7 @@ public class DefaultMultiAddressUrlHttpClientBuilderTest {
     public void buildWithDefaults() throws Exception {
         StreamingHttpRequester newRequester = HttpClients.forMultiAddressUrl()
                 .ioExecutor(CTX.ioExecutor())
-                .executor(CTX.executor())
+                .executionStrategy(defaultStrategy(CTX.executor()))
                 .buildStreaming();
         assertNotNull(newRequester);
         awaitIndefinitely(newRequester.closeAsync());
@@ -61,7 +62,7 @@ public class DefaultMultiAddressUrlHttpClientBuilderTest {
     public void buildAggregatedWithDefaults() throws Exception {
         HttpRequester newAggregatedRequester = HttpClients.forMultiAddressUrl()
                 .ioExecutor(CTX.ioExecutor())
-                .executor(CTX.executor())
+                .executionStrategy(defaultStrategy(CTX.executor()))
                 .build();
         assertNotNull(newAggregatedRequester);
         awaitIndefinitely(newAggregatedRequester.closeAsync());
@@ -71,7 +72,7 @@ public class DefaultMultiAddressUrlHttpClientBuilderTest {
     public void buildBlockingWithDefaults() throws Exception {
         BlockingStreamingHttpRequester newBlockingRequester = HttpClients.forMultiAddressUrl()
                 .ioExecutor(CTX.ioExecutor())
-                .executor(CTX.executor())
+                .executionStrategy(defaultStrategy(CTX.executor()))
                 .buildBlockingStreaming();
         assertNotNull(newBlockingRequester);
         newBlockingRequester.close();
@@ -81,7 +82,7 @@ public class DefaultMultiAddressUrlHttpClientBuilderTest {
     public void buildBlockingAggregatedWithDefaults() throws Exception {
         BlockingHttpRequester newBlockingAggregatedRequester = HttpClients.forMultiAddressUrl()
                 .ioExecutor(CTX.ioExecutor())
-                .executor(CTX.executor())
+                .executionStrategy(defaultStrategy(CTX.executor()))
                 .buildBlocking();
         assertNotNull(newBlockingAggregatedRequester);
         newBlockingAggregatedRequester.close();
@@ -95,7 +96,7 @@ public class DefaultMultiAddressUrlHttpClientBuilderTest {
         StreamingHttpRequester newRequester = HttpClients.forMultiAddressUrl()
                 .serviceDiscoverer(mockedServiceDiscoverer)
                 .ioExecutor(CTX.ioExecutor())
-                .executor(CTX.executor())
+                .executionStrategy(defaultStrategy(CTX.executor()))
                 .buildStreaming();
         awaitIndefinitely(newRequester.closeAsync());
         verify(mockedServiceDiscoverer, never()).closeAsync();

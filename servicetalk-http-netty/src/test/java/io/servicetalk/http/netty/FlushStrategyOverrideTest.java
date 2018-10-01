@@ -23,6 +23,7 @@ import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.PublisherRule;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpClient.ReservedStreamingHttpConnection;
@@ -52,6 +53,7 @@ import static io.servicetalk.concurrent.api.AsyncCloseables.emptyAsyncCloseable;
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Single.success;
+import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
 import static io.servicetalk.http.netty.HttpClients.forSingleAddress;
 import static io.servicetalk.transport.netty.internal.ExecutionContextRule.immediate;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -74,14 +76,13 @@ public class FlushStrategyOverrideTest {
         service = new FlushingService();
         serverCtx = HttpServers.forPort(0)
                 .ioExecutor(ctx.ioExecutor())
-                .executor(ctx.executor())
                 .listenStreaming(service)
                 .toFuture().get();
         InetSocketAddress serverAddr = (InetSocketAddress) serverCtx.listenAddress();
         client = forSingleAddress(new NoopSD(serverAddr), serverAddr)
                 .disableHostHeaderFallback()
                 .ioExecutor(ctx.ioExecutor())
-                .executor(ctx.executor())
+                .executionStrategy(noOffloadsStrategy())
                 .buildStreaming();
         conn = client.reserveConnection(client.get("/")).toFuture().get();
     }
@@ -122,7 +123,9 @@ public class FlushStrategyOverrideTest {
 
         Collection<Object> chunks = clientResp.get();
         assertThat("Unexpected items received.", chunks, hasSize(4 /*3 chunks + last chunk*/));
+
         c.cancel(); // revert to flush on each.
+        clientStrategy.verifyWriteCancelled();
 
         // No more custom strategies.
         Collection<Object> secondReqChunks = conn.request(conn.get(""))
@@ -156,6 +159,11 @@ public class FlushStrategyOverrideTest {
 
         MockFlushStrategy getLastUsedStrategy() throws InterruptedException {
             return flushStrategies.take();
+        }
+
+        @Override
+        public HttpExecutionStrategy executionStrategy() {
+            return noOffloadsStrategy();
         }
     }
 

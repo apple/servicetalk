@@ -18,23 +18,26 @@ package io.servicetalk.http.netty;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpResponseMetaData;
 import io.servicetalk.http.api.StreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.StreamingHttpResponse;
-import io.servicetalk.http.api.StreamingHttpResponses;
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ExecutionContext;
+
+import java.util.function.Function;
 
 import static io.servicetalk.concurrent.api.Publisher.error;
 import static io.servicetalk.concurrent.api.Publisher.just;
 import static io.servicetalk.concurrent.api.Single.success;
+import static io.servicetalk.http.api.StreamingHttpResponses.newResponseWithTrailers;
 import static io.servicetalk.http.netty.HeaderUtils.addRequestTransferEncodingIfNecessary;
-import static io.servicetalk.http.netty.SpliceFlatStreamToMetaSingle.flatten;
 import static java.util.Objects.requireNonNull;
 
-abstract class AbstractStreamingHttpConnection<CC extends ConnectionContext> extends StreamingHttpConnection {
+abstract class AbstractStreamingHttpConnection<CC extends ConnectionContext> extends StreamingHttpConnection
+        implements Function<Publisher<Object>, Single<StreamingHttpResponse>> {
 
     protected final CC connection;
     protected final ExecutionContext executionContext;
@@ -64,15 +67,14 @@ abstract class AbstractStreamingHttpConnection<CC extends ConnectionContext> ext
     }
 
     @Override
-    public Single<StreamingHttpResponse> request(StreamingHttpRequest request) {
+    public final Single<StreamingHttpResponse> apply(final Publisher<Object> flattenedRequest) {
+        return new SpliceFlatStreamToMetaSingle<>(writeAndRead(flattenedRequest), this::newResponse);
+    }
+
+    @Override
+    public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy, StreamingHttpRequest request) {
         addRequestTransferEncodingIfNecessary(request); // See https://tools.ietf.org/html/rfc7230#section-3.3.3
-        final Publisher<Object> requestAsPublisher = flatten(request, StreamingHttpRequest::payloadBodyAndTrailers)
-                // We will write this stream to the connection, which will request more data from the EventLoop.
-                // Offload control path to avoid blocking the EventLoop
-                .subscribeOn(executionContext.executor());
-        return new SpliceFlatStreamToMetaSingle<>(writeAndRead(requestAsPublisher), this::newResponse)
-                // Headers will be emitted from the EventLoop, so offload those signals to avoid blocking the EventLoop.
-                .publishOn(executionContext.executor());
+        return strategy.invokeClient(executionContext.executor(), request, this);
     }
 
     @Override
@@ -83,10 +85,8 @@ abstract class AbstractStreamingHttpConnection<CC extends ConnectionContext> ext
     protected abstract Publisher<Object> writeAndRead(Publisher<Object> stream);
 
     private StreamingHttpResponse newResponse(HttpResponseMetaData meta, Publisher<Object> pub) {
-        return StreamingHttpResponses.newResponseWithTrailers(meta.status(), meta.version(), meta.headers(),
-                executionContext.bufferAllocator(),
-                // Payload will be emitted from the EventLoop, so offload those signals to avoid blocking the EventLoop.
-                pub.publishOn(executionContext.executor()));
+        return newResponseWithTrailers(meta.status(), meta.version(), meta.headers(),
+                executionContext.bufferAllocator(), pub);
     }
 
     @Override
