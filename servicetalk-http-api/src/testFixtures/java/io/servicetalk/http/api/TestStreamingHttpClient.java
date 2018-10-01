@@ -41,7 +41,8 @@ public class TestStreamingHttpClient extends StreamingHttpClient {
     }
 
     @Override
-    public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
+    public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
+                                                 final StreamingHttpRequest request) {
         return error(new UnsupportedOperationException());
     }
 
@@ -51,7 +52,8 @@ public class TestStreamingHttpClient extends StreamingHttpClient {
     }
 
     @Override
-    public Single<? extends ReservedStreamingHttpConnection> reserveConnection(final StreamingHttpRequest request) {
+    public Single<? extends ReservedStreamingHttpConnection> reserveConnection(final HttpExecutionStrategy strategy,
+                                                                               final StreamingHttpRequest request) {
         return error(new UnsupportedOperationException());
     }
 

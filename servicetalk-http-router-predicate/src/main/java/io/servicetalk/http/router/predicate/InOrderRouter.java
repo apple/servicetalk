@@ -64,7 +64,9 @@ final class InOrderRouter extends StreamingHttpService {
                                                 final StreamingHttpResponseFactory factory) {
         for (final PredicateServicePair pair : predicateServicePairs) {
             if (pair.getPredicate().test(ctx, request)) {
-                return pair.getService().handle(ctx, request, factory);
+                StreamingHttpService service = pair.getService();
+                return service.executionStrategy().wrap(ctx.executionContext().executor(), service)
+                        .handle(ctx, request, factory);
             }
         }
         return fallbackService.handle(ctx, request, factory);

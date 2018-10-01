@@ -56,14 +56,17 @@ final class BlockingStreamingHttpClientToStreamingHttpClient extends StreamingHt
     }
 
     @Override
-    public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
-        return BlockingUtils.request(blockingClient, request);
+    public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
+                                                 final StreamingHttpRequest request) {
+        return blockingToSingle(() -> blockingClient.request(strategy, request.toBlockingStreamingRequest())
+                .toStreamingResponse());
     }
 
     @Override
-    public Single<? extends ReservedStreamingHttpConnection> reserveConnection(final StreamingHttpRequest request) {
+    public Single<? extends ReservedStreamingHttpConnection> reserveConnection(final HttpExecutionStrategy strategy,
+                                                                               final StreamingHttpRequest request) {
         return blockingToSingle(() -> new BlockingToReservedStreamingHttpConnection(
-                    blockingClient.reserveConnection(request.toBlockingStreamingRequest())));
+                    blockingClient.reserveConnection(strategy, request.toBlockingStreamingRequest())));
     }
 
     @Override
@@ -121,8 +124,11 @@ final class BlockingStreamingHttpClientToStreamingHttpClient extends StreamingHt
         }
 
         @Override
-        public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
-            return BlockingUtils.request(blockingReservedConnection, request);
+        public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
+                                                     final StreamingHttpRequest request) {
+            return blockingToSingle(() ->
+                    blockingReservedConnection.request(strategy, request.toBlockingStreamingRequest())
+                            .toStreamingResponse());
         }
 
         @Override

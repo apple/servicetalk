@@ -57,8 +57,8 @@ public abstract class ReservedFromStreamingHttpConnectionAdapter extends Reserve
     }
 
     @Override
-    public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
-        return delegate.request(request);
+    public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy, final StreamingHttpRequest request) {
+        return delegate.request(strategy, request);
     }
 
     @Override

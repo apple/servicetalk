@@ -22,6 +22,7 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.redis.api.RedisConnection;
 import io.servicetalk.redis.api.RedisData;
+import io.servicetalk.redis.api.RedisExecutionStrategy;
 import io.servicetalk.redis.api.RedisRequest;
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ExecutionContext;
@@ -66,12 +67,12 @@ final class RedisConnectionConcurrentRequestsFilter extends RedisConnection {
     }
 
     @Override
-    public Publisher<RedisData> request(RedisRequest request) {
+    public Publisher<RedisData> request(RedisExecutionStrategy strategy, RedisRequest request) {
         return new Publisher<RedisData>() {
             @Override
             protected void handleSubscribe(final Subscriber<? super RedisData> subscriber) {
                 if (limiter.tryRequest()) {
-                    next.request(request).doBeforeFinally(limiter::requestFinished).subscribe(subscriber);
+                    next.request(strategy, request).doBeforeFinally(limiter::requestFinished).subscribe(subscriber);
                 } else {
                     subscriber.onSubscribe(EMPTY_SUBSCRIPTION);
                     subscriber.onError(new MaxRequestLimitExceededRejectedSubscribeException(

@@ -16,7 +16,6 @@
 package io.servicetalk.http.api;
 
 import io.servicetalk.buffer.api.BufferAllocator;
-import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.transport.api.ContextFilter;
 import io.servicetalk.transport.api.IoExecutor;
@@ -207,14 +206,6 @@ public interface HttpServerBuilder {
      * @return {@code this}.
      */
     HttpServerBuilder ioExecutor(IoExecutor ioExecutor);
-
-    /**
-     * Sets the {@link Executor} to be used by this server.
-     *
-     * @param executor {@link Executor} to use.
-     * @return {@code this}.
-     */
-    HttpServerBuilder executor(Executor executor);
 
     /**
      * Sets the {@link BufferAllocator} to be used by this server.

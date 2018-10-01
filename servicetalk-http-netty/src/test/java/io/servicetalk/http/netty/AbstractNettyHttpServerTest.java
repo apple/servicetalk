@@ -63,6 +63,7 @@ import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
 import static io.servicetalk.concurrent.internal.Await.await;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitelyNonNull;
+import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.transport.api.ContextFilter.ACCEPT_ALL;
 import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.parseBoolean;
@@ -130,7 +131,7 @@ public abstract class AbstractNettyHttpServerTest {
     @Before
     public void startServer() throws Exception {
         final InetSocketAddress bindAddress = new InetSocketAddress(LOOPBACK_ADDRESS, 0);
-        setService(new TestServiceStreaming(publisherSupplier));
+        setService(new TestServiceStreaming(publisherSupplier, defaultStrategy(serverExecutor)));
 
         // A small SNDBUF is needed to test that the server defers closing the connection until writes are complete.
         // However, if it is too small, tests that expect certain chunks of data will see those chunks broken up
@@ -144,7 +145,7 @@ public abstract class AbstractNettyHttpServerTest {
                     .build();
             serverBuilder.sslConfig(sslConfig);
         }
-        serverContext = awaitIndefinitelyNonNull(serverBuilder.ioExecutor(serverIoExecutor).executor(serverExecutor)
+        serverContext = awaitIndefinitelyNonNull(serverBuilder.ioExecutor(serverIoExecutor)
                 .contextFilter(contextFilter)
                 .listenStreaming(service)
                 .doBeforeSuccess(ctx -> LOGGER.debug("Server started on {}.", ctx.listenAddress()))

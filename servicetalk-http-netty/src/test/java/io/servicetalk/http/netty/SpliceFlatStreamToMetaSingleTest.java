@@ -25,7 +25,6 @@ import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.util.List;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
 
@@ -33,8 +32,6 @@ import static io.servicetalk.concurrent.api.DeliberateException.DELIBERATE_EXCEP
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Publisher.just;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
-import static io.servicetalk.http.netty.SpliceFlatStreamToMetaSingle.flatten;
-import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertThat;
@@ -61,13 +58,6 @@ public class SpliceFlatStreamToMetaSingleTest {
 
     @Rule
     public final MockedSingleListenerRule<Data> dataSubscriber = new MockedSingleListenerRule<>();
-
-    @Test
-    public void flattenShouldBreakDownGroupWithEmbeddedPayloadIntoFlatHeterogeneousPublisherOfObject()
-            throws ExecutionException, InterruptedException {
-        List<Object> flattened = awaitIndefinitely(flatten(data, Data::getPayload));
-        assertThat(flattened, contains(data, one, two, last));
-    }
 
     @Test
     public void streamWithHeaderAndPayloadShouldProduceDataWithEmbeddedPayload() {

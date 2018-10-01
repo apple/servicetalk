@@ -17,6 +17,7 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
+import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpHeaderNames;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpServiceContext;
@@ -42,6 +43,7 @@ import static io.servicetalk.concurrent.api.Publisher.just;
 import static io.servicetalk.concurrent.api.RetryStrategies.retryWithExponentialBackoff;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitelyNonNull;
+import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
 import static io.servicetalk.http.api.HttpHeaderValues.CHUNKED;
 import static io.servicetalk.http.api.HttpRequestMethods.GET;
 import static io.servicetalk.transport.netty.internal.ExecutionContextRule.immediate;
@@ -64,7 +66,6 @@ public abstract class AbstractEchoServerBasedHttpRequesterTest {
     public static void startServer() throws Exception {
         serverContext = HttpServers.forPort(0)
                 .ioExecutor(CTX.ioExecutor())
-                .executor(CTX.executor())
                 .listenStreamingAndAwait(new EchoServiceStreaming());
     }
 
@@ -88,6 +89,11 @@ public abstract class AbstractEchoServerBasedHttpRequesterTest {
             HttpHeaders headers = resp.headers();
             request.headers().forEach(entry -> headers.set("test-req-header-" + entry.getKey(), entry.getValue()));
             return Single.success(resp);
+        }
+
+        @Override
+        public HttpExecutionStrategy executionStrategy() {
+            return noOffloadsStrategy();
         }
     }
 

@@ -30,6 +30,7 @@ import io.servicetalk.redis.api.RedisData.BulkStringSize;
 import io.servicetalk.redis.api.RedisData.CompleteBulkString;
 import io.servicetalk.redis.api.RedisData.LastBulkStringChunk;
 import io.servicetalk.redis.api.RedisData.RequestRedisData;
+import io.servicetalk.redis.api.RedisExecutionStrategy;
 import io.servicetalk.redis.api.RedisProtocolSupport.Command;
 import io.servicetalk.redis.api.RedisRequest;
 import io.servicetalk.redis.api.RedisServerException;
@@ -242,14 +243,15 @@ public class RedisClientTest extends BaseRedisClientTest {
         final AtomicBoolean closeCalled = new AtomicBoolean();
         RedisClient filteredClient = new RedisClient() {
             @Override
-            public Single<? extends ReservedRedisConnection> reserveConnection(Command command) {
-                return delegate.reserveConnection(command);
+            public Single<? extends ReservedRedisConnection> reserveConnection(RedisExecutionStrategy strategy,
+                                                                               Command command) {
+                return delegate.reserveConnection(strategy, command);
             }
 
             @Override
-            public Publisher<RedisData> request(RedisRequest request) {
+            public Publisher<RedisData> request(final RedisExecutionStrategy strategy, final RedisRequest request) {
                 requestCalled.set(true);
-                return delegate.request(request);
+                return delegate.request(strategy, request);
             }
 
             @Override

@@ -38,9 +38,10 @@ final class BlockingHttpClientToStreamingHttpClient extends StreamingHttpClient 
     }
 
     @Override
-    public Single<? extends ReservedStreamingHttpConnection> reserveConnection(final StreamingHttpRequest request) {
+    public Single<? extends ReservedStreamingHttpConnection> reserveConnection(final HttpExecutionStrategy strategy,
+                                                                               final StreamingHttpRequest request) {
         return request.toRequest().flatMap(req -> blockingToSingle(() ->
-                new BlockingReservedStreamingHttpConnectionToReserved(client.reserveConnection(req))));
+                new BlockingReservedStreamingHttpConnectionToReserved(client.reserveConnection(strategy, req))));
     }
 
     @Override
@@ -50,8 +51,10 @@ final class BlockingHttpClientToStreamingHttpClient extends StreamingHttpClient 
     }
 
     @Override
-    public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
-        return BlockingUtils.request(client, request);
+    public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
+                                                 final StreamingHttpRequest request) {
+        return request.toRequest().flatMap(req -> blockingToSingle(() -> client.request(strategy, req))
+                .map(HttpResponse::toStreamingResponse));
     }
 
     @Override
@@ -102,8 +105,10 @@ final class BlockingHttpClientToStreamingHttpClient extends StreamingHttpClient 
         }
 
         @Override
-        public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
-            return BlockingUtils.request(connection, request);
+        public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
+                                                     final StreamingHttpRequest request) {
+            return request.toRequest().flatMap(req -> blockingToSingle(() -> connection.request(strategy, req))
+                    .map(HttpResponse::toStreamingResponse));
         }
 
         @Override

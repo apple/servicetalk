@@ -34,6 +34,7 @@ import java.util.concurrent.ExecutionException;
 import javax.annotation.Nonnull;
 
 import static io.servicetalk.concurrent.api.Completable.completed;
+import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.inOrder;
@@ -78,7 +79,7 @@ public class HttpClientBuilderTest extends AbstractEchoServerBasedHttpRequesterT
                 .appendConnectionFactoryFilter(factoryFilter(factory1))
                 .appendConnectionFactoryFilter(factoryFilter(factory2))
                 .ioExecutor(CTX.ioExecutor())
-                .executor(CTX.executor())
+                .executionStrategy(noOffloadsStrategy())
                 .buildStreaming();
         makeRequestValidateResponseAndClose(requester);
 
@@ -115,7 +116,7 @@ public class HttpClientBuilderTest extends AbstractEchoServerBasedHttpRequesterT
         StreamingHttpClient requester = HttpClients.forSingleAddress("localhost", port)
                 .serviceDiscoverer(disco)
                 .ioExecutor(CTX.ioExecutor())
-                .executor(CTX.executor())
+                .executionStrategy(noOffloadsStrategy())
                 .buildStreaming();
         makeRequestValidateResponseAndClose(requester);
     }

@@ -28,7 +28,6 @@ import org.reactivestreams.Subscription;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.BiFunction;
-import java.util.function.Function;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
@@ -68,20 +67,6 @@ final class SpliceFlatStreamToMetaSingle<Data, MetaData, Payload> extends Single
     @Override
     protected void handleSubscribe(Subscriber<? super Data> dataSubscriber) {
         original.subscribe(new SplicingSubscriber<>(this, dataSubscriber));
-    }
-
-    /**
-     * Operator to flatten a {@link Data}&lt;{@link Payload}&gt; into a {@link Publisher}&lt;{@link Object}&gt;.
-     *
-     * @param data object containing a {@link Publisher}&lt;{@link Payload}&gt;
-     * @param unpack function to unpack the {@link Publisher}&lt;{@link Payload}&gt; from the container
-     * @param <Data> type of container, eg. {@link StreamingHttpResponse}&lt;{@link Buffer}&gt;
-     * @param <Payload> type of payload inside the {@link Data}, eg. {@link Buffer}
-     * @return a flattened {@link Publisher}&lt;{@link Object}&gt;
-     */
-    @SuppressWarnings("unchecked")
-    static <Data, Payload> Publisher<Object> flatten(Data data, Function<Data, Publisher<Payload>> unpack) {
-        return ((Publisher) Publisher.just(data)).concatWith(unpack.apply(data));
     }
 
     /* Visible for testing */

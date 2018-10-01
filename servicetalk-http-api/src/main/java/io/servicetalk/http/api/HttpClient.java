@@ -48,7 +48,20 @@ public abstract class HttpClient extends HttpRequester {
      * For example this may provide some insight into shard or other info.
      * @return a {@link Single} that provides the {@link ReservedHttpConnection} upon completion.
      */
-    public abstract Single<? extends ReservedHttpConnection> reserveConnection(HttpRequest request);
+    public Single<? extends ReservedHttpConnection> reserveConnection(HttpRequest request) {
+        return reserveConnection(executionStrategy(), request);
+    }
+
+    /**
+     * Reserve a {@link HttpConnection} for handling the provided {@link HttpRequest} but <b>does not execute it</b>!
+     *
+     * @param strategy {@link HttpExecutionStrategy} to use.
+     * @param request Allows the underlying layers to know what {@link HttpConnection}s are valid to reserve.
+     * For example this may provide some insight into shard or other info.
+     * @return a {@link Single} that provides the {@link ReservedHttpConnection} upon completion.
+     */
+    public abstract Single<? extends ReservedHttpConnection> reserveConnection(HttpExecutionStrategy strategy,
+                                                                               HttpRequest request);
 
     /**
      * Attempt a <a href="https://tools.ietf.org/html/rfc7230.html#section-6.7">protocol upgrade</a>.
@@ -101,7 +114,7 @@ public abstract class HttpClient extends HttpRequester {
 
     /**
      * A special type of {@link HttpConnection} for the exclusive use of the caller of
-     * {@link #reserveConnection(HttpRequest)}.
+     * {@link #reserveConnection(HttpRequest)} and {@link #reserveConnection(HttpExecutionStrategy, HttpRequest)}.
      * @see ReservedStreamingHttpConnection
      */
     public abstract static class ReservedHttpConnection extends HttpConnection {

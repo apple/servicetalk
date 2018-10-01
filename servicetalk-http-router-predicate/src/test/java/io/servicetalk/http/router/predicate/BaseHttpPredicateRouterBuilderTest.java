@@ -35,7 +35,6 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.rules.ExpectedException;
 import org.mockito.Mock;
-import org.mockito.invocation.InvocationOnMock;
 import org.mockito.junit.MockitoJUnit;
 import org.mockito.junit.MockitoRule;
 import org.mockito.stubbing.Answer;
@@ -45,6 +44,7 @@ import java.util.Spliterator;
 
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Executors.immediate;
+import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
 import static io.servicetalk.http.api.HttpProtocolVersions.HTTP_1_1;
 import static java.util.Arrays.asList;
 import static org.mockito.ArgumentMatchers.any;
@@ -83,13 +83,17 @@ public abstract class BaseHttpPredicateRouterBuilderTest {
         when(executionCtx.executor()).thenReturn(immediate());
         when(request.version()).thenReturn(HTTP_1_1);
         when(request.headers()).thenReturn(headers);
-        when(factory.newResponse(any(HttpResponseStatus.class))).thenAnswer(new Answer<StreamingHttpResponse>() {
-            @Override
-            public StreamingHttpResponse answer(final InvocationOnMock invocation) throws Throwable {
-                HttpResponseStatus status = invocation.getArgument(0);
-                return reqRespFactory.newResponse(status);
-            }
+        when(factory.newResponse(any(HttpResponseStatus.class))).thenAnswer((Answer<StreamingHttpResponse>) invocation -> {
+            HttpResponseStatus status = invocation.getArgument(0);
+            return reqRespFactory.newResponse(status);
         });
+
+        when(serviceA.executionStrategy()).thenReturn(noOffloadsStrategy());
+        when(serviceB.executionStrategy()).thenReturn(noOffloadsStrategy());
+        when(serviceC.executionStrategy()).thenReturn(noOffloadsStrategy());
+        when(serviceD.executionStrategy()).thenReturn(noOffloadsStrategy());
+        when(serviceE.executionStrategy()).thenReturn(noOffloadsStrategy());
+        when(fallbackService.executionStrategy()).thenReturn(noOffloadsStrategy());
 
         when(serviceA.handle(eq(ctx), eq(request), any())).thenReturn(responseA);
         when(serviceB.handle(eq(ctx), eq(request), any())).thenReturn(responseB);

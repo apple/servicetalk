@@ -49,6 +49,7 @@ import org.mockito.ArgumentCaptor;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
+import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
 import static io.servicetalk.http.api.HttpRequestMethods.GET;
 import static io.servicetalk.http.netty.DefaultHttpServiceContext.newInstance;
 import static io.servicetalk.http.netty.NettyHttpServerConnection.newConnection;
@@ -93,6 +94,7 @@ public class NettyHttpServerConnectionTest {
         DefaultHttpServiceContext serviceContext = newInstance(ctx, DefaultHttpHeadersFactory.INSTANCE);
 
         httpService = mock(StreamingHttpService.class);
+        when(httpService.executionStrategy()).thenReturn(noOffloadsStrategy());
         responseSingle = new TestSingle<>();
         when(httpService.handle(any(), any(), any())).thenReturn(responseSingle);
         originalStrategy = new MockFlushStrategy();

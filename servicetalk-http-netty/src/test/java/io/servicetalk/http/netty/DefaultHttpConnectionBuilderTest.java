@@ -18,6 +18,7 @@ package io.servicetalk.http.netty;
 import io.servicetalk.client.api.ConnectionFactory;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.StreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpConnectionAdapter;
 import io.servicetalk.http.api.StreamingHttpRequest;
@@ -64,9 +65,10 @@ public class DefaultHttpConnectionBuilderTest extends AbstractEchoServerBasedHtt
         }
 
         @Override
-        public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
+        public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
+                                                     final StreamingHttpRequest request) {
             // fanout - simulates followup request on response
-            return delegate().request(request).flatMap(resp ->
+            return delegate().request(strategy, request).flatMap(resp ->
                     resp.payloadBody().ignoreElements().andThen(delegate().request(request)));
         }
 

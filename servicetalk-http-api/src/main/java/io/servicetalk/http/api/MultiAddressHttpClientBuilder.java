@@ -20,7 +20,6 @@ import io.servicetalk.client.api.ConnectionFactoryFilter;
 import io.servicetalk.client.api.LoadBalancerFactory;
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
-import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.SslConfig;
@@ -44,7 +43,7 @@ public interface MultiAddressHttpClientBuilder<U, R> extends HttpClientBuilder<U
     MultiAddressHttpClientBuilder<U, R> ioExecutor(IoExecutor ioExecutor);
 
     @Override
-    MultiAddressHttpClientBuilder<U, R> executor(Executor executor);
+    MultiAddressHttpClientBuilder<U, R> executionStrategy(HttpExecutionStrategy strategy);
 
     @Override
     MultiAddressHttpClientBuilder<U, R> bufferAllocator(BufferAllocator allocator);

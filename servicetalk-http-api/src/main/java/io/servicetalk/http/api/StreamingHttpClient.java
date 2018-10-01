@@ -56,7 +56,21 @@ public abstract class StreamingHttpClient extends StreamingHttpRequester {
      * For example this may provide some insight into shard or other info.
      * @return a {@link ReservedStreamingHttpConnection}.
      */
-    public abstract Single<? extends ReservedStreamingHttpConnection> reserveConnection(StreamingHttpRequest request);
+    public Single<? extends ReservedStreamingHttpConnection> reserveConnection(StreamingHttpRequest request) {
+        return reserveConnection(executionStrategy(), request);
+    }
+
+    /**
+     * Reserve a {@link StreamingHttpConnection} for handling the provided {@link StreamingHttpRequest} but <b>does not
+     * execute it</b>!
+     *
+     * @param strategy {@link HttpExecutionStrategy} to use.
+     * @param request Allows the underlying layers to know what {@link StreamingHttpConnection}s are valid to reserve.
+     * For example this may provide some insight into shard or other info.
+     * @return a {@link ReservedStreamingHttpConnection}.
+     */
+    public abstract Single<? extends ReservedStreamingHttpConnection> reserveConnection(HttpExecutionStrategy strategy,
+                                                                                        StreamingHttpRequest request);
 
     /**
      * Attempt a <a href="https://tools.ietf.org/html/rfc7230.html#section-6.7">protocol upgrade</a>.
@@ -118,7 +132,8 @@ public abstract class StreamingHttpClient extends StreamingHttpRequester {
 
     /**
      * A special type of {@link StreamingHttpConnection} for the exclusive use of the caller of
-     * {@link #reserveConnection(StreamingHttpRequest)}.
+     * {@link #reserveConnection(StreamingHttpRequest)} and
+     * {@link #reserveConnection(HttpExecutionStrategy, StreamingHttpRequest)}.
      */
     public abstract static class ReservedStreamingHttpConnection extends StreamingHttpConnection {
         /**

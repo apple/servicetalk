@@ -25,7 +25,6 @@ import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.concurrent.api.AsyncCloseable;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.CompositeCloseable;
-import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.ClientGroupFilterFunction;
@@ -33,6 +32,7 @@ import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.HttpClientBuilder;
 import io.servicetalk.http.api.HttpClientGroupFilterFactory;
 import io.servicetalk.http.api.HttpConnectionFilterFactory;
+import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpScheme;
@@ -266,13 +266,15 @@ final class DefaultMultiAddressUrlHttpClientBuilder
         }
 
         @Override
-        public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
-            return httpClient.request(request);
+        public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
+                                                     final StreamingHttpRequest request) {
+            return httpClient.request(strategy, request);
         }
 
         @Override
-        public Single<? extends ReservedStreamingHttpConnection> reserveConnection(final StreamingHttpRequest request) {
-            return httpClient.reserveConnection(request);
+        public Single<? extends ReservedStreamingHttpConnection> reserveConnection(final HttpExecutionStrategy strategy,
+                                                                                   final StreamingHttpRequest request) {
+            return httpClient.reserveConnection(strategy, request);
         }
 
         @Override
@@ -309,8 +311,9 @@ final class DefaultMultiAddressUrlHttpClientBuilder
     }
 
     @Override
-    public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> executor(final Executor executor) {
-        builderTemplate.executor(executor);
+    public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> executionStrategy(
+            final HttpExecutionStrategy strategy) {
+        builderTemplate.executionStrategy(strategy);
         return this;
     }
 

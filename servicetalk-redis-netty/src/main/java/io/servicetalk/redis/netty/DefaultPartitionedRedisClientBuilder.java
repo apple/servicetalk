@@ -42,6 +42,7 @@ import io.servicetalk.redis.api.RedisClientFilterFactory;
 import io.servicetalk.redis.api.RedisConnection;
 import io.servicetalk.redis.api.RedisConnectionFilterFactory;
 import io.servicetalk.redis.api.RedisData;
+import io.servicetalk.redis.api.RedisExecutionStrategy;
 import io.servicetalk.redis.api.RedisPartitionAttributesBuilder;
 import io.servicetalk.redis.api.RedisProtocolSupport.Command;
 import io.servicetalk.redis.api.RedisRequest;
@@ -495,12 +496,13 @@ final class DefaultPartitionedRedisClientBuilder<U, R> implements PartitionedRed
         }
 
         @Override
-        public Single<? extends ReservedRedisConnection> reserveConnection(Command command) {
+        public Single<? extends ReservedRedisConnection> reserveConnection(RedisExecutionStrategy strategy,
+                                                                           Command command) {
             return Single.error(new IllegalStateException("Partition is closed."));
         }
 
         @Override
-        public Publisher<RedisData> request(RedisRequest request) {
+        public Publisher<RedisData> request(RedisExecutionStrategy strategy, RedisRequest request) {
             return error(new IllegalStateException("Partition is closed."));
         }
 

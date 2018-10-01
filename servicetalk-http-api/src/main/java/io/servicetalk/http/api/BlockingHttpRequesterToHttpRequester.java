@@ -21,6 +21,7 @@ import io.servicetalk.transport.api.ExecutionContext;
 
 import static io.servicetalk.concurrent.api.Completable.error;
 import static io.servicetalk.http.api.BlockingUtils.blockingToCompletable;
+import static io.servicetalk.http.api.BlockingUtils.blockingToSingle;
 import static java.util.Objects.requireNonNull;
 
 final class BlockingHttpRequesterToHttpRequester extends HttpRequester {
@@ -32,8 +33,8 @@ final class BlockingHttpRequesterToHttpRequester extends HttpRequester {
     }
 
     @Override
-    public Single<HttpResponse> request(final HttpRequest request) {
-        return BlockingUtils.request(requester, request);
+    public Single<HttpResponse> request(final HttpExecutionStrategy strategy, final HttpRequest request) {
+        return blockingToSingle(() -> requester.request(strategy, request));
     }
 
     @Override

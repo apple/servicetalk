@@ -36,8 +36,9 @@ final class StreamingHttpClientToBlockingHttpClient extends BlockingHttpClient {
     }
 
     @Override
-    public ReservedBlockingHttpConnection reserveConnection(final HttpRequest request) throws Exception {
-        return blockingInvocation(client.reserveConnection(request.toStreamingRequest())
+    public ReservedBlockingHttpConnection reserveConnection(final HttpExecutionStrategy strategy,
+                                                            final HttpRequest request) throws Exception {
+        return blockingInvocation(client.reserveConnection(strategy, request.toStreamingRequest())
                 .map(ReservedStreamingHttpConnectionToBlocking::new));
     }
 
@@ -47,8 +48,9 @@ final class StreamingHttpClientToBlockingHttpClient extends BlockingHttpClient {
     }
 
     @Override
-    public HttpResponse request(final HttpRequest request) throws Exception {
-        return BlockingUtils.request(client, request);
+    public HttpResponse request(final HttpExecutionStrategy strategy, final HttpRequest request) throws Exception {
+        return blockingInvocation(client.request(strategy, request.toStreamingRequest())
+                .flatMap(StreamingHttpResponse::toResponse));
     }
 
     @Override
@@ -94,8 +96,9 @@ final class StreamingHttpClientToBlockingHttpClient extends BlockingHttpClient {
         }
 
         @Override
-        public HttpResponse request(final HttpRequest request) throws Exception {
-            return BlockingUtils.request(connection, request);
+        public HttpResponse request(final HttpExecutionStrategy strategy, final HttpRequest request) throws Exception {
+            return blockingInvocation(connection.request(request.toStreamingRequest())
+                    .flatMap(StreamingHttpResponse::toResponse));
         }
 
         @Override

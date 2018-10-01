@@ -30,8 +30,8 @@ final class HttpRequesterToBlockingHttpRequester extends BlockingHttpRequester {
     }
 
     @Override
-    public HttpResponse request(final HttpRequest request) throws Exception {
-        return BlockingUtils.request(requester, request);
+    public HttpResponse request(final HttpExecutionStrategy strategy, final HttpRequest request) throws Exception {
+        return blockingInvocation(requester.request(strategy, request));
     }
 
     @Override

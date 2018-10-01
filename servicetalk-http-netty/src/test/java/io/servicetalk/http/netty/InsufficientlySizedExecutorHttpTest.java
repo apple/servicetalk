@@ -16,9 +16,15 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.concurrent.api.Executor;
+import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
+import io.servicetalk.http.api.HttpExecutionStrategy;
+import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StreamingHttpClient;
+import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
+import io.servicetalk.http.api.StreamingHttpResponseFactory;
+import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.transport.api.ServerContext;
 
 import org.junit.After;
@@ -29,8 +35,8 @@ import org.junit.rules.Timeout;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.nio.channels.ClosedChannelException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -42,6 +48,7 @@ import javax.annotation.Nullable;
 import static io.servicetalk.concurrent.api.Executors.from;
 import static io.servicetalk.concurrent.api.Executors.newFixedSizeExecutor;
 import static io.servicetalk.concurrent.api.Single.success;
+import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpResponseStatuses.SERVICE_UNAVAILABLE;
 import static io.servicetalk.http.netty.HttpClients.forSingleAddress;
 import static io.servicetalk.http.netty.HttpServers.forPort;
@@ -72,7 +79,7 @@ public class InsufficientlySizedExecutorHttpTest {
     @Parameterized.Parameters(name = "{index} - capacity: {0} ")
     public static Collection<Object[]> executors() {
         List<Object[]> executors = new ArrayList<>();
-        executors.add(newParam(0));
+        //executors.add(newParam(0));
         executors.add(newParam(1));
         return executors;
     }
@@ -94,7 +101,7 @@ public class InsufficientlySizedExecutorHttpTest {
             // If there are no threads, we can not start processing.
             // If there is a single thread, it is used by the connection to listen for close events.
             expectedException.expect(instanceOf(ExecutionException.class));
-            expectedException.expectCause(instanceOf(ClosedChannelException.class));
+            expectedException.expectCause(instanceOf(IOException.class));
         }
         StreamingHttpResponse response = client.request(client.get("/")).toFuture().get();
         assertThat("Unexpected response code.", response.status().code(), is(SERVICE_UNAVAILABLE.code()));
@@ -102,13 +109,27 @@ public class InsufficientlySizedExecutorHttpTest {
 
     private void initClientAndServer(boolean clientUnderProvisioned) throws Exception {
         InetSocketAddress addr;
+        final HttpExecutionStrategy strategy = defaultStrategy(executor);
         if (clientUnderProvisioned) {
-            server = forPort(0).listenStreamingAndAwait((ctx, request, responseFactory) -> success(responseFactory.ok()));
+            server = forPort(0).listenStreamingAndAwait(
+                    (ctx, request, responseFactory) -> success(responseFactory.ok()));
             addr = (InetSocketAddress) server.listenAddress();
-            client = forSingleAddress(addr.getHostName(), addr.getPort()).executor(executor).buildStreaming();
+            client = forSingleAddress(addr.getHostName(), addr.getPort()).executionStrategy(strategy)
+                    .buildStreaming();
         } else {
-            server = forPort(0).executor(executor).
-                    listenStreamingAndAwait((ctx, request, responseFactory) -> success(responseFactory.ok()));
+            server = forPort(0).listenStreamingAndAwait(new StreamingHttpService() {
+                @Override
+                public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
+                                                            final StreamingHttpRequest request,
+                                                            final StreamingHttpResponseFactory responseFactory) {
+                    return success(responseFactory.ok());
+                }
+
+                @Override
+                public HttpExecutionStrategy executionStrategy() {
+                    return strategy;
+                }
+            });
             addr = (InetSocketAddress) server.listenAddress();
             client = forSingleAddress(addr.getHostName(), addr.getPort()).buildStreaming();
         }
@@ -122,6 +143,7 @@ public class InsufficientlySizedExecutorHttpTest {
         if (server != null) {
             server.closeAsync().toFuture().get();
         }
+        executor.closeAsync().toFuture().get();
     }
 
     private static Object[] newParam(final int capacity) {

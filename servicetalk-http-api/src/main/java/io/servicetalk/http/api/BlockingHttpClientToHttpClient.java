@@ -38,9 +38,10 @@ final class BlockingHttpClientToHttpClient extends HttpClient {
     }
 
     @Override
-    public Single<? extends ReservedHttpConnection> reserveConnection(final HttpRequest request) {
+    public Single<? extends ReservedHttpConnection> reserveConnection(final HttpExecutionStrategy strategy,
+                                                                      final HttpRequest request) {
         return blockingToSingle(() -> new ReservedBlockingHttpConnectionToReservedHttpConnection(
-                client.reserveConnection(request)));
+                client.reserveConnection(strategy, request)));
     }
 
     @Override
@@ -49,8 +50,8 @@ final class BlockingHttpClientToHttpClient extends HttpClient {
     }
 
     @Override
-    public Single<HttpResponse> request(final HttpRequest request) {
-        return BlockingUtils.request(client, request);
+    public Single<HttpResponse> request(final HttpExecutionStrategy strategy, final HttpRequest request) {
+        return blockingToSingle(() -> client.request(strategy, request));
     }
 
     @Override
@@ -101,8 +102,8 @@ final class BlockingHttpClientToHttpClient extends HttpClient {
         }
 
         @Override
-        public Single<HttpResponse> request(final HttpRequest request) {
-            return BlockingUtils.request(connection, request);
+        public Single<HttpResponse> request(final HttpExecutionStrategy strategy, final HttpRequest request) {
+            return blockingToSingle(() -> connection.request(strategy, request));
         }
 
         @Override

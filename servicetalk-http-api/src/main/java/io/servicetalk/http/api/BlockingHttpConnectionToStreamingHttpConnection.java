@@ -24,6 +24,7 @@ import io.servicetalk.transport.api.ExecutionContext;
 import static io.servicetalk.concurrent.api.Completable.error;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.http.api.BlockingUtils.blockingToCompletable;
+import static io.servicetalk.http.api.BlockingUtils.blockingToSingle;
 import static java.util.Objects.requireNonNull;
 
 final class BlockingHttpConnectionToStreamingHttpConnection extends StreamingHttpConnection {
@@ -45,8 +46,10 @@ final class BlockingHttpConnectionToStreamingHttpConnection extends StreamingHtt
     }
 
     @Override
-    public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
-        return BlockingUtils.request(connection, request);
+    public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
+                                                 final StreamingHttpRequest request) {
+        return request.toRequest().flatMap(req -> blockingToSingle(() -> connection.request(strategy, req))
+                .map(HttpResponse::toStreamingResponse));
     }
 
     @Override

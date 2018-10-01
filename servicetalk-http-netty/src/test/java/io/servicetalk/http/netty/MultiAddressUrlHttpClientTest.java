@@ -20,6 +20,7 @@ import io.servicetalk.concurrent.api.MockedSingleListenerRule;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.DefaultHttpHeadersFactory;
+import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpResponseStatus;
 import io.servicetalk.http.api.HttpResponseStatuses;
@@ -48,6 +49,7 @@ import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseabl
 import static io.servicetalk.concurrent.api.Single.success;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitelyNonNull;
+import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderNames.HOST;
 import static io.servicetalk.http.api.HttpHeaderNames.LOCATION;
@@ -100,7 +102,7 @@ public class MultiAddressUrlHttpClientTest {
 
         requester = afterClassCloseables.append(HttpClients.forMultiAddressUrl()
                 .ioExecutor(CTX.ioExecutor())
-                .executor(CTX.executor())
+                .executionStrategy(noOffloadsStrategy())
                 .buildStreaming());
 
         final HttpHeaders httpHeaders = DefaultHttpHeadersFactory.INSTANCE.newHeaders().set(CONTENT_LENGTH, ZERO);
@@ -134,6 +136,11 @@ public class MultiAddressUrlHttpClientTest {
                     resp.headers().set(httpHeaders);
                     return success(resp);
                 }
+            }
+
+            @Override
+            public HttpExecutionStrategy executionStrategy() {
+                return noOffloadsStrategy();
             }
         };
         serverCtx = startNewLocalServer(httpService, afterClassCloseables);
@@ -278,7 +285,6 @@ public class MultiAddressUrlHttpClientTest {
                                                      final CompositeCloseable closeables) throws Exception {
         return closeables.append(HttpServers.forAddress(new InetSocketAddress(HOSTNAME, 0))
                 .ioExecutor(CTX.ioExecutor())
-                .executor(CTX.executor())
                 .listenStreamingAndAwait(httpService));
     }
 }

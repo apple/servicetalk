@@ -60,7 +60,8 @@ final class DefaultStreamingHttpClientGroup<UnresolvedAddress> extends Streaming
     // Placeholder should not leak outside of the scope of existing class
     private static final StreamingHttpClient PLACEHOLDER_CLIENT = new StreamingHttpClient(NOOP_REQ_RESP_FACTORY) {
         @Override
-        public Single<ReservedStreamingHttpConnection> reserveConnection(final StreamingHttpRequest request) {
+        public Single<ReservedStreamingHttpConnection> reserveConnection(final HttpExecutionStrategy strategy,
+                                                                         final StreamingHttpRequest request) {
             return Single.error(new UnsupportedOperationException(PLACEHOLDER_EXCEPTION_MSG));
         }
 
@@ -76,7 +77,8 @@ final class DefaultStreamingHttpClientGroup<UnresolvedAddress> extends Streaming
         }
 
         @Override
-        public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
+        public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
+                                                     final StreamingHttpRequest request) {
             return Single.error(new UnsupportedOperationException(PLACEHOLDER_EXCEPTION_MSG));
         }
 

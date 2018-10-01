@@ -33,6 +33,7 @@ import io.servicetalk.redis.api.RedisClientFilterFactory;
 import io.servicetalk.redis.api.RedisConnection;
 import io.servicetalk.redis.api.RedisConnectionFilterFactory;
 import io.servicetalk.redis.api.RedisData;
+import io.servicetalk.redis.api.RedisExecutionStrategy;
 import io.servicetalk.redis.api.RedisProtocolSupport.Command;
 import io.servicetalk.redis.api.RedisRequest;
 import io.servicetalk.tcp.netty.internal.TcpClientConfig;
@@ -295,18 +296,20 @@ final class DefaultRedisClientBuilder<U, R> implements RedisClientBuilder<U, R> 
         }
 
         @Override
-        public Single<? extends ReservedRedisConnection> reserveConnection(Command command) {
-            return lbForCommand(command).selectConnection(SELECTOR_FOR_RESERVE);
+        public Single<? extends ReservedRedisConnection> reserveConnection(RedisExecutionStrategy strategy,
+                                                                           Command command) {
+            return strategy.offloadReceive(executionContext.executor(),
+                    lbForCommand(command).selectConnection(SELECTOR_FOR_RESERVE));
         }
 
         @Override
-        public Publisher<RedisData> request(RedisRequest request) {
+        public Publisher<RedisData> request(RedisExecutionStrategy strategy, RedisRequest request) {
             // We have to do the incrementing/decrementing in the Client instead of LoadBalancedRedisConnection because
             // it is possible that someone can use the ConnectionFactory exported by this Client before the LoadBalancer
             // takes ownership of it (e.g. connection initialization) and in that case they will not be following the
             // LoadBalancer API which this Client depends upon to ensure the concurrent request count state is correct.
             return lbForCommand(request.command()).selectConnection(SELECTOR_FOR_REQUEST)
-                    .flatMapPublisher(conn -> conn.request(request).doBeforeFinally(conn::requestFinished));
+                    .flatMapPublisher(conn -> conn.request(strategy, request).doBeforeFinally(conn::requestFinished));
         }
 
         @Override

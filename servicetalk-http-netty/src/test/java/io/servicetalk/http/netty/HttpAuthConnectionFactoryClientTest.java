@@ -19,6 +19,7 @@ import io.servicetalk.client.api.ConnectionFactory;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
+import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpConnection;
@@ -42,6 +43,7 @@ import java.util.concurrent.ExecutionException;
 import static io.servicetalk.concurrent.api.Single.error;
 import static io.servicetalk.concurrent.api.Single.success;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
+import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderValues.ZERO;
 import static io.servicetalk.http.api.HttpResponseStatuses.OK;
@@ -72,7 +74,6 @@ public class HttpAuthConnectionFactoryClientTest {
     public void simulateAuth() throws Exception {
         serverContext = HttpServers.forPort(0)
                 .ioExecutor(CTX.ioExecutor())
-                .executor(CTX.executor())
                 .listenStreamingAndAwait(
                         new StreamingHttpService() {
                             @Override
@@ -81,12 +82,17 @@ public class HttpAuthConnectionFactoryClientTest {
                                                                         final StreamingHttpResponseFactory factory) {
                                 return success(newTestResponse(factory));
                             }
+
+                            @Override
+                            public HttpExecutionStrategy executionStrategy() {
+                                return noOffloadsStrategy();
+                            }
                         });
         client = HttpClients.forSingleAddress("localhost",
                 ((InetSocketAddress) serverContext.listenAddress()).getPort())
                 .appendConnectionFactoryFilter(TestHttpAuthConnectionFactory::new)
                 .ioExecutor(CTX.ioExecutor())
-                .executor(CTX.executor())
+                .executionStrategy(noOffloadsStrategy())
                 .buildStreaming();
 
         StreamingHttpResponse response = awaitIndefinitely(client.request(newTestRequest(client, "/foo")));

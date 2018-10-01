@@ -26,6 +26,7 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.RejectedSubscribeError;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpHeadersFactory;
+import io.servicetalk.http.api.HttpProtocolVersion;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.HttpResponseMetaData;
@@ -61,9 +62,7 @@ import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderValues.ZERO;
 import static io.servicetalk.http.api.StreamingHttpRequests.newRequestWithTrailers;
 import static io.servicetalk.http.netty.HeaderUtils.addResponseTransferEncodingIfNecessary;
-import static io.servicetalk.http.netty.SpliceFlatStreamToMetaSingle.flatten;
 import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater;
-import static java.util.function.Function.identity;
 
 final class NettyHttpServerConnection extends HttpServiceContext implements NettyConnectionContext {
 
@@ -84,13 +83,11 @@ final class NettyHttpServerConnection extends HttpServiceContext implements Nett
     }
 
     Completable process() {
-        final Publisher<Object> connRequestObjectPublisher = connection.read();
-
         final Single<StreamingHttpRequest> requestSingle =
-                new SpliceFlatStreamToMetaSingle<>(connRequestObjectPublisher,
-                        (HttpRequestMetaData hdr, Publisher<Object> pandt) ->
-                        spliceRequest(connection.executionContext().bufferAllocator(),
-                                hdr, pandt));
+                new SpliceFlatStreamToMetaSingle<>(connection.read(),
+                        (HttpRequestMetaData meta, Publisher<Object> pandt) ->
+                                newRequestWithTrailers(meta.method(), meta.requestTarget(), meta.version(),
+                                        meta.headers(), executionContext().bufferAllocator(), pandt));
         return handleRequestAndWriteResponse(requestSingle);
     }
 
@@ -117,16 +114,8 @@ final class NettyHttpServerConnection extends HttpServiceContext implements Nett
                 context.executionContext().bufferAllocator());
     }
 
-    private static StreamingHttpRequest spliceRequest(final BufferAllocator alloc,
-                                                      final HttpRequestMetaData hr,
-                                                      final Publisher<Object> pub) {
-        return newRequestWithTrailers(hr.method(), hr.requestTarget(), hr.version(), hr.headers(), alloc, pub);
-    }
-
     private Completable handleRequestAndWriteResponse(final Single<StreamingHttpRequest> requestSingle) {
         final Publisher<Object> responseObjectPublisher = requestSingle.flatMapPublisher(request -> {
-            final HttpRequestMethod requestMethod = request.method();
-            final HttpKeepAlive keepAlive = HttpKeepAlive.getResponseKeepAlive(request);
             // We transform the request and delay the completion of the result flattened stream to avoid resubscribing
             // to the NettyChannelPublisher before the previous subscriber has terminated. Otherwise we may attempt
             // to do duplicate subscribe on NettyChannelPublisher, which will result in a connection closure.
@@ -160,17 +149,25 @@ final class NettyHttpServerConnection extends HttpServiceContext implements Nett
                             processor.onComplete();
                         }
                     }));
+
+            final HttpRequestMethod requestMethod = request2.method();
+            final HttpKeepAlive keepAlive = HttpKeepAlive.getResponseKeepAlive(request2);
             final Completable drainRequestPayloadBody = request2.payloadBody().ignoreElements()
                     // ignore error about duplicate subscriptions, we are forcing a subscription here and the user
                     // may also subscribe, so it is OK if we fail here.
                     .onErrorResume(t -> completed());
-            return handleRequest(request2)
-                    .map(response -> processResponse(requestMethod, keepAlive, drainRequestPayloadBody, response))
-                    .flatMapPublisher(resp -> flatten(resp, StreamingHttpResponse::payloadBodyAndTrailers))
-                    .concatWith(processor);
-            // We are writing to the connection which may request more data from the EventLoop. So offload control
-            // signals which may have blocking code.
-        }).subscribeOn(executionContext().executor());
+            return service.executionStrategy()
+                    .invokeService(executionContext().executor(), request2,
+                            req -> service.handle(NettyHttpServerConnection.this, req, streamingResponseFactory())
+                                    .map(response -> {
+                                        addResponseTransferEncodingIfNecessary(response, requestMethod);
+                                        keepAlive.addConnectionHeaderIfNecessary(response);
+                                        return response;
+                                    }),
+                            (cause, executor) -> newErrorResponse(cause, executor, request2.version(),
+                                    requestMethod, keepAlive))
+                    .concatWith(drainRequestPayloadBody).concatWith(processor);
+        });
         return connection.write(responseObjectPublisher.repeat(val -> true)
                 // We generate synthetic callbacks to WriteEventsListener as there is a single write per connection but
                 // FlushStrategy are implemented considering individual responses.
@@ -212,43 +209,23 @@ final class NettyHttpServerConnection extends HttpServiceContext implements Nett
                 }));
     }
 
-    private Single<StreamingHttpResponse> handleRequest(final StreamingHttpRequest request) {
-        // Since we do not offload data path for the request single, this method will be invoked from the
-        // EventLoop. So, we offload the call to StreamingHttpService.
-        Executor exec = executionContext().executor();
-        return exec.submit(() ->
-                service.handle(NettyHttpServerConnection.this, request.transformPayloadBody(bdy -> bdy.publishOn(exec)),
-                               streamingResponseFactory())
-        ).flatMap(identity()) // exec.submit() returns a Single<Single<response>>, so flatten the nested Single.
-         .onErrorResume(t -> newErrorResponse(exec, t, request));
-    }
-
-    private static StreamingHttpResponse processResponse(final HttpRequestMethod requestMethod,
-                                                         final HttpKeepAlive keepAlive,
-                                                         final Completable drainRequestPayloadBody,
-                                                         final StreamingHttpResponse response) {
-        addResponseTransferEncodingIfNecessary(response, requestMethod);
-        keepAlive.addConnectionHeaderIfNecessary(response);
-
-        // When the response payload publisher completes, read any of the request payload that hasn't already
-        // been read. This is necessary for using a persistent connection to send multiple requests.
-        return response.transformPayloadBody(responsePayload -> responsePayload.concatWith(drainRequestPayloadBody));
-    }
-
-    private Single<StreamingHttpResponse> newErrorResponse(final Executor executor,
-                                                           final Throwable cause,
-                                                           final StreamingHttpRequest request) {
+    private Single<StreamingHttpResponse> newErrorResponse(final Throwable cause, final Executor executor,
+                                                           final HttpProtocolVersion version,
+                                                           final HttpRequestMethod requestMethod,
+                                                           final HttpKeepAlive keepAlive) {
+        StreamingHttpResponse response;
         if (cause instanceof RejectedExecutionException) {
             LOGGER.error("Task rejected by Executor {} for service={}, connection={}", executor, service, this, cause);
-            StreamingHttpResponse resp = streamingResponseFactory().serviceUnavailable().version(request.version());
-            resp.setHeader(CONTENT_LENGTH, ZERO);
-            return success(resp);
+            response = streamingResponseFactory().serviceUnavailable().version(version);
+            response.setHeader(CONTENT_LENGTH, ZERO);
         } else {
             LOGGER.error("Internal server error service={} connection={}", service, this, cause);
-            StreamingHttpResponse resp = streamingResponseFactory().internalServerError().version(request.version());
-            resp.setHeader(CONTENT_LENGTH, ZERO);
-            return success(resp);
+            response = streamingResponseFactory().internalServerError().version(version);
+            response.setHeader(CONTENT_LENGTH, ZERO);
         }
+        addResponseTransferEncodingIfNecessary(response, requestMethod);
+        keepAlive.addConnectionHeaderIfNecessary(response);
+        return success(response);
     }
 
     @Override

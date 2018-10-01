@@ -15,6 +15,8 @@
  */
 package io.servicetalk.http.api;
 
+import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
+
 /**
  * The equivalent of {@link HttpService} but with synchronous/blocking APIs instead of asynchronous APIs.
  */
@@ -64,6 +66,15 @@ public abstract class BlockingHttpService implements AutoCloseable, BlockingHttp
      */
     public final BlockingStreamingHttpService asBlockingStreamingService() {
         return asStreamingService().asBlockingStreamingService();
+    }
+
+    /**
+     * Returns the {@link HttpExecutionStrategy} for this {@link BlockingHttpService}.
+     *
+     * @return The {@link HttpExecutionStrategy} for this {@link BlockingHttpService}.
+     */
+    public HttpExecutionStrategy executionStrategy() {
+        return defaultStrategy();
     }
 
     StreamingHttpService asStreamingServiceInternal() {

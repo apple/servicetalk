@@ -44,8 +44,9 @@ public abstract class StreamingHttpRequesterAdapter extends StreamingHttpRequest
     }
 
     @Override
-    public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
-        return delegate.request(request);
+    public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
+                                                 final StreamingHttpRequest request) {
+        return delegate.request(strategy, request);
     }
 
     @Override

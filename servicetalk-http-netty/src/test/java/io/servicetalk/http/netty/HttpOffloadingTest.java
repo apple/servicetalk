@@ -21,6 +21,7 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
+import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpConnection;
@@ -57,6 +58,7 @@ import static io.servicetalk.concurrent.api.Publisher.just;
 import static io.servicetalk.concurrent.api.Single.success;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitelyNonNull;
+import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpResponseStatuses.OK;
 import static io.servicetalk.http.api.StreamingHttpConnection.SettingKey.MAX_CONCURRENCY;
 import static io.servicetalk.http.netty.HttpClients.forSingleAddress;
@@ -94,10 +96,9 @@ public class HttpOffloadingTest {
     @Before
     public void beforeTest() throws Exception {
         final InetSocketAddress bindAddress = new InetSocketAddress(LOOPBACK_ADDRESS, 0);
-        service = new OffloadingVerifyingServiceStreaming();
+        service = new OffloadingVerifyingServiceStreaming(defaultStrategy(SERVER_CTX.executor()));
         serverContext = HttpServers.forAddress(bindAddress)
                 .ioExecutor(SERVER_CTX.ioExecutor())
-                .executor(SERVER_CTX.executor())
                 .listenStreamingAndAwait(service);
 
         final InetSocketAddress socketAddress = (InetSocketAddress) serverContext.listenAddress();
@@ -107,7 +108,7 @@ public class HttpOffloadingTest {
         terminated = new CountDownLatch(1);
         client = forSingleAddress(HostAndPort.of(LOOPBACK_ADDRESS.getHostName(), socketAddress.getPort()))
                 .ioExecutor(CLIENT_CTX.ioExecutor())
-                .executor(CLIENT_CTX.executor())
+                .executionStrategy(defaultStrategy(CLIENT_CTX.executor()))
                 .buildStreaming();
         httpConnection = awaitIndefinitelyNonNull(client.reserveConnection(client.get("/")));
         connectionContext = httpConnection.connectionContext();
@@ -344,6 +345,11 @@ public class HttpOffloadingTest {
     private final class OffloadingVerifyingServiceStreaming extends StreamingHttpService {
 
         private final Collection<Throwable> errors = new ConcurrentLinkedQueue<>();
+        private final HttpExecutionStrategy strategy;
+
+        OffloadingVerifyingServiceStreaming(final HttpExecutionStrategy strategy) {
+            this.strategy = strategy;
+        }
 
         @Override
         public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
@@ -370,6 +376,11 @@ public class HttpOffloadingTest {
                                 }
                             });
             return success(factory.ok().payloadBody(responsePayload));
+        }
+
+        @Override
+        public HttpExecutionStrategy executionStrategy() {
+            return strategy;
         }
     }
 }

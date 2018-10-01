@@ -44,8 +44,9 @@ public abstract class StreamingHttpClientAdapter extends StreamingHttpClient {
     }
 
     @Override
-    public Single<? extends ReservedStreamingHttpConnection> reserveConnection(final StreamingHttpRequest request) {
-        return delegate.reserveConnection(request);
+    public Single<? extends ReservedStreamingHttpConnection> reserveConnection(final HttpExecutionStrategy strategy,
+                                                                               final StreamingHttpRequest request) {
+        return delegate.reserveConnection(strategy, request);
     }
 
     @Override
@@ -54,8 +55,9 @@ public abstract class StreamingHttpClientAdapter extends StreamingHttpClient {
     }
 
     @Override
-    public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
-        return delegate.request(request);
+    public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
+                                                 final StreamingHttpRequest request) {
+        return delegate.request(strategy, request);
     }
 
     @Override

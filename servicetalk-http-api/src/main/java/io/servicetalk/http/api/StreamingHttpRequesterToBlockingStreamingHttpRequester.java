@@ -31,8 +31,10 @@ final class StreamingHttpRequesterToBlockingStreamingHttpRequester extends Block
     }
 
     @Override
-    public BlockingStreamingHttpResponse request(final BlockingStreamingHttpRequest request) throws Exception {
-        return BlockingUtils.request(requester, request);
+    public BlockingStreamingHttpResponse request(final HttpExecutionStrategy strategy,
+                                                 final BlockingStreamingHttpRequest request) throws Exception {
+        return blockingInvocation(requester.request(strategy, request.toStreamingRequest()))
+                .toBlockingStreamingResponse();
     }
 
     @Override
