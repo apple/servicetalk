@@ -27,6 +27,7 @@ import io.servicetalk.http.api.StreamingHttpRequestFactory;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.api.StreamingHttpService;
+import io.servicetalk.loadbalancer.RoundRobinLoadBalancer;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.netty.internal.ExecutionContextRule;
 
@@ -46,6 +47,7 @@ import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderValues.ZERO;
 import static io.servicetalk.http.api.HttpResponseStatuses.OK;
 import static io.servicetalk.http.netty.HttpServers.newHttpServerBuilder;
+import static java.util.Comparator.comparingInt;
 import static java.util.Objects.requireNonNull;
 import static org.junit.Assert.assertEquals;
 
@@ -84,6 +86,9 @@ public class HttpAuthConnectionFactoryClientTest {
                         });
         client = HttpClients.forSingleAddress("localhost",
                 ((InetSocketAddress) serverContext.listenAddress()).getPort())
+                .loadBalancerFactory(
+                        (eventPublisher, connectionFactory) -> new RoundRobinLoadBalancer<>(eventPublisher,
+                                new TestHttpAuthConnectionFactory<>(connectionFactory), comparingInt(Object::hashCode)))
                 .executionContext(CTX)
                 .buildStreaming();
 
