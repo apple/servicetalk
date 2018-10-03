@@ -27,17 +27,14 @@ import io.servicetalk.opentracing.core.internal.InMemoryTraceStateFormat;
 import io.opentracing.Scope;
 import io.opentracing.Tracer;
 import io.opentracing.Tracer.SpanBuilder;
-import org.reactivestreams.Subscription;
 
-import static io.opentracing.tag.Tags.ERROR;
 import static io.opentracing.tag.Tags.HTTP_METHOD;
-import static io.opentracing.tag.Tags.HTTP_STATUS;
 import static io.opentracing.tag.Tags.HTTP_URL;
 import static io.opentracing.tag.Tags.SPAN_KIND;
 import static io.opentracing.tag.Tags.SPAN_KIND_CLIENT;
-import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.SERVER_ERROR_5XX;
 import static io.servicetalk.opentracing.http.OpenTracingHttpHeadersFormatter.traceStateFormatter;
 import static io.servicetalk.opentracing.http.TracingUtils.tagErrorAndClose;
+import static io.servicetalk.opentracing.http.TracingUtils.tracingMapper;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -93,33 +90,8 @@ public class OpenTracingStreamingHttpConnectionFilter extends StreamingHttpConne
 
                 Scope childScope = spanBuilder.startActive(true);
                 tracer.inject(childScope.span().context(), formatter, request.headers());
-                delegate().request(request).map(resp -> resp.transformRawPayloadBody(pub ->
-                        pub.doAfterSubscriber(() -> new org.reactivestreams.Subscriber<Object>() {
-                            @Override
-                            public void onSubscribe(final Subscription s) {
-                            }
-
-                            @Override
-                            public void onNext(final Object o) {
-                            }
-
-                            @Override
-                            public void onError(final Throwable t) {
-                                tagErrorAndClose(childScope);
-                            }
-
-                            @Override
-                            public void onComplete() {
-                                HTTP_STATUS.set(childScope.span(), resp.status().code());
-                                try {
-                                    if (isError(resp)) {
-                                        ERROR.set(childScope.span(), true);
-                                    }
-                                } finally {
-                                    childScope.close();
-                                }
-                            }
-                        }).doOnCancel(() -> tagErrorAndClose(childScope)))
+                delegate().request(request).map(
+                        tracingMapper(childScope, OpenTracingStreamingHttpConnectionFilter.this::isError)
                 ).doOnError(cause -> tagErrorAndClose(childScope))
                  .doOnCancel(() -> tagErrorAndClose(childScope))
                  .subscribe(subscriber);
@@ -133,6 +105,6 @@ public class OpenTracingStreamingHttpConnectionFilter extends StreamingHttpConne
      * @return {@code true} if the {@link HttpResponseMetaData} should be considered an error for tracing.
      */
     protected boolean isError(HttpResponseMetaData metaData) {
-        return metaData.status().statusClass().equals(SERVER_ERROR_5XX);
+        return TracingUtils.isError(metaData);
     }
 }

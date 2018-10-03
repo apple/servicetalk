@@ -19,6 +19,7 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpRequestMetaData;
+import io.servicetalk.http.api.HttpResponseMetaData;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
@@ -29,18 +30,17 @@ import io.servicetalk.opentracing.core.internal.InMemoryTraceStateFormat;
 import io.opentracing.Scope;
 import io.opentracing.SpanContext;
 import io.opentracing.Tracer;
-import org.reactivestreams.Subscription;
 
 import javax.annotation.Nullable;
 
 import static io.opentracing.Tracer.SpanBuilder;
 import static io.opentracing.tag.Tags.HTTP_METHOD;
-import static io.opentracing.tag.Tags.HTTP_STATUS;
 import static io.opentracing.tag.Tags.HTTP_URL;
 import static io.opentracing.tag.Tags.SPAN_KIND;
 import static io.opentracing.tag.Tags.SPAN_KIND_SERVER;
 import static io.servicetalk.opentracing.http.OpenTracingHttpHeadersFormatter.traceStateFormatter;
 import static io.servicetalk.opentracing.http.TracingUtils.tagErrorAndClose;
+import static io.servicetalk.opentracing.http.TracingUtils.tracingMapper;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -102,27 +102,7 @@ public class OpenTracingStreamingHttpServiceFilter extends StreamingHttpService 
                     if (injectSpanContextIntoResponse(parentSpanContext)) {
                         tracer.inject(currentScope.span().context(), formatter, resp.headers());
                     }
-                    return resp.transformRawPayloadBody(pub ->
-                            pub.doAfterSubscriber(() -> new org.reactivestreams.Subscriber<Object>() {
-                                @Override
-                                public void onSubscribe(final Subscription s) {
-                                }
-
-                                @Override
-                                public void onNext(final Object o) {
-                                }
-
-                                @Override
-                                public void onError(final Throwable t) {
-                                    tagErrorAndClose(currentScope);
-                                }
-
-                                @Override
-                                public void onComplete() {
-                                    HTTP_STATUS.set(currentScope.span(), resp.status().code());
-                                    currentScope.close();
-                                }
-                            }).doOnCancel(() -> tagErrorAndClose(currentScope)));
+                    return tracingMapper(resp, currentScope, OpenTracingStreamingHttpServiceFilter.this::isError);
                 }).doOnError(cause -> tagErrorAndClose(currentScope))
                   .doOnCancel(() -> tagErrorAndClose(currentScope))
                   .subscribe(subscriber);
@@ -152,5 +132,14 @@ public class OpenTracingStreamingHttpServiceFilter extends StreamingHttpService 
      */
     protected boolean injectSpanContextIntoResponse(@Nullable SpanContext parentSpanContext) {
         return parentSpanContext == null;
+    }
+
+    /**
+     * Determine if a {@link HttpResponseMetaData} should be considered an error from a tracing perspective.
+     * @param metaData The {@link HttpResponseMetaData} to test.
+     * @return {@code true} if the {@link HttpResponseMetaData} should be considered an error for tracing.
+     */
+    protected boolean isError(HttpResponseMetaData metaData) {
+        return TracingUtils.isError(metaData);
     }
 }

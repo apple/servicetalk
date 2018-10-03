@@ -15,9 +15,18 @@
  */
 package io.servicetalk.opentracing.http;
 
+import io.servicetalk.http.api.HttpResponseMetaData;
+import io.servicetalk.http.api.StreamingHttpResponse;
+
 import io.opentracing.Scope;
+import org.reactivestreams.Subscription;
+
+import java.util.function.Predicate;
+import java.util.function.UnaryOperator;
 
 import static io.opentracing.tag.Tags.ERROR;
+import static io.opentracing.tag.Tags.HTTP_STATUS;
+import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.SERVER_ERROR_5XX;
 
 final class TracingUtils {
     private TracingUtils() {
@@ -27,5 +36,45 @@ final class TracingUtils {
     static void tagErrorAndClose(Scope currentScope) {
         ERROR.set(currentScope.span(), true);
         currentScope.close();
+    }
+
+    static boolean isError(HttpResponseMetaData metaData) {
+        return metaData.status().statusClass().equals(SERVER_ERROR_5XX);
+    }
+
+    static UnaryOperator<StreamingHttpResponse> tracingMapper(Scope scope,
+                                                              Predicate<HttpResponseMetaData> errorChecker) {
+        return resp -> resp.transformRawPayloadBody(pub ->
+                pub.doAfterSubscriber(() -> new org.reactivestreams.Subscriber<Object>() {
+                    @Override
+                    public void onSubscribe(final Subscription s) {
+                    }
+
+                    @Override
+                    public void onNext(final Object o) {
+                    }
+
+                    @Override
+                    public void onError(final Throwable t) {
+                        tagErrorAndClose(scope);
+                    }
+
+                    @Override
+                    public void onComplete() {
+                        HTTP_STATUS.set(scope.span(), resp.status().code());
+                        try {
+                            if (errorChecker.test(resp)) {
+                                ERROR.set(scope.span(), true);
+                            }
+                        } finally {
+                            scope.close();
+                        }
+                    }
+                }).doOnCancel(() -> tagErrorAndClose(scope)));
+    }
+
+    static StreamingHttpResponse tracingMapper(StreamingHttpResponse resp,
+                                               Scope scope, Predicate<HttpResponseMetaData> errorChecker) {
+        return tracingMapper(scope, errorChecker).apply(resp);
     }
 }
