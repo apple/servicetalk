@@ -53,6 +53,10 @@ final class OpenTracingHttpHeadersFormatter implements InMemoryTraceStateFormat<
         this.verifyExtractedValues = verifyExtractedValues;
     }
 
+    static InMemoryTraceStateFormat<HttpHeaders> traceStateFormatter(boolean validateTraceKeyFormat) {
+        return validateTraceKeyFormat ? FORMATTER_VALIDATION : FORMATTER_NO_VALIDATION;
+    }
+
     @Override
     public void inject(final InMemoryTraceState state, final HttpHeaders carrier) {
         carrier.set(TRACE_ID, state.traceIdHex());

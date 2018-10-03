@@ -19,9 +19,12 @@ import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.redis.api.RedisClient;
 
+import java.util.function.UnaryOperator;
+
 /**
  * A factory that applies filters to {@link RedisClient}s.
  */
+@FunctionalInterface
 public interface RedisClientFilterFactory {
     /**
      * Apply filters to a {@link RedisClient}.
@@ -35,4 +38,36 @@ public interface RedisClientFilterFactory {
     RedisClient apply(RedisClient client,
                       Publisher<Object> subscribeLoadBalancerEvents,
                       Publisher<Object> pipelinedLoadBalancerEvents);
+
+    /**
+     * Returns a composed function that first applies the {@code before} function to its input, and then applies
+     * this function to the result.
+     * <p>
+     * The order of execution of these filters are in order of append. If 3 filters are added as follows:
+     * <pre>
+     *     filter1.append(filter2).append(filter3)
+     * </pre>
+     * making a request to a client wrapped by this filter chain the order of invocation of these filters will be:
+     * <pre>
+     *     filter1 =&gt; filter2 =&gt; filter3 =&gt; client
+     * </pre>
+     * @param before the function to apply before this function is applied
+     * @return a composed function that first applies the {@code before}
+     * function and then applies this function
+     */
+    default RedisClientFilterFactory append(RedisClientFilterFactory before) {
+        return (client, subscribeLBEvents, pipelinedLBEvents) -> apply(
+                before.apply(client, subscribeLBEvents, pipelinedLBEvents), subscribeLBEvents, pipelinedLBEvents);
+    }
+
+    /**
+     * Returns a function that adapts from the {@link UnaryOperator}&lt;{@link RedisClient}&gt; function type to the
+     * {@link RedisClientFilterFactory}.
+     *
+     * @param function the function that is applied to the input {@link RedisClient}
+     * @return the filtered {@link RedisClient}
+     */
+    static RedisClientFilterFactory from(UnaryOperator<RedisClient> function) {
+        return (client, subscribeLBEvents, pipelinedLBEvents) -> function.apply(client);
+    }
 }

@@ -13,19 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.http.api;
+package io.servicetalk.redis.netty;
+
+import io.servicetalk.redis.api.PartitionedRedisClient;
 
 /**
- * Function to filter an {@link StreamingHttpConnection}.
+ * A factory which filters the behavior of {@link PartitionedRedisClient} instances.
  */
 @FunctionalInterface
-public interface ConnectionFilterFunction {
+public interface PartitionedRedisClientFilterFactory {
     /**
-     * Function that allows to filter an {@link StreamingHttpConnection}.
-     * @param connection the {@link StreamingHttpConnection} to filter
-     * @return the filtered {@link StreamingHttpConnection}
+     * Function that allows to filter an {@link PartitionedRedisClient}.
+     * @param connection the {@link PartitionedRedisClient} to filter
+     * @return the filtered {@link PartitionedRedisClient}
      */
-    StreamingHttpConnection apply(StreamingHttpConnection connection);
+    PartitionedRedisClient apply(PartitionedRedisClient connection);
 
     /**
      * Returns a composed function that first applies the {@code before} function to its input, and then applies
@@ -44,16 +46,16 @@ public interface ConnectionFilterFunction {
      * @return a composed function that first applies the {@code before}
      * function and then applies this function
      */
-    default ConnectionFilterFunction append(ConnectionFilterFunction before) {
+    default PartitionedRedisClientFilterFactory append(PartitionedRedisClientFilterFactory before) {
         return connection -> apply(before.apply(connection));
     }
 
     /**
-     * Returns a function that always returns its input {@link StreamingHttpConnection}.
+     * Returns a function that always returns its input {@link PartitionedRedisClientFilterFactory}.
      *
-     * @return a function that always returns its input {@link StreamingHttpConnection}.
+     * @return a function that always returns its input {@link PartitionedRedisClientFilterFactory}.
      */
-    static ConnectionFilterFunction identity() {
+    static PartitionedRedisClientFilterFactory identity() {
         return connection -> connection;
     }
 }

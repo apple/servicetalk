@@ -17,7 +17,6 @@ package io.servicetalk.tcp.netty.internal;
 
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.buffer.netty.BufferUtil;
-import io.servicetalk.concurrent.api.AsyncContext;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.DelayedCancellable;
@@ -139,9 +138,6 @@ public final class TcpConnector<Read, Write> {
         return new Single<Connection<Read, Write>>() {
             @Override
             protected void handleSubscribe(Subscriber<? super Connection<Read, Write>> subscriber) {
-                // Because we convert to/from a future outside the scope of composition we manually wrap the subscriber
-                // to preserve AsyncContext.
-                subscriber = AsyncContext.wrap(subscriber);
                 connectFutureToListener(connect0(remote, executionContext, subscriber,
                         checkForRefCountedTrapper), subscriber, remote);
             }

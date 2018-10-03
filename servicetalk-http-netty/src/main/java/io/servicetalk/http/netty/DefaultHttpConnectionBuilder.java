@@ -16,9 +16,9 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.http.api.ConnectionFilterFunction;
 import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.HttpConnectionBuilder;
+import io.servicetalk.http.api.HttpConnectionFilterFactory;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.api.StreamingHttpClient;
@@ -53,7 +53,7 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress> implements Http
     private static final Predicate<Object> LAST_CHUNK_PREDICATE = p -> p instanceof HttpHeaders;
 
     private final HttpClientConfig config;
-    private ConnectionFilterFunction connectionFilterFunction = ConnectionFilterFunction.identity();
+    private HttpConnectionFilterFactory connectionFilterFunction = HttpConnectionFilterFactory.identity();
     private ExecutionContext executionContext = globalExecutionContext();
 
     /**
@@ -92,7 +92,7 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress> implements Http
 
     static <ResolvedAddress> Single<StreamingHttpConnection> buildForPipelined(
             final ExecutionContext executionContext, ResolvedAddress resolvedAddress, ReadOnlyHttpClientConfig roConfig,
-            final ConnectionFilterFunction connectionFilterFunction,
+            final HttpConnectionFilterFactory connectionFilterFunction,
             final StreamingHttpRequestResponseFactory reqRespFactory) {
         return buildStreaming(executionContext, resolvedAddress, roConfig, conn ->
                 connectionFilterFunction.apply(
@@ -101,7 +101,7 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress> implements Http
 
     static <ResolvedAddress> Single<StreamingHttpConnection> buildForNonPipelined(
             final ExecutionContext executionContext, ResolvedAddress resolvedAddress, ReadOnlyHttpClientConfig roConfig,
-            final ConnectionFilterFunction connectionFilterFunction,
+            final HttpConnectionFilterFactory connectionFilterFunction,
             final StreamingHttpRequestResponseFactory reqRespFactory) {
         return buildStreaming(executionContext, resolvedAddress, roConfig, conn ->
                 connectionFilterFunction.apply(
@@ -263,7 +263,7 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress> implements Http
      * @return {@code this}
      */
     public DefaultHttpConnectionBuilder<ResolvedAddress> setConnectionFilterFunction(
-            final ConnectionFilterFunction function) {
+            final HttpConnectionFilterFactory function) {
         this.connectionFilterFunction = requireNonNull(function);
         return this;
     }

@@ -16,7 +16,7 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.http.api.ConnectionFilterFunction;
+import io.servicetalk.http.api.HttpConnectionFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.transport.api.ExecutionContext;
 
@@ -33,7 +33,7 @@ final class NonPipelinedLBHttpConnectionFactory<ResolvedAddress>
 
     NonPipelinedLBHttpConnectionFactory(final ReadOnlyHttpClientConfig config,
                                         final ExecutionContext executionContext,
-                                        final ConnectionFilterFunction connectionFilterFunction,
+                                        final HttpConnectionFilterFactory connectionFilterFunction,
                                         final StreamingHttpRequestResponseFactory reqRespFactory) {
         super(connectionFilterFunction);
         this.config = requireNonNull(config);
@@ -43,7 +43,7 @@ final class NonPipelinedLBHttpConnectionFactory<ResolvedAddress>
 
     @Override
     Single<LoadBalancedStreamingHttpConnection> newConnection(final ResolvedAddress resolvedAddress,
-                                                              final ConnectionFilterFunction connectionFilterFunction) {
+                                                              final HttpConnectionFilterFactory connectionFilterFunction) {
         return buildForNonPipelined(executionContext, resolvedAddress, config, connectionFilterFunction, reqRespFactory)
                 .map(filteredConnection -> new LoadBalancedStreamingHttpConnection(filteredConnection,
                         newSingleController(filteredConnection.settingStream(MAX_CONCURRENCY),

@@ -16,21 +16,19 @@
 package io.servicetalk.redis.netty;
 
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.redis.api.RedisConnection;
 import io.servicetalk.transport.api.ExecutionContext;
-
-import java.util.function.Function;
 
 import static io.servicetalk.redis.netty.DefaultRedisConnectionBuilder.buildForSubscribe;
 import static java.util.Objects.requireNonNull;
 
-final class SubscribedLBRedisConnectionFactory<ResolvedAddress> extends AbstractLBRedisConnectionFactory<ResolvedAddress> {
+final class SubscribedLBRedisConnectionFactory<ResolvedAddress> extends
+                                                                AbstractLBRedisConnectionFactory<ResolvedAddress> {
     private final ReadOnlyRedisClientConfig config;
     private final ExecutionContext executionContext;
 
     SubscribedLBRedisConnectionFactory(final ReadOnlyRedisClientConfig config,
                                        final ExecutionContext executionContext,
-                                       final Function<RedisConnection, RedisConnection> connectionFilterFactory) {
+                                       final RedisConnectionFilterFactory connectionFilterFactory) {
         super(connectionFilterFactory);
         this.config = requireNonNull(config);
         this.executionContext = requireNonNull(executionContext);
@@ -38,7 +36,7 @@ final class SubscribedLBRedisConnectionFactory<ResolvedAddress> extends Abstract
 
     @Override
     Single<LoadBalancedRedisConnection> newConnection(final ResolvedAddress resolvedAddress,
-                                          final Function<RedisConnection, RedisConnection> connectionFilterFactory) {
+                                          final RedisConnectionFilterFactory connectionFilterFactory) {
         return buildForSubscribe(executionContext, resolvedAddress, config, connectionFilterFactory)
                 .map(filteredConnection -> new LoadBalancedRedisConnection(filteredConnection,
                         new RedisSubscribedReservableRequestConcurrencyController()));
