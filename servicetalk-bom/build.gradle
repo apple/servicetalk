@@ -73,5 +73,10 @@ dependencyManagement {
     dependency "io.servicetalk:servicetalk-data-jackson:$project.version"
     dependency "io.servicetalk:servicetalk-data-jackson-jersey:$project.version"
     dependency "io.servicetalk:servicetalk-serialization-api:$project.version"
+    dependency "io.servicetalk:servicetalk-opentracing-core:$project.version"
+    dependency "io.servicetalk:servicetalk-opentracing-core-internal:$project.version"
+    dependency "io.servicetalk:servicetalk-opentracing-http:$project.version"
+    dependency "io.servicetalk:servicetalk-opentracing-log4j-internal:$project.version"
+    dependency "io.servicetalk:servicetalk-opentracing-zipkin-publisher:$project.version"
   }
 }
