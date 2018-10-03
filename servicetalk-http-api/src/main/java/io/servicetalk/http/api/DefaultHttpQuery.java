@@ -59,7 +59,7 @@ public final class DefaultHttpQuery implements HttpQuery {
     }
 
     @Override
-    public Iterator<String> all(final String key) {
+    public Iterator<String> values(final String key) {
         final List<String> values = params.get(key);
         if (values == null) {
             return emptyIterator();
@@ -122,7 +122,7 @@ public final class DefaultHttpQuery implements HttpQuery {
 
     @Override
     public boolean contains(final String key, final String value) {
-        final Iterator<String> values = all(key);
+        final Iterator<String> values = values(key);
         while (values.hasNext()) {
             if (value.equals(values.next())) {
                 return true;
@@ -139,7 +139,7 @@ public final class DefaultHttpQuery implements HttpQuery {
 
     @Override
     public boolean remove(final String key, final String value) {
-        final Iterator<String> values = all(key);
+        final Iterator<String> values = values(key);
         while (values.hasNext()) {
             if (value.equals(values.next())) {
                 values.remove();

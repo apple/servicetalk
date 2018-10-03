@@ -86,7 +86,7 @@ final class ReadOnlyHttpHeaders implements HttpHeaders {
     }
 
     @Override
-    public Iterator<? extends CharSequence> getAll(final CharSequence name) {
+    public Iterator<? extends CharSequence> values(final CharSequence name) {
         return new ReadOnlyValueIterator(name);
     }
 
@@ -183,7 +183,7 @@ final class ReadOnlyHttpHeaders implements HttpHeaders {
     }
 
     @Override
-    public HttpHeaders setAll(final HttpHeaders headers) {
+    public HttpHeaders replace(final HttpHeaders headers) {
         throw new UnsupportedOperationException();
     }
 

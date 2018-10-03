@@ -38,10 +38,10 @@ public class HttpPredicateRouterBuilderHeaderTest extends BaseHttpPredicateRoute
                 .when((ctx, req) -> true).thenRouteTo(fallbackService)
                 .buildStreaming();
 
-        when(headers.getAll("host")).then(answerIteratorOf("localhost"));
+        when(headers.values("host")).then(answerIteratorOf("localhost"));
         assertSame(responseA, service.handle(ctx, request, reqRespFactory));
 
-        when(headers.getAll("host")).thenReturn(emptyIterator());
+        when(headers.values("host")).thenReturn(emptyIterator());
         assertSame(fallbackResponse, service.handle(ctx, request, reqRespFactory));
     }
 
@@ -52,19 +52,19 @@ public class HttpPredicateRouterBuilderHeaderTest extends BaseHttpPredicateRoute
                 .when((ctx, req) -> true).thenRouteTo(fallbackService)
                 .buildStreaming();
 
-        when(headers.getAll("host")).then(answerIteratorOf("localhost"));
+        when(headers.values("host")).then(answerIteratorOf("localhost"));
         assertSame(responseA, service.handle(ctx, request, reqRespFactory));
 
-        when(headers.getAll("host")).then(answerIteratorOf("localhost", "127.0.0.1"));
+        when(headers.values("host")).then(answerIteratorOf("localhost", "127.0.0.1"));
         assertSame(responseA, service.handle(ctx, request, reqRespFactory));
 
-        when(headers.getAll("host")).then(answerIteratorOf("127.0.0.1", "localhost"));
+        when(headers.values("host")).then(answerIteratorOf("127.0.0.1", "localhost"));
         assertSame(fallbackResponse, service.handle(ctx, request, reqRespFactory));
 
-        when(headers.getAll("host")).then(answerIteratorOf("127.0.0.1"));
+        when(headers.values("host")).then(answerIteratorOf("127.0.0.1"));
         assertSame(fallbackResponse, service.handle(ctx, request, reqRespFactory));
 
-        when(headers.getAll("host")).thenReturn(emptyIterator());
+        when(headers.values("host")).thenReturn(emptyIterator());
         assertSame(fallbackResponse, service.handle(ctx, request, reqRespFactory));
     }
 
@@ -75,16 +75,16 @@ public class HttpPredicateRouterBuilderHeaderTest extends BaseHttpPredicateRoute
                 .when((ctx, req) -> true).thenRouteTo(fallbackService)
                 .buildStreaming();
 
-        when(headers.getAll("host")).then(answerIteratorOf("127.0.0.1"));
+        when(headers.values("host")).then(answerIteratorOf("127.0.0.1"));
         assertSame(responseA, service.handle(ctx, request, reqRespFactory));
 
-        when(headers.getAll("host")).then(answerIteratorOf("127.0.0.1", "localhost"));
+        when(headers.values("host")).then(answerIteratorOf("127.0.0.1", "localhost"));
         assertSame(responseA, service.handle(ctx, request, reqRespFactory));
 
-        when(headers.getAll("host")).then(answerIteratorOf("localhost", "127.0.0.1"));
+        when(headers.values("host")).then(answerIteratorOf("localhost", "127.0.0.1"));
         assertSame(fallbackResponse, service.handle(ctx, request, reqRespFactory));
 
-        when(headers.getAll("host")).then(answerIteratorOf("localhost"));
+        when(headers.values("host")).then(answerIteratorOf("localhost"));
         assertSame(fallbackResponse, service.handle(ctx, request, reqRespFactory));
     }
 
@@ -95,16 +95,16 @@ public class HttpPredicateRouterBuilderHeaderTest extends BaseHttpPredicateRoute
                 .when((ctx, req) -> true).thenRouteTo(fallbackService)
                 .buildStreaming();
 
-        when(headers.getAll("host")).then(answerIteratorOf("127.0.0.1"));
+        when(headers.values("host")).then(answerIteratorOf("127.0.0.1"));
         assertSame(responseA, service.handle(ctx, request, reqRespFactory));
 
-        when(headers.getAll("host")).then(answerIteratorOf("127.0.0.1", "localhost"));
+        when(headers.values("host")).then(answerIteratorOf("127.0.0.1", "localhost"));
         assertSame(responseA, service.handle(ctx, request, reqRespFactory));
 
-        when(headers.getAll("host")).then(answerIteratorOf("localhost", "127.0.0.1"));
+        when(headers.values("host")).then(answerIteratorOf("localhost", "127.0.0.1"));
         assertSame(fallbackResponse, service.handle(ctx, request, reqRespFactory));
 
-        when(headers.getAll("host")).then(answerIteratorOf("localhost"));
+        when(headers.values("host")).then(answerIteratorOf("localhost"));
         assertSame(fallbackResponse, service.handle(ctx, request, reqRespFactory));
     }
 
@@ -115,16 +115,16 @@ public class HttpPredicateRouterBuilderHeaderTest extends BaseHttpPredicateRoute
                 .when((ctx, req) -> true).thenRouteTo(fallbackService)
                 .buildStreaming();
 
-        when(headers.getAll("host")).then(answerIteratorOf("localhost"));
+        when(headers.values("host")).then(answerIteratorOf("localhost"));
         assertSame(responseA, service.handle(ctx, request, reqRespFactory));
 
-        when(headers.getAll("host")).then(answerIteratorOf("127.0.0.1", "localhost"));
+        when(headers.values("host")).then(answerIteratorOf("127.0.0.1", "localhost"));
         assertSame(responseA, service.handle(ctx, request, reqRespFactory));
 
-        when(headers.getAll("host")).then(answerIteratorOf("127.0.0.1"));
+        when(headers.values("host")).then(answerIteratorOf("127.0.0.1"));
         assertSame(fallbackResponse, service.handle(ctx, request, reqRespFactory));
 
-        when(headers.getAll("host")).thenReturn(emptyIterator());
+        when(headers.values("host")).thenReturn(emptyIterator());
         assertSame(fallbackResponse, service.handle(ctx, request, reqRespFactory));
     }
 
@@ -138,10 +138,10 @@ public class HttpPredicateRouterBuilderHeaderTest extends BaseHttpPredicateRoute
                 .when((ctx, req) -> true).thenRouteTo(fallbackService)
                 .buildStreaming();
 
-        when(headers.getAll("host")).then(answerIteratorOf("d.com"));
+        when(headers.values("host")).then(answerIteratorOf("d.com"));
         assertSame(responseD, service.handle(ctx, request, reqRespFactory));
 
         verify(request, times(4)).headers();
-        verify(headers, times(4)).getAll("host");
+        verify(headers, times(4)).values("host");
     }
 }

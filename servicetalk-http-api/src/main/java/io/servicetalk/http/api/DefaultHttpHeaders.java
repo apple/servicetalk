@@ -549,7 +549,7 @@ final class DefaultHttpHeaders extends MultiMap<CharSequence, CharSequence> impl
     }
 
     @Override
-    public Iterator<? extends CharSequence> getAll(final CharSequence name) {
+    public Iterator<? extends CharSequence> values(final CharSequence name) {
         return getValues(name);
     }
 

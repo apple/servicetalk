@@ -45,7 +45,7 @@ public interface HttpQuery extends Iterable<Map.Entry<String, String>> {
      * @param key the key of the query parameter to retrieve.
      * @return a {@link Iterator} of query parameter values or an empty {@link Iterator} if no values are found.
      */
-    Iterator<String> all(String key);
+    Iterator<String> values(String key);
 
     /**
      * Returns a {@link Set} of all query parameter keys in this object. The returned {@link Set} cannot be modified.

@@ -51,7 +51,7 @@ final class HeaderUtils {
             headers.set(TRANSFER_ENCODING, CHUNKED);
             headers.remove(CONTENT_LENGTH);
         } else {
-            final Iterator<? extends CharSequence> itr = headers.getAll(TRANSFER_ENCODING);
+            final Iterator<? extends CharSequence> itr = headers.values(TRANSFER_ENCODING);
             while (itr.hasNext()) {
                 if (io.netty.handler.codec.http.HttpHeaderValues.CHUNKED.contentEqualsIgnoreCase(itr.next())) {
                     itr.remove();
