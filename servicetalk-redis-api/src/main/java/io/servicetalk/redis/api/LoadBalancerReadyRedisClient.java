@@ -41,7 +41,7 @@ public final class LoadBalancerReadyRedisClient extends RedisClient {
      * Create a new instance.
      *
      * @param maxRetryCount The maximum number of retries when requests fail with a {@link RetryableException}.
-     * @param loadBalancerEvents See {@link LoadBalancer#getEventStream()}. This filter will listen for
+     * @param loadBalancerEvents See {@link LoadBalancer#eventStream()}. This filter will listen for
      * {@link LoadBalancerReadyEvent} events to trigger retries.
      * @param next The next {@link RedisClient} in the filter chain.
      */

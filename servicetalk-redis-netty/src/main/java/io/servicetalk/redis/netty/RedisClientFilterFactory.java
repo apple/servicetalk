@@ -29,9 +29,9 @@ public interface RedisClientFilterFactory {
     /**
      * Apply filters to a {@link RedisClient}.
      * @param client The {@link RedisClient} before filtering.
-     * @param subscribeLoadBalancerEvents The {@link LoadBalancer#getEventStream()} for the load balancer responsible
+     * @param subscribeLoadBalancerEvents The {@link LoadBalancer#eventStream()} for the load balancer responsible
      * for pub/sub commands.
-     * @param pipelinedLoadBalancerEvents The {@link LoadBalancer#getEventStream()} for the load balancer responsible
+     * @param pipelinedLoadBalancerEvents The {@link LoadBalancer#eventStream()} for the load balancer responsible
      * for non-pub/sub commands.
      * @return The filtered {@link RedisClient}.
      */

@@ -128,7 +128,7 @@ public class RoundRobinLoadBalancerTest {
     public void streamEventJustClose() throws InterruptedException {
         CountDownLatch readyLatch = new CountDownLatch(1);
         CountDownLatch completeLatch = new CountDownLatch(1);
-        lb.getEventStream().doAfterComplete(completeLatch::countDown).first().subscribe(next -> readyLatch.countDown());
+        lb.eventStream().doAfterComplete(completeLatch::countDown).first().subscribe(next -> readyLatch.countDown());
         lb.closeAsync().subscribe();
 
         assertThat(readyLatch.await(100, MILLISECONDS), is(false));
@@ -140,7 +140,7 @@ public class RoundRobinLoadBalancerTest {
         CountDownLatch readyLatch = new CountDownLatch(1);
         CountDownLatch completeLatch = new CountDownLatch(1);
         AtomicReference<Throwable> causeRef = new AtomicReference<>();
-        lb.getEventStream().subscribe(new Subscriber<Object>() {
+        lb.eventStream().subscribe(new Subscriber<Object>() {
             @Override
             public void onSubscribe(final Subscription s) {
                 s.request(1);

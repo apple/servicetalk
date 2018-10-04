@@ -31,7 +31,8 @@ import java.util.function.Function;
 public interface LoadBalancer<C extends ListenableAsyncCloseable> extends ListenableAsyncCloseable {
 
     /**
-     * Select the most appropriate connection for a request. Returned connection may be used concurrently for other requests.
+     * Select the most appropriate connection for a request. Returned connection may be used concurrently for other
+     * requests.
      *
      * @param selector A {@link Function} that evaluates a connection for selection.
      *                 This selector should return {@code null} if the connection <strong>MUST</strong> not be selected.
@@ -46,5 +47,5 @@ public interface LoadBalancer<C extends ListenableAsyncCloseable> extends Listen
      * of this {@link LoadBalancer} to provide hints/visibility for external usage.
      * @return A {@link Publisher} of events provided by this {@link LoadBalancer}.
      */
-    Publisher<Object> getEventStream();
+    Publisher<Object> eventStream();
 }
