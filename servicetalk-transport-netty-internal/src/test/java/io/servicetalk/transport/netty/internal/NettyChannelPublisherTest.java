@@ -31,7 +31,6 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
-import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
@@ -459,10 +458,8 @@ public class NettyChannelPublisherTest {
         ).request(2);
 
         subscriber.verifyItems(1).verifyFailure(DELIBERATE_EXCEPTION);
-        ArgumentCaptor<Throwable> captor = ArgumentCaptor.forClass(Throwable.class);
-        subscriber2.verifyFailure(captor);
         // only the active subscriber sees the initial exception, subsequent subscribers will observe a closed channel
-        assertThat(captor.getValue(), instanceOf(ClosedChannelException.class));
+        subscriber2.verifyFailure(ClosedChannelException.class);
     }
 
     private void testChannelReadThrows(boolean requestLate) {

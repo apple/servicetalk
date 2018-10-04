@@ -129,7 +129,7 @@ final class NettyChannelPublisher<T> extends Publisher<T> {
 
     // All private methods MUST be invoked from the eventloop.
 
-    void requestN(long n, SubscriptionImpl forSubscription) {
+    private void requestN(long n, SubscriptionImpl forSubscription) {
         if (forSubscription != subscription) {
             // Subscriptions shares common state hence a requestN after termination/cancellation must be ignored
             return;
@@ -149,7 +149,7 @@ final class NettyChannelPublisher<T> extends Publisher<T> {
         }
     }
 
-    boolean processPending(SubscriptionImpl target) {
+    private boolean processPending(SubscriptionImpl target) {
         // Should always be called from eventloop. (assert done before calling)
         if (inProcessPending || pending == null) {
             // Guard against re-entrance.
@@ -170,13 +170,12 @@ final class NettyChannelPublisher<T> extends Publisher<T> {
                     return true;
                 }
                 if (emit(target, p)) {
-                    SubscriptionImpl s = subscription;
-                    if (s == target || s == null) {
+                    if (subscription == target || subscription == null) {
                         // stop draining the pending events if the current Subscription is still the same for which we
                         // started draining, continue emitting the remaining data if there is a new Subscriber
                         return true;
                     }
-                    target = s;
+                    target = subscription;
                 }
             }
             if (pending.peek() instanceof TerminalNotification) {
