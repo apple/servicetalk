@@ -147,14 +147,14 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends ListenableA
                             final List<Host<ResolvedAddress, C>> refreshedAddresses = new ArrayList<>(currentAddresses);
                             final MutableAddressHost<ResolvedAddress, C> searchHost = new MutableAddressHost();
 
-                            searchHost.mutableAddress = event.getAddress();
+                            searchHost.mutableAddress = event.address();
                             // Binary search because any insertion is performed at the index returned by the search,
                             // which is consistent with the ordering defined by the comparator
                             final int i = binarySearch(refreshedAddresses, searchHost, activeAddressComparator);
 
-                            if (event.isAvailable()) {
+                            if (event.available()) {
                                 if (i < 0) {
-                                    refreshedAddresses.add(-i - 1, new Host(event.getAddress()));
+                                    refreshedAddresses.add(-i - 1, new Host(event.address()));
                                 }
                             } else if (i >= 0) {
                                 Host<ResolvedAddress, C> removed = refreshedAddresses.remove(i);
@@ -166,7 +166,7 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends ListenableA
                             return refreshedAddresses;
                         });
 
-                if (event.isAvailable()) {
+                if (event.available()) {
                     if (activeAddresses.size() == 1) {
                         eventStream.sendOnNext(LOAD_BALANCER_READY_EVENT);
                     }

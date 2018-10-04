@@ -31,30 +31,30 @@ public interface PartitionMap<T extends AsyncCloseable> extends ListenableAsyncC
     /**
      * Add a new {@link PartitionAttributes} that is absolutely specified. This may create new partitions.
      * <p>
-     * The terminology "absolutely"/"fully" here is meant to clarify that {@code partition} contains all the attributes to
-     * uniquely identify a single host. This is typically called when notification is received from {@link ServiceDiscoverer}
-     * and that address is translated to the corresponding {@link PartitionAttributes}.
+     * The terminology "absolutely"/"fully" here is meant to clarify that {@code partition} contains all the attributes
+     * to uniquely identify a single host. This is typically called when notification is received from
+     * {@link ServiceDiscoverer} and that address is translated to the corresponding {@link PartitionAttributes}.
      * <p>
      * This method is not guaranteed to provide any thread safety or visibility with respect to calls to this method or
-     * {@link #removePartition(PartitionAttributes)}. If these methods are called from multiple threads you may need to
+     * {@link #remove(PartitionAttributes)}. If these methods are called from multiple threads you may need to
      * provide external synchronization.
      * @param partition A fully specified {@link PartitionAttributes}.
      * @return The partitions that {@code partition} belongs to. These may (or may not) be new partitions.
      */
-    List<T> addPartition(PartitionAttributes partition);
+    List<T> add(PartitionAttributes partition);
 
     /**
-     * Remove a {@link PartitionAttributes} that was previously added via {@link #addPartition(PartitionAttributes)}.
+     * Remove a {@link PartitionAttributes} that was previously added via {@link #add(PartitionAttributes)}.
      * <p>
      * New partitions typically are not created as a result of this method call.
      * <p>
      * This method is not guaranteed to provide any thread safety or visibility with respect to calls to this method or
-     * {@link #addPartition(PartitionAttributes)}. If these methods are called from multiple threads you may need to
+     * {@link #add(PartitionAttributes)}. If these methods are called from multiple threads you may need to
      * provide external synchronization.
      * @param partition A fully specified {@link PartitionAttributes}.
      * @return The partitions that {@code partition} belongs to.
      */
-    List<T> removePartition(PartitionAttributes partition);
+    List<T> remove(PartitionAttributes partition);
 
     /**
      * Get the partition value corresponding to the {@link PartitionAttributes} parameter.
@@ -65,5 +65,5 @@ public interface PartitionMap<T extends AsyncCloseable> extends ListenableAsyncC
      * @return the partition value corresponding to the {@link PartitionAttributes} parameter.
      */
     @Nullable
-    T getPartition(@Nullable PartitionAttributes wildCardAttributes);
+    T get(@Nullable PartitionAttributes wildCardAttributes);
 }

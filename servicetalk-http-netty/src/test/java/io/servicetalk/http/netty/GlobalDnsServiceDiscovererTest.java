@@ -44,8 +44,8 @@ public class GlobalDnsServiceDiscovererTest {
         Single<Event<InetSocketAddress>> servicetalkIo = dns.discover(HostAndPort.of("localhost", 80)).first();
         Event<InetSocketAddress> event = awaitIndefinitelyNonNull(servicetalkIo);
 
-        assertThat(event.getAddress().getHostName(), equalTo("localhost"));
-        assertThat(event.getAddress().getHostString(), equalTo("localhost"));
-        assertThat(event.getAddress().getAddress().getAddress(), equalTo(new byte[]{127, 0, 0, 1}));
+        assertThat(event.address().getHostName(), equalTo("localhost"));
+        assertThat(event.address().getHostString(), equalTo("localhost"));
+        assertThat(event.address().getAddress().getAddress(), equalTo(new byte[]{127, 0, 0, 1}));
     }
 }

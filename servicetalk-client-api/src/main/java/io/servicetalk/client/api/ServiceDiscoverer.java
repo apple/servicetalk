@@ -22,17 +22,20 @@ import org.reactivestreams.Subscription;
 
 /**
  * Represents the interaction pattern with a service discovery system. It is assumed that once {@link #discover(Object)}
- * is called that the service discovery system will push data updates or implementations of this interface will poll for data updates.
- * Changes in the available hosts will be communicated via the resulting {@link Publisher}.
+ * is called that the service discovery system will push data updates or implementations of this interface will poll for
+ * data updates. Changes in the available hosts will be communicated via the resulting {@link Publisher}.
  * @param <UnresolvedAddress> The type of address before resolution.
  * @param <ResolvedAddress> The type of address after resolution.
  */
 public interface ServiceDiscoverer<UnresolvedAddress, ResolvedAddress> extends ListenableAsyncCloseable {
     /**
-     * Subscribe to the service discovery system for changes in the available {@link ResolvedAddress} associated with {@code address}.
+     * Subscribe to the service discovery system for changes in the available {@link ResolvedAddress} associated with
+     * {@code address}.
      * <p>
-     * In general a call to this method will continue to discover changes related to {@code address} until the {@link Subscription}
-     * corresponding to the return value is cancelled via {@link Subscription#cancel()} or there are no more changes to publish.
+     * In general a call to this method will continue to discover changes related to {@code address} until the
+     * {@link Subscription}
+     * corresponding to the return value is cancelled via {@link Subscription#cancel()} or there are no more changes to
+     * publish.
      * @param address the service address to discover. Examples of what this address maybe are:
      * <ul>
      * <li>hostname/port (e.g. InetAddress)</li>
@@ -53,12 +56,13 @@ public interface ServiceDiscoverer<UnresolvedAddress, ResolvedAddress> extends L
          * Get the resolved address which is the subject of this event.
          * @return a resolved address that can be used for connecting.
          */
-        ResolvedAddress getAddress();
+        ResolvedAddress address();
 
         /**
-         * Determine if {@link #getAddress()} is now available or unavailable.
-         * @return {@code true} if {@link #getAddress()} is now available or false if the {@link #getAddress()} is now unavailable.
+         * Determine if {@link #address()} is now available or unavailable.
+         * @return {@code true} if {@link #address()} is now available or false if the {@link #address()} is now
+         * unavailable.
          */
-        boolean isAvailable();
+        boolean available();
     }
 }

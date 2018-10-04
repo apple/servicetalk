@@ -50,7 +50,7 @@ public final class ServiceDiscovererTestSubscriber<T> implements Subscriber<Even
 
     @Override
     public void onNext(Event<T> event) {
-        if (event.isAvailable()) {
+        if (event.available()) {
             processActiveEvent(event);
         } else {
             processInActiveEvent(event);
@@ -60,16 +60,16 @@ public final class ServiceDiscovererTestSubscriber<T> implements Subscriber<Even
 
     private void processInActiveEvent(Event<T> event) {
         ++inActiveCount;
-        if (!activeAddresses.remove(event.getAddress())) {
-            throwableRef.set(new IllegalStateException("address: " + event.getAddress() + " removed but not active"));
+        if (!activeAddresses.remove(event.address())) {
+            throwableRef.set(new IllegalStateException("address: " + event.address() + " removed but not active"));
             countDownLatchToZero();
         }
     }
 
     private void processActiveEvent(Event<T> event) {
         ++activeCount;
-        if (!activeAddresses.add(event.getAddress())) {
-            throwableRef.set(new IllegalStateException("address: " + event.getAddress() + " is already active"));
+        if (!activeAddresses.add(event.address())) {
+            throwableRef.set(new IllegalStateException("address: " + event.address() + " is already active"));
             countDownLatchToZero();
         }
     }

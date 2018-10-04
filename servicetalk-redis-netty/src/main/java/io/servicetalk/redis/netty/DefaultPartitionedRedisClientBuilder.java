@@ -316,9 +316,9 @@ public class DefaultPartitionedRedisClientBuilder<ResolvedAddress>
                                     clientFilterFactory, loadBalancerFactory);
             sequentialCancellable = new SequentialCancellable();
 
-            addressEventStream.groupByMulti(event -> event.isAvailable() ?
-                            partitionMap.addPartition(event.getPartitionAddress()).iterator() :
-                            partitionMap.removePartition(event.getPartitionAddress()).iterator(),
+            addressEventStream.groupByMulti(event -> event.available() ?
+                            partitionMap.add(event.partitionAddress()).iterator() :
+                            partitionMap.remove(event.partitionAddress()).iterator(),
                     serviceDiscoveryMaxQueueSize)
                     .subscribe(new Subscriber<GroupedPublisher<Partition, PartitionedEvent<ResolvedAddress>>>() {
                         @Override
@@ -362,17 +362,17 @@ public class DefaultPartitionedRedisClientBuilder<ResolvedAddress>
 
                         @Override
                         public boolean test(PartitionedEvent<ResolvedAddress> evt) {
-                            MutableInteger count = addressesToCount.computeIfAbsent(evt.getAddress(),
+                            MutableInteger count = addressesToCount.computeIfAbsent(evt.address(),
                                     addr -> new MutableInteger());
                             boolean acceptEvent;
-                            if (evt.isAvailable()) {
+                            if (evt.available()) {
                                 acceptEvent = ++count.count == 1;
                             } else {
                                 acceptEvent = --count.count == 0;
                                 if (acceptEvent) {
                                     // If address is unavailable and no more add events are pending stop tracking and
                                     // close partition.
-                                    addressesToCount.remove(evt.getAddress());
+                                    addressesToCount.remove(evt.address());
                                     if (addressesToCount.isEmpty()) {
                                         // closeNow will subscribe to closeAsync() so we do not have to here.
                                         partition.closeNow();
@@ -388,7 +388,7 @@ public class DefaultPartitionedRedisClientBuilder<ResolvedAddress>
         @Nullable
         private RedisClient lookupPartitionedClientOrFailSubscriber(PartitionAttributes selector,
                                                                     Single.Subscriber<?> subscriber) {
-            final Partition partition = partitionMap.getPartition(selector);
+            final Partition partition = partitionMap.get(selector);
             final RedisClient client;
             if (partition == null || (client = partition.getClient()) == null) {
                 subscriber.onSubscribe(IGNORE_CANCEL);
@@ -427,7 +427,7 @@ public class DefaultPartitionedRedisClientBuilder<ResolvedAddress>
             return new Publisher<RedisData>() {
                 @Override
                 protected void handleSubscribe(Subscriber<? super RedisData> subscriber) {
-                    final Partition partition = partitionMap.getPartition(partitionSelector);
+                    final Partition partition = partitionMap.get(partitionSelector);
                     final RedisClient client;
                     if (partition == null || (client = partition.getClient()) == null) {
                         subscriber.onSubscribe(EMPTY_SUBSCRIPTION);

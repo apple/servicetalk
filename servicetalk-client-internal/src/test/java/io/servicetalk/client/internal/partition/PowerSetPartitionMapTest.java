@@ -62,33 +62,33 @@ public class PowerSetPartitionMapTest {
     public void testDuplicatePutMakesNoChange() {
         PowerSetPartitionMap<ListenableAsyncCloseable> map = oneTwoThreeMap();
         // Test duplicate put
-        List<ListenableAsyncCloseable> result = map.addPartition(host3Attributes());
+        List<ListenableAsyncCloseable> result = map.add(host3Attributes());
         assertOneTwoThree(map);
         assertEquals(15, result.size());
-        assertEquals(VALUE, map.getPartition(host3Attributes()));
+        assertEquals(VALUE, map.get(host3Attributes()));
     }
 
     @Test
     public void testRemoveOfOverlappingAttributesPreservesValue() {
         PowerSetPartitionMap<ListenableAsyncCloseable> map = oneTwoThreeMap();
         // Test remove
-        List<ListenableAsyncCloseable> result = map.removePartition(host3Attributes());
-        assertEquals(VALUE, map.getPartition(host1Attributes()));
-        assertEquals(VALUE, map.getPartition(host2Attributes()));
-        assertNull(map.getPartition(host3Attributes()));
+        List<ListenableAsyncCloseable> result = map.remove(host3Attributes());
+        assertEquals(VALUE, map.get(host1Attributes()));
+        assertEquals(VALUE, map.get(host2Attributes()));
+        assertNull(map.get(host3Attributes()));
         assertEquals(15, result.size());
 
         // Test a wild card with a unique attribute to host3 removed no longer returns any results.
         PartitionAttributesBuilder builder = new DefaultPartitionAttributesBuilder(1);
         builder.add(SHARD_ID, 9);
         PartitionAttributes partitionAttributes = builder.build();
-        assertNull(map.getPartition(partitionAttributes));
+        assertNull(map.get(partitionAttributes));
 
         // Test the same key, but different value still returns results.
         builder = new DefaultPartitionAttributesBuilder(1);
         builder.add(SHARD_ID, 10);
         partitionAttributes = builder.build();
-        assertNotNull(map.getPartition(partitionAttributes));
+        assertNotNull(map.get(partitionAttributes));
     }
 
     @Test
@@ -97,31 +97,31 @@ public class PowerSetPartitionMapTest {
 
         PartitionAttributesBuilder builder = new DefaultPartitionAttributesBuilder(1);
         builder.add(DC_ID, 1);
-        assertEquals(VALUE, map.getPartition(builder.build()));
+        assertEquals(VALUE, map.get(builder.build()));
 
         builder = new DefaultPartitionAttributesBuilder(1);
         builder.add(SHARD_ID, 10);
-        assertEquals(VALUE, map.getPartition(builder.build()));
+        assertEquals(VALUE, map.get(builder.build()));
 
         builder = new DefaultPartitionAttributesBuilder(1);
         builder.add(SHARD_ID, 9);
-        assertEquals(VALUE, map.getPartition(builder.build()));
+        assertEquals(VALUE, map.get(builder.build()));
 
         builder = new DefaultPartitionAttributesBuilder(1);
         builder.add(APP_ID, "myapp");
-        assertEquals(VALUE, map.getPartition(builder.build()));
+        assertEquals(VALUE, map.get(builder.build()));
 
         builder = new DefaultPartitionAttributesBuilder(1);
         builder.add(IS_MASTER, false);
-        assertEquals(VALUE, map.getPartition(builder.build()));
+        assertEquals(VALUE, map.get(builder.build()));
 
         builder = new DefaultPartitionAttributesBuilder(1);
         builder.add(IS_MASTER, true);
-        assertEquals(VALUE, map.getPartition(builder.build()));
+        assertEquals(VALUE, map.get(builder.build()));
 
         builder = new DefaultPartitionAttributesBuilder(1);
         builder.add(APP_ID, "notmyapp");
-        assertNull(map.getPartition(builder.build()));
+        assertNull(map.get(builder.build()));
     }
 
     @Test
@@ -131,42 +131,42 @@ public class PowerSetPartitionMapTest {
         PartitionAttributesBuilder builder = new DefaultPartitionAttributesBuilder(2);
         builder.add(DC_ID, 1);
         builder.add(SHARD_ID, 10);
-        assertEquals(VALUE, map.getPartition(builder.build()));
+        assertEquals(VALUE, map.get(builder.build()));
 
         builder = new DefaultPartitionAttributesBuilder(2);
         builder.add(DC_ID, 1);
         builder.add(SHARD_ID, 9);
-        assertEquals(VALUE, map.getPartition(builder.build()));
+        assertEquals(VALUE, map.get(builder.build()));
 
         builder = new DefaultPartitionAttributesBuilder(2);
         builder.add(DC_ID, 1);
         builder.add(APP_ID, "myapp");
-        assertEquals(VALUE, map.getPartition(builder.build()));
+        assertEquals(VALUE, map.get(builder.build()));
 
         builder = new DefaultPartitionAttributesBuilder(2);
         builder.add(APP_ID, "myapp");
         builder.add(IS_MASTER, true);
-        assertEquals(VALUE, map.getPartition(builder.build()));
+        assertEquals(VALUE, map.get(builder.build()));
 
         builder = new DefaultPartitionAttributesBuilder(2);
         builder.add(APP_ID, "myapp");
         builder.add(IS_MASTER, false);
-        assertEquals(VALUE, map.getPartition(builder.build()));
+        assertEquals(VALUE, map.get(builder.build()));
 
         builder = new DefaultPartitionAttributesBuilder(2);
         builder.add(DC_ID, 1);
         builder.add(IS_MASTER, false);
-        assertEquals(VALUE, map.getPartition(builder.build()));
+        assertEquals(VALUE, map.get(builder.build()));
 
         builder = new DefaultPartitionAttributesBuilder(2);
         builder.add(DC_ID, 1);
         builder.add(IS_MASTER, true);
-        assertEquals(VALUE, map.getPartition(builder.build()));
+        assertEquals(VALUE, map.get(builder.build()));
 
         builder = new DefaultPartitionAttributesBuilder(2);
         builder.add(DC_ID, 2);
         builder.add(IS_MASTER, true);
-        assertNull(map.getPartition(builder.build()));
+        assertNull(map.get(builder.build()));
     }
 
     @Test
@@ -177,41 +177,41 @@ public class PowerSetPartitionMapTest {
         builder.add(DC_ID, 1);
         builder.add(SHARD_ID, 10);
         builder.add(APP_ID, "myapp");
-        assertEquals(VALUE, map.getPartition(builder.build()));
+        assertEquals(VALUE, map.get(builder.build()));
 
         builder = new DefaultPartitionAttributesBuilder(3);
         builder.add(DC_ID, 1);
         builder.add(SHARD_ID, 9);
         builder.add(APP_ID, "myapp");
-        assertEquals(VALUE, map.getPartition(builder.build()));
+        assertEquals(VALUE, map.get(builder.build()));
 
         builder = new DefaultPartitionAttributesBuilder(3);
         builder.add(DC_ID, 1);
         builder.add(APP_ID, "myapp");
         builder.add(IS_MASTER, true);
-        assertEquals(VALUE, map.getPartition(builder.build()));
+        assertEquals(VALUE, map.get(builder.build()));
 
         builder = new DefaultPartitionAttributesBuilder(3);
         builder.add(DC_ID, 1);
         builder.add(APP_ID, "myapp");
         builder.add(IS_MASTER, false);
-        assertEquals(VALUE, map.getPartition(builder.build()));
+        assertEquals(VALUE, map.get(builder.build()));
 
         builder = new DefaultPartitionAttributesBuilder(3);
         builder.add(DC_ID, 1);
         builder.add(APP_ID, "notmyapp");
         builder.add(IS_MASTER, true);
-        assertNull(map.getPartition(builder.build()));
+        assertNull(map.get(builder.build()));
     }
 
     @Test
     public void testResolveFourElements() {
         PowerSetPartitionMap<ListenableAsyncCloseable> map = oneTwoThreeMap();
 
-        assertEquals(VALUE, map.getPartition(host1Attributes()));
-        assertEquals(VALUE, map.getPartition(host2Attributes()));
-        assertEquals(VALUE, map.getPartition(host3Attributes()));
-        assertNull(map.getPartition(host4Attributes()));
+        assertEquals(VALUE, map.get(host1Attributes()));
+        assertEquals(VALUE, map.get(host2Attributes()));
+        assertEquals(VALUE, map.get(host3Attributes()));
+        assertNull(map.get(host4Attributes()));
 
         // Add an extra attribute to host3 and test that it doesn't resolve.
         PartitionAttributesBuilder builder = new DefaultPartitionAttributesBuilder(5);
@@ -220,7 +220,7 @@ public class PowerSetPartitionMapTest {
         builder.add(APP_ID, "myapp");
         builder.add(IS_MASTER, true);
         builder.add(EXTRA, true);
-        assertNull(map.getPartition(builder.build()));
+        assertNull(map.get(builder.build()));
     }
 
     @Test
@@ -228,7 +228,7 @@ public class PowerSetPartitionMapTest {
         PowerSetPartitionMap<ListenableAsyncCloseable> map = new PowerSetPartitionMap<>(address -> VALUE);
         PartitionAttributes emptyAttributes = new DefaultPartitionAttributesBuilder(0).build();
         try {
-            map.addPartition(emptyAttributes);
+            map.add(emptyAttributes);
             fail();
         } catch (IllegalArgumentException expected) {
             // expected
@@ -240,12 +240,12 @@ public class PowerSetPartitionMapTest {
         PowerSetPartitionMap<ListenableAsyncCloseable> map = new PowerSetPartitionMap<>(address -> VALUE);
         assertTrue("New map is not empty.", map.isEmpty());
         PartitionAttributes partition = new DefaultPartitionAttributesBuilder(1).add(IS_MASTER, true).add(SHARD_ID, 1).build();
-        List<ListenableAsyncCloseable> added1 = map.addPartition(partition);
-        List<ListenableAsyncCloseable> added2 = map.addPartition(partition);
+        List<ListenableAsyncCloseable> added1 = map.add(partition);
+        List<ListenableAsyncCloseable> added2 = map.add(partition);
         assertEquals("Added partitions are not equal.", added1, added2);
         assertEquals("Same partition added twice.", map.size(), 1);
 
-        List<ListenableAsyncCloseable> removed = map.removePartition(partition);
+        List<ListenableAsyncCloseable> removed = map.remove(partition);
         assertEquals("Unexpected size of removed partitions.", removed.size(), added1.size());
     }
 
@@ -261,16 +261,16 @@ public class PowerSetPartitionMapTest {
 
     private static PowerSetPartitionMap<ListenableAsyncCloseable> oneTwoThreeMap() {
         PowerSetPartitionMap<ListenableAsyncCloseable> map = new PowerSetPartitionMap<>(address -> VALUE);
-        List<ListenableAsyncCloseable> result = map.addPartition(host1Attributes());
-        assertEquals(VALUE, map.getPartition(host1Attributes()));
+        List<ListenableAsyncCloseable> result = map.add(host1Attributes());
+        assertEquals(VALUE, map.get(host1Attributes()));
         assertEquals(15, result.size());
         assertMapSize(map, 1, 15);
-        result = map.addPartition(host2Attributes());
-        assertEquals(VALUE, map.getPartition(host2Attributes()));
+        result = map.add(host2Attributes());
+        assertEquals(VALUE, map.get(host2Attributes()));
         assertEquals(15, result.size());
         assertMapSize(map, 2, 23);
-        result = map.addPartition(host3Attributes());
-        assertEquals(VALUE, map.getPartition(host3Attributes()));
+        result = map.add(host3Attributes());
+        assertEquals(VALUE, map.get(host3Attributes()));
         assertEquals(15, result.size());
         assertOneTwoThree(map);
         return map;

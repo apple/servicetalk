@@ -23,8 +23,8 @@ import static io.servicetalk.client.api.ServiceDiscoverer.Event;
  */
 public interface PartitionedEvent<ResolvedAddress> extends Event<ResolvedAddress> {
     /**
-     * Get the fully specified {@link PartitionAttributes} that uniquely identifies {@link #getAddress()}.
-     * @return the fully specified {@link PartitionAttributes} that uniquely identifies {@link #getAddress()}.
+     * Get the fully specified {@link PartitionAttributes} that uniquely identifies {@link #address()}.
+     * @return the fully specified {@link PartitionAttributes} that uniquely identifies {@link #address()}.
      */
-    PartitionAttributes getPartitionAddress();
+    PartitionAttributes partitionAddress();
 }
