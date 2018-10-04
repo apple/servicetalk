@@ -211,7 +211,7 @@ final class DefaultMultiAddressUrlHttpClientBuilder
         public SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> apply(
                 final GroupKey<HostAndPort> groupKey, final HttpRequestMetaData requestMetaData) {
             final HttpScheme scheme = HttpScheme.from(requestMetaData.scheme());
-            final HostAndPort hostAndPort = groupKey.getAddress();
+            final HostAndPort hostAndPort = groupKey.address();
             SslConfig sslConfig;
             switch (scheme) {
                 case HTTP:
@@ -241,7 +241,7 @@ final class DefaultMultiAddressUrlHttpClientBuilder
             }
             return builder.executionContext(executionContext)
                     .sslConfig(sslConfig)
-                    .appendClientFilter(clientFilterFunction.asClientFilter(groupKey.getAddress()));
+                    .appendClientFilter(clientFilterFunction.asClientFilter(groupKey.address()));
         }
 
         HttpHeadersFactory headersFactory() {

@@ -33,7 +33,7 @@ public final class DefaultGroupKey<Address> implements GroupKey<Address> {
      * Create a new instance.
      *
      * @param address The address of the remote peer to connect to.
-     * @param executionContext The {@link ExecutionContext} to use for {@link #getExecutionContext()}.
+     * @param executionContext The {@link ExecutionContext} to use for {@link #executionContext()}.
      */
     public DefaultGroupKey(final Address address,
                            final ExecutionContext executionContext) {
@@ -42,12 +42,12 @@ public final class DefaultGroupKey<Address> implements GroupKey<Address> {
     }
 
     @Override
-    public Address getAddress() {
+    public Address address() {
         return address;
     }
 
     @Override
-    public ExecutionContext getExecutionContext() {
+    public ExecutionContext executionContext() {
         return executionContext;
     }
 

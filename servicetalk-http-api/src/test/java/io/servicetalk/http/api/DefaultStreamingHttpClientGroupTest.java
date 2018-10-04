@@ -88,7 +88,7 @@ public class DefaultStreamingHttpClientGroupTest {
     @SuppressWarnings("unchecked")
     private static GroupKey<String> mockKey(final int i) {
         final GroupKey<String> key = mock(GroupKey.class);
-        when(key.getAddress()).thenReturn("address_" + i);
+        when(key.address()).thenReturn("address_" + i);
         return key;
     }
 
