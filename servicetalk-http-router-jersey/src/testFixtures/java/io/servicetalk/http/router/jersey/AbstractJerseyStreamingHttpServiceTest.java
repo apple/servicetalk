@@ -279,7 +279,7 @@ public abstract class AbstractJerseyStreamingHttpServiceTest {
         if (expectedContentLength != null) {
             assertThat(res.headers().get(CONTENT_LENGTH),
                     is(newAsciiString(Integer.toString(expectedContentLength))));
-            res.headers().getAll(TRANSFER_ENCODING)
+            res.headers().values(TRANSFER_ENCODING)
                     .forEachRemaining(h -> assertThat(h.toString(), equalToIgnoringCase("chunked")));
         } else {
             assertThat(res.headers().contains(CONTENT_LENGTH), is(false));

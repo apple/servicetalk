@@ -66,12 +66,12 @@ public enum HttpProtocolVersions implements HttpProtocolVersion {
     }
 
     @Override
-    public int getMajorVersion() {
+    public int majorVersion() {
         return major;
     }
 
     @Override
-    public int getMinorVersion() {
+    public int minorVersion() {
         return minor;
     }
 

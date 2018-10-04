@@ -26,14 +26,14 @@ public interface HttpCookie {
      *
      * @return The name of this {@link HttpCookie}
      */
-    CharSequence getName();
+    CharSequence name();
 
     /**
      * Returns the value of this {@link HttpCookie}.
      *
      * @return The value of this {@link HttpCookie}
      */
-    CharSequence getValue();
+    CharSequence value();
 
     /**
      * Returns true if the raw value of this {@link HttpCookie},
@@ -41,7 +41,7 @@ public interface HttpCookie {
      *
      * @return If the value of this {@link HttpCookie} is to be wrapped
      */
-    boolean isWrapped();
+    boolean wrapped();
 
     /**
      * Returns the domain of this {@link HttpCookie}.
@@ -49,7 +49,7 @@ public interface HttpCookie {
      * @return The domain of this {@link HttpCookie}
      */
     @Nullable
-    CharSequence getDomain();
+    CharSequence domain();
 
     /**
      * Returns the path of this {@link HttpCookie}.
@@ -57,7 +57,7 @@ public interface HttpCookie {
      * @return The {@link HttpCookie}'s path
      */
     @Nullable
-    CharSequence getPath();
+    CharSequence path();
 
     /**
      * Returns the maximum age of this {@link HttpCookie} in seconds if specified.
@@ -65,7 +65,7 @@ public interface HttpCookie {
      * @return The maximum age of this {@link HttpCookie}. {@code null} if none specified.
      */
     @Nullable
-    Long getMaxAge();
+    Long maxAge();
 
     /**
      * Returns the expire date of this {@link HttpCookie} according
@@ -75,14 +75,14 @@ public interface HttpCookie {
      * to <a href="https://tools.ietf.org/html/rfc6265#section-4.1.1">Expires</a>.
      */
     @Nullable
-    CharSequence getExpires();
+    CharSequence expires();
 
     /**
      * Checks to see if this {@link HttpCookie} is secure.
      *
      * @return True if this {@link HttpCookie} is secure, otherwise false
      */
-    boolean isSecure();
+    boolean secure();
 
     /**
      * Checks to see if this {@link HttpCookie} can only be accessed via HTTP.
@@ -92,7 +92,7 @@ public interface HttpCookie {
      *
      * @return True if this {@link HttpCookie} is HTTP-only or false if it isn't
      */
-    boolean isHttpOnly();
+    boolean httpOnly();
 
     /**
      * Create a new not wrapped, not secure and not HTTP-only {@link HttpCookie} instance, with no path, domain,

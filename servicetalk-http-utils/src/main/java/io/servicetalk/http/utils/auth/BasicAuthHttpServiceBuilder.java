@@ -258,7 +258,7 @@ public final class BasicAuthHttpServiceBuilder<UserInfo> {
             //  - https://tools.ietf.org/html/rfc7617#section-2
             //  - https://tools.ietf.org/html/rfc2617#section-2
             final Iterator<? extends CharSequence> authorizations = request.headers()
-                    .getAll(proxy ? PROXY_AUTHORIZATION : AUTHORIZATION);
+                    .values(proxy ? PROXY_AUTHORIZATION : AUTHORIZATION);
             String token = "";
             while (authorizations.hasNext()) {
                 final CharSequence authorization = authorizations.next();

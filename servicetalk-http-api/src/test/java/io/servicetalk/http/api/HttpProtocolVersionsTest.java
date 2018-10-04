@@ -28,28 +28,28 @@ public class HttpProtocolVersionsTest {
     @Test
     public void testCreateNewProtocolVersionFromMajorAndMinor() {
         HttpProtocolVersion version11 = newProtocolVersion(1, 1);
-        assertEquals(HTTP_1_1.getMajorVersion(), version11.getMajorVersion());
-        assertEquals(HTTP_1_1.getMinorVersion(), version11.getMinorVersion());
+        assertEquals(HTTP_1_1.majorVersion(), version11.majorVersion());
+        assertEquals(HTTP_1_1.minorVersion(), version11.minorVersion());
         assertEquals(HTTP_1_1.toString(), version11.toString());
         assertNotEquals(HTTP_1_1, version11);   // FIXME: enum does not equal to a new HttpProtocolVersion object
 
         HttpProtocolVersion version98 = newProtocolVersion(9, 8);
-        assertEquals(9, version98.getMajorVersion());
-        assertEquals(8, version98.getMinorVersion());
+        assertEquals(9, version98.majorVersion());
+        assertEquals(8, version98.minorVersion());
         assertEquals("HTTP/9.8", version98.toString());
     }
 
     @Test
     public void testCreateNewProtocolVersionFromBuffer() {
         HttpProtocolVersion version11 = newProtocolVersion(DEFAULT_ALLOCATOR.fromAscii("HTTP/1.1"));
-        assertEquals(HTTP_1_1.getMajorVersion(), version11.getMajorVersion());
-        assertEquals(HTTP_1_1.getMinorVersion(), version11.getMinorVersion());
+        assertEquals(HTTP_1_1.majorVersion(), version11.majorVersion());
+        assertEquals(HTTP_1_1.minorVersion(), version11.minorVersion());
         assertEquals(HTTP_1_1.toString(), version11.toString());
         assertNotEquals(HTTP_1_1, version11);   // FIXME: enum does not equal to a new HttpProtocolVersion object
 
         HttpProtocolVersion version98 = newProtocolVersion(DEFAULT_ALLOCATOR.fromAscii("HTTP/9.8"));
-        assertEquals(9, version98.getMajorVersion());
-        assertEquals(8, version98.getMinorVersion());
+        assertEquals(9, version98.majorVersion());
+        assertEquals(8, version98.minorVersion());
         assertEquals("HTTP/9.8", version98.toString());
     }
 

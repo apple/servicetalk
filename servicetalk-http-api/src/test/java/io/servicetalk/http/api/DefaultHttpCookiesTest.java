@@ -736,15 +736,15 @@ public class DefaultHttpCookiesTest {
     }
 
     private static boolean areCookiesEqual(final HttpCookie cookie1, final HttpCookie cookie2) {
-        return contentEqualsIgnoreCase(cookie1.getName(), cookie2.getName()) &&
-                cookie1.getValue().equals(cookie2.getValue()) &&
-                Objects.equals(cookie1.getDomain(), cookie2.getDomain()) &&
-                Objects.equals(cookie1.getPath(), cookie2.getPath()) &&
-                Objects.equals(cookie1.getExpires(), cookie2.getExpires()) &&
-                Objects.equals(cookie1.getValue(), cookie2.getValue()) &&
-                cookie1.isHttpOnly() == cookie2.isHttpOnly() &&
-                cookie1.isSecure() == cookie2.isSecure() &&
-                cookie1.isWrapped() == cookie2.isWrapped();
+        return contentEqualsIgnoreCase(cookie1.name(), cookie2.name()) &&
+                cookie1.value().equals(cookie2.value()) &&
+                Objects.equals(cookie1.domain(), cookie2.domain()) &&
+                Objects.equals(cookie1.path(), cookie2.path()) &&
+                Objects.equals(cookie1.expires(), cookie2.expires()) &&
+                Objects.equals(cookie1.value(), cookie2.value()) &&
+                cookie1.httpOnly() == cookie2.httpOnly() &&
+                cookie1.secure() == cookie2.secure() &&
+                cookie1.wrapped() == cookie2.wrapped();
     }
 
     private static final class TestCookie implements HttpCookie {
@@ -777,51 +777,51 @@ public class DefaultHttpCookiesTest {
         }
 
         @Override
-        public String getName() {
+        public String name() {
             return name;
         }
 
         @Override
-        public String getValue() {
+        public String value() {
             return value;
         }
 
         @Override
-        public boolean isWrapped() {
+        public boolean wrapped() {
             return isWrapped;
         }
 
         @Nullable
         @Override
-        public String getDomain() {
+        public String domain() {
             return domain;
         }
 
         @Nullable
         @Override
-        public String getPath() {
+        public String path() {
             return path;
         }
 
         @Nullable
         @Override
-        public Long getMaxAge() {
+        public Long maxAge() {
             return maxAge;
         }
 
         @Nullable
         @Override
-        public String getExpires() {
+        public String expires() {
             return expires;
         }
 
         @Override
-        public boolean isSecure() {
+        public boolean secure() {
             return isSecure;
         }
 
         @Override
-        public boolean isHttpOnly() {
+        public boolean httpOnly() {
             return isHttpOnly;
         }
 

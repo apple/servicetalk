@@ -52,7 +52,7 @@ public final class EmptyHttpHeaders implements HttpHeaders {
     }
 
     @Override
-    public Iterator<? extends CharSequence> getAll(CharSequence name) {
+    public Iterator<? extends CharSequence> values(CharSequence name) {
         return emptyIterator();
     }
 
@@ -77,7 +77,7 @@ public final class EmptyHttpHeaders implements HttpHeaders {
     }
 
     @Override
-    public Set<? extends CharSequence> getNames() {
+    public Set<? extends CharSequence> names() {
         return emptySet();
     }
 
@@ -122,7 +122,7 @@ public final class EmptyHttpHeaders implements HttpHeaders {
     }
 
     @Override
-    public HttpHeaders setAll(HttpHeaders headers) {
+    public HttpHeaders replace(HttpHeaders headers) {
         throw new UnsupportedOperationException();
     }
 

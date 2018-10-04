@@ -83,7 +83,7 @@ public interface HttpHeaders extends Iterable<Entry<CharSequence, CharSequence>>
      * @param name the name of the header to retrieve.
      * @return a {@link Iterator} of header values or an empty {@link Iterator} if no values are found.
      */
-    Iterator<? extends CharSequence> getAll(CharSequence name);
+    Iterator<? extends CharSequence> values(CharSequence name);
 
     /**
      * Returns {@code true} if a header with the {@code name} exists, {@code false} otherwise.
@@ -132,7 +132,7 @@ public interface HttpHeaders extends Iterable<Entry<CharSequence, CharSequence>>
      * Returns a {@link Set} of all header names in this object. The returned {@link Set} cannot be modified.
      * @return a {@link Set} of all header names in this object. The returned {@link Set} cannot be modified.
      */
-    Set<? extends CharSequence> getNames();
+    Set<? extends CharSequence> names();
 
     /**
      * Adds a new header with the specified {@code name} and {@code value}.
@@ -246,9 +246,9 @@ public interface HttpHeaders extends Iterable<Entry<CharSequence, CharSequence>>
      * @param headers The headers used to remove names and then add new entries.
      * @return {@code this}.
      */
-    default HttpHeaders setAll(final HttpHeaders headers) {
+    default HttpHeaders replace(final HttpHeaders headers) {
         if (headers != this) {
-            for (final CharSequence key : headers.getNames()) {
+            for (final CharSequence key : headers.names()) {
                 remove(key);
             }
             add(headers);
