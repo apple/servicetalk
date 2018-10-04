@@ -18,7 +18,7 @@ package io.servicetalk.client.api;
 import java.util.function.Function;
 
 /**
- * A hint from {@link LoadBalancer#getEventStream()} that the internal state of the {@link LoadBalancer} is ready such
+ * A hint from {@link LoadBalancer#eventStream()} that the internal state of the {@link LoadBalancer} is ready such
  * {@link LoadBalancer#selectConnection(Function)} is not likely to fail. Note that the return status of
  * {@link LoadBalancer#selectConnection(Function)} may depend upon many factors including but not limited to:
  * <ul>

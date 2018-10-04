@@ -223,7 +223,7 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends ListenableA
     }
 
     @Override
-    public Publisher<Object> getEventStream() {
+    public Publisher<Object> eventStream() {
         return eventStream;
     }
 

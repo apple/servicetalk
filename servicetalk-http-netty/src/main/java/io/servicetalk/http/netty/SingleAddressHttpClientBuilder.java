@@ -67,7 +67,7 @@ public interface SingleAddressHttpClientBuilder<U, R>
      * @param function {@link HttpClientFilterFactory} to decorate a {@link StreamingHttpClient} for the purpose of filtering.
      * The signature of the {@link BiFunction} is as follows:
      * <pre>
-     *     PostFilteredHttpClient func(PreFilteredHttpClient, {@link LoadBalancer#getEventStream()})
+     *     PostFilteredHttpClient func(PreFilteredHttpClient, {@link LoadBalancer#eventStream()})
      * </pre>
      * @return {@code this}
      */

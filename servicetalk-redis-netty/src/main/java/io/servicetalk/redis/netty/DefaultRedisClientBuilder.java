@@ -219,7 +219,7 @@ public final class DefaultRedisClientBuilder<ResolvedAddress>
                 (LoadBalancer<LoadBalancedRedisConnection>) lbfUntypedForCast;
 
         return clientFilterFactory.apply(new DefaultRedisClient(executionContext, subscribeLb, pipelineLb),
-                subscribeLb.getEventStream(), pipelineLb.getEventStream());
+                subscribeLb.eventStream(), pipelineLb.eventStream());
     }
 
     private static final class DefaultRedisClient extends RedisClient {
