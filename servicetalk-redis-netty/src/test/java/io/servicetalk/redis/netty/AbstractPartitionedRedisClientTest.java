@@ -186,17 +186,17 @@ public abstract class AbstractPartitionedRedisClientTest {
             private final InetSocketAddress address = new InetSocketAddress(redisHost, redisPort);
 
             @Override
-            public PartitionAttributes getPartitionAddress() {
+            public PartitionAttributes partitionAddress() {
                 return partitionAddress;
             }
 
             @Override
-            public InetSocketAddress getAddress() {
+            public InetSocketAddress address() {
                 return address;
             }
 
             @Override
-            public boolean isAvailable() {
+            public boolean available() {
                 return available;
             }
         });

@@ -28,14 +28,16 @@ public interface PartitionAttributesBuilder {
      * @param value The value.
      * @param <T> The value type.
      * @return {@code this}.
-     * @throws DuplicateAttributeException A best effort will be made to detect adding duplicate keys, and if a duplicate
-     * key is detected this exception will be thrown.
+     * @throws DuplicateAttributeException A best effort will be made to detect adding duplicate keys, and if a
+     * duplicate key is detected this exception will be thrown.
      */
     <T> PartitionAttributesBuilder add(PartitionAttributes.Key<T> key, T value);
 
     /**
-     * Build a {@link PartitionAttributes} corresponding to the previous {@link #add(PartitionAttributes.Key, Object)} calls.
-     * @return a {@link PartitionAttributes} corresponding to the previous {@link #add(PartitionAttributes.Key, Object)} calls.
+     * Build a {@link PartitionAttributes} corresponding to the previous {@link #add(PartitionAttributes.Key, Object)}
+     * calls.
+     * @return a {@link PartitionAttributes} corresponding to the previous {@link #add(PartitionAttributes.Key, Object)}
+     * calls.
      * @throws DuplicateAttributeException If a duplicate key is detected this exception will be thrown.
      */
     PartitionAttributes build();

@@ -41,7 +41,7 @@ import static java.util.Objects.requireNonNull;
 
 /**
  * A {@link PartitionMap} that creates the full power set using the individual attributes in {@link PartitionAttributes}es
- * to create partitions for each {@link #addPartition(PartitionAttributes)}.
+ * to create partitions for each {@link #add(PartitionAttributes)}.
  * @param <T> The partition type.
  */
 public final class PowerSetPartitionMap<T extends AsyncCloseable> implements PartitionMap<T> {
@@ -69,7 +69,7 @@ public final class PowerSetPartitionMap<T extends AsyncCloseable> implements Par
      * <p>This map contains all combinations of the attributes of each absolute Attribute to provide a fast lookup when given
      * a Wild Card Attributes.
      * <p>This map and the values contained within are unmodifiable and modifications are treated as copy on write.
-     * This approach allows the {@link #getPartition(PartitionAttributes)} method which reads from this map and is expected to be
+     * This approach allows the {@link #get(PartitionAttributes)} method which reads from this map and is expected to be
      * called much more frequently than other methods which modify to the map can function with minimal synchronization.
      */
     private volatile Map<PartitionAttributes, ValueHolder<T>> wildCardToValueMap;
@@ -92,8 +92,8 @@ public final class PowerSetPartitionMap<T extends AsyncCloseable> implements Par
      * Create a new instance.
      * @param valueFactory Generates values for new partitions.
      * @param partitionAttributesBuilderFunc Generates new {@link PartitionAttributes} objects, this factory must be consistent with the factory
-     *                                    used to build the {@link PartitionAttributes} objects for {@link #addPartition(PartitionAttributes)}
-     *                                    and {@link #removePartition(PartitionAttributes)} to ensure {@link #hashCode()} and {@link #equals(Object)}
+     *                                    used to build the {@link PartitionAttributes} objects for {@link #add(PartitionAttributes)}
+     *                                    and {@link #remove(PartitionAttributes)} to ensure {@link #hashCode()} and {@link #equals(Object)}
      *                                    are consistent.
      */
     public PowerSetPartitionMap(Function<PartitionAttributes, T> valueFactory, IntFunction<PartitionAttributesBuilder> partitionAttributesBuilderFunc) {
@@ -104,13 +104,13 @@ public final class PowerSetPartitionMap<T extends AsyncCloseable> implements Par
     }
 
     @Override
-    public T getPartition(@Nullable PartitionAttributes wildCardAttributes) {
+    public T get(@Nullable PartitionAttributes wildCardAttributes) {
         ValueHolder<T> valueHolder = wildCardToValueMap.get(wildCardAttributes);
         return valueHolder == null ? null : valueHolder.value;
     }
 
     @Override
-    public List<T> addPartition(final PartitionAttributes partition) {
+    public List<T> add(final PartitionAttributes partition) {
         final int partitionSize = partition.size();
         if (partitionSize <= 0 || partitionSize > MAX_PARTITION_ATTRIBUTE_SIZE) {
             throw new IllegalArgumentException("attribute size: " + partitionSize + " must be in the range [0," + MAX_PARTITION_ATTRIBUTE_SIZE + ")");
@@ -166,7 +166,7 @@ public final class PowerSetPartitionMap<T extends AsyncCloseable> implements Par
     }
 
     @Override
-    public List<T> removePartition(PartitionAttributes partition) {
+    public List<T> remove(PartitionAttributes partition) {
         Set<PartitionAttributes> removedWildCardAttributes = absoluteToWildCardIndexMap.remove(partition);
         if (removedWildCardAttributes == null) {
             return emptyList();

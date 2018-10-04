@@ -60,7 +60,7 @@ public final class ServiceDiscovererUtils {
      * Calculate the relative complement of {@code sortedA} and {@code sortedB} (elements in {@code sortedB} and not in {@code sortedA}).
      * <p>
      * See <a href="https://en.wikipedia.org/wiki/Venn_diagram#Overview">Set Mathematics</a>.
-     * @param isAvailable Will be used for {@link ServiceDiscoverer.Event#isAvailable()} for each {@link ServiceDiscoverer.Event} in the returned {@link List}.
+     * @param isAvailable Will be used for {@link ServiceDiscoverer.Event#available()} for each {@link ServiceDiscoverer.Event} in the returned {@link List}.
      * @param sortedA A sorted {@link List} of which no elements be present in the return value.
      * @param sortedB A sorted {@link List} of which elements in this set that are not in {@code sortedA} will be in the return value.
      * @param comparator Used for binary searches on {@code sortedA} for each element in {@code sortedB}.

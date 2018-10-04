@@ -27,7 +27,7 @@ public final class DefaultServiceDiscovererEvent<T> implements ServiceDiscoverer
 
     /**
      * Create a new instance.
-     * @param address The address returned by {@link #getAddress()}.
+     * @param address The address returned by {@link #address()}.
      * @param isAvailable Value returned by {@link #isAvailable}.
      */
     public DefaultServiceDiscovererEvent(T address, boolean isAvailable) {
@@ -36,12 +36,12 @@ public final class DefaultServiceDiscovererEvent<T> implements ServiceDiscoverer
     }
 
     @Override
-    public T getAddress() {
+    public T address() {
         return address;
     }
 
     @Override
-    public boolean isAvailable() {
+    public boolean available() {
         return isAvailable;
     }
 }
