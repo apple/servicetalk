@@ -169,9 +169,13 @@ final class NettyChannelPublisher<T> extends Publisher<T> {
                     sendErrorToTarget(target, throwable);
                     return true;
                 }
-
                 if (emit(target, p)) {
-                    return true;
+                    if (subscription == target || subscription == null) {
+                        // stop draining the pending events if the current Subscription is still the same for which we
+                        // started draining, continue emitting the remaining data if there is a new Subscriber
+                        return true;
+                    }
+                    target = subscription;
                 }
             }
             if (pending.peek() instanceof TerminalNotification) {

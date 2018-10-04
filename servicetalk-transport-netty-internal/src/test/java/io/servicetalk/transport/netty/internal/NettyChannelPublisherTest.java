@@ -39,6 +39,7 @@ import java.nio.channels.ClosedChannelException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.DeliberateException.DELIBERATE_EXCEPTION;
@@ -63,6 +64,8 @@ public class NettyChannelPublisherTest {
     public final Timeout timeout = new ServiceTalkTestTimeout();
     @Rule
     public final MockedSubscriberRule<Integer> subscriber = new MockedSubscriberRule<>();
+    @Rule
+    public final MockedSubscriberRule<Integer> subscriber2 = new MockedSubscriberRule<>();
 
     private Publisher<Integer> publisher;
     private EmbeddedChannel channel;
@@ -73,7 +76,11 @@ public class NettyChannelPublisherTest {
 
     @Before
     public void setUp() throws Exception {
-        handler = new AbstractChannelReadHandler<Integer>(integer -> nextItemTerminal, NOOP_CLOSE_HANDLER) {
+        setUp(integer -> nextItemTerminal);
+    }
+
+    public void setUp(Predicate<Integer> terminalPredicate) throws Exception {
+        handler = new AbstractChannelReadHandler<Integer>(terminalPredicate, NOOP_CLOSE_HANDLER) {
             @Override
             protected void onPublisherCreation(ChannelHandlerContext ctx, Publisher<Integer> newPublisher) {
                 publisher = newPublisher;
@@ -81,12 +88,12 @@ public class NettyChannelPublisherTest {
         };
         channel = new EmbeddedChannel(DefaultChannelId.newInstance(), false, false, handler,
                 new ChannelOutboundHandlerAdapter() {
-            @Override
-            public void read(ChannelHandlerContext ctx) throws Exception {
-                readRequested = true;
-                super.read(ctx);
-            }
-        });
+                    @Override
+                    public void read(ChannelHandlerContext ctx) throws Exception {
+                        readRequested = true;
+                        super.read(ctx);
+                    }
+                });
         channel.config().setAutoRead(false);
         channel.register();
         handlerCtx = channel.pipeline().context(handler);
@@ -410,6 +417,49 @@ public class NettyChannelPublisherTest {
         publisher.doBeforeError(exRef::set).forEach(__ -> { });
         assertThat("Subscriber active post channel error.", exRef.get(),
                 is(instanceOf(ClosedChannelException.class)));
+    }
+
+    @Test
+    public void testSubscribeAndRequestWithinOnCompleteWithPendingData() throws Exception {
+        // With data queued up for multiple payloads in NettyChannelPublisher, when an existing subscriber terminates
+        // and a new Subscriber requests data synchronously from the previous terminal signal, the demand should be
+        // fulfilled synchronously using the pending data.
+
+        setUp(i -> i == 2 || i == 4); // rewire pipeline, terminal for 2 and 4
+
+        // queue up payloads
+        fireChannelReadToBuffer(1, 2);
+        fireChannelReadToBuffer(3, 4);
+
+        subscriber.subscribe(publisher.
+                doAfterFinally(() ->
+                        // re-subscribing from the previous completion event
+                        subscriber2.subscribe(publisher).request(2))
+        ).request(2);
+
+        subscriber.verifySuccessNoRequestN(1, 2);
+        subscriber2.verifySuccessNoRequestN(3, 4);
+    }
+
+    @Test
+    public void testSubscribeAndRequestWithinOnErrorWithPendingData() throws Exception {
+        // With data and a fatal error queued up in NettyChannelPublisher, when an existing subscriber terminates and a
+        // new Subscriber requests data synchronously from the previous terminal signal, the demand should trigger
+        // observing a ClosedChannelException.`
+
+        // queue up data and trigger terminal failure
+        fireChannelReadToBuffer(1);
+        handler.exceptionCaught(handlerCtx, DELIBERATE_EXCEPTION);
+
+        subscriber.subscribe(publisher
+                .doAfterFinally(() ->
+                        // re-subscribing from the previous completion event
+                        subscriber2.subscribe(publisher).request(1))
+        ).request(2);
+
+        subscriber.verifyItems(1).verifyFailure(DELIBERATE_EXCEPTION);
+        // only the active subscriber sees the initial exception, subsequent subscribers will observe a closed channel
+        subscriber2.verifyFailure(ClosedChannelException.class);
     }
 
     private void testChannelReadThrows(boolean requestLate) {
