@@ -86,7 +86,7 @@ public class BlockingStreamingHttpClientGroupTest {
         when(mockCtx.executionContext()).thenReturn(mockExecutionContext);
         when(mockIterable.iterator()).thenReturn(mockIterator);
         when(mockExecutionContext.executor()).thenReturn(immediate());
-        when(mockKey.getExecutionContext()).thenReturn(mockExecutionContext);
+        when(mockKey.executionContext()).thenReturn(mockExecutionContext);
     }
 
     @Test

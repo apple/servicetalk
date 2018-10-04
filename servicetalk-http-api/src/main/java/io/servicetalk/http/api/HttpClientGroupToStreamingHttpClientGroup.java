@@ -51,7 +51,7 @@ final class HttpClientGroupToStreamingHttpClientGroup<UnresolvedAddress> extends
     public Single<? extends UpgradableStreamingHttpResponse> upgradeConnection(
             final GroupKey<UnresolvedAddress> key, final StreamingHttpRequest request) {
         return request.toRequest().flatMap(req -> group.upgradeConnection(key, req))
-                .map(resp -> newUpgradeResponse(resp, key.getExecutionContext().bufferAllocator()));
+                .map(resp -> newUpgradeResponse(resp, key.executionContext().bufferAllocator()));
     }
 
     @Override

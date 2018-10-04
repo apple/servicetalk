@@ -30,11 +30,11 @@ public interface GroupKey<Address> {
      * @return the address to use when looking for or creating a new client. This address is typically unresolved, but
      * may not be a requirement depending upon configuration.
      */
-    Address getAddress();
+    Address address();
 
     /**
      * Get the {@link ExecutionContext} to use when looking for or creating a new client.
      * @return the {@link ExecutionContext} to use when looking for or creating a new client.
      */
-    ExecutionContext getExecutionContext();
+    ExecutionContext executionContext();
 }
