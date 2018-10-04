@@ -170,7 +170,7 @@ public abstract class AbstractHttpHeadersTest {
         assertEquals(2, headers.size());
         headers.remove("name2");
         assertEquals(0, headers.size());
-        assertTrue(headers.empty());
+        assertTrue(headers.isEmpty());
     }
 
     @Test
@@ -190,7 +190,7 @@ public abstract class AbstractHttpHeadersTest {
         assertEquals(2, headers.size());
         headers.remove("name2");
         assertEquals(0, headers.size());
-        assertTrue(headers.empty());
+        assertTrue(headers.isEmpty());
     }
 
     @Test
@@ -201,7 +201,7 @@ public abstract class AbstractHttpHeadersTest {
         assertEquals(2, headers.size());
         headers.clear();
         assertEquals(0, headers.size());
-        assertTrue(headers.empty());
+        assertTrue(headers.isEmpty());
         assertFalse(headers.contains("name1"));
         assertFalse(headers.contains("name2"));
     }
@@ -472,7 +472,7 @@ public abstract class AbstractHttpHeadersTest {
         assertEquals("name1", next.getKey());
         assertEquals("value1", next.getValue());
         itr.remove();
-        assertTrue(headers.empty());
+        assertTrue(headers.isEmpty());
         assertEquals(0, headers.size());
         itr.remove();
     }
@@ -903,7 +903,7 @@ public abstract class AbstractHttpHeadersTest {
 
         assertTrue(headers.remove("name4", "value1", true));
         assertNull(headers.get("name4"));
-        assertTrue(headers.empty());
+        assertTrue(headers.isEmpty());
     }
 
     @SafeVarargs

@@ -126,7 +126,7 @@ public interface HttpHeaders extends Iterable<Entry<CharSequence, CharSequence>>
      * Returns {@code true} if {@link #size()} equals {@code 0}.
      * @return {@code true} if {@link #size()} equals {@code 0}.
      */
-    boolean empty();
+    boolean isEmpty();
 
     /**
      * Returns a {@link Set} of all header names in this object. The returned {@link Set} cannot be modified.

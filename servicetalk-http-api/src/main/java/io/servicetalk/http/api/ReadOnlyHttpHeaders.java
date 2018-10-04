@@ -128,7 +128,7 @@ final class ReadOnlyHttpHeaders implements HttpHeaders {
     }
 
     @Override
-    public boolean empty() {
+    public boolean isEmpty() {
         return keyValuePairs.length == 0;
     }
 

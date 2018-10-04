@@ -72,7 +72,7 @@ public final class EmptyHttpHeaders implements HttpHeaders {
     }
 
     @Override
-    public boolean empty() {
+    public boolean isEmpty() {
         return true;
     }
 
@@ -163,7 +163,7 @@ public final class EmptyHttpHeaders implements HttpHeaders {
         }
 
         HttpHeaders rhs = (HttpHeaders) o;
-        return empty() && rhs.empty();
+        return isEmpty() && rhs.isEmpty();
     }
 
     @Override

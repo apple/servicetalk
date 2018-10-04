@@ -100,7 +100,7 @@ final class HeaderUtils {
     }
 
     static int hashCode(final HttpHeaders headers) {
-        if (headers.empty()) {
+        if (headers.isEmpty()) {
             return 0;
         }
         int result = HASH_CODE_SEED;
