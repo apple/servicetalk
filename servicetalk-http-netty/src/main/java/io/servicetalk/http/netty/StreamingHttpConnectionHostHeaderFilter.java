@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.http.utils;
+package io.servicetalk.http.netty;
 
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpHeaderNames;
@@ -23,8 +23,8 @@ import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.transport.api.HostAndPort;
 
-import java.net.InetSocketAddress;
-
+import static io.netty.util.NetUtil.isValidIpV6Address;
+import static io.netty.util.NetUtil.toSocketAddressString;
 import static io.servicetalk.http.api.CharSequences.newAsciiString;
 import static io.servicetalk.http.api.HttpHeaderNames.HOST;
 import static io.servicetalk.http.api.HttpProtocolVersions.HTTP_1_1;
@@ -33,7 +33,7 @@ import static java.util.Objects.requireNonNull;
 /**
  * A filter which will apply a fallback value for the {@link HttpHeaderNames#HOST} header if one is not present.
  */
-public final class StreamingHttpConnectionHostHeaderFilter extends StreamingHttpConnectionAdapter {
+final class StreamingHttpConnectionHostHeaderFilter extends StreamingHttpConnectionAdapter {
     private final CharSequence fallbackHost;
 
     /**
@@ -41,16 +41,7 @@ public final class StreamingHttpConnectionHostHeaderFilter extends StreamingHttp
      * @param fallbackHost The address to use as a fallback if a {@link HttpHeaderNames#HOST} header is not present.
      * @param next The next {@link StreamingHttpConnection} in the filter chain.
      */
-    public StreamingHttpConnectionHostHeaderFilter(InetSocketAddress fallbackHost, StreamingHttpConnection next) {
-        this(fallbackHost.getHostString(), fallbackHost.getPort(), next);
-    }
-
-    /**
-     * Create a new instance.
-     * @param fallbackHost The address to use as a fallback if a {@link HttpHeaderNames#HOST} header is not present.
-     * @param next The next {@link StreamingHttpConnection} in the filter chain.
-     */
-    public StreamingHttpConnectionHostHeaderFilter(HostAndPort fallbackHost, StreamingHttpConnection next) {
+    StreamingHttpConnectionHostHeaderFilter(HostAndPort fallbackHost, StreamingHttpConnection next) {
         this(fallbackHost.getHostName(), fallbackHost.getPort(), next);
     }
 
@@ -61,28 +52,21 @@ public final class StreamingHttpConnectionHostHeaderFilter extends StreamingHttp
      * @param fallbackPort The port to use as a fallback if a {@link HttpHeaderNames#HOST} header is not present.
      * @param next The next {@link StreamingHttpConnection} in the filter chain.
      */
-    public StreamingHttpConnectionHostHeaderFilter(String fallbackHostName, int fallbackPort,
-                                                   StreamingHttpConnection next) {
-        this(newAsciiString(fallbackHostName + ':' + fallbackPort), next);
-    }
-
-    /**
-     * Create a new instance.
-     * @param fallbackHost The address to use as a fallback if a {@link HttpHeaderNames#HOST} header is not present.
-     * @param next The next {@link StreamingHttpConnection} in the filter chain.
-     */
-    public StreamingHttpConnectionHostHeaderFilter(String fallbackHost, StreamingHttpConnection next) {
-        this(newAsciiString(fallbackHost), next);
-    }
-
-    /**
-     * Create a new instance.
-     * @param fallbackHost The address to use as a fallback if a {@link HttpHeaderNames#HOST} header is not present.
-     * @param next The next {@link StreamingHttpConnection} in the filter chain.
-     */
-    public StreamingHttpConnectionHostHeaderFilter(CharSequence fallbackHost, StreamingHttpConnection next) {
+    StreamingHttpConnectionHostHeaderFilter(String fallbackHostName, int fallbackPort,
+                                            StreamingHttpConnection next) {
         super(next);
-        this.fallbackHost = requireNonNull(fallbackHost);
+        this.fallbackHost = requireNonNull(newAsciiString(toSocketAddressString(fallbackHostName, fallbackPort)));
+    }
+
+    /**
+     * Create a new instance.
+     * @param fallbackHost The address to use as a fallback if a {@link HttpHeaderNames#HOST} header is not present.
+     * @param next The next {@link StreamingHttpConnection} in the filter chain.
+     */
+    StreamingHttpConnectionHostHeaderFilter(CharSequence fallbackHost, StreamingHttpConnection next) {
+        super(next);
+        this.fallbackHost = newAsciiString(isValidIpV6Address(fallbackHost) && fallbackHost.charAt(0) != '[' ?
+                "[" + fallbackHost + "]" : fallbackHost.toString());
     }
 
     @Override
