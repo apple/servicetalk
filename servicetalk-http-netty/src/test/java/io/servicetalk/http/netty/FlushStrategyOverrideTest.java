@@ -172,12 +172,12 @@ public class FlushStrategyOverrideTest {
         public Publisher<Event<InetSocketAddress>> discover(final InetSocketAddress inetSocketAddress) {
             return from(new Event<InetSocketAddress>() {
                 @Override
-                public InetSocketAddress getAddress() {
+                public InetSocketAddress address() {
                     return serverAddr;
                 }
 
                 @Override
-                public boolean isAvailable() {
+                public boolean available() {
                     return true;
                 }
             });

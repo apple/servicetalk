@@ -16,10 +16,7 @@
 package io.servicetalk.transport.netty.internal;
 
 import io.servicetalk.concurrent.Cancellable;
-import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.transport.api.ConnectionContext;
-
-import org.reactivestreams.Subscriber;
 
 import java.util.function.UnaryOperator;
 
@@ -40,33 +37,4 @@ public interface NettyConnectionContext extends ConnectionContext {
      * connection to a default value.
      */
     Cancellable updateFlushStrategy(UnaryOperator<FlushStrategy> strategyProvider);
-
-    /**
-     * Returns a {@link Publisher} that emits various {@link ConnectionEvent}s happening on this connection.
-     * <p>
-     * <b>All methods of a {@link Subscriber} to this {@link Publisher} will be invoked on the event loop.
-     * Presence of blocking operations within these methods will negatively impact responsiveness of that event
-     * loop.</b>
-     *
-     * <h2>Flow control</h2>
-     * Typically consuming {@link ConnectionEvent}s from the returned {@link Publisher} is not expected to be flow
-     * controlled (i.e. there should always be sufficient demand). However, if there is not enough demand generated
-     * {@link ConnectionEvent}s may be dropped.
-     *
-     * @return {@link Publisher} that emits various {@link ConnectionEvent}s happening on this connection.
-     */
-    Publisher<ConnectionEvent> connectionEvents();
-
-    /**
-     * Events happening on a connection.
-     */
-    enum ConnectionEvent {
-        /**
-         * A batch of read has now completed on this connection.<p>
-         * This does <b>not</b> indicate liveness of the connection or whether there will be any more reads done on
-         * this connection. If reads are done in batches, this event indicates, that such a batch has now ended.
-         * One may see zero or more occurrences of this event on any connection.
-         */
-        ReadComplete
-   }
 }

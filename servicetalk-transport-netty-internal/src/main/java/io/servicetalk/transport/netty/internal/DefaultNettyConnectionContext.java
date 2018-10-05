@@ -17,7 +17,6 @@ package io.servicetalk.transport.netty.internal;
 
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.api.Completable;
-import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ExecutionContext;
 
@@ -31,7 +30,6 @@ import java.util.function.UnaryOperator;
 import javax.annotation.Nullable;
 import javax.net.ssl.SSLSession;
 
-import static io.servicetalk.concurrent.api.Publisher.empty;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater;
 
@@ -136,13 +134,6 @@ public final class DefaultNettyConnectionContext implements NettyConnectionConte
     public Cancellable updateFlushStrategy(final UnaryOperator<FlushStrategy> strategyProvider) {
         FlushStrategy old = flushStrategyUpdater.getAndUpdate(this, strategyProvider);
         return () -> updateFlushStrategy(__ -> old);
-    }
-
-    @Override
-    public Publisher<ConnectionEvent> connectionEvents() {
-        // This context does not know of any events, connection implementations should implement this method, if
-        // required.
-        return empty();
     }
 
     /**

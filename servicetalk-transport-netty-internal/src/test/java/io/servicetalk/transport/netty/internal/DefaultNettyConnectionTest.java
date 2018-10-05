@@ -50,8 +50,6 @@ import static io.servicetalk.transport.netty.internal.CloseHandler.NOOP_CLOSE_HA
 import static io.servicetalk.transport.netty.internal.FlushStrategies.batchFlush;
 import static io.servicetalk.transport.netty.internal.FlushStrategies.defaultFlushStrategy;
 import static io.servicetalk.transport.netty.internal.FlushStrategies.flushOnEnd;
-import static io.servicetalk.transport.netty.internal.FlushStrategies.flushWith;
-import static io.servicetalk.transport.netty.internal.NettyConnectionContext.ConnectionEvent.ReadComplete;
 import static java.lang.Integer.MAX_VALUE;
 import static java.nio.charset.Charset.defaultCharset;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -295,19 +293,6 @@ public class DefaultNettyConnectionTest {
         publisher.onComplete();
         pollChannelAndVerifyWrites("Hello2");
         verifyPredictorCalled(1, hello1, hello2);
-        writeListener.verifyCompletion();
-    }
-
-    @Test
-    public void testFlushOnReadComplete() {
-        conn.updateFlushStrategy(old -> flushWith(conn.connectionEvents().filter(evt -> evt == ReadComplete)));
-        writeListener.listen(conn.write(publisher));
-        channel.pipeline().fireChannelRead("ReadingMessage");
-        publisher.sendItems(newBuffer("Hello"));
-        pollChannelAndVerifyWrites();
-        channel.pipeline().fireChannelReadComplete();
-        pollChannelAndVerifyWrites("Hello");
-        publisher.onComplete();
         writeListener.verifyCompletion();
     }
 

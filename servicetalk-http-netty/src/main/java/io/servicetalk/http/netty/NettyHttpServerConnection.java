@@ -101,11 +101,6 @@ final class NettyHttpServerConnection extends HttpServiceContext implements Nett
         return compositeFlushStrategy.updateFlushStrategy(strategyProvider);
     }
 
-    @Override
-    public Publisher<ConnectionEvent> connectionEvents() {
-        return connection.connectionEvents();
-    }
-
     static NettyHttpServerConnection newConnection(final Channel channel,
                                                    final Publisher<Object> requestObjectPublisher,
                                                    final NettyConnection.TerminalPredicate<Object> terminalPredicate,

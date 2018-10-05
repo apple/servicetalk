@@ -80,7 +80,6 @@ public class DefaultNettyConnection<Read, Write> implements NettyConnection<Read
     private final Publisher<Read> read;
     private final TerminalPredicate<Read> terminalMsgPredicate;
     private final CloseHandler closeHandler;
-    private final ConnectionEventPublisher eventPublisher;
 
     @Nullable
     private final CompletableProcessor onClosing;
@@ -146,7 +145,6 @@ public class DefaultNettyConnection<Read, Write> implements NettyConnection<Read
         } else {
             onClosing = null;
         }
-        eventPublisher = new ConnectionEventPublisher(channel.eventLoop());
         channel.pipeline().addLast(new ChannelInboundHandler() {
             @Override
             public void channelWritabilityChanged(ChannelHandlerContext ctx) {
@@ -177,7 +175,6 @@ public class DefaultNettyConnection<Read, Write> implements NettyConnection<Read
 
             @Override
             public void channelReadComplete(ChannelHandlerContext ctx) {
-                eventPublisher.publishReadComplete();
             }
 
             @Override
@@ -205,7 +202,6 @@ public class DefaultNettyConnection<Read, Write> implements NettyConnection<Read
             @Override
             public void channelInactive(ChannelHandlerContext ctx) {
                 writableListener.channelClosed(CLOSED_CHANNEL_INACTIVE);
-                eventPublisher.close();
             }
         });
     }
@@ -375,11 +371,6 @@ public class DefaultNettyConnection<Read, Write> implements NettyConnection<Read
     public Cancellable updateFlushStrategy(final UnaryOperator<FlushStrategy> strategyProvider) {
         FlushStrategy old = flushStrategyUpdater.getAndUpdate(this, strategyProvider);
         return () -> updateFlushStrategy(__ -> old);
-    }
-
-    @Override
-    public Publisher<ConnectionEvent> connectionEvents() {
-        return eventPublisher;
     }
 
     interface WritableListener {
