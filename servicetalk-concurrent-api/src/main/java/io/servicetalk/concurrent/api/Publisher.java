@@ -18,7 +18,6 @@ package io.servicetalk.concurrent.api;
 import io.servicetalk.concurrent.BlockingIterable;
 import io.servicetalk.concurrent.BlockingIterator;
 import io.servicetalk.concurrent.Cancellable;
-import io.servicetalk.concurrent.internal.CloseableIteratorAsInputStream;
 import io.servicetalk.concurrent.internal.SignalOffloader;
 
 import org.reactivestreams.Subscriber;

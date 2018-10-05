@@ -20,7 +20,7 @@ import io.servicetalk.concurrent.BlockingIterable;
 import io.servicetalk.concurrent.CloseableIterable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.concurrent.internal.CloseableIteratorBufferAsInputStream;
+import io.servicetalk.concurrent.api.internal.CloseableIteratorBufferAsInputStream;
 
 import org.reactivestreams.Subscriber;
 

@@ -19,41 +19,79 @@ import io.servicetalk.concurrent.CloseableIterator;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Iterator;
 import java.util.function.Function;
-import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.internal.AutoClosableUtils.closeAndReThrowIoException;
 import static java.lang.Math.min;
-import static java.lang.System.arraycopy;
 import static java.util.Objects.requireNonNull;
 
 /**
  * Conversion from a {@link CloseableIterator} to a {@link InputStream} given a {@link Function} to serialize to bytes.
  *
  * @param <T> Type of items emitted by the {@link CloseableIterator}.
- * @see CloseableIteratorBufferAsInputStream
  */
-public final class CloseableIteratorAsInputStream<T> extends InputStream {
-    private static final byte[] CLOSED = new byte[0];
-    private final Function<T, byte[]> serializer;
+public abstract class AbstractCloseableIteratorAsInputStream<T> extends InputStream {
     private final CloseableIterator<T> iterator;
-
-    @Nullable
-    private byte[] leftover;
-    private int leftoverReadIndex;
 
     /**
      * Create a new instance.
      * @param source The {@link CloseableIterator} providing data.
-     * @param serializer A means to serialize the data from {@code source} to bytes.
      */
-    public CloseableIteratorAsInputStream(final CloseableIterator<T> source, final Function<T, byte[]> serializer) {
-        this.serializer = requireNonNull(serializer);
-        iterator = source;
+    protected AbstractCloseableIteratorAsInputStream(final CloseableIterator<T> source) {
+        iterator = requireNonNull(source);
     }
 
+    /**
+     * Get the number of readable bytes in the left over buffer.
+     * @return the number of readable bytes in the left over buffer.
+     */
+    protected abstract int leftOverReadableBytes();
+
+    /**
+     * Read bytes from the left over buffer into {@code b}.
+     * @param dst The destination to read to.
+     * @param offset The offset to read into for {@code dst}.
+     * @param length The amount of bytes to read from the left over buffer.
+     */
+    protected abstract void leftOverReadBytes(byte[] dst, int offset, int length);
+
+    /**
+     * Determine if there are left over bytes buffered.
+     * @return {@code true} if there are left over bytes buffered.
+     */
+    protected abstract boolean hasLeftOver();
+
+    /**
+     * Check if the left over buffer needs to be reset.
+     */
+    protected abstract void leftOverCheckReset();
+
+    /**
+     * Reset the left over buffer.
+     */
+    protected abstract void leftOverReset();
+
+    /**
+     * Read the next element from the {@link Iterator}.
+     * @param iterator The {@link CloseableIterator} to get the next element from.
+     */
+    protected abstract void nextLeftOver(CloseableIterator<T> iterator);
+
+    /**
+     * Read a single byte from the left over buffer.
+     * @return a single byte from the left over buffer.
+     */
+    protected abstract byte leftOverReadSingleByte();
+
+    /**
+     * Determine if {@link #close()} has been called.
+     * @return {@code true} if {@link #close()} has been called.
+     */
+    protected abstract boolean isClosed();
+
     @Override
-    public int read(final byte[] b, int off, int len) throws IOException {
+    public final int read(final byte[] b, int off, int len) throws IOException {
         checkAlreadyClosed();
         requireNonNull(b);
         if (off < 0 || len < 0 || len > b.length - off) {
@@ -63,90 +101,71 @@ public final class CloseableIteratorAsInputStream<T> extends InputStream {
 
         final int initialLen = len;
         for (;;) {
-            if (leftover != null) {
+            if (hasLeftOver()) {
                 // We have leftOver bytes from a previous read, so try to satisfy read from leftOver.
-                final int toRead = min(len, (leftover.length - leftoverReadIndex));
-                arraycopy(leftover, leftoverReadIndex, b, off, toRead);
+                final int toRead = min(len, leftOverReadableBytes());
+                leftOverReadBytes(b, off, toRead);
                 if (toRead != len) { // drained left over.
-                    resetLeftover();
+                    leftOverReset();
                     off += toRead;
                     len -= toRead;
                 } else { // toRead == len, i.e. we filled the buffer.
-                    leftoverReadIndex += toRead;
-                    checkResetLeftover(leftover);
+                    leftOverCheckReset();
                     return initialLen - (len - toRead);
                 }
             }
             // Avoid fetching a new element if we have no more space to read to. This prevents serializing and
             // retaining an object that we may never actually need.
             if (len == 0) {
-                return initialLen - len;
+                return initialLen;
             }
             if (!iterator.hasNext()) {
                 final int bytesRead = initialLen - len;
                 return bytesRead == 0 ? -1 : bytesRead;
             }
-            leftover = serializer.apply(iterator.next());
+            nextLeftOver(iterator);
         }
     }
 
     @Override
-    public int available() {
-        return leftover == null ? 0 : leftover.length - leftoverReadIndex;
+    public final int available() {
+        return hasLeftOver() ? leftOverReadableBytes() : 0;
     }
 
     @Override
     public void close() throws IOException {
-        leftover = CLOSED;
         closeAndReThrowIoException(iterator);
     }
 
     @Override
-    public boolean markSupported() {
+    public final boolean markSupported() {
         // To reduce complexity at this layer, we do not support marks. If required, someone can wrap this in a stream
         // that supports marks like a BufferedInputStream.
         return false;
     }
 
     @Override
-    public int read() throws IOException {
+    public final int read() throws IOException {
         checkAlreadyClosed();
-        if (leftover != null) {
-            return readSingleByteFromLeftover(leftover);
+        if (hasLeftOver()) {
+            return leftOverReadSingleByte();
         }
         for (;;) {
             if (!iterator.hasNext()) {
                 return -1;
             }
-            leftover = serializer.apply(iterator.next());
-            if (leftover != null) {
-                if (leftover.length != 0) {
-                    return readSingleByteFromLeftover(leftover);
+            nextLeftOver(iterator);
+            if (hasLeftOver()) {
+                if (leftOverReadableBytes() != 0) {
+                    return leftOverReadSingleByte();
                 }
-                resetLeftover();
+                leftOverReset();
             }
         }
     }
 
-    private int readSingleByteFromLeftover(byte[] leftover) {
-        final int value = leftover[leftoverReadIndex++];
-        checkResetLeftover(leftover);
-        return value;
-    }
-
-    private void checkResetLeftover(byte[] leftover) {
-        if (leftoverReadIndex == leftover.length) {
-            resetLeftover();
-        }
-    }
-
-    private void resetLeftover() {
-        leftover = null;
-        leftoverReadIndex = 0;
-    }
-
     private void checkAlreadyClosed() throws IOException {
-        if (leftover == CLOSED) {
+        if (isClosed()) {
             throw new IOException("Stream is already closed.");
         }
     }

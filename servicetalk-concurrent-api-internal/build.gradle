@@ -37,6 +37,8 @@ dependencies {
   implementation "io.servicetalk:servicetalk-annotations:$project.version"
   implementation "io.servicetalk:servicetalk-concurrent-api:$project.version"
   implementation "io.servicetalk:servicetalk-concurrent-internal:$project.version"
+  // Buffer based Concurrent conversions
+  implementation "io.servicetalk:servicetalk-buffer-api:$project.version"
   implementation "org.slf4j:slf4j-api"
 
   testImplementation "io.servicetalk:servicetalk-concurrent-api-testFixtures:$project.version"

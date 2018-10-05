@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.concurrent.internal;
+package io.servicetalk.concurrent.api.internal;
 
 import io.servicetalk.buffer.api.Buffer;
 
@@ -23,7 +23,6 @@ import org.junit.rules.ExpectedException;
 
 import java.io.IOException;
 import java.io.InputStream;
-import javax.annotation.Nullable;
 
 import static io.servicetalk.buffer.api.ReadOnlyBufferAllocators.DEFAULT_RO_ALLOCATOR;
 import static io.servicetalk.concurrent.internal.BlockingIterables.from;
@@ -191,16 +190,7 @@ public class CloseableIteratorBufferAsInputStreamTest {
     }
 
     @Test
-    public void testEmptyIteratorValue() throws IOException {
-        testNullAndEmptyIteratorValue(new byte[0]);
-    }
-
-    @Test
-    public void testNullIteratorValue() throws IOException {
-        testNullAndEmptyIteratorValue(null);
-    }
-
-    private void testNullAndEmptyIteratorValue(@Nullable byte[] emptyConversionValue) throws IOException {
+    public void testNullAndEmptyIteratorValues() throws IOException {
         Buffer src1 = DEFAULT_RO_ALLOCATOR.fromAscii("hel");
         Buffer src2 = DEFAULT_RO_ALLOCATOR.fromAscii("");
         Buffer src3 = DEFAULT_RO_ALLOCATOR.fromAscii("lo!");
@@ -220,7 +210,7 @@ public class CloseableIteratorBufferAsInputStreamTest {
         assertThat(data, is(realStringData.getBytes(US_ASCII)));
     }
 
-    private Buffer bytesToBuffer(final byte[] data, final int length) {
+    private static Buffer bytesToBuffer(final byte[] data, final int length) {
         return DEFAULT_RO_ALLOCATOR.wrap(data, 0, length);
     }
 }
