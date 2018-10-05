@@ -26,10 +26,15 @@ import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.ClientGroupFilterFunction;
 import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
+import io.servicetalk.http.api.HttpClientBuilder;
 import io.servicetalk.http.api.HttpClientGroupFilterFactory;
 import io.servicetalk.http.api.HttpConnectionFilterFactory;
 import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.api.HttpRequestMetaData;
+import io.servicetalk.http.api.HttpScheme;
+import io.servicetalk.http.api.MultiAddressHttpClientBuilder;
+import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
+import io.servicetalk.http.api.SslConfigProvider;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpClientGroup;
 import io.servicetalk.http.api.StreamingHttpConnection;
@@ -57,7 +62,7 @@ import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseabl
 import static io.servicetalk.concurrent.api.AsyncCloseables.toListenableAsyncCloseable;
 import static io.servicetalk.http.api.HttpClientGroups.newHttpClientGroup;
 import static io.servicetalk.http.api.HttpHeaderNames.HOST;
-import static io.servicetalk.http.netty.SslConfigProviders.plainByDefault;
+import static io.servicetalk.http.api.SslConfigProviders.plainByDefault;
 import static io.servicetalk.transport.api.SslConfigBuilder.forClient;
 import static io.servicetalk.transport.netty.internal.GlobalExecutionContext.globalExecutionContext;
 import static java.util.Objects.requireNonNull;
@@ -153,7 +158,7 @@ final class DefaultMultiAddressUrlHttpClientBuilder
             }
             final int effectivePort = request.effectivePort();
             final int port = effectivePort >= 0 ? effectivePort :
-                    sslConfigProvider.defaultPort(HttpScheme.from(request.scheme()), host);
+                    sslConfigProvider.defaultPort(HttpScheme.forValue(request.scheme()), host);
             final String authority = host + ':' + port;
 
             final GroupKey<HostAndPort> groupKey = groupKeyCache.get(authority);
@@ -178,7 +183,7 @@ final class DefaultMultiAddressUrlHttpClientBuilder
     }
 
     /**
-     * Creates a new {@link BaseHttpClientBuilder} with appropriate {@link SslConfig} for specified
+     * Creates a new {@link HttpClientBuilder} with appropriate {@link SslConfig} for specified
      * {@link HostAndPort}.
      */
     private static final class ClientBuilderFactory implements BiFunction<GroupKey<HostAndPort>, HttpRequestMetaData,
@@ -210,7 +215,7 @@ final class DefaultMultiAddressUrlHttpClientBuilder
         @Override
         public SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> apply(
                 final GroupKey<HostAndPort> groupKey, final HttpRequestMetaData requestMetaData) {
-            final HttpScheme scheme = HttpScheme.from(requestMetaData.scheme());
+            final HttpScheme scheme = HttpScheme.forValue(requestMetaData.scheme());
             final HostAndPort hostAndPort = groupKey.address();
             SslConfig sslConfig;
             switch (scheme) {
@@ -368,8 +373,8 @@ final class DefaultMultiAddressUrlHttpClientBuilder
 
     @Override
     public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> appendConnectionFilter(
-            final HttpConnectionFilterFactory function) {
-        builderTemplate.appendConnectionFilter(function);
+            final HttpConnectionFilterFactory factory) {
+        builderTemplate.appendConnectionFilter(factory);
         return this;
     }
 

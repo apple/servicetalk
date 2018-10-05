@@ -13,17 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.http.netty;
+package io.servicetalk.http.api;
 
 import io.servicetalk.client.api.LoadBalancer;
-import io.servicetalk.http.api.HttpClientFilterFactory;
-import io.servicetalk.http.api.HttpHeaderNames;
-import io.servicetalk.http.api.StreamingHttpClient;
-import io.servicetalk.http.api.StreamingHttpRequest;
+import io.servicetalk.client.api.LoadBalancerFactory;
+import io.servicetalk.client.api.ServiceDiscoverer;
+import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.SslConfig;
 
 import java.io.InputStream;
+import java.net.SocketOption;
 import java.util.function.BiFunction;
 import javax.annotation.Nullable;
 
@@ -35,8 +35,53 @@ import javax.annotation.Nullable;
  * @param <U> the type of address before resolution (unresolved address)
  * @param <R> the type of address after resolution (resolved address)
  */
-public interface SingleAddressHttpClientBuilder<U, R>
-        extends BaseHttpClientBuilder<U, R, SingleAddressHttpClientBuilder<U, R>> {
+public interface SingleAddressHttpClientBuilder<U, R> extends HttpClientBuilder<U, R> {
+
+    @Override
+    SingleAddressHttpClientBuilder<U, R> executionContext(ExecutionContext context);
+
+    @Override
+    <T> SingleAddressHttpClientBuilder<U, R> socketOption(SocketOption<T> option, T value);
+
+    @Override
+    SingleAddressHttpClientBuilder<U, R> enableWireLogging(String loggerName);
+
+    @Override
+    SingleAddressHttpClientBuilder<U, R> disableWireLogging();
+
+    @Override
+    SingleAddressHttpClientBuilder<U, R> headersFactory(HttpHeadersFactory headersFactory);
+
+    @Override
+    SingleAddressHttpClientBuilder<U, R> maxInitialLineLength(int maxInitialLineLength);
+
+    @Override
+    SingleAddressHttpClientBuilder<U, R> maxHeaderSize(int maxHeaderSize);
+
+    @Override
+    SingleAddressHttpClientBuilder<U, R> headersEncodedSizeEstimate(int headersEncodedSizeEstimate);
+
+    @Override
+    SingleAddressHttpClientBuilder<U, R> trailersEncodedSizeEstimate(int trailersEncodedSizeEstimate);
+
+    @Override
+    SingleAddressHttpClientBuilder<U, R> maxPipelinedRequests(int maxPipelinedRequests);
+
+    @Override
+    SingleAddressHttpClientBuilder<U, R> appendConnectionFilter(HttpConnectionFilterFactory factory);
+
+    @Override
+    SingleAddressHttpClientBuilder<U, R> disableHostHeaderFallback();
+
+    @Override
+    SingleAddressHttpClientBuilder<U, R> disableWaitForLoadBalancer();
+
+    @Override
+    SingleAddressHttpClientBuilder<U, R> serviceDiscoverer(ServiceDiscoverer<U, R> serviceDiscoverer);
+
+    @Override
+    SingleAddressHttpClientBuilder<U, R> loadBalancerFactory(
+            LoadBalancerFactory<R, StreamingHttpConnection> loadBalancerFactory);
 
     /**
      * Automatically set the provided {@link HttpHeaderNames#HOST} on {@link StreamingHttpRequest}s when it's missing.

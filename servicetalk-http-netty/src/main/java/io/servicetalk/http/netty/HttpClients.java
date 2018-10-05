@@ -15,15 +15,23 @@
  */
 package io.servicetalk.http.netty;
 
+import io.servicetalk.client.api.DefaultServiceDiscovererEvent;
 import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.api.ServiceDiscoverer;
+import io.servicetalk.concurrent.api.Completable;
+import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
+import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.http.api.HttpClient;
 import io.servicetalk.http.api.HttpHeaderNames;
+import io.servicetalk.http.api.MultiAddressHttpClientBuilder;
+import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.transport.api.HostAndPort;
 
 import java.net.InetSocketAddress;
 
+import static io.servicetalk.concurrent.api.AsyncCloseables.emptyAsyncCloseable;
+import static io.servicetalk.concurrent.api.Publisher.just;
 import static io.servicetalk.http.netty.DefaultSingleAddressHttpClientBuilder.forUnknownHostAndPort;
 
 /**
@@ -56,7 +64,7 @@ public final class HttpClients {
      * @param host host to connect to, resolved by default using a DNS {@link ServiceDiscoverer}. This will also be
      * used for the {@link HttpHeaderNames#HOST} together with the {@code port}. Use this method {@link
      * SingleAddressHttpClientBuilder#enableHostHeaderFallback(CharSequence)} if you want to override that value or
-     * {@link BaseHttpClientBuilder#disableHostHeaderFallback()} if you want to disable this behavior.
+     * {@link SingleAddressHttpClientBuilder#disableHostHeaderFallback()} if you want to disable this behavior.
      * @param port port to connect to
      * @return new builder for the address
      */
@@ -72,7 +80,7 @@ public final class HttpClients {
      * @param address the {@code UnresolvedAddress} to connect to, resolved by default using a DNS {@link
      * ServiceDiscoverer}. This address will also be used for the {@link HttpHeaderNames#HOST}. Use this method {@link
      * SingleAddressHttpClientBuilder#enableHostHeaderFallback(CharSequence)} if you want to override that value or
-     * {@link BaseHttpClientBuilder#disableHostHeaderFallback()} if you want to disable this behavior.
+     * {@link SingleAddressHttpClientBuilder#disableHostHeaderFallback()} if you want to disable this behavior.
      * @return new builder for the address
      */
     public static SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> forSingleAddress(
@@ -89,7 +97,7 @@ public final class HttpClients {
      * @param address the {@code UnresolvedAddress} to connect to resolved using the provided {@code serviceDiscoverer}.
      * This address will also be used for the {@link HttpHeaderNames#HOST} using a best effort conversion. Use {@link
      * SingleAddressHttpClientBuilder#enableHostHeaderFallback(CharSequence)} if you want to override that value or
-     * {@link BaseHttpClientBuilder#disableHostHeaderFallback()} if you want to disable this behavior.
+     * {@link SingleAddressHttpClientBuilder#disableHostHeaderFallback()} if you want to disable this behavior.
      * @param <U> the type of address before resolution (unresolved address)
      * @param <R> the type of address after resolution (resolved address)
      * @return new builder with provided configuration
@@ -98,5 +106,62 @@ public final class HttpClients {
             final ServiceDiscoverer<U, R> serviceDiscoverer,
             final U address) {
         return new DefaultSingleAddressHttpClientBuilder<>(serviceDiscoverer, address);
+    }
+
+    /**
+     * Creates a {@link SingleAddressHttpClientBuilder} for a resolved address with default {@link LoadBalancer}.
+     *
+     * @param resolvedAddress the {@code ResolvedAddress} to connect to. This will also be used for the
+     * {@link HttpHeaderNames#HOST} together with the {@link InetSocketAddress#getPort()}. Use
+     * {@link SingleAddressHttpClientBuilder#enableHostHeaderFallback(CharSequence)} if you want to override that value
+     * or {@link SingleAddressHttpClientBuilder#disableHostHeaderFallback()} if you want to disable this behavior.
+     * @return new builder for the address
+     * @throws IllegalArgumentException If the passed {@code resolvedAddress} is not resolved.
+     */
+    public static SingleAddressHttpClientBuilder<InetSocketAddress, InetSocketAddress> forResolvedAddress(
+            final InetSocketAddress resolvedAddress) {
+        if (resolvedAddress.isUnresolved()) {
+            throw new IllegalArgumentException("Address is not resolved.");
+        }
+        return forResolvedAddress0(resolvedAddress);
+    }
+
+    /**
+     * Creates a {@link SingleAddressHttpClientBuilder} for a custom address type with default {@link LoadBalancer} and
+     * user provided {@link ServiceDiscoverer}.
+     *
+     * @param resolvedAddress the {@code ResolvedAddress} to connect to. This will also be used for the
+     * {@link HttpHeaderNames#HOST} together with the {@link InetSocketAddress#getPort()}. Use
+     * {@link SingleAddressHttpClientBuilder#enableHostHeaderFallback(CharSequence)} if you want to override that value
+     * or {@link SingleAddressHttpClientBuilder#disableHostHeaderFallback()} if you want to disable this behavior.
+     * @param <R> the type of address after resolution (resolved address)
+     * @return new builder with provided configuration
+     */
+    public static <R> SingleAddressHttpClientBuilder<R, R> forResolvedAddress(final R resolvedAddress) {
+        return forResolvedAddress0(resolvedAddress);
+    }
+
+    private static <R> SingleAddressHttpClientBuilder<R, R> forResolvedAddress0(final R resolvedAddress) {
+        return new DefaultSingleAddressHttpClientBuilder<>(new IdentityServiceDiscoverer<>(), resolvedAddress);
+    }
+
+    private static final class IdentityServiceDiscoverer<R> implements ServiceDiscoverer<R, R> {
+
+        private final ListenableAsyncCloseable closeable = emptyAsyncCloseable();
+
+        @Override
+        public Publisher<Event<R>> discover(final R r) {
+            return just(r).map(r1 -> new DefaultServiceDiscovererEvent<>(r, true));
+        }
+
+        @Override
+        public Completable onClose() {
+            return closeable.onClose();
+        }
+
+        @Override
+        public Completable closeAsync() {
+            return closeable.closeAsync();
+        }
     }
 }
