@@ -21,7 +21,6 @@ import io.servicetalk.http.api.HttpClient;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.HttpSerializationProvider;
 import io.servicetalk.http.netty.HttpServers;
-import io.servicetalk.opentracing.core.AsyncContextInMemoryScopeManager;
 import io.servicetalk.opentracing.core.internal.DefaultInMemoryTracer;
 import io.servicetalk.opentracing.core.internal.InMemoryScope;
 import io.servicetalk.transport.api.ServerContext;
@@ -33,11 +32,11 @@ import org.junit.rules.Timeout;
 import java.net.InetSocketAddress;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.concurrent.api.AsyncContextMap.Key.newKeyWithDebugToString;
 import static io.servicetalk.concurrent.api.Publisher.just;
 import static io.servicetalk.concurrent.api.Single.success;
 import static io.servicetalk.http.api.HttpSerializationProviders.jsonSerializer;
 import static io.servicetalk.http.netty.HttpClients.forSingleAddress;
+import static io.servicetalk.opentracing.core.AsyncContextInMemoryScopeManager.SCOPE_MANAGER;
 import static io.servicetalk.opentracing.core.internal.ZipkinHeaderNames.PARENT_SPAN_ID;
 import static io.servicetalk.opentracing.core.internal.ZipkinHeaderNames.SAMPLED;
 import static io.servicetalk.opentracing.core.internal.ZipkinHeaderNames.SPAN_ID;
@@ -57,8 +56,7 @@ public class OpenTracingStreamingHttpConnectionFilterTest {
 
     @Test
     public void testInjectWithNoParent() throws Exception {
-        DefaultInMemoryTracer tracer = new DefaultInMemoryTracer.Builder(
-                new AsyncContextInMemoryScopeManager(newKeyWithDebugToString("tracer"))).build();
+        DefaultInMemoryTracer tracer = new DefaultInMemoryTracer.Builder(SCOPE_MANAGER).build();
         try (ServerContext context = buildServer()) {
             try (HttpClient client = forSingleAddress(of((InetSocketAddress) context.listenAddress()))
                     .appendConnectionFilter(conn -> new OpenTracingStreamingHttpConnectionFilter(
@@ -79,8 +77,7 @@ public class OpenTracingStreamingHttpConnectionFilterTest {
 
     @Test
     public void testInjectWithParent() throws Exception {
-        DefaultInMemoryTracer tracer = new DefaultInMemoryTracer.Builder(
-                new AsyncContextInMemoryScopeManager(newKeyWithDebugToString("tracer"))).build();
+        DefaultInMemoryTracer tracer = new DefaultInMemoryTracer.Builder(SCOPE_MANAGER).build();
         try (ServerContext context = buildServer()) {
             try (HttpClient client = forSingleAddress(of((InetSocketAddress) context.listenAddress()))
                     .appendConnectionFilter(conn -> new OpenTracingStreamingHttpConnectionFilter(
