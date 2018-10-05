@@ -25,7 +25,7 @@ import io.netty.channel.Channel;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import javax.annotation.Nullable;
 
-final class WriteSingleSubscriber implements Single.Subscriber<Object>, NettyConnection.WritableListener {
+final class WriteSingleSubscriber implements Single.Subscriber<Object>, DefaultNettyConnection.WritableListener {
     private static final AtomicIntegerFieldUpdater<WriteSingleSubscriber> terminatedUpdater =
             AtomicIntegerFieldUpdater.newUpdater(WriteSingleSubscriber.class, "terminated");
     private final Channel channel;

@@ -29,7 +29,7 @@ import io.servicetalk.tcp.netty.internal.TcpClientConfig;
 import io.servicetalk.tcp.netty.internal.TcpConnector;
 import io.servicetalk.transport.api.DefaultExecutionContext;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
-import io.servicetalk.transport.netty.internal.Connection;
+import io.servicetalk.transport.netty.internal.NettyConnection;
 import io.servicetalk.transport.netty.internal.NettyIoExecutor;
 
 import io.netty.buffer.ByteBuf;
@@ -196,7 +196,7 @@ public class PingerTest {
         Thread.sleep(PING_PERIOD.toMillis() * durationCount);
     }
 
-    private static Single<Connection<RedisData, ByteBuf>> connect(Queue<Object> commandsWritten) {
+    private static Single<NettyConnection<RedisData, ByteBuf>> connect(Queue<Object> commandsWritten) {
         assert config != null;
         assert nettyIoExecutor != null;
         assert serverAddress != null;

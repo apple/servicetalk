@@ -21,7 +21,7 @@ import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.SequentialCancellable;
 import io.servicetalk.transport.api.ExecutionContext;
-import io.servicetalk.transport.netty.internal.Connection.RequestNSupplier;
+import io.servicetalk.transport.netty.internal.NettyConnection.RequestNSupplier;
 
 import org.reactivestreams.Subscriber;
 import org.slf4j.Logger;
@@ -39,7 +39,7 @@ import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 
 /**
- * Implementation of {@link NettyPipelinedConnection} using a {@link Connection}.
+ * Implementation of {@link NettyPipelinedConnection} using a {@link NettyConnection}.
  *
  * @param <Req> Type of requests sent on this connection.
  * @param <Resp> Type of responses read from this connection.
@@ -48,26 +48,26 @@ public final class DefaultNettyPipelinedConnection<Req, Resp> implements NettyPi
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DefaultNettyPipelinedConnection.class);
 
-    private final Connection<Resp, Req> connection;
-    private final Connection.TerminalPredicate<Resp> terminalMsgPredicate;
+    private final NettyConnection<Resp, Req> connection;
+    private final NettyConnection.TerminalPredicate<Resp> terminalMsgPredicate;
     private final WriteQueue<Resp> writeQueue;
 
     /**
      * New instance.
      *
-     * @param connection {@link Connection} requests to which are to be pipelined.
+     * @param connection {@link NettyConnection} requests to which are to be pipelined.
      */
-    public DefaultNettyPipelinedConnection(Connection<Resp, Req> connection) {
+    public DefaultNettyPipelinedConnection(NettyConnection<Resp, Req> connection) {
         this(connection, 2);
     }
 
     /**
      * New instance.
      *
-     * @param connection {@link Connection} requests to which are to be pipelined.
+     * @param connection {@link NettyConnection} requests to which are to be pipelined.
      * @param initialQueueSize Initial size for the write and read queues.
      */
-    public DefaultNettyPipelinedConnection(Connection<Resp, Req> connection, int initialQueueSize) {
+    public DefaultNettyPipelinedConnection(NettyConnection<Resp, Req> connection, int initialQueueSize) {
         this.connection = requireNonNull(connection);
         this.terminalMsgPredicate = connection.getTerminalMsgPredicate();
         writeQueue = new WriteQueue<>(terminalMsgPredicate, initialQueueSize);
@@ -217,7 +217,7 @@ public final class DefaultNettyPipelinedConnection<Req, Resp> implements NettyPi
 
         private final ResponseQueue<Resp> responseQueue;
 
-        WriteQueue(Connection.TerminalPredicate<Resp> terminalMsgPredicate, int initialQueueSize) {
+        WriteQueue(NettyConnection.TerminalPredicate<Resp> terminalMsgPredicate, int initialQueueSize) {
             // Queues are unbounded since max capacity has to be enforced across these two queues
             // i.e. requests queued for write + responses not completed must not exceed maxPendingRequests.
             super(initialQueueSize, UNBOUNDED);
@@ -232,9 +232,9 @@ public final class DefaultNettyPipelinedConnection<Req, Resp> implements NettyPi
 
     private static final class ResponseQueue<Resp> extends SequentialTaskQueue<Task<Resp>> {
 
-        private final Connection.TerminalPredicate<Resp> terminalMsgPredicate;
+        private final NettyConnection.TerminalPredicate<Resp> terminalMsgPredicate;
 
-        ResponseQueue(Connection.TerminalPredicate<Resp> terminalMsgPredicate, int initialQueueSize) {
+        ResponseQueue(NettyConnection.TerminalPredicate<Resp> terminalMsgPredicate, int initialQueueSize) {
             // Queues are unbounded since max capacity has to be enforced across these two queues
             // i.e. requests queued for write + responses not completed must not exceed maxPendingRequests.
             super(initialQueueSize, UNBOUNDED);

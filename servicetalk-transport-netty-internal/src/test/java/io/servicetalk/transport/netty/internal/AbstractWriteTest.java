@@ -37,14 +37,14 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 public abstract class AbstractWriteTest {
 
     protected EmbeddedChannel channel;
-    protected Connection.RequestNSupplier requestNSupplier;
+    protected NettyConnection.RequestNSupplier requestNSupplier;
     protected Completable.Subscriber completableSubscriber;
 
     @Before
     public void setUp() throws Exception {
         completableSubscriber = mock(Completable.Subscriber.class);
         channel = new EmbeddedChannel(new LoggingHandler());
-        requestNSupplier = mock(Connection.RequestNSupplier.class);
+        requestNSupplier = mock(NettyConnection.RequestNSupplier.class);
     }
 
     @After

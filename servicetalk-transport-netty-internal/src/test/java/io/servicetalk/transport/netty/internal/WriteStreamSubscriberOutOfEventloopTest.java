@@ -41,7 +41,7 @@ public class WriteStreamSubscriberOutOfEventloopTest extends AbstractOutOfEventl
     @Override
     public void setup0() {
         Completable.Subscriber completableSubscriber = mock(Completable.Subscriber.class);
-        Connection.RequestNSupplier requestNSupplier = mock(Connection.RequestNSupplier.class);
+        NettyConnection.RequestNSupplier requestNSupplier = mock(NettyConnection.RequestNSupplier.class);
         subscriber = new WriteStreamSubscriber(channel, requestNSupplier, completableSubscriber, NOOP_CLOSE_HANDLER);
     }
 
@@ -97,7 +97,7 @@ public class WriteStreamSubscriberOutOfEventloopTest extends AbstractOutOfEventl
                 }
             }
         };
-        Connection.RequestNSupplier requestNSupplier = mock(Connection.RequestNSupplier.class);
+        NettyConnection.RequestNSupplier requestNSupplier = mock(NettyConnection.RequestNSupplier.class);
         this.subscriber = new WriteStreamSubscriber(channel, requestNSupplier, subscriber, NOOP_CLOSE_HANDLER);
 
         this.subscriber.onNext(1);

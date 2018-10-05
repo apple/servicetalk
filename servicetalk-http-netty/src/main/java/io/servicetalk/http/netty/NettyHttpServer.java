@@ -32,10 +32,10 @@ import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.netty.internal.AbstractContextFilterAwareChannelReadHandler;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
 import io.servicetalk.transport.netty.internal.CloseHandler;
-import io.servicetalk.transport.netty.internal.Connection;
-import io.servicetalk.transport.netty.internal.Connection.TerminalPredicate;
 import io.servicetalk.transport.netty.internal.ConnectionHolderChannelHandler;
 import io.servicetalk.transport.netty.internal.FlushStrategy;
+import io.servicetalk.transport.netty.internal.NettyConnection;
+import io.servicetalk.transport.netty.internal.NettyConnection.TerminalPredicate;
 
 import io.netty.channel.ChannelHandlerContext;
 import org.slf4j.Logger;
@@ -161,7 +161,7 @@ final class NettyHttpServer {
         }
 
         @Override
-        public Connection<Object, Object> getConnection() {
+        public NettyConnection<Object, Object> getConnection() {
             return connection == null ? null : connection.getConnection();
         }
     }

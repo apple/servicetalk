@@ -21,7 +21,7 @@ import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.internal.ConcurrentSubscription;
 import io.servicetalk.concurrent.internal.EmptySubscription;
 import io.servicetalk.concurrent.internal.FlowControlUtil;
-import io.servicetalk.transport.netty.internal.Connection.RequestNSupplier;
+import io.servicetalk.transport.netty.internal.NettyConnection.RequestNSupplier;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelPromise;
@@ -36,7 +36,7 @@ import javax.annotation.Nullable;
 import static java.util.Objects.requireNonNull;
 
 /**
- * A {@link org.reactivestreams.Subscriber} for any {@link Publisher} written via {@link NettyConnection}.
+ * A {@link org.reactivestreams.Subscriber} for any {@link Publisher} written via {@link DefaultNettyConnection}.
  *
  * <h2>Flow control</h2>
  *
@@ -55,7 +55,7 @@ import static java.util.Objects.requireNonNull;
  *
  * If the capacity determined above is positive then invoke {@link RequestNSupplier} to determine number of items required to fill that capacity.
  */
-final class WriteStreamSubscriber implements org.reactivestreams.Subscriber<Object>, NettyConnection.WritableListener, Cancellable {
+final class WriteStreamSubscriber implements org.reactivestreams.Subscriber<Object>, DefaultNettyConnection.WritableListener, Cancellable {
     private static final Subscription CANCELLED = new EmptySubscription();
     private static final AtomicLongFieldUpdater<WriteStreamSubscriber> requestedUpdater =
             AtomicLongFieldUpdater.newUpdater(WriteStreamSubscriber.class, "requested");

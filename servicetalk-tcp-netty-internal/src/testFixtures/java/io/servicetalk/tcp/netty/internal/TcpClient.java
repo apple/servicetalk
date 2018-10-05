@@ -21,7 +21,7 @@ import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.FileDescriptorSocketAddress;
 import io.servicetalk.transport.netty.internal.BufferHandler;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
-import io.servicetalk.transport.netty.internal.Connection;
+import io.servicetalk.transport.netty.internal.NettyConnection;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
@@ -84,11 +84,11 @@ public final class TcpClient {
      *
      * @param executionContext {@link ExecutionContext} to use for the connections.
      * @param port to connect.
-     * @return New {@link Connection}.
+     * @return New {@link NettyConnection}.
      * @throws ExecutionException If connect failed.
      * @throws InterruptedException If interrupted while waiting for connect to complete.
      */
-    public Connection<Buffer, Buffer> connectBlocking(ExecutionContext executionContext, int port)
+    public NettyConnection<Buffer, Buffer> connectBlocking(ExecutionContext executionContext, int port)
             throws ExecutionException, InterruptedException {
         return connectBlocking(executionContext, new InetSocketAddress(port));
     }
@@ -98,11 +98,11 @@ public final class TcpClient {
      *
      * @param executionContext {@link ExecutionContext} to use for the connections.
      * @param address to connect.
-     * @return New {@link Connection}.
+     * @return New {@link NettyConnection}.
      * @throws ExecutionException If connect failed.
      * @throws InterruptedException If interrupted while waiting for connect to complete.
      */
-    public Connection<Buffer, Buffer> connectBlocking(ExecutionContext executionContext, SocketAddress address)
+    public NettyConnection<Buffer, Buffer> connectBlocking(ExecutionContext executionContext, SocketAddress address)
             throws ExecutionException, InterruptedException {
         TcpConnector<Buffer, Buffer> connector = createConnector(executionContext.bufferAllocator());
         return awaitIndefinitelyNonNull(connector.connect(executionContext, address));
@@ -113,11 +113,11 @@ public final class TcpClient {
      *
      * @param executionContext {@link ExecutionContext} to use for the connections.
      * @param address to connect.
-     * @return New {@link Connection}.
+     * @return New {@link NettyConnection}.
      * @throws ExecutionException If connect failed.
      * @throws InterruptedException If interrupted while waiting for connect to complete.
      */
-    public Connection<Buffer, Buffer> connectWithFdBlocking(ExecutionContext executionContext, SocketAddress address)
+    public NettyConnection<Buffer, Buffer> connectWithFdBlocking(ExecutionContext executionContext, SocketAddress address)
             throws ExecutionException, InterruptedException {
         assumeTrue(executionContext.ioExecutor().isFileDescriptorSocketAddressSupported());
         assumeTrue(Epoll.isAvailable() || KQueue.isAvailable());
@@ -148,7 +148,7 @@ public final class TcpClient {
         // Unregister it from the netty EventLoop as we want to to handle it via ST.
         channel.deregister().syncUninterruptibly();
         FileDescriptorSocketAddress fd = new FileDescriptorSocketAddress(channel.fd().intValue());
-        Connection<Buffer, Buffer> connection = connectBlocking(executionContext, fd);
+        NettyConnection<Buffer, Buffer> connection = connectBlocking(executionContext, fd);
         assertThat("Data read on the FileDescriptor from netty pipeline.",
                 dataReadDirectlyFromNetty.get(), is(false));
         return connection;

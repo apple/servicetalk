@@ -15,7 +15,7 @@
  */
 package io.servicetalk.transport.netty.internal;
 
-import io.servicetalk.transport.netty.internal.Connection.RequestNSupplier;
+import io.servicetalk.transport.netty.internal.NettyConnection.RequestNSupplier;
 
 import io.netty.channel.FileRegion;
 

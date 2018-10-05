@@ -68,7 +68,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
-public class NettyConnectionTest {
+public class DefaultNettyConnectionTest {
 
     private TestPublisher<Buffer> publisher;
     @Rule
@@ -83,10 +83,10 @@ public class NettyConnectionTest {
     private BufferAllocator allocator;
     private EmbeddedChannel channel;
     private ConnectionContext context;
-    private Connection.RequestNSupplier requestNSupplier;
+    private NettyConnection.RequestNSupplier requestNSupplier;
     private int requestNext = MAX_VALUE;
-    private NettyConnection<Buffer, Buffer> conn;
-    private Connection.TerminalPredicate<Buffer> terminalPredicate;
+    private DefaultNettyConnection<Buffer, Buffer> conn;
+    private NettyConnection.TerminalPredicate<Buffer> terminalPredicate;
     private TestPublisher<Buffer> readPublisher;
 
     @Before
@@ -103,11 +103,11 @@ public class NettyConnectionTest {
         when(context.onClose()).thenReturn(new NettyFutureCompletable(channel::closeFuture));
         when(context.closeAsync()).thenReturn(new NettyFutureCompletable(channel::close));
         when(context.executionContext()).thenReturn(executionContext);
-        requestNSupplier = mock(Connection.RequestNSupplier.class);
+        requestNSupplier = mock(NettyConnection.RequestNSupplier.class);
         when(requestNSupplier.getRequestNFor(anyLong())).then(invocation1 -> (long) requestNext);
-        terminalPredicate = new Connection.TerminalPredicate<>(o -> false);
+        terminalPredicate = new NettyConnection.TerminalPredicate<>(o -> false);
         readPublisher = new TestPublisher<Buffer>().sendOnSubscribe();
-        conn = new NettyConnection<>(channel, context, readPublisher, terminalPredicate, closeHandler,
+        conn = new DefaultNettyConnection<>(channel, context, readPublisher, terminalPredicate, closeHandler,
                 defaultFlushStrategy());
         publisher = new TestPublisher<Buffer>().sendOnSubscribe();
     }
@@ -479,6 +479,6 @@ public class NettyConnectionTest {
         // Exception should NOT be of type CloseEventObservedException
         assertThat(exCaptor.getValue(), instanceOf(ClosedChannelException.class));
         assertThat(exCaptor.getValue().getCause(), nullValue());
-        assertThat(exCaptor.getValue().getStackTrace()[0].getClassName(), equalTo(NettyConnection.class.getName()));
+        assertThat(exCaptor.getValue().getStackTrace()[0].getClassName(), equalTo(DefaultNettyConnection.class.getName()));
     }
 }

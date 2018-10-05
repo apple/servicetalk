@@ -144,8 +144,8 @@ public class FlushStrategyOverrideTest {
                 MockFlushStrategy strategy = new MockFlushStrategy();
                 Cancellable c = nctx.updateFlushStrategy(old -> strategy);
                 return success(responseFactory.ok().payloadBody(request.payloadBody().doAfterFinally(() -> {
-                    flushStrategies.add(strategy);
                     c.cancel();
+                    flushStrategies.add(strategy);
                 })));
             } else {
                 return success(responseFactory.ok().payloadBody(request.payloadBody()

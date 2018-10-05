@@ -22,14 +22,14 @@ import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.transport.api.ExecutionContext;
-import io.servicetalk.transport.netty.internal.Connection;
 import io.servicetalk.transport.netty.internal.DefaultNettyPipelinedConnection;
+import io.servicetalk.transport.netty.internal.NettyConnection;
 
 import static io.servicetalk.http.api.HttpProtocolVersions.HTTP_1_1;
 
 final class PipelinedStreamingHttpConnection extends AbstractStreamingHttpConnection<DefaultNettyPipelinedConnection<Object, Object>> {
 
-    PipelinedStreamingHttpConnection(final Connection<Object, Object> connection,
+    PipelinedStreamingHttpConnection(final NettyConnection<Object, Object> connection,
                                      final ReadOnlyHttpClientConfig config,
                                      final ExecutionContext executionContext,
                                      final StreamingHttpRequestResponseFactory reqRespFactor) {

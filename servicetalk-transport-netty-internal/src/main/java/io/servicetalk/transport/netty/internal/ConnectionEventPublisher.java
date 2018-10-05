@@ -39,7 +39,7 @@ import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater
 
 /**
  * A {@link Publisher} of {@link ConnectionEvent}s for a {@link Channel} as returned from
- * {@link Connection#connectionEvents()}.
+ * {@link NettyConnection#connectionEvents()}.
  */
 final class ConnectionEventPublisher extends Publisher<ConnectionEvent> implements AutoCloseable {
 
@@ -173,6 +173,7 @@ final class ConnectionEventPublisher extends Publisher<ConnectionEvent> implemen
         @Override
         public void request(final long n) {
             if (!isRequestNValid(n)) {
+                state = TERMINATED;
                 subscriber.onError(newExceptionForInvalidRequestN(n));
                 return;
             }

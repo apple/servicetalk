@@ -36,7 +36,7 @@ import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.netty.internal.CloseHandler;
-import io.servicetalk.transport.netty.internal.Connection;
+import io.servicetalk.transport.netty.internal.DefaultNettyConnection;
 import io.servicetalk.transport.netty.internal.FlushStrategy;
 import io.servicetalk.transport.netty.internal.NettyConnection;
 import io.servicetalk.transport.netty.internal.NettyConnectionContext;
@@ -50,7 +50,6 @@ import org.slf4j.LoggerFactory;
 
 import java.net.SocketAddress;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
-import java.util.function.BiFunction;
 import java.util.function.UnaryOperator;
 import javax.annotation.Nullable;
 import javax.net.ssl.SSLSession;
@@ -68,12 +67,11 @@ final class NettyHttpServerConnection extends HttpServiceContext implements Nett
 
     private static final Logger LOGGER = LoggerFactory.getLogger(NettyHttpServerConnection.class);
     private final StreamingHttpService service;
-    private final NettyConnection<Object, Object> connection;
-    private BiFunction<HttpRequestMetaData, Publisher<Object>, StreamingHttpRequest> packer;
+    private final DefaultNettyConnection<Object, Object> connection;
     private final CompositeFlushStrategy compositeFlushStrategy;
 
-    NettyHttpServerConnection(final NettyConnection<Object, Object> connection, final StreamingHttpService service,
-                              final CompositeFlushStrategy compositeFlushStrategy,
+    NettyHttpServerConnection(final DefaultNettyConnection<Object, Object> connection,
+                              final StreamingHttpService service, final CompositeFlushStrategy compositeFlushStrategy,
                               final HttpHeadersFactory headersFactory, final BufferAllocator allocator) {
         super(new DefaultHttpResponseFactory(headersFactory, allocator),
                 new DefaultStreamingHttpResponseFactory(headersFactory, allocator),
@@ -81,20 +79,20 @@ final class NettyHttpServerConnection extends HttpServiceContext implements Nett
         this.connection = connection;
         this.service = service;
         this.compositeFlushStrategy = compositeFlushStrategy;
-        packer = (HttpRequestMetaData hdr, Publisher<Object> pandt) ->
-                spliceRequest(NettyHttpServerConnection.this.connection.executionContext().bufferAllocator(), hdr,
-                        pandt);
     }
 
     Completable process() {
         final Publisher<Object> connRequestObjectPublisher = connection.read();
 
         final Single<StreamingHttpRequest> requestSingle =
-                new SpliceFlatStreamToMetaSingle<>(connRequestObjectPublisher, packer);
+                new SpliceFlatStreamToMetaSingle<>(connRequestObjectPublisher,
+                        (HttpRequestMetaData hdr, Publisher<Object> pandt) ->
+                        spliceRequest(NettyHttpServerConnection.this.connection.executionContext().bufferAllocator(),
+                                hdr, pandt));
         return handleRequestAndWriteResponse(requestSingle);
     }
 
-    NettyConnection<Object, Object> getConnection() {
+    DefaultNettyConnection<Object, Object> getConnection() {
         return connection;
     }
 
@@ -110,14 +108,14 @@ final class NettyHttpServerConnection extends HttpServiceContext implements Nett
 
     static NettyHttpServerConnection newConnection(final Channel channel,
                                                    final Publisher<Object> requestObjectPublisher,
-                                                   final Connection.TerminalPredicate<Object> terminalPredicate,
+                                                   final NettyConnection.TerminalPredicate<Object> terminalPredicate,
                                                    final CloseHandler closeHandler, final ConnectionContext context,
                                                    final StreamingHttpService service,
                                                    final FlushStrategy flushStrategy,
                                                    final HttpHeadersFactory headersFactory) {
         CompositeFlushStrategy cfs = new CompositeFlushStrategy(flushStrategy);
-        NettyConnection<Object, Object> conn = new NettyConnection<>(channel, context, requestObjectPublisher,
-                terminalPredicate, closeHandler, cfs);
+        DefaultNettyConnection<Object, Object> conn = new DefaultNettyConnection<>(channel, context,
+                requestObjectPublisher, terminalPredicate, closeHandler, cfs);
         return new NettyHttpServerConnection(conn, service, cfs, headersFactory,
                 context.executionContext().bufferAllocator());
     }
@@ -328,9 +326,24 @@ final class NettyHttpServerConnection extends HttpServiceContext implements Nett
             // We always revert to the original strategy specified for the connection. If a user wishes to create a
             // hierarchical strategy, they have to do it by themselves.
             return () -> {
-                WriteEventsListener current = CompositeFlushStrategy.this.currentListener;
+                final WriteEventsListener prev = currentListener;
                 updateFlushStrategy(__ -> originalStrategy);
-                casListener(current, originalStrategy.apply(flushSender));
+                // Since flushStrategy and currentListener can not be updated atomically, we only switch currentListener
+                // if it has not changed from what it was before updating flushStrategy.
+                // If the listener has changed, it could have changed before or after updating the flushStrategy but
+                // we do not have any way to find, so we let the listener terminate through the regular code path when
+                // the response terminates.
+                // Unconditionally updating the currentListener would mean that we may swap out the listener for the
+                // updated strategy.
+                if (currentListener == prev) {
+                    WriteEventsListener listener = originalStrategy.apply(flushSender);
+                    listener.writeStarted();
+                    if (currentListenerUpdater.compareAndSet(CompositeFlushStrategy.this, prev, listener)) {
+                        prev.writeTerminated();
+                    } else {
+                        listener.writeTerminated();
+                    }
+                }
             };
         }
 
@@ -341,7 +354,7 @@ final class NettyHttpServerConnection extends HttpServiceContext implements Nett
             // read-transform-write for Http server, it means this method MUST be called before we start reading data.
             // Since, there is no way to update FlushStrategy for the connection before we read the first request, this
             // method MUST be called before FlushStrategy is updated. So, we simply use the originalStrategy here.
-            casListener(currentListener, originalStrategy.apply(sender));
+            updateListener(originalStrategy.apply(sender));
             return this;
         }
 
@@ -374,27 +387,28 @@ final class NettyHttpServerConnection extends HttpServiceContext implements Nett
             // We know that apply() should happen-before we subscribe to the Publisher that is written to the
             // connection. Since read-transform-write for Http server, subscribe to write Publisher MUST happen-before
             // reading of the first request. This means that apply() should happen-before any metadata is emitted.
-            casListener(currentListener, flushStrategy.apply(flushSender));
+            updateListener(flushStrategy.apply(flushSender));
         }
 
         void afterEmitTrailers() {
-            casListener(currentListener, INIT);
+            updateListener(INIT);
         }
 
-        private void casListener(final WriteEventsListener current, final WriteEventsListener newListener) {
-            // We only do a single write on a connection and create synthetic callbacks for any subsequent listeners,
-            // resulting from the update to the FlushStrategy.
+        private void updateListener(final WriteEventsListener newListener) {
             newListener.writeStarted();
-            if (currentListenerUpdater.compareAndSet(this, current, newListener)) {
-                // Old listener will not be invoked any more, so send a terminal signal.
-                current.writeTerminated();
-            } else if (currentListener == CANCELLED) {
-                newListener.writeCancelled();
-            } else {
-                // Either we were concurrently terminated or there was a concurrent update. If there was a concurrent
-                // update, then we do not override the winning update as that could cause out-of-order update of the
-                // listener.
-                newListener.writeTerminated();
+            for (;;) {
+                final WriteEventsListener current = currentListener;
+                if (current == CANCELLED) {
+                    newListener.writeCancelled();
+                    return;
+                } else if (current == TERMINATED) {
+                    newListener.writeTerminated();
+                    return;
+                } else if (currentListenerUpdater.compareAndSet(this, current, newListener)) {
+                    // Old listener will not be invoked any more, so send a terminal signal.
+                    current.writeTerminated();
+                    return;
+                }
             }
         }
     }

@@ -28,8 +28,8 @@ import io.servicetalk.http.api.StreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.tcp.netty.internal.TcpClientConfig;
-import io.servicetalk.transport.netty.internal.Connection;
 import io.servicetalk.transport.netty.internal.ExecutionContextRule;
+import io.servicetalk.transport.netty.internal.NettyConnection;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -56,7 +56,7 @@ public class PipelinedHttpConnectionTest {
     public final ExecutionContextRule ctx = immediate();
 
     @SuppressWarnings("unchecked")
-    private final Connection<Object, Object> connection = mock(Connection.class);
+    private final NettyConnection<Object, Object> connection = mock(NettyConnection.class);
 
     @Rule
     public final MockedSubscriberRule<StreamingHttpResponse> dataSubscriber1 = new MockedSubscriberRule<>();

@@ -20,7 +20,7 @@ import io.netty.channel.ChannelHandler;
 import javax.annotation.Nullable;
 
 /**
- * A {@link ChannelHandler} that contains a {@link Connection}.
+ * A {@link ChannelHandler} that contains a {@link NettyConnection}.
  *
  * @param <Read> Type of objects read from this connection.
  * @param <Write> Type of objects written to this connection.
@@ -28,10 +28,10 @@ import javax.annotation.Nullable;
 public interface ConnectionHolderChannelHandler<Read, Write> extends ChannelHandler {
 
     /**
-     * Get the {@link Connection} associated with this object.
+     * Get the {@link NettyConnection} associated with this object.
      *
-     * @return the {@link Connection} associated with this object.
+     * @return the {@link NettyConnection} associated with this object.
      */
     @Nullable
-    Connection<Read, Write> getConnection();
+    NettyConnection<Read, Write> getConnection();
 }

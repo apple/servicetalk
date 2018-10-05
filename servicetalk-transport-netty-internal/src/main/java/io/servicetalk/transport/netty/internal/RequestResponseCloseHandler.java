@@ -103,7 +103,7 @@ class RequestResponseCloseHandler extends CloseHandler {
     }
 
     /**
-     * Feed back events to {@link NettyConnection} bypassing the pipeline.
+     * Feed back events to {@link DefaultNettyConnection} bypassing the pipeline.
      */
     private Consumer<CloseEvent> eventHandler = $ -> { };
 

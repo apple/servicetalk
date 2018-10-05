@@ -27,7 +27,7 @@ import io.servicetalk.tcp.netty.internal.TcpConnector;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.SslConfig;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
-import io.servicetalk.transport.netty.internal.Connection;
+import io.servicetalk.transport.netty.internal.NettyConnection;
 
 import io.netty.buffer.ByteBuf;
 
@@ -246,7 +246,7 @@ public final class DefaultRedisConnectionBuilder<ResolvedAddress> implements Red
     private static <ResolvedAddress> Single<RedisConnection> build(ExecutionContext executionContext,
                                                  ResolvedAddress resolvedAddress,
                                                  ReadOnlyRedisClientConfig roConfig,
-                                   Function<Connection<RedisData, ByteBuf>, RedisConnection> mapper) {
+                                   Function<NettyConnection<RedisData, ByteBuf>, RedisConnection> mapper) {
         return new Single<RedisConnection>() {
             @Override
             protected void handleSubscribe(final Subscriber<? super RedisConnection> subscriber) {

@@ -41,8 +41,9 @@ import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater
 public final class DefaultNettyConnectionContext implements NettyConnectionContext {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DefaultNettyConnectionContext.class);
-    private static final AtomicReferenceFieldUpdater<DefaultNettyConnectionContext, FlushStrategy> flushStrategyUpdater =
-            newUpdater(DefaultNettyConnectionContext.class, FlushStrategy.class, "flushStrategy");
+    private static final AtomicReferenceFieldUpdater<DefaultNettyConnectionContext, FlushStrategy>
+            flushStrategyUpdater = newUpdater(DefaultNettyConnectionContext.class, FlushStrategy.class,
+            "flushStrategy");
 
     private final ExecutionContext executionContext;
     private final Channel channel;
@@ -149,7 +150,7 @@ public final class DefaultNettyConnectionContext implements NettyConnectionConte
      *
      * @return {@link FlushStrategy} for this connection.
      */
-    public FlushStrategy getFlushStrategy() {
+    public FlushStrategy flushStrategy() {
         return flushStrategy;
     }
 }

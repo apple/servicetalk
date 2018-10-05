@@ -19,6 +19,7 @@ import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.api.PublisherRule;
 import io.servicetalk.concurrent.api.TestSingle;
+import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.DefaultHttpHeadersFactory;
 import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.HttpHeaders;
@@ -28,10 +29,10 @@ import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.transport.api.ConnectionContext;
-import io.servicetalk.transport.netty.internal.Connection.TerminalPredicate;
 import io.servicetalk.transport.netty.internal.ExecutionContextRule;
 import io.servicetalk.transport.netty.internal.FlushStrategy;
 import io.servicetalk.transport.netty.internal.MockFlushStrategy;
+import io.servicetalk.transport.netty.internal.NettyConnection.TerminalPredicate;
 import io.servicetalk.transport.netty.internal.NettyConnectionContext;
 
 import io.netty.channel.ChannelHandlerContext;
@@ -42,6 +43,7 @@ import org.hamcrest.Matcher;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.Timeout;
 import org.mockito.ArgumentCaptor;
 
 import java.util.concurrent.LinkedBlockingQueue;
@@ -65,10 +67,8 @@ public class NettyHttpServerConnectionTest {
 
     private static final Object FLUSH = new Object();
 
-    /*
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
-    */
     @Rule
     public final PublisherRule<Object> connReadPublisherRule = new PublisherRule<>();
     @Rule

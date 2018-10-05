@@ -22,8 +22,8 @@ import io.servicetalk.redis.api.RedisProtocolSupport;
 import io.servicetalk.redis.api.RedisRequest;
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ExecutionContext;
-import io.servicetalk.transport.netty.internal.Connection;
 import io.servicetalk.transport.netty.internal.DefaultNettyPipelinedConnection;
+import io.servicetalk.transport.netty.internal.NettyConnection;
 import io.servicetalk.transport.netty.internal.NettyPipelinedConnection;
 
 import io.netty.buffer.ByteBuf;
@@ -61,7 +61,7 @@ final class PipelinedRedisConnection extends AbstractRedisConnection {
     private static final AtomicIntegerFieldUpdater<PipelinedRedisConnection> skipQuitWhenClosedUpdater =
             newUpdater(PipelinedRedisConnection.class, "skipQuitWhenClosed");
     private final NettyPipelinedConnection<ByteBuf, RedisData> connection;
-    private final Connection<RedisData, ByteBuf> rawConnection;
+    private final NettyConnection<RedisData, ByteBuf> rawConnection;
 
     /**
      This is only used within the Writer while writing a request on the connection.
@@ -80,7 +80,7 @@ final class PipelinedRedisConnection extends AbstractRedisConnection {
     private volatile int skipQuitWhenClosed;
 
     @SuppressWarnings("unchecked")
-    private PipelinedRedisConnection(Connection<RedisData, ByteBuf> connection,
+    private PipelinedRedisConnection(NettyConnection<RedisData, ByteBuf> connection,
                                      ExecutionContext executionContext,
                                      ReadOnlyRedisClientConfig roConfig) {
         super(toNettyIoExecutor(connection.executionContext().ioExecutor()).asExecutor(), connection.onClosing(),
@@ -128,7 +128,7 @@ final class PipelinedRedisConnection extends AbstractRedisConnection {
         return request0(request, false, false);
     }
 
-    static PipelinedRedisConnection newPipelinedConnection(Connection<RedisData, ByteBuf> connection,
+    static PipelinedRedisConnection newPipelinedConnection(NettyConnection<RedisData, ByteBuf> connection,
                                                            ExecutionContext executionContext,
                                                            ReadOnlyRedisClientConfig roConfig) {
         PipelinedRedisConnection toReturn = new PipelinedRedisConnection(connection, executionContext, roConfig);

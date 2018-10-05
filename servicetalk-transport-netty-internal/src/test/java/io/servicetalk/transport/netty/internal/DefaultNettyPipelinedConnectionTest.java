@@ -54,7 +54,7 @@ public class DefaultNettyPipelinedConnectionTest {
     private TestPublisher<Integer> writePublisher2;
     private int requestNext = MAX_VALUE;
     private DefaultNettyPipelinedConnection<Integer, Integer> requester;
-    private NettyConnection<Integer, Integer> connection;
+    private DefaultNettyConnection<Integer, Integer> connection;
 
     @Before
     public void setUp() {
@@ -65,7 +65,7 @@ public class DefaultNettyPipelinedConnectionTest {
         when(context.executionContext()).thenReturn(executionContext);
         when(context.executionContext().executor()).thenReturn(immediate());
         when(executionContext.executor()).thenReturn(immediate());
-        Connection.RequestNSupplier requestNSupplier = mock(Connection.RequestNSupplier.class);
+        NettyConnection.RequestNSupplier requestNSupplier = mock(NettyConnection.RequestNSupplier.class);
         readPublisher = new TestPublisher<>(false, false);
         readPublisher.sendOnSubscribe();
         writePublisher1 = new TestPublisher<>();
@@ -73,8 +73,8 @@ public class DefaultNettyPipelinedConnectionTest {
         writePublisher2 = new TestPublisher<>();
         writePublisher2.sendOnSubscribe();
         when(requestNSupplier.getRequestNFor(anyLong())).then(invocation1 -> requestNext);
-        connection = new NettyConnection<>(channel, context, readPublisher,
-                new Connection.TerminalPredicate<>(integer -> true), NOOP_CLOSE_HANDLER, defaultFlushStrategy());
+        connection = new DefaultNettyConnection<>(channel, context, readPublisher,
+                new NettyConnection.TerminalPredicate<>(integer -> true), NOOP_CLOSE_HANDLER, defaultFlushStrategy());
         requester = new DefaultNettyPipelinedConnection<>(connection, MAX_PENDING_REQUESTS);
     }
 

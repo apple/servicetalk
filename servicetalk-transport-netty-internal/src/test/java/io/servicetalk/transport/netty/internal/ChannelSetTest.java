@@ -74,7 +74,7 @@ public class ChannelSetTest {
     @Mock
     private ConnectionHolderChannelHandler connectionHolderChannelHandler;
     @Mock
-    private NettyConnection nettyConnection;
+    private DefaultNettyConnection defaultNettyConnection;
 
     private final ChannelId channelId = DefaultChannelId.newInstance();
     private final ChannelSet fixture = new ChannelSet(immediate());
@@ -93,9 +93,9 @@ public class ChannelSetTest {
         when(channelCloseFuture.channel()).thenReturn(channel);
         when(channel.pipeline()).thenReturn(channelPipeline);
         when(channelPipeline.get(ConnectionHolderChannelHandler.class)).thenReturn(connectionHolderChannelHandler);
-        when(connectionHolderChannelHandler.getConnection()).thenReturn(nettyConnection);
-        when(nettyConnection.closeAsync()).thenReturn(closeAsyncCompletable);
-        when(nettyConnection.closeAsyncGracefully()).thenReturn(closeAsyncGracefullyCompletable);
+        when(connectionHolderChannelHandler.getConnection()).thenReturn(defaultNettyConnection);
+        when(defaultNettyConnection.closeAsync()).thenReturn(closeAsyncCompletable);
+        when(defaultNettyConnection.closeAsyncGracefully()).thenReturn(closeAsyncGracefullyCompletable);
         when(channelCloseFuture.addListener(any())).then((invocation) -> {
             listener = invocation.getArgument(0);
             return channelCloseFuture;
@@ -115,9 +115,9 @@ public class ChannelSetTest {
     @Test
     public void closeAsyncGracefullyWithNettyConnectionChannelHandler() throws Exception {
         Completable completable = closeAsyncGracefully(fixture, 100, SECONDS);
-        verify(nettyConnection, never()).closeAsyncGracefully();
+        verify(defaultNettyConnection, never()).closeAsyncGracefully();
         subscriberRule1.listen(completable);
-        verify(nettyConnection).closeAsyncGracefully();
+        verify(defaultNettyConnection).closeAsyncGracefully();
         verify(channel, never()).close();
         subscriberRule1.verifyNoEmissions();
         closeAsyncGracefullyCompletable.onComplete();
@@ -142,7 +142,7 @@ public class ChannelSetTest {
         Completable closeCompletable = fixture.closeAsync();
 
         subscriberRule1.listen(gracefulCompletable);
-        verify(nettyConnection).closeAsyncGracefully();
+        verify(defaultNettyConnection).closeAsyncGracefully();
 
         subscriberRule2.listen(closeCompletable);
         verify(channel).close();
@@ -165,7 +165,7 @@ public class ChannelSetTest {
         verify(channel).close();
 
         subscriberRule1.listen(gracefulCompletable);
-        verify(nettyConnection, never()).closeAsyncGracefully();
+        verify(defaultNettyConnection, never()).closeAsyncGracefully();
 
         awaitIndefinitely(fixture.onClose());
 
@@ -179,10 +179,10 @@ public class ChannelSetTest {
         Completable gracefulCompletable2 = closeAsyncGracefully(fixture, 60, SECONDS);
 
         subscriberRule1.listen(gracefulCompletable1);
-        verify(nettyConnection).closeAsyncGracefully();
+        verify(defaultNettyConnection).closeAsyncGracefully();
 
         subscriberRule2.listen(gracefulCompletable2);
-        verify(nettyConnection, times(1)).closeAsyncGracefully();
+        verify(defaultNettyConnection, times(1)).closeAsyncGracefully();
 
         subscriberRule1.verifyNoEmissions();
         closeAsyncGracefullyCompletable.onComplete();
@@ -202,10 +202,10 @@ public class ChannelSetTest {
         Completable gracefulCompletable2 = closeAsyncGracefully(fixture, 1000, MILLISECONDS);
 
         subscriberRule1.listen(gracefulCompletable1);
-        verify(nettyConnection).closeAsyncGracefully();
+        verify(defaultNettyConnection).closeAsyncGracefully();
 
         subscriberRule2.listen(gracefulCompletable2);
-        verify(nettyConnection, times(1)).closeAsyncGracefully();
+        verify(defaultNettyConnection, times(1)).closeAsyncGracefully();
 
         awaitIndefinitely(gracefulCompletable1);
         subscriberRule2.verifyCompletion();
@@ -234,7 +234,7 @@ public class ChannelSetTest {
         assumeThat("Ignored flaky test", parseBoolean(System.getenv("CI")), is(FALSE));
         Completable completable = closeAsyncGracefully(fixture, 100, MILLISECONDS);
         subscriberRule1.listen(completable);
-        verify(nettyConnection).closeAsyncGracefully();
+        verify(defaultNettyConnection).closeAsyncGracefully();
         awaitIndefinitely(fixture.onClose());
         verify(channel).close();
         subscriberRule1.verifyCompletion();

@@ -18,13 +18,13 @@ package io.servicetalk.transport.netty.internal;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.transport.netty.internal.Connection.RequestNSupplier;
+import io.servicetalk.transport.netty.internal.NettyConnection.RequestNSupplier;
 
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 /**
- * Contract for using a {@link Connection} to make pipelined requests, typically for a client.
+ * Contract for using a {@link NettyConnection} to make pipelined requests, typically for a client.
  * <p>
  * Pipelining allows to have concurrent requests processed on the server but still deliver responses in order.
  * This eliminates the need for request-response correlation, at the cost of head-of-line blocking.

@@ -28,7 +28,7 @@ import io.servicetalk.redis.api.RedisRequest;
 import io.servicetalk.redis.netty.SubscribedChannelReadStream.PubSubChannelMessage;
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ExecutionContext;
-import io.servicetalk.transport.netty.internal.Connection;
+import io.servicetalk.transport.netty.internal.NettyConnection;
 import io.servicetalk.transport.netty.internal.SequentialTaskQueue;
 
 import io.netty.buffer.ByteBuf;
@@ -64,13 +64,13 @@ import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 final class InternalSubscribedRedisConnection extends AbstractRedisConnection {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(InternalSubscribedRedisConnection.class);
-    protected final Connection<RedisData, ByteBuf> connection;
+    protected final NettyConnection<RedisData, ByteBuf> connection;
 
     private final ReadStreamSplitter readStreamSplitter;
     private final WriteQueue writeQueue;
     private final boolean deferSubscribeTillConnect;
 
-    private InternalSubscribedRedisConnection(Connection<RedisData, ByteBuf> connection,
+    private InternalSubscribedRedisConnection(NettyConnection<RedisData, ByteBuf> connection,
                                               ExecutionContext executionContext,
                                               ReadOnlyRedisClientConfig roConfig, int initialQueueCapacity,
                                               int maxBufferPerGroup) {
@@ -189,13 +189,13 @@ final class InternalSubscribedRedisConnection extends AbstractRedisConnection {
         return LOGGER;
     }
 
-    static RedisConnection newSubscribedConnection(Connection<RedisData, ByteBuf> connection,
+    static RedisConnection newSubscribedConnection(NettyConnection<RedisData, ByteBuf> connection,
                                                    ExecutionContext executionContext,
                                                    ReadOnlyRedisClientConfig roConfig) {
         return newSubscribedConnection(connection, executionContext, roConfig, 2, 256);
     }
 
-    static RedisConnection newSubscribedConnection(Connection<RedisData, ByteBuf> connection,
+    static RedisConnection newSubscribedConnection(NettyConnection<RedisData, ByteBuf> connection,
                                                    ExecutionContext executionContext,
                                                    ReadOnlyRedisClientConfig roConfig,
                                                    int initialQueueCapacity,

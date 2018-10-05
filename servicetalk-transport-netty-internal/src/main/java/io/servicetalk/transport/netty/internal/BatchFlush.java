@@ -15,6 +15,7 @@
  */
 package io.servicetalk.transport.netty.internal;
 
+import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.internal.DelayedCancellable;
 
@@ -43,6 +44,11 @@ final class BatchFlush implements FlushStrategy {
         private final Publisher<?> boundaries;
         private final int batchSize;
         private final FlushSender sender;
+        /**
+         * This field is accessed from {@link #writeCancelled()} as well as {@link #writeTerminated()} which can be
+         * concurrent, so we use {@link DelayedCancellable} to avoid concurrent invocation of the actual
+         * {@link Cancellable}.
+         */
         private final DelayedCancellable boundariesCancellable = new DelayedCancellable();
         private int unflushedCount;
 
