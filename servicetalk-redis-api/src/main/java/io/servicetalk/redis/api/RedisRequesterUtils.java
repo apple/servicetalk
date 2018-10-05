@@ -122,7 +122,8 @@ final class RedisRequesterUtils {
                     if (redisData instanceof RedisData.BulkStringChunk) {
                         final Buffer buffer = redisData.getBufferValue();
                         if (buffer.hasArray()) {
-                            return new String(buffer.array(), buffer.arrayOffset(), buffer.readableBytes(), UTF_8);
+                            final int offset = buffer.arrayOffset() + buffer.readerIndex();
+                            return new String(buffer.array(), offset, buffer.readableBytes(), UTF_8);
                         } else {
                             final byte[] bytes = new byte[buffer.readableBytes()];
                             buffer.readBytes(bytes);
