@@ -120,7 +120,15 @@ final class RedisRequesterUtils {
                         return redisData.getCharSequenceValue();
                     }
                     if (redisData instanceof RedisData.BulkStringChunk) {
-                        return redisData.getBufferValue().toString(UTF_8);
+                        final Buffer buffer = redisData.getBufferValue();
+                        final byte[] bytes;
+                        if (buffer.isDirect()) {
+                            bytes = new byte[buffer.readableBytes()];
+                            buffer.readBytes(bytes);
+                        } else {
+                            bytes = buffer.array();
+                        }
+                        return new String(bytes, UTF_8);
                     }
                     throw new IllegalArgumentException("unsupported data:" + redisData);
                 }
