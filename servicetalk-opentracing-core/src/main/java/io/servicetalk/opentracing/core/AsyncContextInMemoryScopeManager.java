@@ -77,7 +77,7 @@ public final class AsyncContextInMemoryScopeManager extends AbstractListenableIn
     }
 
     @Nullable
-    private InMemorySpan span(@Nullable InMemoryScope scope) {
+    private static InMemorySpan span(@Nullable InMemoryScope scope) {
         return scope == null ? null : scope.span();
     }
 }
