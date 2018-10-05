@@ -16,7 +16,7 @@
 package io.servicetalk.opentracing.core;
 
 import io.servicetalk.concurrent.api.AsyncContext;
-import io.servicetalk.concurrent.api.AsyncContextMap;
+import io.servicetalk.concurrent.api.AsyncContextMap.Key;
 import io.servicetalk.opentracing.core.internal.AbstractListenableInMemoryScopeManager;
 import io.servicetalk.opentracing.core.internal.InMemoryScope;
 import io.servicetalk.opentracing.core.internal.InMemorySpan;
@@ -24,25 +24,22 @@ import io.servicetalk.opentracing.core.internal.ListenableInMemoryScopeManager;
 
 import javax.annotation.Nullable;
 
-import static java.util.Objects.requireNonNull;
+import static io.servicetalk.concurrent.api.AsyncContextMap.Key.newKeyWithDebugToString;
 
 /**
  * A {@link ListenableInMemoryScopeManager} that uses {@link AsyncContext} as the backing storage.
  */
 public final class AsyncContextInMemoryScopeManager extends AbstractListenableInMemoryScopeManager {
-    private final AsyncContextMap.Key<InMemoryScope> key;
+    private static final Key<InMemoryScope> SCOPE_KEY = newKeyWithDebugToString("opentracing");
+    public static final ListenableInMemoryScopeManager SCOPE_MANAGER = new AsyncContextInMemoryScopeManager();
 
     /**
-     * Constructs an instance which stores the span under the {@link AsyncContextMap.Key}.
-     *
-     * @param key {@link AsyncContextMap.Key} to use
+     * Constructs an instance which stores the spans in {@link AsyncContext}.
      */
-    public AsyncContextInMemoryScopeManager(final AsyncContextMap.Key<InMemoryScope> key) {
-        this.key = requireNonNull(key);
-
+    private AsyncContextInMemoryScopeManager() {
         AsyncContext.addListener((oldContext, newContext) -> {
-            InMemoryScope oldScope = oldContext.get(key);
-            InMemoryScope newScope = newContext.get(key);
+            InMemoryScope oldScope = oldContext.get(SCOPE_KEY);
+            InMemoryScope newScope = newContext.get(SCOPE_KEY);
             if (oldScope != newScope) {
                 notifySpanChanged(span(oldScope), span(newScope));
             }
@@ -69,14 +66,14 @@ public final class AsyncContextInMemoryScopeManager extends AbstractListenableIn
                 return span;
             }
         };
-        AsyncContext.put(key, scope);
+        AsyncContext.put(SCOPE_KEY, scope);
         return scope;
     }
 
     @Nullable
     @Override
     public InMemoryScope active() {
-        return AsyncContext.get(key);
+        return AsyncContext.get(SCOPE_KEY);
     }
 
     @Nullable
