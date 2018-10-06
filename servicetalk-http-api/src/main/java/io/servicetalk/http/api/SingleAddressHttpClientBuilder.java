@@ -96,7 +96,7 @@ public interface SingleAddressHttpClientBuilder<U, R> extends HttpClientBuilder<
     SingleAddressHttpClientBuilder<U, R> enableHostHeaderFallback(CharSequence hostHeader);
 
     /**
-     * Appends the filter to the chain of filters used to decorate the {@link StreamingHttpClient} created by this builder.
+     * Append the filter to the chain of filters used to decorate the {@link StreamingHttpClient} created by this builder.
      * <p>
      * Note this method will be used to decorate the result of {@link #buildStreaming()} before it is
      * returned to the user.

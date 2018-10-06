@@ -158,7 +158,7 @@ final class DefaultMultiAddressUrlHttpClientBuilder
             }
             final int effectivePort = request.effectivePort();
             final int port = effectivePort >= 0 ? effectivePort :
-                    sslConfigProvider.defaultPort(HttpScheme.forValue(request.scheme()), host);
+                    sslConfigProvider.defaultPort(HttpScheme.schemeForValue(request.scheme()), host);
             final String authority = host + ':' + port;
 
             final GroupKey<HostAndPort> groupKey = groupKeyCache.get(authority);
@@ -215,7 +215,7 @@ final class DefaultMultiAddressUrlHttpClientBuilder
         @Override
         public SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> apply(
                 final GroupKey<HostAndPort> groupKey, final HttpRequestMetaData requestMetaData) {
-            final HttpScheme scheme = HttpScheme.forValue(requestMetaData.scheme());
+            final HttpScheme scheme = HttpScheme.schemeForValue(requestMetaData.scheme());
             final HostAndPort hostAndPort = groupKey.address();
             SslConfig sslConfig;
             switch (scheme) {

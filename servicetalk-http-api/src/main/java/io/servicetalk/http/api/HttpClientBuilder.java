@@ -123,7 +123,7 @@ public interface HttpClientBuilder<U, R> {
     HttpClientBuilder<U, R> maxPipelinedRequests(int maxPipelinedRequests);
 
     /**
-     * Appends the filter to the chain of filters used to decorate the {@link StreamingHttpConnection} created by this
+     * Append the filter to the chain of filters used to decorate the {@link StreamingHttpConnection} created by this
      * builder.
      * <p>
      * Filtering allows you to wrap a {@link StreamingHttpConnection} and modify behavior during request/response
@@ -154,7 +154,7 @@ public interface HttpClientBuilder<U, R> {
     HttpClientBuilder<U, R> disableHostHeaderFallback();
 
     /**
-     * Disables automatically delaying {@link StreamingHttpRequest}s until the {@link LoadBalancer} is ready.
+     * Disable automatically delaying {@link StreamingHttpRequest}s until the {@link LoadBalancer} is ready.
      *
      * @return {@code this}
      */

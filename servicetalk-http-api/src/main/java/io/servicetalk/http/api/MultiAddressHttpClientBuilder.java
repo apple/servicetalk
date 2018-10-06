@@ -96,8 +96,8 @@ public interface MultiAddressHttpClientBuilder<U, R> extends HttpClientBuilder<U
     MultiAddressHttpClientBuilder<U, R> enableHostHeaderFallback(Function<U, CharSequence> hostHeaderTransformer);
 
     /**
-     * Appends the filter to the chain of filters used to decorate the {@link StreamingHttpClient} created by this builder for a
-     * given {@code UnresolvedAddress}.
+     * Append the filter to the chain of filters used to decorate the {@link StreamingHttpClient} created by this
+     * builder for a given {@code UnresolvedAddress}.
      * <p>
      * Note this method will be used to decorate the result of {@link #buildStreaming()} before it is
      * returned to the user.
@@ -117,9 +117,11 @@ public interface MultiAddressHttpClientBuilder<U, R> extends HttpClientBuilder<U
     MultiAddressHttpClientBuilder<U, R> appendClientFilter(HttpClientGroupFilterFactory<U> function);
 
     /**
-     * Appends the filter to the chain of filters used to decorate the {@link StreamingHttpClientGroup} created by this builder.
+     * Append the filter to the chain of filters used to decorate the {@link StreamingHttpClientGroup} created by this
+     * builder.
      * <p>
-     * Filtering allows you to wrap {@link StreamingHttpClientGroup} and modify behavior during request/response processing.
+     * Filtering allows you to wrap {@link StreamingHttpClientGroup} and modify behavior during request/response
+     * processing.
      * Some potential candidates for filtering include logging, metrics, and decorating responses.
      * <p>
      * The order of execution of these filters are in order of append. If 3 filters are added as follows:

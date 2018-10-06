@@ -72,7 +72,7 @@ public enum HttpScheme {
      * @return {@link HttpScheme} if the passed {@code scheme} is a valid HTTP scheme.
      * @throws IllegalArgumentException If the passed {@code scheme} is an invalid HTTP scheme.
      */
-    public static HttpScheme forValue(@Nullable String scheme) {
+    public static HttpScheme schemeForValue(@Nullable String scheme) {
         if (scheme == null) {
             return NONE;
         }
