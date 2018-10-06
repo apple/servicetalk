@@ -29,7 +29,7 @@ import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.concurrent.api.AutoClosableUtils.closeAndReThrowUnchecked;
+import static io.servicetalk.concurrent.internal.AutoClosableUtils.closeAndReThrowUnchecked;
 import static io.servicetalk.concurrent.internal.ConcurrentUtils.CONCURRENT_EMITTING;
 import static io.servicetalk.concurrent.internal.ConcurrentUtils.CONCURRENT_IDLE;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.checkDuplicateSubscription;

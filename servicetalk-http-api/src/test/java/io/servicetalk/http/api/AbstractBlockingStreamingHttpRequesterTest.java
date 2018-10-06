@@ -33,6 +33,7 @@ import org.mockito.MockitoAnnotations;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
+import java.io.InputStream;
 import java.util.concurrent.CountDownLatch;
 import java.util.function.Function;
 
@@ -45,6 +46,7 @@ import static io.servicetalk.http.api.HttpProtocolVersions.HTTP_1_1;
 import static io.servicetalk.http.api.HttpResponseStatuses.OK;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.util.Collections.singleton;
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -116,6 +118,24 @@ public abstract class AbstractBlockingStreamingHttpRequesterTest {
         assertTrue(iterator.hasNext());
         assertEquals(allocator.fromAscii("hello"), iterator.next());
         assertFalse(iterator.hasNext());
+    }
+
+    @Test
+    public void asyncToSyncWithPayloadInputStream() throws Exception {
+        String expectedPayload = "hello";
+        byte[] expectedPayloadBytes = expectedPayload.getBytes(US_ASCII);
+        StreamingHttpRequester asyncRequester = newAsyncRequester(reqRespFactory, mockExecutionCtx,
+                req -> success(reqRespFactory.ok().payloadBody(just(allocator.fromAscii(expectedPayload)))));
+        BlockingStreamingHttpRequester syncRequester = asyncRequester.asBlockingStreamingRequester();
+        BlockingStreamingHttpResponse syncResponse = syncRequester.request(
+                syncRequester.get("/"));
+        assertEquals(HTTP_1_1, syncResponse.version());
+        assertEquals(OK, syncResponse.status());
+        InputStream is = syncResponse.payloadBodyInputStream();
+        byte[] actualPayloadBytes = new byte[expectedPayloadBytes.length];
+        assertEquals(expectedPayloadBytes.length, is.read(actualPayloadBytes, 0, actualPayloadBytes.length));
+        assertArrayEquals(expectedPayloadBytes, actualPayloadBytes);
+        is.close();
     }
 
     @Test

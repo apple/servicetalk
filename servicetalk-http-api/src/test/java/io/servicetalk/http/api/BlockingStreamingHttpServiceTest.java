@@ -33,6 +33,7 @@ import org.mockito.MockitoAnnotations;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
+import java.io.InputStream;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -46,6 +47,7 @@ import static io.servicetalk.http.api.HttpProtocolVersions.HTTP_1_1;
 import static io.servicetalk.http.api.HttpResponseStatuses.OK;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.util.Collections.singleton;
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -115,6 +117,30 @@ public class BlockingStreamingHttpServiceTest {
         assertTrue(iterator.hasNext());
         assertEquals("hello", iterator.next().toString(US_ASCII));
         assertFalse(iterator.hasNext());
+    }
+
+    @Test
+    public void asyncToSyncWithPayloadInputStream() throws Exception {
+        String expectedPayload = "hello";
+        byte[] expectedPayloadBytes = expectedPayload.getBytes(US_ASCII);
+        StreamingHttpService asyncService = new StreamingHttpService() {
+            @Override
+            public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
+                                                        final StreamingHttpRequest request,
+                                                        final StreamingHttpResponseFactory factory) {
+                return success(factory.ok().payloadBody(just(allocator.fromAscii(expectedPayload))));
+            }
+        };
+        BlockingStreamingHttpService syncService = asyncService.asBlockingStreamingService();
+        BlockingStreamingHttpResponse syncResponse = syncService.handle(mockCtx,
+                blkReqRespFactory.get("/"), blkReqRespFactory);
+        assertEquals(HTTP_1_1, syncResponse.version());
+        assertEquals(OK, syncResponse.status());
+        InputStream is = syncResponse.payloadBodyInputStream();
+        byte[] actualPayloadBytes = new byte[expectedPayloadBytes.length];
+        assertEquals(expectedPayloadBytes.length, is.read(actualPayloadBytes, 0, actualPayloadBytes.length));
+        assertArrayEquals(expectedPayloadBytes, actualPayloadBytes);
+        is.close();
     }
 
     @Test
@@ -192,6 +218,31 @@ public class BlockingStreamingHttpServiceTest {
         StreamingHttpService asyncService = syncService.asStreamingService();
         StreamingHttpResponse asyncResponse = awaitIndefinitely(asyncService.handle(mockCtx,
                 reqRespFactory.get("/"), reqRespFactory));
+        assertNotNull(asyncResponse);
+        assertEquals(HTTP_1_1, asyncResponse.version());
+        assertEquals(OK, asyncResponse.status());
+        assertEquals("hello", awaitIndefinitely(asyncResponse.payloadBody()
+                .reduce(() -> "", (acc, next) -> acc + next.toString(US_ASCII))));
+    }
+
+    @Test
+    public void syncToAsyncWithPayloadInputStream() throws Exception {
+        String expectedPayload = "hello";
+        byte[] expectedPayloadBytes = expectedPayload.getBytes(US_ASCII);
+        BlockingStreamingHttpService syncService = new BlockingStreamingHttpService() {
+            @Override
+            public BlockingStreamingHttpResponse handle(final HttpServiceContext ctx,
+                                                        final BlockingStreamingHttpRequest request,
+                                                        final BlockingStreamingHttpResponseFactory factory)
+                    throws Exception {
+                byte[] actualPayloadBytes = new byte[expectedPayloadBytes.length];
+                request.payloadBodyInputStream().read(actualPayloadBytes);
+                return factory.ok().payloadBody(singleton(allocator.wrap(actualPayloadBytes)));
+            }
+        };
+        StreamingHttpService asyncService = syncService.asStreamingService();
+        StreamingHttpResponse asyncResponse = awaitIndefinitely(asyncService.handle(mockCtx,
+                reqRespFactory.post("/").payloadBody(just(allocator.fromAscii(expectedPayload))), reqRespFactory));
         assertNotNull(asyncResponse);
         assertEquals(HTTP_1_1, asyncResponse.version());
         assertEquals(OK, asyncResponse.status());

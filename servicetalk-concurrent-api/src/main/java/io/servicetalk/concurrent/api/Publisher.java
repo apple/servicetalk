@@ -1873,7 +1873,7 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
      * returned {@link InputStream}s read methods after emitting all received data.
      */
     public final InputStream toInputStream(Function<T, byte[]> serializer) {
-        return new PublisherAsInputStream<>(new PublisherAsBlockingIterable<>(this).iterator(), serializer);
+        return new CloseableIteratorAsInputStream<>(new PublisherAsBlockingIterable<>(this).iterator(), serializer);
     }
 
     /**
@@ -1905,7 +1905,7 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
      * returned {@link InputStream}s read methods after emitting all received data.
      */
     public final InputStream toInputStream(Function<T, byte[]> serializer, int queueCapacity) {
-        return new PublisherAsInputStream<>(new PublisherAsBlockingIterable<>(this, queueCapacity).iterator(),
+        return new CloseableIteratorAsInputStream<>(new PublisherAsBlockingIterable<>(this, queueCapacity).iterator(),
                 serializer);
     }
 

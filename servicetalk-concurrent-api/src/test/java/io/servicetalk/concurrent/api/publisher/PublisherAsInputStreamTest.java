@@ -13,7 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.concurrent.api;
+package io.servicetalk.concurrent.api.publisher;
+
+import io.servicetalk.concurrent.api.Completable;
+import io.servicetalk.concurrent.api.DeliberateException;
+import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.concurrent.api.PublisherRule;
+import io.servicetalk.concurrent.api.TestPublisher;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -23,7 +29,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.concurrent.api.Publisher.empty;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.util.Arrays.copyOfRange;
@@ -201,7 +206,7 @@ public final class PublisherAsInputStreamTest {
 
     @Test
     public void completionAndEmptyReadShouldIndicateEOF() throws IOException {
-        InputStream stream = from(empty()).toInputStream(obj -> new byte[0]);
+        InputStream stream = from(Publisher.empty()).toInputStream(obj -> new byte[0]);
         byte[] data = new byte[32];
         int read = stream.read(data, 0, 32);
         assertThat("Unexpected bytes read.", read, equalTo(-1));
