@@ -86,7 +86,7 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress> implements Http
                         reqRespFactory)
                 : buildForPipelined(executionContext, resolvedAddress, roConfig, connectionFilterFunction,
                 reqRespFactory))
-                    .map(filteredConnection -> new StreamingHttpConnectionConcurrentRequestsFilter(filteredConnection,
+                    .map(filteredConnection -> new ConcurrentRequestsHttpConnectionFilter(filteredConnection,
                             roConfig.getMaxPipelinedRequests()));
     }
 

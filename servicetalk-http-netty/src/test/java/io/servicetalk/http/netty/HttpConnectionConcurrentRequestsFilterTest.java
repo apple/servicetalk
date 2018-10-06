@@ -96,7 +96,7 @@ public class HttpConnectionConcurrentRequestsFilterTest {
             }
         };
         StreamingHttpConnection limitedConnection =
-                new StreamingHttpConnectionConcurrentRequestsFilter(mockConnection, 2);
+                new ConcurrentRequestsHttpConnectionFilter(mockConnection, 2);
         StreamingHttpResponse resp1 = awaitIndefinitelyNonNull(
                 limitedConnection.request(limitedConnection.get("/foo")));
         awaitIndefinitelyNonNull(limitedConnection.request(limitedConnection.get("/bar")));

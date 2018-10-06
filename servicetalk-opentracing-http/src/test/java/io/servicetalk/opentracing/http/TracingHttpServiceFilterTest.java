@@ -53,7 +53,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
-public class OpenTracingStreamingHttpServiceFilterTest {
+public class TracingHttpServiceFilterTest {
 
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
@@ -62,7 +62,7 @@ public class OpenTracingStreamingHttpServiceFilterTest {
     private ServerContext buildServer() throws Exception {
         DefaultInMemoryTracer tracer = new DefaultInMemoryTracer.Builder(SCOPE_MANAGER).build();
         return HttpServers.newHttpServerBuilder(0)
-                .listenStreamingAndAwait(new OpenTracingStreamingHttpServiceFilter(tracer, "testServer",
+                .listenStreamingAndAwait(new TracingHttpServiceFilter(tracer, "testServer",
                         ((StreamingHttpRequestHandler) (ctx, request, responseFactory) -> {
                     InMemorySpan span = tracer.activeSpan();
                     if (span == null) {

@@ -33,7 +33,7 @@ import static java.util.Objects.requireNonNull;
 /**
  * A filter which will apply a fallback value for the {@link HttpHeaderNames#HOST} header if one is not present.
  */
-final class StreamingHttpConnectionHostHeaderFilter extends StreamingHttpConnectionAdapter {
+final class HostHeaderHttpConnectionFilter extends StreamingHttpConnectionAdapter {
     private final CharSequence fallbackHost;
 
     /**
@@ -41,7 +41,7 @@ final class StreamingHttpConnectionHostHeaderFilter extends StreamingHttpConnect
      * @param fallbackHost The address to use as a fallback if a {@link HttpHeaderNames#HOST} header is not present.
      * @param next The next {@link StreamingHttpConnection} in the filter chain.
      */
-    StreamingHttpConnectionHostHeaderFilter(HostAndPort fallbackHost, StreamingHttpConnection next) {
+    HostHeaderHttpConnectionFilter(HostAndPort fallbackHost, StreamingHttpConnection next) {
         this(fallbackHost.getHostName(), fallbackHost.getPort(), next);
     }
 
@@ -52,8 +52,8 @@ final class StreamingHttpConnectionHostHeaderFilter extends StreamingHttpConnect
      * @param fallbackPort The port to use as a fallback if a {@link HttpHeaderNames#HOST} header is not present.
      * @param next The next {@link StreamingHttpConnection} in the filter chain.
      */
-    StreamingHttpConnectionHostHeaderFilter(String fallbackHostName, int fallbackPort,
-                                            StreamingHttpConnection next) {
+    HostHeaderHttpConnectionFilter(String fallbackHostName, int fallbackPort,
+                                   StreamingHttpConnection next) {
         super(next);
         this.fallbackHost = requireNonNull(newAsciiString(toSocketAddressString(fallbackHostName, fallbackPort)));
     }
@@ -63,7 +63,7 @@ final class StreamingHttpConnectionHostHeaderFilter extends StreamingHttpConnect
      * @param fallbackHost The address to use as a fallback if a {@link HttpHeaderNames#HOST} header is not present.
      * @param next The next {@link StreamingHttpConnection} in the filter chain.
      */
-    StreamingHttpConnectionHostHeaderFilter(CharSequence fallbackHost, StreamingHttpConnection next) {
+    HostHeaderHttpConnectionFilter(CharSequence fallbackHost, StreamingHttpConnection next) {
         super(next);
         this.fallbackHost = newAsciiString(isValidIpV6Address(fallbackHost) && fallbackHost.charAt(0) != '[' ?
                 "[" + fallbackHost + "]" : fallbackHost.toString());

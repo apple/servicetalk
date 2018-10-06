@@ -28,11 +28,11 @@ import static io.servicetalk.client.internal.RequestConcurrencyControllers.newSi
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.http.api.StreamingHttpConnection.SettingKey.MAX_CONCURRENCY;
 
-final class StreamingHttpConnectionConcurrentRequestsFilter extends StreamingHttpConnectionAdapter {
+final class ConcurrentRequestsHttpConnectionFilter extends StreamingHttpConnectionAdapter {
     private final RequestConcurrencyController limiter;
 
-    StreamingHttpConnectionConcurrentRequestsFilter(StreamingHttpConnection next,
-                                                    int defaultMaxPipelinedRequests) {
+    ConcurrentRequestsHttpConnectionFilter(StreamingHttpConnection next,
+                                           int defaultMaxPipelinedRequests) {
         super(next);
         limiter = defaultMaxPipelinedRequests == 1 ?
                 newSingleController(next.settingStream(MAX_CONCURRENCY), next.onClose()) :
@@ -51,7 +51,7 @@ final class StreamingHttpConnectionConcurrentRequestsFilter extends StreamingHtt
                     subscriber.onSubscribe(IGNORE_CANCEL);
                     subscriber.onError(new MaxRequestLimitExceededRejectedSubscribeException(
                             "Max concurrent requests saturated for: " +
-                                    StreamingHttpConnectionConcurrentRequestsFilter.this));
+                                    ConcurrentRequestsHttpConnectionFilter.this));
                 }
             }
         };

@@ -32,7 +32,7 @@ import static io.opentracing.tag.Tags.HTTP_METHOD;
 import static io.opentracing.tag.Tags.HTTP_URL;
 import static io.opentracing.tag.Tags.SPAN_KIND;
 import static io.opentracing.tag.Tags.SPAN_KIND_CLIENT;
-import static io.servicetalk.opentracing.http.OpenTracingHttpHeadersFormatter.traceStateFormatter;
+import static io.servicetalk.opentracing.http.TracingHttpHeadersFormatter.traceStateFormatter;
 import static io.servicetalk.opentracing.http.TracingUtils.tagErrorAndClose;
 import static io.servicetalk.opentracing.http.TracingUtils.tracingMapper;
 import static java.util.Objects.requireNonNull;
@@ -40,7 +40,7 @@ import static java.util.Objects.requireNonNull;
 /**
  * A {@link StreamingHttpConnection} that supports open tracing.
  */
-public class OpenTracingStreamingHttpConnectionFilter extends StreamingHttpConnectionAdapter {
+public class TracingHttpConnectionFilter extends StreamingHttpConnectionAdapter {
     private final Tracer tracer;
     private final String componentName;
     private final InMemoryTraceStateFormat<HttpHeaders> formatter;
@@ -51,9 +51,9 @@ public class OpenTracingStreamingHttpConnectionFilter extends StreamingHttpConne
      * @param componentName The component name used during building new spans.
      * @param next The next {@link StreamingHttpConnection} in the filter chain.
      */
-    public OpenTracingStreamingHttpConnectionFilter(Tracer tracer,
-                                                    String componentName,
-                                                    StreamingHttpConnection next) {
+    public TracingHttpConnectionFilter(Tracer tracer,
+                                       String componentName,
+                                       StreamingHttpConnection next) {
         this(tracer, componentName, next, true);
     }
 
@@ -64,10 +64,10 @@ public class OpenTracingStreamingHttpConnectionFilter extends StreamingHttpConne
      * @param validateTraceKeyFormat {@code true} to validate the contents of the trace ids.
      * @param next The next {@link StreamingHttpConnection} in the filter chain.
      */
-    public OpenTracingStreamingHttpConnectionFilter(Tracer tracer,
-                                                    String componentName,
-                                                    StreamingHttpConnection next,
-                                                    boolean validateTraceKeyFormat) {
+    public TracingHttpConnectionFilter(Tracer tracer,
+                                       String componentName,
+                                       StreamingHttpConnection next,
+                                       boolean validateTraceKeyFormat) {
         super(next);
         this.tracer = requireNonNull(tracer);
         this.componentName = requireNonNull(componentName);
@@ -91,7 +91,7 @@ public class OpenTracingStreamingHttpConnectionFilter extends StreamingHttpConne
                 Scope childScope = spanBuilder.startActive(true);
                 tracer.inject(childScope.span().context(), formatter, request.headers());
                 delegate().request(request).map(
-                        tracingMapper(childScope, OpenTracingStreamingHttpConnectionFilter.this::isError)
+                        tracingMapper(childScope, TracingHttpConnectionFilter.this::isError)
                 ).doOnError(cause -> tagErrorAndClose(childScope))
                  .doOnCancel(() -> tagErrorAndClose(childScope))
                  .subscribe(subscriber);
