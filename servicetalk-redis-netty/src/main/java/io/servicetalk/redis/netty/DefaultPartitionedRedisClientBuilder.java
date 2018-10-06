@@ -15,33 +15,34 @@
  */
 package io.servicetalk.redis.netty;
 
-import io.servicetalk.client.api.LoadBalancer;
+import io.servicetalk.client.api.ConnectionFactoryFilter;
 import io.servicetalk.client.api.LoadBalancerFactory;
 import io.servicetalk.client.api.ServiceDiscoverer;
-import io.servicetalk.client.api.ServiceDiscoverer.Event;
 import io.servicetalk.client.api.partition.PartitionAttributes;
 import io.servicetalk.client.api.partition.PartitionMap;
 import io.servicetalk.client.api.partition.PartitionMapFactory;
-import io.servicetalk.client.api.partition.PartitionedEvent;
+import io.servicetalk.client.api.partition.ServiceDiscovererPartitionedEvent;
 import io.servicetalk.client.api.partition.UnknownPartitionException;
 import io.servicetalk.client.internal.partition.PowerSetPartitionMapFactory;
 import io.servicetalk.concurrent.api.AsyncCloseable;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.GroupedPublisher;
+import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.SequentialCancellable;
 import io.servicetalk.redis.api.PartitionedRedisClient;
 import io.servicetalk.redis.api.PartitionedRedisClientBuilder;
+import io.servicetalk.redis.api.PartitionedRedisClientFilterFactory;
 import io.servicetalk.redis.api.RedisClient;
 import io.servicetalk.redis.api.RedisClient.ReservedRedisConnection;
-import io.servicetalk.redis.api.RedisClientBuilder;
+import io.servicetalk.redis.api.RedisClientFilterFactory;
 import io.servicetalk.redis.api.RedisConnection;
+import io.servicetalk.redis.api.RedisConnectionFilterFactory;
 import io.servicetalk.redis.api.RedisData;
 import io.servicetalk.redis.api.RedisPartitionAttributesBuilder;
 import io.servicetalk.redis.api.RedisProtocolSupport.Command;
 import io.servicetalk.redis.api.RedisRequest;
-import io.servicetalk.tcp.netty.internal.TcpClientConfig;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.SslConfig;
 
@@ -50,7 +51,6 @@ import org.reactivestreams.Subscription;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.InputStream;
 import java.net.SocketOption;
 import java.time.Duration;
 import java.util.HashMap;
@@ -61,154 +61,84 @@ import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
+import static io.servicetalk.concurrent.api.AsyncCloseables.emptyAsyncCloseable;
 import static io.servicetalk.concurrent.api.Publisher.error;
 import static io.servicetalk.concurrent.internal.EmptySubscription.EMPTY_SUBSCRIPTION;
-import static io.servicetalk.redis.netty.DefaultRedisClientBuilder.DEFAULT_CLIENT_FILTER_FACTORY;
-import static io.servicetalk.redis.netty.DefaultRedisClientBuilder.newRedisClient;
-import static io.servicetalk.redis.netty.PartitionedRedisClientFilterFactory.identity;
+import static io.servicetalk.redis.api.PartitionedRedisClientFilterFactory.identity;
 import static java.util.Objects.requireNonNull;
 
 /**
  * A builder for instances of {@link PartitionedRedisClient}.
  *
- * @param <ResolvedAddress> the type of address after resolution.
+ * @param <U> the type of address before resolution (unresolved address)
+ * @param <R> the type of address after resolution (resolved address)
  */
-public class DefaultPartitionedRedisClientBuilder<ResolvedAddress>
-        implements PartitionedRedisClientBuilder<ResolvedAddress> {
+final class DefaultPartitionedRedisClientBuilder<U, R> implements PartitionedRedisClientBuilder<U, R> {
     private static final Logger LOGGER = LoggerFactory.getLogger(DefaultPartitionedRedisClientBuilder.class);
 
-    @Nullable
-    private final Function<Command, RedisPartitionAttributesBuilder> redisPartitionAttributesBuilderFactory;
-    private final LoadBalancerFactory<ResolvedAddress, RedisConnection> loadBalancerFactory;
-    private final PartitionMapFactory partitionMapFactory;
-    private final RedisClientConfig config;
+    private final DefaultRedisClientBuilder<U, R> builderTemplate;
+    private final Function<Command, RedisPartitionAttributesBuilder> partitionAttributesBuilderFactory;
+    private PartitionMapFactory partitionMapFactory = PowerSetPartitionMapFactory.INSTANCE;
     private int serviceDiscoveryMaxQueueSize = 32;
-    private RedisClientFilterFactory clientFilterFactory = DEFAULT_CLIENT_FILTER_FACTORY;
-    private RedisConnectionFilterFactory connectionFilterFactory = RedisConnectionFilterFactory.identity();
     private PartitionedRedisClientFilterFactory partitionedClientFilterFactory = identity();
 
-    /**
-     * Create a new instance.
-     *
-     * @param loadBalancerFactory {@link LoadBalancerFactory} to use for creating new {@link LoadBalancer} instances.
-     * @param redisPartitionAttributesBuilderFactory A {@link Function} to provide
-     * {@link RedisPartitionAttributesBuilder} for each {@link Command} executed by the returned
-     * {@link PartitionedRedisClient}.
-     */
-    public DefaultPartitionedRedisClientBuilder(
-            LoadBalancerFactory<ResolvedAddress, RedisConnection> loadBalancerFactory,
-            Function<Command, RedisPartitionAttributesBuilder> redisPartitionAttributesBuilderFactory) {
-        this.redisPartitionAttributesBuilderFactory = requireNonNull(redisPartitionAttributesBuilderFactory);
-        this.loadBalancerFactory = requireNonNull(loadBalancerFactory);
-        this.partitionMapFactory = PowerSetPartitionMapFactory.INSTANCE;
-        config = new RedisClientConfig(new TcpClientConfig(false));
+    private DefaultPartitionedRedisClientBuilder(DefaultRedisClientBuilder<U, R> builderTemplate,
+                                                 Function<Command, RedisPartitionAttributesBuilder> factory) {
+        this.builderTemplate = builderTemplate;
+        this.partitionAttributesBuilderFactory = requireNonNull(factory);
     }
 
-    /**
-     * Create a new instance.
-     *
-     * @param loadBalancerFactory A factory which generates {@link LoadBalancer} objects.
-     */
-    protected DefaultPartitionedRedisClientBuilder(
-            LoadBalancerFactory<ResolvedAddress, RedisConnection> loadBalancerFactory) {
-        redisPartitionAttributesBuilderFactory = null;
-        this.loadBalancerFactory = requireNonNull(loadBalancerFactory);
-        this.partitionMapFactory = PowerSetPartitionMapFactory.INSTANCE;
-        config = new RedisClientConfig(new TcpClientConfig(false));
-    }
-
-    /**
-     * Enable SSL/TLS using the provided {@link SslConfig}. To disable SSL pass in {@code null}.
-     *
-     * @param config the {@link SslConfig}.
-     * @return {@code this}.
-     * @throws IllegalStateException if accessing the cert/key throws when {@link InputStream#close()} is called.
-     */
-    public DefaultPartitionedRedisClientBuilder<ResolvedAddress> ssl(@Nullable SslConfig config) {
-        this.config.getTcpClientConfig().setSslConfig(config);
+    @Override
+    public PartitionedRedisClientBuilder<U, R> executionContext(final ExecutionContext context) {
+        builderTemplate.executionContext(context);
         return this;
     }
 
-    /**
-     * Add a {@link SocketOption} for all connections created by this builder.
-     *
-     * @param <T> the type of the value.
-     * @param option the option to apply.
-     * @param value the value.
-     * @return {@code this}.
-     */
-    public <T> DefaultPartitionedRedisClientBuilder<ResolvedAddress> socketOption(SocketOption<T> option, T value) {
-        config.getTcpClientConfig().setSocketOption(option, value);
+    @Override
+    public DefaultPartitionedRedisClientBuilder<U, R> sslConfig(@Nullable SslConfig config) {
+        builderTemplate.sslConfig(config);
         return this;
     }
 
-    /**
-     * Enable wire-logging for connections created by this builder. All wire events will be logged at trace level.
-     *
-     * @param loggerName The name of the logger to log wire events.
-     * @return {@code this}.
-     */
-    public DefaultPartitionedRedisClientBuilder<ResolvedAddress> enableWireLogging(String loggerName) {
-        config.getTcpClientConfig().enableWireLogging(loggerName);
+    @Override
+    public <T> DefaultPartitionedRedisClientBuilder<U, R> socketOption(SocketOption<T> option, T value) {
+        builderTemplate.socketOption(option, value);
         return this;
     }
 
-    /**
-     * Disable previously configured wire-logging for connections created by this builder.
-     * If wire-logging has not been configured before, this method has no effect.
-     *
-     * @return {@code this}.
-     * @see #enableWireLogging(String)
-     */
-    public DefaultPartitionedRedisClientBuilder<ResolvedAddress> disableWireLogging() {
-        config.getTcpClientConfig().disableWireLogging();
+    @Override
+    public DefaultPartitionedRedisClientBuilder<U, R> enableWireLogging(String loggerName) {
+        builderTemplate.enableWireLogging(loggerName);
         return this;
     }
 
-    /**
-     * Sets maximum requests that can be pipelined on a connection created by this builder.
-     *
-     * @param maxPipelinedRequests Maximum number of pipelined requests per {@link RedisConnection}.
-     * @return {@code this}.
-     */
-    public DefaultPartitionedRedisClientBuilder<ResolvedAddress> maxPipelinedRequests(int maxPipelinedRequests) {
-        config.setMaxPipelinedRequests(maxPipelinedRequests);
+    @Override
+    public DefaultPartitionedRedisClientBuilder<U, R> disableWireLogging() {
+        builderTemplate.disableWireLogging();
         return this;
     }
 
-    /**
-     * Sets the idle timeout for connections created by this builder.
-     *
-     * @param idleConnectionTimeout the timeout {@link Duration} or {@code null} if no timeout configured.
-     * @return {@code this}.
-     */
-    public DefaultPartitionedRedisClientBuilder<ResolvedAddress> idleConnectionTimeout(
+    @Override
+    public DefaultPartitionedRedisClientBuilder<U, R> maxPipelinedRequests(int maxPipelinedRequests) {
+        builderTemplate.maxPipelinedRequests(maxPipelinedRequests);
+        return this;
+    }
+
+    @Override
+    public DefaultPartitionedRedisClientBuilder<U, R> idleConnectionTimeout(
             @Nullable Duration idleConnectionTimeout) {
-        config.setIdleConnectionTimeout(idleConnectionTimeout);
+        builderTemplate.idleConnectionTimeout(idleConnectionTimeout);
         return this;
     }
 
-    /**
-     * Sets the ping period to keep alive connections created by this builder.
-     *
-     * @param pingPeriod the {@link Duration} between keep-alive pings or {@code null} to disable pings.
-     * @return {@code this}.
-     */
-    public DefaultPartitionedRedisClientBuilder<ResolvedAddress> pingPeriod(@Nullable final Duration pingPeriod) {
-        config.setPingPeriod(pingPeriod);
+    @Override
+    public DefaultPartitionedRedisClientBuilder<U, R> pingPeriod(@Nullable final Duration pingPeriod) {
+        builderTemplate.pingPeriod(pingPeriod);
         return this;
     }
 
-    /**
-     * Sets the maximum amount of {@link Event} objects that will be queued for each partition.
-     * <p>It is assumed that the {@link Subscriber}s will process events in a timely manner (typically synchronously)
-     * so this typically doesn't need to be very large.
-     *
-     * @param serviceDiscoveryMaxQueueSize the maximum amount of {@link Event} objects that will be queued for each
-     * partition.
-     * @return {@code this}.
-     */
-    public DefaultPartitionedRedisClientBuilder<ResolvedAddress> serviceDiscoveryMaxQueueSize(
+    @Override
+    public DefaultPartitionedRedisClientBuilder<U, R> serviceDiscoveryMaxQueueSize(
             int serviceDiscoveryMaxQueueSize) {
         if (serviceDiscoveryMaxQueueSize <= 0) {
             throw new IllegalArgumentException("serviceDiscoveryMaxQueueSize: " + serviceDiscoveryMaxQueueSize
@@ -218,109 +148,97 @@ public class DefaultPartitionedRedisClientBuilder<ResolvedAddress>
         return this;
     }
 
-    /**
-     * Defines a filter {@link Function} to decorate {@link RedisClient} used by this builder.
-     * <p>
-     * Filtering allows you to wrap a {@link RedisClient} and modify behavior during request/response processing.
-     * Some potential candidates for filtering include logging, metrics, and decorating responses.
-     *
-     * @param clientFilterFactory {@link Function} to filter the used {@link RedisClient}.
-     * @return {@code this}.
-     */
-    public DefaultPartitionedRedisClientBuilder<ResolvedAddress> clientFilterFactory(
-            RedisClientFilterFactory clientFilterFactory) {
-        this.clientFilterFactory = requireNonNull(clientFilterFactory);
-        return this;
-    }
-
-    /**
-     * Defines a filter {@link Function} to decorate {@link RedisConnection} used by this builder.
-     * <p>
-     * Filtering allows you to wrap a {@link RedisConnection} and modify behavior during request/response processing.
-     * Some potential candidates for filtering include logging, metrics, and decorating responses.
-     *
-     * @param connectionFilterFactory {@link RedisConnectionFilterFactory} to filter the used {@link RedisConnection}.
-     * @return {@code this}.
-     */
-    public DefaultPartitionedRedisClientBuilder<ResolvedAddress> appendConnectionFilter(
-            RedisConnectionFilterFactory connectionFilterFactory) {
-        this.connectionFilterFactory = requireNonNull(connectionFilterFactory);
-        return this;
-    }
-
-    /**
-     * Set the filter factory that is used to decorate {@link PartitionedRedisClient} created by this builder.
-     * <p>
-     * Note this method will be used to decorate the result of {@link #build(ExecutionContext, Publisher)} before it is
-     * returned to the user.
-     *
-     * @param partitionedClientFilterFactory {@link PartitionedRedisClientFilterFactory} to filter the used
-     * {@link PartitionedRedisClient}.
-     * @return {@code this}.
-     */
-    public DefaultPartitionedRedisClientBuilder<ResolvedAddress> appendPartitionedFilter(
-            PartitionedRedisClientFilterFactory partitionedClientFilterFactory) {
-        this.partitionedClientFilterFactory = requireNonNull(partitionedClientFilterFactory);
+    @Override
+    public DefaultPartitionedRedisClientBuilder<U, R> appendClientFilter(RedisClientFilterFactory factory) {
+        builderTemplate.appendClientFilter(factory);
         return this;
     }
 
     @Override
-    public PartitionedRedisClient build(ExecutionContext executionContext,
-                                        Publisher<PartitionedEvent<ResolvedAddress>> addressEventStream) {
-        return build(executionContext, addressEventStream, requireNonNull(redisPartitionAttributesBuilderFactory));
+    public DefaultPartitionedRedisClientBuilder<U, R> appendConnectionFilter(RedisConnectionFilterFactory factory) {
+        builderTemplate.appendConnectionFilter(factory);
+        return this;
     }
 
-    /**
-     * Build a new {@link PartitionedRedisClient}.
-     *
-     * @param executionContext {@link ExecutionContext} used by the returned {@link PartitionedRedisClient}.
-     * @param addressEventStream A stream of events (typically from a {@link ServiceDiscoverer#discover(Object)}) that
-     * provides the addresses used to create new {@link RedisConnection}s.
-     * @param redisPartitionAttributesBuilderFactory A {@link Function} to provide
-     * {@link RedisPartitionAttributesBuilder} for each {@link Command} executed by the returned
-     * {@link PartitionedRedisClient}.
-     * @return A new {@link PartitionedRedisClient}.
-     */
-    protected PartitionedRedisClient build(ExecutionContext executionContext,
-              Publisher<PartitionedEvent<ResolvedAddress>> addressEventStream,
-              Function<Command, RedisPartitionAttributesBuilder> redisPartitionAttributesBuilderFactory) {
-        return partitionedClientFilterFactory.apply(new DefaultPartitionedRedisClient<>(executionContext,
-                addressEventStream, clientFilterFactory, config, connectionFilterFactory, loadBalancerFactory,
-                requireNonNull(redisPartitionAttributesBuilderFactory),
-                partitionMapFactory.newPartitionMap(Partition::new), serviceDiscoveryMaxQueueSize));
+    @Override
+    public DefaultPartitionedRedisClientBuilder<U, R> appendConnectionFactoryFilter(
+            final ConnectionFactoryFilter<R, RedisConnection> factory) {
+        builderTemplate.appendConnectionFactoryFilter(factory);
+        return this;
     }
 
-    private static final class DefaultPartitionedRedisClient<ResolvedAddress> extends PartitionedRedisClient {
+    @Override
+    public DefaultPartitionedRedisClientBuilder<U, R> appendPartitionedFilter(
+            PartitionedRedisClientFilterFactory factory) {
+        partitionedClientFilterFactory = partitionedClientFilterFactory.append(factory);
+        return this;
+    }
 
-        private final Function<Command, RedisPartitionAttributesBuilder> redisPartitionAttributesBuilderFactory;
+    @Override
+    public DefaultPartitionedRedisClientBuilder<U, R> disableWaitForLoadBalancer() {
+        builderTemplate.disableWaitForLoadBalancer();
+        return this;
+    }
+
+    @Override
+    public PartitionedRedisClientBuilder<U, R> serviceDiscoverer(
+            final ServiceDiscoverer<U, R, ? extends ServiceDiscovererPartitionedEvent<R>> serviceDiscoverer) {
+        builderTemplate.serviceDiscoverer(serviceDiscoverer);
+        return this;
+    }
+
+    @Override
+    public PartitionedRedisClientBuilder<U, R> loadBalancerFactory(
+            final LoadBalancerFactory<R, RedisConnection> factory) {
+        builderTemplate.loadBalancerFactory(factory);
+        return this;
+    }
+
+    @Override
+    public PartitionedRedisClientBuilder<U, R> partitionMapFactory(final PartitionMapFactory partitionMapFactory) {
+        this.partitionMapFactory = requireNonNull(partitionMapFactory);
+        return this;
+    }
+
+    @Override
+    public PartitionedRedisClient build() {
+        return partitionedClientFilterFactory.apply(new DefaultPartitionedRedisClient<>(builderTemplate,
+                partitionAttributesBuilderFactory, partitionMapFactory.newPartitionMap(Partition::new),
+                serviceDiscoveryMaxQueueSize));
+    }
+
+    static <U, R> DefaultPartitionedRedisClientBuilder<U, R> forAddress(
+            final U address,
+            final ServiceDiscoverer<U, R, ? extends ServiceDiscovererPartitionedEvent<R>> sd,
+            final Function<Command, RedisPartitionAttributesBuilder> partitionAttributesBuilderFactory) {
+        DefaultRedisClientBuilder<U, R> clientBuilder = new DefaultRedisClientBuilder<>(sd, address);
+        return new DefaultPartitionedRedisClientBuilder<>(clientBuilder, partitionAttributesBuilderFactory);
+    }
+
+    private static final class DefaultPartitionedRedisClient<U, R> extends PartitionedRedisClient {
+
+        private final Function<Command, RedisPartitionAttributesBuilder> partitionAttributesBuilderFactory;
         private final SequentialCancellable sequentialCancellable;
         private final PartitionMap<Partition> partitionMap;
         private final ExecutionContext executionContext;
 
-        DefaultPartitionedRedisClient(ExecutionContext executionContext,
-                                      Publisher<PartitionedEvent<ResolvedAddress>> addressEventStream,
-                                      RedisClientFilterFactory clientFilterFactory,
-                                      RedisClientConfig config,
-                                      RedisConnectionFilterFactory connectionFilterFactory,
-                                      LoadBalancerFactory<ResolvedAddress, RedisConnection> loadBalancerFactory,
-                                      Function<Command, RedisPartitionAttributesBuilder> redisPartitionAttributesBuilderFactory,
+        DefaultPartitionedRedisClient(DefaultRedisClientBuilder<U, R> builderTemplate,
+                                      Function<Command, RedisPartitionAttributesBuilder> factory,
                                       PartitionMap<Partition> partitionMap,
                                       int serviceDiscoveryMaxQueueSize) {
-            this.executionContext = executionContext;
-            this.redisPartitionAttributesBuilderFactory = redisPartitionAttributesBuilderFactory;
-            this.partitionMap = partitionMap;
-            ReadOnlyRedisClientConfig roConfig = config.asReadOnly();
-            RedisClientBuilder<ResolvedAddress, PartitionedEvent<ResolvedAddress>> redisClientBuilder =
-                    (executionContext1, address) ->
-                            newRedisClient(executionContext1, address, roConfig, connectionFilterFactory,
-                                    clientFilterFactory, loadBalancerFactory);
+            this.partitionAttributesBuilderFactory = factory;
             sequentialCancellable = new SequentialCancellable();
-
-            addressEventStream.groupByMulti(event -> event.available() ?
+            this.partitionMap = partitionMap;
+            final DefaultRedisClientBuilder<U, R> builder = builderTemplate.copy();
+            executionContext = builder.executionContext();
+            @SuppressWarnings("unchecked")
+            ServiceDiscoverer<U, R, ServiceDiscovererPartitionedEvent<R>> sd =
+                    (ServiceDiscoverer<U, R, ServiceDiscovererPartitionedEvent<R>>) builder.serviceDiscoverer();
+            sd.discover(builder.address()).groupByMulti(event -> event.available() ?
                             partitionMap.add(event.partitionAddress()).iterator() :
                             partitionMap.remove(event.partitionAddress()).iterator(),
                     serviceDiscoveryMaxQueueSize)
-                    .subscribe(new Subscriber<GroupedPublisher<Partition, PartitionedEvent<ResolvedAddress>>>() {
+                    .subscribe(new Subscriber<GroupedPublisher<Partition, ServiceDiscovererPartitionedEvent<R>>>() {
                         @Override
                         public void onSubscribe(Subscription s) {
                             // We request max value here to make sure we do not access Subscription concurrently
@@ -332,10 +250,9 @@ public class DefaultPartitionedRedisClientBuilder<ResolvedAddress>
                         }
 
                         @Override
-                        public void onNext(GroupedPublisher<Partition, PartitionedEvent<ResolvedAddress>> newGroup) {
+                        public void onNext(GroupedPublisher<Partition, ServiceDiscovererPartitionedEvent<R>> newGroup) {
                             final Partition partition = newGroup.getKey();
-                            partition.setClient(newRedisClientFromGroup(executionContext, redisClientBuilder, newGroup,
-                                    partition));
+                            partition.setClient(builder.build(new PartitionServiceDiscoverer<>(newGroup, partition)));
                         }
 
                         @Override
@@ -350,39 +267,6 @@ public class DefaultPartitionedRedisClientBuilder<ResolvedAddress>
                             LOGGER.debug("partitioned client group subscriber {} terminated", this);
                         }
                     });
-        }
-
-        private static <ResolvedAddress> RedisClient newRedisClientFromGroup(ExecutionContext executionContext,
-                RedisClientBuilder<ResolvedAddress, PartitionedEvent<ResolvedAddress>> redisClientBuilder,
-                GroupedPublisher<Partition, PartitionedEvent<ResolvedAddress>> newGroup, Partition partition) {
-            return redisClientBuilder.build(executionContext,
-                    newGroup.filter(new Predicate<PartitionedEvent<ResolvedAddress>>() {
-                        // Use a mutable Count to avoid boxing-unboxing and put on each call.
-                        private final Map<ResolvedAddress, MutableInteger> addressesToCount = new HashMap<>();
-
-                        @Override
-                        public boolean test(PartitionedEvent<ResolvedAddress> evt) {
-                            MutableInteger count = addressesToCount.computeIfAbsent(evt.address(),
-                                    addr -> new MutableInteger());
-                            boolean acceptEvent;
-                            if (evt.available()) {
-                                acceptEvent = ++count.count == 1;
-                            } else {
-                                acceptEvent = --count.count == 0;
-                                if (acceptEvent) {
-                                    // If address is unavailable and no more add events are pending stop tracking and
-                                    // close partition.
-                                    addressesToCount.remove(evt.address());
-                                    if (addressesToCount.isEmpty()) {
-                                        // closeNow will subscribe to closeAsync() so we do not have to here.
-                                        partition.closeNow();
-                                    }
-                                }
-                            }
-                            return acceptEvent;
-                        }
-                    }).doBeforeFinally(partition::closeNow)
-            );
         }
 
         @Nullable
@@ -419,7 +303,7 @@ public class DefaultPartitionedRedisClientBuilder<ResolvedAddress>
 
         @Override
         protected Function<Command, RedisPartitionAttributesBuilder> redisPartitionAttributesBuilderFunction() {
-            return redisPartitionAttributesBuilderFactory;
+            return partitionAttributesBuilderFactory;
         }
 
         @Override
@@ -440,11 +324,11 @@ public class DefaultPartitionedRedisClientBuilder<ResolvedAddress>
         }
 
         @Override
-        public <R> Single<R> request(PartitionAttributes partitionSelector, RedisRequest request,
-                                     Class<R> responseType) {
-            return new Single<R>() {
+        public <Resp> Single<Resp> request(PartitionAttributes partitionSelector, RedisRequest request,
+                                     Class<Resp> responseType) {
+            return new Single<Resp>() {
                 @Override
-                protected void handleSubscribe(Subscriber<? super R> subscriber) {
+                protected void handleSubscribe(Subscriber<? super Resp> subscriber) {
                     RedisClient client = lookupPartitionedClientOrFailSubscriber(partitionSelector, subscriber);
                     if (client != null) {
                         client.request(request, responseType).subscribe(subscriber);
@@ -480,7 +364,62 @@ public class DefaultPartitionedRedisClientBuilder<ResolvedAddress>
         }
     }
 
+    private static final class PartitionServiceDiscoverer<U, R>
+            implements ServiceDiscoverer<U, R, ServiceDiscovererPartitionedEvent<R>> {
+        private final ListenableAsyncCloseable close;
+        private final GroupedPublisher<Partition, ServiceDiscovererPartitionedEvent<R>> newGroup;
+        private final Partition partition;
+
+        PartitionServiceDiscoverer(final GroupedPublisher<Partition, ServiceDiscovererPartitionedEvent<R>> newGroup,
+                                   final Partition partition) {
+            this.newGroup = newGroup;
+            this.partition = partition;
+            close = emptyAsyncCloseable();
+        }
+
+        @Override
+        public Publisher<ServiceDiscovererPartitionedEvent<R>> discover(final U ignored) {
+            return newGroup.filter(new Predicate<ServiceDiscovererPartitionedEvent<R>>() {
+                // Use a mutable Count to avoid boxing-unboxing and put on each call.
+                private final Map<R, MutableInteger> addressesToCount = new HashMap<>();
+
+                @Override
+                public boolean test(ServiceDiscovererPartitionedEvent<R> evt) {
+                    MutableInteger count = addressesToCount.computeIfAbsent(evt.address(),
+                            addr -> new MutableInteger());
+                    boolean acceptEvent;
+                    if (evt.available()) {
+                        acceptEvent = ++count.count == 1;
+                    } else {
+                        acceptEvent = --count.count == 0;
+                        if (acceptEvent) {
+                            // If address is unavailable and no more add events are pending stop tracking and
+                            // close partition.
+                            addressesToCount.remove(evt.address());
+                            if (addressesToCount.isEmpty()) {
+                                // closeNow will subscribe to closeAsync() so we do not have to here.
+                                partition.closeNow();
+                            }
+                        }
+                    }
+                    return acceptEvent;
+                }
+            }).doBeforeFinally(partition::closeNow);
+        }
+
+        @Override
+        public Completable onClose() {
+            return close.onClose();
+        }
+
+        @Override
+        public Completable closeAsync() {
+            return close.closeAsync();
+        }
+    }
+
     private static final class Partition implements AsyncCloseable {
+
         private static final AtomicReferenceFieldUpdater<Partition, RedisClient> clientUpdater =
                 AtomicReferenceFieldUpdater.newUpdater(Partition.class, RedisClient.class, "client");
 
@@ -490,7 +429,7 @@ public class DefaultPartitionedRedisClientBuilder<ResolvedAddress>
         @Nullable
         private volatile RedisClient client;
 
-        Partition(PartitionAttributes attributes) {
+        Partition(final PartitionAttributes attributes) {
             this.attributes = attributes;
         }
 
@@ -506,7 +445,8 @@ public class DefaultPartitionedRedisClientBuilder<ResolvedAddress>
 
         @Nullable
         RedisClient getClient() {
-            return client;
+            RedisClient c = client;
+            return c == ClosedClient.CLOSED_CLIENT ? null : c;
         }
 
         @Override
@@ -514,8 +454,7 @@ public class DefaultPartitionedRedisClientBuilder<ResolvedAddress>
             return new Completable() {
                 @Override
                 protected void handleSubscribe(Subscriber subscriber) {
-                    RedisClient oldClient = clientUpdater.getAndSet(Partition.this,
-                            new NoopRedisClient(client.executionContext()));
+                    RedisClient oldClient = clientUpdater.getAndSet(Partition.this, ClosedClient.CLOSED_CLIENT);
                     if (oldClient != null) {
                         oldClient.closeAsync().subscribe(subscriber);
                     } else {
@@ -532,11 +471,12 @@ public class DefaultPartitionedRedisClientBuilder<ResolvedAddress>
         }
     }
 
-    private static final class NoopRedisClient extends RedisClient {
-        private final ExecutionContext executionContext;
+    private static final class ClosedClient extends RedisClient {
 
-        private NoopRedisClient(ExecutionContext executionContext) {
-            this.executionContext = requireNonNull(executionContext);
+        private static final ClosedClient CLOSED_CLIENT = new ClosedClient();
+
+        private ClosedClient() {
+            // Singleton
         }
 
         @Override
@@ -551,7 +491,7 @@ public class DefaultPartitionedRedisClientBuilder<ResolvedAddress>
 
         @Override
         public ExecutionContext executionContext() {
-            return executionContext;
+            throw new UnsupportedOperationException();
         }
 
         @Override

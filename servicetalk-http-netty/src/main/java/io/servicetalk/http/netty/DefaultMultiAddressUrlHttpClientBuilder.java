@@ -19,6 +19,7 @@ import io.servicetalk.client.api.DefaultGroupKey;
 import io.servicetalk.client.api.GroupKey;
 import io.servicetalk.client.api.LoadBalancerFactory;
 import io.servicetalk.client.api.ServiceDiscoverer;
+import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.concurrent.api.AsyncCloseable;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.CompositeCloseable;
@@ -426,8 +427,9 @@ final class DefaultMultiAddressUrlHttpClientBuilder
 
     @Override
     public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> serviceDiscoverer(
-            final ServiceDiscoverer<HostAndPort, InetSocketAddress> serviceDiscoverer) {
-        builderTemplate.serviceDiscoverer(serviceDiscoverer);
+            final ServiceDiscoverer<HostAndPort, InetSocketAddress,
+                    ? extends ServiceDiscovererEvent<InetSocketAddress>> sd) {
+        builderTemplate.serviceDiscoverer(sd);
         return this;
     }
 

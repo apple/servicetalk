@@ -18,10 +18,10 @@ package io.servicetalk.client.api;
 import static java.util.Objects.requireNonNull;
 
 /**
- * Default implementation of {@link ServiceDiscoverer.Event}.
+ * Default implementation of {@link ServiceDiscovererEvent}.
  * @param <T> The type of resolved address.
  */
-public final class DefaultServiceDiscovererEvent<T> implements ServiceDiscoverer.Event<T> {
+public final class DefaultServiceDiscovererEvent<T> implements ServiceDiscovererEvent<T> {
     private final T address;
     private final boolean isAvailable;
 

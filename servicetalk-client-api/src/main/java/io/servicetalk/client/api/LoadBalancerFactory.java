@@ -15,7 +15,6 @@
  */
 package io.servicetalk.client.api;
 
-import io.servicetalk.client.api.ServiceDiscoverer.Event;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Publisher;
 
@@ -30,13 +29,13 @@ public interface LoadBalancerFactory<ResolvedAddress, C extends ListenableAsyncC
 
     /**
      * Create a new {@link LoadBalancer}.
-     * @param eventPublisher A stream of {@link Event}s which the {@link LoadBalancer} can use to connect to physical hosts.
-     *                       Typically generated from a {@link ServiceDiscoverer}.
-     * @param connectionFactory {@link ConnectionFactory} that the returned {@link LoadBalancer} will use to generate new connections.
-     *                          Returned {@link LoadBalancer} will own the responsibility for this {@link ConnectionFactory} and hence
-     *                          will call {@link ConnectionFactory#closeAsync()} when {@link LoadBalancer#closeAsync()} is called.
+     * @param eventPublisher A stream of {@link ServiceDiscovererEvent}s which the {@link LoadBalancer} can use to
+     * connect to physical hosts. Typically generated from a {@link ServiceDiscoverer}.
+     * @param connectionFactory {@link ConnectionFactory} that the returned {@link LoadBalancer} will use to generate
+     * new connections. Returned {@link LoadBalancer} will own the responsibility for this {@link ConnectionFactory}
+     * and hence will call {@link ConnectionFactory#closeAsync()} when {@link LoadBalancer#closeAsync()} is called.
      * @return a new {@link LoadBalancer}.
      */
-    LoadBalancer<C> newLoadBalancer(Publisher<? extends Event<ResolvedAddress>> eventPublisher,
+    LoadBalancer<C> newLoadBalancer(Publisher<? extends ServiceDiscovererEvent<ResolvedAddress>> eventPublisher,
                                     ConnectionFactory<ResolvedAddress, ? extends C> connectionFactory);
 }

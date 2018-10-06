@@ -17,6 +17,7 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.client.api.DefaultServiceDiscovererEvent;
 import io.servicetalk.client.api.ServiceDiscoverer;
+import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.http.api.StreamingHttpClient;
@@ -46,7 +47,7 @@ public class HttpClientBuilderTest extends AbstractEchoServerBasedHttpRequesterT
     @Test
     public void httpClientWithDynamicLoadBalancing() throws ExecutionException, InterruptedException {
 
-        TestPublisher<ServiceDiscoverer.Event<InetSocketAddress>> sdPub = new TestPublisher<>();
+        TestPublisher<ServiceDiscovererEvent<InetSocketAddress>> sdPub = new TestPublisher<>();
         sdPub.sendOnSubscribe();
 
         DefaultServiceDiscovererEvent<InetSocketAddress> sdEvent = new DefaultServiceDiscovererEvent<>(
@@ -61,9 +62,11 @@ public class HttpClientBuilderTest extends AbstractEchoServerBasedHttpRequesterT
         sendRequestAndValidate(sdPub);
     }
 
-    private void sendRequestAndValidate(final Publisher<ServiceDiscoverer.Event<InetSocketAddress>> sdPub)
+    private void sendRequestAndValidate(final Publisher<ServiceDiscovererEvent<InetSocketAddress>> sdPub)
             throws ExecutionException, InterruptedException {
-        ServiceDiscoverer<HostAndPort, InetSocketAddress> disco = mock(ServiceDiscoverer.class);
+        @SuppressWarnings("unchecked")
+        ServiceDiscoverer<HostAndPort, InetSocketAddress, ServiceDiscovererEvent<InetSocketAddress>> disco =
+                mock(ServiceDiscoverer.class);
         when(disco.discover(any())).thenReturn(sdPub);
         int port = ((InetSocketAddress) serverContext.listenAddress()).getPort();
         StreamingHttpClient requester = HttpClients.forSingleAddress("localhost", port)

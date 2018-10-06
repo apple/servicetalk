@@ -19,9 +19,10 @@ import io.servicetalk.client.api.ConnectionFactory;
 import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.api.LoadBalancerFactory;
 import io.servicetalk.client.api.ServiceDiscoverer;
-import io.servicetalk.client.api.ServiceDiscoverer.Event;
+import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.dns.discovery.netty.DefaultDnsServiceDiscovererBuilder;
 import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.HttpClientFilterFactory;
 import io.servicetalk.http.api.HttpConnectionFilterFactory;
@@ -42,7 +43,6 @@ import java.util.function.Function;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
-import static io.servicetalk.http.netty.GlobalDnsServiceDiscoverer.globalDnsServiceDiscoverer;
 import static io.servicetalk.loadbalancer.RoundRobinLoadBalancer.newRoundRobinFactory;
 import static io.servicetalk.transport.netty.internal.GlobalExecutionContext.globalExecutionContext;
 import static java.util.Objects.requireNonNull;
@@ -68,30 +68,27 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
     private final HttpClientConfig config;
     private ExecutionContext executionContext = globalExecutionContext();
     private LoadBalancerFactory<R, StreamingHttpConnection> loadBalancerFactory;
-    private ServiceDiscoverer<U, R> serviceDiscoverer;
+    private ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>> serviceDiscoverer;
     private Function<U, HttpConnectionFilterFactory> hostHeaderFilterFunction =
             DefaultSingleAddressHttpClientBuilder::defaultHostClientFilterFactory;
     private HttpConnectionFilterFactory connectionFilterFunction = HttpConnectionFilterFactory.identity();
     private HttpClientFilterFactory clientFilterFunction = HttpClientFilterFactory.identity();
     private HttpClientFilterFactory lbReadyFilter = LB_READY_FILTER;
 
-    DefaultSingleAddressHttpClientBuilder(final ServiceDiscoverer<U, R> serviceDiscoverer,
-                                          final U address) {
+    DefaultSingleAddressHttpClientBuilder(
+            final ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>> serviceDiscoverer, final U address) {
         config = new HttpClientConfig(new TcpClientConfig(false));
         this.loadBalancerFactory = newRoundRobinFactory();
         this.serviceDiscoverer = requireNonNull(serviceDiscoverer);
         this.address = requireNonNull(address);
     }
 
-    private DefaultSingleAddressHttpClientBuilder(
-            final LoadBalancerFactory<R, StreamingHttpConnection> loadBalancerFactory,
-            final ServiceDiscoverer<U, R> serviceDiscoverer,
-            final U address,
-            final DefaultSingleAddressHttpClientBuilder<U, R> from) {
+    private DefaultSingleAddressHttpClientBuilder(final U address,
+                                                  final DefaultSingleAddressHttpClientBuilder<U, R> from) {
         config = new HttpClientConfig(from.config);
         this.address = requireNonNull(address);
-        this.serviceDiscoverer = requireNonNull(serviceDiscoverer);
-        this.loadBalancerFactory = requireNonNull(loadBalancerFactory);
+        this.serviceDiscoverer = requireNonNull(from.serviceDiscoverer);
+        this.loadBalancerFactory = requireNonNull(from.loadBalancerFactory);
         clientFilterFunction = from.clientFilterFunction;
         connectionFilterFunction = from.connectionFilterFunction;
         hostHeaderFilterFunction = from.hostHeaderFilterFunction;
@@ -103,12 +100,17 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
     }
 
     DefaultSingleAddressHttpClientBuilder<U, R> copy(final U address) {
-        return new DefaultSingleAddressHttpClientBuilder<>(loadBalancerFactory, serviceDiscoverer, address, this);
+        return new DefaultSingleAddressHttpClientBuilder<>(address, this);
     }
 
     static DefaultSingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> forHostAndPort(
             final HostAndPort address) {
-        return new DefaultSingleAddressHttpClientBuilder<>(globalDnsServiceDiscoverer(), address);
+        // We assume here that there is no need to explicitly close the ServiceDiscoverer if the Publisher returned
+        // from it is correctly cancelled. This means that a ServiceDiscoverer does not keep state outside the scope
+        // of Publishers returned from their discover() methods. Hence, we do not need to explicitly close this
+        // ServiceDiscoverer created here.
+        return new DefaultSingleAddressHttpClientBuilder<>(
+                new DefaultDnsServiceDiscovererBuilder(globalExecutionContext()).build(), address);
     }
 
     static DefaultSingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> forUnknownHostAndPort() {
@@ -124,7 +126,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
         // Track resources that potentially need to be closed when an exception is thrown during buildStreaming
         final CompositeCloseable closeOnException = newCompositeCloseable();
         try {
-            Publisher<Event<R>> sdEvents = serviceDiscoverer.discover(address);
+            Publisher<? extends ServiceDiscovererEvent<R>> sdEvents = serviceDiscoverer.discover(address);
 
             final StreamingHttpRequestResponseFactory reqRespFactory =
                     new DefaultStreamingHttpRequestResponseFactory(exec.bufferAllocator(),
@@ -257,7 +259,8 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
     }
 
     @Override
-    public SingleAddressHttpClientBuilder<U, R> serviceDiscoverer(final ServiceDiscoverer<U, R> serviceDiscoverer) {
+    public SingleAddressHttpClientBuilder<U, R> serviceDiscoverer(
+            final ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>> serviceDiscoverer) {
         this.serviceDiscoverer = requireNonNull(serviceDiscoverer);
         return this;
     }

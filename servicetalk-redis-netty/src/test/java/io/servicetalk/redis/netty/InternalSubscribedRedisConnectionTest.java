@@ -102,8 +102,9 @@ public class InternalSubscribedRedisConnectionTest {
         assert builder != null && redisAddress != null && ioExecutor != null;
         CountDownLatch requestStreamCancelled = new CountDownLatch(1);
 
-        RedisConnection connection = awaitIndefinitely(builder.build(
-                new DefaultExecutionContext(DEFAULT_ALLOCATOR, ioExecutor, immediate()), redisAddress));
+        RedisConnection connection = awaitIndefinitely(
+                builder.executionContext(new DefaultExecutionContext(DEFAULT_ALLOCATOR, ioExecutor, immediate()))
+                        .build(redisAddress));
         assert connection != null;
 
         final RedisRequest subReq = newRequest(SUBSCRIBE,
@@ -123,8 +124,9 @@ public class InternalSubscribedRedisConnectionTest {
     public void testReadCancelAndClose() throws ExecutionException, InterruptedException {
         assert builder != null && redisAddress != null && ioExecutor != null;
 
-        RedisConnection connection = awaitIndefinitely(builder.build(
-                new DefaultExecutionContext(DEFAULT_ALLOCATOR, ioExecutor, immediate()), redisAddress));
+        RedisConnection connection = awaitIndefinitely(
+                builder.executionContext(new DefaultExecutionContext(DEFAULT_ALLOCATOR, ioExecutor, immediate()))
+                .build(redisAddress));
         assert connection != null;
 
         final CountDownLatch latch = new CountDownLatch(1);
@@ -142,8 +144,9 @@ public class InternalSubscribedRedisConnectionTest {
         subscription.request(1);
         latch.await();
 
-        RedisConnection publishConnection = awaitIndefinitely(forPipeline().build(
-                new DefaultExecutionContext(DEFAULT_ALLOCATOR, ioExecutor, immediate()), redisAddress));
+        RedisConnection publishConnection = awaitIndefinitely(forPipeline()
+                .executionContext(new DefaultExecutionContext(DEFAULT_ALLOCATOR, ioExecutor, immediate()))
+                .build(redisAddress));
         assert publishConnection != null;
 
         awaitIndefinitely(publishConnection.asCommander().publish(channelToSubscribe, randomStringOfLength(32)));

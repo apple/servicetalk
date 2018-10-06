@@ -15,211 +15,260 @@
  */
 package io.servicetalk.redis.netty;
 
+import io.servicetalk.client.api.ConnectionFactoryFilter;
 import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.api.LoadBalancerFactory;
-import io.servicetalk.client.api.ServiceDiscoverer.Event;
+import io.servicetalk.client.api.ServiceDiscoverer;
+import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.concurrent.api.Completable;
+import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.dns.discovery.netty.DefaultDnsServiceDiscovererBuilder;
 import io.servicetalk.redis.api.LoadBalancerReadyRedisClient;
 import io.servicetalk.redis.api.RedisClient;
 import io.servicetalk.redis.api.RedisClientBuilder;
+import io.servicetalk.redis.api.RedisClientFilterFactory;
 import io.servicetalk.redis.api.RedisConnection;
+import io.servicetalk.redis.api.RedisConnectionFilterFactory;
 import io.servicetalk.redis.api.RedisData;
 import io.servicetalk.redis.api.RedisProtocolSupport.Command;
 import io.servicetalk.redis.api.RedisRequest;
 import io.servicetalk.tcp.netty.internal.TcpClientConfig;
 import io.servicetalk.transport.api.ExecutionContext;
+import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.SslConfig;
 
-import java.io.InputStream;
+import java.net.InetSocketAddress;
 import java.net.SocketOption;
 import java.time.Duration;
 import java.util.function.Function;
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.redis.netty.RedisConnectionFilterFactory.identity;
+import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
+import static io.servicetalk.loadbalancer.RoundRobinLoadBalancer.newRoundRobinFactory;
 import static io.servicetalk.redis.netty.RedisUtils.isSubscribeModeCommand;
+import static io.servicetalk.transport.netty.internal.GlobalExecutionContext.globalExecutionContext;
 import static java.util.Objects.requireNonNull;
 
 /**
  * A builder for instances of {@link RedisClient}.
- * @param <ResolvedAddress> the type of address after resolution.
+ *
+ * @param <U> the type of address before resolution (unresolved address)
+ * @param <R> the type of address after resolution (resolved address)
  */
-public final class DefaultRedisClientBuilder<ResolvedAddress>
-        implements RedisClientBuilder<ResolvedAddress, Event<ResolvedAddress>> {
+final class DefaultRedisClientBuilder<U, R> implements RedisClientBuilder<U, R> {
 
     public static final Function<LoadBalancedRedisConnection, LoadBalancedRedisConnection> SELECTOR_FOR_REQUEST =
             conn -> conn.tryRequest() ? conn : null;
     public static final Function<LoadBalancedRedisConnection, LoadBalancedRedisConnection> SELECTOR_FOR_RESERVE =
             conn -> conn.tryReserve() ? conn : null;
-    static final RedisClientFilterFactory DEFAULT_CLIENT_FILTER_FACTORY =
+    private static final RedisClientFilterFactory LB_READY_FILTER =
             // We ignore the sdEvents because currently the SD stream is multiplexed and the pipelined LB will get
             // events after the pubsub LB. If there is async behavior in the load balancer folks can override this.
             (client, pubsubEvents, pipelinedEvents) -> new LoadBalancerReadyRedisClient(4, pipelinedEvents, client);
 
-    private final LoadBalancerFactory<ResolvedAddress, RedisConnection> loadBalancerFactory;
+    private final U address;
     private final RedisClientConfig config;
-    private RedisConnectionFilterFactory connectionFilterFactory = identity();
-    private RedisClientFilterFactory clientFilterFactory = DEFAULT_CLIENT_FILTER_FACTORY;
+    private ExecutionContext executionContext = globalExecutionContext();
+    private LoadBalancerFactory<R, RedisConnection> loadBalancerFactory;
+    private ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>> serviceDiscoverer;
+    private RedisConnectionFilterFactory connectionFilterFactory = RedisConnectionFilterFactory.identity();
+    private RedisClientFilterFactory clientFilterFactory = RedisClientFilterFactory.identity();
+    private RedisClientFilterFactory lbReadyFilter = LB_READY_FILTER;
+    private ConnectionFactoryFilter<R, RedisConnection> connectionFactoryFilter = ConnectionFactoryFilter.identity();
 
-    /**
-     * Create a new instance.
-     * @param loadBalancerFactory A factory which generates {@link LoadBalancer} objects.
-     */
-    public DefaultRedisClientBuilder(LoadBalancerFactory<ResolvedAddress, RedisConnection> loadBalancerFactory) {
-        this(loadBalancerFactory, new RedisClientConfig(new TcpClientConfig(false)));
+    DefaultRedisClientBuilder(final ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>> serviceDiscoverer,
+                              final U address) {
+        this.address = requireNonNull(address);
+        config = new RedisClientConfig(new TcpClientConfig(false));
+        loadBalancerFactory = newRoundRobinFactory();
+        this.serviceDiscoverer = requireNonNull(serviceDiscoverer);
     }
 
-    /**
-     * Create a new instance.
-     * @param loadBalancerFactory A factory which generates {@link LoadBalancer} objects.
-     * @param config the {@link RedisClientConfig} to use as basis
-     */
-    DefaultRedisClientBuilder(LoadBalancerFactory<ResolvedAddress, RedisConnection> loadBalancerFactory,
-                              RedisClientConfig config) {
-        this.loadBalancerFactory = requireNonNull(loadBalancerFactory);
-        this.config = requireNonNull(config);
+    private DefaultRedisClientBuilder(U address, DefaultRedisClientBuilder<U, R> from) {
+        this.address = address;
+        config = from.config;
+        executionContext = from.executionContext;
+        loadBalancerFactory = from.loadBalancerFactory;
+        serviceDiscoverer = from.serviceDiscoverer;
+        connectionFilterFactory = from.connectionFilterFactory;
+        clientFilterFactory = from.clientFilterFactory;
+        connectionFactoryFilter = from.connectionFactoryFilter;
+        lbReadyFilter = from.lbReadyFilter;
     }
 
-    /**
-     * Enable SSL/TLS using the provided {@link SslConfig}. To disable SSL pass in {@code null}.
-     * @param config the {@link SslConfig}.
-     * @return {@code this}.
-     * @throws IllegalStateException if accessing the cert/key throws when {@link InputStream#close()} is called.
-     */
-    public DefaultRedisClientBuilder<ResolvedAddress> ssl(@Nullable SslConfig config) {
-        this.config.getTcpClientConfig().setSslConfig(config);
-        return this;
+    DefaultRedisClientBuilder<U, R> copy() {
+        return new DefaultRedisClientBuilder<>(address, this);
     }
 
-    /**
-     * Add a {@link SocketOption} for all connections created by this builder.
-     *
-     * @param <T> the type of the value.
-     * @param option the option to apply.
-     * @param value the value.
-     * @return {@code this}.
-     */
-    public <T> DefaultRedisClientBuilder<ResolvedAddress> socketOption(SocketOption<T> option, T value) {
-        config.getTcpClientConfig().setSocketOption(option, value);
-        return this;
+    DefaultRedisClientBuilder<U, R> copy(U address) {
+        return new DefaultRedisClientBuilder<>(address, this);
     }
 
-    /**
-     * Enable wire-logging for connections created by this builder. All wire events will be logged at trace level.
-     *
-     * @param loggerName The name of the logger to log wire events.
-     * @return {@code this}.
-     */
-    public DefaultRedisClientBuilder<ResolvedAddress> enableWireLogging(String loggerName) {
-        config.getTcpClientConfig().enableWireLogging(loggerName);
-        return this;
+    static DefaultRedisClientBuilder<HostAndPort, InetSocketAddress> forHostAndPort(final HostAndPort address) {
+        // We assume here that there is no need to explicitly close the ServiceDiscoverer if the Publisher returned
+        // from it is correctly cancelled. This means that a ServiceDiscoverer does not keep state outside the scope
+        // of Publishers returned from their discover() methods. Hence, we do not need to explicitly close this
+        // ServiceDiscoverer created here.
+        return new DefaultRedisClientBuilder<>(new DefaultDnsServiceDiscovererBuilder(globalExecutionContext())
+                .build(), address);
     }
 
-    /**
-     * Disable previously configured wire-logging for connections created by this builder.
-     * If wire-logging has not been configured before, this method has no effect.
-     *
-     * @return {@code this}.
-     * @see #enableWireLogging(String)
-     */
-    public DefaultRedisClientBuilder<ResolvedAddress> disableWireLogging() {
-        config.getTcpClientConfig().disableWireLogging();
-        return this;
-    }
-
-    /**
-     * Sets maximum requests that can be pipelined on a connection created by this builder.
-     *
-     * @param maxPipelinedRequests Maximum number of pipelined requests per {@link RedisConnection}.
-     * @return {@code this}.
-     */
-    public DefaultRedisClientBuilder<ResolvedAddress> maxPipelinedRequests(int maxPipelinedRequests) {
-        config.setMaxPipelinedRequests(maxPipelinedRequests);
-        return this;
-    }
-
-    /**
-     * Sets the idle timeout for connections created by this builder.
-     *
-     * @param idleConnectionTimeout the timeout {@link Duration} or {@code null} if no timeout configured.
-     * @return {@code this}.
-     */
-    public DefaultRedisClientBuilder<ResolvedAddress> idleConnectionTimeout(@Nullable Duration idleConnectionTimeout) {
-        config.setIdleConnectionTimeout(idleConnectionTimeout);
-        return this;
-    }
-
-    /**
-     * Sets the ping period to keep alive connections created by this builder.
-     *
-     * @param pingPeriod the {@link Duration} between keep-alive pings or {@code null} to disable pings.
-     * @return {@code this}.
-     */
-    public DefaultRedisClientBuilder<ResolvedAddress> pingPeriod(@Nullable final Duration pingPeriod) {
-        config.setPingPeriod(pingPeriod);
-        return this;
-    }
-
-    /**
-     * Set the {@link Function} which is used as a factory to filter/decorate {@link RedisConnection} created by this
-     * builder.
-     * <p>
-     * Filtering allows you to wrap a {@link RedisConnection} and modify behavior during request/response processing.
-     * Some potential candidates for filtering include logging, metrics, and decorating responses.
-     * @param connectionFilterFactory {@link RedisConnectionFilterFactory} to decorate a {@link RedisConnection} for the
-     * purpose of filtering.
-     * @return {@code this}.
-     */
-    public DefaultRedisClientBuilder<ResolvedAddress> appendConnectionFilter(
-            RedisConnectionFilterFactory connectionFilterFactory) {
-        this.connectionFilterFactory = requireNonNull(connectionFilterFactory);
-        return this;
-    }
-
-    /**
-     * Set the filter factory that is used to decorate {@link RedisClient} created by this builder.
-     * <p>
-     * Note this method will be used to decorate the result of {@link #build(ExecutionContext, Publisher)} before it is
-     * returned to the user.
-     * @param clientFilterFactory factory to decorate a {@link RedisClient} for the purpose of filtering.
-     * @return {@code this}
-     */
-    public DefaultRedisClientBuilder<ResolvedAddress> appendClientFilter(
-            RedisClientFilterFactory clientFilterFactory) {
-        this.clientFilterFactory = requireNonNull(clientFilterFactory);
+    @Override
+    public RedisClientBuilder<U, R> executionContext(final ExecutionContext context) {
+        this.executionContext = context;
         return this;
     }
 
     @Override
-    public RedisClient build(ExecutionContext executionContext,
-                             Publisher<Event<ResolvedAddress>> addressEventStream) {
-        return newRedisClient(executionContext, addressEventStream, config.asReadOnly(), connectionFilterFactory,
-                clientFilterFactory, loadBalancerFactory);
+    public DefaultRedisClientBuilder<U, R> sslConfig(@Nullable SslConfig config) {
+        this.config.getTcpClientConfig().setSslConfig(config);
+        return this;
     }
 
-    static <ResolvedAddress, EventType extends Event<ResolvedAddress>> RedisClient newRedisClient(
-            ExecutionContext executionContext, Publisher<EventType> addressEventStream,
-            ReadOnlyRedisClientConfig roConfig, RedisConnectionFilterFactory connectionFilterFactory,
-            RedisClientFilterFactory clientFilterFactory,
-            LoadBalancerFactory<ResolvedAddress, RedisConnection> loadBalancerFactory) {
-        final Publisher<EventType> multicastAddressEventStream = addressEventStream.multicast(2);
+    @Override
+    public <T> DefaultRedisClientBuilder<U, R> socketOption(SocketOption<T> option, T value) {
+        config.getTcpClientConfig().setSocketOption(option, value);
+        return this;
+    }
 
-        LoadBalancer<? extends RedisConnection> lbfUntypedForCast =
-                loadBalancerFactory.newLoadBalancer(multicastAddressEventStream,
-                        new SubscribedLBRedisConnectionFactory<>(roConfig, executionContext, connectionFilterFactory));
-        @SuppressWarnings("unchecked")
-        LoadBalancer<LoadBalancedRedisConnection> subscribeLb =
-                (LoadBalancer<LoadBalancedRedisConnection>) lbfUntypedForCast;
-        lbfUntypedForCast = loadBalancerFactory.newLoadBalancer(multicastAddressEventStream,
-                new PipelinedLBRedisConnectionFactory<>(roConfig, executionContext, connectionFilterFactory));
-        @SuppressWarnings("unchecked")
-        LoadBalancer<LoadBalancedRedisConnection> pipelineLb =
-                (LoadBalancer<LoadBalancedRedisConnection>) lbfUntypedForCast;
+    @Override
+    public DefaultRedisClientBuilder<U, R> enableWireLogging(String loggerName) {
+        config.getTcpClientConfig().enableWireLogging(loggerName);
+        return this;
+    }
 
-        return clientFilterFactory.apply(new DefaultRedisClient(executionContext, subscribeLb, pipelineLb),
-                subscribeLb.eventStream(), pipelineLb.eventStream());
+    @Override
+    public DefaultRedisClientBuilder<U, R> disableWireLogging() {
+        config.getTcpClientConfig().disableWireLogging();
+        return this;
+    }
+
+    @Override
+    public DefaultRedisClientBuilder<U, R> maxPipelinedRequests(int maxPipelinedRequests) {
+        config.setMaxPipelinedRequests(maxPipelinedRequests);
+        return this;
+    }
+
+    @Override
+    public DefaultRedisClientBuilder<U, R> idleConnectionTimeout(@Nullable Duration idleConnectionTimeout) {
+        config.setIdleConnectionTimeout(idleConnectionTimeout);
+        return this;
+    }
+
+    @Override
+    public DefaultRedisClientBuilder<U, R> pingPeriod(@Nullable final Duration pingPeriod) {
+        config.setPingPeriod(pingPeriod);
+        return this;
+    }
+
+    @Override
+    public DefaultRedisClientBuilder<U, R> appendConnectionFilter(RedisConnectionFilterFactory factory) {
+        connectionFilterFactory = connectionFilterFactory.append(factory);
+        return this;
+    }
+
+    @Override
+    public DefaultRedisClientBuilder<U, R> appendConnectionFactoryFilter(
+            final ConnectionFactoryFilter<R, RedisConnection> factory) {
+        connectionFactoryFilter = connectionFactoryFilter.append(factory);
+        return this;
+    }
+
+    @Override
+    public DefaultRedisClientBuilder<U, R> appendClientFilter(RedisClientFilterFactory factory) {
+        clientFilterFactory = clientFilterFactory.append(factory);
+        return this;
+    }
+
+    @Override
+    public RedisClientBuilder<U, R> disableWaitForLoadBalancer() {
+        lbReadyFilter = RedisClientFilterFactory.identity();
+        return this;
+    }
+
+    @Override
+    public RedisClientBuilder<U, R> serviceDiscoverer(
+            final ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>> serviceDiscoverer) {
+        this.serviceDiscoverer = requireNonNull(serviceDiscoverer);
+        return this;
+    }
+
+    @Override
+    public RedisClientBuilder<U, R> loadBalancerFactory(final LoadBalancerFactory<R, RedisConnection> factory) {
+        loadBalancerFactory = requireNonNull(factory);
+        return this;
+    }
+
+    /**
+     * Should the subscribe signal be deferred until the Redis PubSub subscribe ack or not (default).
+     *
+     * WARNING: internal API not to be exposed outside the package.
+     * @param defer {@code true} to defer the subscribe
+     * @return {@code this}
+     */
+    RedisClientBuilder<U, R> setDeferSubscribeTillConnect(boolean defer) {
+        config.setDeferSubscribeTillConnect(defer);
+        return this;
+    }
+
+    @Override
+    public RedisClient build() {
+        return build0(serviceDiscoverer);
+    }
+
+    RedisClient build(ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>> sd) {
+        return build0(sd);
+    }
+
+    ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>> serviceDiscoverer() {
+        return serviceDiscoverer;
+    }
+
+    U address() {
+        return address;
+    }
+
+    ExecutionContext executionContext() {
+        return executionContext;
+    }
+
+    @Nonnull
+    private RedisClient build0(ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>> sd) {
+        Publisher<? extends ServiceDiscovererEvent<R>> multicastAddressEventStream =
+                sd.discover(address).multicast(2);
+        ReadOnlyRedisClientConfig roConfig = config.asReadOnly();
+
+        // Track resources that potentially need to be closed when an exception is thrown during buildStreaming
+        final CompositeCloseable closeOnException = newCompositeCloseable();
+
+        try {
+            LoadBalancer<? extends RedisConnection> lbfUntypedForCast =
+                    loadBalancerFactory.newLoadBalancer(multicastAddressEventStream,
+                            connectionFactoryFilter.apply(new SubscribedLBRedisConnectionFactory<>(roConfig,
+                                    executionContext, connectionFilterFactory)));
+            closeOnException.append(lbfUntypedForCast);
+            @SuppressWarnings("unchecked")
+            LoadBalancer<LoadBalancedRedisConnection> subscribeLb =
+                    (LoadBalancer<LoadBalancedRedisConnection>) lbfUntypedForCast;
+
+            lbfUntypedForCast = loadBalancerFactory.newLoadBalancer(multicastAddressEventStream,
+                    connectionFactoryFilter.apply(new PipelinedLBRedisConnectionFactory<>(roConfig, executionContext,
+                            connectionFilterFactory)));
+            closeOnException.append(lbfUntypedForCast);
+            @SuppressWarnings("unchecked")
+            LoadBalancer<LoadBalancedRedisConnection> pipelineLb =
+                    (LoadBalancer<LoadBalancedRedisConnection>) lbfUntypedForCast;
+
+            return clientFilterFactory.append(lbReadyFilter)
+                    .apply(closeOnException.append(new DefaultRedisClient(executionContext, subscribeLb, pipelineLb)),
+                            subscribeLb.eventStream(), pipelineLb.eventStream());
+        } catch (Throwable t) {
+            closeOnException.closeAsync().subscribe();
+            throw t;
+        }
     }
 
     private static final class DefaultRedisClient extends RedisClient {

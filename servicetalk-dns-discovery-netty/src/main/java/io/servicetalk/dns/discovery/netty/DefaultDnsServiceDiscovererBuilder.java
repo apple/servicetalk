@@ -16,6 +16,7 @@
 package io.servicetalk.dns.discovery.netty;
 
 import io.servicetalk.client.api.ServiceDiscoverer;
+import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.concurrent.api.BiIntFunction;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.transport.api.ExecutionContext;
@@ -81,10 +82,12 @@ public final class DefaultDnsServiceDiscovererBuilder {
     /**
      * Set the {@link DnsServerAddressStreamProvider} which determines which DNS server should be used per query.
      *
-     * @param dnsServerAddressStreamProvider the {@link DnsServerAddressStreamProvider} which determines which DNS server should be used per query.
+     * @param dnsServerAddressStreamProvider the {@link DnsServerAddressStreamProvider} which determines which DNS
+     * server should be used per query.
      * @return {@code this}.
      */
-    public DefaultDnsServiceDiscovererBuilder setDnsServerAddressStreamProvider(@Nullable DnsServerAddressStreamProvider dnsServerAddressStreamProvider) {
+    public DefaultDnsServiceDiscovererBuilder setDnsServerAddressStreamProvider(
+            @Nullable DnsServerAddressStreamProvider dnsServerAddressStreamProvider) {
         this.dnsServerAddressStreamProvider = dnsServerAddressStreamProvider;
         return this;
     }
@@ -119,7 +122,8 @@ public final class DefaultDnsServiceDiscovererBuilder {
      * @param dnsResolverAddressTypes the address types.
      * @return {@code this}.
      */
-    public DefaultDnsServiceDiscovererBuilder setDnsResolverAddressTypes(@Nullable DnsResolverAddressTypes dnsResolverAddressTypes) {
+    public DefaultDnsServiceDiscovererBuilder setDnsResolverAddressTypes(
+            @Nullable DnsResolverAddressTypes dnsResolverAddressTypes) {
         this.dnsResolverAddressTypes = dnsResolverAddressTypes;
         return this;
     }
@@ -140,7 +144,7 @@ public final class DefaultDnsServiceDiscovererBuilder {
      *
      * @return a new instance of {@link ServiceDiscoverer ServiceDiscoverer&lt;String, InetAddress&gt;}.
      */
-    public ServiceDiscoverer<String, InetAddress> buildInetDiscoverer() {
+    public ServiceDiscoverer<String, InetAddress, ServiceDiscovererEvent<InetAddress>> buildInetDiscoverer() {
         return newDefaultDnsServiceDiscoverer();
     }
 
@@ -150,7 +154,7 @@ public final class DefaultDnsServiceDiscovererBuilder {
      * @return a new instance of {@link ServiceDiscoverer ServiceDiscoverer&lt;HostAndPort, InetSocketAddress&gt;}.
      * @see HostAndPort
      */
-    public ServiceDiscoverer<HostAndPort, InetSocketAddress> build() {
+    public ServiceDiscoverer<HostAndPort, InetSocketAddress, ServiceDiscovererEvent<InetSocketAddress>> build() {
         return newDefaultDnsServiceDiscoverer().toHostAndPortDiscoverer();
     }
 

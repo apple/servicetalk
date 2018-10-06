@@ -100,7 +100,7 @@ public class BlockingPartitionedRedisClientTest extends AbstractPartitionedRedis
     }
 
     @Test
-    public void BlockingRedisCommanderUsesFilters() throws Exception {
+    public void blockingRedisCommanderUsesFilters() throws Exception {
         final PartitionedRedisClient delegate = client;
         final AtomicBoolean requestCalled = new AtomicBoolean();
         CountDownLatch closedLatch = new CountDownLatch(1);

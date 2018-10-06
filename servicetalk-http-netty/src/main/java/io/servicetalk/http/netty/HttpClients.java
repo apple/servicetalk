@@ -17,6 +17,7 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.api.ServiceDiscoverer;
+import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.http.api.HttpClient;
 import io.servicetalk.http.api.HttpHeaderNames;
 import io.servicetalk.http.api.MultiAddressHttpClientBuilder;
@@ -97,7 +98,7 @@ public final class HttpClients {
      * @return new builder with provided configuration
      */
     public static <U, R> SingleAddressHttpClientBuilder<U, R> forSingleAddress(
-            final ServiceDiscoverer<U, R> serviceDiscoverer,
+            final ServiceDiscoverer<U, R, ServiceDiscovererEvent<R>> serviceDiscoverer,
             final U address) {
         return new DefaultSingleAddressHttpClientBuilder<>(serviceDiscoverer, address);
     }
