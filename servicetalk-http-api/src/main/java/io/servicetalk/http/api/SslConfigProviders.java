@@ -13,14 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.http.netty;
+package io.servicetalk.http.api;
 
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.SslConfig;
 
-import static io.servicetalk.http.netty.HttpScheme.HTTP;
-import static io.servicetalk.http.netty.HttpScheme.HTTPS;
-import static io.servicetalk.http.netty.HttpScheme.NONE;
+import static io.servicetalk.http.api.HttpScheme.HTTP;
+import static io.servicetalk.http.api.HttpScheme.HTTPS;
+import static io.servicetalk.http.api.HttpScheme.NONE;
 import static io.servicetalk.transport.api.SslConfigBuilder.forClient;
 
 /**

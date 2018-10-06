@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.http.netty;
+package io.servicetalk.http.api;
 
 import javax.annotation.Nullable;
 
@@ -65,7 +65,14 @@ public enum HttpScheme {
         return defaultPort;
     }
 
-    static HttpScheme from(@Nullable String scheme) {
+    /**
+     * Converts the passed {@code scheme} to a valid {@link HttpScheme} if possible.
+     *
+     * @param scheme representing an HTTP scheme.
+     * @return {@link HttpScheme} if the passed {@code scheme} is a valid HTTP scheme.
+     * @throws IllegalArgumentException If the passed {@code scheme} is an invalid HTTP scheme.
+     */
+    public static HttpScheme schemeForValue(@Nullable String scheme) {
         if (scheme == null) {
             return NONE;
         }

@@ -19,11 +19,11 @@ import io.servicetalk.transport.api.HostAndPort;
 
 import org.junit.Test;
 
-import static io.servicetalk.http.netty.HttpScheme.HTTP;
-import static io.servicetalk.http.netty.HttpScheme.HTTPS;
-import static io.servicetalk.http.netty.HttpScheme.NONE;
-import static io.servicetalk.http.netty.SslConfigProviders.plainByDefault;
-import static io.servicetalk.http.netty.SslConfigProviders.secureByDefault;
+import static io.servicetalk.http.api.HttpScheme.HTTP;
+import static io.servicetalk.http.api.HttpScheme.HTTPS;
+import static io.servicetalk.http.api.HttpScheme.NONE;
+import static io.servicetalk.http.api.SslConfigProviders.plainByDefault;
+import static io.servicetalk.http.api.SslConfigProviders.secureByDefault;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;

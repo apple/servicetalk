@@ -13,9 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.http.netty;
+package io.servicetalk.http.api;
 
-import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.SslConfig;
 

@@ -13,17 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.http.netty;
+package io.servicetalk.http.api;
 
-import io.servicetalk.http.api.ClientGroupFilterFunction;
-import io.servicetalk.http.api.HttpClientGroupFilterFactory;
-import io.servicetalk.http.api.HttpHeaderNames;
-import io.servicetalk.http.api.StreamingHttpClient;
-import io.servicetalk.http.api.StreamingHttpClientGroup;
-import io.servicetalk.http.api.StreamingHttpRequest;
+import io.servicetalk.client.api.LoadBalancerFactory;
+import io.servicetalk.client.api.ServiceDiscoverer;
+import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.SslConfig;
 
+import java.net.SocketOption;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
 
@@ -37,8 +35,53 @@ import java.util.function.UnaryOperator;
  * @param <R> the type of address after resolution (resolved address)
  * @see <a href="https://tools.ietf.org/html/rfc7230#section-5.3.2">absolute-form rfc7230#section-5.3.2</a>
  */
-public interface MultiAddressHttpClientBuilder<U, R>
-        extends BaseHttpClientBuilder<U, R, MultiAddressHttpClientBuilder<U, R>> {
+public interface MultiAddressHttpClientBuilder<U, R> extends HttpClientBuilder<U, R> {
+
+    @Override
+    MultiAddressHttpClientBuilder<U, R> executionContext(ExecutionContext context);
+
+    @Override
+    <T> MultiAddressHttpClientBuilder<U, R> socketOption(SocketOption<T> option, T value);
+
+    @Override
+    MultiAddressHttpClientBuilder<U, R> enableWireLogging(String loggerName);
+
+    @Override
+    MultiAddressHttpClientBuilder<U, R> disableWireLogging();
+
+    @Override
+    MultiAddressHttpClientBuilder<U, R> headersFactory(HttpHeadersFactory headersFactory);
+
+    @Override
+    MultiAddressHttpClientBuilder<U, R> maxInitialLineLength(int maxInitialLineLength);
+
+    @Override
+    MultiAddressHttpClientBuilder<U, R> maxHeaderSize(int maxHeaderSize);
+
+    @Override
+    MultiAddressHttpClientBuilder<U, R> headersEncodedSizeEstimate(int headersEncodedSizeEstimate);
+
+    @Override
+    MultiAddressHttpClientBuilder<U, R> trailersEncodedSizeEstimate(int trailersEncodedSizeEstimate);
+
+    @Override
+    MultiAddressHttpClientBuilder<U, R> maxPipelinedRequests(int maxPipelinedRequests);
+
+    @Override
+    MultiAddressHttpClientBuilder<U, R> appendConnectionFilter(HttpConnectionFilterFactory factory);
+
+    @Override
+    MultiAddressHttpClientBuilder<U, R> disableHostHeaderFallback();
+
+    @Override
+    MultiAddressHttpClientBuilder<U, R> disableWaitForLoadBalancer();
+
+    @Override
+    MultiAddressHttpClientBuilder<U, R> serviceDiscoverer(ServiceDiscoverer<U, R> serviceDiscoverer);
+
+    @Override
+    MultiAddressHttpClientBuilder<U, R> loadBalancerFactory(
+            LoadBalancerFactory<R, StreamingHttpConnection> loadBalancerFactory);
 
     /**
      * Automatically set the provided {@link HttpHeaderNames#HOST} on {@link StreamingHttpRequest}s when it's missing.
@@ -53,8 +96,8 @@ public interface MultiAddressHttpClientBuilder<U, R>
     MultiAddressHttpClientBuilder<U, R> enableHostHeaderFallback(Function<U, CharSequence> hostHeaderTransformer);
 
     /**
-     * Appends the filter to the chain of filters used to decorate the {@link StreamingHttpClient} created by this builder for a
-     * given {@code UnresolvedAddress}.
+     * Append the filter to the chain of filters used to decorate the {@link StreamingHttpClient} created by this
+     * builder for a given {@code UnresolvedAddress}.
      * <p>
      * Note this method will be used to decorate the result of {@link #buildStreaming()} before it is
      * returned to the user.
@@ -74,9 +117,11 @@ public interface MultiAddressHttpClientBuilder<U, R>
     MultiAddressHttpClientBuilder<U, R> appendClientFilter(HttpClientGroupFilterFactory<U> function);
 
     /**
-     * Appends the filter to the chain of filters used to decorate the {@link StreamingHttpClientGroup} created by this builder.
+     * Append the filter to the chain of filters used to decorate the {@link StreamingHttpClientGroup} created by this
+     * builder.
      * <p>
-     * Filtering allows you to wrap {@link StreamingHttpClientGroup} and modify behavior during request/response processing.
+     * Filtering allows you to wrap {@link StreamingHttpClientGroup} and modify behavior during request/response
+     * processing.
      * Some potential candidates for filtering include logging, metrics, and decorating responses.
      * <p>
      * The order of execution of these filters are in order of append. If 3 filters are added as follows:

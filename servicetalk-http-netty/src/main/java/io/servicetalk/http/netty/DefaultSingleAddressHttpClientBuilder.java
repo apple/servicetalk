@@ -27,6 +27,7 @@ import io.servicetalk.http.api.HttpClientFilterFactory;
 import io.servicetalk.http.api.HttpConnectionFilterFactory;
 import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.api.LoadBalancerReadyStreamingHttpClient;
+import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
@@ -225,8 +226,8 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
     }
 
     @Override
-    public SingleAddressHttpClientBuilder<U, R> appendConnectionFilter(final HttpConnectionFilterFactory function) {
-        connectionFilterFunction = connectionFilterFunction.append(requireNonNull(function));
+    public SingleAddressHttpClientBuilder<U, R> appendConnectionFilter(final HttpConnectionFilterFactory factory) {
+        connectionFilterFunction = connectionFilterFunction.append(requireNonNull(factory));
         return this;
     }
 

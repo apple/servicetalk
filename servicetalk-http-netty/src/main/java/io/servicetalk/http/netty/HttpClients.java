@@ -19,6 +19,8 @@ import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.http.api.HttpClient;
 import io.servicetalk.http.api.HttpHeaderNames;
+import io.servicetalk.http.api.MultiAddressHttpClientBuilder;
+import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.transport.api.HostAndPort;
 
@@ -56,7 +58,7 @@ public final class HttpClients {
      * @param host host to connect to, resolved by default using a DNS {@link ServiceDiscoverer}. This will also be
      * used for the {@link HttpHeaderNames#HOST} together with the {@code port}. Use this method {@link
      * SingleAddressHttpClientBuilder#enableHostHeaderFallback(CharSequence)} if you want to override that value or
-     * {@link BaseHttpClientBuilder#disableHostHeaderFallback()} if you want to disable this behavior.
+     * {@link SingleAddressHttpClientBuilder#disableHostHeaderFallback()} if you want to disable this behavior.
      * @param port port to connect to
      * @return new builder for the address
      */
@@ -72,7 +74,7 @@ public final class HttpClients {
      * @param address the {@code UnresolvedAddress} to connect to, resolved by default using a DNS {@link
      * ServiceDiscoverer}. This address will also be used for the {@link HttpHeaderNames#HOST}. Use this method {@link
      * SingleAddressHttpClientBuilder#enableHostHeaderFallback(CharSequence)} if you want to override that value or
-     * {@link BaseHttpClientBuilder#disableHostHeaderFallback()} if you want to disable this behavior.
+     * {@link SingleAddressHttpClientBuilder#disableHostHeaderFallback()} if you want to disable this behavior.
      * @return new builder for the address
      */
     public static SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> forSingleAddress(
@@ -89,7 +91,7 @@ public final class HttpClients {
      * @param address the {@code UnresolvedAddress} to connect to resolved using the provided {@code serviceDiscoverer}.
      * This address will also be used for the {@link HttpHeaderNames#HOST} using a best effort conversion. Use {@link
      * SingleAddressHttpClientBuilder#enableHostHeaderFallback(CharSequence)} if you want to override that value or
-     * {@link BaseHttpClientBuilder#disableHostHeaderFallback()} if you want to disable this behavior.
+     * {@link SingleAddressHttpClientBuilder#disableHostHeaderFallback()} if you want to disable this behavior.
      * @param <U> the type of address before resolution (unresolved address)
      * @param <R> the type of address after resolution (resolved address)
      * @return new builder with provided configuration
