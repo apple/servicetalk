@@ -49,7 +49,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 
-public class OpenTracingStreamingHttpConnectionFilterTest {
+public class TracingHttpConnectionFilterTest {
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
     private static final HttpSerializationProvider httpSerializer = jsonSerializer(new JacksonSerializationProvider());
@@ -59,7 +59,7 @@ public class OpenTracingStreamingHttpConnectionFilterTest {
         DefaultInMemoryTracer tracer = new DefaultInMemoryTracer.Builder(SCOPE_MANAGER).build();
         try (ServerContext context = buildServer()) {
             try (HttpClient client = forSingleAddress(of((InetSocketAddress) context.listenAddress()))
-                    .appendConnectionFilter(conn -> new OpenTracingStreamingHttpConnectionFilter(
+                    .appendConnectionFilter(conn -> new TracingHttpConnectionFilter(
                             tracer, "testClient", conn)).build()) {
                 HttpResponse response = client.request(client.get("/")).toFuture().get();
                 TestSpanState serverSpanState = response.payloadBody(httpSerializer.deserializerFor(
@@ -80,7 +80,7 @@ public class OpenTracingStreamingHttpConnectionFilterTest {
         DefaultInMemoryTracer tracer = new DefaultInMemoryTracer.Builder(SCOPE_MANAGER).build();
         try (ServerContext context = buildServer()) {
             try (HttpClient client = forSingleAddress(of((InetSocketAddress) context.listenAddress()))
-                    .appendConnectionFilter(conn -> new OpenTracingStreamingHttpConnectionFilter(
+                    .appendConnectionFilter(conn -> new TracingHttpConnectionFilter(
                             tracer, "testClient", conn)).build()) {
                 try (InMemoryScope clientScope = tracer.buildSpan("test").startActive(true)) {
                     HttpResponse response = client.request(client.get("/")).toFuture().get();

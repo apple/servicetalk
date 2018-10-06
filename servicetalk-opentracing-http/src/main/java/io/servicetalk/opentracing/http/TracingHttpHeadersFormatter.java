@@ -31,15 +31,15 @@ import static io.servicetalk.http.api.CharSequences.newAsciiString;
 import static io.servicetalk.opentracing.core.internal.HexUtil.validateHexBytes;
 import static java.lang.String.valueOf;
 
-final class OpenTracingHttpHeadersFormatter implements InMemoryTraceStateFormat<HttpHeaders> {
-    private static final Logger logger = LoggerFactory.getLogger(OpenTracingHttpHeadersFormatter.class);
+final class TracingHttpHeadersFormatter implements InMemoryTraceStateFormat<HttpHeaders> {
+    private static final Logger logger = LoggerFactory.getLogger(TracingHttpHeadersFormatter.class);
     private static final CharSequence TRACE_ID = newAsciiString(ZipkinHeaderNames.TRACE_ID);
     private static final CharSequence SPAN_ID = newAsciiString(ZipkinHeaderNames.SPAN_ID);
     private static final CharSequence PARENT_SPAN_ID = newAsciiString(ZipkinHeaderNames.PARENT_SPAN_ID);
     private static final CharSequence SAMPLED = newAsciiString(ZipkinHeaderNames.SAMPLED);
-    static final InMemoryTraceStateFormat<HttpHeaders> FORMATTER_VALIDATION = new OpenTracingHttpHeadersFormatter(true);
+    static final InMemoryTraceStateFormat<HttpHeaders> FORMATTER_VALIDATION = new TracingHttpHeadersFormatter(true);
     static final InMemoryTraceStateFormat<HttpHeaders> FORMATTER_NO_VALIDATION =
-            new OpenTracingHttpHeadersFormatter(false);
+            new TracingHttpHeadersFormatter(false);
 
     private final boolean verifyExtractedValues;
 
@@ -49,7 +49,7 @@ final class OpenTracingHttpHeadersFormatter implements InMemoryTraceStateFormat<
      * @param verifyExtractedValues {@code true} to make a best effort verification that the extracted values are of the
      * correct format.
      */
-    private OpenTracingHttpHeadersFormatter(boolean verifyExtractedValues) {
+    private TracingHttpHeadersFormatter(boolean verifyExtractedValues) {
         this.verifyExtractedValues = verifyExtractedValues;
     }
 

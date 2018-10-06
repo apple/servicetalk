@@ -38,7 +38,7 @@ import static io.opentracing.tag.Tags.HTTP_METHOD;
 import static io.opentracing.tag.Tags.HTTP_URL;
 import static io.opentracing.tag.Tags.SPAN_KIND;
 import static io.opentracing.tag.Tags.SPAN_KIND_SERVER;
-import static io.servicetalk.opentracing.http.OpenTracingHttpHeadersFormatter.traceStateFormatter;
+import static io.servicetalk.opentracing.http.TracingHttpHeadersFormatter.traceStateFormatter;
 import static io.servicetalk.opentracing.http.TracingUtils.tagErrorAndClose;
 import static io.servicetalk.opentracing.http.TracingUtils.tracingMapper;
 import static java.util.Objects.requireNonNull;
@@ -46,7 +46,7 @@ import static java.util.Objects.requireNonNull;
 /**
  * A {@link StreamingHttpService} that supports open tracing.
  */
-public class OpenTracingStreamingHttpServiceFilter extends StreamingHttpService {
+public class TracingHttpServiceFilter extends StreamingHttpService {
     private final StreamingHttpService next;
     private final Tracer tracer;
     private final String componentName;
@@ -58,9 +58,9 @@ public class OpenTracingStreamingHttpServiceFilter extends StreamingHttpService 
      * @param componentName The component name used during building new spans.
      * @param next The next {@link StreamingHttpService} in the filter chain.
      */
-    public OpenTracingStreamingHttpServiceFilter(Tracer tracer,
-                                                 String componentName,
-                                                 StreamingHttpService next) {
+    public TracingHttpServiceFilter(Tracer tracer,
+                                    String componentName,
+                                    StreamingHttpService next) {
         this(tracer, componentName, next, true);
     }
 
@@ -71,10 +71,10 @@ public class OpenTracingStreamingHttpServiceFilter extends StreamingHttpService 
      * @param validateTraceKeyFormat {@code true} to validate the contents of the trace ids.
      * @param next The next {@link StreamingHttpService} in the filter chain.
      */
-    public OpenTracingStreamingHttpServiceFilter(Tracer tracer,
-                                                 String componentName,
-                                                 StreamingHttpService next,
-                                                 boolean validateTraceKeyFormat) {
+    public TracingHttpServiceFilter(Tracer tracer,
+                                    String componentName,
+                                    StreamingHttpService next,
+                                    boolean validateTraceKeyFormat) {
         this.tracer = requireNonNull(tracer);
         this.componentName = requireNonNull(componentName);
         this.next = requireNonNull(next);
@@ -102,7 +102,7 @@ public class OpenTracingStreamingHttpServiceFilter extends StreamingHttpService 
                     if (injectSpanContextIntoResponse(parentSpanContext)) {
                         tracer.inject(currentScope.span().context(), formatter, resp.headers());
                     }
-                    return tracingMapper(resp, currentScope, OpenTracingStreamingHttpServiceFilter.this::isError);
+                    return tracingMapper(resp, currentScope, TracingHttpServiceFilter.this::isError);
                 }).doOnError(cause -> tagErrorAndClose(currentScope))
                   .doOnCancel(() -> tagErrorAndClose(currentScope))
                   .subscribe(subscriber);

@@ -33,7 +33,7 @@ import static java.util.Objects.requireNonNull;
 import static org.junit.Assert.assertEquals;
 
 @SuppressWarnings("PMD.AvoidUsingHardCodedIP")
-public class StreamingHttpConnectionHostHeaderFilterTest {
+public class HostHeaderHttpConnectionFilterTest {
     @Test
     public void ipv4NotEscaped() throws Exception {
         doHostHeaderTest("1.2.3.4", "1.2.3.4");
