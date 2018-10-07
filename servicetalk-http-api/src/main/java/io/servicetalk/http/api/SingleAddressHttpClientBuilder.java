@@ -15,6 +15,7 @@
  */
 package io.servicetalk.http.api;
 
+import io.servicetalk.client.api.ConnectionFactory;
 import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.api.LoadBalancerFactory;
 import io.servicetalk.client.api.ServiceDiscoverer;
@@ -26,6 +27,7 @@ import io.servicetalk.transport.api.SslConfig;
 import java.io.InputStream;
 import java.net.SocketOption;
 import java.util.function.BiFunction;
+import java.util.function.UnaryOperator;
 import javax.annotation.Nullable;
 
 /**
@@ -70,6 +72,10 @@ public interface SingleAddressHttpClientBuilder<U, R> extends HttpClientBuilder<
 
     @Override
     SingleAddressHttpClientBuilder<U, R> appendConnectionFilter(HttpConnectionFilterFactory factory);
+
+    @Override
+    SingleAddressHttpClientBuilder<U, R> appendConnectionFactoryFilter(
+            UnaryOperator<ConnectionFactory<R, ? extends StreamingHttpConnection>> factory);
 
     @Override
     SingleAddressHttpClientBuilder<U, R> disableHostHeaderFallback();

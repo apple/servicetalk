@@ -15,6 +15,7 @@
  */
 package io.servicetalk.http.netty;
 
+import io.servicetalk.client.api.ConnectionFactory;
 import io.servicetalk.client.api.DefaultGroupKey;
 import io.servicetalk.client.api.GroupKey;
 import io.servicetalk.client.api.LoadBalancerFactory;
@@ -56,6 +57,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.function.UnaryOperator;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
@@ -376,6 +378,13 @@ final class DefaultMultiAddressUrlHttpClientBuilder
     public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> appendConnectionFilter(
             final HttpConnectionFilterFactory factory) {
         builderTemplate.appendConnectionFilter(factory);
+        return this;
+    }
+
+    @Override
+    public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> appendConnectionFactoryFilter(
+            final UnaryOperator<ConnectionFactory<InetSocketAddress, ? extends StreamingHttpConnection>> factory) {
+        builderTemplate.appendConnectionFactoryFilter(factory);
         return this;
     }
 

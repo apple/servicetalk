@@ -15,6 +15,7 @@
  */
 package io.servicetalk.http.api;
 
+import io.servicetalk.client.api.ConnectionFactory;
 import io.servicetalk.client.api.LoadBalancerFactory;
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
@@ -70,6 +71,10 @@ public interface MultiAddressHttpClientBuilder<U, R> extends HttpClientBuilder<U
 
     @Override
     MultiAddressHttpClientBuilder<U, R> appendConnectionFilter(HttpConnectionFilterFactory factory);
+
+    @Override
+    MultiAddressHttpClientBuilder<U, R> appendConnectionFactoryFilter(
+            UnaryOperator<ConnectionFactory<R, ? extends StreamingHttpConnection>> factory);
 
     @Override
     MultiAddressHttpClientBuilder<U, R> disableHostHeaderFallback();
