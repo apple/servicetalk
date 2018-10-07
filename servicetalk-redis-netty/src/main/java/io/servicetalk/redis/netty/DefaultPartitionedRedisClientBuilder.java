@@ -399,14 +399,14 @@ public class DefaultPartitionedRedisClientBuilder<ResolvedAddress>
         }
 
         @Override
-        public Single<ReservedRedisConnection> reserveConnection(PartitionAttributes partitionSelector,
-                                                                 RedisRequest request) {
+        public Single<? extends ReservedRedisConnection> reserveConnection(PartitionAttributes partitionSelector,
+                                                                           Command command) {
             return new Single<ReservedRedisConnection>() {
                 @Override
                 protected void handleSubscribe(Subscriber<? super ReservedRedisConnection> subscriber) {
                     RedisClient client = lookupPartitionedClientOrFailSubscriber(partitionSelector, subscriber);
                     if (client != null) {
-                        client.reserveConnection(request).subscribe(subscriber);
+                        client.reserveConnection(command).subscribe(subscriber);
                     }
                 }
             };
@@ -540,7 +540,7 @@ public class DefaultPartitionedRedisClientBuilder<ResolvedAddress>
         }
 
         @Override
-        public Single<? extends ReservedRedisConnection> reserveConnection(RedisRequest request) {
+        public Single<? extends ReservedRedisConnection> reserveConnection(Command command) {
             return Single.error(new UnsupportedOperationException());
         }
 

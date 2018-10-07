@@ -24,10 +24,10 @@ import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.redis.api.BlockingRedisCommander;
 import io.servicetalk.redis.api.PartitionedRedisClient;
-import io.servicetalk.redis.api.RedisClient;
+import io.servicetalk.redis.api.RedisClient.ReservedRedisConnection;
 import io.servicetalk.redis.api.RedisData;
 import io.servicetalk.redis.api.RedisPartitionAttributesBuilder;
-import io.servicetalk.redis.api.RedisProtocolSupport;
+import io.servicetalk.redis.api.RedisProtocolSupport.Command;
 import io.servicetalk.redis.api.RedisRequest;
 import io.servicetalk.transport.api.ExecutionContext;
 
@@ -112,14 +112,16 @@ public class BlockingPartitionedRedisClientTest extends AbstractPartitionedRedis
             }
 
             @Override
-            public <R> Single<R> request(PartitionAttributes partitionSelector, RedisRequest request, Class<R> responseType) {
+            public <R> Single<R> request(PartitionAttributes partitionSelector, RedisRequest request,
+                                         Class<R> responseType) {
                 requestCalled.set(true);
                 return delegate.request(partitionSelector, request, responseType);
             }
 
             @Override
-            public Single<RedisClient.ReservedRedisConnection> reserveConnection(PartitionAttributes partitionSelector, RedisRequest request) {
-                return delegate.reserveConnection(partitionSelector, request);
+            public Single<? extends ReservedRedisConnection> reserveConnection(PartitionAttributes partitionSelector,
+                                                                               Command command) {
+                return delegate.reserveConnection(partitionSelector, command);
             }
 
             @Override
@@ -128,7 +130,7 @@ public class BlockingPartitionedRedisClientTest extends AbstractPartitionedRedis
             }
 
             @Override
-            protected Function<RedisProtocolSupport.Command, RedisPartitionAttributesBuilder> redisPartitionAttributesBuilderFunction() {
+            protected Function<Command, RedisPartitionAttributesBuilder> redisPartitionAttributesBuilderFunction() {
                 return getPartitionAttributesBuilderFactory();
             }
 

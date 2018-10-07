@@ -23,11 +23,11 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.redis.api.PartitionedRedisClient;
 import io.servicetalk.redis.api.PubSubRedisConnection;
 import io.servicetalk.redis.api.PubSubRedisMessage;
-import io.servicetalk.redis.api.RedisClient;
+import io.servicetalk.redis.api.RedisClient.ReservedRedisConnection;
 import io.servicetalk.redis.api.RedisCommander;
 import io.servicetalk.redis.api.RedisData;
 import io.servicetalk.redis.api.RedisPartitionAttributesBuilder;
-import io.servicetalk.redis.api.RedisProtocolSupport;
+import io.servicetalk.redis.api.RedisProtocolSupport.Command;
 import io.servicetalk.redis.api.RedisRequest;
 import io.servicetalk.transport.api.ExecutionContext;
 
@@ -115,14 +115,16 @@ public class PartitionedRedisClientTest extends AbstractPartitionedRedisClientTe
             }
 
             @Override
-            public <R> Single<R> request(PartitionAttributes partitionSelector, RedisRequest request, Class<R> responseType) {
+            public <R> Single<R> request(PartitionAttributes partitionSelector, RedisRequest request,
+                                         Class<R> responseType) {
                 requestCalled.set(true);
                 return delegate.request(partitionSelector, request, responseType);
             }
 
             @Override
-            public Single<RedisClient.ReservedRedisConnection> reserveConnection(PartitionAttributes partitionSelector, RedisRequest request) {
-                return delegate.reserveConnection(partitionSelector, request);
+            public Single<? extends ReservedRedisConnection> reserveConnection(PartitionAttributes partitionSelector,
+                                                                               Command command) {
+                return delegate.reserveConnection(partitionSelector, command);
             }
 
             @Override
@@ -131,7 +133,7 @@ public class PartitionedRedisClientTest extends AbstractPartitionedRedisClientTe
             }
 
             @Override
-            protected Function<RedisProtocolSupport.Command, RedisPartitionAttributesBuilder> redisPartitionAttributesBuilderFunction() {
+            protected Function<Command, RedisPartitionAttributesBuilder> redisPartitionAttributesBuilderFunction() {
                 return getPartitionAttributesBuilderFactory();
             }
 
@@ -143,7 +145,7 @@ public class PartitionedRedisClientTest extends AbstractPartitionedRedisClientTe
             @Override
             public Completable closeAsync() {
                 closeCalled.set(true);
-                // Don't actually close the client connection for this unit test ... because it is used in a static fashion.
+                // Don't actually close the client connection for this unit test, because it is used in a static fashion.
                 return delegate.onClose();
             }
         };

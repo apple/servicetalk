@@ -113,7 +113,8 @@ public class SubscribedRedisClientTest extends BaseRedisClientTest {
             return this;
         }
 
-        boolean awaitUntilAtLeastNReceived(final int n, final long timeout, final TimeUnit unit) throws InterruptedException {
+        boolean awaitUntilAtLeastNReceived(final int n, final long timeout, final TimeUnit unit)
+                throws InterruptedException {
             return onNextSemaphore.tryAcquire(n, timeout, unit);
         }
 
@@ -164,7 +165,7 @@ public class SubscribedRedisClientTest extends BaseRedisClientTest {
     public void monitor() throws Exception {
         final RedisRequest monitorRequest = newRequest(MONITOR);
 
-        final ReservedRedisConnection cnx = awaitIndefinitely(getEnv().client.reserveConnection(monitorRequest));
+        final ReservedRedisConnection cnx = awaitIndefinitely(getEnv().client.reserveConnection(MONITOR));
         assert cnx != null : "Connection can not be null";
 
         final AccumulatingSubscriber<RedisData> subscriber = new AccumulatingSubscriber<>();
@@ -189,19 +190,21 @@ public class SubscribedRedisClientTest extends BaseRedisClientTest {
     public void pubSubUntilCancel() throws Exception {
         final RedisRequest subscribeRequest = newRequest(SUBSCRIBE, new CompleteBulkString(buf("test-channel-1")));
 
-        ReservedRedisConnection cnx = awaitIndefinitely(getEnv().client.reserveConnection(subscribeRequest));
+        ReservedRedisConnection cnx = awaitIndefinitely(getEnv().client.reserveConnection(SUBSCRIBE));
         assert cnx != null : "Connection can not be null";
         testSubscribeUnsubscribe(cnx, cnx.request(subscribeRequest));
 
-        cnx = awaitIndefinitely(getEnv().client.reserveConnection(subscribeRequest));
+        cnx = awaitIndefinitely(getEnv().client.reserveConnection(SUBSCRIBE));
         assert cnx != null : "Connection can not be null";
         // Ensure we can actually re-do all this a second time (i.e. that no old state lingered)
         testSubscribeUnsubscribe(cnx, cnx.request(subscribeRequest));
         awaitIndefinitely(cnx.releaseAsync());
     }
 
-    private static void testSubscribeUnsubscribe(final RedisConnection cnx, final Publisher<RedisData> messages) throws Exception {
-        final AccumulatingSubscriber<RedisData> messagesSubscriber = new AccumulatingSubscriber<RedisData>().subscribe(messages);
+    private static void testSubscribeUnsubscribe(final RedisConnection cnx, final Publisher<RedisData> messages)
+            throws Exception {
+        final AccumulatingSubscriber<RedisData> messagesSubscriber = new AccumulatingSubscriber<RedisData>()
+                .subscribe(messages);
 
         // Check ping requests are honored with proper responses
         RedisData pong = awaitIndefinitely(cnx.request(newRequest(PING)).first());
@@ -224,10 +227,11 @@ public class SubscribedRedisClientTest extends BaseRedisClientTest {
     @Test
     public void pubSubUntilClose() throws Exception {
         final RedisRequest subscribeRequest = newRequest(SUBSCRIBE, new CompleteBulkString(buf("test-channel-2")));
-        final ReservedRedisConnection cnx = awaitIndefinitely(getEnv().client.reserveConnection(subscribeRequest));
+        final ReservedRedisConnection cnx = awaitIndefinitely(getEnv().client.reserveConnection(SUBSCRIBE));
         final Publisher<RedisData> messages = cnx.request(subscribeRequest);
 
-        final AccumulatingSubscriber<RedisData> messagesSubscriber = new AccumulatingSubscriber<RedisData>().subscribe(messages);
+        final AccumulatingSubscriber<RedisData> messagesSubscriber = new AccumulatingSubscriber<RedisData>()
+                .subscribe(messages);
         awaitIndefinitely(cnx.closeAsync());
 
         // Check that the violent termination of the connection has been detected
@@ -239,14 +243,15 @@ public class SubscribedRedisClientTest extends BaseRedisClientTest {
     public void pubSubMultipleSubscribes() throws Exception {
         final RedisRequest subscribeRequest = newRequest(SUBSCRIBE, new CompleteBulkString(buf("test-channel-3")));
 
-        final ReservedRedisConnection cnx = awaitIndefinitely(getEnv().client.reserveConnection(subscribeRequest));
+        final ReservedRedisConnection cnx = awaitIndefinitely(getEnv().client.reserveConnection(SUBSCRIBE));
         assert cnx != null : "Connection can not be null";
 
         CountDownLatch latch = new CountDownLatch(1);
 
         final Publisher<RedisData> messages1 = cnx.request(subscribeRequest).doAfterSubscribe($ -> latch.countDown());
 
-        final AccumulatingSubscriber<RedisData> messages1Subscriber = new AccumulatingSubscriber<RedisData>().subscribe(messages1);
+        final AccumulatingSubscriber<RedisData> messages1Subscriber = new AccumulatingSubscriber<RedisData>()
+                .subscribe(messages1);
 
         latch.await();
 
@@ -258,12 +263,16 @@ public class SubscribedRedisClientTest extends BaseRedisClientTest {
         checkValidPing(pong, EMPTY_BUFFER);
 
         // Subscribe to a pattern on the same connection
-        final Publisher<RedisData> messages2 = cnx.request(newRequest(PSUBSCRIBE, new CompleteBulkString(buf("test-channel-4*"))));
-        final AccumulatingSubscriber<RedisData> messages2Subscriber = new AccumulatingSubscriber<RedisData>().subscribe(messages2);
+        final Publisher<RedisData> messages2 = cnx.request(newRequest(PSUBSCRIBE,
+                new CompleteBulkString(buf("test-channel-4*"))));
+        final AccumulatingSubscriber<RedisData> messages2Subscriber =
+                new AccumulatingSubscriber<RedisData>().subscribe(messages2);
 
         // Let's throw a wrench and psubscribe a second time to the same pattern
-        final Publisher<RedisData> messages3 = cnx.request(newRequest(PSUBSCRIBE, new CompleteBulkString(buf("test-channel-4*"))));
-        final AccumulatingSubscriber<RedisData> messages3Subscriber = new AccumulatingSubscriber<RedisData>().subscribe(messages3);
+        final Publisher<RedisData> messages3 = cnx.request(newRequest(PSUBSCRIBE,
+                new CompleteBulkString(buf("test-channel-4*"))));
+        final AccumulatingSubscriber<RedisData> messages3Subscriber = new AccumulatingSubscriber<RedisData>()
+                .subscribe(messages3);
 
         assertThat(messages3Subscriber.awaitTerminal(DEFAULT_TIMEOUT_SECONDS, SECONDS), is(true));
         assertThat(messages3Subscriber.getTerminal().getCause(), is(instanceOf(RejectedSubscribeException.class)));
@@ -272,17 +281,21 @@ public class SubscribedRedisClientTest extends BaseRedisClientTest {
         publishTestMessage("test-channel-404");
 
         // Check ping request still get proper response
-        final RedisData myPong = awaitIndefinitely(cnx.request(newRequest(PING, new CompleteBulkString(buf("my-pong")))).first());
+        final RedisData myPong = awaitIndefinitely(cnx.request(newRequest(PING,
+                new CompleteBulkString(buf("my-pong")))).first());
         checkValidPing(myPong, buf("my-pong"));
 
-        assertThat(messages1Subscriber.request(1).awaitUntilAtLeastNReceived(1, DEFAULT_TIMEOUT_SECONDS, SECONDS), is(true));
+        assertThat(messages1Subscriber.request(1).awaitUntilAtLeastNReceived(1, DEFAULT_TIMEOUT_SECONDS, SECONDS),
+                is(true));
         checkValidPubSubData(messages1Subscriber.getReceived().poll(), Channel, "test-channel-3", buf("test-message"));
 
         // Cancel the subscriber, which issues an UNSUBSCRIBE behind the scenes
         messages1Subscriber.cancel();
 
-        assertThat(messages2Subscriber.request(1).awaitUntilAtLeastNReceived(1, DEFAULT_TIMEOUT_SECONDS, SECONDS), is(true));
-        checkValidPubSubData(messages2Subscriber.getReceived().poll(), Pattern, "test-channel-404", "test-channel-4*", buf("test-message"));
+        assertThat(messages2Subscriber.request(1).awaitUntilAtLeastNReceived(1, DEFAULT_TIMEOUT_SECONDS, SECONDS),
+                is(true));
+        checkValidPubSubData(messages2Subscriber.getReceived().poll(), Pattern, "test-channel-404", "test-channel-4*",
+                buf("test-message"));
         // Cancel the subscriber, which issues an PUNSUBSCRIBE behind the scenes
         messages2Subscriber.cancel();
     }
@@ -290,7 +303,7 @@ public class SubscribedRedisClientTest extends BaseRedisClientTest {
     @Test
     public void pingVerifyRequested() throws Exception {
         final RedisRequest subscribeRequest = newRequest(SUBSCRIBE, new CompleteBulkString(buf("test-channel-7")));
-        final ReservedRedisConnection cnx = awaitIndefinitely(getEnv().client.reserveConnection(subscribeRequest));
+        final ReservedRedisConnection cnx = awaitIndefinitely(getEnv().client.reserveConnection(SUBSCRIBE));
         assert cnx != null : "Connection can not be null";
 
         final Publisher<RedisData> messages = cnx.request(subscribeRequest);
@@ -315,15 +328,17 @@ public class SubscribedRedisClientTest extends BaseRedisClientTest {
     @Test
     public void pubSubBatchedPings() throws Exception {
         final RedisRequest subscribeRequest = newRequest(SUBSCRIBE, new CompleteBulkString(buf("test-channel-6")));
-        final ReservedRedisConnection cnx = awaitIndefinitely(getEnv().client.reserveConnection(subscribeRequest));
+        final ReservedRedisConnection cnx = awaitIndefinitely(getEnv().client.reserveConnection(SUBSCRIBE));
         assert cnx != null : "Connection can not be null";
         final Publisher<RedisData> messages = cnx.request(subscribeRequest);
-        final AccumulatingSubscriber<RedisData> messagesSubscriber = new AccumulatingSubscriber<RedisData>().subscribe(messages);
+        final AccumulatingSubscriber<RedisData> messagesSubscriber = new AccumulatingSubscriber<RedisData>()
+                .subscribe(messages);
 
         Map<Buffer, AccumulatingSubscriber<RedisData>> pingSubscribers = new HashMap<>();
         for (int i = 0; i < 10; i++) {
             Buffer pingData = buf("ping-" + i);
-            final AccumulatingSubscriber<RedisData> pingSubscriber = new AccumulatingSubscriber<RedisData>().subscribe(cnx.request(newRequest(PING, new CompleteBulkString(pingData))));
+            final AccumulatingSubscriber<RedisData> pingSubscriber = new AccumulatingSubscriber<RedisData>()
+                    .subscribe(cnx.request(newRequest(PING, new CompleteBulkString(pingData))));
             assertThat(pingSubscriber.awaitSubscription(DEFAULT_TIMEOUT_SECONDS, SECONDS), is(true));
             pingSubscribers.put(pingData, pingSubscriber);
         }
@@ -345,7 +360,7 @@ public class SubscribedRedisClientTest extends BaseRedisClientTest {
     @Test
     public void actualChannelInPattern() throws Exception {
         final RedisRequest subscribeRequest = newRequest(PSUBSCRIBE, new CompleteBulkString(buf("test-channel-7*")));
-        final ReservedRedisConnection cnx = awaitIndefinitely(getEnv().client.reserveConnection(subscribeRequest));
+        final ReservedRedisConnection cnx = awaitIndefinitely(getEnv().client.reserveConnection(PSUBSCRIBE));
         assert cnx != null : "Connection can not be null";
 
         BlockingQueue<AccumulatingSubscriber<PatternPubSubRedisMessage>> groupSubs = new LinkedBlockingQueue<>();
@@ -406,11 +421,12 @@ public class SubscribedRedisClientTest extends BaseRedisClientTest {
 
         // Subscribe to the channel
         final RedisRequest subscribeRequest = newRequest(SUBSCRIBE, new CompleteBulkString(buf("test-channel-5")));
-        final ReservedRedisConnection cnx = awaitIndefinitely(getEnv().client.reserveConnection(subscribeRequest));
+        final ReservedRedisConnection cnx = awaitIndefinitely(getEnv().client.reserveConnection(SUBSCRIBE));
         assert cnx != null : "Connection can not be null";
 
         final Publisher<RedisData> messages = cnx.request(subscribeRequest);
-        final AccumulatingSubscriber<RedisData> messagesSubscriber = new AccumulatingSubscriber<RedisData>().subscribe(messages);
+        final AccumulatingSubscriber<RedisData> messagesSubscriber = new AccumulatingSubscriber<RedisData>()
+                .subscribe(messages);
 
         // Send a bunch of ping requests
         if (concurrentPings) {
@@ -495,8 +511,8 @@ public class SubscribedRedisClientTest extends BaseRedisClientTest {
         assertThat(pong.getData(), is(redisCompleteBulkString(expectedData)));
     }
 
-    static void checkValidPubSubData(@Nullable final RedisData dataRaw, final KeyType expectedKeyType, final String channelName,
-                                     final Buffer expectedData) {
+    static void checkValidPubSubData(@Nullable final RedisData dataRaw, final KeyType expectedKeyType,
+                                     final String channelName, final Buffer expectedData) {
         assertThat(dataRaw, is(notNullValue()));
         assertThat(dataRaw, is(instanceOf(PubSubChannelMessage.class)));
 
@@ -507,8 +523,8 @@ public class SubscribedRedisClientTest extends BaseRedisClientTest {
         assertThat(data.getData(), is(redisCompleteBulkString(expectedData)));
     }
 
-    static void checkValidPubSubData(@Nullable final RedisData dataRaw, final KeyType expectedKeyType, final String channelName, final String pattern,
-                                     final Buffer expectedData) {
+    static void checkValidPubSubData(@Nullable final RedisData dataRaw, final KeyType expectedKeyType,
+                                     final String channelName, final String pattern, final Buffer expectedData) {
         checkValidPubSubData(dataRaw, expectedKeyType, channelName, expectedData);
         assert dataRaw != null;
         assertThat(((PubSubChannelMessage) dataRaw).getPattern(), is(pattern));
@@ -547,7 +563,8 @@ public class SubscribedRedisClientTest extends BaseRedisClientTest {
         public void onError(Throwable t) {
             assertThat("Received null Throwable.", t, is(notNullValue()));
             if (notification != null) {
-                throw new IllegalStateException("Duplicate terminal notification. Existing: " + notification + ", new: " + t);
+                throw new IllegalStateException("Duplicate terminal notification. Existing: " + notification +
+                        ", new: " + t);
             }
             notification = TerminalNotification.error(t);
             termReceived.countDown();
@@ -556,7 +573,8 @@ public class SubscribedRedisClientTest extends BaseRedisClientTest {
         @Override
         public void onComplete() {
             if (notification != null) {
-                throw new IllegalStateException("Duplicate terminal notification. Existing: " + notification + ", new: " + complete());
+                throw new IllegalStateException("Duplicate terminal notification. Existing: " + notification +
+                        ", new: " + complete());
             }
             notification = TerminalNotification.complete();
             termReceived.countDown();

@@ -20,6 +20,7 @@ import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.redis.api.RedisClient;
 import io.servicetalk.redis.api.RedisData;
+import io.servicetalk.redis.api.RedisProtocolSupport.Command;
 import io.servicetalk.redis.api.RedisRequest;
 import io.servicetalk.transport.api.ExecutionContext;
 
@@ -42,8 +43,8 @@ public abstract class DelegatingRedisClient extends RedisClient {
     }
 
     @Override
-    public Single<? extends ReservedRedisConnection> reserveConnection(final RedisRequest request) {
-        return wrapped.reserveConnection(request);
+    public Single<? extends ReservedRedisConnection> reserveConnection(Command command) {
+        return wrapped.reserveConnection(command);
     }
 
     @Override

@@ -25,9 +25,9 @@ import javax.annotation.Generated;
 
 import static io.servicetalk.redis.api.RedisCoercions.toPubSubPongMessages;
 import static io.servicetalk.redis.api.RedisRequests.addRequestArgument;
-import static io.servicetalk.redis.api.RedisRequests.newConnectedClient;
 import static io.servicetalk.redis.api.RedisRequests.newRequest;
 import static io.servicetalk.redis.api.RedisRequests.newRequestCompositeBuffer;
+import static io.servicetalk.redis.api.RedisRequests.reserveConnection;
 import static java.util.Objects.requireNonNull;
 
 @Generated({})
@@ -90,7 +90,7 @@ final class DefaultPubSubRedisConnection extends PubSubRedisConnection {
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.PSUBSCRIBE, allocator);
         addRequestArgument(pattern, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.PSUBSCRIBE, cb);
-        return newConnectedClient(reservedCnx, request,
+        return reserveConnection(reservedCnx, request,
                     (rcnx, pub) -> new DefaultPubSubRedisConnection(rcnx, pub.map(msg -> (PubSubRedisMessage) msg)));
     }
 
@@ -103,7 +103,7 @@ final class DefaultPubSubRedisConnection extends PubSubRedisConnection {
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SUBSCRIBE, allocator);
         addRequestArgument(channel, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SUBSCRIBE, cb);
-        return newConnectedClient(reservedCnx, request,
+        return reserveConnection(reservedCnx, request,
                     (rcnx, pub) -> new DefaultPubSubRedisConnection(rcnx, pub.map(msg -> (PubSubRedisMessage) msg)));
     }
 }

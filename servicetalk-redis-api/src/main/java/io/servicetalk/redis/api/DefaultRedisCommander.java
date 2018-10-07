@@ -31,9 +31,9 @@ import static io.servicetalk.redis.api.RedisRequests.addRequestArgument;
 import static io.servicetalk.redis.api.RedisRequests.addRequestCharSequenceArguments;
 import static io.servicetalk.redis.api.RedisRequests.addRequestLongArguments;
 import static io.servicetalk.redis.api.RedisRequests.addRequestTupleArguments;
-import static io.servicetalk.redis.api.RedisRequests.newConnectedClient;
 import static io.servicetalk.redis.api.RedisRequests.newRequest;
 import static io.servicetalk.redis.api.RedisRequests.newRequestCompositeBuffer;
+import static io.servicetalk.redis.api.RedisRequests.reserveConnection;
 import static java.util.Objects.requireNonNull;
 import static java.util.function.Function.identity;
 
@@ -2903,7 +2903,7 @@ final class DefaultRedisCommander extends RedisCommander {
         int len = 1;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.MONITOR, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.MONITOR, cb);
-        return newConnectedClient(requester, request, (con, pub) -> pub.map(RedisCoercions::simpleStringToString))
+        return reserveConnection(requester, request, (con, pub) -> pub.map(RedisCoercions::simpleStringToString))
                     .flatMapPublisher(identity());
     }
 
@@ -3076,7 +3076,7 @@ final class DefaultRedisCommander extends RedisCommander {
         int len = 1;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.MULTI, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.MULTI, cb);
-        return newConnectedClient(requester, request, RedisData.OK::equals, DefaultTransactedRedisCommander::new);
+        return reserveConnection(requester, request, RedisData.OK::equals, DefaultTransactedRedisCommander::new);
     }
 
     @Override
@@ -3445,7 +3445,7 @@ final class DefaultRedisCommander extends RedisCommander {
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.PSUBSCRIBE, allocator);
         addRequestArgument(pattern, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.PSUBSCRIBE, cb);
-        return newConnectedClient(requester, request,
+        return reserveConnection(requester, request,
                     (rcnx, pub) -> new DefaultPubSubRedisConnection(rcnx, pub.map(msg -> (PubSubRedisMessage) msg)));
     }
 
@@ -5143,7 +5143,7 @@ final class DefaultRedisCommander extends RedisCommander {
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SUBSCRIBE, allocator);
         addRequestArgument(channel, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SUBSCRIBE, cb);
-        return newConnectedClient(requester, request,
+        return reserveConnection(requester, request,
                     (rcnx, pub) -> new DefaultPubSubRedisConnection(rcnx, pub.map(msg -> (PubSubRedisMessage) msg)));
     }
 

@@ -17,6 +17,7 @@ package io.servicetalk.redis.api;
 
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.redis.api.RedisProtocolSupport.Command;
 
 /**
  * Provides a means to issue requests against redis service. The implementation is free to maintain a collection of
@@ -25,14 +26,16 @@ import io.servicetalk.concurrent.api.Single;
 public abstract class RedisClient extends RedisRequester {
 
     /**
-     * Reserve a {@link RedisConnection} for the for handling the provided {@link RedisRequest}
-     * but <b>does not execute it</b>!
+     * Reserve a {@link RedisConnection} for exclusive use. Caller is responsible for invoking
+     * {@link ReservedRedisConnection#releaseAsync()} after done using the return value.
      *
-     * @param request Allows the underlying layers to know what {@link RedisConnection}s are valid to reserve.
-     * For example this may provide some insight into shard or other info.
+     * @param command A command representing how the returned {@link ReservedRedisConnection} will be used. It is
+     * possible that this {@link RedisClient} will return different types of {@link ReservedRedisConnection} depending
+     * on usage. For example {@link Command#SUBSCRIBE} and {@link Command#MONITOR} may be treated differently than other
+     * request/response based commands.
      * @return a {@link ReservedRedisConnection}.
      */
-    public abstract Single<? extends ReservedRedisConnection> reserveConnection(RedisRequest request);
+    public abstract Single<? extends ReservedRedisConnection> reserveConnection(Command command);
 
     /**
      * A {@link RedisConnection} that is reserved for exclusive use until {@link #releaseAsync() released}.

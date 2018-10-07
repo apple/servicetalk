@@ -23,6 +23,7 @@ import io.servicetalk.concurrent.api.BiIntFunction;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.redis.api.RedisProtocolSupport.Command;
 import io.servicetalk.transport.api.ExecutionContext;
 
 import static io.servicetalk.concurrent.api.Completable.error;
@@ -58,8 +59,8 @@ public final class LoadBalancerReadyRedisClient extends RedisClient {
     }
 
     @Override
-    public Single<? extends ReservedRedisConnection> reserveConnection(final RedisRequest request) {
-        return next.reserveConnection(request).retryWhen(retryWhenFunction());
+    public Single<? extends ReservedRedisConnection> reserveConnection(Command command) {
+        return next.reserveConnection(command).retryWhen(retryWhenFunction());
     }
 
     @Override
