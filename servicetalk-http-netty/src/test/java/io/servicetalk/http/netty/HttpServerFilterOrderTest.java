@@ -17,15 +17,14 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.HttpResponse;
+import io.servicetalk.http.api.HttpServiceFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequestHandler;
-import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.transport.api.ServerContext;
 
 import org.junit.Test;
 import org.mockito.InOrder;
 
 import java.net.InetSocketAddress;
-import java.util.function.Function;
 
 import static io.servicetalk.http.api.HttpResponseStatuses.OK;
 import static io.servicetalk.http.netty.HttpClients.forSingleAddress;
@@ -64,8 +63,7 @@ public class HttpServerFilterOrderTest {
         return mock;
     }
 
-    private static Function<StreamingHttpService, ? extends StreamingHttpRequestHandler> addFilter(
-            StreamingHttpRequestHandler filter) {
+    private static HttpServiceFilterFactory addFilter(StreamingHttpRequestHandler filter) {
         return orig -> {
             when(filter.handle(any(), any(), any()))
                     .thenAnswer(i -> orig.handle(i.getArgument(0), i.getArgument(1), i.getArgument(2)));

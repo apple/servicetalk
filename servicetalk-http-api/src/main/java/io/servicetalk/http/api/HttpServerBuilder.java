@@ -28,7 +28,6 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.net.SocketOption;
 import java.util.Map;
-import java.util.function.Function;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.http.api.BlockingUtils.blockingInvocation;
@@ -176,10 +175,10 @@ public interface HttpServerBuilder {
      * <pre>
      *     filter1 =&gt; filter2 =&gt; filter3 =&gt; service
      * </pre>
-     * @param filter {@link Function} to decorate a {@link StreamingHttpService} for the purpose of filtering.
+     * @param factory {@link HttpServiceFilterFactory} to append.
      * @return {@code this}
      */
-    HttpServerBuilder appendServiceFilter(Function<StreamingHttpService, ? extends StreamingHttpRequestHandler> filter);
+    HttpServerBuilder appendServiceFilter(HttpServiceFilterFactory factory);
 
     /**
      * Sets the address to listen on.

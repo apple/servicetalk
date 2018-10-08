@@ -20,8 +20,8 @@ import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.api.HttpServerBuilder;
+import io.servicetalk.http.api.HttpServiceFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequestHandler;
-import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.transport.api.ContextFilter;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.ServerContext;
@@ -31,12 +31,11 @@ import io.servicetalk.transport.netty.internal.ExecutionContextBuilder;
 import java.net.SocketAddress;
 import java.net.SocketOption;
 import java.util.Map;
-import java.util.function.Function;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.http.api.HttpServiceFilterFactory.identity;
 import static io.servicetalk.http.netty.NettyHttpServer.bind;
 import static java.util.Objects.requireNonNull;
-import static java.util.function.Function.identity;
 
 final class DefaultHttpServerBuilder implements HttpServerBuilder {
 
@@ -44,7 +43,7 @@ final class DefaultHttpServerBuilder implements HttpServerBuilder {
     private final ExecutionContextBuilder executionContextBuilder = new ExecutionContextBuilder();
     private ContextFilter contextFilter = ContextFilter.ACCEPT_ALL;
     private SocketAddress address;
-    private Function<StreamingHttpService, ? extends StreamingHttpRequestHandler> serviceFilter = identity();
+    private HttpServiceFilterFactory serviceFilter = identity();
 
     DefaultHttpServerBuilder(SocketAddress address) {
         this.address = address;
@@ -129,10 +128,8 @@ final class DefaultHttpServerBuilder implements HttpServerBuilder {
     }
 
     @Override
-    public HttpServerBuilder appendServiceFilter(
-            final Function<StreamingHttpService, ? extends StreamingHttpRequestHandler> filter) {
-        Function<StreamingHttpService, ? extends StreamingHttpRequestHandler> prev = serviceFilter;
-        serviceFilter = service -> prev.apply(filter.apply(service).asStreamingService());
+    public HttpServerBuilder appendServiceFilter(final HttpServiceFilterFactory factory) {
+        serviceFilter = serviceFilter.append(factory);
         return this;
     }
 
