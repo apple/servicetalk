@@ -176,6 +176,80 @@ class DefaultBlockingStreamingHttpResponse<P> extends DefaultHttpResponseMetaDat
     }
 
     @Override
+    public final BlockingStreamingHttpResponse addHeader(final CharSequence name, final CharSequence value) {
+        super.addHeader(name, value);
+        return this;
+    }
+
+    @Override
+    public final BlockingStreamingHttpResponse addHeaders(final CharSequence name,
+                                                          final Iterable<? extends CharSequence> values) {
+        super.addHeaders(name, values);
+        return this;
+    }
+
+    @Override
+    public final BlockingStreamingHttpResponse addHeaders(final CharSequence name, final CharSequence... values) {
+        super.addHeaders(name, values);
+        return this;
+    }
+
+    @Override
+    public final BlockingStreamingHttpResponse addHeaders(final HttpHeaders headers) {
+        super.addHeaders(headers);
+        return this;
+    }
+
+    @Override
+    public final BlockingStreamingHttpResponse setHeader(final CharSequence name, final CharSequence value) {
+        super.setHeader(name, value);
+        return this;
+    }
+
+    @Override
+    public final BlockingStreamingHttpResponse setHeaders(final CharSequence name,
+                                                          final Iterable<? extends CharSequence> values) {
+        super.setHeaders(name, values);
+        return this;
+    }
+
+    @Override
+    public final BlockingStreamingHttpResponse setHeaders(final CharSequence name, final CharSequence... values) {
+        super.setHeaders(name, values);
+        return this;
+    }
+
+    @Override
+    public final BlockingStreamingHttpResponse setHeaders(final HttpHeaders headers) {
+        super.setHeaders(headers);
+        return this;
+    }
+
+    @Override
+    public final BlockingStreamingHttpResponse addCookie(final HttpCookie cookie) {
+        super.addCookie(cookie);
+        return this;
+    }
+
+    @Override
+    public final BlockingStreamingHttpResponse addCookie(final CharSequence name, final CharSequence value) {
+        super.addCookie(name, value);
+        return this;
+    }
+
+    @Override
+    public final BlockingStreamingHttpResponse addSetCookie(final HttpCookie cookie) {
+        super.addSetCookie(cookie);
+        return this;
+    }
+
+    @Override
+    public final BlockingStreamingHttpResponse addSetCookie(final CharSequence name, final CharSequence value) {
+        super.addSetCookie(name, value);
+        return this;
+    }
+
+    @Override
     public boolean equals(final Object o) {
         if (this == o) {
             return true;

@@ -38,4 +38,40 @@ public interface HttpResponseMetaData extends HttpMetaData {
 
     @Override
     HttpResponseMetaData version(HttpProtocolVersion version);
+
+    @Override
+    HttpResponseMetaData addHeader(CharSequence name, CharSequence value);
+
+    @Override
+    HttpResponseMetaData addHeaders(CharSequence name, Iterable<? extends CharSequence> values);
+
+    @Override
+    HttpResponseMetaData addHeaders(CharSequence name, CharSequence... values);
+
+    @Override
+    HttpResponseMetaData addHeaders(HttpHeaders headers);
+
+    @Override
+    HttpResponseMetaData setHeader(CharSequence name, CharSequence value);
+
+    @Override
+    HttpResponseMetaData setHeaders(CharSequence name, Iterable<? extends CharSequence> values);
+
+    @Override
+    HttpResponseMetaData setHeaders(CharSequence name, CharSequence... values);
+
+    @Override
+    HttpResponseMetaData setHeaders(HttpHeaders headers);
+
+    @Override
+    HttpResponseMetaData addCookie(HttpCookie cookie);
+
+    @Override
+    HttpResponseMetaData addCookie(CharSequence name, CharSequence value);
+
+    @Override
+    HttpResponseMetaData addSetCookie(HttpCookie cookie);
+
+    @Override
+    HttpResponseMetaData addSetCookie(CharSequence name, CharSequence value);
 }

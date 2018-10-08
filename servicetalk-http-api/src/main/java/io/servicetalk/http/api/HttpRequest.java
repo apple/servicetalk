@@ -22,13 +22,15 @@ import io.servicetalk.buffer.api.Buffer;
  */
 public interface HttpRequest extends HttpRequestMetaData {
     /**
-     * Get the underlying payload as a {@link Buffer}.
+     * Gets the underlying payload as a {@link Buffer}.
+     *
      * @return The {@link Buffer} representation of the underlying payload.
      */
     Buffer payloadBody();
 
     /**
-     * Get and deserialize the payload body.
+     * Gets and deserialize the payload body.
+     *
      * @param deserializer The function that deserializes the underlying {@link Object}.
      * @param <T> The resulting type of the deserialization operation.
      * @return The results of the deserialization operation.
@@ -38,20 +40,23 @@ public interface HttpRequest extends HttpRequestMetaData {
     }
 
     /**
-     * Get the <a href="https://tools.ietf.org/html/rfc7230#section-4.4">trailers</a>.
+     * Gets the <a href="https://tools.ietf.org/html/rfc7230#section-4.4">trailers</a>.
+     *
      * @return the <a href="https://tools.ietf.org/html/rfc7230#section-4.4">trailers</a>.
      */
     HttpHeaders trailers();
 
     /**
-     * Set the underlying payload.
+     * Sets the underlying payload.
+     *
      * @param payloadBody the underlying payload.
      * @return A {@link HttpRequest} with the new serialized payload body.
      */
     HttpRequest payloadBody(Buffer payloadBody);
 
     /**
-     * Set the underlying payload to be the results of serialization of {@code pojo}.
+     * Sets the underlying payload to be the results of serialization of {@code pojo}.
+     *
      * @param pojo The object to serialize.
      * @param serializer The {@link HttpSerializer} which converts {@code pojo} into bytes.
      * @param <T> The type of object to serialize.
@@ -60,13 +65,15 @@ public interface HttpRequest extends HttpRequestMetaData {
     <T> HttpRequest payloadBody(T pojo, HttpSerializer<T> serializer);
 
     /**
-     * Translate this {@link HttpRequest} to a {@link StreamingHttpRequest}.
+     * Translates this {@link HttpRequest} to a {@link StreamingHttpRequest}.
+     *
      * @return a {@link StreamingHttpRequest} representation of this {@link HttpRequest}.
      */
     StreamingHttpRequest toStreamingRequest();
 
     /**
-     * Translate this {@link HttpRequest} to a {@link BlockingStreamingHttpRequest}.
+     * Translates this {@link HttpRequest} to a {@link BlockingStreamingHttpRequest}.
+     *
      * @return a {@link BlockingStreamingHttpRequest} representation of this {@link HttpRequest}.
      */
     BlockingStreamingHttpRequest toBlockingStreamingRequest();
@@ -88,4 +95,76 @@ public interface HttpRequest extends HttpRequestMetaData {
 
     @Override
     HttpRequest requestTarget(String requestTarget);
+
+    @Override
+    HttpRequest addHeader(CharSequence name, CharSequence value);
+
+    @Override
+    HttpRequest addHeaders(CharSequence name, Iterable<? extends CharSequence> values);
+
+    @Override
+    HttpRequest addHeaders(CharSequence name, CharSequence... values);
+
+    @Override
+    HttpRequest addHeaders(HttpHeaders headers);
+
+    @Override
+    HttpRequest setHeader(CharSequence name, CharSequence value);
+
+    @Override
+    HttpRequest setHeaders(CharSequence name, Iterable<? extends CharSequence> values);
+
+    @Override
+    HttpRequest setHeaders(CharSequence name, CharSequence... values);
+
+    @Override
+    HttpRequest setHeaders(HttpHeaders headers);
+
+    @Override
+    HttpRequest addCookie(HttpCookie cookie);
+
+    @Override
+    HttpRequest addCookie(CharSequence name, CharSequence value);
+
+    @Override
+    HttpRequest addSetCookie(HttpCookie cookie);
+
+    @Override
+    HttpRequest addSetCookie(CharSequence name, CharSequence value);
+
+    /**
+     * Adds a new trailer with the specified {@code name} and {@code value}.
+     *
+     * @param name the name of the trailer.
+     * @param value the value of the trailer.
+     * @return {@code this}.
+     */
+    HttpRequest addTrailer(CharSequence name, CharSequence value);
+
+    /**
+     * Adds all trailer names and values of {@code trailer} object.
+     *
+     * @param trailers the trailers to add.
+     * @return {@code this}.
+     * @throws IllegalArgumentException if {@code trailers == trailers()}.
+     */
+    HttpRequest addTrailer(HttpHeaders trailers);
+
+    /**
+     * Sets a trailer with the specified {@code name} and {@code value}. Any existing trailers with the same name are
+     * overwritten.
+     *
+     * @param name the name of the trailer.
+     * @param value the value of the trailer.
+     * @return {@code this}.
+     */
+    HttpRequest setTrailer(CharSequence name, CharSequence value);
+
+    /**
+     * Clears the current trailer entries and copies all trailer entries of the specified {@code trailers} object.
+     *
+     * @param trailers the trailers object which contains new values.
+     * @return {@code this}.
+     */
+    HttpRequest setTrailer(HttpHeaders trailers);
 }

@@ -74,7 +74,7 @@ public class HttpConnectionEmptyPayloadTest {
                                             req.method() == HEAD ? EMPTY_BUFFER :
                                                     ctx.executionContext().bufferAllocator()
                                                     .newBuffer(expectedContentLength).writeBytes(expectedPayload)));
-                                    resp.headers().add(CONTENT_LENGTH, String.valueOf(expectedContentLength));
+                                    resp.addHeader(CONTENT_LENGTH, String.valueOf(expectedContentLength));
                                     return success(resp);
                                 }
                             }));

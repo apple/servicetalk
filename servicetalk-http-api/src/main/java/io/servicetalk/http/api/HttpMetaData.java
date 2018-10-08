@@ -45,6 +45,151 @@ public interface HttpMetaData {
     HttpHeaders headers();
 
     /**
+     * Adds a new header with the specified {@code name} and {@code value}.
+     *
+     * @param name the name of the header.
+     * @param value the value of the header.
+     * @return {@code this}.
+     */
+    HttpMetaData addHeader(CharSequence name, CharSequence value);
+
+    /**
+     * Adds new headers with the specified {@code name} and {@code values}. This method is semantically equivalent to:
+     *
+     * <pre>
+     * for (T value : values) {
+     *     httpMetaData.addHeader(name, value);
+     * }
+     * </pre>
+     *
+     * @param name the name of the header.
+     * @param values the values of the header.
+     * @return {@code this}.
+     */
+    HttpMetaData addHeaders(CharSequence name, Iterable<? extends CharSequence> values);
+
+    /**
+     * Adds new headers with the specified {@code name} and {@code values}. This method is semantically equivalent to:
+     *
+     * <pre>
+     * for (T value : values) {
+     *     httpMetaData.addHeader(name, value);
+     * }
+     * </pre>
+     *
+     * @param name the name of the header.
+     * @param values the values of the header.
+     * @return {@code this}.
+     */
+    HttpMetaData addHeaders(CharSequence name, CharSequence... values);
+
+    /**
+     * Adds all header names and values of {@code headers} object.
+     *
+     * @param headers the headers to add.
+     * @return {@code this}.
+     * @throws IllegalArgumentException if {@code headers == headers()}.
+     */
+    HttpMetaData addHeaders(HttpHeaders headers);
+
+    /**
+     * Sets a header with the specified {@code name} and {@code value}. Any existing headers with the same name are
+     * overwritten.
+     *
+     * @param name the name of the header.
+     * @param value the value of the header.
+     * @return {@code this}.
+     */
+    HttpMetaData setHeader(CharSequence name, CharSequence value);
+
+    /**
+     * Sets a new header with the specified {@code name} and {@code values}. This method is equivalent to:
+     *
+     * <pre>
+     * headers.remove(name);
+     * for (T value : values) {
+     *     httpMetaData.setHeader(name, value);
+     * }
+     * </pre>
+     *
+     * @param name the name of the header.
+     * @param values the values of the header.
+     * @return {@code this}.
+     */
+    HttpMetaData setHeaders(CharSequence name, Iterable<? extends CharSequence> values);
+
+    /**
+     * Sets a header with the specified {@code name} and {@code values}. Any existing headers with this name are
+     * removed. This method is equivalent to:
+     *
+     * <pre>
+     * headers.remove(name);
+     * for (T value : values) {
+     *     httpMetaData.setHeader(name, value);
+     * }
+     * </pre>
+     *
+     * @param name the name of the header.
+     * @param values the values of the header.
+     * @return {@code this}.
+     */
+    HttpMetaData setHeaders(CharSequence name, CharSequence... values);
+
+    /**
+     * Clears the current header entries and copies all header entries of the specified {@code headers} object.
+     *
+     * @param headers the headers object which contains new values.
+     * @return {@code this}.
+     */
+    HttpMetaData setHeaders(HttpHeaders headers);
+
+    /**
+     * Adds a <a href="https://tools.ietf.org/html/rfc6265#section-4.2">cookie</a>.
+     * <p>
+     * This may result in multiple {@link HttpCookie}s with same name.
+     *
+     * @param cookie the cookie to add.
+     * @return {@code this}.
+     */
+    HttpMetaData addCookie(HttpCookie cookie);
+
+    /**
+     * Adds a <a href="https://tools.ietf.org/html/rfc6265#section-4.2">cookie</a> with the specified {@code name} and
+     * {@code value}.
+     * <p>
+     * This may result in multiple {@link HttpCookie}s with same name. Added cookie will not be wrapped, not secure, and
+     * not HTTP-only, with no path, domain, expire date and maximum age.
+     *
+     * @param name the name of the cookie.
+     * @param value the value of the cookie.
+     * @return {@code this}.
+     */
+    HttpMetaData addCookie(CharSequence name, CharSequence value);
+
+    /**
+     * Adds a <a href="https://tools.ietf.org/html/rfc6265#section-4.1">set-cookie</a>.
+     * <p>
+     * This may result in multiple {@link HttpCookie}s with same name.
+     *
+     * @param cookie the cookie to add.
+     * @return {@code this}.
+     */
+    HttpMetaData addSetCookie(HttpCookie cookie);
+
+    /**
+     * Adds a <a href="https://tools.ietf.org/html/rfc6265#section-4.1">set-cookie</a> with the specified {@code name}
+     * and {@code value}.
+     * <p>
+     * This may result in multiple {@link HttpCookie}s with same name. Added cookie will not be wrapped, not secure, and
+     * not HTTP-only, with no path, domain, expire date and maximum age.
+     *
+     * @param name the name of the cookie.
+     * @param value the value of the cookie.
+     * @return {@code this}.
+     */
+    HttpMetaData addSetCookie(CharSequence name, CharSequence value);
+
+    /**
      * Returns a string representation of the message. To avoid accidentally logging sensitive information,
      * implementations should not return any header or content.
      *

@@ -224,4 +224,40 @@ public interface BlockingStreamingHttpRequest extends HttpRequestMetaData {
 
     @Override
     BlockingStreamingHttpRequest requestTarget(String requestTarget);
+
+    @Override
+    BlockingStreamingHttpRequest addHeader(CharSequence name, CharSequence value);
+
+    @Override
+    BlockingStreamingHttpRequest addHeaders(CharSequence name, Iterable<? extends CharSequence> values);
+
+    @Override
+    BlockingStreamingHttpRequest addHeaders(CharSequence name, CharSequence... values);
+
+    @Override
+    BlockingStreamingHttpRequest addHeaders(HttpHeaders headers);
+
+    @Override
+    BlockingStreamingHttpRequest setHeader(CharSequence name, CharSequence value);
+
+    @Override
+    BlockingStreamingHttpRequest setHeaders(CharSequence name, Iterable<? extends CharSequence> values);
+
+    @Override
+    BlockingStreamingHttpRequest setHeaders(CharSequence name, CharSequence... values);
+
+    @Override
+    BlockingStreamingHttpRequest setHeaders(HttpHeaders headers);
+
+    @Override
+    BlockingStreamingHttpRequest addCookie(HttpCookie cookie);
+
+    @Override
+    BlockingStreamingHttpRequest addCookie(CharSequence name, CharSequence value);
+
+    @Override
+    BlockingStreamingHttpRequest addSetCookie(HttpCookie cookie);
+
+    @Override
+    BlockingStreamingHttpRequest addSetCookie(CharSequence name, CharSequence value);
 }

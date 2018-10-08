@@ -268,6 +268,83 @@ final class BlockingStreamingHttpClientToStreamingHttpClient extends StreamingHt
         }
 
         @Override
+        public BlockingToUpgradableStreamingHttpResponse addHeader(final CharSequence name, final CharSequence value) {
+            upgradeResponse.addHeader(name, value);
+            return this;
+        }
+
+        @Override
+        public BlockingToUpgradableStreamingHttpResponse addHeaders(final CharSequence name,
+                                                                    final Iterable<? extends CharSequence> values) {
+            upgradeResponse.addHeaders(name, values);
+            return this;
+        }
+
+        @Override
+        public BlockingToUpgradableStreamingHttpResponse addHeaders(final CharSequence name,
+                                                                    final CharSequence... values) {
+            upgradeResponse.addHeaders(name, values);
+            return this;
+        }
+
+        @Override
+        public BlockingToUpgradableStreamingHttpResponse addHeaders(final HttpHeaders headers) {
+            upgradeResponse.addHeaders(headers);
+            return this;
+        }
+
+        @Override
+        public BlockingToUpgradableStreamingHttpResponse setHeader(final CharSequence name, final CharSequence value) {
+            upgradeResponse.setHeader(name, value);
+            return this;
+        }
+
+        @Override
+        public BlockingToUpgradableStreamingHttpResponse setHeaders(final CharSequence name,
+                                                                    final Iterable<? extends CharSequence> values) {
+            upgradeResponse.setHeaders(name, values);
+            return this;
+        }
+
+        @Override
+        public BlockingToUpgradableStreamingHttpResponse setHeaders(final CharSequence name,
+                                                                    final CharSequence... values) {
+            upgradeResponse.setHeaders(name, values);
+            return this;
+        }
+
+        @Override
+        public BlockingToUpgradableStreamingHttpResponse setHeaders(final HttpHeaders headers) {
+            upgradeResponse.setHeaders(headers);
+            return this;
+        }
+
+        @Override
+        public BlockingToUpgradableStreamingHttpResponse addCookie(final HttpCookie cookie) {
+            upgradeResponse.addCookie(cookie);
+            return this;
+        }
+
+        @Override
+        public BlockingToUpgradableStreamingHttpResponse addCookie(final CharSequence name, final CharSequence value) {
+            upgradeResponse.addCookie(name, value);
+            return this;
+        }
+
+        @Override
+        public BlockingToUpgradableStreamingHttpResponse addSetCookie(final HttpCookie cookie) {
+            upgradeResponse.addSetCookie(cookie);
+            return this;
+        }
+
+        @Override
+        public BlockingToUpgradableStreamingHttpResponse addSetCookie(final CharSequence name,
+                                                                      final CharSequence value) {
+            upgradeResponse.addSetCookie(name, value);
+            return this;
+        }
+
+        @Override
         public HttpHeaders headers() {
             return upgradeResponse.headers();
         }

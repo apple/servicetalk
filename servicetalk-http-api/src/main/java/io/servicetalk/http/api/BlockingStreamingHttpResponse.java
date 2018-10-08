@@ -141,7 +141,7 @@ public interface BlockingStreamingHttpResponse extends HttpResponseMetaData {
      * @param serializer Used to serialize the payload body.
      * @param <T> The type of objects to deserialize.
      * @param <R> The type of objects to serialize.
-     * @return A {@link BlockingStreamingHttpRequest} with the new serialized payload body.
+     * @return A {@link BlockingStreamingHttpResponse} with the new serialized payload body.
      */
     default <T, R> BlockingStreamingHttpResponse transformPayloadBody(
             Function<BlockingIterable<T>, BlockingIterable<R>> transformer, HttpDeserializer<T> deserializer,
@@ -213,4 +213,40 @@ public interface BlockingStreamingHttpResponse extends HttpResponseMetaData {
 
     @Override
     BlockingStreamingHttpResponse status(HttpResponseStatus status);
+
+    @Override
+    BlockingStreamingHttpResponse addHeader(CharSequence name, CharSequence value);
+
+    @Override
+    BlockingStreamingHttpResponse addHeaders(CharSequence name, Iterable<? extends CharSequence> values);
+
+    @Override
+    BlockingStreamingHttpResponse addHeaders(CharSequence name, CharSequence... values);
+
+    @Override
+    BlockingStreamingHttpResponse addHeaders(HttpHeaders headers);
+
+    @Override
+    BlockingStreamingHttpResponse setHeader(CharSequence name, CharSequence value);
+
+    @Override
+    BlockingStreamingHttpResponse setHeaders(CharSequence name, Iterable<? extends CharSequence> values);
+
+    @Override
+    BlockingStreamingHttpResponse setHeaders(CharSequence name, CharSequence... values);
+
+    @Override
+    BlockingStreamingHttpResponse setHeaders(HttpHeaders headers);
+
+    @Override
+    BlockingStreamingHttpResponse addCookie(HttpCookie cookie);
+
+    @Override
+    BlockingStreamingHttpResponse addCookie(CharSequence name, CharSequence value);
+
+    @Override
+    BlockingStreamingHttpResponse addSetCookie(HttpCookie cookie);
+
+    @Override
+    BlockingStreamingHttpResponse addSetCookie(CharSequence name, CharSequence value);
 }

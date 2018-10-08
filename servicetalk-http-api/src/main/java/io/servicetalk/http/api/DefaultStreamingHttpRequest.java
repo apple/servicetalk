@@ -115,6 +115,80 @@ class DefaultStreamingHttpRequest<P> extends DefaultHttpRequestMetaData implemen
     }
 
     @Override
+    public final StreamingHttpRequest addHeader(final CharSequence name, final CharSequence value) {
+        super.addHeader(name, value);
+        return this;
+    }
+
+    @Override
+    public final StreamingHttpRequest addHeaders(final CharSequence name,
+                                                 final Iterable<? extends CharSequence> values) {
+        super.addHeaders(name, values);
+        return this;
+    }
+
+    @Override
+    public final StreamingHttpRequest addHeaders(final CharSequence name, final CharSequence... values) {
+        super.addHeaders(name, values);
+        return this;
+    }
+
+    @Override
+    public final StreamingHttpRequest addHeaders(final HttpHeaders headers) {
+        super.addHeaders(headers);
+        return this;
+    }
+
+    @Override
+    public final StreamingHttpRequest setHeader(final CharSequence name, final CharSequence value) {
+        super.setHeader(name, value);
+        return this;
+    }
+
+    @Override
+    public final StreamingHttpRequest setHeaders(final CharSequence name,
+                                                 final Iterable<? extends CharSequence> values) {
+        super.setHeaders(name, values);
+        return this;
+    }
+
+    @Override
+    public final StreamingHttpRequest setHeaders(final CharSequence name, final CharSequence... values) {
+        super.setHeaders(name, values);
+        return this;
+    }
+
+    @Override
+    public final StreamingHttpRequest setHeaders(final HttpHeaders headers) {
+        super.setHeaders(headers);
+        return this;
+    }
+
+    @Override
+    public final StreamingHttpRequest addCookie(final HttpCookie cookie) {
+        super.addCookie(cookie);
+        return this;
+    }
+
+    @Override
+    public final StreamingHttpRequest addCookie(final CharSequence name, final CharSequence value) {
+        super.addCookie(name, value);
+        return this;
+    }
+
+    @Override
+    public final StreamingHttpRequest addSetCookie(final HttpCookie cookie) {
+        super.addSetCookie(cookie);
+        return this;
+    }
+
+    @Override
+    public final StreamingHttpRequest addSetCookie(final CharSequence name, final CharSequence value) {
+        super.addSetCookie(name, value);
+        return this;
+    }
+
+    @Override
     public Publisher<Buffer> payloadBody() {
         return payloadBody.liftSynchronous(HttpBufferFilterOperator.INSTANCE);
     }

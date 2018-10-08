@@ -269,5 +269,41 @@ public abstract class StreamingHttpClient extends StreamingHttpRequester {
 
         @Override
         UpgradableStreamingHttpResponse status(HttpResponseStatus status);
+
+        @Override
+        UpgradableStreamingHttpResponse addHeader(CharSequence name, CharSequence value);
+
+        @Override
+        UpgradableStreamingHttpResponse addHeaders(CharSequence name, Iterable<? extends CharSequence> values);
+
+        @Override
+        UpgradableStreamingHttpResponse addHeaders(CharSequence name, CharSequence... values);
+
+        @Override
+        UpgradableStreamingHttpResponse addHeaders(HttpHeaders headers);
+
+        @Override
+        UpgradableStreamingHttpResponse setHeader(CharSequence name, CharSequence value);
+
+        @Override
+        UpgradableStreamingHttpResponse setHeaders(CharSequence name, Iterable<? extends CharSequence> values);
+
+        @Override
+        UpgradableStreamingHttpResponse setHeaders(CharSequence name, CharSequence... values);
+
+        @Override
+        UpgradableStreamingHttpResponse setHeaders(HttpHeaders headers);
+
+        @Override
+        UpgradableStreamingHttpResponse addCookie(HttpCookie cookie);
+
+        @Override
+        UpgradableStreamingHttpResponse addCookie(CharSequence name, CharSequence value);
+
+        @Override
+        UpgradableStreamingHttpResponse addSetCookie(HttpCookie cookie);
+
+        @Override
+        UpgradableStreamingHttpResponse addSetCookie(CharSequence name, CharSequence value);
     }
 }

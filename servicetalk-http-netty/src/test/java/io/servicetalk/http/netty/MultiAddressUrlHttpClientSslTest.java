@@ -152,9 +152,9 @@ public class MultiAddressUrlHttpClientSslTest {
     public void nonSecureClientToSecureServer() throws Exception {
         HttpRequester requester = HttpClients.forMultiAddressUrl().executionContext(CTX).build();
 
-        HttpRequest request = requester.get("/");
-        request.headers().add(HOST, secureServerHostHeader);
-        request.headers().add(CONTENT_LENGTH, ZERO);
+        HttpRequest request = requester.get("/")
+                .addHeader(HOST, secureServerHostHeader)
+                .addHeader(CONTENT_LENGTH, ZERO);
         await(requester.request(request), 2, SECONDS);
     }
 
@@ -163,9 +163,9 @@ public class MultiAddressUrlHttpClientSslTest {
         HttpRequester requester = HttpClients.forMultiAddressUrl().sslConfigProvider(secureByDefault())
                 .executionContext(CTX).build();
 
-        HttpRequest request = requester.get("/");
-        request.headers().add(HOST, serverHostHeader);
-        request.headers().add(CONTENT_LENGTH, ZERO);
+        HttpRequest request = requester.get("/")
+                .addHeader(HOST, serverHostHeader)
+                .addHeader(CONTENT_LENGTH, ZERO);
         await(requester.request(request), 2, SECONDS);
     }
 
@@ -231,9 +231,9 @@ public class MultiAddressUrlHttpClientSslTest {
 
         private static void requestAndValidate(final BlockingHttpRequester requester,
                                            final String requestTarget, final String hostHeader) throws Exception {
-        HttpRequest request = requester.get(requestTarget);
-        request.headers().add(HOST, hostHeader);
-        request.headers().add(CONTENT_LENGTH, ZERO);
+        HttpRequest request = requester.get(requestTarget)
+                .addHeader(HOST, hostHeader)
+                .addHeader(CONTENT_LENGTH, ZERO);
         assertEquals(OK, requester.request(request).status());
     }
 }

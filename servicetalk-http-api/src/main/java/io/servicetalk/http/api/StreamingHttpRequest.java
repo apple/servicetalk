@@ -187,4 +187,40 @@ public interface StreamingHttpRequest extends HttpRequestMetaData {
 
     @Override
     StreamingHttpRequest requestTarget(String requestTarget);
+
+    @Override
+    StreamingHttpRequest addHeader(CharSequence name, CharSequence value);
+
+    @Override
+    StreamingHttpRequest addHeaders(CharSequence name, Iterable<? extends CharSequence> values);
+
+    @Override
+    StreamingHttpRequest addHeaders(CharSequence name, CharSequence... values);
+
+    @Override
+    StreamingHttpRequest addHeaders(HttpHeaders headers);
+
+    @Override
+    StreamingHttpRequest setHeader(CharSequence name, CharSequence value);
+
+    @Override
+    StreamingHttpRequest setHeaders(CharSequence name, Iterable<? extends CharSequence> values);
+
+    @Override
+    StreamingHttpRequest setHeaders(CharSequence name, CharSequence... values);
+
+    @Override
+    StreamingHttpRequest setHeaders(HttpHeaders headers);
+
+    @Override
+    StreamingHttpRequest addCookie(HttpCookie cookie);
+
+    @Override
+    StreamingHttpRequest addCookie(CharSequence name, CharSequence value);
+
+    @Override
+    StreamingHttpRequest addSetCookie(HttpCookie cookie);
+
+    @Override
+    StreamingHttpRequest addSetCookie(CharSequence name, CharSequence value);
 }

@@ -99,6 +99,102 @@ final class BufferHttpResponse extends DefaultHttpResponseMetaData implements Ht
     }
 
     @Override
+    public HttpResponse addHeader(final CharSequence name, final CharSequence value) {
+        super.addHeader(name, value);
+        return this;
+    }
+
+    @Override
+    public HttpResponse addHeaders(final CharSequence name, final Iterable<? extends CharSequence> values) {
+        super.addHeaders(name, values);
+        return this;
+    }
+
+    @Override
+    public HttpResponse addHeaders(final CharSequence name, final CharSequence... values) {
+        super.addHeaders(name, values);
+        return this;
+    }
+
+    @Override
+    public HttpResponse addHeaders(final HttpHeaders headers) {
+        super.addHeaders(headers);
+        return this;
+    }
+
+    @Override
+    public HttpResponse setHeader(final CharSequence name, final CharSequence value) {
+        super.setHeader(name, value);
+        return this;
+    }
+
+    @Override
+    public HttpResponse setHeaders(final CharSequence name, final Iterable<? extends CharSequence> values) {
+        super.setHeaders(name, values);
+        return this;
+    }
+
+    @Override
+    public HttpResponse setHeaders(final CharSequence name, final CharSequence... values) {
+        super.setHeaders(name, values);
+        return this;
+    }
+
+    @Override
+    public HttpResponse setHeaders(final HttpHeaders headers) {
+        super.setHeaders(headers);
+        return this;
+    }
+
+    @Override
+    public HttpResponse addCookie(final HttpCookie cookie) {
+        super.addCookie(cookie);
+        return this;
+    }
+
+    @Override
+    public HttpResponse addCookie(final CharSequence name, final CharSequence value) {
+        super.addCookie(name, value);
+        return this;
+    }
+
+    @Override
+    public HttpResponse addSetCookie(final HttpCookie cookie) {
+        super.addSetCookie(cookie);
+        return this;
+    }
+
+    @Override
+    public HttpResponse addSetCookie(final CharSequence name, final CharSequence value) {
+        super.addSetCookie(name, value);
+        return this;
+    }
+
+    @Override
+    public HttpResponse addTrailer(final CharSequence name, final CharSequence value) {
+        trailers().add(name, value);
+        return this;
+    }
+
+    @Override
+    public HttpResponse addTrailer(final HttpHeaders trailers) {
+        trailers().add(trailers);
+        return this;
+    }
+
+    @Override
+    public HttpResponse setTrailer(final CharSequence name, final CharSequence value) {
+        trailers().set(name, value);
+        return this;
+    }
+
+    @Override
+    public HttpResponse setTrailer(final HttpHeaders trailers) {
+        trailers().set(trailers);
+        return this;
+    }
+
+    @Override
     public boolean equals(final Object o) {
         if (this == o) {
             return true;

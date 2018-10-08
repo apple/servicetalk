@@ -77,7 +77,7 @@ public class HttpResponseEncoderTest {
         EmbeddedChannel channel = newEmbeddedChannel();
         HttpResponseMetaData response = newResponseMetaData(HTTP_1_1, OK, INSTANCE.newHeaders());
         try {
-            response.headers().add(" " + CONNECTION, KEEP_ALIVE);
+            response.addHeader(" " + CONNECTION, KEEP_ALIVE);
         } finally {
             assertFalse(channel.finishAndReleaseAll());
         }

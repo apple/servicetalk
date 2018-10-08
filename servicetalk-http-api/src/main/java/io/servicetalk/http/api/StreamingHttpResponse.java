@@ -104,7 +104,7 @@ public interface StreamingHttpResponse extends HttpResponseMetaData {
      * @param serializer Used to serialize the payload body.
      * @param <T> The type of objects to deserialize.
      * @param <R> The type of objects to serialize.
-     * @return A {@link StreamingHttpRequest} with the new serialized payload body.
+     * @return A {@link StreamingHttpResponse} with the new serialized payload body.
      */
     default <T, R> StreamingHttpResponse transformPayloadBody(Function<Publisher<T>, Publisher<R>> transformer,
                                                               HttpDeserializer<T> deserializer,
@@ -176,4 +176,40 @@ public interface StreamingHttpResponse extends HttpResponseMetaData {
 
     @Override
     StreamingHttpResponse status(HttpResponseStatus status);
+
+    @Override
+    StreamingHttpResponse addHeader(CharSequence name, CharSequence value);
+
+    @Override
+    StreamingHttpResponse addHeaders(CharSequence name, Iterable<? extends CharSequence> values);
+
+    @Override
+    StreamingHttpResponse addHeaders(CharSequence name, CharSequence... values);
+
+    @Override
+    StreamingHttpResponse addHeaders(HttpHeaders headers);
+
+    @Override
+    StreamingHttpResponse setHeader(CharSequence name, CharSequence value);
+
+    @Override
+    StreamingHttpResponse setHeaders(CharSequence name, Iterable<? extends CharSequence> values);
+
+    @Override
+    StreamingHttpResponse setHeaders(CharSequence name, CharSequence... values);
+
+    @Override
+    StreamingHttpResponse setHeaders(HttpHeaders headers);
+
+    @Override
+    StreamingHttpResponse addCookie(HttpCookie cookie);
+
+    @Override
+    StreamingHttpResponse addCookie(CharSequence name, CharSequence value);
+
+    @Override
+    StreamingHttpResponse addSetCookie(HttpCookie cookie);
+
+    @Override
+    StreamingHttpResponse addSetCookie(CharSequence name, CharSequence value);
 }

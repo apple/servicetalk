@@ -207,4 +207,40 @@ public interface HttpRequestMetaData extends HttpMetaData {
 
     @Override
     HttpRequestMetaData version(HttpProtocolVersion version);
+
+    @Override
+    HttpRequestMetaData addHeader(CharSequence name, CharSequence value);
+
+    @Override
+    HttpRequestMetaData addHeaders(CharSequence name, Iterable<? extends CharSequence> values);
+
+    @Override
+    HttpRequestMetaData addHeaders(CharSequence name, CharSequence... values);
+
+    @Override
+    HttpRequestMetaData addHeaders(HttpHeaders headers);
+
+    @Override
+    HttpRequestMetaData setHeader(CharSequence name, CharSequence value);
+
+    @Override
+    HttpRequestMetaData setHeaders(CharSequence name, Iterable<? extends CharSequence> values);
+
+    @Override
+    HttpRequestMetaData setHeaders(CharSequence name, CharSequence... values);
+
+    @Override
+    HttpRequestMetaData setHeaders(HttpHeaders headers);
+
+    @Override
+    HttpRequestMetaData addCookie(HttpCookie cookie);
+
+    @Override
+    HttpRequestMetaData addCookie(CharSequence name, CharSequence value);
+
+    @Override
+    HttpRequestMetaData addSetCookie(HttpCookie cookie);
+
+    @Override
+    HttpRequestMetaData addSetCookie(CharSequence name, CharSequence value);
 }
