@@ -37,17 +37,19 @@ buildscript {
 // Note that this workaround may not be required in the future, as the composite
 // build feature evolves and improves in Gradle.
 ext.replaceTestFixtures = { includedBuild, name ->
-  def config = includedBuild.configuredBuild.rootProject.configurations.findByName(name)
-  if (config) {
-    config.dependencies.findAll { it.name.endsWith TEST_FIXTURES_DEPENDENCY_SUFFIX }.each {
-      def projectDependency =
-          new DefaultExternalModuleDependency(
-              it.group,
-              it.name.substring(0, it.name.length() - TEST_FIXTURES_DEPENDENCY_SUFFIX.length()),
-              it.version,
-              'testFixturesRuntime')
-      config.dependencies.add(projectDependency)
-      config.dependencies.remove(it)
+  includedBuild.configuredBuild.rootProject.allprojects { prj ->
+    def config = prj.configurations.findByName(name)
+    if (config) {
+      config.dependencies.findAll { it.group == 'io.servicetalk' && it.name.endsWith(TEST_FIXTURES_DEPENDENCY_SUFFIX) }.each {
+        def projectDependency =
+            new DefaultExternalModuleDependency(
+                it.group,
+                it.name.substring(0, it.name.length() - TEST_FIXTURES_DEPENDENCY_SUFFIX.length()),
+                it.version,
+                'testFixturesRuntime')
+        config.dependencies.add(projectDependency)
+        config.dependencies.remove(it)
+      }
     }
   }
 }
@@ -63,67 +65,67 @@ project.configure(project) {
 }
 
 ext.findTasks = { taskName, excludedBuilds = [] ->
-  gradle.includedBuilds.findAll { !excludedBuilds.contains(it.name) }.collect { it.task(taskName) }
+  gradle.includedBuilds.findAll { !excludedBuilds.contains(it.name) }.collect { it.configuredBuild.rootProject.getTasksByName(taskName, true) }.flatten()
 }
 
 // Add tasks for composite:
 
 task clean {
-  dependsOn gradle.includedBuilds*.task(':clean')
+  dependsOn findTasks('clean')
 }
 
 task javadoc {
-  dependsOn gradle.includedBuilds*.task(':javadoc')
+  dependsOn findTasks('javadoc')
 }
 
 task 'package' {
-  dependsOn findTasks(':package', ['servicetalk-examples'])
+  dependsOn findTasks('package', ['servicetalk-examples'])
 }
 
 task test {
-  dependsOn gradle.includedBuilds*.task(':test')
+  dependsOn findTasks('test')
 }
 
 task check {
-  dependsOn gradle.includedBuilds*.task(':check')
+  dependsOn findTasks('check')
 }
 
 task build {
-  dependsOn gradle.includedBuilds*.task(':build')
+  dependsOn findTasks('build')
 }
 
 task checkstyle {
-  dependsOn findTasks(':checkstyle',
+  dependsOn findTasks('checkstyle',
     ['servicetalk-bom', 'servicetalk-bom-internal', 'servicetalk-examples', 'servicetalk-gradle-plugin-internal'])
 }
 
 task pmd {
-  dependsOn findTasks(':pmd',
+  dependsOn findTasks('pmd',
     ['servicetalk-bom', 'servicetalk-bom-internal', 'servicetalk-examples', 'servicetalk-gradle-plugin-internal'])
 }
 
 task spotbugs {
-  dependsOn findTasks(':spotbugs',
+  dependsOn findTasks('spotbugs',
     ['servicetalk-bom', 'servicetalk-bom-internal', 'servicetalk-examples', 'servicetalk-gradle-plugin-internal'])
 }
 
 task quality {
-  dependsOn findTasks(':quality',
+  dependsOn findTasks('quality',
     ['servicetalk-bom', 'servicetalk-bom-internal', 'servicetalk-examples', 'servicetalk-gradle-plugin-internal'])
 }
 
 task bintrayUpload {
-  dependsOn findTasks(':bintrayUpload', ['servicetalk-benchmarks', 'servicetalk-examples'])
+  dependsOn findTasks('bintrayUpload', ['servicetalk-benchmarks', 'servicetalk-examples'])
 }
 
 // Override behavior for existing tasks:
 
 task publish(overwrite: true) {
-  dependsOn findTasks(':publish', ['servicetalk-benchmarks', 'servicetalk-examples'])
+  dependsOn findTasks('publish', ['servicetalk-benchmarks', 'servicetalk-examples'])
 }
 
 task publishToMavenLocal(overwrite: true) {
-  dependsOn findTasks(':publishToMavenLocal', ['servicetalk-benchmarks', 'servicetalk-examples'])
+  dependsOn findTasks('publishToMavenLocal', ['servicetalk-benchmarks', 'servicetalk-examples'])
 }
 
 task license(overwrite: true) {
