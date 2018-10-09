@@ -20,7 +20,7 @@
     <Class name="io.servicetalk.http.api.ReadOnlyHttpHeaders$ReadOnlyIterator"/>
     <Bug pattern="PZ_DONT_REUSE_ENTRY_OBJECTS_IN_ITERATORS"/>
   </Match>
-  
+
   <!-- False positive. Everything involved has a default @NonNull from the package-info.java -->
   <Match>
     <Class name="io.servicetalk.http.api.DefaultHttpCookies"/>
@@ -53,6 +53,12 @@
     <Or>
       <Method name="status"/>
       <Method name="version"/>
+      <Method name="addHeader"/>
+      <Method name="addHeaders"/>
+      <Method name="setHeader"/>
+      <Method name="setHeaders"/>
+      <Method name="addCookie"/>
+      <Method name="addSetCookie"/>
     </Or>
     <Bug pattern="RV_RETURN_VALUE_IGNORED_NO_SIDE_EFFECT"/>
   </Match>
