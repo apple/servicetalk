@@ -21,7 +21,7 @@ import io.servicetalk.client.api.ServiceDiscovererEvent;
  * An {@link ServiceDiscovererEvent} which is associated with a partition.
  * @param <ResolvedAddress> The type of resolved address.
  */
-public interface ServiceDiscovererPartitionedEvent<ResolvedAddress> extends ServiceDiscovererEvent<ResolvedAddress> {
+public interface PartitionedServiceDiscovererEvent<ResolvedAddress> extends ServiceDiscovererEvent<ResolvedAddress> {
     /**
      * Get the fully specified {@link PartitionAttributes} that uniquely identifies {@link #address()}.
      * @return the fully specified {@link PartitionAttributes} that uniquely identifies {@link #address()}.

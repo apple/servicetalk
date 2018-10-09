@@ -80,7 +80,7 @@ final class RedisTestEnvironment implements AutoCloseable {
         DefaultRedisClientBuilder<HostAndPort, InetSocketAddress> builder =
                 (DefaultRedisClientBuilder<HostAndPort, InetSocketAddress>) forAddress(redisHost, redisPort);
         RedisClient rawClient = builder
-                .setDeferSubscribeTillConnect(true)
+                .deferSubscribeTillConnect(true)
                 .executionContext(executionContext)
                 .maxPipelinedRequests(10)
                 .idleConnectionTimeout(ofSeconds(2))

@@ -209,7 +209,7 @@ final class DefaultRedisClientBuilder<U, R> implements RedisClientBuilder<U, R> 
      * @param defer {@code true} to defer the subscribe
      * @return {@code this}
      */
-    RedisClientBuilder<U, R> setDeferSubscribeTillConnect(boolean defer) {
+    RedisClientBuilder<U, R> deferSubscribeTillConnect(boolean defer) {
         config.setDeferSubscribeTillConnect(defer);
         return this;
     }

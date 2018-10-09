@@ -22,7 +22,7 @@ import io.servicetalk.client.api.LoadBalancerFactory;
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.client.api.partition.PartitionMapFactory;
-import io.servicetalk.client.api.partition.ServiceDiscovererPartitionedEvent;
+import io.servicetalk.client.api.partition.PartitionedServiceDiscovererEvent;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.SslConfig;
 
@@ -192,7 +192,7 @@ public interface PartitionedRedisClientBuilder<U, R> {
      * @return {@code this}.
      */
     PartitionedRedisClientBuilder<U, R> serviceDiscoverer(
-            ServiceDiscoverer<U, R, ? extends ServiceDiscovererPartitionedEvent<R>> serviceDiscoverer);
+            ServiceDiscoverer<U, R, ? extends PartitionedServiceDiscovererEvent<R>> serviceDiscoverer);
 
     /**
      * Set a {@link LoadBalancerFactory} to generate {@link LoadBalancer} objects.

@@ -20,7 +20,7 @@ import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.partition.PartitionAttributes;
 import io.servicetalk.client.api.partition.PartitionAttributes.Key;
 import io.servicetalk.client.api.partition.PartitionAttributesBuilder;
-import io.servicetalk.client.api.partition.ServiceDiscovererPartitionedEvent;
+import io.servicetalk.client.api.partition.PartitionedServiceDiscovererEvent;
 import io.servicetalk.client.internal.partition.DefaultPartitionAttributesBuilder;
 import io.servicetalk.concurrent.api.PublisherRule;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
@@ -68,7 +68,7 @@ public abstract class AbstractPartitionedRedisClientTest {
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
     @Rule
-    public final PublisherRule<ServiceDiscovererPartitionedEvent<InetSocketAddress>> serviceDiscoveryPublisher =
+    public final PublisherRule<PartitionedServiceDiscovererEvent<InetSocketAddress>> serviceDiscoveryPublisher =
             new PublisherRule<>();
 
     private static final Key<Boolean> MASTER_KEY = Key.newKeyWithDebugToString("master");
@@ -136,8 +136,8 @@ public abstract class AbstractPartitionedRedisClientTest {
         };
 
         @SuppressWarnings("unchecked")
-        ServiceDiscoverer<String, InetSocketAddress, ServiceDiscovererPartitionedEvent<InetSocketAddress>> sd =
-                (ServiceDiscoverer<String, InetSocketAddress, ServiceDiscovererPartitionedEvent<InetSocketAddress>>)
+        ServiceDiscoverer<String, InetSocketAddress, PartitionedServiceDiscovererEvent<InetSocketAddress>> sd =
+                (ServiceDiscoverer<String, InetSocketAddress, PartitionedServiceDiscovererEvent<InetSocketAddress>>)
                         mock(ServiceDiscoverer.class);
         when(sd.discover(any())).thenReturn(serviceDiscoveryPublisher.getPublisher());
         client = RedisClients.forPartitionedAddress(sd, "ignored", partitionAttributesBuilderFactory)
@@ -191,7 +191,7 @@ public abstract class AbstractPartitionedRedisClientTest {
     }
 
     void sendServiceDiscoveryEvent(boolean available, PartitionAttributes partitionAddress) {
-        serviceDiscoveryPublisher.sendItems(new ServiceDiscovererPartitionedEvent<InetSocketAddress>() {
+        serviceDiscoveryPublisher.sendItems(new PartitionedServiceDiscovererEvent<InetSocketAddress>() {
             private final InetSocketAddress address = new InetSocketAddress(redisHost, redisPort);
 
             @Override

@@ -87,8 +87,8 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
                                                   final DefaultSingleAddressHttpClientBuilder<U, R> from) {
         config = new HttpClientConfig(from.config);
         this.address = requireNonNull(address);
-        this.serviceDiscoverer = requireNonNull(from.serviceDiscoverer);
-        this.loadBalancerFactory = requireNonNull(from.loadBalancerFactory);
+        this.serviceDiscoverer = from.serviceDiscoverer;
+        this.loadBalancerFactory = from.loadBalancerFactory;
         clientFilterFunction = from.clientFilterFunction;
         connectionFilterFunction = from.connectionFilterFunction;
         hostHeaderFilterFunction = from.hostHeaderFilterFunction;

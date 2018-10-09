@@ -98,7 +98,7 @@ public final class HttpClients {
      * @return new builder with provided configuration
      */
     public static <U, R> SingleAddressHttpClientBuilder<U, R> forSingleAddress(
-            final ServiceDiscoverer<U, R, ServiceDiscovererEvent<R>> serviceDiscoverer,
+            final ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>> serviceDiscoverer,
             final U address) {
         return new DefaultSingleAddressHttpClientBuilder<>(serviceDiscoverer, address);
     }

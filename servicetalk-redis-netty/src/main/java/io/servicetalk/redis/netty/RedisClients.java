@@ -19,7 +19,7 @@ import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.client.api.partition.PartitionAttributesBuilder;
-import io.servicetalk.client.api.partition.ServiceDiscovererPartitionedEvent;
+import io.servicetalk.client.api.partition.PartitionedServiceDiscovererEvent;
 import io.servicetalk.redis.api.PartitionedRedisClientBuilder;
 import io.servicetalk.redis.api.RedisClient;
 import io.servicetalk.redis.api.RedisClientBuilder;
@@ -93,7 +93,7 @@ public final class RedisClients {
      * @return new builder with provided configuration
      */
     public static <U, R> PartitionedRedisClientBuilder<U, R> forPartitionedAddress(
-            final ServiceDiscoverer<U, R, ? extends ServiceDiscovererPartitionedEvent<R>> serviceDiscoverer,
+            final ServiceDiscoverer<U, R, ? extends PartitionedServiceDiscovererEvent<R>> serviceDiscoverer,
             final U address, Function<Command, RedisPartitionAttributesBuilder> partitionAttributesBuilderFactory) {
         return DefaultPartitionedRedisClientBuilder.forAddress(address, serviceDiscoverer,
                 partitionAttributesBuilderFactory);

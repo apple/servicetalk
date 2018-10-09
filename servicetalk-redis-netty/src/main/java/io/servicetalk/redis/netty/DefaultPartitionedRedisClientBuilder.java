@@ -21,7 +21,7 @@ import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.partition.PartitionAttributes;
 import io.servicetalk.client.api.partition.PartitionMap;
 import io.servicetalk.client.api.partition.PartitionMapFactory;
-import io.servicetalk.client.api.partition.ServiceDiscovererPartitionedEvent;
+import io.servicetalk.client.api.partition.PartitionedServiceDiscovererEvent;
 import io.servicetalk.client.api.partition.UnknownPartitionException;
 import io.servicetalk.client.internal.partition.PowerSetPartitionMapFactory;
 import io.servicetalk.concurrent.api.AsyncCloseable;
@@ -182,7 +182,7 @@ final class DefaultPartitionedRedisClientBuilder<U, R> implements PartitionedRed
 
     @Override
     public PartitionedRedisClientBuilder<U, R> serviceDiscoverer(
-            final ServiceDiscoverer<U, R, ? extends ServiceDiscovererPartitionedEvent<R>> serviceDiscoverer) {
+            final ServiceDiscoverer<U, R, ? extends PartitionedServiceDiscovererEvent<R>> serviceDiscoverer) {
         builderTemplate.serviceDiscoverer(serviceDiscoverer);
         return this;
     }
@@ -209,7 +209,7 @@ final class DefaultPartitionedRedisClientBuilder<U, R> implements PartitionedRed
 
     static <U, R> DefaultPartitionedRedisClientBuilder<U, R> forAddress(
             final U address,
-            final ServiceDiscoverer<U, R, ? extends ServiceDiscovererPartitionedEvent<R>> sd,
+            final ServiceDiscoverer<U, R, ? extends PartitionedServiceDiscovererEvent<R>> sd,
             final Function<Command, RedisPartitionAttributesBuilder> partitionAttributesBuilderFactory) {
         DefaultRedisClientBuilder<U, R> clientBuilder = new DefaultRedisClientBuilder<>(sd, address);
         return new DefaultPartitionedRedisClientBuilder<>(clientBuilder, partitionAttributesBuilderFactory);
@@ -232,13 +232,13 @@ final class DefaultPartitionedRedisClientBuilder<U, R> implements PartitionedRed
             final DefaultRedisClientBuilder<U, R> builder = builderTemplate.copy();
             executionContext = builder.executionContext();
             @SuppressWarnings("unchecked")
-            ServiceDiscoverer<U, R, ServiceDiscovererPartitionedEvent<R>> sd =
-                    (ServiceDiscoverer<U, R, ServiceDiscovererPartitionedEvent<R>>) builder.serviceDiscoverer();
+            ServiceDiscoverer<U, R, PartitionedServiceDiscovererEvent<R>> sd =
+                    (ServiceDiscoverer<U, R, PartitionedServiceDiscovererEvent<R>>) builder.serviceDiscoverer();
             sd.discover(builder.address()).groupByMulti(event -> event.available() ?
                             partitionMap.add(event.partitionAddress()).iterator() :
                             partitionMap.remove(event.partitionAddress()).iterator(),
                     serviceDiscoveryMaxQueueSize)
-                    .subscribe(new Subscriber<GroupedPublisher<Partition, ServiceDiscovererPartitionedEvent<R>>>() {
+                    .subscribe(new Subscriber<GroupedPublisher<Partition, PartitionedServiceDiscovererEvent<R>>>() {
                         @Override
                         public void onSubscribe(Subscription s) {
                             // We request max value here to make sure we do not access Subscription concurrently
@@ -250,7 +250,7 @@ final class DefaultPartitionedRedisClientBuilder<U, R> implements PartitionedRed
                         }
 
                         @Override
-                        public void onNext(GroupedPublisher<Partition, ServiceDiscovererPartitionedEvent<R>> newGroup) {
+                        public void onNext(GroupedPublisher<Partition, PartitionedServiceDiscovererEvent<R>> newGroup) {
                             final Partition partition = newGroup.getKey();
                             partition.setClient(builder.build(new PartitionServiceDiscoverer<>(newGroup, partition)));
                         }
@@ -365,12 +365,12 @@ final class DefaultPartitionedRedisClientBuilder<U, R> implements PartitionedRed
     }
 
     private static final class PartitionServiceDiscoverer<U, R>
-            implements ServiceDiscoverer<U, R, ServiceDiscovererPartitionedEvent<R>> {
+            implements ServiceDiscoverer<U, R, PartitionedServiceDiscovererEvent<R>> {
         private final ListenableAsyncCloseable close;
-        private final GroupedPublisher<Partition, ServiceDiscovererPartitionedEvent<R>> newGroup;
+        private final GroupedPublisher<Partition, PartitionedServiceDiscovererEvent<R>> newGroup;
         private final Partition partition;
 
-        PartitionServiceDiscoverer(final GroupedPublisher<Partition, ServiceDiscovererPartitionedEvent<R>> newGroup,
+        PartitionServiceDiscoverer(final GroupedPublisher<Partition, PartitionedServiceDiscovererEvent<R>> newGroup,
                                    final Partition partition) {
             this.newGroup = newGroup;
             this.partition = partition;
@@ -378,13 +378,13 @@ final class DefaultPartitionedRedisClientBuilder<U, R> implements PartitionedRed
         }
 
         @Override
-        public Publisher<ServiceDiscovererPartitionedEvent<R>> discover(final U ignored) {
-            return newGroup.filter(new Predicate<ServiceDiscovererPartitionedEvent<R>>() {
+        public Publisher<PartitionedServiceDiscovererEvent<R>> discover(final U ignored) {
+            return newGroup.filter(new Predicate<PartitionedServiceDiscovererEvent<R>>() {
                 // Use a mutable Count to avoid boxing-unboxing and put on each call.
                 private final Map<R, MutableInteger> addressesToCount = new HashMap<>();
 
                 @Override
-                public boolean test(ServiceDiscovererPartitionedEvent<R> evt) {
+                public boolean test(PartitionedServiceDiscovererEvent<R> evt) {
                     MutableInteger count = addressesToCount.computeIfAbsent(evt.address(),
                             addr -> new MutableInteger());
                     boolean acceptEvent;

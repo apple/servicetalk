@@ -17,7 +17,7 @@ package io.servicetalk.redis.api;
 
 import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.client.api.partition.PartitionAttributes;
-import io.servicetalk.client.api.partition.ServiceDiscovererPartitionedEvent;
+import io.servicetalk.client.api.partition.PartitionedServiceDiscovererEvent;
 import io.servicetalk.redis.api.RedisProtocolSupport.Command;
 
 import java.util.function.Function;
@@ -30,14 +30,14 @@ import java.util.function.Function;
 public interface RedisPartitionAttributesProvider<R> {
 
     /**
-     * Converts the passed {@link ServiceDiscovererEvent} to a {@link ServiceDiscovererPartitionedEvent} that contains
-     * the {@link PartitionAttributes} as returned by {@link ServiceDiscovererPartitionedEvent#partitionAddress()}.
+     * Converts the passed {@link ServiceDiscovererEvent} to a {@link PartitionedServiceDiscovererEvent} that contains
+     * the {@link PartitionAttributes} as returned by {@link PartitionedServiceDiscovererEvent#partitionAddress()}.
      *
      * @param resolvedAddressEvent {@link ServiceDiscovererEvent} for which the {@link PartitionAttributes} are to be
      * created.
-     * @return {@link ServiceDiscovererPartitionedEvent} containing the relevant {@link PartitionAttributes}.
+     * @return {@link PartitionedServiceDiscovererEvent} containing the relevant {@link PartitionAttributes}.
      */
-    ServiceDiscovererPartitionedEvent<R> forAddress(ServiceDiscovererEvent<R> resolvedAddressEvent);
+    PartitionedServiceDiscovererEvent<R> forAddress(ServiceDiscovererEvent<R> resolvedAddressEvent);
 
     /**
      * Provides a {@link RedisPartitionAttributesBuilder} to build {@link PartitionAttributes} for the passed
@@ -59,11 +59,11 @@ public interface RedisPartitionAttributesProvider<R> {
      * @return A new {@link RedisPartitionAttributesProvider}.
      */
     static <R> RedisPartitionAttributesProvider<R> from(
-            Function<ServiceDiscovererEvent<R>, ServiceDiscovererPartitionedEvent<R>> forAddress,
+            Function<ServiceDiscovererEvent<R>, PartitionedServiceDiscovererEvent<R>> forAddress,
             Function<Command, RedisPartitionAttributesBuilder> forCommand) {
         return new RedisPartitionAttributesProvider<R>() {
             @Override
-            public ServiceDiscovererPartitionedEvent<R> forAddress(
+            public PartitionedServiceDiscovererEvent<R> forAddress(
                     final ServiceDiscovererEvent<R> resolvedAddressEvent) {
                 return forAddress.apply(resolvedAddressEvent);
             }
