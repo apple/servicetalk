@@ -396,7 +396,7 @@ public final class RedisRequests {
                                                           final Predicate<RedisData> responsePredicate,
                                                       final BiFunction<ReservedRedisConnection, Boolean, C> builder) {
         return reservedCnx.request(request)
-                .first() // TODO(scott): should we be using first here, or will cancellation be a problem?
+                .first()
                 .map(res -> {
                     if (responsePredicate.test(res)) {
                         return builder.apply(reservedCnx, closeCnx);
