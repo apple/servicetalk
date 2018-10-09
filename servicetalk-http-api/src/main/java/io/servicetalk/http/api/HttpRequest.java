@@ -20,7 +20,7 @@ import io.servicetalk.buffer.api.Buffer;
 /**
  * An HTTP request. The payload is represented as a single {@link Object}.
  */
-public interface HttpRequest extends HttpRequestMetaData {
+public interface HttpRequest extends HttpRequestMetaData, TrailersHolder {
     /**
      * Gets the underlying payload as a {@link Buffer}.
      *
@@ -38,13 +38,6 @@ public interface HttpRequest extends HttpRequestMetaData {
     default <T> T payloadBody(HttpDeserializer<T> deserializer) {
         return deserializer.deserialize(headers(), payloadBody());
     }
-
-    /**
-     * Gets the <a href="https://tools.ietf.org/html/rfc7230#section-4.4">trailers</a>.
-     *
-     * @return the <a href="https://tools.ietf.org/html/rfc7230#section-4.4">trailers</a>.
-     */
-    HttpHeaders trailers();
 
     /**
      * Sets the underlying payload.
@@ -120,38 +113,15 @@ public interface HttpRequest extends HttpRequestMetaData {
     @Override
     HttpRequest addSetCookie(CharSequence name, CharSequence value);
 
-    /**
-     * Adds a new trailer with the specified {@code name} and {@code value}.
-     *
-     * @param name the name of the trailer.
-     * @param value the value of the trailer.
-     * @return {@code this}.
-     */
+    @Override
     HttpRequest addTrailer(CharSequence name, CharSequence value);
 
-    /**
-     * Adds all trailer names and values of {@code trailer} object.
-     *
-     * @param trailers the trailers to add.
-     * @return {@code this}.
-     */
+    @Override
     HttpRequest addTrailer(HttpHeaders trailers);
 
-    /**
-     * Sets a trailer with the specified {@code name} and {@code value}. Any existing trailers with the same name are
-     * overwritten.
-     *
-     * @param name the name of the trailer.
-     * @param value the value of the trailer.
-     * @return {@code this}.
-     */
+    @Override
     HttpRequest setTrailer(CharSequence name, CharSequence value);
 
-    /**
-     * Clears the current trailer entries and copies all trailer entries of the specified {@code trailers} object.
-     *
-     * @param trailers the trailers object which contains new values.
-     * @return {@code this}.
-     */
+    @Override
     HttpRequest setTrailer(HttpHeaders trailers);
 }
