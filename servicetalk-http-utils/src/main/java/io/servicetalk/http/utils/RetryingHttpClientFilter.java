@@ -43,14 +43,14 @@ import static java.util.Objects.requireNonNull;
  * A {@link StreamingHttpClient} to enable retries for requests. Use {@link #asBlockingClient()},
  * {@link #asBlockingStreamingClient()} or {@link #asClient()} to use this filter with other programming models.
  */
-public final class RetryingStreamingHttpClient extends StreamingHttpClientAdapter {
+public final class RetryingHttpClientFilter extends StreamingHttpClientAdapter {
 
     private final BiIntFunction<Throwable, Completable> strategy;
     private final Predicate<HttpRequestMetaData> isRetryable;
 
-    private RetryingStreamingHttpClient(final StreamingHttpClient delegate,
-                                        final BiIntFunction<Throwable, Completable> strategy,
-                                        final Predicate<HttpRequestMetaData> isRetryable) {
+    private RetryingHttpClientFilter(final StreamingHttpClient delegate,
+                                     final BiIntFunction<Throwable, Completable> strategy,
+                                     final Predicate<HttpRequestMetaData> isRetryable) {
         super(delegate);
         this.strategy = requireNonNull(strategy);
         this.isRetryable = requireNonNull(isRetryable);
@@ -81,7 +81,7 @@ public final class RetryingStreamingHttpClient extends StreamingHttpClientAdapte
     }
 
     /**
-     * A builder for {@link RetryingStreamingHttpClient}.
+     * A builder for {@link RetryingHttpClientFilter}.
      */
     public static final class Builder {
 
@@ -120,7 +120,7 @@ public final class RetryingStreamingHttpClient extends StreamingHttpClientAdapte
          * Adds a delay between retries. For first retry, the delay is {@code initialDelay} which is increased
          * exponentially for subsequent retries.
          * <p>
-         * The resulting {@link RetryingStreamingHttpClient} from {@link #build(int)} may not attempt to check for
+         * The resulting {@link RetryingHttpClientFilter} from {@link #build(int)} may not attempt to check for
          * overflow if the retry count is high enough that an exponential delay causes {@link Long} overflow.
          *
          * @param initialDelay Delay {@link Duration} for the first retry and increased exponentially with each retry.
@@ -180,12 +180,12 @@ public final class RetryingStreamingHttpClient extends StreamingHttpClientAdapte
         }
 
         /**
-         * Builds a {@link RetryingStreamingHttpClient}.
+         * Builds a {@link RetryingHttpClientFilter}.
          *
          * @param retryCount Maximum number of retries.
-         * @return A new {@link RetryingStreamingHttpClient}.
+         * @return A new {@link RetryingHttpClientFilter}.
          */
-        public RetryingStreamingHttpClient build(int retryCount) {
+        public RetryingHttpClientFilter build(int retryCount) {
             Predicate<Throwable> causeFilter = this.causeFilter; // Save reference since accessed lazily.
             final BiIntFunction<Throwable, Completable> strategy;
             if (initialDelay == null) {
@@ -207,7 +207,7 @@ public final class RetryingStreamingHttpClient extends StreamingHttpClientAdapte
                     }
                 }
             }
-            return new RetryingStreamingHttpClient(delegate, strategy, retryableFilter);
+            return new RetryingHttpClientFilter(delegate, strategy, retryableFilter);
         }
     }
 }
