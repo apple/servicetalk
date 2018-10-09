@@ -122,7 +122,6 @@ public interface HttpResponse extends HttpResponseMetaData {
      *
      * @param trailers the trailers to add.
      * @return {@code this}.
-     * @throws IllegalArgumentException if {@code trailers == trailers()}.
      */
     HttpResponse addTrailer(HttpHeaders trailers);
 

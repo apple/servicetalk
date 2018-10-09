@@ -185,7 +185,6 @@ public interface HttpHeaders extends Iterable<Entry<CharSequence, CharSequence>>
      *
      * @param headers the headers to add.
      * @return {@code this}.
-     * @throws IllegalArgumentException if {@code headers == this}.
      */
     HttpHeaders add(HttpHeaders headers);
 

@@ -58,7 +58,6 @@ public interface HttpMetaData {
      *
      * @param headers the headers to add.
      * @return {@code this}.
-     * @throws IllegalArgumentException if {@code headers == headers()}.
      */
     HttpMetaData addHeaders(HttpHeaders headers);
 

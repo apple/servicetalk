@@ -134,7 +134,6 @@ public interface HttpRequest extends HttpRequestMetaData {
      *
      * @param trailers the trailers to add.
      * @return {@code this}.
-     * @throws IllegalArgumentException if {@code trailers == trailers()}.
      */
     HttpRequest addTrailer(HttpHeaders trailers);
 
