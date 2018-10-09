@@ -219,22 +219,10 @@ public abstract class HttpClient extends HttpRequester {
         UpgradableHttpResponse addHeader(CharSequence name, CharSequence value);
 
         @Override
-        UpgradableHttpResponse addHeaders(CharSequence name, Iterable<? extends CharSequence> values);
-
-        @Override
-        UpgradableHttpResponse addHeaders(CharSequence name, CharSequence... values);
-
-        @Override
         UpgradableHttpResponse addHeaders(HttpHeaders headers);
 
         @Override
         UpgradableHttpResponse setHeader(CharSequence name, CharSequence value);
-
-        @Override
-        UpgradableHttpResponse setHeaders(CharSequence name, Iterable<? extends CharSequence> values);
-
-        @Override
-        UpgradableHttpResponse setHeaders(CharSequence name, CharSequence... values);
 
         @Override
         UpgradableHttpResponse setHeaders(HttpHeaders headers);

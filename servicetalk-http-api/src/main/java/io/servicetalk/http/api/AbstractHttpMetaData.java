@@ -56,18 +56,6 @@ abstract class AbstractHttpMetaData implements HttpMetaData {
     }
 
     @Override
-    public HttpMetaData addHeaders(final CharSequence name, final Iterable<? extends CharSequence> values) {
-        headers().add(name, values);
-        return this;
-    }
-
-    @Override
-    public HttpMetaData addHeaders(final CharSequence name, final CharSequence... values) {
-        headers().add(name, values);
-        return this;
-    }
-
-    @Override
     public HttpMetaData addHeaders(final HttpHeaders headers) {
         headers().add(headers);
         return this;
@@ -76,18 +64,6 @@ abstract class AbstractHttpMetaData implements HttpMetaData {
     @Override
     public HttpMetaData setHeader(final CharSequence name, final CharSequence value) {
         headers().set(name, value);
-        return this;
-    }
-
-    @Override
-    public HttpMetaData setHeaders(final CharSequence name, final Iterable<? extends CharSequence> values) {
-        headers().set(name, values);
-        return this;
-    }
-
-    @Override
-    public HttpMetaData setHeaders(final CharSequence name, final CharSequence... values) {
-        headers().set(name, values);
         return this;
     }
 

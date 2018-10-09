@@ -274,20 +274,6 @@ final class BlockingStreamingHttpClientToStreamingHttpClient extends StreamingHt
         }
 
         @Override
-        public BlockingToUpgradableStreamingHttpResponse addHeaders(final CharSequence name,
-                                                                    final Iterable<? extends CharSequence> values) {
-            upgradeResponse.addHeaders(name, values);
-            return this;
-        }
-
-        @Override
-        public BlockingToUpgradableStreamingHttpResponse addHeaders(final CharSequence name,
-                                                                    final CharSequence... values) {
-            upgradeResponse.addHeaders(name, values);
-            return this;
-        }
-
-        @Override
         public BlockingToUpgradableStreamingHttpResponse addHeaders(final HttpHeaders headers) {
             upgradeResponse.addHeaders(headers);
             return this;
@@ -296,20 +282,6 @@ final class BlockingStreamingHttpClientToStreamingHttpClient extends StreamingHt
         @Override
         public BlockingToUpgradableStreamingHttpResponse setHeader(final CharSequence name, final CharSequence value) {
             upgradeResponse.setHeader(name, value);
-            return this;
-        }
-
-        @Override
-        public BlockingToUpgradableStreamingHttpResponse setHeaders(final CharSequence name,
-                                                                    final Iterable<? extends CharSequence> values) {
-            upgradeResponse.setHeaders(name, values);
-            return this;
-        }
-
-        @Override
-        public BlockingToUpgradableStreamingHttpResponse setHeaders(final CharSequence name,
-                                                                    final CharSequence... values) {
-            upgradeResponse.setHeaders(name, values);
             return this;
         }
 

@@ -121,19 +121,6 @@ class DefaultStreamingHttpRequest<P> extends DefaultHttpRequestMetaData implemen
     }
 
     @Override
-    public final StreamingHttpRequest addHeaders(final CharSequence name,
-                                                 final Iterable<? extends CharSequence> values) {
-        super.addHeaders(name, values);
-        return this;
-    }
-
-    @Override
-    public final StreamingHttpRequest addHeaders(final CharSequence name, final CharSequence... values) {
-        super.addHeaders(name, values);
-        return this;
-    }
-
-    @Override
     public final StreamingHttpRequest addHeaders(final HttpHeaders headers) {
         super.addHeaders(headers);
         return this;
@@ -142,19 +129,6 @@ class DefaultStreamingHttpRequest<P> extends DefaultHttpRequestMetaData implemen
     @Override
     public final StreamingHttpRequest setHeader(final CharSequence name, final CharSequence value) {
         super.setHeader(name, value);
-        return this;
-    }
-
-    @Override
-    public final StreamingHttpRequest setHeaders(final CharSequence name,
-                                                 final Iterable<? extends CharSequence> values) {
-        super.setHeaders(name, values);
-        return this;
-    }
-
-    @Override
-    public final StreamingHttpRequest setHeaders(final CharSequence name, final CharSequence... values) {
-        super.setHeaders(name, values);
         return this;
     }
 

@@ -278,22 +278,10 @@ public abstract class BlockingStreamingHttpClient extends BlockingStreamingHttpR
         UpgradableBlockingStreamingHttpResponse addHeader(CharSequence name, CharSequence value);
 
         @Override
-        UpgradableBlockingStreamingHttpResponse addHeaders(CharSequence name, Iterable<? extends CharSequence> values);
-
-        @Override
-        UpgradableBlockingStreamingHttpResponse addHeaders(CharSequence name, CharSequence... values);
-
-        @Override
         UpgradableBlockingStreamingHttpResponse addHeaders(HttpHeaders headers);
 
         @Override
         UpgradableBlockingStreamingHttpResponse setHeader(CharSequence name, CharSequence value);
-
-        @Override
-        UpgradableBlockingStreamingHttpResponse setHeaders(CharSequence name, Iterable<? extends CharSequence> values);
-
-        @Override
-        UpgradableBlockingStreamingHttpResponse setHeaders(CharSequence name, CharSequence... values);
 
         @Override
         UpgradableBlockingStreamingHttpResponse setHeaders(HttpHeaders headers);

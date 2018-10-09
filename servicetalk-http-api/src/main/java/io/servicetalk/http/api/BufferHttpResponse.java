@@ -105,18 +105,6 @@ final class BufferHttpResponse extends DefaultHttpResponseMetaData implements Ht
     }
 
     @Override
-    public HttpResponse addHeaders(final CharSequence name, final Iterable<? extends CharSequence> values) {
-        super.addHeaders(name, values);
-        return this;
-    }
-
-    @Override
-    public HttpResponse addHeaders(final CharSequence name, final CharSequence... values) {
-        super.addHeaders(name, values);
-        return this;
-    }
-
-    @Override
     public HttpResponse addHeaders(final HttpHeaders headers) {
         super.addHeaders(headers);
         return this;
@@ -125,18 +113,6 @@ final class BufferHttpResponse extends DefaultHttpResponseMetaData implements Ht
     @Override
     public HttpResponse setHeader(final CharSequence name, final CharSequence value) {
         super.setHeader(name, value);
-        return this;
-    }
-
-    @Override
-    public HttpResponse setHeaders(final CharSequence name, final Iterable<? extends CharSequence> values) {
-        super.setHeaders(name, values);
-        return this;
-    }
-
-    @Override
-    public HttpResponse setHeaders(final CharSequence name, final CharSequence... values) {
-        super.setHeaders(name, values);
         return this;
     }
 

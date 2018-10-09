@@ -218,22 +218,10 @@ public interface BlockingStreamingHttpResponse extends HttpResponseMetaData {
     BlockingStreamingHttpResponse addHeader(CharSequence name, CharSequence value);
 
     @Override
-    BlockingStreamingHttpResponse addHeaders(CharSequence name, Iterable<? extends CharSequence> values);
-
-    @Override
-    BlockingStreamingHttpResponse addHeaders(CharSequence name, CharSequence... values);
-
-    @Override
     BlockingStreamingHttpResponse addHeaders(HttpHeaders headers);
 
     @Override
     BlockingStreamingHttpResponse setHeader(CharSequence name, CharSequence value);
-
-    @Override
-    BlockingStreamingHttpResponse setHeaders(CharSequence name, Iterable<? extends CharSequence> values);
-
-    @Override
-    BlockingStreamingHttpResponse setHeaders(CharSequence name, CharSequence... values);
 
     @Override
     BlockingStreamingHttpResponse setHeaders(HttpHeaders headers);

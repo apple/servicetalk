@@ -54,36 +54,6 @@ public interface HttpMetaData {
     HttpMetaData addHeader(CharSequence name, CharSequence value);
 
     /**
-     * Adds new headers with the specified {@code name} and {@code values}. This method is semantically equivalent to:
-     *
-     * <pre>
-     * for (T value : values) {
-     *     httpMetaData.addHeader(name, value);
-     * }
-     * </pre>
-     *
-     * @param name the name of the header.
-     * @param values the values of the header.
-     * @return {@code this}.
-     */
-    HttpMetaData addHeaders(CharSequence name, Iterable<? extends CharSequence> values);
-
-    /**
-     * Adds new headers with the specified {@code name} and {@code values}. This method is semantically equivalent to:
-     *
-     * <pre>
-     * for (T value : values) {
-     *     httpMetaData.addHeader(name, value);
-     * }
-     * </pre>
-     *
-     * @param name the name of the header.
-     * @param values the values of the header.
-     * @return {@code this}.
-     */
-    HttpMetaData addHeaders(CharSequence name, CharSequence... values);
-
-    /**
      * Adds all header names and values of {@code headers} object.
      *
      * @param headers the headers to add.
@@ -101,39 +71,6 @@ public interface HttpMetaData {
      * @return {@code this}.
      */
     HttpMetaData setHeader(CharSequence name, CharSequence value);
-
-    /**
-     * Sets a new header with the specified {@code name} and {@code values}. This method is equivalent to:
-     *
-     * <pre>
-     * headers.remove(name);
-     * for (T value : values) {
-     *     httpMetaData.setHeader(name, value);
-     * }
-     * </pre>
-     *
-     * @param name the name of the header.
-     * @param values the values of the header.
-     * @return {@code this}.
-     */
-    HttpMetaData setHeaders(CharSequence name, Iterable<? extends CharSequence> values);
-
-    /**
-     * Sets a header with the specified {@code name} and {@code values}. Any existing headers with this name are
-     * removed. This method is equivalent to:
-     *
-     * <pre>
-     * headers.remove(name);
-     * for (T value : values) {
-     *     httpMetaData.setHeader(name, value);
-     * }
-     * </pre>
-     *
-     * @param name the name of the header.
-     * @param values the values of the header.
-     * @return {@code this}.
-     */
-    HttpMetaData setHeaders(CharSequence name, CharSequence... values);
 
     /**
      * Clears the current header entries and copies all header entries of the specified {@code headers} object.

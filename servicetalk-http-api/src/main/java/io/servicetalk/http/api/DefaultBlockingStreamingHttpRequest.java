@@ -125,19 +125,6 @@ class DefaultBlockingStreamingHttpRequest<P> extends DefaultHttpRequestMetaData 
     }
 
     @Override
-    public final BlockingStreamingHttpRequest addHeaders(final CharSequence name,
-                                                         final Iterable<? extends CharSequence> values) {
-        super.addHeaders(name, values);
-        return this;
-    }
-
-    @Override
-    public final BlockingStreamingHttpRequest addHeaders(final CharSequence name, final CharSequence... values) {
-        super.addHeaders(name, values);
-        return this;
-    }
-
-    @Override
     public final BlockingStreamingHttpRequest addHeaders(final HttpHeaders headers) {
         super.addHeaders(headers);
         return this;
@@ -146,19 +133,6 @@ class DefaultBlockingStreamingHttpRequest<P> extends DefaultHttpRequestMetaData 
     @Override
     public final BlockingStreamingHttpRequest setHeader(final CharSequence name, final CharSequence value) {
         super.setHeader(name, value);
-        return this;
-    }
-
-    @Override
-    public final BlockingStreamingHttpRequest setHeaders(final CharSequence name,
-                                                         final Iterable<? extends CharSequence> values) {
-        super.setHeaders(name, values);
-        return this;
-    }
-
-    @Override
-    public final BlockingStreamingHttpRequest setHeaders(final CharSequence name, final CharSequence... values) {
-        super.setHeaders(name, values);
         return this;
     }
 

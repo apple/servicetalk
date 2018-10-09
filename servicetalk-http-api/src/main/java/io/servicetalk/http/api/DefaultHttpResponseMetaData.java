@@ -48,18 +48,6 @@ class DefaultHttpResponseMetaData extends AbstractHttpMetaData implements HttpRe
     }
 
     @Override
-    public HttpResponseMetaData addHeaders(final CharSequence name, final Iterable<? extends CharSequence> values) {
-        super.addHeaders(name, values);
-        return this;
-    }
-
-    @Override
-    public HttpResponseMetaData addHeaders(final CharSequence name, final CharSequence... values) {
-        super.addHeaders(name, values);
-        return this;
-    }
-
-    @Override
     public HttpResponseMetaData addHeaders(final HttpHeaders headers) {
         super.addHeaders(headers);
         return this;
@@ -68,18 +56,6 @@ class DefaultHttpResponseMetaData extends AbstractHttpMetaData implements HttpRe
     @Override
     public HttpResponseMetaData setHeader(final CharSequence name, final CharSequence value) {
         super.setHeader(name, value);
-        return this;
-    }
-
-    @Override
-    public HttpResponseMetaData setHeaders(final CharSequence name, final Iterable<? extends CharSequence> values) {
-        super.setHeaders(name, values);
-        return this;
-    }
-
-    @Override
-    public HttpResponseMetaData setHeaders(final CharSequence name, final CharSequence... values) {
-        super.setHeaders(name, values);
         return this;
     }
 

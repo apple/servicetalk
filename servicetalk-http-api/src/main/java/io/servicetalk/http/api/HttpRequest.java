@@ -100,22 +100,10 @@ public interface HttpRequest extends HttpRequestMetaData {
     HttpRequest addHeader(CharSequence name, CharSequence value);
 
     @Override
-    HttpRequest addHeaders(CharSequence name, Iterable<? extends CharSequence> values);
-
-    @Override
-    HttpRequest addHeaders(CharSequence name, CharSequence... values);
-
-    @Override
     HttpRequest addHeaders(HttpHeaders headers);
 
     @Override
     HttpRequest setHeader(CharSequence name, CharSequence value);
-
-    @Override
-    HttpRequest setHeaders(CharSequence name, Iterable<? extends CharSequence> values);
-
-    @Override
-    HttpRequest setHeaders(CharSequence name, CharSequence... values);
 
     @Override
     HttpRequest setHeaders(HttpHeaders headers);

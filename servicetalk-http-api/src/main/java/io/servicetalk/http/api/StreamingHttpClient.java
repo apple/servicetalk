@@ -274,22 +274,10 @@ public abstract class StreamingHttpClient extends StreamingHttpRequester {
         UpgradableStreamingHttpResponse addHeader(CharSequence name, CharSequence value);
 
         @Override
-        UpgradableStreamingHttpResponse addHeaders(CharSequence name, Iterable<? extends CharSequence> values);
-
-        @Override
-        UpgradableStreamingHttpResponse addHeaders(CharSequence name, CharSequence... values);
-
-        @Override
         UpgradableStreamingHttpResponse addHeaders(HttpHeaders headers);
 
         @Override
         UpgradableStreamingHttpResponse setHeader(CharSequence name, CharSequence value);
-
-        @Override
-        UpgradableStreamingHttpResponse setHeaders(CharSequence name, Iterable<? extends CharSequence> values);
-
-        @Override
-        UpgradableStreamingHttpResponse setHeaders(CharSequence name, CharSequence... values);
 
         @Override
         UpgradableStreamingHttpResponse setHeaders(HttpHeaders headers);

@@ -279,19 +279,6 @@ final class HttpClientToStreamingHttpClient extends StreamingHttpClient {
         }
 
         @Override
-        public UpgradableStreamingHttpResponse addHeaders(final CharSequence name,
-                                                          final Iterable<? extends CharSequence> values) {
-            upgradableResponse.addHeaders(name, values);
-            return this;
-        }
-
-        @Override
-        public UpgradableStreamingHttpResponse addHeaders(final CharSequence name, final CharSequence... values) {
-            upgradableResponse.addHeaders(name, values);
-            return this;
-        }
-
-        @Override
         public UpgradableStreamingHttpResponse addHeaders(final HttpHeaders headers) {
             upgradableResponse.addHeaders(headers);
             return this;
@@ -300,19 +287,6 @@ final class HttpClientToStreamingHttpClient extends StreamingHttpClient {
         @Override
         public UpgradableStreamingHttpResponse setHeader(final CharSequence name, final CharSequence value) {
             upgradableResponse.setHeader(name, value);
-            return this;
-        }
-
-        @Override
-        public UpgradableStreamingHttpResponse setHeaders(final CharSequence name,
-                                                          final Iterable<? extends CharSequence> values) {
-            upgradableResponse.setHeaders(name, values);
-            return this;
-        }
-
-        @Override
-        public UpgradableStreamingHttpResponse setHeaders(final CharSequence name, final CharSequence... values) {
-            upgradableResponse.setHeaders(name, values);
             return this;
         }
 

@@ -192,22 +192,10 @@ public interface StreamingHttpRequest extends HttpRequestMetaData {
     StreamingHttpRequest addHeader(CharSequence name, CharSequence value);
 
     @Override
-    StreamingHttpRequest addHeaders(CharSequence name, Iterable<? extends CharSequence> values);
-
-    @Override
-    StreamingHttpRequest addHeaders(CharSequence name, CharSequence... values);
-
-    @Override
     StreamingHttpRequest addHeaders(HttpHeaders headers);
 
     @Override
     StreamingHttpRequest setHeader(CharSequence name, CharSequence value);
-
-    @Override
-    StreamingHttpRequest setHeaders(CharSequence name, Iterable<? extends CharSequence> values);
-
-    @Override
-    StreamingHttpRequest setHeaders(CharSequence name, CharSequence... values);
 
     @Override
     StreamingHttpRequest setHeaders(HttpHeaders headers);
