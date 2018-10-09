@@ -16,6 +16,7 @@
 package io.servicetalk.http.api;
 
 import io.servicetalk.client.api.ConnectionFactory;
+import io.servicetalk.client.api.ConnectionFactoryFilter;
 import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.api.LoadBalancerFactory;
 import io.servicetalk.client.api.ServiceDiscoverer;
@@ -24,7 +25,6 @@ import io.servicetalk.transport.api.ExecutionContext;
 
 import java.net.SocketOption;
 import java.util.function.Function;
-import java.util.function.UnaryOperator;
 
 /**
  * A builder of {@link HttpClient} objects.
@@ -162,11 +162,10 @@ public interface HttpClientBuilder<U, R> {
      * <pre>
      *     filter1 =&gt; filter2 =&gt; filter3 =&gt; original connection factory
      * </pre>
-     * @param factory {@link UnaryOperator} to decorate a {@link ConnectionFactory} for the purpose of filtering.
+     * @param factory {@link ConnectionFactoryFilter} to use.
      * @return {@code this}
      */
-    HttpClientBuilder<U, R> appendConnectionFactoryFilter(
-            UnaryOperator<ConnectionFactory<R, ? extends StreamingHttpConnection>> factory);
+    HttpClientBuilder<U, R> appendConnectionFactoryFilter(ConnectionFactoryFilter<R, StreamingHttpConnection> factory);
 
     /**
      * Disable automatically setting {@code Host} headers by inferring from the address or {@link StreamingHttpRequest}.

@@ -16,6 +16,7 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.client.api.ConnectionFactory;
+import io.servicetalk.client.api.ConnectionFactoryFilter;
 import io.servicetalk.client.api.DefaultServiceDiscovererEvent;
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
@@ -26,15 +27,17 @@ import io.servicetalk.http.api.StreamingHttpConnection;
 import io.servicetalk.transport.api.HostAndPort;
 
 import org.junit.Test;
+import org.mockito.InOrder;
 
 import java.net.InetSocketAddress;
 import java.util.concurrent.ExecutionException;
+import javax.annotation.Nonnull;
 
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 public class HttpClientBuilderTest extends AbstractEchoServerBasedHttpRequesterTest {
@@ -69,21 +72,36 @@ public class HttpClientBuilderTest extends AbstractEchoServerBasedHttpRequesterT
     @Test
     public void withConnectionFactoryFilter() throws Exception {
         int port = ((InetSocketAddress) serverContext.listenAddress()).getPort();
-        @SuppressWarnings("unchecked")
-        ConnectionFactory<InetSocketAddress, ? extends StreamingHttpConnection> factory =
-                (ConnectionFactory<InetSocketAddress, ? extends StreamingHttpConnection>) mock(ConnectionFactory.class);
-        when(factory.closeAsyncGracefully()).thenReturn(completed());
-        when(factory.closeAsync()).thenReturn(completed());
+        ConnectionFactory<InetSocketAddress, ? extends StreamingHttpConnection> factory1 = newFilter();
+        ConnectionFactory<InetSocketAddress, ? extends StreamingHttpConnection> factory2 = newFilter();
         StreamingHttpClient requester = HttpClients.forSingleAddress("localhost", port)
-                .appendConnectionFactoryFilter(orig -> {
-                    when(factory.newConnection(any()))
-                            .thenAnswer(invocation -> orig.newConnection(invocation.getArgument(0)));
-                    return factory;
-                })
+                .appendConnectionFactoryFilter(factoryFilter(factory1))
+                .appendConnectionFactoryFilter(factoryFilter(factory2))
                 .executionContext(CTX)
                 .buildStreaming();
         makeRequestValidateResponseAndClose(requester);
-        verify(factory).newConnection(any());
+
+        InOrder verifier = inOrder(factory1, factory2);
+        verifier.verify(factory1).newConnection(any());
+        verifier.verify(factory2).newConnection(any());
+    }
+
+    @Nonnull
+    private ConnectionFactoryFilter<InetSocketAddress, StreamingHttpConnection> factoryFilter(
+            final ConnectionFactory<InetSocketAddress, ? extends StreamingHttpConnection> factory) {
+        return orig -> {
+            when(factory.newConnection(any()))
+                    .thenAnswer(invocation -> orig.newConnection(invocation.getArgument(0)));
+            return factory;
+        };
+    }
+
+    @SuppressWarnings("unchecked")
+    private ConnectionFactory<InetSocketAddress, ? extends StreamingHttpConnection> newFilter() {
+        ConnectionFactory<InetSocketAddress, ? extends StreamingHttpConnection> factory = mock(ConnectionFactory.class);
+        when(factory.closeAsyncGracefully()).thenReturn(completed());
+        when(factory.closeAsync()).thenReturn(completed());
+        return factory;
     }
 
     private void sendRequestAndValidate(final Publisher<ServiceDiscovererEvent<InetSocketAddress>> sdPub)
