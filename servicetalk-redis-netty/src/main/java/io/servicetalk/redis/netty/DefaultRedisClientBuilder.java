@@ -26,7 +26,7 @@ import io.servicetalk.redis.api.RedisClient;
 import io.servicetalk.redis.api.RedisClientBuilder;
 import io.servicetalk.redis.api.RedisConnection;
 import io.servicetalk.redis.api.RedisData;
-import io.servicetalk.redis.api.RedisProtocolSupport;
+import io.servicetalk.redis.api.RedisProtocolSupport.Command;
 import io.servicetalk.redis.api.RedisRequest;
 import io.servicetalk.tcp.netty.internal.TcpClientConfig;
 import io.servicetalk.transport.api.ExecutionContext;
@@ -236,8 +236,8 @@ public final class DefaultRedisClientBuilder<ResolvedAddress>
         }
 
         @Override
-        public Single<? extends ReservedRedisConnection> reserveConnection(RedisRequest request) {
-            return getLbForCommand(request.command()).selectConnection(SELECTOR_FOR_RESERVE);
+        public Single<? extends ReservedRedisConnection> reserveConnection(Command command) {
+            return lbForCommand(command).selectConnection(SELECTOR_FOR_RESERVE);
         }
 
         @Override
@@ -246,9 +246,8 @@ public final class DefaultRedisClientBuilder<ResolvedAddress>
             // it is possible that someone can use the ConnectionFactory exported by this Client before the LoadBalancer
             // takes ownership of it (e.g. connection initialization) and in that case they will not be following the
             // LoadBalancer API which this Client depends upon to ensure the concurrent request count state is correct.
-            return getLbForCommand(request.command()).selectConnection(SELECTOR_FOR_REQUEST)
-                    .flatMapPublisher(selectedConnection -> selectedConnection.request(request)
-                            .doBeforeFinally(selectedConnection::requestFinished));
+            return lbForCommand(request.command()).selectConnection(SELECTOR_FOR_REQUEST)
+                    .flatMapPublisher(conn -> conn.request(request).doBeforeFinally(conn::requestFinished));
         }
 
         @Override
@@ -271,7 +270,7 @@ public final class DefaultRedisClientBuilder<ResolvedAddress>
             return subscribeLb.closeAsyncGracefully().mergeDelayError(pipelineLb.closeAsyncGracefully());
         }
 
-        private LoadBalancer<LoadBalancedRedisConnection> getLbForCommand(RedisProtocolSupport.Command cmd) {
+        private LoadBalancer<LoadBalancedRedisConnection> lbForCommand(Command cmd) {
             return isSubscribeModeCommand(cmd) ? subscribeLb : pipelineLb;
         }
     }

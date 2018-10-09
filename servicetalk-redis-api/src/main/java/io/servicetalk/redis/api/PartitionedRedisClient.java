@@ -28,14 +28,17 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
+import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater;
+
 /**
  * A variant of {@link RedisClient} which supports partitioning on the server side.
  */
 public abstract class PartitionedRedisClient implements ListenableAsyncCloseable {
     private static final AtomicReferenceFieldUpdater<PartitionedRedisClient, RedisCommander> redisCommanderUpdater =
-            AtomicReferenceFieldUpdater.newUpdater(PartitionedRedisClient.class, RedisCommander.class, "redisCommander");
-    private static final AtomicReferenceFieldUpdater<PartitionedRedisClient, BufferRedisCommander> redisBufferCommanderUpdater =
-            AtomicReferenceFieldUpdater.newUpdater(PartitionedRedisClient.class, BufferRedisCommander.class, "redisBufferCommander");
+        newUpdater(PartitionedRedisClient.class, RedisCommander.class, "redisCommander");
+    private static final AtomicReferenceFieldUpdater<PartitionedRedisClient, BufferRedisCommander>
+            redisBufferCommanderUpdater = newUpdater(
+                    PartitionedRedisClient.class, BufferRedisCommander.class, "redisBufferCommander");
 
     @SuppressWarnings("unused")
     @Nullable
@@ -62,17 +65,21 @@ public abstract class PartitionedRedisClient implements ListenableAsyncCloseable
      * @param <R>          the type of the response.
      * @return the response as a {@link Single}.
      */
-    public abstract <R> Single<R> request(PartitionAttributes partitionSelector, RedisRequest request, Class<R> responseType);
+    public abstract <R> Single<R> request(PartitionAttributes partitionSelector, RedisRequest request,
+                                          Class<R> responseType);
 
     /**
-     * Reserve a {@link RedisConnection} for the for handling the provided {@link RedisRequests}
-     * but <b>does not execute it</b>!
+     * Reserve a {@link RedisConnection} for exclusive use. Caller is responsible for invoking
+     * {@link ReservedRedisConnection#releaseAsync()} after done using the return value.
      * @param partitionSelector Defines the partition(s) that are valid for the returned {@link RedisConnection}.
-     * @param request Allows the underlying layers to know what {@link RedisConnection}s are valid to reserve. For example
-     *                this may provide some insight into shard or other info.
+     * @param command A command representing how the returned {@link ReservedRedisConnection} will be used. It is
+     * possible that this {@link RedisClient} will return different types of {@link ReservedRedisConnection} depending
+     * on usage. For example {@link Command#SUBSCRIBE} and {@link Command#MONITOR} may be treated differently than other
+     * request/response based commands.
      * @return a {@link RedisConnection}.
      */
-    public abstract Single<ReservedRedisConnection> reserveConnection(PartitionAttributes partitionSelector, RedisRequest request);
+    public abstract Single<? extends ReservedRedisConnection> reserveConnection(PartitionAttributes partitionSelector,
+                                                                                Command command);
 
     /**
      * Get the {@link ExecutionContext} used during construction of this object.
@@ -84,15 +91,18 @@ public abstract class PartitionedRedisClient implements ListenableAsyncCloseable
     public abstract ExecutionContext executionContext();
 
     /**
-     * Get the {@link Function} that is responsible for generating a {@link RedisPartitionAttributesBuilder} for each {@link Command}.
-     * @return the {@link Function} that is responsible for generating a {@link RedisPartitionAttributesBuilder} for each {@link Command}.
+     * Get the {@link Function} that is responsible for generating a {@link RedisPartitionAttributesBuilder} for each
+     * {@link Command}.
+     * @return the {@link Function} that is responsible for generating a {@link RedisPartitionAttributesBuilder} for
+     * each {@link Command}.
      */
     protected abstract Function<Command, RedisPartitionAttributesBuilder> redisPartitionAttributesBuilderFunction();
 
     /**
-     * Provides an alternative java API to this {@link PartitionedRedisClient}. The {@link RedisCommander} return value has
-     * equivalent networking semantics and lifetime as this {@link PartitionedRedisClient}, and exists primarily to provide a more
-     * expressive java API targeted at the Redis protocol which favors {@link CharSequence} and {@link String}.
+     * Provides an alternative java API to this {@link PartitionedRedisClient}. The {@link RedisCommander} return value
+     * has equivalent networking semantics and lifetime as this {@link PartitionedRedisClient}, and exists primarily to
+     * provide a more expressive java API targeted at the Redis protocol which favors {@link CharSequence} and
+     * {@link String}.
      * <p>
      * Calling {@link RedisCommander#closeAsync()} will also close this {@link PartitionedRedisClient}!
      * @return an alternative java API to this {@link PartitionedRedisClient}.
@@ -110,9 +120,9 @@ public abstract class PartitionedRedisClient implements ListenableAsyncCloseable
     }
 
     /**
-     * Provides an alternative java API to this {@link PartitionedRedisClient}. The {@link BufferRedisCommander} return value has
-     * equivalent networking semantics and lifetime as this {@link PartitionedRedisClient}, and exists primarily to provide a more
-     * expressive java API targeted at the Redis protocol which favors {@link Buffer}.
+     * Provides an alternative java API to this {@link PartitionedRedisClient}. The {@link BufferRedisCommander} return\
+     * value has equivalent networking semantics and lifetime as this {@link PartitionedRedisClient}, and exists
+     * primarily to provide a more expressive java API targeted at the Redis protocol which favors {@link Buffer}.
      * <p>
      * Calling {@link BufferRedisCommander#closeAsync()} will also close this {@link PartitionedRedisClient}!
      *
@@ -121,7 +131,8 @@ public abstract class PartitionedRedisClient implements ListenableAsyncCloseable
     public final BufferRedisCommander asBufferCommander() {
         BufferRedisCommander redisBufferCommander = this.redisBufferCommander;
         if (redisBufferCommander == null) {
-            redisBufferCommander = new DefaultPartitionedBufferRedisCommander(this, redisPartitionAttributesBuilderFunction());
+            redisBufferCommander = new DefaultPartitionedBufferRedisCommander(this,
+                    redisPartitionAttributesBuilderFunction());
             if (!redisBufferCommanderUpdater.compareAndSet(this, null, redisBufferCommander)) {
                 redisBufferCommander = this.redisBufferCommander;
                 assert redisBufferCommander != null : "BufferRedisCommander can not be null.";

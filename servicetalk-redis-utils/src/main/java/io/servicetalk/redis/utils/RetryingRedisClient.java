@@ -40,8 +40,7 @@ import static io.servicetalk.redis.api.RedisProtocolSupport.CommandFlag.READONLY
 import static java.util.Objects.requireNonNull;
 
 /**
- * A {@link RedisClient} wrapper that applies a retry strategy to its {@link RetryingRedisClient#request(RedisRequest)}
- * {@link RetryingRedisClient#request(RedisRequest, Class)} and {@link RetryingRedisClient#reserveConnection(RedisRequest)} methods.
+ * A {@link RedisClient} wrapper that applies a retry strategy.
  *
  * @see RedisRequestAwareRetryStrategy
  * @see RetryStrategies
@@ -75,11 +74,11 @@ public final class RetryingRedisClient extends DelegatingRedisClient {
     }
 
     @Override
-    public Single<? extends ReservedRedisConnection> reserveConnection(final RedisRequest request) {
-        if (!isRetryable.test(request.command())) {
-            return super.reserveConnection(request);
+    public Single<? extends ReservedRedisConnection> reserveConnection(Command command) {
+        if (!isRetryable.test(command)) {
+            return super.reserveConnection(command);
         }
-        return super.reserveConnection(request).retryWhen(strategy);
+        return super.reserveConnection(command).retryWhen(strategy);
     }
 
     /**
@@ -201,7 +200,8 @@ public final class RetryingRedisClient extends DelegatingRedisClient {
                 Duration initialDelay = this.initialDelay;
                 if (exponential) {
                     if (jitter) {
-                        strategy = retryWithExponentialBackoffAndJitter(retryCount, causeFilter, initialDelay, executor);
+                        strategy = retryWithExponentialBackoffAndJitter(retryCount, causeFilter, initialDelay,
+                                executor);
                     } else {
                         strategy = retryWithExponentialBackoff(retryCount, causeFilter, initialDelay, executor);
                     }

@@ -33,9 +33,9 @@ import static io.servicetalk.redis.api.RedisRequests.addRequestArgument;
 import static io.servicetalk.redis.api.RedisRequests.addRequestBufferArguments;
 import static io.servicetalk.redis.api.RedisRequests.addRequestLongArguments;
 import static io.servicetalk.redis.api.RedisRequests.addRequestTupleArguments;
-import static io.servicetalk.redis.api.RedisRequests.newConnectedClient;
 import static io.servicetalk.redis.api.RedisRequests.newRequest;
 import static io.servicetalk.redis.api.RedisRequests.newRequestCompositeBuffer;
+import static io.servicetalk.redis.api.RedisRequests.reserveConnection;
 import static java.util.Objects.requireNonNull;
 import static java.util.function.Function.identity;
 
@@ -3474,7 +3474,7 @@ final class DefaultPartitionedBufferRedisCommander extends BufferRedisCommander 
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.MONITOR, cb);
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.MONITOR);
-        return newConnectedClient(partitionedRedisClient, partitionAttributesBuilder.build(), request,
+        return reserveConnection(partitionedRedisClient, partitionAttributesBuilder.build(), request,
                     (con, pub) -> pub.map(RedisCoercions::simpleStringToString)).flatMapPublisher(identity());
     }
 
@@ -3689,7 +3689,7 @@ final class DefaultPartitionedBufferRedisCommander extends BufferRedisCommander 
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.MULTI, cb);
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.MULTI);
-        return newConnectedClient(partitionedRedisClient, partitionAttributesBuilder.build(), request,
+        return reserveConnection(partitionedRedisClient, partitionAttributesBuilder.build(), request,
                     RedisData.OK::equals, DefaultTransactedBufferRedisCommander::new);
     }
 
@@ -4158,7 +4158,7 @@ final class DefaultPartitionedBufferRedisCommander extends BufferRedisCommander 
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.PSUBSCRIBE, cb);
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.PSUBSCRIBE);
-        return newConnectedClient(partitionedRedisClient, partitionAttributesBuilder.build(), request,
+        return reserveConnection(partitionedRedisClient, partitionAttributesBuilder.build(), request,
                     (rcnx, pub) -> new DefaultPubSubBufferRedisConnection(rcnx,
                                 pub.map(msg -> (PubSubRedisMessage) msg)));
     }
@@ -6202,7 +6202,7 @@ final class DefaultPartitionedBufferRedisCommander extends BufferRedisCommander 
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SUBSCRIBE, cb);
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.SUBSCRIBE);
-        return newConnectedClient(partitionedRedisClient, partitionAttributesBuilder.build(), request,
+        return reserveConnection(partitionedRedisClient, partitionAttributesBuilder.build(), request,
                     (rcnx, pub) -> new DefaultPubSubBufferRedisConnection(rcnx,
                                 pub.map(msg -> (PubSubRedisMessage) msg)));
     }

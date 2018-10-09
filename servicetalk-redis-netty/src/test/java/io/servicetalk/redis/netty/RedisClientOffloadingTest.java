@@ -88,8 +88,7 @@ public class RedisClientOffloadingTest {
         testThread = currentThread();
         errors = new ConcurrentLinkedQueue<>();
         terminated = new CountDownLatch(1);
-        connectionContext = awaitIndefinitelyNonNull(getEnv().client.reserveConnection(newRequest(PING)))
-                .connectionContext();
+        connectionContext = awaitIndefinitelyNonNull(getEnv().client.reserveConnection(PING)).connectionContext();
     }
 
     @Test
@@ -111,7 +110,7 @@ public class RedisClientOffloadingTest {
 
     @Test
     public void reserveConnectionIsOffloaded() throws Exception {
-        getEnv().client.reserveConnection(newRequest(PING)).doAfterFinally(terminated::countDown)
+        getEnv().client.reserveConnection(PING).doAfterFinally(terminated::countDown)
                 .subscribe(new Single.Subscriber<ReservedRedisConnection>() {
                     @Override
                     public void onSubscribe(final Cancellable cancellable) {
@@ -149,7 +148,7 @@ public class RedisClientOffloadingTest {
     @Test
     public void settingsStreamIsOffloaded() throws Exception {
         final ReservedRedisConnection connection =
-                awaitIndefinitelyNonNull(getEnv().client.reserveConnection(newRequest(PING)));
+                awaitIndefinitelyNonNull(getEnv().client.reserveConnection(PING));
         subscribeTo(getEnv()::isInClientEventLoop, errors,
                 connection.settingStream(MAX_CONCURRENCY).doAfterFinally(terminated::countDown),
                 "Client settings stream: ");

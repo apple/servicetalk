@@ -46,7 +46,8 @@ final class RedisUtils {
      */
     static boolean isSubscribeModeCommand(Command command) {
         // PING and QUIT are allowed for both modes, hence they are handled specially, if required from the caller.
-        return command == Command.SUBSCRIBE || command == Command.PSUBSCRIBE || command == Command.UNSUBSCRIBE || command == Command.PUNSUBSCRIBE;
+        return command == Command.SUBSCRIBE || command == Command.PSUBSCRIBE || command == Command.UNSUBSCRIBE ||
+                command == Command.PUNSUBSCRIBE;
     }
 
     static Publisher<ByteBuf> encodeRequestContent(final RedisRequest request, final BufferAllocator allocator) {

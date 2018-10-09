@@ -93,7 +93,8 @@ public final class RedisRequests {
      * @param arg the command argument.
      * @return a new {@link RedisRequest}.
      */
-    public static RedisRequest newRequest(final Command command, final SubCommand subCommand, final CompleteBulkString arg) {
+    public static RedisRequest newRequest(final Command command, final SubCommand subCommand,
+                                          final CompleteBulkString arg) {
         return newRequest(command, Publisher.from(new ArraySize(3L), command, requireNonNull(subCommand),
                 requireNonNull(arg)));
     }
@@ -122,7 +123,8 @@ public final class RedisRequests {
      * @param args the command arguments.
      * @return a new {@link RedisRequest}.
      */
-    public static RedisRequest newRequest(final Command command, final SubCommand subCommand, final CompleteBulkString... args) {
+    public static RedisRequest newRequest(final Command command, final SubCommand subCommand,
+                                          final CompleteBulkString... args) {
         final RequestRedisData[] stanzaAndArgs = new RequestRedisData[args.length + 3];
         stanzaAndArgs[0] = new ArraySize(args.length + 2);
         stanzaAndArgs[1] = command;
@@ -178,11 +180,14 @@ public final class RedisRequests {
         return new DefaultRedisRequest(command, Publisher.just(new RESPBuffer(content)));
     }
 
-    static CompositeBuffer newRequestCompositeBuffer(final int argCount, final Command command, final BufferAllocator allocator) {
+    static CompositeBuffer newRequestCompositeBuffer(final int argCount, final Command command,
+                                                     final BufferAllocator allocator) {
         return newRequestCompositeBuffer(argCount, command, null, allocator);
     }
 
-    static CompositeBuffer newRequestCompositeBuffer(final int argCount, final Command command, @Nullable final SubCommand subCommand, final BufferAllocator allocator) {
+    static CompositeBuffer newRequestCompositeBuffer(final int argCount, final Command command,
+                                                     @Nullable final SubCommand subCommand,
+                                                     final BufferAllocator allocator) {
         final CompositeBuffer cb = allocator.newCompositeBuffer()
                 .addBuffer(toRespArraySize(argCount, allocator))
                 .addBuffer(command.toRESPArgument(allocator));
@@ -208,11 +213,14 @@ public final class RedisRequests {
         arg.writeTo(cb, allocator);
     }
 
-    static void addRequestArgument(final CompleteRequestRedisData arg, final CompositeBuffer cb, final BufferAllocator allocator) {
+    static void addRequestArgument(final CompleteRequestRedisData arg, final CompositeBuffer cb,
+                                   final BufferAllocator allocator) {
         cb.addBuffer(arg.toRESPArgument(allocator));
     }
 
-    static void addRequestBufferArguments(final Collection<? extends Buffer> args, @Nullable final SubCommand subCommand, final CompositeBuffer cb, final BufferAllocator allocator) {
+    static void addRequestBufferArguments(final Collection<? extends Buffer> args,
+                                          @Nullable final SubCommand subCommand, final CompositeBuffer cb,
+                                          final BufferAllocator allocator) {
         if (args instanceof List && args instanceof RandomAccess) {
             final List<? extends Buffer> argsList = castCollectionToList(args);
             // Don't use foreach to avoid creating an iterator
@@ -233,7 +241,9 @@ public final class RedisRequests {
         }
     }
 
-    static void addRequestCharSequenceArguments(final Collection<? extends CharSequence> args, @Nullable final SubCommand subCommand, final CompositeBuffer cb, final BufferAllocator allocator) {
+    static void addRequestCharSequenceArguments(final Collection<? extends CharSequence> args,
+                                                @Nullable final SubCommand subCommand, final CompositeBuffer cb,
+                                                final BufferAllocator allocator) {
         if (args instanceof List && args instanceof RandomAccess) {
             final List<? extends CharSequence> argsList = castCollectionToList(args);
             // Don't use foreach to avoid creating an iterator
@@ -254,7 +264,8 @@ public final class RedisRequests {
         }
     }
 
-    static void addBufferKeysToAttributeBuilder(final Collection<? extends Buffer> keys, final RedisPartitionAttributesBuilder builder) {
+    static void addBufferKeysToAttributeBuilder(final Collection<? extends Buffer> keys,
+                                                final RedisPartitionAttributesBuilder builder) {
         if (keys instanceof List && keys instanceof RandomAccess) {
             final List<? extends Buffer> keysList = castCollectionToList(keys);
             // Don't use foreach to avoid creating an iterator
@@ -269,7 +280,8 @@ public final class RedisRequests {
         }
     }
 
-    static void addCharSequenceKeysToAttributeBuilder(final Collection<? extends CharSequence> keys, final RedisPartitionAttributesBuilder builder) {
+    static void addCharSequenceKeysToAttributeBuilder(final Collection<? extends CharSequence> keys,
+                                                      final RedisPartitionAttributesBuilder builder) {
         if (keys instanceof List && keys instanceof RandomAccess) {
             final List<? extends CharSequence> keysList = castCollectionToList(keys);
             // Don't use foreach to avoid creating an iterator
@@ -284,22 +296,9 @@ public final class RedisRequests {
         }
     }
 
-    static void addTupleKeysToAttributeBuilder(final Collection<? extends TupleArgument> args, final RedisPartitionAttributesBuilder builder) {
-        if (args instanceof List && args instanceof RandomAccess) {
-            final List<? extends TupleArgument> argsList = castCollectionToList(args);
-            // Don't use foreach to avoid creating an iterator
-            //noinspection ForLoopReplaceableByForEach
-            for (int i = 0; i < args.size(); i++) {
-                argsList.get(i).buildAttributes(builder);
-            }
-        } else {
-            for (final TupleArgument arg : args) {
-                arg.buildAttributes(builder);
-            }
-        }
-    }
-
-    static void addRequestTupleArguments(final Collection<? extends TupleArgument> args, @Nullable final SubCommand subCommand, final CompositeBuffer cb, final BufferAllocator allocator) {
+    static void addRequestTupleArguments(final Collection<? extends TupleArgument> args,
+                                         @Nullable final SubCommand subCommand, final CompositeBuffer cb,
+                                         final BufferAllocator allocator) {
         if (args instanceof List && args instanceof RandomAccess) {
             final List<? extends TupleArgument> argsList = castCollectionToList(args);
             // Don't use foreach to avoid creating an iterator
@@ -320,7 +319,9 @@ public final class RedisRequests {
         }
     }
 
-    static void addRequestLongArguments(final Collection<? extends Number> args, @Nullable final SubCommand subCommand, final CompositeBuffer cb, final BufferAllocator allocator) {
+    static void addRequestLongArguments(final Collection<? extends Number> args,
+                                        @Nullable final SubCommand subCommand, final CompositeBuffer cb,
+                                        final BufferAllocator allocator) {
         if (args instanceof List && args instanceof RandomAccess) {
             final List<? extends Number> argsList = castCollectionToList(args);
             // Don't use foreach to avoid creating an iterator
@@ -345,50 +346,55 @@ public final class RedisRequests {
         return (List<N>) args;
     }
 
-    static <C> Single<C> newConnectedClient(final RedisRequester requestor, final RedisRequest request,
-                                            final Predicate<RedisData> responsePredicate,
-                                            final BiFunction<ReservedRedisConnection, Boolean, C> builder) {
+    static <C> Single<C> reserveConnection(final RedisRequester requestor, final RedisRequest request,
+                                           final Predicate<RedisData> responsePredicate,
+                                           final BiFunction<ReservedRedisConnection, Boolean, C> builder) {
         if (requestor instanceof ReservedRedisConnection) {
-            return newConnectedClient((ReservedRedisConnection) requestor, false, request, responsePredicate, builder);
+            return requestAndWrapConnection((ReservedRedisConnection) requestor, false, request, responsePredicate,
+                    builder);
         } else if (requestor instanceof RedisClient) {
-            return ((RedisClient) requestor).reserveConnection(request)
-                    .flatMap(reservedCnx -> newConnectedClient(reservedCnx, true, request, responsePredicate, builder));
+            return ((RedisClient) requestor).reserveConnection(request.command())
+                .flatMap(reservedCnx ->
+                        requestAndWrapConnection(reservedCnx, true, request, responsePredicate, builder));
         } else {
-            return newConnectedClient(new StandAloneReservedRedisConnection((RedisConnection) requestor), false, request, responsePredicate, builder);
+            return requestAndWrapConnection(new StandAloneReservedRedisConnection((RedisConnection) requestor), false,
+                    request, responsePredicate, builder);
         }
     }
 
-    static <C> Single<C> newConnectedClient(final PartitionedRedisClient client, final PartitionAttributes partitionSelector,
-                                            final RedisRequest request,
-                                            final Predicate<RedisData> responsePredicate,
-                                            final BiFunction<ReservedRedisConnection, Boolean, C> builder) {
-        return client.reserveConnection(partitionSelector, request)
-                .flatMap(reservedCnx -> newConnectedClient(reservedCnx, true, request, responsePredicate, builder));
+    static <C> Single<C> reserveConnection(final PartitionedRedisClient client,
+                                           final PartitionAttributes partitionSelector, final RedisRequest request,
+                                           final Predicate<RedisData> responsePredicate,
+                                           final BiFunction<ReservedRedisConnection, Boolean, C> builder) {
+        return client.reserveConnection(partitionSelector, request.command())
+            .flatMap(reservedCnx -> requestAndWrapConnection(reservedCnx, true, request, responsePredicate, builder));
     }
 
-    static <C> Single<C> newConnectedClient(final RedisRequester requestor, final RedisRequest request,
-                                            final BiFunction<ReservedRedisConnection, Publisher<RedisData>, C> builder) {
+    static <C> Single<C> reserveConnection(final RedisRequester requestor, final RedisRequest request,
+                                           final BiFunction<ReservedRedisConnection, Publisher<RedisData>, C> builder) {
         if (requestor instanceof ReservedRedisConnection) {
             return success(builder.apply((ReservedRedisConnection) requestor, requestor.request(request)));
         } else if (requestor instanceof RedisClient) {
-            return ((RedisClient) requestor).reserveConnection(request)
+            return ((RedisClient) requestor).reserveConnection(request.command())
                     .flatMap(reservedCnx -> success(builder.apply(reservedCnx, reservedCnx.request(request))));
         } else {
-            final StandAloneReservedRedisConnection reservedCnx = new StandAloneReservedRedisConnection((RedisConnection) requestor);
+            final StandAloneReservedRedisConnection reservedCnx =
+                    new StandAloneReservedRedisConnection((RedisConnection) requestor);
             return success(builder.apply(reservedCnx, reservedCnx.request(request)));
         }
     }
 
-    static <C> Single<C> newConnectedClient(final PartitionedRedisClient client, final PartitionAttributes partitionSelector,
-                                            final RedisRequest request,
-                                            final BiFunction<ReservedRedisConnection, Publisher<RedisData>, C> builder) {
-        return client.reserveConnection(partitionSelector, request)
+    static <C> Single<C> reserveConnection(final PartitionedRedisClient client,
+                                           final PartitionAttributes partitionSelector, final RedisRequest request,
+                                           final BiFunction<ReservedRedisConnection, Publisher<RedisData>, C> builder) {
+        return client.reserveConnection(partitionSelector, request.command())
                 .flatMap(reservedCnx -> success(builder.apply(reservedCnx, reservedCnx.request(request))));
     }
 
-    private static <C> Single<C> newConnectedClient(final ReservedRedisConnection reservedCnx, final boolean closeCnx, final RedisRequest request,
-                                                    final Predicate<RedisData> responsePredicate,
-                                                    final BiFunction<ReservedRedisConnection, Boolean, C> builder) {
+    private static <C> Single<C> requestAndWrapConnection(final ReservedRedisConnection reservedCnx,
+                                                          final boolean closeCnx, final RedisRequest request,
+                                                          final Predicate<RedisData> responsePredicate,
+                                                      final BiFunction<ReservedRedisConnection, Boolean, C> builder) {
         return reservedCnx.request(request)
                 .first()
                 .map(res -> {
