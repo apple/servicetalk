@@ -38,6 +38,7 @@ import static io.opentracing.tag.Tags.HTTP_METHOD;
 import static io.opentracing.tag.Tags.HTTP_URL;
 import static io.opentracing.tag.Tags.SPAN_KIND;
 import static io.opentracing.tag.Tags.SPAN_KIND_SERVER;
+import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.opentracing.http.TracingHttpHeadersFormatter.traceStateFormatter;
 import static io.servicetalk.opentracing.http.TracingUtils.tagErrorAndClose;
 import static io.servicetalk.opentracing.http.TracingUtils.tracingMapper;
@@ -88,17 +89,27 @@ public class TracingHttpServiceFilter extends StreamingHttpService {
         return new Single<StreamingHttpResponse>() {
             @Override
             protected void handleSubscribe(final Subscriber<? super StreamingHttpResponse> subscriber) {
-                SpanContext parentSpanContext = tracer.extract(formatter, request.headers());
-                SpanBuilder spanBuilder = tracer.buildSpan(getOperationName(componentName, request))
-                        .withTag(SPAN_KIND.getKey(), SPAN_KIND_SERVER)
-                        .withTag(HTTP_METHOD.getKey(), request.method().getName())
-                        .withTag(HTTP_URL.getKey(), request.path());
-                if (parentSpanContext != null) {
-                    spanBuilder = spanBuilder.asChildOf(parentSpanContext);
-                }
+                final Scope currentScope;
+                final SpanContext parentSpanContext;
+                final Single<StreamingHttpResponse> responseSingle;
+                try {
+                    SpanBuilder spanBuilder = tracer.buildSpan(getOperationName(componentName, request))
+                            .withTag(SPAN_KIND.getKey(), SPAN_KIND_SERVER)
+                            .withTag(HTTP_METHOD.getKey(), request.method().getName())
+                            .withTag(HTTP_URL.getKey(), request.path());
+                    parentSpanContext = tracer.extract(formatter, request.headers());
+                    if (parentSpanContext != null) {
+                        spanBuilder = spanBuilder.asChildOf(parentSpanContext);
+                    }
 
-                Scope currentScope = spanBuilder.startActive(true);
-                next.handle(ctx, request, responseFactory).map(resp -> {
+                    currentScope = spanBuilder.startActive(true);
+                    responseSingle = requireNonNull(next.handle(ctx, request, responseFactory));
+                } catch (Throwable cause) {
+                    subscriber.onSubscribe(IGNORE_CANCEL);
+                    subscriber.onError(cause);
+                    return;
+                }
+                responseSingle.map(resp -> {
                     if (injectSpanContextIntoResponse(parentSpanContext)) {
                         tracer.inject(currentScope.span().context(), formatter, resp.headers());
                     }
