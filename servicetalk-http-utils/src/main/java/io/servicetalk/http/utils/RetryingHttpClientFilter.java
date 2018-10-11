@@ -87,6 +87,7 @@ public final class RetryingHttpClientFilter extends StreamingHttpClientAdapter {
 
         private final StreamingHttpClient delegate;
         private Executor executor;
+        private int retryCount = 2;
         private boolean jitter;
         private boolean exponential;
         @Nullable
@@ -106,6 +107,19 @@ public final class RetryingHttpClientFilter extends StreamingHttpClientAdapter {
         }
 
         /**
+         * Set the number of retry operations before giving up.
+         * @param retryCount the number of retry operations before giving up.
+         * @return {@code this}.
+         */
+        public Builder retryCount(int retryCount) {
+            if (retryCount <= 0) {
+                throw new IllegalArgumentException("retryCount: " + retryCount + " (expected: >0)");
+            }
+            this.retryCount = retryCount;
+            return this;
+        }
+
+        /**
          * Adds a delay of {@code delay} between retries.
          *
          * @param delay Delay {@link Duration} for the retries.
@@ -120,7 +134,7 @@ public final class RetryingHttpClientFilter extends StreamingHttpClientAdapter {
          * Adds a delay between retries. For first retry, the delay is {@code initialDelay} which is increased
          * exponentially for subsequent retries.
          * <p>
-         * The resulting {@link RetryingHttpClientFilter} from {@link #build(int)} may not attempt to check for
+         * The resulting {@link RetryingHttpClientFilter} from {@link #build()} may not attempt to check for
          * overflow if the retry count is high enough that an exponential delay causes {@link Long} overflow.
          *
          * @param initialDelay Delay {@link Duration} for the first retry and increased exponentially with each retry.
@@ -182,10 +196,9 @@ public final class RetryingHttpClientFilter extends StreamingHttpClientAdapter {
         /**
          * Builds a {@link RetryingHttpClientFilter}.
          *
-         * @param retryCount Maximum number of retries.
          * @return A new {@link RetryingHttpClientFilter}.
          */
-        public RetryingHttpClientFilter build(int retryCount) {
+        public RetryingHttpClientFilter build() {
             Predicate<Throwable> causeFilter = this.causeFilter; // Save reference since accessed lazily.
             final BiIntFunction<Throwable, Completable> strategy;
             if (initialDelay == null) {
