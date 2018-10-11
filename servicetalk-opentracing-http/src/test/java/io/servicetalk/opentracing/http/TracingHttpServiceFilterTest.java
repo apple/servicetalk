@@ -27,14 +27,19 @@ import io.servicetalk.opentracing.core.internal.DefaultInMemoryTracer;
 import io.servicetalk.opentracing.core.internal.InMemorySpan;
 import io.servicetalk.transport.api.ServerContext;
 
+import io.opentracing.Tracer;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
+import org.mockito.Mock;
 
 import java.net.InetSocketAddress;
 
+import static io.servicetalk.concurrent.api.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.concurrent.api.Publisher.just;
 import static io.servicetalk.concurrent.api.Single.success;
+import static io.servicetalk.http.api.HttpResponseStatuses.INTERNAL_SERVER_ERROR;
 import static io.servicetalk.http.api.HttpSerializationProviders.jsonSerializer;
 import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
 import static io.servicetalk.http.netty.HttpClients.forSingleAddress;
@@ -47,17 +52,27 @@ import static io.servicetalk.opentracing.http.TestUtils.isHexId;
 import static io.servicetalk.opentracing.http.TestUtils.randomHexId;
 import static io.servicetalk.transport.api.HostAndPort.of;
 import static org.hamcrest.Matchers.equalToIgnoringCase;
+import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
+import static org.mockito.MockitoAnnotations.initMocks;
 
 public class TracingHttpServiceFilterTest {
-
+    private static final HttpSerializationProvider httpSerializer = jsonSerializer(new JacksonSerializationProvider());
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
-    private static final HttpSerializationProvider httpSerializer = jsonSerializer(new JacksonSerializationProvider());
+    @Mock
+    private Tracer mockTracer;
+
+    @Before
+    public void setup() {
+        initMocks(this);
+    }
 
     private ServerContext buildServer() throws Exception {
         DefaultInMemoryTracer tracer = new DefaultInMemoryTracer.Builder(SCOPE_MANAGER).build();
@@ -113,6 +128,21 @@ public class TracingHttpServiceFilterTest {
                 assertThat(serverSpanState.spanId, isHexId());
                 assertNull(serverSpanState.parentSpanId);
                 assertTrue(serverSpanState.sampled);
+            }
+        }
+    }
+
+    @Test
+    public void tracerThrowsReturnsErrorResponse() throws Exception {
+        when(mockTracer.buildSpan(any())).thenThrow(DELIBERATE_EXCEPTION);
+        try (ServerContext context = HttpServers.newHttpServerBuilder(0)
+                .listenStreamingAndAwait(new TracingHttpServiceFilter(mockTracer, "testServer",
+                        ((StreamingHttpRequestHandler) (ctx, request, responseFactory) ->
+                                success(responseFactory.forbidden())).asStreamingService()))) {
+            try (HttpClient client = forSingleAddress(of((InetSocketAddress) context.listenAddress())).build()) {
+                HttpRequest request = client.get("/");
+                HttpResponse response = client.request(request).toFuture().get();
+                assertThat(response.status(), is(INTERNAL_SERVER_ERROR));
             }
         }
     }

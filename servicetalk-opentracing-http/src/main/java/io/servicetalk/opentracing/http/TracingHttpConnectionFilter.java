@@ -32,6 +32,7 @@ import static io.opentracing.tag.Tags.HTTP_METHOD;
 import static io.opentracing.tag.Tags.HTTP_URL;
 import static io.opentracing.tag.Tags.SPAN_KIND;
 import static io.opentracing.tag.Tags.SPAN_KIND_CLIENT;
+import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.opentracing.http.TracingHttpHeadersFormatter.traceStateFormatter;
 import static io.servicetalk.opentracing.http.TracingUtils.tagErrorAndClose;
 import static io.servicetalk.opentracing.http.TracingUtils.tracingMapper;
@@ -79,20 +80,28 @@ public class TracingHttpConnectionFilter extends StreamingHttpConnectionAdapter 
         return new Single<StreamingHttpResponse>() {
             @Override
             protected void handleSubscribe(final Subscriber<? super StreamingHttpResponse> subscriber) {
-                SpanBuilder spanBuilder = tracer.buildSpan(componentName)
-                        .withTag(SPAN_KIND.getKey(), SPAN_KIND_CLIENT)
-                        .withTag(HTTP_METHOD.getKey(), request.method().getName())
-                        .withTag(HTTP_URL.getKey(), request.path());
-                Scope currentScope = tracer.scopeManager().active();
-                if (currentScope != null) {
-                    spanBuilder = spanBuilder.asChildOf(currentScope.span());
-                }
+                final Scope childScope;
+                final Single<StreamingHttpResponse> responseSingle;
+                try {
+                    SpanBuilder spanBuilder = tracer.buildSpan(componentName)
+                            .withTag(SPAN_KIND.getKey(), SPAN_KIND_CLIENT)
+                            .withTag(HTTP_METHOD.getKey(), request.method().getName())
+                            .withTag(HTTP_URL.getKey(), request.path());
+                    Scope currentScope = tracer.scopeManager().active();
+                    if (currentScope != null) {
+                        spanBuilder = spanBuilder.asChildOf(currentScope.span());
+                    }
 
-                Scope childScope = spanBuilder.startActive(true);
-                tracer.inject(childScope.span().context(), formatter, request.headers());
-                delegate().request(request).map(
-                        tracingMapper(childScope, TracingHttpConnectionFilter.this::isError)
-                ).doOnError(cause -> tagErrorAndClose(childScope))
+                    childScope = spanBuilder.startActive(true);
+                    tracer.inject(childScope.span().context(), formatter, request.headers());
+                    responseSingle = requireNonNull(delegate().request(request));
+                } catch (Throwable cause) {
+                    subscriber.onSubscribe(IGNORE_CANCEL);
+                    subscriber.onError(cause);
+                    return;
+                }
+                responseSingle.map(tracingMapper(childScope, TracingHttpConnectionFilter.this::isError))
+                 .doOnError(cause -> tagErrorAndClose(childScope))
                  .doOnCancel(() -> tagErrorAndClose(childScope))
                  .subscribe(subscriber);
             }
