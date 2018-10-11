@@ -216,39 +216,75 @@ public abstract class HttpClient extends HttpRequester {
         UpgradableHttpResponse status(HttpResponseStatus status);
 
         @Override
-        UpgradableHttpResponse addHeader(CharSequence name, CharSequence value);
+        default UpgradableHttpResponse addHeader(final CharSequence name, final CharSequence value) {
+            HttpResponse.super.addHeader(name, value);
+            return this;
+        }
 
         @Override
-        UpgradableHttpResponse addHeaders(HttpHeaders headers);
+        default UpgradableHttpResponse addHeaders(final HttpHeaders headers) {
+            HttpResponse.super.addHeaders(headers);
+            return this;
+        }
 
         @Override
-        UpgradableHttpResponse setHeader(CharSequence name, CharSequence value);
+        default UpgradableHttpResponse setHeader(final CharSequence name, final CharSequence value) {
+            HttpResponse.super.setHeader(name, value);
+            return this;
+        }
 
         @Override
-        UpgradableHttpResponse setHeaders(HttpHeaders headers);
+        default UpgradableHttpResponse setHeaders(final HttpHeaders headers) {
+            HttpResponse.super.setHeaders(headers);
+            return this;
+        }
 
         @Override
-        UpgradableHttpResponse addCookie(HttpCookie cookie);
+        default UpgradableHttpResponse addCookie(final HttpCookie cookie) {
+            HttpResponse.super.addCookie(cookie);
+            return this;
+        }
 
         @Override
-        UpgradableHttpResponse addCookie(CharSequence name, CharSequence value);
+        default UpgradableHttpResponse addCookie(final CharSequence name, final CharSequence value) {
+            HttpResponse.super.addCookie(name, value);
+            return this;
+        }
 
         @Override
-        UpgradableHttpResponse addSetCookie(HttpCookie cookie);
+        default UpgradableHttpResponse addSetCookie(final HttpCookie cookie) {
+            HttpResponse.super.addSetCookie(cookie);
+            return this;
+        }
 
         @Override
-        UpgradableHttpResponse addSetCookie(CharSequence name, CharSequence value);
+        default UpgradableHttpResponse addSetCookie(final CharSequence name, final CharSequence value) {
+            HttpResponse.super.addSetCookie(name, value);
+            return this;
+        }
 
         @Override
-        UpgradableHttpResponse addTrailer(CharSequence name, CharSequence value);
+        default UpgradableHttpResponse addTrailer(final CharSequence name, final CharSequence value) {
+            HttpResponse.super.addTrailer(name, value);
+            return this;
+        }
 
         @Override
-        UpgradableHttpResponse addTrailer(HttpHeaders trailers);
+        default UpgradableHttpResponse addTrailer(final HttpHeaders trailers) {
+            HttpResponse.super.addTrailer(trailers);
+            return this;
+        }
 
         @Override
-        UpgradableHttpResponse setTrailer(CharSequence name, CharSequence value);
+        default UpgradableHttpResponse setTrailer(final CharSequence name, final CharSequence value) {
+            HttpResponse.super.setTrailer(name, value);
+            return this;
+        }
 
         @Override
-        UpgradableHttpResponse setTrailer(HttpHeaders trailers);
+        default UpgradableHttpResponse setTrailer(final HttpHeaders trailers) {
+            HttpResponse.super.setTrailer(trailers);
+            return this;
+        }
     }
 }

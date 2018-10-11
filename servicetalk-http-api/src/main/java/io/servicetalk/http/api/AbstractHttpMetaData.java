@@ -50,54 +50,6 @@ abstract class AbstractHttpMetaData implements HttpMetaData {
     }
 
     @Override
-    public HttpMetaData addHeader(final CharSequence name, final CharSequence value) {
-        headers().add(name, value);
-        return this;
-    }
-
-    @Override
-    public HttpMetaData addHeaders(final HttpHeaders headers) {
-        headers().add(headers);
-        return this;
-    }
-
-    @Override
-    public HttpMetaData setHeader(final CharSequence name, final CharSequence value) {
-        headers().set(name, value);
-        return this;
-    }
-
-    @Override
-    public HttpMetaData setHeaders(final HttpHeaders headers) {
-        headers().set(headers);
-        return this;
-    }
-
-    @Override
-    public HttpMetaData addCookie(final HttpCookie cookie) {
-        headers().addCookie(cookie);
-        return this;
-    }
-
-    @Override
-    public HttpMetaData addCookie(final CharSequence name, final CharSequence value) {
-        headers().addCookie(name, value);
-        return this;
-    }
-
-    @Override
-    public HttpMetaData addSetCookie(final HttpCookie cookie) {
-        headers().addSetCookie(cookie);
-        return this;
-    }
-
-    @Override
-    public HttpMetaData addSetCookie(final CharSequence name, final CharSequence value) {
-        headers().addSetCookie(name, value);
-        return this;
-    }
-
-    @Override
     public boolean equals(final Object o) {
         if (this == o) {
             return true;

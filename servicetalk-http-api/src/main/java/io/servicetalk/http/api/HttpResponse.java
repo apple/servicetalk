@@ -78,38 +78,74 @@ public interface HttpResponse extends HttpResponseMetaData, TrailersHolder {
     HttpResponse status(HttpResponseStatus status);
 
     @Override
-    HttpResponse addHeader(CharSequence name, CharSequence value);
+    default HttpResponse addHeader(final CharSequence name, final CharSequence value) {
+        HttpResponseMetaData.super.addHeader(name, value);
+        return this;
+    }
 
     @Override
-    HttpResponse addHeaders(HttpHeaders headers);
+    default HttpResponse addHeaders(final HttpHeaders headers) {
+        HttpResponseMetaData.super.addHeaders(headers);
+        return this;
+    }
 
     @Override
-    HttpResponse setHeader(CharSequence name, CharSequence value);
+    default HttpResponse setHeader(final CharSequence name, final CharSequence value) {
+        HttpResponseMetaData.super.setHeader(name, value);
+        return this;
+    }
 
     @Override
-    HttpResponse setHeaders(HttpHeaders headers);
+    default HttpResponse setHeaders(final HttpHeaders headers) {
+        HttpResponseMetaData.super.setHeaders(headers);
+        return this;
+    }
 
     @Override
-    HttpResponse addCookie(HttpCookie cookie);
+    default HttpResponse addCookie(final HttpCookie cookie) {
+        HttpResponseMetaData.super.addCookie(cookie);
+        return this;
+    }
 
     @Override
-    HttpResponse addCookie(CharSequence name, CharSequence value);
+    default HttpResponse addCookie(final CharSequence name, final CharSequence value) {
+        HttpResponseMetaData.super.addCookie(name, value);
+        return this;
+    }
 
     @Override
-    HttpResponse addSetCookie(HttpCookie cookie);
+    default HttpResponse addSetCookie(final HttpCookie cookie) {
+        HttpResponseMetaData.super.addSetCookie(cookie);
+        return this;
+    }
 
     @Override
-    HttpResponse addSetCookie(CharSequence name, CharSequence value);
+    default HttpResponse addSetCookie(final CharSequence name, final CharSequence value) {
+        HttpResponseMetaData.super.addSetCookie(name, value);
+        return this;
+    }
 
     @Override
-    HttpResponse addTrailer(CharSequence name, CharSequence value);
+    default HttpResponse addTrailer(final CharSequence name, final CharSequence value) {
+        TrailersHolder.super.addTrailer(name, value);
+        return this;
+    }
 
     @Override
-    HttpResponse addTrailer(HttpHeaders trailers);
+    default HttpResponse addTrailer(final HttpHeaders trailers) {
+        TrailersHolder.super.addTrailer(trailers);
+        return this;
+    }
 
     @Override
-    HttpResponse setTrailer(CharSequence name, CharSequence value);
+    default HttpResponse setTrailer(final CharSequence name, final CharSequence value) {
+        TrailersHolder.super.setTrailer(name, value);
+        return this;
+    }
 
     @Override
-    HttpResponse setTrailer(HttpHeaders trailers);
+    default HttpResponse setTrailer(final HttpHeaders trailers) {
+        TrailersHolder.super.setTrailer(trailers);
+        return this;
+    }
 }

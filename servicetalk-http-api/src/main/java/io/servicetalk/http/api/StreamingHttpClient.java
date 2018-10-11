@@ -271,27 +271,51 @@ public abstract class StreamingHttpClient extends StreamingHttpRequester {
         UpgradableStreamingHttpResponse status(HttpResponseStatus status);
 
         @Override
-        UpgradableStreamingHttpResponse addHeader(CharSequence name, CharSequence value);
+        default UpgradableStreamingHttpResponse addHeader(final CharSequence name, final CharSequence value) {
+            StreamingHttpResponse.super.addHeader(name, value);
+            return this;
+        }
 
         @Override
-        UpgradableStreamingHttpResponse addHeaders(HttpHeaders headers);
+        default UpgradableStreamingHttpResponse addHeaders(final HttpHeaders headers) {
+            StreamingHttpResponse.super.addHeaders(headers);
+            return this;
+        }
 
         @Override
-        UpgradableStreamingHttpResponse setHeader(CharSequence name, CharSequence value);
+        default UpgradableStreamingHttpResponse setHeader(final CharSequence name, final CharSequence value) {
+            StreamingHttpResponse.super.setHeader(name, value);
+            return this;
+        }
 
         @Override
-        UpgradableStreamingHttpResponse setHeaders(HttpHeaders headers);
+        default UpgradableStreamingHttpResponse setHeaders(final HttpHeaders headers) {
+            StreamingHttpResponse.super.setHeaders(headers);
+            return this;
+        }
 
         @Override
-        UpgradableStreamingHttpResponse addCookie(HttpCookie cookie);
+        default UpgradableStreamingHttpResponse addCookie(final HttpCookie cookie) {
+            StreamingHttpResponse.super.addCookie(cookie);
+            return this;
+        }
 
         @Override
-        UpgradableStreamingHttpResponse addCookie(CharSequence name, CharSequence value);
+        default UpgradableStreamingHttpResponse addCookie(final CharSequence name, final CharSequence value) {
+            StreamingHttpResponse.super.addCookie(name, value);
+            return this;
+        }
 
         @Override
-        UpgradableStreamingHttpResponse addSetCookie(HttpCookie cookie);
+        default UpgradableStreamingHttpResponse addSetCookie(final HttpCookie cookie) {
+            StreamingHttpResponse.super.addSetCookie(cookie);
+            return this;
+        }
 
         @Override
-        UpgradableStreamingHttpResponse addSetCookie(CharSequence name, CharSequence value);
+        default UpgradableStreamingHttpResponse addSetCookie(final CharSequence name, final CharSequence value) {
+            StreamingHttpResponse.super.addSetCookie(name, value);
+            return this;
+        }
     }
 }

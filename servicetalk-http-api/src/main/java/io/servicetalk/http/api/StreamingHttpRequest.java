@@ -189,26 +189,50 @@ public interface StreamingHttpRequest extends HttpRequestMetaData {
     StreamingHttpRequest requestTarget(String requestTarget);
 
     @Override
-    StreamingHttpRequest addHeader(CharSequence name, CharSequence value);
+    default StreamingHttpRequest addHeader(final CharSequence name, final CharSequence value) {
+        HttpRequestMetaData.super.addHeader(name, value);
+        return this;
+    }
 
     @Override
-    StreamingHttpRequest addHeaders(HttpHeaders headers);
+    default StreamingHttpRequest addHeaders(final HttpHeaders headers) {
+        HttpRequestMetaData.super.addHeaders(headers);
+        return this;
+    }
 
     @Override
-    StreamingHttpRequest setHeader(CharSequence name, CharSequence value);
+    default StreamingHttpRequest setHeader(final CharSequence name, final CharSequence value) {
+        HttpRequestMetaData.super.setHeader(name, value);
+        return this;
+    }
 
     @Override
-    StreamingHttpRequest setHeaders(HttpHeaders headers);
+    default StreamingHttpRequest setHeaders(final HttpHeaders headers) {
+        HttpRequestMetaData.super.setHeaders(headers);
+        return this;
+    }
 
     @Override
-    StreamingHttpRequest addCookie(HttpCookie cookie);
+    default StreamingHttpRequest addCookie(final HttpCookie cookie) {
+        HttpRequestMetaData.super.addCookie(cookie);
+        return this;
+    }
 
     @Override
-    StreamingHttpRequest addCookie(CharSequence name, CharSequence value);
+    default StreamingHttpRequest addCookie(final CharSequence name, final CharSequence value) {
+        HttpRequestMetaData.super.addCookie(name, value);
+        return this;
+    }
 
     @Override
-    StreamingHttpRequest addSetCookie(HttpCookie cookie);
+    default StreamingHttpRequest addSetCookie(final HttpCookie cookie) {
+        HttpRequestMetaData.super.addSetCookie(cookie);
+        return this;
+    }
 
     @Override
-    StreamingHttpRequest addSetCookie(CharSequence name, CharSequence value);
+    default StreamingHttpRequest addSetCookie(final CharSequence name, final CharSequence value) {
+        HttpRequestMetaData.super.addSetCookie(name, value);
+        return this;
+    }
 }

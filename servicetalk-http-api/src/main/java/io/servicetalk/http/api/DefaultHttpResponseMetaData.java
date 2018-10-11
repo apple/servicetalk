@@ -42,54 +42,6 @@ class DefaultHttpResponseMetaData extends AbstractHttpMetaData implements HttpRe
     }
 
     @Override
-    public HttpResponseMetaData addHeader(final CharSequence name, final CharSequence value) {
-        super.addHeader(name, value);
-        return this;
-    }
-
-    @Override
-    public HttpResponseMetaData addHeaders(final HttpHeaders headers) {
-        super.addHeaders(headers);
-        return this;
-    }
-
-    @Override
-    public HttpResponseMetaData setHeader(final CharSequence name, final CharSequence value) {
-        super.setHeader(name, value);
-        return this;
-    }
-
-    @Override
-    public HttpResponseMetaData setHeaders(final HttpHeaders headers) {
-        super.setHeaders(headers);
-        return this;
-    }
-
-    @Override
-    public HttpResponseMetaData addCookie(final HttpCookie cookie) {
-        super.addCookie(cookie);
-        return this;
-    }
-
-    @Override
-    public HttpResponseMetaData addCookie(final CharSequence name, final CharSequence value) {
-        super.addCookie(name, value);
-        return this;
-    }
-
-    @Override
-    public HttpResponseMetaData addSetCookie(final HttpCookie cookie) {
-        super.addSetCookie(cookie);
-        return this;
-    }
-
-    @Override
-    public HttpResponseMetaData addSetCookie(final CharSequence name, final CharSequence value) {
-        super.addSetCookie(name, value);
-        return this;
-    }
-
-    @Override
     public final HttpResponseStatus status() {
         return status;
     }

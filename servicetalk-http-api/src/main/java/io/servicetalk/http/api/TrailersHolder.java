@@ -34,7 +34,10 @@ interface TrailersHolder {
      * @param value the value of the trailer.
      * @return {@code this}.
      */
-    TrailersHolder addTrailer(CharSequence name, CharSequence value);
+    default TrailersHolder addTrailer(final CharSequence name, final CharSequence value) {
+        trailers().add(name, value);
+        return this;
+    }
 
     /**
      * Adds all trailer names and values of {@code trailer} object.
@@ -42,7 +45,10 @@ interface TrailersHolder {
      * @param trailers the trailers to add.
      * @return {@code this}.
      */
-    TrailersHolder addTrailer(HttpHeaders trailers);
+    default TrailersHolder addTrailer(final HttpHeaders trailers) {
+        trailers().add(trailers);
+        return this;
+    }
 
     /**
      * Sets a trailer with the specified {@code name} and {@code value}. Any existing trailers with the same name are
@@ -52,7 +58,10 @@ interface TrailersHolder {
      * @param value the value of the trailer.
      * @return {@code this}.
      */
-    TrailersHolder setTrailer(CharSequence name, CharSequence value);
+    default TrailersHolder setTrailer(final CharSequence name, final CharSequence value) {
+        trailers().set(name, value);
+        return this;
+    }
 
     /**
      * Clears the current trailer entries and copies all trailer entries of the specified {@code trailers} object.
@@ -60,5 +69,8 @@ interface TrailersHolder {
      * @param trailers the trailers object which contains new values.
      * @return {@code this}.
      */
-    TrailersHolder setTrailer(HttpHeaders trailers);
+    default TrailersHolder setTrailer(final HttpHeaders trailers) {
+        trailers().set(trailers);
+        return this;
+    }
 }

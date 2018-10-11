@@ -119,54 +119,6 @@ class DefaultBlockingStreamingHttpRequest<P> extends DefaultHttpRequestMetaData 
     }
 
     @Override
-    public final BlockingStreamingHttpRequest addHeader(final CharSequence name, final CharSequence value) {
-        super.addHeader(name, value);
-        return this;
-    }
-
-    @Override
-    public final BlockingStreamingHttpRequest addHeaders(final HttpHeaders headers) {
-        super.addHeaders(headers);
-        return this;
-    }
-
-    @Override
-    public final BlockingStreamingHttpRequest setHeader(final CharSequence name, final CharSequence value) {
-        super.setHeader(name, value);
-        return this;
-    }
-
-    @Override
-    public final BlockingStreamingHttpRequest setHeaders(final HttpHeaders headers) {
-        super.setHeaders(headers);
-        return this;
-    }
-
-    @Override
-    public final BlockingStreamingHttpRequest addCookie(final HttpCookie cookie) {
-        super.addCookie(cookie);
-        return this;
-    }
-
-    @Override
-    public final BlockingStreamingHttpRequest addCookie(final CharSequence name, final CharSequence value) {
-        super.addCookie(name, value);
-        return this;
-    }
-
-    @Override
-    public final BlockingStreamingHttpRequest addSetCookie(final HttpCookie cookie) {
-        super.addSetCookie(cookie);
-        return this;
-    }
-
-    @Override
-    public final BlockingStreamingHttpRequest addSetCookie(final CharSequence name, final CharSequence value) {
-        super.addSetCookie(name, value);
-        return this;
-    }
-
-    @Override
     public BlockingIterable<Buffer> payloadBody() {
         return new HttpBufferFilterIterable(payloadBody);
     }

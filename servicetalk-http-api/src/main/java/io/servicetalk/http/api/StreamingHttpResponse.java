@@ -175,29 +175,50 @@ public interface StreamingHttpResponse extends HttpResponseMetaData {
     StreamingHttpResponse version(HttpProtocolVersion version);
 
     @Override
-    StreamingHttpResponse status(HttpResponseStatus status);
+    default StreamingHttpResponse addHeader(final CharSequence name, final CharSequence value) {
+        HttpResponseMetaData.super.addHeader(name, value);
+        return this;
+    }
 
     @Override
-    StreamingHttpResponse addHeader(CharSequence name, CharSequence value);
+    default StreamingHttpResponse addHeaders(final HttpHeaders headers) {
+        HttpResponseMetaData.super.addHeaders(headers);
+        return this;
+    }
 
     @Override
-    StreamingHttpResponse addHeaders(HttpHeaders headers);
+    default StreamingHttpResponse setHeader(final CharSequence name, final CharSequence value) {
+        HttpResponseMetaData.super.setHeader(name, value);
+        return this;
+    }
 
     @Override
-    StreamingHttpResponse setHeader(CharSequence name, CharSequence value);
+    default StreamingHttpResponse setHeaders(final HttpHeaders headers) {
+        HttpResponseMetaData.super.setHeaders(headers);
+        return this;
+    }
 
     @Override
-    StreamingHttpResponse setHeaders(HttpHeaders headers);
+    default StreamingHttpResponse addCookie(final HttpCookie cookie) {
+        HttpResponseMetaData.super.addCookie(cookie);
+        return this;
+    }
 
     @Override
-    StreamingHttpResponse addCookie(HttpCookie cookie);
+    default StreamingHttpResponse addCookie(final CharSequence name, final CharSequence value) {
+        HttpResponseMetaData.super.addCookie(name, value);
+        return this;
+    }
 
     @Override
-    StreamingHttpResponse addCookie(CharSequence name, CharSequence value);
+    default StreamingHttpResponse addSetCookie(final HttpCookie cookie) {
+        HttpResponseMetaData.super.addSetCookie(cookie);
+        return this;
+    }
 
     @Override
-    StreamingHttpResponse addSetCookie(HttpCookie cookie);
-
-    @Override
-    StreamingHttpResponse addSetCookie(CharSequence name, CharSequence value);
+    default StreamingHttpResponse addSetCookie(final CharSequence name, final CharSequence value) {
+        HttpResponseMetaData.super.addSetCookie(name, value);
+        return this;
+    }
 }

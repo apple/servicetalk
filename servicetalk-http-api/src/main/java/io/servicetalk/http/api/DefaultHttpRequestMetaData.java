@@ -78,54 +78,6 @@ class DefaultHttpRequestMetaData extends AbstractHttpMetaData implements HttpReq
     }
 
     @Override
-    public HttpRequestMetaData addHeader(final CharSequence name, final CharSequence value) {
-        super.addHeader(name, value);
-        return this;
-    }
-
-    @Override
-    public HttpRequestMetaData addHeaders(final HttpHeaders headers) {
-        super.addHeaders(headers);
-        return this;
-    }
-
-    @Override
-    public HttpRequestMetaData setHeader(final CharSequence name, final CharSequence value) {
-        super.setHeader(name, value);
-        return this;
-    }
-
-    @Override
-    public HttpRequestMetaData setHeaders(final HttpHeaders headers) {
-        super.setHeaders(headers);
-        return this;
-    }
-
-    @Override
-    public HttpRequestMetaData addCookie(final HttpCookie cookie) {
-        super.addCookie(cookie);
-        return this;
-    }
-
-    @Override
-    public HttpRequestMetaData addCookie(final CharSequence name, final CharSequence value) {
-        super.addCookie(name, value);
-        return this;
-    }
-
-    @Override
-    public HttpRequestMetaData addSetCookie(final HttpCookie cookie) {
-        super.addSetCookie(cookie);
-        return this;
-    }
-
-    @Override
-    public HttpRequestMetaData addSetCookie(final CharSequence name, final CharSequence value) {
-        super.addSetCookie(name, value);
-        return this;
-    }
-
-    @Override
     public final HttpRequestMethod method() {
         return method;
     }

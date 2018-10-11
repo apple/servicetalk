@@ -40,26 +40,50 @@ public interface HttpResponseMetaData extends HttpMetaData {
     HttpResponseMetaData version(HttpProtocolVersion version);
 
     @Override
-    HttpResponseMetaData addHeader(CharSequence name, CharSequence value);
+    default HttpResponseMetaData addHeader(final CharSequence name, final CharSequence value) {
+        HttpMetaData.super.addHeader(name, value);
+        return this;
+    }
 
     @Override
-    HttpResponseMetaData addHeaders(HttpHeaders headers);
+    default HttpResponseMetaData addHeaders(final HttpHeaders headers) {
+        HttpMetaData.super.addHeaders(headers);
+        return this;
+    }
 
     @Override
-    HttpResponseMetaData setHeader(CharSequence name, CharSequence value);
+    default HttpResponseMetaData setHeader(final CharSequence name, final CharSequence value) {
+        HttpMetaData.super.setHeader(name, value);
+        return this;
+    }
 
     @Override
-    HttpResponseMetaData setHeaders(HttpHeaders headers);
+    default HttpResponseMetaData setHeaders(final HttpHeaders headers) {
+        HttpMetaData.super.setHeaders(headers);
+        return this;
+    }
 
     @Override
-    HttpResponseMetaData addCookie(HttpCookie cookie);
+    default HttpResponseMetaData addCookie(final HttpCookie cookie) {
+        HttpMetaData.super.addCookie(cookie);
+        return this;
+    }
 
     @Override
-    HttpResponseMetaData addCookie(CharSequence name, CharSequence value);
+    default HttpResponseMetaData addCookie(final CharSequence name, final CharSequence value) {
+        HttpMetaData.super.addCookie(name, value);
+        return this;
+    }
 
     @Override
-    HttpResponseMetaData addSetCookie(HttpCookie cookie);
+    default HttpResponseMetaData addSetCookie(final HttpCookie cookie) {
+        HttpMetaData.super.addSetCookie(cookie);
+        return this;
+    }
 
     @Override
-    HttpResponseMetaData addSetCookie(CharSequence name, CharSequence value);
+    default HttpResponseMetaData addSetCookie(final CharSequence name, final CharSequence value) {
+        HttpMetaData.super.addSetCookie(name, value);
+        return this;
+    }
 }

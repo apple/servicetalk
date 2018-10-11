@@ -88,54 +88,6 @@ class DefaultStreamingHttpResponse<P> extends DefaultHttpResponseMetaData implem
     }
 
     @Override
-    public final StreamingHttpResponse addHeader(final CharSequence name, final CharSequence value) {
-        super.addHeader(name, value);
-        return this;
-    }
-
-    @Override
-    public final StreamingHttpResponse addHeaders(final HttpHeaders headers) {
-        super.addHeaders(headers);
-        return this;
-    }
-
-    @Override
-    public final StreamingHttpResponse setHeader(final CharSequence name, final CharSequence value) {
-        super.setHeader(name, value);
-        return this;
-    }
-
-    @Override
-    public final StreamingHttpResponse setHeaders(final HttpHeaders headers) {
-        super.setHeaders(headers);
-        return this;
-    }
-
-    @Override
-    public final StreamingHttpResponse addCookie(final HttpCookie cookie) {
-        super.addCookie(cookie);
-        return this;
-    }
-
-    @Override
-    public final StreamingHttpResponse addCookie(final CharSequence name, final CharSequence value) {
-        super.addCookie(name, value);
-        return this;
-    }
-
-    @Override
-    public final StreamingHttpResponse addSetCookie(final HttpCookie cookie) {
-        super.addSetCookie(cookie);
-        return this;
-    }
-
-    @Override
-    public final StreamingHttpResponse addSetCookie(final CharSequence name, final CharSequence value) {
-        super.addSetCookie(name, value);
-        return this;
-    }
-
-    @Override
     public Publisher<Buffer> payloadBody() {
         return payloadBody.liftSynchronous(HttpBufferFilterOperator.INSTANCE);
     }

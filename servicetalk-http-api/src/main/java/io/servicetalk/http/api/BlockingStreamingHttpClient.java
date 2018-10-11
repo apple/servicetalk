@@ -276,27 +276,52 @@ public abstract class BlockingStreamingHttpClient extends BlockingStreamingHttpR
         UpgradableBlockingStreamingHttpResponse status(HttpResponseStatus status);
 
         @Override
-        UpgradableBlockingStreamingHttpResponse addHeader(CharSequence name, CharSequence value);
+        default UpgradableBlockingStreamingHttpResponse addHeader(final CharSequence name, final CharSequence value) {
+            BlockingStreamingHttpResponse.super.addHeader(name, value);
+            return this;
+        }
 
         @Override
-        UpgradableBlockingStreamingHttpResponse addHeaders(HttpHeaders headers);
+        default UpgradableBlockingStreamingHttpResponse addHeaders(final HttpHeaders headers) {
+            BlockingStreamingHttpResponse.super.addHeaders(headers);
+            return this;
+        }
 
         @Override
-        UpgradableBlockingStreamingHttpResponse setHeader(CharSequence name, CharSequence value);
+        default UpgradableBlockingStreamingHttpResponse setHeader(final CharSequence name, final CharSequence value) {
+            BlockingStreamingHttpResponse.super.setHeader(name, value);
+            return this;
+        }
 
         @Override
-        UpgradableBlockingStreamingHttpResponse setHeaders(HttpHeaders headers);
+        default UpgradableBlockingStreamingHttpResponse setHeaders(final HttpHeaders headers) {
+            BlockingStreamingHttpResponse.super.setHeaders(headers);
+            return this;
+        }
 
         @Override
-        UpgradableBlockingStreamingHttpResponse addCookie(HttpCookie cookie);
+        default UpgradableBlockingStreamingHttpResponse addCookie(final HttpCookie cookie) {
+            BlockingStreamingHttpResponse.super.addCookie(cookie);
+            return this;
+        }
 
         @Override
-        UpgradableBlockingStreamingHttpResponse addCookie(CharSequence name, CharSequence value);
+        default UpgradableBlockingStreamingHttpResponse addCookie(final CharSequence name, final CharSequence value) {
+            BlockingStreamingHttpResponse.super.addCookie(name, value);
+            return this;
+        }
 
         @Override
-        UpgradableBlockingStreamingHttpResponse addSetCookie(HttpCookie cookie);
+        default UpgradableBlockingStreamingHttpResponse addSetCookie(final HttpCookie cookie) {
+            BlockingStreamingHttpResponse.super.addSetCookie(cookie);
+            return this;
+        }
 
         @Override
-        UpgradableBlockingStreamingHttpResponse addSetCookie(CharSequence name, CharSequence value);
+        default UpgradableBlockingStreamingHttpResponse addSetCookie(final CharSequence name,
+                                                                     final CharSequence value) {
+            BlockingStreamingHttpResponse.super.addSetCookie(name, value);
+            return this;
+        }
     }
 }

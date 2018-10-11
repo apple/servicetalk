@@ -265,57 +265,6 @@ final class StreamingHttpClientToBlockingStreamingHttpClient extends BlockingStr
         }
 
         @Override
-        public UpgradableStreamingHttpResponseToBlockingStreaming addHeader(final CharSequence name,
-                                                                            final CharSequence value) {
-            upgradeResponse.addHeader(name, value);
-            return this;
-        }
-
-        @Override
-        public UpgradableStreamingHttpResponseToBlockingStreaming addHeaders(final HttpHeaders headers) {
-            upgradeResponse.addHeaders(headers);
-            return this;
-        }
-
-        @Override
-        public UpgradableStreamingHttpResponseToBlockingStreaming setHeader(final CharSequence name,
-                                                                            final CharSequence value) {
-            upgradeResponse.setHeader(name, value);
-            return this;
-        }
-
-        @Override
-        public UpgradableStreamingHttpResponseToBlockingStreaming setHeaders(final HttpHeaders headers) {
-            upgradeResponse.setHeaders(headers);
-            return this;
-        }
-
-        @Override
-        public UpgradableStreamingHttpResponseToBlockingStreaming addCookie(final HttpCookie cookie) {
-            upgradeResponse.addCookie(cookie);
-            return this;
-        }
-
-        @Override
-        public UpgradableStreamingHttpResponseToBlockingStreaming addCookie(final CharSequence name,
-                                                                            final CharSequence value) {
-            upgradeResponse.addCookie(name, value);
-            return this;
-        }
-
-        @Override
-        public UpgradableStreamingHttpResponseToBlockingStreaming addSetCookie(final HttpCookie cookie) {
-            upgradeResponse.addSetCookie(cookie);
-            return this;
-        }
-
-        @Override
-        public UpgradableStreamingHttpResponseToBlockingStreaming addSetCookie(final CharSequence name, final CharSequence value) {
-            upgradeResponse.addSetCookie(name, value);
-            return this;
-        }
-
-        @Override
         public HttpHeaders headers() {
             return upgradeResponse.headers();
         }
