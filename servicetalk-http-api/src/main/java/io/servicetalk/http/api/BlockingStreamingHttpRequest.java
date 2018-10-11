@@ -214,6 +214,12 @@ public interface BlockingStreamingHttpRequest extends HttpRequestMetaData {
     BlockingStreamingHttpRequest path(String path);
 
     @Override
+    BlockingStreamingHttpRequest addQueryParameter(String key, String value);
+
+    @Override
+    BlockingStreamingHttpRequest setQueryParameter(String key, String value);
+
+    @Override
     BlockingStreamingHttpRequest rawQuery(String query);
 
     @Override

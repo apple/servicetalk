@@ -318,6 +318,17 @@ public abstract class AbstractHttpRequestMetaDataTest<T extends HttpRequestMetaD
     }
 
     @Test
+    public void testUpdateQuery() {
+        createFixture("/some/path?foo=bar&abc=def&foo=baz");
+
+        fixture.addQueryParameter("abc", "ghi")
+                .setQueryParameter("foo", "j&k|l")
+                .addQueryParameter("@$%", "mno");
+
+        assertEquals("/some/path?foo=j%26k%7Cl&abc=def&abc=ghi&%40%24%25=mno", fixture.requestTarget());
+    }
+
+    @Test
     public void testUriDoesNotChangeUntilReencode() {
         createFixture("/some/path?foo=bar&abc=def&foo=baz");
         final HttpQuery query = fixture.parseQuery();

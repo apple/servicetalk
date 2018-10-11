@@ -182,7 +182,7 @@ public interface HttpQuery extends Iterable<Map.Entry<String, String>> {
      * Returns {@code true} if {@link #size()} equals {@code 0}.
      * @return {@code true} if {@link #size()} equals {@code 0}.
      */
-    boolean empty();
+    boolean isEmpty();
 
     /**
      * Sets the <a href="https://tools.ietf.org/html/rfc3986#section-3.4">query component</a> on the request that this

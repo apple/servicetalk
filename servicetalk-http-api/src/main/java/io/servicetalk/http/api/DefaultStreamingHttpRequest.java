@@ -109,6 +109,18 @@ class DefaultStreamingHttpRequest<P> extends DefaultHttpRequestMetaData implemen
     }
 
     @Override
+    public final StreamingHttpRequest addQueryParameter(final String key, final String value) {
+        super.addQueryParameter(key, value);
+        return this;
+    }
+
+    @Override
+    public final StreamingHttpRequest setQueryParameter(final String key, final String value) {
+        super.setQueryParameter(key, value);
+        return this;
+    }
+
+    @Override
     public final StreamingHttpRequest rawQuery(final String query) {
         super.rawQuery(query);
         return this;

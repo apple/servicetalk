@@ -77,6 +77,18 @@ final class TransportStreamingHttpRequest extends DefaultHttpRequestMetaData imp
     }
 
     @Override
+    public StreamingHttpRequest addQueryParameter(final String key, final String value) {
+        super.addQueryParameter(key, value);
+        return this;
+    }
+
+    @Override
+    public StreamingHttpRequest setQueryParameter(final String key, final String value) {
+        super.setQueryParameter(key, value);
+        return this;
+    }
+
+    @Override
     public StreamingHttpRequest rawQuery(final String query) {
         super.rawQuery(query);
         return this;

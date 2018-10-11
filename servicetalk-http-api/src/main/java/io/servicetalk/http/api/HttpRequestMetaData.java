@@ -159,6 +159,33 @@ public interface HttpRequestMetaData extends HttpMetaData {
     HttpQuery parseQuery();
 
     /**
+     * Adds a new query parameter with the specified {@code key} and {@code value}, which will be
+     * <a href="https://tools.ietf.org/html/rfc3986#section-2.1">percent-encoded</a> if needed.
+     *
+     * Each add <strong>MAY</strong> parse the query string and hence bulk modifications may be more efficient
+     * using {@link #parseQuery()}.
+     *
+     * @param key the query parameter key.
+     * @param value the query parameter value.
+     * @return {@code this}.
+     */
+    HttpRequestMetaData addQueryParameter(String key, String value);
+
+    /**
+     * Sets a query parameter with the specified {@code key} and {@code value}, which will be
+     * <a href="https://tools.ietf.org/html/rfc3986#section-2.1">percent-encoded</a> if needed.
+     * Any existing query parameters with the same key are overwritten.
+     *
+     * Each add <strong>MAY</strong> parse the query string and hence bulk modifications may be more efficient
+     * using {@link #parseQuery()}.
+     *
+     * @param key the query parameter key.
+     * @param value the query parameter value.
+     * @return {@code this}.
+     */
+    HttpRequestMetaData setQueryParameter(String key, String value);
+
+    /**
      * The <a href="https://tools.ietf.org/html/rfc3986#section-3.4">query component</a> derived
      * from {@link #requestTarget()}.
      * <p>
