@@ -22,7 +22,6 @@ import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.dns.discovery.netty.DefaultDnsServiceDiscovererBuilder;
 import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.HttpClientFilterFactory;
 import io.servicetalk.http.api.HttpConnectionFilterFactory;
@@ -43,6 +42,7 @@ import java.util.function.Function;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
+import static io.servicetalk.http.netty.GlobalDnsServiceDiscoverer.globalDnsServiceDiscoverer;
 import static io.servicetalk.loadbalancer.RoundRobinLoadBalancer.newRoundRobinFactory;
 import static io.servicetalk.transport.netty.internal.GlobalExecutionContext.globalExecutionContext;
 import static java.util.Objects.requireNonNull;
@@ -105,12 +105,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
 
     static DefaultSingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> forHostAndPort(
             final HostAndPort address) {
-        // We assume here that there is no need to explicitly close the ServiceDiscoverer if the Publisher returned
-        // from it is correctly cancelled. This means that a ServiceDiscoverer does not keep state outside the scope
-        // of Publishers returned from their discover() methods. Hence, we do not need to explicitly close this
-        // ServiceDiscoverer created here.
-        return new DefaultSingleAddressHttpClientBuilder<>(
-                new DefaultDnsServiceDiscovererBuilder(globalExecutionContext()).build(), address);
+        return new DefaultSingleAddressHttpClientBuilder<>(globalDnsServiceDiscoverer(), address);
     }
 
     static DefaultSingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> forUnknownHostAndPort() {

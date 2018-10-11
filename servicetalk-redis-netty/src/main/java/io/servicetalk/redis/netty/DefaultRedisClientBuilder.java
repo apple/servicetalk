@@ -24,7 +24,6 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.dns.discovery.netty.DefaultDnsServiceDiscovererBuilder;
 import io.servicetalk.redis.api.LoadBalancerReadyRedisClient;
 import io.servicetalk.redis.api.RedisClient;
 import io.servicetalk.redis.api.RedisClientBuilder;
@@ -48,6 +47,7 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.loadbalancer.RoundRobinLoadBalancer.newRoundRobinFactory;
+import static io.servicetalk.redis.netty.GlobalDnsServiceDiscoverer.globalDnsServiceDiscoverer;
 import static io.servicetalk.redis.netty.RedisUtils.isSubscribeModeCommand;
 import static io.servicetalk.transport.netty.internal.GlobalExecutionContext.globalExecutionContext;
 import static java.util.Objects.requireNonNull;
@@ -108,12 +108,7 @@ final class DefaultRedisClientBuilder<U, R> implements RedisClientBuilder<U, R> 
     }
 
     static DefaultRedisClientBuilder<HostAndPort, InetSocketAddress> forHostAndPort(final HostAndPort address) {
-        // We assume here that there is no need to explicitly close the ServiceDiscoverer if the Publisher returned
-        // from it is correctly cancelled. This means that a ServiceDiscoverer does not keep state outside the scope
-        // of Publishers returned from their discover() methods. Hence, we do not need to explicitly close this
-        // ServiceDiscoverer created here.
-        return new DefaultRedisClientBuilder<>(new DefaultDnsServiceDiscovererBuilder(globalExecutionContext())
-                .build(), address);
+        return new DefaultRedisClientBuilder<>(globalDnsServiceDiscoverer(), address);
     }
 
     @Override

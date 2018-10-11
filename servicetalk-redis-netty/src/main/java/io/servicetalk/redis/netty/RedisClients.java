@@ -75,7 +75,7 @@ public final class RedisClients {
      * @return new builder with provided configuration
      */
     public static <U, R> RedisClientBuilder<U, R> forAddress(
-            final ServiceDiscoverer<U, R, ServiceDiscovererEvent<R>> serviceDiscoverer, final U address) {
+            final ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>> serviceDiscoverer, final U address) {
         return new DefaultRedisClientBuilder<>(serviceDiscoverer, address);
     }
 

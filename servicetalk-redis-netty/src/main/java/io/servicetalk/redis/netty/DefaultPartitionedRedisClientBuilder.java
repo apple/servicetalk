@@ -445,8 +445,7 @@ final class DefaultPartitionedRedisClientBuilder<U, R> implements PartitionedRed
 
         @Nullable
         RedisClient getClient() {
-            RedisClient c = client;
-            return c == ClosedClient.CLOSED_CLIENT ? null : c;
+            return client;
         }
 
         @Override
@@ -481,17 +480,17 @@ final class DefaultPartitionedRedisClientBuilder<U, R> implements PartitionedRed
 
         @Override
         public Single<? extends ReservedRedisConnection> reserveConnection(Command command) {
-            return Single.error(new UnsupportedOperationException());
+            return Single.error(new IllegalStateException("Partition is closed."));
         }
 
         @Override
         public Publisher<RedisData> request(RedisRequest request) {
-            return error(new UnsupportedOperationException());
+            return error(new IllegalStateException("Partition is closed."));
         }
 
         @Override
         public ExecutionContext executionContext() {
-            throw new UnsupportedOperationException();
+            throw new IllegalStateException("Partition is closed.");
         }
 
         @Override
