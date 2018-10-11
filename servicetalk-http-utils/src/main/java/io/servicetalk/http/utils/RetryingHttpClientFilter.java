@@ -98,7 +98,9 @@ public final class RetryingHttpClientFilter extends StreamingHttpClientAdapter {
 
         /**
          * New instance.
-         *
+         * <p>
+         * By default this builder will not infinitely retry. To configure the number of retry attempts see
+         * {@link #retryCount(int)}.
          * @param delegate {@link StreamingHttpClient} to wrap with retries.
          */
         public Builder(final StreamingHttpClient delegate) {
