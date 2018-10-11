@@ -104,6 +104,30 @@ final class BufferHttpRequest extends DefaultHttpRequestMetaData implements Http
     }
 
     @Override
+    public HttpRequest addHeaderField(final CharSequence name, final CharSequence value) {
+        super.addHeaderField(name, value);
+        return this;
+    }
+
+    @Override
+    public HttpRequest setHeaderField(final CharSequence name, final CharSequence value) {
+        super.setHeaderField(name, value);
+        return this;
+    }
+
+    @Override
+    public HttpRequest addQueryParameter(final String key, final String value) {
+        super.addQueryParameter(key, value);
+        return this;
+    }
+
+    @Override
+    public HttpRequest setQueryParameter(final String key, final String value) {
+        super.setQueryParameter(key, value);
+        return this;
+    }
+
+    @Override
     public HttpRequest requestTarget(final String requestTarget) {
         super.requestTarget(requestTarget);
         return this;

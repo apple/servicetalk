@@ -61,6 +61,18 @@ final class TransportStreamingHttpResponse extends DefaultHttpResponseMetaData i
     }
 
     @Override
+    public TransportStreamingHttpResponse addHeaderField(final CharSequence name, final CharSequence value) {
+        super.addHeaderField(name, value);
+        return this;
+    }
+
+    @Override
+    public TransportStreamingHttpResponse setHeaderField(final CharSequence name, final CharSequence value) {
+        super.setHeaderField(name, value);
+        return this;
+    }
+
+    @Override
     public Publisher<Buffer> payloadBody() {
         return payloadAndTrailers.liftSynchronous(HttpTransportBufferFilterOperator.INSTANCE);
     }

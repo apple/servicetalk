@@ -176,4 +176,10 @@ public interface StreamingHttpResponse extends HttpResponseMetaData {
 
     @Override
     StreamingHttpResponse status(HttpResponseStatus status);
+
+    @Override
+    StreamingHttpResponse addHeaderField(CharSequence name, CharSequence value);
+
+    @Override
+    StreamingHttpResponse setHeaderField(CharSequence name, CharSequence value);
 }

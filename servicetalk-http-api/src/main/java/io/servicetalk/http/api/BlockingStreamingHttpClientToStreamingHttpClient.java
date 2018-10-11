@@ -273,6 +273,20 @@ final class BlockingStreamingHttpClientToStreamingHttpClient extends StreamingHt
         }
 
         @Override
+        public BlockingToUpgradableStreamingHttpResponse addHeaderField(final CharSequence name,
+                                                                        final CharSequence value) {
+            upgradeResponse.addHeaderField(name, value);
+            return this;
+        }
+
+        @Override
+        public BlockingToUpgradableStreamingHttpResponse setHeaderField(final CharSequence name,
+                                                                        final CharSequence value) {
+            upgradeResponse.setHeaderField(name, value);
+            return this;
+        }
+
+        @Override
         public String toString(final BiFunction<? super CharSequence, ? super CharSequence, CharSequence>
                                                headerFilter) {
             return upgradeResponse.toString(headerFilter);

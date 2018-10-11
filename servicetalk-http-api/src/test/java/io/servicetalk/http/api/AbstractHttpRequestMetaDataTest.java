@@ -318,6 +318,16 @@ public abstract class AbstractHttpRequestMetaDataTest<T extends HttpRequestMetaD
     }
 
     @Test
+    public void testUpdateQuery() {
+        createFixture("/some/path?foo=bar&abc=def&foo=baz");
+
+        fixture.addQueryParameter("abc", "ghi")
+                .setQueryParameter("foo", "jkl");
+
+        assertEquals("/some/path?foo=jkl&abc=def&abc=ghi", fixture.requestTarget());
+    }
+
+    @Test
     public void testUriDoesNotChangeUntilReencode() {
         createFixture("/some/path?foo=bar&abc=def&foo=baz");
         final HttpQuery query = fixture.parseQuery();
@@ -453,6 +463,15 @@ public abstract class AbstractHttpRequestMetaDataTest<T extends HttpRequestMetaD
 
         assertEquals("my.site.com", fixture.effectiveHost());
         assertEquals(-1, fixture.effectivePort());
+    }
+
+    @Test
+    public void testHeadersOperations() {
+        createFixture("/some/path");
+        fixture.addHeaderField("hdr1", "val1")
+                .setHeaderField("hdr2", "val2");
+
+        assertEquals(fixture.headers().size(), 2);
     }
 
     @SuppressWarnings("unchecked")

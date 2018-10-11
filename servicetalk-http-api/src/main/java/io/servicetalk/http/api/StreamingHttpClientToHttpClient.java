@@ -208,6 +208,18 @@ final class StreamingHttpClientToHttpClient extends HttpClient {
         }
 
         @Override
+        public UpgradableHttpResponse addHeaderField(final CharSequence name, final CharSequence value) {
+            upgradableResponse.addHeaderField(name, value);
+            return this;
+        }
+
+        @Override
+        public UpgradableHttpResponse setHeaderField(final CharSequence name, final CharSequence value) {
+            upgradableResponse.setHeaderField(name, value);
+            return this;
+        }
+
+        @Override
         public String toString() {
             return upgradableResponse.toString();
         }

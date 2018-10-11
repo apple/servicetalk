@@ -177,6 +177,12 @@ public interface StreamingHttpRequest extends HttpRequestMetaData {
     StreamingHttpRequest path(String path);
 
     @Override
+    StreamingHttpRequest addQueryParameter(String key, String value);
+
+    @Override
+    StreamingHttpRequest setQueryParameter(String key, String value);
+
+    @Override
     StreamingHttpRequest rawQuery(String query);
 
     @Override
@@ -187,4 +193,10 @@ public interface StreamingHttpRequest extends HttpRequestMetaData {
 
     @Override
     StreamingHttpRequest requestTarget(String requestTarget);
+
+    @Override
+    StreamingHttpRequest addHeaderField(CharSequence name, CharSequence value);
+
+    @Override
+    StreamingHttpRequest setHeaderField(CharSequence name, CharSequence value);
 }

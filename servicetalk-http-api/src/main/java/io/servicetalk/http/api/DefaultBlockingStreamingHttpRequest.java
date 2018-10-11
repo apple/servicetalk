@@ -95,6 +95,18 @@ class DefaultBlockingStreamingHttpRequest<P> extends DefaultHttpRequestMetaData 
     }
 
     @Override
+    public BlockingStreamingHttpRequest addHeaderField(final CharSequence name, final CharSequence value) {
+        super.addHeaderField(name, value);
+        return this;
+    }
+
+    @Override
+    public BlockingStreamingHttpRequest setHeaderField(final CharSequence name, final CharSequence value) {
+        super.setHeaderField(name, value);
+        return this;
+    }
+
+    @Override
     public final BlockingStreamingHttpRequest requestTarget(final String requestTarget) {
         super.requestTarget(requestTarget);
         return this;
@@ -109,6 +121,18 @@ class DefaultBlockingStreamingHttpRequest<P> extends DefaultHttpRequestMetaData 
     @Override
     public final BlockingStreamingHttpRequest rawPath(final String path) {
         super.rawPath(path);
+        return this;
+    }
+
+    @Override
+    public BlockingStreamingHttpRequest addQueryParameter(final String key, final String value) {
+        super.addQueryParameter(key, value);
+        return this;
+    }
+
+    @Override
+    public BlockingStreamingHttpRequest setQueryParameter(final String key, final String value) {
+        super.setQueryParameter(key, value);
         return this;
     }
 

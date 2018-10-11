@@ -38,4 +38,10 @@ public interface HttpResponseMetaData extends HttpMetaData {
 
     @Override
     HttpResponseMetaData version(HttpProtocolVersion version);
+
+    @Override
+    HttpResponseMetaData addHeaderField(CharSequence name, CharSequence value);
+
+    @Override
+    HttpResponseMetaData setHeaderField(CharSequence name, CharSequence value);
 }

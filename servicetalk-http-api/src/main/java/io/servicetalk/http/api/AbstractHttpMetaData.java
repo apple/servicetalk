@@ -50,6 +50,18 @@ abstract class AbstractHttpMetaData implements HttpMetaData {
     }
 
     @Override
+    public HttpMetaData addHeaderField(final CharSequence name, final CharSequence value) {
+        headers.add(name, value);
+        return this;
+    }
+
+    @Override
+    public HttpMetaData setHeaderField(final CharSequence name, final CharSequence value) {
+        headers.set(name, value);
+        return this;
+    }
+
+    @Override
     public boolean equals(final Object o) {
         if (this == o) {
             return true;

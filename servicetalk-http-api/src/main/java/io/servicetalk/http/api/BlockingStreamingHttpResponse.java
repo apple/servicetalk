@@ -213,4 +213,10 @@ public interface BlockingStreamingHttpResponse extends HttpResponseMetaData {
 
     @Override
     BlockingStreamingHttpResponse status(HttpResponseStatus status);
+
+    @Override
+    BlockingStreamingHttpResponse addHeaderField(CharSequence name, CharSequence value);
+
+    @Override
+    BlockingStreamingHttpResponse setHeaderField(CharSequence name, CharSequence value);
 }

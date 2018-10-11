@@ -214,6 +214,12 @@ public interface BlockingStreamingHttpRequest extends HttpRequestMetaData {
     BlockingStreamingHttpRequest path(String path);
 
     @Override
+    BlockingStreamingHttpRequest addQueryParameter(String key, String value);
+
+    @Override
+    BlockingStreamingHttpRequest setQueryParameter(String key, String value);
+
+    @Override
     BlockingStreamingHttpRequest rawQuery(String query);
 
     @Override
@@ -224,4 +230,10 @@ public interface BlockingStreamingHttpRequest extends HttpRequestMetaData {
 
     @Override
     BlockingStreamingHttpRequest requestTarget(String requestTarget);
+
+    @Override
+    BlockingStreamingHttpRequest addHeaderField(CharSequence name, CharSequence value);
+
+    @Override
+    BlockingStreamingHttpRequest setHeaderField(CharSequence name, CharSequence value);
 }

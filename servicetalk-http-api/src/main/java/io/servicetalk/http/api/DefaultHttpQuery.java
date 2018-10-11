@@ -159,7 +159,7 @@ public final class DefaultHttpQuery implements HttpQuery {
     }
 
     @Override
-    public boolean empty() {
+    public boolean isEmpty() {
         return size() > 0;
     }
 

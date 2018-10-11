@@ -78,6 +78,12 @@ public interface HttpRequest extends HttpRequestMetaData {
     HttpRequest path(String path);
 
     @Override
+    HttpRequest addQueryParameter(String key, String value);
+
+    @Override
+    HttpRequest setQueryParameter(String key, String value);
+
+    @Override
     HttpRequest rawQuery(String query);
 
     @Override
@@ -88,4 +94,10 @@ public interface HttpRequest extends HttpRequestMetaData {
 
     @Override
     HttpRequest requestTarget(String requestTarget);
+
+    @Override
+    HttpRequest addHeaderField(CharSequence name, CharSequence value);
+
+    @Override
+    HttpRequest setHeaderField(CharSequence name, CharSequence value);
 }
