@@ -204,7 +204,7 @@ public interface HttpHeaders extends Iterable<Entry<CharSequence, CharSequence>>
      * <pre>
      * headers.remove(name);
      * for (T value : values) {
-     *     headers.set(name, value);
+     *     headers.add(name, value);
      * }
      * </pre>
      *
@@ -221,7 +221,7 @@ public interface HttpHeaders extends Iterable<Entry<CharSequence, CharSequence>>
      * <pre>
      * headers.remove(name);
      * for (T value : values) {
-     *     headers.set(name, value);
+     *     headers.add(name, value);
      * }
      * </pre>
      *

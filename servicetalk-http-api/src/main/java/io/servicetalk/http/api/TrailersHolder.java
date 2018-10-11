@@ -18,7 +18,7 @@ package io.servicetalk.http.api;
 /**
  * An object which holds HTTP <a href="https://tools.ietf.org/html/rfc7230#section-4.4">trailers</a>.
  */
-public interface TrailersHolder {
+interface TrailersHolder {
 
     /**
      * Gets the <a href="https://tools.ietf.org/html/rfc7230#section-4.4">trailers</a>.

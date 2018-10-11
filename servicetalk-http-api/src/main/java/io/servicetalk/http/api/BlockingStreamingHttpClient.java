@@ -67,8 +67,8 @@ public abstract class BlockingStreamingHttpClient extends BlockingStreamingHttpR
      * responsible for calling {@link UpgradableBlockingStreamingHttpResponse#httpConnection(boolean)}.
      *
      * @param request the request which initiates the upgrade.
-     * @return An object that provides the {@link UpgradableBlockingStreamingHttpResponse} for the upgrade attempt and also contains the
-     * {@link BlockingStreamingHttpConnection} used for the upgrade.
+     * @return An object that provides the {@link UpgradableBlockingStreamingHttpResponse} for the upgrade attempt and
+     * also contains the {@link BlockingStreamingHttpConnection} used for the upgrade.
      * @throws Exception if a exception occurs during the upgrade process.
      * @see StreamingHttpClient#upgradeConnection(StreamingHttpRequest)
      */
@@ -78,8 +78,8 @@ public abstract class BlockingStreamingHttpClient extends BlockingStreamingHttpR
     /**
      * Convert this {@link BlockingStreamingHttpClient} to the {@link StreamingHttpClient} API.
      * <p>
-     * Note that the resulting {@link StreamingHttpClient} may still be subject to any blocking, in memory aggregation, and
-     * other behavior as this {@link BlockingStreamingHttpClient}.
+     * Note that the resulting {@link StreamingHttpClient} may still be subject to any blocking, in memory aggregation,
+     * and other behavior as this {@link BlockingStreamingHttpClient}.
      *
      * @return a {@link StreamingHttpClient} representation of this {@link BlockingStreamingHttpClient}.
      */
@@ -247,7 +247,8 @@ public abstract class BlockingStreamingHttpClient extends BlockingStreamingHttpR
         }
 
         @Override
-        UpgradableBlockingStreamingHttpResponse transformPayloadBody(UnaryOperator<BlockingIterable<Buffer>> transformer);
+        UpgradableBlockingStreamingHttpResponse transformPayloadBody(
+                UnaryOperator<BlockingIterable<Buffer>> transformer);
 
         @Override
         UpgradableBlockingStreamingHttpResponse transformRawPayloadBody(UnaryOperator<BlockingIterable<?>> transformer);
