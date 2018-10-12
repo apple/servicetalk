@@ -53,6 +53,18 @@ class DefaultHttpResponseMetaData extends AbstractHttpMetaData implements HttpRe
     }
 
     @Override
+    public HttpResponseMetaData addHeaderField(final CharSequence name, final CharSequence value) {
+        super.addHeaderField(name, value);
+        return this;
+    }
+
+    @Override
+    public HttpResponseMetaData setHeaderField(final CharSequence name, final CharSequence value) {
+        super.setHeaderField(name, value);
+        return this;
+    }
+
+    @Override
     public final String toString(
             final BiFunction<? super CharSequence, ? super CharSequence, CharSequence> headerFilter) {
         return version() + " " + status() + lineSeparator()

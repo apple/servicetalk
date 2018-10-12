@@ -76,4 +76,10 @@ public interface HttpResponse extends HttpResponseMetaData {
 
     @Override
     HttpResponse status(HttpResponseStatus status);
+
+    @Override
+    HttpResponse addHeaderField(CharSequence name, CharSequence value);
+
+    @Override
+    HttpResponse setHeaderField(CharSequence name, CharSequence value);
 }

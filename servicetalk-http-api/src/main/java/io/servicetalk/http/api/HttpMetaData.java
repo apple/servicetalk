@@ -45,6 +45,25 @@ public interface HttpMetaData {
     HttpHeaders headers();
 
     /**
+     * Adds a new header with the specified {@code name} and {@code value}.
+     *
+     * @param name the name of the header.
+     * @param value the value of the header.
+     * @return {@code this}.
+     */
+    HttpMetaData addHeaderField(CharSequence name, CharSequence value);
+
+    /**
+     * Sets a header with the specified {@code name} and {@code value}. Any existing headers with the same name are
+     * overwritten.
+     *
+     * @param name the header name.
+     * @param value the value of the header.
+     * @return {@code this}.
+     */
+    HttpMetaData setHeaderField(CharSequence name, CharSequence value);
+
+    /**
      * Returns a string representation of the message. To avoid accidentally logging sensitive information,
      * implementations should not return any header or content.
      *

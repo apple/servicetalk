@@ -66,6 +66,18 @@ final class BufferHttpResponse extends DefaultHttpResponseMetaData implements Ht
     }
 
     @Override
+    public HttpResponse addHeaderField(final CharSequence name, final CharSequence value) {
+        super.addHeaderField(name, value);
+        return this;
+    }
+
+    @Override
+    public HttpResponse setHeaderField(final CharSequence name, final CharSequence value) {
+        super.setHeaderField(name, value);
+        return this;
+    }
+
+    @Override
     public Buffer payloadBody() {
         return payloadBody;
     }

@@ -91,6 +91,18 @@ class DefaultStreamingHttpRequest<P> extends DefaultHttpRequestMetaData implemen
     }
 
     @Override
+    public final StreamingHttpRequest addHeaderField(final CharSequence name, final CharSequence value) {
+        super.addHeaderField(name, value);
+        return this;
+    }
+
+    @Override
+    public final StreamingHttpRequest setHeaderField(final CharSequence name, final CharSequence value) {
+        super.setHeaderField(name, value);
+        return this;
+    }
+
+    @Override
     public final StreamingHttpRequest requestTarget(final String requestTarget) {
         super.requestTarget(requestTarget);
         return this;
@@ -105,6 +117,18 @@ class DefaultStreamingHttpRequest<P> extends DefaultHttpRequestMetaData implemen
     @Override
     public final StreamingHttpRequest rawPath(final String path) {
         super.rawPath(path);
+        return this;
+    }
+
+    @Override
+    public final StreamingHttpRequest addQueryParameter(final String key, final String value) {
+        super.addQueryParameter(key, value);
+        return this;
+    }
+
+    @Override
+    public final StreamingHttpRequest setQueryParameter(final String key, final String value) {
+        super.setQueryParameter(key, value);
         return this;
     }
 

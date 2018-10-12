@@ -88,6 +88,18 @@ class DefaultStreamingHttpResponse<P> extends DefaultHttpResponseMetaData implem
     }
 
     @Override
+    public final StreamingHttpResponse addHeaderField(final CharSequence name, final CharSequence value) {
+        super.addHeaderField(name, value);
+        return this;
+    }
+
+    @Override
+    public final StreamingHttpResponse setHeaderField(final CharSequence name, final CharSequence value) {
+        super.setHeaderField(name, value);
+        return this;
+    }
+
+    @Override
     public Publisher<Buffer> payloadBody() {
         return payloadBody.liftSynchronous(HttpBufferFilterOperator.INSTANCE);
     }

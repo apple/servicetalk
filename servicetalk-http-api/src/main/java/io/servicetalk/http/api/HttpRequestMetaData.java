@@ -159,6 +159,25 @@ public interface HttpRequestMetaData extends HttpMetaData {
     HttpQuery parseQuery();
 
     /**
+     * Adds a new query parameter with the specified {@code key} and {@code value}.
+     *
+     * @param key the query parameter key.
+     * @param value the query parameter value.
+     * @return {@code this}.
+     */
+    HttpRequestMetaData addQueryParameter(String key, String value);
+
+    /**
+     * Sets a query parameter with the specified {@code key} and {@code value}. Any existing query parameters with
+     * the same key are overwritten.
+     *
+     * @param key the query parameter key.
+     * @param value the query parameter value.
+     * @return {@code this}.
+     */
+    HttpRequestMetaData setQueryParameter(String key, String value);
+
+    /**
      * The <a href="https://tools.ietf.org/html/rfc3986#section-3.4">query component</a> derived
      * from {@link #requestTarget()}.
      * <p>
@@ -207,4 +226,10 @@ public interface HttpRequestMetaData extends HttpMetaData {
 
     @Override
     HttpRequestMetaData version(HttpProtocolVersion version);
+
+    @Override
+    HttpRequestMetaData addHeaderField(CharSequence name, CharSequence value);
+
+    @Override
+    HttpRequestMetaData setHeaderField(CharSequence name, CharSequence value);
 }

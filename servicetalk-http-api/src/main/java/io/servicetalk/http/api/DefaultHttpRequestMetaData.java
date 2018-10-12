@@ -89,6 +89,18 @@ class DefaultHttpRequestMetaData extends AbstractHttpMetaData implements HttpReq
     }
 
     @Override
+    public HttpRequestMetaData addHeaderField(final CharSequence name, final CharSequence value) {
+        super.addHeaderField(name, value);
+        return this;
+    }
+
+    @Override
+    public HttpRequestMetaData setHeaderField(final CharSequence name, final CharSequence value) {
+        super.setHeaderField(name, value);
+        return this;
+    }
+
+    @Override
     public final String requestTarget() {
         return requestTarget;
     }
@@ -161,6 +173,18 @@ class DefaultHttpRequestMetaData extends AbstractHttpMetaData implements HttpReq
     @Override
     public final HttpQuery parseQuery() {
         return new DefaultHttpQuery(lazyParseQueryString(), this::setQueryParams);
+    }
+
+    @Override
+    public HttpRequestMetaData addQueryParameter(final String key, final String value) {
+        parseQuery().add(key, value).encodeToRequestTarget();
+        return this;
+    }
+
+    @Override
+    public HttpRequestMetaData setQueryParameter(final String key, final String value) {
+        parseQuery().set(key, value).encodeToRequestTarget();
+        return this;
     }
 
     @Override
