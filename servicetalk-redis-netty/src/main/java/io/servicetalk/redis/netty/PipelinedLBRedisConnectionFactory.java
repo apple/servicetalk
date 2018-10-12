@@ -16,6 +16,7 @@
 package io.servicetalk.redis.netty;
 
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.redis.api.RedisConnectionFilterFactory;
 import io.servicetalk.transport.api.ExecutionContext;
 
 import static io.servicetalk.client.internal.ReservableRequestConcurrencyControllers.newController;

@@ -18,6 +18,7 @@ package io.servicetalk.http.api;
 import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.api.LoadBalancerFactory;
 import io.servicetalk.client.api.ServiceDiscoverer;
+import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.SslConfig;
@@ -77,7 +78,8 @@ public interface SingleAddressHttpClientBuilder<U, R> extends HttpClientBuilder<
     SingleAddressHttpClientBuilder<U, R> disableWaitForLoadBalancer();
 
     @Override
-    SingleAddressHttpClientBuilder<U, R> serviceDiscoverer(ServiceDiscoverer<U, R> serviceDiscoverer);
+    SingleAddressHttpClientBuilder<U, R> serviceDiscoverer(
+            ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>> serviceDiscoverer);
 
     @Override
     SingleAddressHttpClientBuilder<U, R> loadBalancerFactory(
@@ -96,7 +98,8 @@ public interface SingleAddressHttpClientBuilder<U, R> extends HttpClientBuilder<
     SingleAddressHttpClientBuilder<U, R> enableHostHeaderFallback(CharSequence hostHeader);
 
     /**
-     * Append the filter to the chain of filters used to decorate the {@link StreamingHttpClient} created by this builder.
+     * Append the filter to the chain of filters used to decorate the {@link StreamingHttpClient} created by this
+     * builder.
      * <p>
      * Note this method will be used to decorate the result of {@link #buildStreaming()} before it is
      * returned to the user.
@@ -109,7 +112,8 @@ public interface SingleAddressHttpClientBuilder<U, R> extends HttpClientBuilder<
      * <pre>
      *     filter1 =&gt; filter2 =&gt; filter3 =&gt; client
      * </pre>
-     * @param function {@link HttpClientFilterFactory} to decorate a {@link StreamingHttpClient} for the purpose of filtering.
+     * @param function {@link HttpClientFilterFactory} to decorate a {@link StreamingHttpClient} for the purpose of
+     * filtering.
      * The signature of the {@link BiFunction} is as follows:
      * <pre>
      *     PostFilteredHttpClient func(PreFilteredHttpClient, {@link LoadBalancer#eventStream()})

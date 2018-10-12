@@ -20,6 +20,8 @@ import io.servicetalk.concurrent.api.Publisher;
 
 import java.util.function.UnaryOperator;
 
+import static java.util.Objects.requireNonNull;
+
 /**
  * A factory which filters the behavior of {@link StreamingHttpClient} instances.
  */
@@ -50,6 +52,7 @@ public interface HttpClientFilterFactory {
      * function and then applies this function
      */
     default HttpClientFilterFactory append(HttpClientFilterFactory before) {
+        requireNonNull(before);
         return (client, lbEvents) -> apply(before.apply(client, lbEvents), lbEvents);
     }
 
@@ -70,6 +73,7 @@ public interface HttpClientFilterFactory {
      * @return the filtered {@link StreamingHttpClient}
      */
     static HttpClientFilterFactory from(UnaryOperator<StreamingHttpClient> function) {
+        requireNonNull(function);
         return (client, lbEvents) -> function.apply(client);
     }
 }

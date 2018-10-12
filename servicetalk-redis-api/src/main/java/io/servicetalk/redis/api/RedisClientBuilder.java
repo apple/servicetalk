@@ -15,27 +15,169 @@
  */
 package io.servicetalk.redis.api;
 
+import io.servicetalk.client.api.ConnectionFactory;
+import io.servicetalk.client.api.ConnectionFactoryFilter;
+import io.servicetalk.client.api.LoadBalancer;
+import io.servicetalk.client.api.LoadBalancerFactory;
 import io.servicetalk.client.api.ServiceDiscoverer;
-import io.servicetalk.client.api.ServiceDiscoverer.Event;
-import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.transport.api.ExecutionContext;
+import io.servicetalk.transport.api.SslConfig;
+
+import java.io.InputStream;
+import java.net.SocketOption;
+import java.time.Duration;
+import java.util.function.Function;
+import javax.annotation.Nullable;
 
 /**
  * A builder of {@link RedisClient} objects.
  *
- * @param <ResolvedAddress> An resolved address that can be used to establish new {@link RedisConnection}s.
- * @param <EventType> The type of {@link Event} which communicates address changes.
+ * @param <U> the type of address before resolution (unresolved address)
+ * @param <R> the type of address after resolution (resolved address)
  */
-@FunctionalInterface
-public interface RedisClientBuilder<ResolvedAddress, EventType extends Event<ResolvedAddress>> {
+public interface RedisClientBuilder<U, R> {
+
+    /**
+     * Sets an {@link ExecutionContext} for all clients created from this {@link RedisClientBuilder}.
+     *
+     * @param context {@link ExecutionContext} to use.
+     * @return {@code this}.
+     */
+    RedisClientBuilder<U, R> executionContext(ExecutionContext context);
+
+    /**
+     * Enable SSL/TLS using the provided {@link SslConfig}. To disable SSL pass in {@code null}.
+     * @param config the {@link SslConfig}.
+     * @return {@code this}.
+     * @throws IllegalStateException if accessing the cert/key throws when {@link InputStream#close()} is called.
+     */
+    RedisClientBuilder<U, R> sslConfig(@Nullable SslConfig config);
+
+    /**
+     * Add a {@link SocketOption} for all connections created by this builder.
+     *
+     * @param <T> the type of the value.
+     * @param option the option to apply.
+     * @param value the value.
+     * @return {@code this}.
+     */
+    <T> RedisClientBuilder<U, R> socketOption(SocketOption<T> option, T value);
+
+    /**
+     * Enable wire-logging for connections created by this builder. All wire events will be logged at trace level.
+     *
+     * @param loggerName The name of the logger to log wire events.
+     * @return {@code this}.
+     */
+    RedisClientBuilder<U, R> enableWireLogging(String loggerName);
+
+    /**
+     * Disable previously configured wire-logging for connections created by this builder.
+     * If wire-logging has not been configured before, this method has no effect.
+     *
+     * @return {@code this}.
+     * @see #enableWireLogging(String)
+     */
+    RedisClientBuilder<U, R> disableWireLogging();
+
+    /**
+     * Sets maximum requests that can be pipelined on a connection created by this builder.
+     *
+     * @param maxPipelinedRequests Maximum number of pipelined requests per {@link RedisConnection}.
+     * @return {@code this}.
+     */
+    RedisClientBuilder<U, R> maxPipelinedRequests(int maxPipelinedRequests);
+
+    /**
+     * Sets the idle timeout for connections created by this builder.
+     *
+     * @param idleConnectionTimeout the timeout {@link Duration} or {@code null} if no timeout configured.
+     * @return {@code this}.
+     */
+    RedisClientBuilder<U, R> idleConnectionTimeout(@Nullable Duration idleConnectionTimeout);
+
+    /**
+     * Sets the ping period to keep alive connections created by this builder.
+     *
+     * @param pingPeriod the {@link Duration} between keep-alive pings or {@code null} to disable pings.
+     * @return {@code this}.
+     */
+    RedisClientBuilder<U, R> pingPeriod(@Nullable Duration pingPeriod);
+
+    /**
+     * Set the {@link Function} which is used as a factory to filter/decorate {@link RedisConnection} created by this
+     * builder.
+     * <p>
+     * Filtering allows you to wrap a {@link RedisConnection} and modify behavior during request/response processing.
+     * Some potential candidates for filtering include logging, metrics, and decorating responses.
+     * @param connectionFilterFactory {@link RedisConnectionFilterFactory} to decorate a {@link RedisConnection} for the
+     * purpose of filtering.
+     * @return {@code this}.
+     */
+    RedisClientBuilder<U, R> appendConnectionFilter(RedisConnectionFilterFactory connectionFilterFactory);
+
+    /**
+     * Append the filter to the chain of filters used to decorate the {@link ConnectionFactory} used by this
+     * builder.
+     * <p>
+     * Filtering allows you to wrap a {@link ConnectionFactory} and modify behavior of
+     * {@link ConnectionFactory#newConnection(Object)}.
+     * Some potential candidates for filtering include logging and metrics.
+     * <p>
+     * The order of execution of these filters are in order of append. If 3 filters are added as follows:
+     * <pre>
+     *     builder.append(filter1).append(filter2).append(filter3)
+     * </pre>
+     * Calling {@link ConnectionFactory} wrapped by this filter chain, the order of invocation of these filters will be:
+     * <pre>
+     *     filter1 =&gt; filter2 =&gt; filter3 =&gt; original connection factory
+     * </pre>
+     * @param factory {@link ConnectionFactoryFilter} to use.
+     * @return {@code this}
+     */
+    RedisClientBuilder<U, R> appendConnectionFactoryFilter(ConnectionFactoryFilter<R, RedisConnection> factory);
+
+    /**
+     * Set the filter factory that is used to decorate {@link RedisClient} created by this builder.
+     * <p>
+     * Note this method will be used to decorate the result of {@link #build()} before it is
+     * returned to the user.
+     * @param clientFilterFactory factory to decorate a {@link RedisClient} for the purpose of filtering.
+     * @return {@code this}
+     */
+    RedisClientBuilder<U, R> appendClientFilter(RedisClientFilterFactory clientFilterFactory);
+
+    /**
+     * Disables automatically delaying {@link RedisRequest}s until the {@link LoadBalancer} is ready.
+     *
+     * @return {@code this}
+     */
+    RedisClientBuilder<U, R> disableWaitForLoadBalancer();
+
+    /**
+     * Set a {@link ServiceDiscoverer} to resolve addresses of remote servers to connect to.
+     * @param serviceDiscoverer The {@link ServiceDiscoverer} to resolve addresses of remote servers to connect to.
+     * Lifecycle of the provided {@link ServiceDiscoverer} is managed externally and it should be
+     * {@link ServiceDiscoverer#closeAsync() closed} after all built {@link RedisClient}s will be closed and this
+     * {@link ServiceDiscoverer} is no longer needed.
+     * @return {@code this}.
+     */
+    RedisClientBuilder<U, R> serviceDiscoverer(
+            ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>> serviceDiscoverer);
+
+    /**
+     * Set a {@link LoadBalancerFactory} to generate {@link LoadBalancer} objects.
+     *
+     * @param loadBalancerFactory The {@link LoadBalancerFactory} which generates {@link LoadBalancer} objects.
+     * @return {@code this}.
+     */
+    RedisClientBuilder<U, R> loadBalancerFactory(LoadBalancerFactory<R, RedisConnection> loadBalancerFactory);
 
     /**
      * Build a new {@link RedisClient}.
      *
-     * @param executionContext {@link ExecutionContext} used by the returned {@link RedisClient}.
-     * @param addressEventStream A stream of events (typically from a {@link ServiceDiscoverer#discover(Object)}) that
-     * provides the addresses used to create new {@link RedisConnection}s.
      * @return A new {@link RedisClient}.
      */
-    RedisClient build(ExecutionContext executionContext, Publisher<EventType> addressEventStream);
+    RedisClient build();
 }

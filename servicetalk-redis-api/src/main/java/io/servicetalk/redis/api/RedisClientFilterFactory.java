@@ -13,13 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.redis.netty;
+package io.servicetalk.redis.api;
 
 import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.redis.api.RedisClient;
 
 import java.util.function.UnaryOperator;
+
+import static java.util.Objects.requireNonNull;
 
 /**
  * A factory that applies filters to {@link RedisClient}s.
@@ -56,8 +57,18 @@ public interface RedisClientFilterFactory {
      * function and then applies this function
      */
     default RedisClientFilterFactory append(RedisClientFilterFactory before) {
+        requireNonNull(before);
         return (client, subscribeLBEvents, pipelinedLBEvents) -> apply(
                 before.apply(client, subscribeLBEvents, pipelinedLBEvents), subscribeLBEvents, pipelinedLBEvents);
+    }
+
+    /**
+     * Returns a function that always returns its input {@link RedisClient}.
+     *
+     * @return a function that always returns its input {@link RedisClient}.
+     */
+    static RedisClientFilterFactory identity() {
+        return (client, subscribeLoadBalancerEvents, pipelinedLoadBalancerEvents) -> client;
     }
 
     /**
@@ -68,6 +79,7 @@ public interface RedisClientFilterFactory {
      * @return the filtered {@link RedisClient}
      */
     static RedisClientFilterFactory from(UnaryOperator<RedisClient> function) {
+        requireNonNull(function);
         return (client, subscribeLBEvents, pipelinedLBEvents) -> function.apply(client);
     }
 }

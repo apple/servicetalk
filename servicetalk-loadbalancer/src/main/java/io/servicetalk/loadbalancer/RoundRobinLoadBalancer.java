@@ -21,7 +21,7 @@ import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.api.LoadBalancerFactory;
 import io.servicetalk.client.api.NoAvailableHostException;
 import io.servicetalk.client.api.RetryableException;
-import io.servicetalk.client.api.ServiceDiscoverer;
+import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.concurrent.api.AsyncCloseable;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.CompositeCloseable;
@@ -79,9 +79,10 @@ import static java.util.stream.Collectors.toList;
  * <li>Round robining is done at address level.</li>
  * <li>Connections are created lazily, without any concurrency control on their creation.
  * This can lead to over-provisioning connections when dealing with a requests surge.</li>
- * <li>Existing connections are reused unless a selector passed to {@link #selectConnection(Function)} suggests otherwise.
- * This can lead to situations where connections will be used to their maximum capacity (for example in the context of pipelining)
- * before new connections are created.</li>
+ * <li>Existing connections are reused unless a selector passed to {@link #selectConnection(Function)} suggests
+ * otherwise.
+ * This can lead to situations where connections will be used to their maximum capacity (for example in the context of
+ * pipelining) before new connections are created.</li>
  * <li>Closed connections are automatically pruned.</li>
  * </ul>
  *
@@ -92,9 +93,11 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends ListenableA
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RoundRobinLoadBalancer.class);
     private static final IllegalStateException LB_CLOSED_SELECT_CNX_EXCEPTION =
-            unknownStackTrace(new IllegalStateException("LoadBalancer has closed"), RoundRobinLoadBalancer.class, "selectConnection0(...)");
+            unknownStackTrace(new IllegalStateException("LoadBalancer has closed"), RoundRobinLoadBalancer.class,
+                    "selectConnection0(...)");
     private static final NoAvailableHostException NO_ACTIVE_HOSTS_SELECT_CNX_EXCEPTION =
-            unknownStackTrace(new NoAvailableHostException("No hosts are available to connect."), RoundRobinLoadBalancer.class, "selectConnection0(...)");
+            unknownStackTrace(new NoAvailableHostException("No hosts are available to connect."),
+                    RoundRobinLoadBalancer.class, "selectConnection0(...)");
 
     private static final AtomicReferenceFieldUpdater<RoundRobinLoadBalancer, List> activeHostsUpdater =
             newUpdater(RoundRobinLoadBalancer.class, List.class, "activeHosts");
@@ -118,16 +121,17 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends ListenableA
      * @param connectionFactory a function which creates new connections.
      * @param comparator        used to compare addresses for lookup/iteration during the connection attempt phase.
      */
-    public RoundRobinLoadBalancer(final Publisher<? extends ServiceDiscoverer.Event<ResolvedAddress>> eventPublisher,
+    public RoundRobinLoadBalancer(final Publisher<? extends ServiceDiscovererEvent<ResolvedAddress>> eventPublisher,
                                   final ConnectionFactory<ResolvedAddress, ? extends C> connectionFactory,
                                   final Comparator<ResolvedAddress> comparator) {
 
         this.connectionFactory = requireNonNull(connectionFactory);
 
         final Comparator<Host<ResolvedAddress, C>> activeAddressComparator =
-                comparing(host -> host instanceof MutableAddressHost ? ((MutableAddressHost<ResolvedAddress, C>) host).mutableAddress : host.address, comparator);
+                comparing(host -> host instanceof MutableAddressHost ?
+                        ((MutableAddressHost<ResolvedAddress, C>) host).mutableAddress : host.address, comparator);
 
-        eventPublisher.subscribe(new org.reactivestreams.Subscriber<ServiceDiscoverer.Event<ResolvedAddress>>() {
+        eventPublisher.subscribe(new org.reactivestreams.Subscriber<ServiceDiscovererEvent<ResolvedAddress>>() {
 
             @Override
             public void onSubscribe(final Subscription s) {
@@ -141,7 +145,7 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends ListenableA
 
             @SuppressWarnings("unchecked")
             @Override
-            public void onNext(final ServiceDiscoverer.Event<ResolvedAddress> event) {
+            public void onNext(final ServiceDiscovererEvent<ResolvedAddress> event) {
                 final List<Host<ResolvedAddress, C>> activeAddresses =
                         activeHostsUpdater.updateAndGet(RoundRobinLoadBalancer.this, currentAddresses -> {
                             final List<Host<ResolvedAddress, C>> refreshedAddresses = new ArrayList<>(currentAddresses);
@@ -255,19 +259,20 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends ListenableA
         // No connection was selected: create a new one
         return connectionFactory.newConnection(host.address)
                 .flatMap(newCnx -> {
-                    // Invoke the selector before adding the connection to the pool, otherwise, connection can be used concurrently
-                    // and hence a new connection can be rejected by the selector.
+                    // Invoke the selector before adding the connection to the pool, otherwise, connection can be used
+                    // concurrently and hence a new connection can be rejected by the selector.
                     CC selection = selector.apply(newCnx);
                     if (selection == null) {
                         newCnx.closeAsync().subscribe();
                         // Failure in selection could be temporary, hence add it to the queue and be consistent with the
                         // fact that select failure does not close a connection.
-                        return error(new ConnectionRejectedException("Newly created connection " + newCnx + " rejected by the selection filter."));
+                        return error(new ConnectionRejectedException("Newly created connection " + newCnx +
+                                " rejected by the selection filter."));
                     }
                     if (host.addConnection(newCnx)) {
                         // If the LB has closed, we attempt to remove the connection, if the removal succeeds, close it.
-                        // If we can't remove it, it means it's been removed concurrently and we assume that whoever removed it also closed it
-                        // or that it has been removed as a consequence of closing.
+                        // If we can't remove it, it means it's been removed concurrently and we assume that whoever
+                        // removed it also closed it or that it has been removed as a consequence of closing.
                         if (closed) {
                             if (host.connections.remove(newCnx)) {
                                 newCnx.closeAsync().subscribe();
@@ -276,7 +281,8 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends ListenableA
                         }
                         return success(selection);
                     }
-                    return error(new RetryableException("Failed to add newly created connection for host: " + host.address + ", host inactive? " + host.removed));
+                    return error(new RetryableException("Failed to add newly created connection for host: " +
+                            host.address + ", host inactive? " + host.removed));
                 });
     }
 

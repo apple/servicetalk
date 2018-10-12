@@ -16,6 +16,7 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.client.api.ServiceDiscoverer;
+import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.BlockingHttpRequester;
 import io.servicetalk.http.api.BlockingStreamingHttpRequester;
@@ -85,7 +86,8 @@ public class DefaultMultiAddressUrlHttpClientBuilderTest {
     @Test
     @SuppressWarnings("unchecked")
     public void buildWithProvidedServiceDiscoverer() throws Exception {
-        ServiceDiscoverer<HostAndPort, InetSocketAddress> mockedServiceDiscoverer = mock(ServiceDiscoverer.class);
+        ServiceDiscoverer<HostAndPort, InetSocketAddress,
+                ServiceDiscovererEvent<InetSocketAddress>> mockedServiceDiscoverer = mock(ServiceDiscoverer.class);
         StreamingHttpRequester newRequester = HttpClients.forMultiAddressUrl()
                 .serviceDiscoverer(mockedServiceDiscoverer).executionContext(CTX)
                 .buildStreaming();

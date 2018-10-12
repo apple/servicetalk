@@ -15,7 +15,7 @@
  */
 package io.servicetalk.client.servicediscoverer;
 
-import io.servicetalk.client.api.ServiceDiscoverer.Event;
+import io.servicetalk.client.api.ServiceDiscovererEvent;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
@@ -28,7 +28,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import static java.util.Objects.requireNonNull;
 
 // TODO(scott): make available outside this package to use in other ServiceDiscoverer tests
-public final class ServiceDiscovererTestSubscriber<T> implements Subscriber<Event<T>> {
+public final class ServiceDiscovererTestSubscriber<T> implements Subscriber<ServiceDiscovererEvent<T>> {
     private final CountDownLatch latch;
     private final AtomicReference<Throwable> throwableRef;
     private final long initialRequestN;
@@ -36,7 +36,8 @@ public final class ServiceDiscovererTestSubscriber<T> implements Subscriber<Even
     private int activeCount;
     private int inActiveCount;
 
-    public ServiceDiscovererTestSubscriber(CountDownLatch latch, AtomicReference<Throwable> throwableRef, long initialRequestN) {
+    public ServiceDiscovererTestSubscriber(CountDownLatch latch, AtomicReference<Throwable> throwableRef,
+                                           long initialRequestN) {
         this.latch = requireNonNull(latch);
         this.throwableRef = requireNonNull(throwableRef);
         this.initialRequestN = initialRequestN;
@@ -49,7 +50,7 @@ public final class ServiceDiscovererTestSubscriber<T> implements Subscriber<Even
     }
 
     @Override
-    public void onNext(Event<T> event) {
+    public void onNext(ServiceDiscovererEvent<T> event) {
         if (event.available()) {
             processActiveEvent(event);
         } else {
@@ -58,7 +59,7 @@ public final class ServiceDiscovererTestSubscriber<T> implements Subscriber<Even
         latch.countDown();
     }
 
-    private void processInActiveEvent(Event<T> event) {
+    private void processInActiveEvent(ServiceDiscovererEvent<T> event) {
         ++inActiveCount;
         if (!activeAddresses.remove(event.address())) {
             throwableRef.set(new IllegalStateException("address: " + event.address() + " removed but not active"));
@@ -66,7 +67,7 @@ public final class ServiceDiscovererTestSubscriber<T> implements Subscriber<Even
         }
     }
 
-    private void processActiveEvent(Event<T> event) {
+    private void processActiveEvent(ServiceDiscovererEvent<T> event) {
         ++activeCount;
         if (!activeAddresses.add(event.address())) {
             throwableRef.set(new IllegalStateException("address: " + event.address() + " is already active"));

@@ -18,6 +18,7 @@ package io.servicetalk.redis.netty;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.redis.api.RedisConnection;
 import io.servicetalk.redis.api.RedisConnectionBuilder;
+import io.servicetalk.redis.api.RedisConnectionFilterFactory;
 import io.servicetalk.redis.api.RedisData;
 import io.servicetalk.tcp.netty.internal.ReadOnlyTcpClientConfig;
 import io.servicetalk.tcp.netty.internal.TcpClientChannelInitializer;
@@ -37,9 +38,10 @@ import java.util.function.Function;
 import java.util.function.UnaryOperator;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.redis.api.RedisConnectionFilterFactory.identity;
 import static io.servicetalk.redis.netty.InternalSubscribedRedisConnection.newSubscribedConnection;
 import static io.servicetalk.redis.netty.PipelinedRedisConnection.newPipelinedConnection;
-import static io.servicetalk.redis.netty.RedisConnectionFilterFactory.identity;
+import static io.servicetalk.transport.netty.internal.GlobalExecutionContext.globalExecutionContext;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -51,6 +53,7 @@ public final class DefaultRedisConnectionBuilder<ResolvedAddress> implements Red
     private final RedisClientConfig config;
     private final boolean forSubscribe;
     private RedisConnectionFilterFactory connectionFilterFactory = identity();
+    private ExecutionContext context = globalExecutionContext();
 
     private DefaultRedisConnectionBuilder(boolean forSubscribe) {
         this(forSubscribe, new RedisClientConfig(new TcpClientConfig(false)));
@@ -59,6 +62,12 @@ public final class DefaultRedisConnectionBuilder<ResolvedAddress> implements Red
     private DefaultRedisConnectionBuilder(boolean forSubscribe, RedisClientConfig config) {
         this.forSubscribe = forSubscribe;
         this.config = requireNonNull(config);
+    }
+
+    @Override
+    public RedisConnectionBuilder<ResolvedAddress> executionContext(final ExecutionContext context) {
+        this.context = requireNonNull(context);
+        return this;
     }
 
     /**
@@ -126,7 +135,8 @@ public final class DefaultRedisConnectionBuilder<ResolvedAddress> implements Red
      * @param idleConnectionTimeout the timeout {@link Duration} or {@code null} if no timeout configured.
      * @return {@code this}.
      */
-    public DefaultRedisConnectionBuilder<ResolvedAddress> idleConnectionTimeout(@Nullable Duration idleConnectionTimeout) {
+    public DefaultRedisConnectionBuilder<ResolvedAddress> idleConnectionTimeout(
+            @Nullable Duration idleConnectionTimeout) {
         config.setIdleConnectionTimeout(idleConnectionTimeout);
         return this;
     }
@@ -145,7 +155,7 @@ public final class DefaultRedisConnectionBuilder<ResolvedAddress> implements Red
     /**
      * Set the filter factory that is used to decorate {@link RedisConnection} created by this builder.
      * <p>
-     * Note this method will be used to decorate the result of {@link #build(ExecutionContext, Object)} before it is
+     * Note this method will be used to decorate the result of {@link #build(Object)} before it is
      * returned to the user.
      * @param connectionFilterFactory {@link UnaryOperator} to decorate a {@link RedisConnection} for the purpose of
      * filtering.
@@ -162,7 +172,8 @@ public final class DefaultRedisConnectionBuilder<ResolvedAddress> implements Red
      * <a href="https://redis.io/topics/pubsub">Redis Subscribe mode</a>.
      *
      * @param <ResolvedAddress> the type of address after resolution.
-     * @return A new instance of {@link DefaultRedisConnectionBuilder} that will build connections only for Redis Subscriber mode.
+     * @return A new instance of {@link DefaultRedisConnectionBuilder} that will build connections only for Redis
+     * Subscriber mode.
      */
     public static <ResolvedAddress> DefaultRedisConnectionBuilder<ResolvedAddress> forSubscribe() {
         return new DefaultRedisConnectionBuilder<>(true);
@@ -197,14 +208,13 @@ public final class DefaultRedisConnectionBuilder<ResolvedAddress> implements Red
     }
 
     @Override
-    public Single<RedisConnection> build(final ExecutionContext executionContext,
-                                         final ResolvedAddress resolvedAddress) {
+    public Single<RedisConnection> build(final ResolvedAddress resolvedAddress) {
         final ReadOnlyRedisClientConfig roConfig = config.asReadOnly();
         // ConcurrencyFilter -> User Filters -> IdleReaper -> Connection
         return forSubscribe ?
-                buildForSubscribe(executionContext, resolvedAddress, roConfig, connectionFilterFactory)
+                buildForSubscribe(context, resolvedAddress, roConfig, connectionFilterFactory)
                         .map(RedisSubscribedConcurrencyLimitingFilter::new) :
-                buildForPipelined(executionContext, resolvedAddress, roConfig, connectionFilterFactory)
+                buildForPipelined(context, resolvedAddress, roConfig, connectionFilterFactory)
                         .map(filteredConnection -> new RedisConnectionConcurrentRequestsFilter(filteredConnection,
                                 roConfig.getMaxPipelinedRequests()));
     }

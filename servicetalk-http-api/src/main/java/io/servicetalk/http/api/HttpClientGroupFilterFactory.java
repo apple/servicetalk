@@ -22,6 +22,8 @@ import io.servicetalk.concurrent.api.Publisher;
 import java.util.function.BiFunction;
 import java.util.function.UnaryOperator;
 
+import static java.util.Objects.requireNonNull;
+
 /**
  * A factory which filters the behavior of {@link StreamingHttpClient} instances created from a
  * {@link StreamingHttpClientGroup}.
@@ -55,6 +57,7 @@ public interface HttpClientGroupFilterFactory<U> {
      * @return a composed function that first applies the {@code before} function and then applies this function
      */
     default HttpClientGroupFilterFactory<U> append(HttpClientGroupFilterFactory<U> before) {
+        requireNonNull(before);
         return (group, client, lbEvents) -> apply(group, before.apply(group, client, lbEvents), lbEvents);
     }
 
@@ -65,6 +68,7 @@ public interface HttpClientGroupFilterFactory<U> {
      * @return a {@link HttpClientFilterFactory} function with a provided {@link GroupKey}
      */
     default HttpClientFilterFactory asClientFilter(U address) {
+        requireNonNull(address);
         return (client, lbEvents) -> apply(address, client, lbEvents);
     }
 
@@ -87,6 +91,7 @@ public interface HttpClientGroupFilterFactory<U> {
      * @return the resulting {@link HttpClientGroupFilterFactory}
      */
     static <U> HttpClientGroupFilterFactory<U> from(BiFunction<U, StreamingHttpClient, StreamingHttpClient> function) {
+        requireNonNull(function);
         return (address, client, lbEvents) -> function.apply(address, client);
     }
 
@@ -99,6 +104,7 @@ public interface HttpClientGroupFilterFactory<U> {
      * @return the resulting {@link HttpClientGroupFilterFactory}
      */
     static <U> HttpClientGroupFilterFactory<U> from(UnaryOperator<StreamingHttpClient> function) {
+        requireNonNull(function);
         return (address, client, lbEvents) -> function.apply(client);
     }
 }

@@ -17,6 +17,7 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.client.api.LoadBalancerFactory;
 import io.servicetalk.client.api.ServiceDiscoverer;
+import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.SslConfig;
@@ -77,7 +78,8 @@ public interface MultiAddressHttpClientBuilder<U, R> extends HttpClientBuilder<U
     MultiAddressHttpClientBuilder<U, R> disableWaitForLoadBalancer();
 
     @Override
-    MultiAddressHttpClientBuilder<U, R> serviceDiscoverer(ServiceDiscoverer<U, R> serviceDiscoverer);
+    MultiAddressHttpClientBuilder<U, R> serviceDiscoverer(
+            ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>> serviceDiscoverer);
 
     @Override
     MultiAddressHttpClientBuilder<U, R> loadBalancerFactory(

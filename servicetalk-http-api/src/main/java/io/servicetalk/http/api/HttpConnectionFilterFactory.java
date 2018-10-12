@@ -15,6 +15,8 @@
  */
 package io.servicetalk.http.api;
 
+import static java.util.Objects.requireNonNull;
+
 /**
  * A factory which filters the behavior of {@link StreamingHttpConnection} instances.
  */
@@ -45,6 +47,7 @@ public interface HttpConnectionFilterFactory {
      * function and then applies this function
      */
     default HttpConnectionFilterFactory append(HttpConnectionFilterFactory before) {
+        requireNonNull(before);
         return connection -> apply(before.apply(connection));
     }
 

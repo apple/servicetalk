@@ -18,6 +18,7 @@ package io.servicetalk.http.api;
 import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.api.LoadBalancerFactory;
 import io.servicetalk.client.api.ServiceDiscoverer;
+import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.transport.api.ExecutionContext;
 
 import java.net.SocketOption;
@@ -168,7 +169,8 @@ public interface HttpClientBuilder<U, R> {
      * this {@link ServiceDiscoverer} is no longer needed.
      * @return {@code this}.
      */
-    HttpClientBuilder<U, R> serviceDiscoverer(ServiceDiscoverer<U, R> serviceDiscoverer);
+    HttpClientBuilder<U, R> serviceDiscoverer(
+            ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>> serviceDiscoverer);
 
     /**
      * Set a {@link LoadBalancerFactory} to generate {@link LoadBalancer} objects.

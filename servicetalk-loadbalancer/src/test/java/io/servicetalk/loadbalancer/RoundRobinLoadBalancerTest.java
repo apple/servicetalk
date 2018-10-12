@@ -19,7 +19,7 @@ import io.servicetalk.client.api.ConnectionFactory;
 import io.servicetalk.client.api.DefaultServiceDiscovererEvent;
 import io.servicetalk.client.api.LoadBalancerReadyEvent;
 import io.servicetalk.client.api.NoAvailableHostException;
-import io.servicetalk.client.api.ServiceDiscoverer;
+import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.CompletableProcessor;
 import io.servicetalk.concurrent.api.DeliberateException;
@@ -89,7 +89,7 @@ public class RoundRobinLoadBalancerTest {
     public final ExpectedException thrown = ExpectedException.none();
 
     @Rule
-    public final PublisherRule<ServiceDiscoverer.Event<String>> serviceDiscoveryPublisher = new PublisherRule<>();
+    public final PublisherRule<ServiceDiscovererEvent<String>> serviceDiscoveryPublisher = new PublisherRule<>();
 
     @Rule
     public final MockedSingleListenerRule<TestLoadBalancedConnection> selectConnectionListener = new MockedSingleListenerRule<>();
@@ -367,19 +367,20 @@ public class RoundRobinLoadBalancerTest {
     }
 
     @SuppressWarnings("unchecked")
-    private void sendServiceDiscoveryEvents(final ServiceDiscoverer.Event... events) {
+    private void sendServiceDiscoveryEvents(final ServiceDiscovererEvent... events) {
         serviceDiscoveryPublisher.sendItems(events);
     }
 
-    private static ServiceDiscoverer.Event upEvent(final String address) {
+    private static ServiceDiscovererEvent upEvent(final String address) {
         return new DefaultServiceDiscovererEvent<>(address, true);
     }
 
-    private static ServiceDiscoverer.Event downEvent(final String address) {
+    private static ServiceDiscovererEvent downEvent(final String address) {
         return new DefaultServiceDiscovererEvent<>(address, false);
     }
 
-    private RoundRobinLoadBalancer<String, TestLoadBalancedConnection> newTestLoadBalancer(final DelegatingConnectionFactory connectionFactory) {
+    private RoundRobinLoadBalancer<String, TestLoadBalancedConnection> newTestLoadBalancer(
+            final DelegatingConnectionFactory connectionFactory) {
         return new RoundRobinLoadBalancer<>(serviceDiscoveryPublisher.getPublisher(), connectionFactory, String::compareTo);
     }
 

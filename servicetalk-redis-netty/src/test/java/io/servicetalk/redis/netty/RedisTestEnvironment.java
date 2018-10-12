@@ -16,13 +16,12 @@
 package io.servicetalk.redis.netty;
 
 import io.servicetalk.client.api.ServiceDiscoverer;
+import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.internal.DefaultThreadFactory;
 import io.servicetalk.dns.discovery.netty.DefaultDnsServiceDiscovererBuilder;
-import io.servicetalk.loadbalancer.RoundRobinLoadBalancer;
 import io.servicetalk.redis.api.RedisClient;
 import io.servicetalk.redis.api.RedisData;
-import io.servicetalk.tcp.netty.internal.TcpClientConfig;
 import io.servicetalk.transport.api.DefaultExecutionContext;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.HostAndPort;
@@ -38,6 +37,7 @@ import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitelyNonNull;
 import static io.servicetalk.redis.api.RedisProtocolSupport.Command.INFO;
 import static io.servicetalk.redis.api.RedisRequests.newRequest;
+import static io.servicetalk.redis.netty.RedisClients.forAddress;
 import static io.servicetalk.redis.utils.RetryingRedisClient.newBuilder;
 import static io.servicetalk.transport.netty.NettyIoExecutors.createIoExecutor;
 import static java.lang.Thread.NORM_PRIORITY;
@@ -45,7 +45,6 @@ import static java.net.InetAddress.getLoopbackAddress;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.time.Duration.ofMillis;
 import static java.time.Duration.ofSeconds;
-import static java.util.Comparator.comparingInt;
 import static java.util.stream.IntStream.rangeClosed;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.isEmptyOrNullString;
@@ -63,7 +62,7 @@ final class RedisTestEnvironment implements AutoCloseable {
     final int redisPort;
     final String redisHost;
     final RedisClient client;
-    final ServiceDiscoverer<HostAndPort, InetSocketAddress> serviceDiscoverer;
+    final ServiceDiscoverer<HostAndPort, InetSocketAddress, ServiceDiscovererEvent<InetSocketAddress>> serviceDiscoverer;
 
     final int[] serverVersion;
 
@@ -78,15 +77,15 @@ final class RedisTestEnvironment implements AutoCloseable {
                 NORM_PRIORITY);
         executionContext = new DefaultExecutionContext(DEFAULT_ALLOCATOR, createIoExecutor(threadFactory), executor);
         serviceDiscoverer = new DefaultDnsServiceDiscovererBuilder(executionContext).build();
-        RedisClientConfig config = new RedisClientConfig(new TcpClientConfig(false))
-                .setDeferSubscribeTillConnect(true);
-        RedisClient rawClient = new DefaultRedisClientBuilder<InetSocketAddress>(
-                (eventPublisher, connectionFactory) -> new RoundRobinLoadBalancer<>(eventPublisher, connectionFactory,
-                        comparingInt(Object::hashCode)), config)
+        DefaultRedisClientBuilder<HostAndPort, InetSocketAddress> builder =
+                (DefaultRedisClientBuilder<HostAndPort, InetSocketAddress>) forAddress(redisHost, redisPort);
+        RedisClient rawClient = builder
+                .deferSubscribeTillConnect(true)
+                .executionContext(executionContext)
                 .maxPipelinedRequests(10)
                 .idleConnectionTimeout(ofSeconds(2))
                 .pingPeriod(ofSeconds(PING_PERIOD_SECONDS))
-                .build(executionContext, serviceDiscoverer.discover(HostAndPort.of(redisHost, redisPort)));
+                .build();
         client = newBuilder(rawClient).exponentialBackoff(ofMillis(10)).build(10);
 
         final String serverInfo = awaitIndefinitelyNonNull(

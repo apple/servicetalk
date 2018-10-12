@@ -110,7 +110,8 @@ public abstract class PartitionedRedisClient implements ListenableAsyncCloseable
     public final RedisCommander asCommander() {
         RedisCommander redisCommander = this.redisCommander;
         if (redisCommander == null) {
-            redisCommander = new DefaultPartitionedRedisCommander(this, redisPartitionAttributesBuilderFunction());
+            redisCommander = new DefaultPartitionedRedisCommander(this,
+                    redisPartitionAttributesBuilderFunction());
             if (!redisCommanderUpdater.compareAndSet(this, null, redisCommander)) {
                 redisCommander = this.redisCommander;
                 assert redisCommander != null : "RedisCommander can not be null.";

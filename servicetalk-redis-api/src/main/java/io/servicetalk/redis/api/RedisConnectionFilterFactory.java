@@ -13,21 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.redis.netty;
+package io.servicetalk.redis.api;
 
-import io.servicetalk.redis.api.PartitionedRedisClient;
+import static java.util.Objects.requireNonNull;
 
 /**
- * A factory which filters the behavior of {@link PartitionedRedisClient} instances.
+ * A factory which filters the behavior of {@link RedisConnection} instances.
  */
 @FunctionalInterface
-public interface PartitionedRedisClientFilterFactory {
+public interface RedisConnectionFilterFactory {
     /**
-     * Function that allows to filter an {@link PartitionedRedisClient}.
-     * @param connection the {@link PartitionedRedisClient} to filter
-     * @return the filtered {@link PartitionedRedisClient}
+     * Function that allows to filter an {@link RedisConnection}.
+     * @param connection the {@link RedisConnection} to filter
+     * @return the filtered {@link RedisConnection}
      */
-    PartitionedRedisClient apply(PartitionedRedisClient connection);
+    RedisConnection apply(RedisConnection connection);
 
     /**
      * Returns a composed function that first applies the {@code before} function to its input, and then applies
@@ -46,16 +46,17 @@ public interface PartitionedRedisClientFilterFactory {
      * @return a composed function that first applies the {@code before}
      * function and then applies this function
      */
-    default PartitionedRedisClientFilterFactory append(PartitionedRedisClientFilterFactory before) {
+    default RedisConnectionFilterFactory append(RedisConnectionFilterFactory before) {
+        requireNonNull(before);
         return connection -> apply(before.apply(connection));
     }
 
     /**
-     * Returns a function that always returns its input {@link PartitionedRedisClientFilterFactory}.
+     * Returns a function that always returns its input {@link RedisConnectionFilterFactory}.
      *
-     * @return a function that always returns its input {@link PartitionedRedisClientFilterFactory}.
+     * @return a function that always returns its input {@link RedisConnectionFilterFactory}.
      */
-    static PartitionedRedisClientFilterFactory identity() {
+    static RedisConnectionFilterFactory identity() {
         return connection -> connection;
     }
 }

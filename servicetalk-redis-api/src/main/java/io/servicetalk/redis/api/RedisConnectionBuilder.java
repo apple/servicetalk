@@ -31,30 +31,34 @@ import static io.servicetalk.concurrent.api.AsyncCloseables.emptyAsyncCloseable;
 public interface RedisConnectionBuilder<ResolvedAddress> {
 
     /**
+     * Sets an {@link ExecutionContext} for all connections created from this {@link RedisConnectionBuilder}.
+     *
+     * @param context {@link ExecutionContext} to use.
+     * @return {@code this}.
+     */
+    RedisConnectionBuilder<ResolvedAddress> executionContext(ExecutionContext context);
+
+    /**
      * Create a new {@link RedisConnection}.
      *
-     * @param executionContext {@link ExecutionContext} to use when building {@link RedisConnection}s.
-     * {@link RedisConnection}.
      * @param resolvedAddress a resolved address to use when connecting.
      * @return A single that will complete with the {@link RedisConnection}.
      */
-    Single<RedisConnection> build(ExecutionContext executionContext, ResolvedAddress resolvedAddress);
+    Single<RedisConnection> build(ResolvedAddress resolvedAddress);
 
     /**
      * Convert this {@link RedisConnectionBuilder} to a {@link ConnectionFactory}. This can be useful to take advantage
      * of connection filters targeted at the {@link ConnectionFactory} API.
      *
-     * @param executionContext {@link ExecutionContext} to use when building {@link RedisConnection}s.
-     * {@link ConnectionFactory}.
-     * @return A {@link ConnectionFactory} that will use the {@link #build(ExecutionContext, Object)} method to
+     * @return A {@link ConnectionFactory} that will use the {@link #build(Object)} method to
      * create new {@link RedisConnection} objects.
      */
-    default ConnectionFactory<ResolvedAddress, RedisConnection> asConnectionFactory(ExecutionContext executionContext) {
+    default ConnectionFactory<ResolvedAddress, RedisConnection> asConnectionFactory() {
         return new ConnectionFactory<ResolvedAddress, RedisConnection>() {
             private final ListenableAsyncCloseable close = emptyAsyncCloseable();
             @Override
             public Single<RedisConnection> newConnection(ResolvedAddress resolvedAddress) {
-                return build(executionContext, resolvedAddress);
+                return build(resolvedAddress);
             }
 
             @Override

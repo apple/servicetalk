@@ -15,18 +15,14 @@
  */
 package io.servicetalk.redis.netty;
 
-import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.concurrent.internal.PlatformDependent;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
-import io.servicetalk.dns.discovery.netty.DefaultDnsServiceDiscovererBuilder;
-import io.servicetalk.loadbalancer.RoundRobinLoadBalancer;
 import io.servicetalk.redis.api.RedisClient;
 import io.servicetalk.redis.api.RedisCommander;
 import io.servicetalk.redis.api.RedisServerException;
 import io.servicetalk.redis.utils.RedisAuthConnectionFactory;
 import io.servicetalk.redis.utils.RedisAuthorizationException;
 import io.servicetalk.transport.api.DefaultExecutionContext;
-import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutor;
 
 import org.junit.After;
@@ -34,7 +30,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
 
-import java.net.InetSocketAddress;
 import java.util.function.Consumer;
 import javax.annotation.Nullable;
 
@@ -46,7 +41,6 @@ import static io.servicetalk.transport.netty.NettyIoExecutors.createIoExecutor;
 import static io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutors.toEventLoopAwareNettyIoExecutor;
 import static java.time.Duration.ofMillis;
 import static java.time.Duration.ofSeconds;
-import static java.util.Comparator.comparingInt;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.isEmptyOrNullString;
@@ -62,23 +56,15 @@ public class RedisAuthConnectionFactoryClientTest {
     private static final String CORRECT_PASSWORD = "password";
 
     @Nullable
-    private ServiceDiscoverer<HostAndPort, InetSocketAddress> serviceDiscoverer;
-    @Nullable
     private EventLoopAwareNettyIoExecutor ioExecutor;
     @Nullable
     private RedisClient client;
 
     @After
     public void cleanup() throws Exception {
-        if (client == null) {
-            if (serviceDiscoverer != null) {
-                awaitIndefinitely(serviceDiscoverer.closeAsync());
-            }
-        } else {
+        if (client != null) {
             assert ioExecutor != null;
-            assert serviceDiscoverer != null;
-            awaitIndefinitely(
-                    client.closeAsync().andThen(serviceDiscoverer.closeAsync()).andThen(ioExecutor.closeAsync()));
+            awaitIndefinitely(client.closeAsync().andThen(ioExecutor.closeAsync()));
         }
     }
 
@@ -156,16 +142,14 @@ public class RedisAuthConnectionFactoryClientTest {
         redisHost = System.getenv().getOrDefault("REDIS_HOST", "127.0.0.1");
 
         ioExecutor = toEventLoopAwareNettyIoExecutor(createIoExecutor());
-        DefaultExecutionContext executionContext =
-                new DefaultExecutionContext(DEFAULT_ALLOCATOR, ioExecutor, immediate());
-        serviceDiscoverer = new DefaultDnsServiceDiscovererBuilder(executionContext).build();
-        RedisClient rawClient = new DefaultRedisClientBuilder<InetSocketAddress>((eventPublisher, connectionFactory) ->
-                new RoundRobinLoadBalancer<>(eventPublisher, new RedisAuthConnectionFactory<>(connectionFactory,
-                        ctx -> ctx.executionContext().bufferAllocator().fromAscii(password)),
-                        comparingInt(Object::hashCode)))
+        RedisClient rawClient = RedisClients.forAddress(redisHost, redisPort)
+                .appendConnectionFactoryFilter(f ->
+                        new RedisAuthConnectionFactory<>(f, ctx -> ctx.executionContext().bufferAllocator()
+                                .fromAscii(password)))
                 .maxPipelinedRequests(10)
+                .executionContext(new DefaultExecutionContext(DEFAULT_ALLOCATOR, ioExecutor, immediate()))
                 .idleConnectionTimeout(ofSeconds(2))
-                .build(executionContext, serviceDiscoverer.discover(HostAndPort.of(redisHost, redisPort)));
+                .build();
         client = newBuilder(rawClient).exponentialBackoff(ofMillis(10)).build(10);
         clientConsumer.accept(client);
     }

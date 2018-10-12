@@ -16,7 +16,7 @@
 package io.servicetalk.dns.discovery.netty;
 
 import io.servicetalk.client.api.ServiceDiscoverer;
-import io.servicetalk.client.api.ServiceDiscoverer.Event;
+import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.client.servicediscoverer.ServiceDiscovererTestSubscriber;
 import io.servicetalk.concurrent.api.BiIntFunction;
 import io.servicetalk.concurrent.api.Completable;
@@ -74,7 +74,7 @@ public class DefaultDnsServiceDiscovererTest {
 
     private static EventLoopAwareNettyIoExecutor nettyIoExecutor;
     private static TestDnsServer dnsServer;
-    private ServiceDiscoverer<String, InetAddress> discoverer;
+    private ServiceDiscoverer<String, InetAddress, ServiceDiscovererEvent<InetAddress>> discoverer;
 
     @BeforeClass
     public static void beforeClass() throws Exception {
@@ -102,10 +102,11 @@ public class DefaultDnsServiceDiscovererTest {
     @Test
     public void testRetry() throws Exception {
         AtomicInteger retryStrategyCalledCount = new AtomicInteger();
-        ServiceDiscoverer<String, InetAddress> retryingDiscoverer = buildServiceDiscoverer((retryCount, cause) -> {
-            retryStrategyCalledCount.incrementAndGet();
-            return retryCount == 1 && cause instanceof UnknownHostException ? completed() : error(cause);
-        });
+        ServiceDiscoverer<String, InetAddress, ServiceDiscovererEvent<InetAddress>> retryingDiscoverer =
+                buildServiceDiscoverer((retryCount, cause) -> {
+                    retryStrategyCalledCount.incrementAndGet();
+                    return retryCount == 1 && cause instanceof UnknownHostException ? completed() : error(cause);
+                });
 
         try {
             awaitIndefinitely(retryingDiscoverer.discover("unknown.com"));
@@ -123,15 +124,15 @@ public class DefaultDnsServiceDiscovererTest {
     public void unknownHostDiscover() throws InterruptedException {
         CountDownLatch latch = new CountDownLatch(1);
         AtomicReference<Throwable> throwableRef = new AtomicReference<>();
-        Publisher<Event<InetAddress>> publisher = discoverer.discover("unknown.com");
-        publisher.subscribe(new Subscriber<Event<InetAddress>>() {
+        Publisher<ServiceDiscovererEvent<InetAddress>> publisher = discoverer.discover("unknown.com");
+        publisher.subscribe(new Subscriber<ServiceDiscovererEvent<InetAddress>>() {
             @Override
             public void onSubscribe(Subscription s) {
                 s.request(1);
             }
 
             @Override
-            public void onNext(Event<InetAddress> inetAddressEvent) {
+            public void onNext(ServiceDiscovererEvent<InetAddress> inetAddressEvent) {
                 throwableRef.set(new IllegalStateException("unexpected resolution: " + inetAddressEvent));
                 latch.countDown();
             }
@@ -156,7 +157,7 @@ public class DefaultDnsServiceDiscovererTest {
     public void singleDiscover() throws InterruptedException {
         CountDownLatch latch = new CountDownLatch(1);
         AtomicReference<Throwable> throwableRef = new AtomicReference<>();
-        Publisher<Event<InetAddress>> publisher = discoverer.discover("apple.com");
+        Publisher<ServiceDiscovererEvent<InetAddress>> publisher = discoverer.discover("apple.com");
         ServiceDiscovererTestSubscriber<InetAddress> subscriber =
                 new ServiceDiscovererTestSubscriber<>(latch, throwableRef, 1);
         publisher.subscribe(subscriber);
@@ -171,7 +172,7 @@ public class DefaultDnsServiceDiscovererTest {
     public void repeatDiscover() throws InterruptedException {
         CountDownLatch latch = new CountDownLatch(2);
         AtomicReference<Throwable> throwableRef = new AtomicReference<>();
-        Publisher<Event<InetAddress>> publisher = discoverer.discover("apple.com");
+        Publisher<ServiceDiscovererEvent<InetAddress>> publisher = discoverer.discover("apple.com");
         ServiceDiscovererTestSubscriber<InetAddress> subscriber =
                 new ServiceDiscovererTestSubscriber<>(latch, throwableRef, Long.MAX_VALUE);
         publisher.subscribe(subscriber);
@@ -185,13 +186,14 @@ public class DefaultDnsServiceDiscovererTest {
     @Test
     public void repeatDiscoverMultipleHosts() throws InterruptedException {
         assumeThat("Ignored flaky test", parseBoolean(System.getenv("CI")), is(FALSE));
-        ServiceDiscoverer<String, InetAddress> discoverer = buildServiceDiscoverer(null);
+        ServiceDiscoverer<String, InetAddress, ServiceDiscovererEvent<InetAddress>> discoverer =
+                buildServiceDiscoverer(null);
 
         CountDownLatch appleLatch = new CountDownLatch(2);
         CountDownLatch stLatch = new CountDownLatch(2);
         AtomicReference<Throwable> throwableRef = new AtomicReference<>();
-        Publisher<Event<InetAddress>> applePublisher = discoverer.discover("apple.com");
-        Publisher<Event<InetAddress>> stPublisher = discoverer.discover("servicetalk.io");
+        Publisher<ServiceDiscovererEvent<InetAddress>> applePublisher = discoverer.discover("apple.com");
+        Publisher<ServiceDiscovererEvent<InetAddress>> stPublisher = discoverer.discover("servicetalk.io");
         ServiceDiscovererTestSubscriber<InetAddress> appleSubscriber =
                 new ServiceDiscovererTestSubscriber<>(appleLatch, throwableRef, Long.MAX_VALUE);
         ServiceDiscovererTestSubscriber<InetAddress> stSubscriber =
@@ -212,8 +214,9 @@ public class DefaultDnsServiceDiscovererTest {
     @Test(expected = ExecutionException.class)
     public void exceptionInSubscriberOnErrorWhileClose() throws Exception {
         CountDownLatch latchOnSubscribe = new CountDownLatch(1);
-        ServiceDiscoverer<String, InetAddress> discoverer = buildServiceDiscoverer(null);
-        Subscriber<Event<InetAddress>> subscriber = mock(Subscriber.class);
+        ServiceDiscoverer<String, InetAddress, ServiceDiscovererEvent<InetAddress>> discoverer =
+                buildServiceDiscoverer(null);
+        Subscriber<ServiceDiscovererEvent<InetAddress>> subscriber = mock(Subscriber.class);
 
         try {
             doAnswer(a -> {
@@ -231,7 +234,7 @@ public class DefaultDnsServiceDiscovererTest {
         }
     }
 
-    private static ServiceDiscoverer<String, InetAddress> buildServiceDiscoverer(
+    private static ServiceDiscoverer<String, InetAddress, ServiceDiscovererEvent<InetAddress>> buildServiceDiscoverer(
             @Nullable BiIntFunction<Throwable, Completable> retryStrategy) {
 
         DefaultDnsServiceDiscovererBuilder builder =

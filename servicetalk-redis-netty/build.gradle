@@ -37,6 +37,8 @@ dependencies {
   implementation "io.servicetalk:servicetalk-annotations:$project.version"
   implementation "io.servicetalk:servicetalk-client-internal:$project.version"
   implementation "io.servicetalk:servicetalk-concurrent-internal:$project.version"
+  implementation "io.servicetalk:servicetalk-dns-discovery-netty:$project.version"
+  implementation "io.servicetalk:servicetalk-loadbalancer:$project.version"
   implementation "io.servicetalk:servicetalk-redis-internal:$project.version"
   implementation "io.servicetalk:servicetalk-tcp-netty-internal:$project.version"
   implementation "io.servicetalk:servicetalk-transport-netty:$project.version"

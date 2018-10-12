@@ -16,18 +16,18 @@
 package io.servicetalk.redis.netty;
 
 import io.servicetalk.buffer.api.Buffer;
+import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.partition.PartitionAttributes;
 import io.servicetalk.client.api.partition.PartitionAttributes.Key;
 import io.servicetalk.client.api.partition.PartitionAttributesBuilder;
-import io.servicetalk.client.api.partition.PartitionedEvent;
+import io.servicetalk.client.api.partition.PartitionedServiceDiscovererEvent;
 import io.servicetalk.client.internal.partition.DefaultPartitionAttributesBuilder;
 import io.servicetalk.concurrent.api.PublisherRule;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
-import io.servicetalk.loadbalancer.RoundRobinLoadBalancer;
 import io.servicetalk.redis.api.PartitionedRedisClient;
 import io.servicetalk.redis.api.RedisData;
 import io.servicetalk.redis.api.RedisPartitionAttributesBuilder;
-import io.servicetalk.redis.api.RedisProtocolSupport;
+import io.servicetalk.redis.api.RedisProtocolSupport.Command;
 import io.servicetalk.transport.api.DefaultExecutionContext;
 import io.servicetalk.transport.netty.internal.NettyIoExecutor;
 
@@ -41,7 +41,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
-import java.util.regex.Pattern;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
@@ -55,18 +54,22 @@ import static io.servicetalk.transport.netty.NettyIoExecutors.createIoExecutor;
 import static io.servicetalk.transport.netty.internal.NettyIoExecutors.toNettyIoExecutor;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.time.Duration.ofSeconds;
-import static java.util.Comparator.comparingInt;
+import static java.util.regex.Pattern.compile;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.isEmptyOrNullString;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assume.assumeThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public abstract class AbstractPartitionedRedisClientTest {
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
     @Rule
-    public final PublisherRule<PartitionedEvent<InetSocketAddress>> serviceDiscoveryPublisher = new PublisherRule<>();
+    public final PublisherRule<PartitionedServiceDiscovererEvent<InetSocketAddress>> serviceDiscoveryPublisher =
+            new PublisherRule<>();
 
     private static final Key<Boolean> MASTER_KEY = Key.newKeyWithDebugToString("master");
     private static final Key<Integer> SHARD_KEY = Key.newKeyWithDebugToString("shard");
@@ -85,11 +88,12 @@ public abstract class AbstractPartitionedRedisClientTest {
 
     private NettyIoExecutor ioExecutor;
     private static final String redisPortString = System.getenv("REDIS_PORT");
-    private static final int redisPort = redisPortString == null || redisPortString.isEmpty() ? -1 : Integer.parseInt(redisPortString);
+    private static final int redisPort = redisPortString == null || redisPortString.isEmpty() ? -1 :
+            Integer.parseInt(redisPortString);
     private static final String redisHost = System.getenv().getOrDefault("REDIS_HOST", "localhost");
     @Nullable
     protected PartitionedRedisClient client;
-    private Function<RedisProtocolSupport.Command, RedisPartitionAttributesBuilder> partitionAttributesBuilderFactory;
+    private Function<Command, RedisPartitionAttributesBuilder> partitionAttributesBuilderFactory;
 
     @Before
     public void startClient() throws Exception {
@@ -130,25 +134,31 @@ public abstract class AbstractPartitionedRedisClientTest {
                 }
             };
         };
-        client = new DefaultPartitionedRedisClientBuilder<InetSocketAddress>((eventPublisher, connectionFactory) ->
-                new RoundRobinLoadBalancer<>(eventPublisher, connectionFactory, comparingInt(Object::hashCode)),
-                partitionAttributesBuilderFactory)
+
+        @SuppressWarnings("unchecked")
+        ServiceDiscoverer<String, InetSocketAddress, PartitionedServiceDiscovererEvent<InetSocketAddress>> sd =
+                (ServiceDiscoverer<String, InetSocketAddress, PartitionedServiceDiscovererEvent<InetSocketAddress>>)
+                        mock(ServiceDiscoverer.class);
+        when(sd.discover(any())).thenReturn(serviceDiscoveryPublisher.getPublisher());
+        client = RedisClients.forPartitionedAddress(sd, "ignored", partitionAttributesBuilderFactory)
                 .maxPipelinedRequests(10)
                 .pingPeriod(ofSeconds(1))
-                .build(new DefaultExecutionContext(DEFAULT_ALLOCATOR, ioExecutor, immediate()),
-                        serviceDiscoveryPublisher.getPublisher());
+                .executionContext(new DefaultExecutionContext(DEFAULT_ALLOCATOR, ioExecutor, immediate()))
+                .build();
 
         sendHost1ServiceDiscoveryEvent(true);
 
         PartitionAttributesBuilder partitionAttributesBuilder = new DefaultPartitionAttributesBuilder(1);
         partitionAttributesBuilder.add(MASTER_KEY, true);
         final String serverInfo = awaitIndefinitely(
-                client.request(partitionAttributesBuilder.build(), newRequest(INFO, new RedisData.CompleteBulkString(buf("SERVER"))))
+                client.request(partitionAttributesBuilder.build(), newRequest(INFO,
+                        new RedisData.CompleteBulkString(buf("SERVER"))))
                         .filter(d -> d instanceof RedisData.BulkStringChunk)
                         .reduce(StringBuilder::new, (sb, d) -> sb.append(d.getBufferValue().toString(US_ASCII))))
                 .toString();
 
-        final java.util.regex.Matcher versionMatcher = Pattern.compile("(?s).*redis_version:([\\d]+)\\.([\\d]+)\\.([\\d]+).*").matcher(serverInfo);
+        final java.util.regex.Matcher versionMatcher = compile("(?s).*redis_version:([\\d]+)\\.([\\d]+)\\.([\\d]+).*")
+                .matcher(serverInfo);
         assertThat(versionMatcher.matches(), is(true));
     }
 
@@ -162,8 +172,7 @@ public abstract class AbstractPartitionedRedisClientTest {
         awaitIndefinitely(client.closeAsync().andThen(ioExecutor.closeAsync()));
     }
 
-    public Function<RedisProtocolSupport.Command,
-            RedisPartitionAttributesBuilder> getPartitionAttributesBuilderFactory() {
+    public Function<Command, RedisPartitionAttributesBuilder> getPartitionAttributesBuilderFactory() {
         return partitionAttributesBuilderFactory;
     }
 
@@ -182,7 +191,7 @@ public abstract class AbstractPartitionedRedisClientTest {
     }
 
     void sendServiceDiscoveryEvent(boolean available, PartitionAttributes partitionAddress) {
-        serviceDiscoveryPublisher.sendItems(new PartitionedEvent<InetSocketAddress>() {
+        serviceDiscoveryPublisher.sendItems(new PartitionedServiceDiscovererEvent<InetSocketAddress>() {
             private final InetSocketAddress address = new InetSocketAddress(redisHost, redisPort);
 
             @Override

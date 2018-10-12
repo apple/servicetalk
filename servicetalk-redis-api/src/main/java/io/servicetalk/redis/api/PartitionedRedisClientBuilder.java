@@ -15,25 +15,205 @@
  */
 package io.servicetalk.redis.api;
 
+import io.servicetalk.client.api.ConnectionFactory;
+import io.servicetalk.client.api.ConnectionFactoryFilter;
+import io.servicetalk.client.api.LoadBalancer;
+import io.servicetalk.client.api.LoadBalancerFactory;
 import io.servicetalk.client.api.ServiceDiscoverer;
-import io.servicetalk.client.api.partition.PartitionedEvent;
-import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.client.api.ServiceDiscovererEvent;
+import io.servicetalk.client.api.partition.PartitionMapFactory;
+import io.servicetalk.client.api.partition.PartitionedServiceDiscovererEvent;
 import io.servicetalk.transport.api.ExecutionContext;
+import io.servicetalk.transport.api.SslConfig;
+
+import org.reactivestreams.Subscriber;
+
+import java.io.InputStream;
+import java.net.SocketOption;
+import java.time.Duration;
+import java.util.function.Function;
+import javax.annotation.Nullable;
 
 /**
  * A builder of {@link PartitionedRedisClient} objects.
- * @param <ResolvedAddress> An resolved address that can be used to establish new {@link RedisConnection}s.
+ *
+ * @param <U> the type of address before resolution (unresolved address)
+ * @param <R> the type of address after resolution (resolved address)
  */
-public interface PartitionedRedisClientBuilder<ResolvedAddress> {
+public interface PartitionedRedisClientBuilder<U, R> {
+
+    /**
+     * Sets an {@link ExecutionContext} for all clients created from this {@link RedisClientBuilder}.
+     *
+     * @param context {@link ExecutionContext} to use.
+     * @return {@code this}.
+     */
+    PartitionedRedisClientBuilder<U, R> executionContext(ExecutionContext context);
+
+    /**
+     * Enable SSL/TLS using the provided {@link SslConfig}. To disable SSL pass in {@code null}.
+     *
+     * @param config the {@link SslConfig}.
+     * @return {@code this}.
+     * @throws IllegalStateException if accessing the cert/key throws when {@link InputStream#close()} is called.
+     */
+    PartitionedRedisClientBuilder<U, R> sslConfig(@Nullable SslConfig config);
+
+    /**
+     * Add a {@link SocketOption} for all connections created by this builder.
+     *
+     * @param <T> the type of the value.
+     * @param option the option to apply.
+     * @param value the value.
+     * @return {@code this}.
+     */
+    <T> PartitionedRedisClientBuilder<U, R> socketOption(SocketOption<T> option, T value);
+
+    /**
+     * Enable wire-logging for connections created by this builder. All wire events will be logged at trace level.
+     *
+     * @param loggerName The name of the logger to log wire events.
+     * @return {@code this}.
+     */
+    PartitionedRedisClientBuilder<U, R> enableWireLogging(String loggerName);
+
+    /**
+     * Disable previously configured wire-logging for connections created by this builder.
+     * If wire-logging has not been configured before, this method has no effect.
+     *
+     * @return {@code this}.
+     * @see #enableWireLogging(String)
+     */
+    PartitionedRedisClientBuilder<U, R> disableWireLogging();
+
+    /**
+     * Sets maximum requests that can be pipelined on a connection created by this builder.
+     *
+     * @param maxPipelinedRequests Maximum number of pipelined requests per {@link RedisConnection}.
+     * @return {@code this}.
+     */
+    PartitionedRedisClientBuilder<U, R> maxPipelinedRequests(int maxPipelinedRequests);
+
+    /**
+     * Sets the idle timeout for connections created by this builder.
+     *
+     * @param idleConnectionTimeout the timeout {@link Duration} or {@code null} if no timeout configured.
+     * @return {@code this}.
+     */
+    PartitionedRedisClientBuilder<U, R> idleConnectionTimeout(@Nullable Duration idleConnectionTimeout);
+
+    /**
+     * Sets the ping period to keep alive connections created by this builder.
+     *
+     * @param pingPeriod the {@link Duration} between keep-alive pings or {@code null} to disable pings.
+     * @return {@code this}.
+     */
+    PartitionedRedisClientBuilder<U, R> pingPeriod(@Nullable Duration pingPeriod);
+
+    /**
+     * Sets the maximum amount of {@link ServiceDiscovererEvent} objects that will be queued for each partition.
+     * <p>It is assumed that the {@link Subscriber}s will process events in a timely manner (typically synchronously)
+     * so this typically doesn't need to be very large.
+     *
+     * @param serviceDiscoveryMaxQueueSize the maximum amount of {@link ServiceDiscovererEvent} objects that will be
+     * queued for each partition.
+     * @return {@code this}.
+     */
+    PartitionedRedisClientBuilder<U, R> serviceDiscoveryMaxQueueSize(int serviceDiscoveryMaxQueueSize);
+
+    /**
+     * Defines a filter {@link Function} to decorate {@link RedisClient} used by this builder.
+     * <p>
+     * Filtering allows you to wrap a {@link RedisClient} and modify behavior during request/response processing.
+     * Some potential candidates for filtering include logging, metrics, and decorating responses.
+     *
+     * @param factory {@link Function} to filter the used {@link RedisClient}.
+     * @return {@code this}.
+     */
+    PartitionedRedisClientBuilder<U, R> appendClientFilter(RedisClientFilterFactory factory);
+
+    /**
+     * Defines a filter {@link Function} to decorate {@link RedisConnection} used by this builder.
+     * <p>
+     * Filtering allows you to wrap a {@link RedisConnection} and modify behavior during request/response processing.
+     * Some potential candidates for filtering include logging, metrics, and decorating responses.
+     *
+     * @param factory {@link RedisConnectionFilterFactory} to filter the used {@link RedisConnection}.
+     * @return {@code this}.
+     */
+    PartitionedRedisClientBuilder<U, R> appendConnectionFilter(RedisConnectionFilterFactory factory);
+
+    /**
+     * Append the filter to the chain of filters used to decorate the {@link ConnectionFactory} used by this
+     * builder.
+     * <p>
+     * Filtering allows you to wrap a {@link ConnectionFactory} and modify behavior of
+     * {@link ConnectionFactory#newConnection(Object)}.
+     * Some potential candidates for filtering include logging and metrics.
+     * <p>
+     * The order of execution of these filters are in order of append. If 3 filters are added as follows:
+     * <pre>
+     *     builder.append(filter1).append(filter2).append(filter3)
+     * </pre>
+     * Calling {@link ConnectionFactory} wrapped by this filter chain, the order of invocation of these filters will be:
+     * <pre>
+     *     filter1 =&gt; filter2 =&gt; filter3 =&gt; original connection factory
+     * </pre>
+     * @param factory {@link ConnectionFactoryFilter} to use.
+     * @return {@code this}
+     */
+    PartitionedRedisClientBuilder<U, R> appendConnectionFactoryFilter(
+            ConnectionFactoryFilter<R, RedisConnection> factory);
+
+    /**
+     * Set the filter factory that is used to decorate {@link PartitionedRedisClient} created by this builder.
+     * <p>
+     * Note this method will be used to decorate the result of {@link #build()} before it is returned to the user.
+     *
+     * @param factory {@link PartitionedRedisClientFilterFactory} to filter the used
+     * {@link PartitionedRedisClient}.
+     * @return {@code this}.
+     */
+    PartitionedRedisClientBuilder<U, R> appendPartitionedFilter(PartitionedRedisClientFilterFactory factory);
+
+    /**
+     * Disables automatically delaying {@link RedisRequest}s until the {@link LoadBalancer} is ready.
+     *
+     * @return {@code this}
+     */
+    PartitionedRedisClientBuilder<U, R> disableWaitForLoadBalancer();
+
+    /**
+     * Set a {@link ServiceDiscoverer} to resolve addresses of remote servers to connect to.
+     * @param serviceDiscoverer The {@link ServiceDiscoverer} to resolve addresses of remote servers to connect to.
+     * Lifecycle of the provided {@link ServiceDiscoverer} is managed externally and it should be
+     * {@link ServiceDiscoverer#closeAsync() closed} after all built {@link RedisClient}s will be closed and this
+     * {@link ServiceDiscoverer} is no longer needed.
+     * @return {@code this}.
+     */
+    PartitionedRedisClientBuilder<U, R> serviceDiscoverer(
+            ServiceDiscoverer<U, R, ? extends PartitionedServiceDiscovererEvent<R>> serviceDiscoverer);
+
+    /**
+     * Set a {@link LoadBalancerFactory} to generate {@link LoadBalancer} objects.
+     *
+     * @param factory The {@link LoadBalancerFactory} which generates {@link LoadBalancer} objects.
+     * @return {@code this}.
+     */
+    PartitionedRedisClientBuilder<U, R> loadBalancerFactory(LoadBalancerFactory<R, RedisConnection> factory);
+
+    /**
+     * Set {@link PartitionMapFactory} to use by all {@link PartitionedRedisClient}s created by this builder.
+     *
+     * @param partitionMapFactory {@link PartitionMapFactory} to use.
+     * @return {@code this}.
+     */
+    PartitionedRedisClientBuilder<U, R> partitionMapFactory(PartitionMapFactory partitionMapFactory);
 
     /**
      * Build a new {@link PartitionedRedisClient}.
      *
-     * @param executionContext {@link ExecutionContext} used by the returned {@link PartitionedRedisClient}.
-     * @param addressEventStream A stream of events (typically from a {@link ServiceDiscoverer#discover(Object)}) that
-     * provides the addresses used to create new {@link RedisConnection}s.
      * @return A new {@link PartitionedRedisClient}.
      */
-    PartitionedRedisClient build(ExecutionContext executionContext,
-                                 Publisher<PartitionedEvent<ResolvedAddress>> addressEventStream);
+    PartitionedRedisClient build();
 }
