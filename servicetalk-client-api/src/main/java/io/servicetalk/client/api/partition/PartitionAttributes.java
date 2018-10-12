@@ -24,10 +24,10 @@ import static java.lang.String.valueOf;
 import static java.util.Objects.requireNonNull;
 
 /**
- * Provide a way to describe a partition using a collection of of attributes. Typically only a single type of any particular
- * {@link Key} exists in each {@link PartitionAttributes}. For example:
+ * Provide a way to describe a partition using a collection of of attributes. Typically only a single type of any
+ * particular {@link Key} exists in each {@link PartitionAttributes}. For example:
  * <pre>
- * PartitionAttributes = { [Key(shard) = "shard X"], [Key(data center) = "data center X"], [Key(is master) = "false/true"] }
+ * { [Key(shard) = "shard X"], [Key(data center) = "data center X"], [Key(is master) = "false/true"] }
  * </pre>
  * This construct allows for the attributes to partially specify a partition and preform "wild card" type matching.
  */
@@ -53,15 +53,18 @@ public interface PartitionAttributes {
         }
 
         /**
-         * Create a new {@link Key} which has a {@link String} used only in the {@link #toString()} method for debugging visibility.
+         * Create a new {@link Key} which has a {@link String} used only in the {@link #toString()} method for debugging
+         * visibility.
          * <p>
          * Comparison between {@link Key} objects should be assumed to be on an instance basis.
-         * In general {@code newKeyWithDebugToString(str) != newKeyWithDebugToString(str)}.
-         * @param toString The value to use in {@link #toString()}. This <strong>WILL NOT</strong> be used in comparisons between {@link Key} objects.
+         * In general {@code newKey(str) != newKey(str)}.
+         * @param toString The value to use in {@link #toString()}. This <strong>WILL NOT</strong> be used in
+         * comparisons between {@link Key} objects.
          * @param <T> The value type associated with the {@link Key}.
-         * @return a new {@link Key} which has a {@link String} used only in the {@link #toString()} method for debugging visibility.
+         * @return a new {@link Key} which has a {@link String} used only in the {@link #toString()} method for
+         * debugging visibility.
          */
-        public static <T> Key<T> newKeyWithDebugToString(String toString) {
+        public static <T> Key<T> newKey(String toString) {
             return new Key<>(toString);
         }
 

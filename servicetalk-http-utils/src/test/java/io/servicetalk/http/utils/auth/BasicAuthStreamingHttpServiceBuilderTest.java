@@ -41,7 +41,7 @@ import org.junit.rules.Timeout;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
-import static io.servicetalk.concurrent.api.AsyncContextMap.Key.newKeyWithDebugToString;
+import static io.servicetalk.concurrent.api.AsyncContextMap.Key.newKey;
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Publisher.just;
 import static io.servicetalk.concurrent.api.Single.error;
@@ -72,7 +72,7 @@ import static org.mockito.Mockito.when;
 public class BasicAuthStreamingHttpServiceBuilderTest {
 
     private static final CharSequence USER_ID_HEADER_NAME = newAsciiString("test-userid");
-    private static final Key<BasicUserInfo> USER_INFO_KEY = newKeyWithDebugToString("basicUserInfo");
+    private static final Key<BasicUserInfo> USER_INFO_KEY = newKey("basicUserInfo");
     private static final class BasicUserInfo {
 
         private final String userId;

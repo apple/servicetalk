@@ -33,11 +33,11 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 public class PowerSetPartitionMapTest {
-    private static final Key<Integer> DC_ID = Key.newKeyWithDebugToString("dc");
-    private static final Key<String> APP_ID = Key.newKeyWithDebugToString("app");
-    private static final Key<Integer> SHARD_ID = Key.newKeyWithDebugToString("shard");
-    private static final Key<Boolean> IS_MASTER = Key.newKeyWithDebugToString("master");
-    private static final Key<Boolean> EXTRA = Key.newKeyWithDebugToString("extra");
+    private static final Key<Integer> DC_ID = Key.newKey("dc");
+    private static final Key<String> APP_ID = Key.newKey("app");
+    private static final Key<Integer> SHARD_ID = Key.newKey("shard");
+    private static final Key<Boolean> IS_MASTER = Key.newKey("master");
+    private static final Key<Boolean> EXTRA = Key.newKey("extra");
     private static final ListenableAsyncCloseable VALUE = new ListenableAsyncCloseable() {
         private final CompletableProcessor close = new CompletableProcessor();
 

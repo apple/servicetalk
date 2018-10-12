@@ -37,7 +37,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static io.servicetalk.concurrent.api.AsyncContextMap.Key.newKeyWithDebugToString;
+import static io.servicetalk.concurrent.api.AsyncContextMap.Key.newKey;
 import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
 import static io.servicetalk.concurrent.api.Single.fromStage;
 import static java.lang.Thread.NORM_PRIORITY;
@@ -45,7 +45,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public class CompletionStageAsyncContextTest {
-    private static final Key<Integer> K1 = newKeyWithDebugToString("k1");
+    private static final Key<Integer> K1 = newKey("k1");
     @Rule
     public final ExecutorRule executorRule = new ExecutorRule(() ->
             newCachedThreadExecutor(new DefaultThreadFactory(ST_THREAD_PREFIX_NAME, true, NORM_PRIORITY)));

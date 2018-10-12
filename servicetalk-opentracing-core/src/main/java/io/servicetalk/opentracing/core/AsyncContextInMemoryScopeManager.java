@@ -24,13 +24,13 @@ import io.servicetalk.opentracing.core.internal.ListenableInMemoryScopeManager;
 
 import javax.annotation.Nullable;
 
-import static io.servicetalk.concurrent.api.AsyncContextMap.Key.newKeyWithDebugToString;
+import static io.servicetalk.concurrent.api.AsyncContextMap.Key.newKey;
 
 /**
  * A {@link ListenableInMemoryScopeManager} that uses {@link AsyncContext} as the backing storage.
  */
 public final class AsyncContextInMemoryScopeManager extends AbstractListenableInMemoryScopeManager {
-    private static final Key<InMemoryScope> SCOPE_KEY = newKeyWithDebugToString("opentracing");
+    private static final Key<InMemoryScope> SCOPE_KEY = newKey("opentracing");
     public static final ListenableInMemoryScopeManager SCOPE_MANAGER = new AsyncContextInMemoryScopeManager();
 
     /**

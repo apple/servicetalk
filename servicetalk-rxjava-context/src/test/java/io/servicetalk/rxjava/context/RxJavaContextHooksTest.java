@@ -53,8 +53,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 
 public class RxJavaContextHooksTest {
-    private static final Key<String> K1 = Key.newKeyWithDebugToString("k1");
-    private static final Key<String> K2 = Key.newKeyWithDebugToString("k2");
+    private static final Key<String> K1 = Key.newKey("k1");
+    private static final Key<String> K2 = Key.newKey("k2");
 
     private static ScheduledExecutorService executor;
     private static Observable<String> sharedObservable;

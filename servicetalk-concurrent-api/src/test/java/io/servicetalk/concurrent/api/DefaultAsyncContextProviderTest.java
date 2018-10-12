@@ -68,14 +68,14 @@ public class DefaultAsyncContextProviderTest {
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
 
-    private static final Key<String> K1 = Key.newKeyWithDebugToString("k1");
-    private static final Key<String> K2 = Key.newKeyWithDebugToString("k2");
-    private static final Key<String> K3 = Key.newKeyWithDebugToString("k3");
-    private static final Key<String> K4 = Key.newKeyWithDebugToString("k4");
-    private static final Key<String> K5 = Key.newKeyWithDebugToString("k5");
-    private static final Key<String> K6 = Key.newKeyWithDebugToString("k6");
-    private static final Key<String> K7 = Key.newKeyWithDebugToString("k7");
-    private static final Key<String> K8 = Key.newKeyWithDebugToString("k8");
+    private static final Key<String> K1 = Key.newKey("k1");
+    private static final Key<String> K2 = Key.newKey("k2");
+    private static final Key<String> K3 = Key.newKey("k3");
+    private static final Key<String> K4 = Key.newKey("k4");
+    private static final Key<String> K5 = Key.newKey("k5");
+    private static final Key<String> K6 = Key.newKey("k6");
+    private static final Key<String> K7 = Key.newKey("k7");
+    private static final Key<String> K8 = Key.newKey("k8");
 
     private static ScheduledExecutorService executor;
 
