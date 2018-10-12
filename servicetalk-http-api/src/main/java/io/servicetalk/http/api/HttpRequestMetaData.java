@@ -160,28 +160,26 @@ public interface HttpRequestMetaData extends HttpMetaData {
     HttpRequestMetaData appendPathSegments(String... segments);
 
     /**
-     * Parses the <a href="https://tools.ietf.org/html/rfc3986#section-3.4">query component</a> of the request target,
-     * returning an {@link HttpQuery} that may be used for reading and manipulating the query component. Modifications
-     * to the {@link HttpQuery} will only be reflected in the request after {@link HttpQuery#encodeToRequestTarget()} is
-     * called. If the underlying request is modified, the returned {@link HttpQuery} may become stale.
+     * The <a href="https://tools.ietf.org/html/rfc3986#section-3.4">query component</a> of the request target,
+     * returning an {@link HttpQuery} that may be used for reading and manipulating the query component.
      *
      * @return an {@link HttpQuery} that reflects the current state of the query component.
      */
-    HttpQuery parseQuery();
+    HttpQuery query();
 
     /**
      * Adds a new query parameter with the specified {@code key} and {@code value}, which will be
      * <a href="https://tools.ietf.org/html/rfc3986#section-2.1">percent-encoded</a> if needed.
      *
      * Each add <strong>MAY</strong> parse the query string and hence bulk modifications may be more efficient
-     * using {@link #parseQuery()}.
+     * using {@link #query()}.
      *
      * @param key the query parameter key.
      * @param value the query parameter value.
      * @return {@code this}.
      */
     default HttpRequestMetaData addQueryParameter(String key, String value) {
-        parseQuery().add(key, value).encodeToRequestTarget();
+        query().add(key, value);
         return this;
     }
 
@@ -191,14 +189,14 @@ public interface HttpRequestMetaData extends HttpMetaData {
      * Any existing query parameters with the same key are overwritten.
      *
      * Each add <strong>MAY</strong> parse the query string and hence bulk modifications may be more efficient
-     * using {@link #parseQuery()}.
+     * using {@link #query()}.
      *
      * @param key the query parameter key.
      * @param value the query parameter value.
      * @return {@code this}.
      */
     default HttpRequestMetaData setQueryParameter(String key, String value) {
-        parseQuery().set(key, value).encodeToRequestTarget();
+        query().set(key, value);
         return this;
     }
 

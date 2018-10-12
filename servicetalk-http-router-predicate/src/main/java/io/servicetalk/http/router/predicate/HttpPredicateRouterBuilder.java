@@ -111,7 +111,7 @@ public final class HttpPredicateRouterBuilder implements RouteStarter {
     @Override
     public StringMultiValueMatcher whenQueryParam(final String name) {
         requireNonNull(name);
-        return new StringMultiValueMatcherImpl(req -> req.parseQuery().values(name));
+        return new StringMultiValueMatcherImpl(req -> req.query().values(name));
     }
 
     @Override

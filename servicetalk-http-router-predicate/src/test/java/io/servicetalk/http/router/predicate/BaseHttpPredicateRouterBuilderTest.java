@@ -86,7 +86,7 @@ public abstract class BaseHttpPredicateRouterBuilderTest {
         when(executionCtx.executor()).thenReturn(immediate());
         when(request.version()).thenReturn(HTTP_1_1);
         when(request.headers()).thenReturn(headers);
-        when(request.parseQuery()).thenReturn(query);
+        when(request.query()).thenReturn(query);
         when(factory.newResponse(any(HttpResponseStatus.class))).thenAnswer(new Answer<StreamingHttpResponse>() {
             @Override
             public StreamingHttpResponse answer(final InvocationOnMock invocation) throws Throwable {

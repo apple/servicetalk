@@ -175,7 +175,7 @@ class DefaultHttpRequestMetaData extends AbstractHttpMetaData implements HttpReq
     }
 
     @Override
-    public final HttpQuery parseQuery() {
+    public final HttpQuery query() {
         return new DefaultHttpQuery(lazyParseQueryString(), this::setQueryParams);
     }
 

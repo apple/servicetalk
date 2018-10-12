@@ -131,7 +131,6 @@ public class DefaultHttpQueryTest {
         params.put("abc", newList("def"));
         final DefaultHttpQuery query = new DefaultHttpQuery(params, queryParamsUpdater);
         query.add("abc", newList("new1", "new2"));
-        query.encodeToRequestTarget();
 
         assertEquals(asList("def", "new1", "new2"), iteratorAsList(query.values("abc")));
         assertEquals(asList("bar", "baz"), iteratorAsList(query.values("foo")));
