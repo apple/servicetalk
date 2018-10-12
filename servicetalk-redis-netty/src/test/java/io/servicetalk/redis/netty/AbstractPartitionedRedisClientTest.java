@@ -71,8 +71,8 @@ public abstract class AbstractPartitionedRedisClientTest {
     public final PublisherRule<PartitionedServiceDiscovererEvent<InetSocketAddress>> serviceDiscoveryPublisher =
             new PublisherRule<>();
 
-    private static final Key<Boolean> MASTER_KEY = Key.newKeyWithDebugToString("master");
-    private static final Key<Integer> SHARD_KEY = Key.newKeyWithDebugToString("shard");
+    private static final Key<Boolean> MASTER_KEY = Key.newKey("master");
+    private static final Key<Integer> SHARD_KEY = Key.newKey("shard");
     private static final Map<String, Integer> keyToShardMap;
 
     static {

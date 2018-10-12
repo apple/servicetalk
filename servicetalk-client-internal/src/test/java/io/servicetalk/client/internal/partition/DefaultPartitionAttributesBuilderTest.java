@@ -29,11 +29,11 @@ import static org.junit.Assert.assertSame;
 import static org.junit.Assert.fail;
 
 public class DefaultPartitionAttributesBuilderTest {
-    private static final Key<String> SHARD_KEY = Key.newKeyWithDebugToString("shard");
-    private static final Key<String> DC_KEY = Key.newKeyWithDebugToString("dc");
-    private static final Key<Boolean> MASTER_KEY = Key.newKeyWithDebugToString("master");
-    private static final Key<Integer> OTHER_KEY = Key.newKeyWithDebugToString("other");
-    private static final Key<Integer> OTHER_KEY2 = Key.newKeyWithDebugToString("other2");
+    private static final Key<String> SHARD_KEY = Key.newKey("shard");
+    private static final Key<String> DC_KEY = Key.newKey("dc");
+    private static final Key<Boolean> MASTER_KEY = Key.newKey("master");
+    private static final Key<Integer> OTHER_KEY = Key.newKey("other");
+    private static final Key<Integer> OTHER_KEY2 = Key.newKey("other2");
     private static final String DEFAULT_SHARD = "myshard";
     private static final String DEFAULT_DC = "mydc";
 

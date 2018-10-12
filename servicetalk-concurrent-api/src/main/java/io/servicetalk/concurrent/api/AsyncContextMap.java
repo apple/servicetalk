@@ -48,14 +48,14 @@ public interface AsyncContextMap {
          * visibility.
          * <p>
          * Comparison between {@link Key} objects should be assumed to be on an instance basis.
-         * In general {@code newKeyWithDebugToString(str) != newKeyWithDebugToString(str)}.
+         * In general {@code newKey(str) != newKey(str)}.
          * @param toString The value to use in {@link #toString()}. This <strong>WILL NOT</strong> be used in
          * comparisons between {@link Key} objects.
          * @param <T> The value type associated with the {@link Key}.
          * @return a new {@link Key} which has a {@link String} used only in the {@link #toString()} method for
          * debugging visibility.
          */
-        public static <T> Key<T> newKeyWithDebugToString(String toString) {
+        public static <T> Key<T> newKey(String toString) {
             return new Key<>(toString);
         }
 

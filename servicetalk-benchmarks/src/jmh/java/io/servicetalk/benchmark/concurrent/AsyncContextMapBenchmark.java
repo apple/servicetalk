@@ -36,7 +36,7 @@ import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
-import static io.servicetalk.concurrent.api.AsyncContextMap.Key.newKeyWithDebugToString;
+import static io.servicetalk.concurrent.api.AsyncContextMap.Key.newKey;
 import static java.util.Collections.unmodifiableSet;
 
 @Fork(2)
@@ -44,14 +44,14 @@ import static java.util.Collections.unmodifiableSet;
 @Warmup(iterations = 10, time = 2)
 @Measurement(iterations = 10, time = 2)
 public class AsyncContextMapBenchmark {
-    private static final Key<String> K1 = newKeyWithDebugToString("k1");
-    private static final Key<String> K2 = newKeyWithDebugToString("k2");
-    private static final Key<String> K3 = newKeyWithDebugToString("k3");
-    private static final Key<String> K4 = newKeyWithDebugToString("k4");
-    private static final Key<String> K5 = newKeyWithDebugToString("k5");
-    private static final Key<String> K6 = newKeyWithDebugToString("k6");
-    private static final Key<String> K7 = newKeyWithDebugToString("k7");
-    private static final Key<String> K8 = newKeyWithDebugToString("k8");
+    private static final Key<String> K1 = newKey("k1");
+    private static final Key<String> K2 = newKey("k2");
+    private static final Key<String> K3 = newKey("k3");
+    private static final Key<String> K4 = newKey("k4");
+    private static final Key<String> K5 = newKey("k5");
+    private static final Key<String> K6 = newKey("k6");
+    private static final Key<String> K7 = newKey("k7");
+    private static final Key<String> K8 = newKey("k8");
 
     @Setup(Level.Invocation)
     public final void setup() {

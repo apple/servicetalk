@@ -38,7 +38,7 @@ import static java.util.Collections.unmodifiableMap;
  * A {@link ThreadContext} that provides storage for MDC based upon {@link AsyncContext}.
  */
 public class ServiceTalkThreadContextMap implements ReadOnlyThreadContextMap, CleanableThreadContextMap {
-    private static final Key<Map<String, String>> key = Key.newKeyWithDebugToString("log4j2Mdc");
+    private static final Key<Map<String, String>> key = Key.newKey("log4j2Mdc");
 
     @Override
     public final void put(String key, String value) {
