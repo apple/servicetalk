@@ -187,4 +187,52 @@ public interface StreamingHttpRequest extends HttpRequestMetaData {
 
     @Override
     StreamingHttpRequest requestTarget(String requestTarget);
+
+    @Override
+    default StreamingHttpRequest addHeader(final CharSequence name, final CharSequence value) {
+        HttpRequestMetaData.super.addHeader(name, value);
+        return this;
+    }
+
+    @Override
+    default StreamingHttpRequest addHeaders(final HttpHeaders headers) {
+        HttpRequestMetaData.super.addHeaders(headers);
+        return this;
+    }
+
+    @Override
+    default StreamingHttpRequest setHeader(final CharSequence name, final CharSequence value) {
+        HttpRequestMetaData.super.setHeader(name, value);
+        return this;
+    }
+
+    @Override
+    default StreamingHttpRequest setHeaders(final HttpHeaders headers) {
+        HttpRequestMetaData.super.setHeaders(headers);
+        return this;
+    }
+
+    @Override
+    default StreamingHttpRequest addCookie(final HttpCookie cookie) {
+        HttpRequestMetaData.super.addCookie(cookie);
+        return this;
+    }
+
+    @Override
+    default StreamingHttpRequest addCookie(final CharSequence name, final CharSequence value) {
+        HttpRequestMetaData.super.addCookie(name, value);
+        return this;
+    }
+
+    @Override
+    default StreamingHttpRequest addSetCookie(final HttpCookie cookie) {
+        HttpRequestMetaData.super.addSetCookie(cookie);
+        return this;
+    }
+
+    @Override
+    default StreamingHttpRequest addSetCookie(final CharSequence name, final CharSequence value) {
+        HttpRequestMetaData.super.addSetCookie(name, value);
+        return this;
+    }
 }

@@ -37,6 +37,7 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
 public abstract class AbstractHttpHeadersTest {
@@ -606,10 +607,13 @@ public abstract class AbstractHttpHeadersTest {
         assertEquals(headers1, expected);
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testAddSelf() {
         final HttpHeaders headers = newHeaders();
-        headers.add(headers);
+        headers.add("name", "value");
+        assertEquals(1, headers.size());
+        assertSame(headers, headers.add(headers));
+        assertEquals(1, headers.size());
     }
 
     @Test

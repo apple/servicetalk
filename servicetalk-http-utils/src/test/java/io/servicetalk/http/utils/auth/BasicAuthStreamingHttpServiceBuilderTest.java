@@ -274,20 +274,18 @@ public class BasicAuthStreamingHttpServiceBuilderTest {
 
     @Test
     public void authenticatedWithSecondHeader() throws Exception {
-        StreamingHttpRequest request = reqRespFactory.get("/path");
-        request.headers().add(AUTHORIZATION, "Other token1");
-        request.headers().add(AUTHORIZATION, "Basic " + base64("userId:password"));
-        request.headers().add(AUTHORIZATION, "Some token2");
-        testAuthenticated(request);
+        testAuthenticated(reqRespFactory.get("/path")
+                .addHeader(AUTHORIZATION, "Other token1")
+                .addHeader(AUTHORIZATION, "Basic " + base64("userId:password"))
+                .addHeader(AUTHORIZATION, "Some token2"));
     }
 
     @Test
     public void authenticatedWithSecondHeaderForProxy() throws Exception {
-        StreamingHttpRequest request = reqRespFactory.get("/path");
-        request.headers().add(PROXY_AUTHORIZATION, "Other token1");
-        request.headers().add(PROXY_AUTHORIZATION, "Basic " + base64("userId:password"));
-        request.headers().add(PROXY_AUTHORIZATION, "Some token2");
-        testAuthenticatedForProxy(request);
+        testAuthenticatedForProxy(reqRespFactory.get("/path")
+                .addHeader(PROXY_AUTHORIZATION, "Other token1")
+                .addHeader(PROXY_AUTHORIZATION, "Basic " + base64("userId:password"))
+                .addHeader(PROXY_AUTHORIZATION, "Some token2"));
     }
 
     @Test

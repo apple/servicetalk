@@ -591,7 +591,7 @@ final class DefaultHttpHeaders extends MultiMap<CharSequence, CharSequence> impl
     @Override
     public HttpHeaders add(final HttpHeaders headers) {
         if (headers == this) {
-            throw new IllegalArgumentException("can't add to itself");
+            return this;
         }
         if (headers instanceof MultiMap) {
             putAll((MultiMap<? extends CharSequence, ? extends CharSequence>) headers);

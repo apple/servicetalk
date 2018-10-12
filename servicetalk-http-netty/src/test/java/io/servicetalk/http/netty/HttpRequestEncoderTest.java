@@ -145,7 +145,7 @@ public class HttpRequestEncoderTest {
         HttpRequestMetaData request = newRequestMetaData(HTTP_1_1,
                 GET, "/some/path?foo=bar&baz=yyy", INSTANCE.newHeaders());
         try {
-            request.headers().add(" " + CONNECTION, KEEP_ALIVE);
+            request.addHeader(" " + CONNECTION, KEEP_ALIVE);
         } finally {
             assertFalse(channel.finishAndReleaseAll());
         }

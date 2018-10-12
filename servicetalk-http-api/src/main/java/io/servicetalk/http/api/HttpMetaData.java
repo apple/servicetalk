@@ -45,6 +45,111 @@ public interface HttpMetaData {
     HttpHeaders headers();
 
     /**
+     * Adds a new header with the specified {@code name} and {@code value}.
+     *
+     * @param name the name of the header.
+     * @param value the value of the header.
+     * @return {@code this}.
+     */
+    default HttpMetaData addHeader(final CharSequence name, final CharSequence value) {
+        headers().add(name, value);
+        return this;
+    }
+
+    /**
+     * Adds all header names and values of {@code headers} object.
+     *
+     * @param headers the headers to add.
+     * @return {@code this}.
+     */
+    default HttpMetaData addHeaders(final HttpHeaders headers) {
+        headers().add(headers);
+        return this;
+    }
+
+    /**
+     * Sets a header with the specified {@code name} and {@code value}. Any existing headers with the same name are
+     * overwritten.
+     *
+     * @param name the name of the header.
+     * @param value the value of the header.
+     * @return {@code this}.
+     */
+    default HttpMetaData setHeader(final CharSequence name, final CharSequence value) {
+        headers().set(name, value);
+        return this;
+    }
+
+    /**
+     * Clears the current header entries and copies all header entries of the specified {@code headers} object.
+     *
+     * @param headers the headers object which contains new values.
+     * @return {@code this}.
+     */
+    default HttpMetaData setHeaders(final HttpHeaders headers) {
+        headers().set(headers);
+        return this;
+    }
+
+    /**
+     * Adds a <a href="https://tools.ietf.org/html/rfc6265#section-4.2">cookie</a>.
+     * <p>
+     * This may result in multiple {@link HttpCookie}s with same name.
+     *
+     * @param cookie the cookie to add.
+     * @return {@code this}.
+     */
+    default HttpMetaData addCookie(final HttpCookie cookie) {
+        headers().addCookie(cookie);
+        return this;
+    }
+
+    /**
+     * Adds a <a href="https://tools.ietf.org/html/rfc6265#section-4.2">cookie</a> with the specified {@code name} and
+     * {@code value}.
+     * <p>
+     * This may result in multiple {@link HttpCookie}s with same name. Added cookie will not be wrapped, not secure, and
+     * not HTTP-only, with no path, domain, expire date and maximum age.
+     *
+     * @param name the name of the cookie.
+     * @param value the value of the cookie.
+     * @return {@code this}.
+     */
+    default HttpMetaData addCookie(final CharSequence name, final CharSequence value) {
+        headers().addCookie(name, value);
+        return this;
+    }
+
+    /**
+     * Adds a <a href="https://tools.ietf.org/html/rfc6265#section-4.1">set-cookie</a>.
+     * <p>
+     * This may result in multiple {@link HttpCookie}s with same name.
+     *
+     * @param cookie the cookie to add.
+     * @return {@code this}.
+     */
+    default HttpMetaData addSetCookie(final HttpCookie cookie) {
+        headers().addSetCookie(cookie);
+        return this;
+    }
+
+    /**
+     * Adds a <a href="https://tools.ietf.org/html/rfc6265#section-4.1">set-cookie</a> with the specified {@code name}
+     * and {@code value}.
+     * <p>
+     * This may result in multiple {@link HttpCookie}s with same name. Added cookie will not be wrapped, not secure, and
+     * not HTTP-only, with no path, domain, expire date and maximum age.
+     *
+     * @param name the name of the cookie.
+     * @param value the value of the cookie.
+     * @return {@code this}.
+     */
+    default HttpMetaData addSetCookie(final CharSequence name, final CharSequence value) {
+        headers().addSetCookie(name, value);
+        return this;
+    }
+
+    /**
      * Returns a string representation of the message. To avoid accidentally logging sensitive information,
      * implementations should not return any header or content.
      *

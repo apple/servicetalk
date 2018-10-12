@@ -214,5 +214,77 @@ public abstract class HttpClient extends HttpRequester {
 
         @Override
         UpgradableHttpResponse status(HttpResponseStatus status);
+
+        @Override
+        default UpgradableHttpResponse addHeader(final CharSequence name, final CharSequence value) {
+            HttpResponse.super.addHeader(name, value);
+            return this;
+        }
+
+        @Override
+        default UpgradableHttpResponse addHeaders(final HttpHeaders headers) {
+            HttpResponse.super.addHeaders(headers);
+            return this;
+        }
+
+        @Override
+        default UpgradableHttpResponse setHeader(final CharSequence name, final CharSequence value) {
+            HttpResponse.super.setHeader(name, value);
+            return this;
+        }
+
+        @Override
+        default UpgradableHttpResponse setHeaders(final HttpHeaders headers) {
+            HttpResponse.super.setHeaders(headers);
+            return this;
+        }
+
+        @Override
+        default UpgradableHttpResponse addCookie(final HttpCookie cookie) {
+            HttpResponse.super.addCookie(cookie);
+            return this;
+        }
+
+        @Override
+        default UpgradableHttpResponse addCookie(final CharSequence name, final CharSequence value) {
+            HttpResponse.super.addCookie(name, value);
+            return this;
+        }
+
+        @Override
+        default UpgradableHttpResponse addSetCookie(final HttpCookie cookie) {
+            HttpResponse.super.addSetCookie(cookie);
+            return this;
+        }
+
+        @Override
+        default UpgradableHttpResponse addSetCookie(final CharSequence name, final CharSequence value) {
+            HttpResponse.super.addSetCookie(name, value);
+            return this;
+        }
+
+        @Override
+        default UpgradableHttpResponse addTrailer(final CharSequence name, final CharSequence value) {
+            HttpResponse.super.addTrailer(name, value);
+            return this;
+        }
+
+        @Override
+        default UpgradableHttpResponse addTrailer(final HttpHeaders trailers) {
+            HttpResponse.super.addTrailer(trailers);
+            return this;
+        }
+
+        @Override
+        default UpgradableHttpResponse setTrailer(final CharSequence name, final CharSequence value) {
+            HttpResponse.super.setTrailer(name, value);
+            return this;
+        }
+
+        @Override
+        default UpgradableHttpResponse setTrailer(final HttpHeaders trailers) {
+            HttpResponse.super.setTrailer(trailers);
+            return this;
+        }
     }
 }

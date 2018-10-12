@@ -224,4 +224,52 @@ public interface BlockingStreamingHttpRequest extends HttpRequestMetaData {
 
     @Override
     BlockingStreamingHttpRequest requestTarget(String requestTarget);
+
+    @Override
+    default BlockingStreamingHttpRequest addHeader(final CharSequence name, final CharSequence value) {
+        HttpRequestMetaData.super.addHeader(name, value);
+        return this;
+    }
+
+    @Override
+    default BlockingStreamingHttpRequest addHeaders(final HttpHeaders headers) {
+        HttpRequestMetaData.super.addHeaders(headers);
+        return this;
+    }
+
+    @Override
+    default BlockingStreamingHttpRequest setHeader(final CharSequence name, final CharSequence value) {
+        HttpRequestMetaData.super.setHeader(name, value);
+        return this;
+    }
+
+    @Override
+    default BlockingStreamingHttpRequest setHeaders(final HttpHeaders headers) {
+        HttpRequestMetaData.super.setHeaders(headers);
+        return this;
+    }
+
+    @Override
+    default BlockingStreamingHttpRequest addCookie(final HttpCookie cookie) {
+        HttpRequestMetaData.super.addCookie(cookie);
+        return this;
+    }
+
+    @Override
+    default BlockingStreamingHttpRequest addCookie(final CharSequence name, final CharSequence value) {
+        HttpRequestMetaData.super.addCookie(name, value);
+        return this;
+    }
+
+    @Override
+    default BlockingStreamingHttpRequest addSetCookie(final HttpCookie cookie) {
+        HttpRequestMetaData.super.addSetCookie(cookie);
+        return this;
+    }
+
+    @Override
+    default BlockingStreamingHttpRequest addSetCookie(final CharSequence name, final CharSequence value) {
+        HttpRequestMetaData.super.addSetCookie(name, value);
+        return this;
+    }
 }

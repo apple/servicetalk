@@ -20,15 +20,17 @@ import io.servicetalk.buffer.api.Buffer;
 /**
  * An HTTP request. The payload is represented as a single {@link Object}.
  */
-public interface HttpRequest extends HttpRequestMetaData {
+public interface HttpRequest extends HttpRequestMetaData, TrailersHolder {
     /**
-     * Get the underlying payload as a {@link Buffer}.
+     * Gets the underlying payload as a {@link Buffer}.
+     *
      * @return The {@link Buffer} representation of the underlying payload.
      */
     Buffer payloadBody();
 
     /**
-     * Get and deserialize the payload body.
+     * Gets and deserialize the payload body.
+     *
      * @param deserializer The function that deserializes the underlying {@link Object}.
      * @param <T> The resulting type of the deserialization operation.
      * @return The results of the deserialization operation.
@@ -38,20 +40,16 @@ public interface HttpRequest extends HttpRequestMetaData {
     }
 
     /**
-     * Get the <a href="https://tools.ietf.org/html/rfc7230#section-4.4">trailers</a>.
-     * @return the <a href="https://tools.ietf.org/html/rfc7230#section-4.4">trailers</a>.
-     */
-    HttpHeaders trailers();
-
-    /**
-     * Set the underlying payload.
+     * Sets the underlying payload.
+     *
      * @param payloadBody the underlying payload.
      * @return A {@link HttpRequest} with the new serialized payload body.
      */
     HttpRequest payloadBody(Buffer payloadBody);
 
     /**
-     * Set the underlying payload to be the results of serialization of {@code pojo}.
+     * Sets the underlying payload to be the results of serialization of {@code pojo}.
+     *
      * @param pojo The object to serialize.
      * @param serializer The {@link HttpSerializer} which converts {@code pojo} into bytes.
      * @param <T> The type of object to serialize.
@@ -60,13 +58,15 @@ public interface HttpRequest extends HttpRequestMetaData {
     <T> HttpRequest payloadBody(T pojo, HttpSerializer<T> serializer);
 
     /**
-     * Translate this {@link HttpRequest} to a {@link StreamingHttpRequest}.
+     * Translates this {@link HttpRequest} to a {@link StreamingHttpRequest}.
+     *
      * @return a {@link StreamingHttpRequest} representation of this {@link HttpRequest}.
      */
     StreamingHttpRequest toStreamingRequest();
 
     /**
-     * Translate this {@link HttpRequest} to a {@link BlockingStreamingHttpRequest}.
+     * Translates this {@link HttpRequest} to a {@link BlockingStreamingHttpRequest}.
+     *
      * @return a {@link BlockingStreamingHttpRequest} representation of this {@link HttpRequest}.
      */
     BlockingStreamingHttpRequest toBlockingStreamingRequest();
@@ -88,4 +88,76 @@ public interface HttpRequest extends HttpRequestMetaData {
 
     @Override
     HttpRequest requestTarget(String requestTarget);
+
+    @Override
+    default HttpRequest addHeader(final CharSequence name, final CharSequence value) {
+        HttpRequestMetaData.super.addHeader(name, value);
+        return this;
+    }
+
+    @Override
+    default HttpRequest addHeaders(final HttpHeaders headers) {
+        HttpRequestMetaData.super.addHeaders(headers);
+        return this;
+    }
+
+    @Override
+    default HttpRequest setHeader(final CharSequence name, final CharSequence value) {
+        HttpRequestMetaData.super.setHeader(name, value);
+        return this;
+    }
+
+    @Override
+    default HttpRequest setHeaders(final HttpHeaders headers) {
+        HttpRequestMetaData.super.setHeaders(headers);
+        return this;
+    }
+
+    @Override
+    default HttpRequest addCookie(final HttpCookie cookie) {
+        HttpRequestMetaData.super.addCookie(cookie);
+        return this;
+    }
+
+    @Override
+    default HttpRequest addCookie(final CharSequence name, final CharSequence value) {
+        HttpRequestMetaData.super.addCookie(name, value);
+        return this;
+    }
+
+    @Override
+    default HttpRequest addSetCookie(final HttpCookie cookie) {
+        HttpRequestMetaData.super.addSetCookie(cookie);
+        return this;
+    }
+
+    @Override
+    default HttpRequest addSetCookie(final CharSequence name, final CharSequence value) {
+        HttpRequestMetaData.super.addSetCookie(name, value);
+        return this;
+    }
+
+    @Override
+    default HttpRequest addTrailer(final CharSequence name, final CharSequence value) {
+        TrailersHolder.super.addTrailer(name, value);
+        return this;
+    }
+
+    @Override
+    default HttpRequest addTrailer(final HttpHeaders trailers) {
+        TrailersHolder.super.addTrailer(trailers);
+        return this;
+    }
+
+    @Override
+    default HttpRequest setTrailer(final CharSequence name, final CharSequence value) {
+        TrailersHolder.super.setTrailer(name, value);
+        return this;
+    }
+
+    @Override
+    default HttpRequest setTrailer(final HttpHeaders trailers) {
+        TrailersHolder.super.setTrailer(trailers);
+        return this;
+    }
 }

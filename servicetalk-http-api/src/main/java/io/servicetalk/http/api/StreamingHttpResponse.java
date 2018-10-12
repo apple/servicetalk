@@ -104,7 +104,7 @@ public interface StreamingHttpResponse extends HttpResponseMetaData {
      * @param serializer Used to serialize the payload body.
      * @param <T> The type of objects to deserialize.
      * @param <R> The type of objects to serialize.
-     * @return A {@link StreamingHttpRequest} with the new serialized payload body.
+     * @return A {@link StreamingHttpResponse} with the new serialized payload body.
      */
     default <T, R> StreamingHttpResponse transformPayloadBody(Function<Publisher<T>, Publisher<R>> transformer,
                                                               HttpDeserializer<T> deserializer,
@@ -175,5 +175,50 @@ public interface StreamingHttpResponse extends HttpResponseMetaData {
     StreamingHttpResponse version(HttpProtocolVersion version);
 
     @Override
-    StreamingHttpResponse status(HttpResponseStatus status);
+    default StreamingHttpResponse addHeader(final CharSequence name, final CharSequence value) {
+        HttpResponseMetaData.super.addHeader(name, value);
+        return this;
+    }
+
+    @Override
+    default StreamingHttpResponse addHeaders(final HttpHeaders headers) {
+        HttpResponseMetaData.super.addHeaders(headers);
+        return this;
+    }
+
+    @Override
+    default StreamingHttpResponse setHeader(final CharSequence name, final CharSequence value) {
+        HttpResponseMetaData.super.setHeader(name, value);
+        return this;
+    }
+
+    @Override
+    default StreamingHttpResponse setHeaders(final HttpHeaders headers) {
+        HttpResponseMetaData.super.setHeaders(headers);
+        return this;
+    }
+
+    @Override
+    default StreamingHttpResponse addCookie(final HttpCookie cookie) {
+        HttpResponseMetaData.super.addCookie(cookie);
+        return this;
+    }
+
+    @Override
+    default StreamingHttpResponse addCookie(final CharSequence name, final CharSequence value) {
+        HttpResponseMetaData.super.addCookie(name, value);
+        return this;
+    }
+
+    @Override
+    default StreamingHttpResponse addSetCookie(final HttpCookie cookie) {
+        HttpResponseMetaData.super.addSetCookie(cookie);
+        return this;
+    }
+
+    @Override
+    default StreamingHttpResponse addSetCookie(final CharSequence name, final CharSequence value) {
+        HttpResponseMetaData.super.addSetCookie(name, value);
+        return this;
+    }
 }

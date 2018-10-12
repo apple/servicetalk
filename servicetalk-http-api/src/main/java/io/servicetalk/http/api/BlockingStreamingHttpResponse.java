@@ -141,7 +141,7 @@ public interface BlockingStreamingHttpResponse extends HttpResponseMetaData {
      * @param serializer Used to serialize the payload body.
      * @param <T> The type of objects to deserialize.
      * @param <R> The type of objects to serialize.
-     * @return A {@link BlockingStreamingHttpRequest} with the new serialized payload body.
+     * @return A {@link BlockingStreamingHttpResponse} with the new serialized payload body.
      */
     default <T, R> BlockingStreamingHttpResponse transformPayloadBody(
             Function<BlockingIterable<T>, BlockingIterable<R>> transformer, HttpDeserializer<T> deserializer,
@@ -213,4 +213,52 @@ public interface BlockingStreamingHttpResponse extends HttpResponseMetaData {
 
     @Override
     BlockingStreamingHttpResponse status(HttpResponseStatus status);
+
+    @Override
+    default BlockingStreamingHttpResponse addHeader(final CharSequence name, final CharSequence value) {
+        HttpResponseMetaData.super.addHeader(name, value);
+        return this;
+    }
+
+    @Override
+    default BlockingStreamingHttpResponse addHeaders(final HttpHeaders headers) {
+        HttpResponseMetaData.super.addHeaders(headers);
+        return this;
+    }
+
+    @Override
+    default BlockingStreamingHttpResponse setHeader(final CharSequence name, final CharSequence value) {
+        HttpResponseMetaData.super.setHeader(name, value);
+        return this;
+    }
+
+    @Override
+    default BlockingStreamingHttpResponse setHeaders(final HttpHeaders headers) {
+        HttpResponseMetaData.super.setHeaders(headers);
+        return this;
+    }
+
+    @Override
+    default BlockingStreamingHttpResponse addCookie(final HttpCookie cookie) {
+        HttpResponseMetaData.super.addCookie(cookie);
+        return this;
+    }
+
+    @Override
+    default BlockingStreamingHttpResponse addCookie(final CharSequence name, final CharSequence value) {
+        HttpResponseMetaData.super.addCookie(name, value);
+        return this;
+    }
+
+    @Override
+    default BlockingStreamingHttpResponse addSetCookie(final HttpCookie cookie) {
+        HttpResponseMetaData.super.addSetCookie(cookie);
+        return this;
+    }
+
+    @Override
+    default BlockingStreamingHttpResponse addSetCookie(final CharSequence name, final CharSequence value) {
+        HttpResponseMetaData.super.addSetCookie(name, value);
+        return this;
+    }
 }

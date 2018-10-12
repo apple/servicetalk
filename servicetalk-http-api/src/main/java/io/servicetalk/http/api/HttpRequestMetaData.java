@@ -207,4 +207,52 @@ public interface HttpRequestMetaData extends HttpMetaData {
 
     @Override
     HttpRequestMetaData version(HttpProtocolVersion version);
+
+    @Override
+    default HttpRequestMetaData addHeader(final CharSequence name, final CharSequence value) {
+        HttpMetaData.super.addHeader(name, value);
+        return this;
+    }
+
+    @Override
+    default HttpRequestMetaData addHeaders(final HttpHeaders headers) {
+        HttpMetaData.super.addHeaders(headers);
+        return this;
+    }
+
+    @Override
+    default HttpRequestMetaData setHeader(final CharSequence name, final CharSequence value) {
+        HttpMetaData.super.setHeader(name, value);
+        return this;
+    }
+
+    @Override
+    default HttpRequestMetaData setHeaders(final HttpHeaders headers) {
+        HttpMetaData.super.setHeaders(headers);
+        return this;
+    }
+
+    @Override
+    default HttpRequestMetaData addCookie(final HttpCookie cookie) {
+        HttpMetaData.super.addCookie(cookie);
+        return this;
+    }
+
+    @Override
+    default HttpRequestMetaData addCookie(final CharSequence name, final CharSequence value) {
+        HttpMetaData.super.addCookie(name, value);
+        return this;
+    }
+
+    @Override
+    default HttpRequestMetaData addSetCookie(final HttpCookie cookie) {
+        HttpMetaData.super.addSetCookie(cookie);
+        return this;
+    }
+
+    @Override
+    default HttpRequestMetaData addSetCookie(final CharSequence name, final CharSequence value) {
+        HttpMetaData.super.addSetCookie(name, value);
+        return this;
+    }
 }

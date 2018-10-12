@@ -269,5 +269,53 @@ public abstract class StreamingHttpClient extends StreamingHttpRequester {
 
         @Override
         UpgradableStreamingHttpResponse status(HttpResponseStatus status);
+
+        @Override
+        default UpgradableStreamingHttpResponse addHeader(final CharSequence name, final CharSequence value) {
+            StreamingHttpResponse.super.addHeader(name, value);
+            return this;
+        }
+
+        @Override
+        default UpgradableStreamingHttpResponse addHeaders(final HttpHeaders headers) {
+            StreamingHttpResponse.super.addHeaders(headers);
+            return this;
+        }
+
+        @Override
+        default UpgradableStreamingHttpResponse setHeader(final CharSequence name, final CharSequence value) {
+            StreamingHttpResponse.super.setHeader(name, value);
+            return this;
+        }
+
+        @Override
+        default UpgradableStreamingHttpResponse setHeaders(final HttpHeaders headers) {
+            StreamingHttpResponse.super.setHeaders(headers);
+            return this;
+        }
+
+        @Override
+        default UpgradableStreamingHttpResponse addCookie(final HttpCookie cookie) {
+            StreamingHttpResponse.super.addCookie(cookie);
+            return this;
+        }
+
+        @Override
+        default UpgradableStreamingHttpResponse addCookie(final CharSequence name, final CharSequence value) {
+            StreamingHttpResponse.super.addCookie(name, value);
+            return this;
+        }
+
+        @Override
+        default UpgradableStreamingHttpResponse addSetCookie(final HttpCookie cookie) {
+            StreamingHttpResponse.super.addSetCookie(cookie);
+            return this;
+        }
+
+        @Override
+        default UpgradableStreamingHttpResponse addSetCookie(final CharSequence name, final CharSequence value) {
+            StreamingHttpResponse.super.addSetCookie(name, value);
+            return this;
+        }
     }
 }
