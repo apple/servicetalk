@@ -15,6 +15,7 @@
  */
 package io.servicetalk.http.netty;
 
+import io.servicetalk.client.api.ConnectionFactoryFilter;
 import io.servicetalk.client.api.DefaultGroupKey;
 import io.servicetalk.client.api.GroupKey;
 import io.servicetalk.client.api.LoadBalancerFactory;
@@ -376,6 +377,13 @@ final class DefaultMultiAddressUrlHttpClientBuilder
     public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> appendConnectionFilter(
             final HttpConnectionFilterFactory factory) {
         builderTemplate.appendConnectionFilter(factory);
+        return this;
+    }
+
+    @Override
+    public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> appendConnectionFactoryFilter(
+            final ConnectionFactoryFilter<InetSocketAddress, StreamingHttpConnection> factory) {
+        builderTemplate.appendConnectionFactoryFilter(factory);
         return this;
     }
 

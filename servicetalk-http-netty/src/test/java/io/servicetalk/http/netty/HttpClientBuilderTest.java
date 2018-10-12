@@ -15,28 +15,35 @@
  */
 package io.servicetalk.http.netty;
 
+import io.servicetalk.client.api.ConnectionFactory;
+import io.servicetalk.client.api.ConnectionFactoryFilter;
 import io.servicetalk.client.api.DefaultServiceDiscovererEvent;
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.http.api.StreamingHttpClient;
+import io.servicetalk.http.api.StreamingHttpConnection;
 import io.servicetalk.transport.api.HostAndPort;
 
 import org.junit.Test;
+import org.mockito.InOrder;
 
 import java.net.InetSocketAddress;
 import java.util.concurrent.ExecutionException;
+import javax.annotation.Nonnull;
 
+import static io.servicetalk.concurrent.api.Completable.completed;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 public class HttpClientBuilderTest extends AbstractEchoServerBasedHttpRequesterTest {
 
     @Test
-    public void httpClientWithStaticLoadBalancing() throws ExecutionException, InterruptedException {
+    public void httpClientWithStaticLoadBalancing() throws Exception {
 
         DefaultServiceDiscovererEvent<InetSocketAddress> sdEvent = new DefaultServiceDiscovererEvent<>(
                 (InetSocketAddress) serverContext.listenAddress(), true);
@@ -45,7 +52,7 @@ public class HttpClientBuilderTest extends AbstractEchoServerBasedHttpRequesterT
     }
 
     @Test
-    public void httpClientWithDynamicLoadBalancing() throws ExecutionException, InterruptedException {
+    public void httpClientWithDynamicLoadBalancing() throws Exception {
 
         TestPublisher<ServiceDiscovererEvent<InetSocketAddress>> sdPub = new TestPublisher<>();
         sdPub.sendOnSubscribe();
@@ -60,6 +67,41 @@ public class HttpClientBuilderTest extends AbstractEchoServerBasedHttpRequesterT
         }, 300, MILLISECONDS);
 
         sendRequestAndValidate(sdPub);
+    }
+
+    @Test
+    public void withConnectionFactoryFilter() throws Exception {
+        int port = ((InetSocketAddress) serverContext.listenAddress()).getPort();
+        ConnectionFactory<InetSocketAddress, ? extends StreamingHttpConnection> factory1 = newFilter();
+        ConnectionFactory<InetSocketAddress, ? extends StreamingHttpConnection> factory2 = newFilter();
+        StreamingHttpClient requester = HttpClients.forSingleAddress("localhost", port)
+                .appendConnectionFactoryFilter(factoryFilter(factory1))
+                .appendConnectionFactoryFilter(factoryFilter(factory2))
+                .executionContext(CTX)
+                .buildStreaming();
+        makeRequestValidateResponseAndClose(requester);
+
+        InOrder verifier = inOrder(factory1, factory2);
+        verifier.verify(factory1).newConnection(any());
+        verifier.verify(factory2).newConnection(any());
+    }
+
+    @Nonnull
+    private ConnectionFactoryFilter<InetSocketAddress, StreamingHttpConnection> factoryFilter(
+            final ConnectionFactory<InetSocketAddress, ? extends StreamingHttpConnection> factory) {
+        return orig -> {
+            when(factory.newConnection(any()))
+                    .thenAnswer(invocation -> orig.newConnection(invocation.getArgument(0)));
+            return factory;
+        };
+    }
+
+    @SuppressWarnings("unchecked")
+    private ConnectionFactory<InetSocketAddress, ? extends StreamingHttpConnection> newFilter() {
+        ConnectionFactory<InetSocketAddress, ? extends StreamingHttpConnection> factory = mock(ConnectionFactory.class);
+        when(factory.closeAsyncGracefully()).thenReturn(completed());
+        when(factory.closeAsync()).thenReturn(completed());
+        return factory;
     }
 
     private void sendRequestAndValidate(final Publisher<ServiceDiscovererEvent<InetSocketAddress>> sdPub)

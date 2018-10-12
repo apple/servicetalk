@@ -15,6 +15,7 @@
  */
 package io.servicetalk.http.api;
 
+import io.servicetalk.client.api.ConnectionFactoryFilter;
 import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.api.LoadBalancerFactory;
 import io.servicetalk.client.api.ServiceDiscoverer;
@@ -70,6 +71,10 @@ public interface SingleAddressHttpClientBuilder<U, R> extends HttpClientBuilder<
 
     @Override
     SingleAddressHttpClientBuilder<U, R> appendConnectionFilter(HttpConnectionFilterFactory factory);
+
+    @Override
+    SingleAddressHttpClientBuilder<U, R> appendConnectionFactoryFilter(
+            ConnectionFactoryFilter<R, StreamingHttpConnection> factory);
 
     @Override
     SingleAddressHttpClientBuilder<U, R> disableHostHeaderFallback();

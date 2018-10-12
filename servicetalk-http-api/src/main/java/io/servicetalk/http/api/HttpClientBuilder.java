@@ -15,6 +15,8 @@
  */
 package io.servicetalk.http.api;
 
+import io.servicetalk.client.api.ConnectionFactory;
+import io.servicetalk.client.api.ConnectionFactoryFilter;
 import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.api.LoadBalancerFactory;
 import io.servicetalk.client.api.ServiceDiscoverer;
@@ -23,7 +25,6 @@ import io.servicetalk.transport.api.ExecutionContext;
 
 import java.net.SocketOption;
 import java.util.function.Function;
-import java.util.function.UnaryOperator;
 
 /**
  * A builder of {@link HttpClient} objects.
@@ -139,10 +140,32 @@ public interface HttpClientBuilder<U, R> {
      * <pre>
      *     filter1 =&gt; filter2 =&gt; filter3 =&gt; connection
      * </pre>
-     * @param factory {@link UnaryOperator} to decorate a {@link StreamingHttpConnection} for the purpose of filtering.
+     * @param factory {@link HttpConnectionFilterFactory} to decorate a {@link StreamingHttpConnection} for the purpose
+     * of filtering.
      * @return {@code this}
      */
     HttpClientBuilder<U, R> appendConnectionFilter(HttpConnectionFilterFactory factory);
+
+    /**
+     * Append the filter to the chain of filters used to decorate the {@link ConnectionFactory} used by this
+     * builder.
+     * <p>
+     * Filtering allows you to wrap a {@link ConnectionFactory} and modify behavior of
+     * {@link ConnectionFactory#newConnection(Object)}.
+     * Some potential candidates for filtering include logging and metrics.
+     * <p>
+     * The order of execution of these filters are in order of append. If 3 filters are added as follows:
+     * <pre>
+     *     builder.append(filter1).append(filter2).append(filter3)
+     * </pre>
+     * Calling {@link ConnectionFactory} wrapped by this filter chain, the order of invocation of these filters will be:
+     * <pre>
+     *     filter1 =&gt; filter2 =&gt; filter3 =&gt; original connection factory
+     * </pre>
+     * @param factory {@link ConnectionFactoryFilter} to use.
+     * @return {@code this}
+     */
+    HttpClientBuilder<U, R> appendConnectionFactoryFilter(ConnectionFactoryFilter<R, StreamingHttpConnection> factory);
 
     /**
      * Disable automatically setting {@code Host} headers by inferring from the address or {@link StreamingHttpRequest}.
