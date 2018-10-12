@@ -103,6 +103,12 @@ class DefaultStreamingHttpRequest<P> extends DefaultHttpRequestMetaData implemen
     }
 
     @Override
+    public final StreamingHttpRequest appendPathSegments(final String... segments) {
+        super.appendPathSegments(segments);
+        return this;
+    }
+
+    @Override
     public final StreamingHttpRequest rawPath(final String path) {
         super.rawPath(path);
         return this;

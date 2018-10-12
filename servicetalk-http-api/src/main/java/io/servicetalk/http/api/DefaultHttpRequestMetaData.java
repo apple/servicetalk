@@ -138,14 +138,30 @@ class DefaultHttpRequestMetaData extends AbstractHttpMetaData implements HttpReq
         if (!path.isEmpty() && path.charAt(0) != '/') {
             path = "/" + path;
         }
-        final String encodedPath;
-        try {
-            // TODO This is an ugly hack!
-            encodedPath = encode(path, REQUEST_TARGET_CHARSET.name()).replaceAll("%2F", "/");
-        } catch (final UnsupportedEncodingException e) {
-            throw new UnsupportedCharsetException(REQUEST_TARGET_CHARSET.name());
-        }
+        // TODO This is an ugly hack!
+        final String encodedPath = urlEncode(path).replaceAll("%2F", "/");
         requestTarget(encodeRequestTarget(encodedPath, rawQuery(), null));
+        return this;
+    }
+
+    @Override
+    public HttpRequestMetaData appendPathSegments(String... segments) {
+        if (segments.length == 0) {
+            throw new IllegalArgumentException("At least one path segment must be provided");
+        }
+
+        final StringBuilder builder = new StringBuilder(path().length() + 8 * segments.length).append(path());
+        if (!path().isEmpty() && !path().endsWith("/")) {
+            builder.append('/');
+        }
+        for (int i = 0; i < segments.length; i++) {
+            builder.append(urlEncode(segments[i]));
+
+            if (i < (segments.length - 1)) {
+                builder.append('/');
+            }
+        }
+        requestTarget(encodeRequestTarget(builder.toString(), rawQuery(), null));
         return this;
     }
 
@@ -277,5 +293,13 @@ class DefaultHttpRequestMetaData extends AbstractHttpMetaData implements HttpReq
         result = 31 * result + method.hashCode();
         result = 31 * result + requestTarget.hashCode();
         return result;
+    }
+
+    private static String urlEncode(String s) {
+        try {
+            return encode(s, REQUEST_TARGET_CHARSET.name());
+        } catch (final UnsupportedEncodingException e) {
+            throw new UnsupportedCharsetException(REQUEST_TARGET_CHARSET.name());
+        }
     }
 }

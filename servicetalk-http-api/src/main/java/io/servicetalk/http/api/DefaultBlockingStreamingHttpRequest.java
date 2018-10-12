@@ -107,6 +107,12 @@ class DefaultBlockingStreamingHttpRequest<P> extends DefaultHttpRequestMetaData 
     }
 
     @Override
+    public final BlockingStreamingHttpRequest appendPathSegments(final String... segments) {
+        super.appendPathSegments(segments);
+        return this;
+    }
+
+    @Override
     public final BlockingStreamingHttpRequest rawPath(final String path) {
         super.rawPath(path);
         return this;

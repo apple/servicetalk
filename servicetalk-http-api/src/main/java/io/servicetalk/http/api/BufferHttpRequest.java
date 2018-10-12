@@ -86,6 +86,12 @@ final class BufferHttpRequest extends DefaultHttpRequestMetaData implements Http
     }
 
     @Override
+    public HttpRequest appendPathSegments(final String... segments) {
+        super.appendPathSegments(segments);
+        return this;
+    }
+
+    @Override
     public HttpRequest rawQuery(final String query) {
         super.rawQuery(query);
         return this;

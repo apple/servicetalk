@@ -71,6 +71,12 @@ final class TransportStreamingHttpRequest extends DefaultHttpRequestMetaData imp
     }
 
     @Override
+    public StreamingHttpRequest appendPathSegments(final String... segments) {
+        super.appendPathSegments(segments);
+        return this;
+    }
+
+    @Override
     public StreamingHttpRequest rawPath(final String path) {
         super.rawPath(path);
         return this;

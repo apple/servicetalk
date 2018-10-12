@@ -149,6 +149,17 @@ public interface HttpRequestMetaData extends HttpMetaData {
     HttpRequestMetaData path(String path);
 
     /**
+     * Appends segments to the current {@link #path()}, performing encoding of each segment
+     * (including ({@code '/'}) characters) according
+     * to <a href="https://tools.ietf.org/html/rfc3986#section-2.1">percent-encoding</a>.
+     * A {@code /} is used to separate each segment and between the current {@link #path()} and the following segments.
+     *
+     * @param segments the un-encoded path to set.
+     * @return {@code this}.
+     */
+    HttpRequestMetaData appendPathSegments(String... segments);
+
+    /**
      * Parses the <a href="https://tools.ietf.org/html/rfc3986#section-3.4">query component</a> of the request target,
      * returning an {@link HttpQuery} that may be used for reading and manipulating the query component. Modifications
      * to the {@link HttpQuery} will only be reflected in the request after {@link HttpQuery#encodeToRequestTarget()} is

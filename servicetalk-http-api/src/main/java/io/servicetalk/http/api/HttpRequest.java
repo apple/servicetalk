@@ -78,6 +78,9 @@ public interface HttpRequest extends HttpRequestMetaData, TrailersHolder {
     HttpRequest path(String path);
 
     @Override
+    HttpRequest appendPathSegments(String... segments);
+
+    @Override
     default HttpRequest addQueryParameter(String key, String value) {
         HttpRequestMetaData.super.addQueryParameter(key, value);
         return this;

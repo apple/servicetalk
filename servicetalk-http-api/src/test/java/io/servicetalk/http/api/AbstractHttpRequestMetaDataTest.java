@@ -223,6 +223,27 @@ public abstract class AbstractHttpRequestMetaDataTest<T extends HttpRequestMetaD
     }
 
     @Test
+    public void testAppendSegmentsToPath() {
+        createFixture("base/");
+        fixture.appendPathSegments("foo", "/$", "bar");
+        assertEquals("base/foo/%2F%24/bar", fixture.requestTarget());
+    }
+
+    @Test
+    public void testAppendSegmentsToPathWithoutTrailingSlash() {
+        createFixture("base");
+        fixture.appendPathSegments("foo", "/$", "bar");
+        assertEquals("base/foo/%2F%24/bar", fixture.requestTarget());
+    }
+
+    @Test
+    public void testAppendNoSegmentToPath() {
+        createFixture("base/");
+        expected.expect(IllegalArgumentException.class);
+        fixture.appendPathSegments();
+    }
+
+    @Test
     public void testSetRawPathWithoutLeadingSlash() {
         createFixture("temp");
         expected.expect(IllegalArgumentException.class);
