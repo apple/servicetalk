@@ -113,18 +113,6 @@ class DefaultBlockingStreamingHttpRequest<P> extends DefaultHttpRequestMetaData 
     }
 
     @Override
-    public BlockingStreamingHttpRequest addQueryParameter(final String key, final String value) {
-        super.addQueryParameter(key, value);
-        return this;
-    }
-
-    @Override
-    public BlockingStreamingHttpRequest setQueryParameter(final String key, final String value) {
-        super.setQueryParameter(key, value);
-        return this;
-    }
-
-    @Override
     public final BlockingStreamingHttpRequest rawQuery(final String query) {
         super.rawQuery(query);
         return this;

@@ -214,10 +214,16 @@ public interface BlockingStreamingHttpRequest extends HttpRequestMetaData {
     BlockingStreamingHttpRequest path(String path);
 
     @Override
-    BlockingStreamingHttpRequest addQueryParameter(String key, String value);
+    default BlockingStreamingHttpRequest addQueryParameter(String key, String value) {
+        HttpRequestMetaData.super.addQueryParameter(key, value);
+        return this;
+    }
 
     @Override
-    BlockingStreamingHttpRequest setQueryParameter(String key, String value);
+    default BlockingStreamingHttpRequest setQueryParameter(String key, String value) {
+        HttpRequestMetaData.super.setQueryParameter(key, value);
+        return this;
+    }
 
     @Override
     BlockingStreamingHttpRequest rawQuery(String query);

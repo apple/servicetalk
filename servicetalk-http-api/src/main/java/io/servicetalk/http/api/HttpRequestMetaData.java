@@ -169,7 +169,10 @@ public interface HttpRequestMetaData extends HttpMetaData {
      * @param value the query parameter value.
      * @return {@code this}.
      */
-    HttpRequestMetaData addQueryParameter(String key, String value);
+    default HttpRequestMetaData addQueryParameter(String key, String value) {
+        parseQuery().add(key, value).encodeToRequestTarget();
+        return this;
+    }
 
     /**
      * Sets a query parameter with the specified {@code key} and {@code value}, which will be
@@ -183,7 +186,10 @@ public interface HttpRequestMetaData extends HttpMetaData {
      * @param value the query parameter value.
      * @return {@code this}.
      */
-    HttpRequestMetaData setQueryParameter(String key, String value);
+    default HttpRequestMetaData setQueryParameter(String key, String value) {
+        parseQuery().set(key, value).encodeToRequestTarget();
+        return this;
+    }
 
     /**
      * The <a href="https://tools.ietf.org/html/rfc3986#section-3.4">query component</a> derived

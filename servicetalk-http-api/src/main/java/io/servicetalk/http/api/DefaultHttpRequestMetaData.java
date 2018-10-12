@@ -164,18 +164,6 @@ class DefaultHttpRequestMetaData extends AbstractHttpMetaData implements HttpReq
     }
 
     @Override
-    public HttpRequestMetaData addQueryParameter(final String key, final String value) {
-        parseQuery().add(key, value).encodeToRequestTarget();
-        return this;
-    }
-
-    @Override
-    public HttpRequestMetaData setQueryParameter(final String key, final String value) {
-        parseQuery().set(key, value).encodeToRequestTarget();
-        return this;
-    }
-
-    @Override
     public final String rawQuery() {
         return lazyParseRequestTarget().getRawQuery();
     }
