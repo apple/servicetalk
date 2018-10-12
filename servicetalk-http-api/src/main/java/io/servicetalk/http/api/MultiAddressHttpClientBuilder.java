@@ -26,7 +26,6 @@ import io.servicetalk.transport.api.SslConfig;
 
 import java.net.SocketOption;
 import java.util.function.Function;
-import java.util.function.UnaryOperator;
 
 /**
  * A builder of {@link StreamingHttpClient} instances which have a capacity to call any server based on the parsed absolute-form
@@ -38,7 +37,8 @@ import java.util.function.UnaryOperator;
  * @param <R> the type of address after resolution (resolved address)
  * @see <a href="https://tools.ietf.org/html/rfc7230#section-5.3.2">absolute-form rfc7230#section-5.3.2</a>
  */
-public interface MultiAddressHttpClientBuilder<U, R> extends HttpClientBuilder<U, R> {
+public interface MultiAddressHttpClientBuilder<U, R> extends HttpClientBuilder<U, R, ServiceDiscovererEvent<R>> {
+
     @Override
     MultiAddressHttpClientBuilder<U, R> ioExecutor(IoExecutor ioExecutor);
 
@@ -128,28 +128,6 @@ public interface MultiAddressHttpClientBuilder<U, R> extends HttpClientBuilder<U
      * @return {@code this}
      */
     MultiAddressHttpClientBuilder<U, R> appendClientFilter(HttpClientGroupFilterFactory<U> function);
-
-    /**
-     * Append the filter to the chain of filters used to decorate the {@link StreamingHttpClientGroup} created by this
-     * builder.
-     * <p>
-     * Filtering allows you to wrap {@link StreamingHttpClientGroup} and modify behavior during request/response
-     * processing.
-     * Some potential candidates for filtering include logging, metrics, and decorating responses.
-     * <p>
-     * The order of execution of these filters are in order of append. If 3 filters are added as follows:
-     * <pre>
-     *     builder.append(filter1).append(filter2).append(filter3)
-     * </pre>
-     * Making a request to a client wrapped by this filter chain the order of invocation of these filters will be:
-     * <pre>
-     *     filter1 =&gt; filter2 =&gt; filter3 =&gt; client
-     * </pre>
-     * @param function A {@link UnaryOperator} to decorate {@link StreamingHttpClientGroup} for the purpose of
-     * filtering.
-     * @return {@code this}.
-     */
-    MultiAddressHttpClientBuilder<U, R> appendClientGroupFilter(ClientGroupFilterFunction<U> function);
 
     /**
      * Set a {@link SslConfigProvider} for appropriate {@link SslConfig}s.

@@ -18,9 +18,10 @@ package io.servicetalk.http.utils;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.SequentialCancellable;
+import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpRequestMethod;
-import io.servicetalk.http.api.StreamingHttpClientGroup;
+import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequestFactory;
 import io.servicetalk.http.api.StreamingHttpRequester;
@@ -43,12 +44,13 @@ import static io.servicetalk.http.api.HttpRequestMethods.TRACE;
 import static java.util.Objects.requireNonNull;
 
 /**
- * An operator, which implements redirect logic for {@link StreamingHttpClientGroup}.
+ * An operator, which implements redirect logic for {@link StreamingHttpClient}.
  */
 final class RedirectSingle extends Single<StreamingHttpResponse> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RedirectSingle.class);
 
+    private final HttpExecutionStrategy strategy;
     private final Single<StreamingHttpResponse> originalResponse;
     private final StreamingHttpRequest originalRequest;
     private final int maxRedirects;
@@ -57,17 +59,19 @@ final class RedirectSingle extends Single<StreamingHttpResponse> {
     /**
      * Create a new {@link Single}<{@link StreamingHttpResponse}> which will be able to handle redirects.
      *
+     * @param strategy Sets the {@link HttpExecutionStrategy} when performing redirects.
      * @param originalResponse The original {@link Single}<{@link StreamingHttpResponse}> for which redirect should be
      * applied.
      * @param originalRequest The original {@link StreamingHttpRequest} which was sent.
      * @param maxRedirects The maximum number of follow up redirects.
      * @param requester The {@link StreamingHttpRequester} to send redirected requests, must be backed by
-     * {@link StreamingHttpClientGroup}.
+     * {@link StreamingHttpClient}.
      */
-    RedirectSingle(final Single<StreamingHttpResponse> originalResponse,
+    RedirectSingle(final HttpExecutionStrategy strategy, final Single<StreamingHttpResponse> originalResponse,
                    final StreamingHttpRequest originalRequest,
                    final int maxRedirects,
                    final StreamingHttpRequester requester) {
+        this.strategy = strategy;
         this.originalResponse = requireNonNull(originalResponse);
         this.originalRequest = requireNonNull(originalRequest);
         this.maxRedirects = maxRedirects;
@@ -133,7 +137,7 @@ final class RedirectSingle extends Single<StreamingHttpResponse> {
             }
             // Consume any payload of the redirect response
             result.payloadBody().ignoreElements().subscribe();
-            redirectSingle.requester.request(newRequest).subscribe(new RedirectSubscriber(
+            redirectSingle.requester.request(redirectSingle.strategy, newRequest).subscribe(new RedirectSubscriber(
                     target, redirectSingle, newRequest, redirectCount + 1, sequentialCancellable));
         }
 
