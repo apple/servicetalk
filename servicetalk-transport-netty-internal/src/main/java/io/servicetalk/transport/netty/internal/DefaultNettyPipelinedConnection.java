@@ -155,11 +155,19 @@ public final class DefaultNettyPipelinedConnection<Req, Resp> implements NettyPi
                             "Unexpected reject from an unbounded pending requests queue."));
                 }
             }
-        }.andThen(connection.read()).doBeforeFinally(() -> {
-            if (terminalMsgPredicate != null) {
-                this.terminalMsgPredicate.discardIfCurrent(terminalMsgPredicate);
-            }
-        }).doAfterFinally(writeQueue.responseQueue::postTaskTermination);
+        }.andThen(
+                connection.read()
+                        // Below is related to read stream: terminal predicate and responseQueue
+                        // We should only trigger this on the read stream signals. Attaching them to the write+read
+                        // stream will eagerly start the subsequent read (writeQueue.responseQueue::postTaskTermination)
+                        // on cancellation.
+                        .doBeforeFinally(() -> {
+                            if (terminalMsgPredicate != null) {
+                                this.terminalMsgPredicate.discardIfCurrent(terminalMsgPredicate);
+                            }
+                        })
+                        .doAfterFinally(writeQueue.responseQueue::postTaskTermination)
+        );
     }
 
     @Override

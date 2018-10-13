@@ -96,6 +96,26 @@ public class DefaultNettyPipelinedConnectionTest {
     }
 
     @Test
+    public void testWriteCancelAndPreviousRead() {
+        readSubscriber.subscribe(requester.request(writePublisher1, defaultFlushStrategy())).request(1);
+        secondReadSubscriber.subscribe(requester.request(writePublisher2, defaultFlushStrategy())).request(1);
+        writePublisher1.verifySubscribed();
+        readPublisher.verifyNotSubscribed();
+        writePublisher2.verifyNotSubscribed();
+        writePublisher1.sendItems(1).onComplete();
+        readPublisher.verifySubscribed(); // Keep the first read active.
+
+        writePublisher2.verifySubscribed().onComplete();
+        // First read active, second write active. Cancel of request() should not start
+        // second read.
+        secondReadSubscriber.cancel();
+
+        readPublisher.verifySubscribed().onComplete();
+        readSubscriber.verifySuccess();
+        secondReadSubscriber.verifyNoEmissions();
+    }
+
+    @Test
     public void testItemWriteAndFlush() {
         readSubscriber.subscribe(requester.request(1)).request(1);
         readPublisher.onComplete();
