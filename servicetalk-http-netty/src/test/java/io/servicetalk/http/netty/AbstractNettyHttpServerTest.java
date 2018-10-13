@@ -31,7 +31,6 @@ import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.test.resources.DefaultTestCerts;
 import io.servicetalk.transport.api.ContextFilter;
-import io.servicetalk.transport.api.DefaultExecutionContext;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.api.SslConfig;
@@ -145,8 +144,7 @@ public abstract class AbstractNettyHttpServerTest {
                     .build();
             serverBuilder.sslConfig(sslConfig);
         }
-        serverContext = awaitIndefinitelyNonNull(serverBuilder.executionContext(new DefaultExecutionContext(
-                DEFAULT_ALLOCATOR, serverIoExecutor, serverExecutor))
+        serverContext = awaitIndefinitelyNonNull(serverBuilder.ioExecutor(serverIoExecutor).executor(serverExecutor)
                 .contextFilter(contextFilter)
                 .listenStreaming(service)
                 .doBeforeSuccess(ctx -> LOGGER.debug("Server started on {}.", ctx.listenAddress()))
@@ -161,8 +159,8 @@ public abstract class AbstractNettyHttpServerTest {
                     .trustManager(DefaultTestCerts::loadMutualAuthCaPem).build();
             httpConnectionBuilder.setSslConfig(sslConfig);
         }
-        DefaultExecutionContext context = new DefaultExecutionContext(DEFAULT_ALLOCATOR, clientIoExecutor, clientExecutor);
-        httpConnection = awaitIndefinitelyNonNull(httpConnectionBuilder.executionContext(context)
+        httpConnection = awaitIndefinitelyNonNull(httpConnectionBuilder.ioExecutor(clientIoExecutor)
+                .executor(clientExecutor)
                 .buildStreaming(socketAddress));
     }
 

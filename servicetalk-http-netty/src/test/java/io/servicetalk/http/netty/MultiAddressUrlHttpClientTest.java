@@ -99,7 +99,9 @@ public class MultiAddressUrlHttpClientTest {
     public static void beforeClass() throws Exception {
         afterClassCloseables = newCompositeCloseable();
 
-        requester = afterClassCloseables.append(HttpClients.forMultiAddressUrl().executionContext(CTX)
+        requester = afterClassCloseables.append(HttpClients.forMultiAddressUrl()
+                .ioExecutor(CTX.ioExecutor())
+                .executor(CTX.executor())
                 .buildStreaming());
 
         final HttpHeaders httpHeaders = DefaultHttpHeadersFactory.INSTANCE.newHeaders().set(CONTENT_LENGTH, ZERO);
@@ -276,7 +278,8 @@ public class MultiAddressUrlHttpClientTest {
     private static ServerContext startNewLocalServer(final StreamingHttpService httpService,
                                                      final CompositeCloseable closeables) throws Exception {
         return closeables.append(newHttpServerBuilder(new InetSocketAddress(HOSTNAME, 0))
-                .executionContext(CTX)
+                .ioExecutor(CTX.ioExecutor())
+                .executor(CTX.executor())
                 .listenStreamingAndAwait(httpService));
     }
 }

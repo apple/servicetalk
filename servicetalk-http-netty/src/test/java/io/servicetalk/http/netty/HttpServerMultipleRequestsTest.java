@@ -89,7 +89,8 @@ public class HttpServerMultipleRequestsTest {
         final int numRequests = 10;
         CompositeCloseable compositeCloseable = AsyncCloseables.newCompositeCloseable();
         ServerContext ctx = compositeCloseable.append(HttpServers.newHttpServerBuilder(LOCAL_0)
-                .executionContext(serverExecution)
+                .ioExecutor(serverExecution.ioExecutor())
+                .executor(serverExecution.executor())
                 .listenStreamingAndAwait(service));
         ExecutorService executorService = Executors.newCachedThreadPool();
         try {
@@ -103,7 +104,8 @@ public class HttpServerMultipleRequestsTest {
                         StreamingHttpConnection connection = compositeCloseable.append(
                                 new DefaultHttpConnectionBuilder<SocketAddress>()
                                         .setMaxPipelinedRequests(numRequests)
-                                        .executionContext(clientExecution)
+                                        .ioExecutor(clientExecution.ioExecutor())
+                                        .executor(clientExecution.executor())
                                         .buildStreaming(ctx.listenAddress()).toFuture().get());
                         barrier.await();
                         for (int x = 0; x < numRequests; ++x) {

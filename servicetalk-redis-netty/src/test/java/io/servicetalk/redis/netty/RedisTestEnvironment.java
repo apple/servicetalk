@@ -15,16 +15,12 @@
  */
 package io.servicetalk.redis.netty;
 
-import io.servicetalk.client.api.ServiceDiscoverer;
-import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.internal.DefaultThreadFactory;
-import io.servicetalk.dns.discovery.netty.DefaultDnsServiceDiscovererBuilder;
 import io.servicetalk.redis.api.RedisClient;
 import io.servicetalk.redis.api.RedisData;
-import io.servicetalk.transport.api.DefaultExecutionContext;
-import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.HostAndPort;
+import io.servicetalk.transport.api.IoExecutor;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -58,15 +54,16 @@ final class RedisTestEnvironment implements AutoCloseable {
     private static final InetAddress LOOPBACK_ADDRESS = getLoopbackAddress();
     private static final String IO_EXECUTOR_THREAD_NAME_PREFIX = "redis-client-io-executor-";
 
-    final ExecutionContext executionContext;
     final int redisPort;
     final String redisHost;
     final RedisClient client;
-    final ServiceDiscoverer<HostAndPort, InetSocketAddress, ServiceDiscovererEvent<InetSocketAddress>> serviceDiscoverer;
 
     final int[] serverVersion;
+    final Executor executor;
+    final IoExecutor ioExecutor;
 
     RedisTestEnvironment(Executor executor) throws Exception {
+        this.executor = executor;
         final String tmpRedisPort = System.getenv("REDIS_PORT");
         assumeThat(tmpRedisPort, not(isEmptyOrNullString()));
         redisPort = Integer.parseInt(tmpRedisPort);
@@ -75,13 +72,13 @@ final class RedisTestEnvironment implements AutoCloseable {
 
         final DefaultThreadFactory threadFactory = new DefaultThreadFactory(IO_EXECUTOR_THREAD_NAME_PREFIX, true,
                 NORM_PRIORITY);
-        executionContext = new DefaultExecutionContext(DEFAULT_ALLOCATOR, createIoExecutor(threadFactory), executor);
-        serviceDiscoverer = new DefaultDnsServiceDiscovererBuilder(executionContext).build();
         DefaultRedisClientBuilder<HostAndPort, InetSocketAddress> builder =
                 (DefaultRedisClientBuilder<HostAndPort, InetSocketAddress>) forAddress(redisHost, redisPort);
+        ioExecutor = createIoExecutor(threadFactory);
         RedisClient rawClient = builder
                 .deferSubscribeTillConnect(true)
-                .executionContext(executionContext)
+                .ioExecutor(ioExecutor)
+                .executor(executor)
                 .maxPipelinedRequests(10)
                 .idleConnectionTimeout(ofSeconds(2))
                 .pingPeriod(ofSeconds(PING_PERIOD_SECONDS))
@@ -102,8 +99,7 @@ final class RedisTestEnvironment implements AutoCloseable {
 
     @Override
     public void close() throws Exception {
-        awaitIndefinitely(newCompositeCloseable().appendAll(client, serviceDiscoverer,
-                executionContext.ioExecutor(), executionContext.executor()).closeAsync());
+        awaitIndefinitely(newCompositeCloseable().appendAll(client, ioExecutor, executor).closeAsync());
     }
 
     boolean isInClientEventLoop(Thread thread) {

@@ -15,6 +15,8 @@
  */
 package io.servicetalk.http.netty;
 
+import io.servicetalk.buffer.api.BufferAllocator;
+import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.HttpConnectionBuilder;
@@ -28,9 +30,11 @@ import io.servicetalk.tcp.netty.internal.TcpClientChannelInitializer;
 import io.servicetalk.tcp.netty.internal.TcpClientConfig;
 import io.servicetalk.tcp.netty.internal.TcpConnector;
 import io.servicetalk.transport.api.ExecutionContext;
+import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.SslConfig;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
 import io.servicetalk.transport.netty.internal.CloseHandler;
+import io.servicetalk.transport.netty.internal.ExecutionContextBuilder;
 import io.servicetalk.transport.netty.internal.NettyConnection;
 
 import java.io.InputStream;
@@ -40,7 +44,6 @@ import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.transport.netty.internal.CloseHandler.forPipelinedRequestResponse;
-import static io.servicetalk.transport.netty.internal.GlobalExecutionContext.globalExecutionContext;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -53,8 +56,8 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress> implements Http
     private static final Predicate<Object> LAST_CHUNK_PREDICATE = p -> p instanceof HttpHeaders;
 
     private final HttpClientConfig config;
+    private final ExecutionContextBuilder executionContextBuilder = new ExecutionContextBuilder();
     private HttpConnectionFilterFactory connectionFilterFunction = HttpConnectionFilterFactory.identity();
-    private ExecutionContext executionContext = globalExecutionContext();
 
     /**
      * Create a new builder.
@@ -68,13 +71,26 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress> implements Http
     }
 
     @Override
-    public DefaultHttpConnectionBuilder<ResolvedAddress> executionContext(final ExecutionContext context) {
-        executionContext = requireNonNull(context);
+    public DefaultHttpConnectionBuilder<ResolvedAddress> ioExecutor(final IoExecutor ioExecutor) {
+        executionContextBuilder.ioExecutor(ioExecutor);
+        return this;
+    }
+
+    @Override
+    public DefaultHttpConnectionBuilder<ResolvedAddress> executor(final Executor executor) {
+        executionContextBuilder.executor(executor);
+        return this;
+    }
+
+    @Override
+    public DefaultHttpConnectionBuilder<ResolvedAddress> bufferAllocator(final BufferAllocator allocator) {
+        executionContextBuilder.bufferAllocator(allocator);
         return this;
     }
 
     @Override
     public Single<StreamingHttpConnection> buildStreaming(final ResolvedAddress resolvedAddress) {
+        ExecutionContext executionContext = executionContextBuilder.build();
         ReadOnlyHttpClientConfig roConfig = config.asReadOnly();
 
         final StreamingHttpRequestResponseFactory reqRespFactory =

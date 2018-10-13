@@ -77,7 +77,8 @@ public class HttpClientBuilderTest extends AbstractEchoServerBasedHttpRequesterT
         StreamingHttpClient requester = HttpClients.forSingleAddress("localhost", port)
                 .appendConnectionFactoryFilter(factoryFilter(factory1))
                 .appendConnectionFactoryFilter(factoryFilter(factory2))
-                .executionContext(CTX)
+                .ioExecutor(CTX.ioExecutor())
+                .executor(CTX.executor())
                 .buildStreaming();
         makeRequestValidateResponseAndClose(requester);
 
@@ -113,7 +114,8 @@ public class HttpClientBuilderTest extends AbstractEchoServerBasedHttpRequesterT
         int port = ((InetSocketAddress) serverContext.listenAddress()).getPort();
         StreamingHttpClient requester = HttpClients.forSingleAddress("localhost", port)
                 .serviceDiscoverer(disco)
-                .executionContext(CTX)
+                .ioExecutor(CTX.ioExecutor())
+                .executor(CTX.executor())
                 .buildStreaming();
         makeRequestValidateResponseAndClose(requester);
     }

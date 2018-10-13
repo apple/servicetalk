@@ -18,15 +18,12 @@ package io.servicetalk.examples.http.service.composition.backends;
 import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.http.api.HttpService;
 import io.servicetalk.http.api.StreamingHttpService;
-import io.servicetalk.transport.api.DefaultExecutionContext;
-import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.ServerContext;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
 import static io.servicetalk.http.netty.HttpServers.newHttpServerBuilder;
 import static java.util.Objects.requireNonNull;
@@ -47,12 +44,10 @@ final class BackendStarter {
     }
 
     ServerContext start(int listenPort, String name, StreamingHttpService service) throws Exception {
-        // Create ExecutionContext for this ServerContext with new Executor.
-        final ExecutionContext executionContext = new DefaultExecutionContext(DEFAULT_ALLOCATOR,
-                ioExecutor, resources.prepend(newCachedThreadExecutor()));
         // Starting the server will start listening for incoming client requests.
         final ServerContext ctx = newHttpServerBuilder(listenPort)
-                .executionContext(executionContext)
+                .ioExecutor(ioExecutor)
+                .executor(newCachedThreadExecutor())
                 .listenStreamingAndAwait(service);
         LOGGER.info("Started {} listening on {}.", name, ctx.listenAddress());
         return ctx;

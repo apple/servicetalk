@@ -15,9 +15,12 @@
  */
 package io.servicetalk.http.api;
 
+import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.client.api.ConnectionFactory;
+import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.transport.api.ExecutionContext;
+import io.servicetalk.transport.api.IoExecutor;
 
 import static io.servicetalk.http.api.BlockingUtils.blockingInvocation;
 
@@ -29,12 +32,28 @@ import static io.servicetalk.http.api.BlockingUtils.blockingInvocation;
 public interface HttpConnectionBuilder<ResolvedAddress> {
 
     /**
-     * Sets an {@link ExecutionContext} for all connections created from this {@link HttpClientBuilder}.
+     * Sets the {@link IoExecutor} for all connections created from this {@link HttpClientBuilder}.
      *
-     * @param context {@link ExecutionContext} to use.
+     * @param ioExecutor {@link IoExecutor} to use.
      * @return {@code this}.
      */
-    HttpConnectionBuilder<ResolvedAddress> executionContext(ExecutionContext context);
+    HttpConnectionBuilder<ResolvedAddress> ioExecutor(IoExecutor ioExecutor);
+
+    /**
+     * Sets the {@link Executor} for all connections created from this {@link HttpClientBuilder}.
+     *
+     * @param executor {@link Executor} to use.
+     * @return {@code this}.
+     */
+    HttpConnectionBuilder<ResolvedAddress> executor(Executor executor);
+
+    /**
+     * Sets the {@link BufferAllocator} for all connections created from this {@link HttpClientBuilder}.
+     *
+     * @param allocator {@link BufferAllocator} to use.
+     * @return {@code this}.
+     */
+    HttpConnectionBuilder<ResolvedAddress> bufferAllocator(BufferAllocator allocator);
 
     /**
      * Create a new {@link StreamingHttpConnection}, using a default {@link ExecutionContext}.

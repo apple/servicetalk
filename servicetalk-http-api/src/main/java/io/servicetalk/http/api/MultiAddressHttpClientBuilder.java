@@ -15,12 +15,14 @@
  */
 package io.servicetalk.http.api;
 
+import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.client.api.ConnectionFactoryFilter;
 import io.servicetalk.client.api.LoadBalancerFactory;
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
-import io.servicetalk.transport.api.ExecutionContext;
+import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.transport.api.HostAndPort;
+import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.SslConfig;
 
 import java.net.SocketOption;
@@ -38,9 +40,14 @@ import java.util.function.UnaryOperator;
  * @see <a href="https://tools.ietf.org/html/rfc7230#section-5.3.2">absolute-form rfc7230#section-5.3.2</a>
  */
 public interface MultiAddressHttpClientBuilder<U, R> extends HttpClientBuilder<U, R> {
+    @Override
+    MultiAddressHttpClientBuilder<U, R> ioExecutor(IoExecutor ioExecutor);
 
     @Override
-    MultiAddressHttpClientBuilder<U, R> executionContext(ExecutionContext context);
+    MultiAddressHttpClientBuilder<U, R> executor(Executor executor);
+
+    @Override
+    MultiAddressHttpClientBuilder<U, R> bufferAllocator(BufferAllocator allocator);
 
     @Override
     <T> MultiAddressHttpClientBuilder<U, R> socketOption(SocketOption<T> option, T value);

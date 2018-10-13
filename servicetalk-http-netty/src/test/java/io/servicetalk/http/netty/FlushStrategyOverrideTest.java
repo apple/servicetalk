@@ -73,13 +73,15 @@ public class FlushStrategyOverrideTest {
     public void setUp() throws Exception {
         service = new FlushingService();
         serverCtx = HttpServers.newHttpServerBuilder(0)
-                .executionContext(ctx)
+                .ioExecutor(ctx.ioExecutor())
+                .executor(ctx.executor())
                 .listenStreaming(service)
                 .toFuture().get();
         InetSocketAddress serverAddr = (InetSocketAddress) serverCtx.listenAddress();
         client = forSingleAddress(new NoopSD(serverAddr), serverAddr)
                 .disableHostHeaderFallback()
-                .executionContext(ctx)
+                .ioExecutor(ctx.ioExecutor())
+                .executor(ctx.executor())
                 .buildStreaming();
         conn = client.reserveConnection(client.get("/")).toFuture().get();
     }

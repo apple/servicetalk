@@ -285,7 +285,8 @@ public class RedisConnectionTest extends BaseRedisClientTest {
         final RedisTestEnvironment env = getEnv();
         RedisConnection rawConnection =
                 awaitIndefinitely(DefaultRedisConnectionBuilder.<InetSocketAddress>forPipeline()
-                        .executionContext(env.executionContext)
+                        .ioExecutor(env.ioExecutor)
+                        .executor(env.executor)
                         .build(new InetSocketAddress(env.redisHost, env.redisPort)));
         try {
             final AtomicBoolean requestCalled = new AtomicBoolean();

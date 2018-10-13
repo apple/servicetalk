@@ -97,7 +97,8 @@ public class HttpOffloadingTest {
         final InetSocketAddress bindAddress = new InetSocketAddress(LOOPBACK_ADDRESS, 0);
         service = new OffloadingVerifyingServiceStreaming();
         serverContext = newHttpServerBuilder(bindAddress)
-                .executionContext(SERVER_CTX)
+                .ioExecutor(SERVER_CTX.ioExecutor())
+                .executor(SERVER_CTX.executor())
                 .listenStreamingAndAwait(service);
 
         final InetSocketAddress socketAddress = (InetSocketAddress) serverContext.listenAddress();
@@ -106,7 +107,8 @@ public class HttpOffloadingTest {
         errors = new ConcurrentLinkedQueue<>();
         terminated = new CountDownLatch(1);
         client = forSingleAddress(HostAndPort.of(LOOPBACK_ADDRESS.getHostName(), socketAddress.getPort()))
-                .executionContext(CLIENT_CTX)
+                .ioExecutor(CLIENT_CTX.ioExecutor())
+                .executor(CLIENT_CTX.executor())
                 .buildStreaming();
         httpConnection = awaitIndefinitelyNonNull(client.reserveConnection(client.get("/")));
         connectionContext = httpConnection.connectionContext();

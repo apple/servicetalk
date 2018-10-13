@@ -26,8 +26,6 @@ import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
 
-import static io.servicetalk.transport.netty.internal.GlobalExecutionContext.globalExecutionContext;
-
 /**
  * ServiceTalk's shared DNS {@link ServiceDiscoverer} with reasonable defaults for APIs when a user doesn't provide one.
  * <p>
@@ -55,8 +53,7 @@ final class GlobalDnsServiceDiscoverer {
     private static final class GlobalDnsServiceDiscovererInitializer {
 
         static final ServiceDiscoverer<HostAndPort, InetSocketAddress,
-                ServiceDiscovererEvent<InetSocketAddress>> INSTANCE =
-                new DefaultDnsServiceDiscovererBuilder(globalExecutionContext()).build();
+                ServiceDiscovererEvent<InetSocketAddress>> INSTANCE = new DefaultDnsServiceDiscovererBuilder().build();
 
         static {
             LOGGER.debug("Initialized GlobalDnsServiceDiscoverer");

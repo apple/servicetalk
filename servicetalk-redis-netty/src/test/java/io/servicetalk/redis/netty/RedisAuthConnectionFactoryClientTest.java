@@ -22,7 +22,6 @@ import io.servicetalk.redis.api.RedisCommander;
 import io.servicetalk.redis.api.RedisServerException;
 import io.servicetalk.redis.utils.RedisAuthConnectionFactory;
 import io.servicetalk.redis.utils.RedisAuthorizationException;
-import io.servicetalk.transport.api.DefaultExecutionContext;
 import io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutor;
 
 import org.junit.After;
@@ -33,7 +32,6 @@ import org.junit.rules.Timeout;
 import java.util.function.Consumer;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.redis.utils.RetryingRedisClient.newBuilder;
@@ -147,7 +145,8 @@ public class RedisAuthConnectionFactoryClientTest {
                         new RedisAuthConnectionFactory<>(f, ctx -> ctx.executionContext().bufferAllocator()
                                 .fromAscii(password)))
                 .maxPipelinedRequests(10)
-                .executionContext(new DefaultExecutionContext(DEFAULT_ALLOCATOR, ioExecutor, immediate()))
+                .ioExecutor(ioExecutor)
+                .executor(immediate())
                 .idleConnectionTimeout(ofSeconds(2))
                 .build();
         client = newBuilder(rawClient).exponentialBackoff(ofMillis(10)).build(10);

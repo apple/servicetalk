@@ -15,9 +15,11 @@
  */
 package io.servicetalk.http.api;
 
+import io.servicetalk.buffer.api.BufferAllocator;
+import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.transport.api.ContextFilter;
-import io.servicetalk.transport.api.ExecutionContext;
+import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.api.SslConfig;
 
@@ -179,13 +181,28 @@ public interface HttpServerBuilder {
     }
 
     /**
-     * Optionally define the {@link ExecutionContext} to use for this server, otherwise a default {@link
-     * ExecutionContext} is used.
+     * Sets the {@link IoExecutor} to be used by this server.
      *
-     * @param context The {@link ExecutionContext} used for this server.
+     * @param ioExecutor {@link IoExecutor} to use.
      * @return {@code this}.
      */
-    HttpServerBuilder executionContext(ExecutionContext context);
+    HttpServerBuilder ioExecutor(IoExecutor ioExecutor);
+
+    /**
+     * Sets the {@link Executor} to be used by this server.
+     *
+     * @param executor {@link Executor} to use.
+     * @return {@code this}.
+     */
+    HttpServerBuilder executor(Executor executor);
+
+    /**
+     * Sets the {@link BufferAllocator} to be used by this server.
+     *
+     * @param allocator {@link BufferAllocator} to use.
+     * @return {@code this}.
+     */
+    HttpServerBuilder bufferAllocator(BufferAllocator allocator);
 
     /**
      * Starts this server and returns the {@link ServerContext} after the server has been successfully started.

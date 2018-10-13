@@ -15,6 +15,7 @@
  */
 package io.servicetalk.redis.netty;
 
+import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.client.api.ConnectionFactoryFilter;
 import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.api.LoadBalancerFactory;
@@ -22,6 +23,7 @@ import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.CompositeCloseable;
+import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.redis.api.LoadBalancerReadyRedisClient;
@@ -36,7 +38,9 @@ import io.servicetalk.redis.api.RedisRequest;
 import io.servicetalk.tcp.netty.internal.TcpClientConfig;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.HostAndPort;
+import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.SslConfig;
+import io.servicetalk.transport.netty.internal.ExecutionContextBuilder;
 
 import java.net.InetSocketAddress;
 import java.net.SocketOption;
@@ -49,7 +53,6 @@ import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseabl
 import static io.servicetalk.loadbalancer.RoundRobinLoadBalancer.newRoundRobinFactory;
 import static io.servicetalk.redis.netty.GlobalDnsServiceDiscoverer.globalDnsServiceDiscoverer;
 import static io.servicetalk.redis.netty.RedisUtils.isSubscribeModeCommand;
-import static io.servicetalk.transport.netty.internal.GlobalExecutionContext.globalExecutionContext;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -71,7 +74,7 @@ final class DefaultRedisClientBuilder<U, R> implements RedisClientBuilder<U, R> 
 
     private final U address;
     private final RedisClientConfig config;
-    private ExecutionContext executionContext = globalExecutionContext();
+    private final ExecutionContextBuilder executionContextBuilder = new ExecutionContextBuilder();
     private LoadBalancerFactory<R, RedisConnection> loadBalancerFactory;
     private ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>> serviceDiscoverer;
     private RedisConnectionFilterFactory connectionFilterFactory = RedisConnectionFilterFactory.identity();
@@ -90,7 +93,6 @@ final class DefaultRedisClientBuilder<U, R> implements RedisClientBuilder<U, R> 
     private DefaultRedisClientBuilder(U address, DefaultRedisClientBuilder<U, R> from) {
         this.address = address;
         config = from.config;
-        executionContext = from.executionContext;
         loadBalancerFactory = from.loadBalancerFactory;
         serviceDiscoverer = from.serviceDiscoverer;
         connectionFilterFactory = from.connectionFilterFactory;
@@ -112,8 +114,20 @@ final class DefaultRedisClientBuilder<U, R> implements RedisClientBuilder<U, R> 
     }
 
     @Override
-    public RedisClientBuilder<U, R> executionContext(final ExecutionContext context) {
-        this.executionContext = context;
+    public RedisClientBuilder<U, R> ioExecutor(final IoExecutor ioExecutor) {
+        executionContextBuilder.ioExecutor(ioExecutor);
+        return this;
+    }
+
+    @Override
+    public RedisClientBuilder<U, R> executor(final Executor executor) {
+        executionContextBuilder.executor(executor);
+        return this;
+    }
+
+    @Override
+    public RedisClientBuilder<U, R> bufferAllocator(final BufferAllocator allocator) {
+        executionContextBuilder.bufferAllocator(allocator);
         return this;
     }
 
@@ -211,11 +225,12 @@ final class DefaultRedisClientBuilder<U, R> implements RedisClientBuilder<U, R> 
 
     @Override
     public RedisClient build() {
-        return build0(serviceDiscoverer);
+        return build0(serviceDiscoverer, buildExecutionContext());
     }
 
-    RedisClient build(ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>> sd) {
-        return build0(sd);
+    RedisClient build(final ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>> sd,
+                      final ExecutionContext executionContext) {
+        return build0(sd, executionContext);
     }
 
     ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>> serviceDiscoverer() {
@@ -226,14 +241,14 @@ final class DefaultRedisClientBuilder<U, R> implements RedisClientBuilder<U, R> 
         return address;
     }
 
-    ExecutionContext executionContext() {
-        return executionContext;
+    ExecutionContext buildExecutionContext() {
+        return executionContextBuilder.build();
     }
 
     @Nonnull
-    private RedisClient build0(ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>> sd) {
-        Publisher<? extends ServiceDiscovererEvent<R>> multicastAddressEventStream =
-                sd.discover(address).multicast(2);
+    private RedisClient build0(final ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>> sd,
+                               final ExecutionContext executionContext) {
+        Publisher<? extends ServiceDiscovererEvent<R>> multicastAddressEventStream = sd.discover(address).multicast(2);
         ReadOnlyRedisClientConfig roConfig = config.asReadOnly();
 
         // Track resources that potentially need to be closed when an exception is thrown during buildStreaming

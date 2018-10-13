@@ -29,8 +29,6 @@ import io.servicetalk.http.netty.HttpClients;
 import io.servicetalk.http.netty.HttpServers;
 import io.servicetalk.http.router.predicate.HttpPredicateRouterBuilder;
 import io.servicetalk.http.utils.RetryingHttpClientFilter;
-import io.servicetalk.transport.api.DefaultExecutionContext;
-import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.ServerContext;
@@ -38,9 +36,7 @@ import io.servicetalk.transport.api.ServerContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
-import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.examples.http.service.composition.backends.PortRegistry.METADATA_BACKEND_ADDRESS;
 import static io.servicetalk.examples.http.service.composition.backends.PortRegistry.RATINGS_BACKEND_ADDRESS;
@@ -72,10 +68,6 @@ public final class GatewayServer {
         try (CompositeCloseable resources = newCompositeCloseable()) {
             // Shared IoExecutor for the application.
             IoExecutor ioExecutor = resources.prepend(createIoExecutor());
-
-            // ExecutionContext for the server.
-            ExecutionContext executionContext = new DefaultExecutionContext(DEFAULT_ALLOCATOR,
-                    ioExecutor, resources.prepend(newCachedThreadExecutor()));
 
             // Create clients for the different backends we are going to use in the gateway.
             StreamingHttpClient recommendationsClient =
@@ -112,7 +104,7 @@ public final class GatewayServer {
             // Create configurable starter for HTTP server.
             // Starting the server will start listening for incoming client requests.
             ServerContext serverContext = HttpServers.newHttpServerBuilder(8080)
-                    .executionContext(executionContext)
+                    .ioExecutor(ioExecutor)
                     .listenStreamingAndAwait(gatewayService);
 
             LOGGER.info("listening on {}", serverContext.listenAddress());
@@ -125,11 +117,6 @@ public final class GatewayServer {
     private static StreamingHttpClient newClient(final IoExecutor ioExecutor,
                                                  final HostAndPort serviceAddress,
                                                  final CompositeCloseable resources) {
-
-        // Setup the ExecutionContext to offload user code onto a cached Executor.
-        DefaultExecutionContext executionContext = new DefaultExecutionContext(DEFAULT_ALLOCATOR, ioExecutor,
-                resources.prepend(newCachedThreadExecutor()));
-
         return resources.prepend(
                 HttpClients.forSingleAddress(serviceAddress)
                         // Set retry and timeout filters for all clients.
@@ -145,7 +132,7 @@ public final class GatewayServer {
                                     }
                                 })
                         )
-                        .executionContext(executionContext)
+                        .ioExecutor(ioExecutor)
                         .buildStreaming());
     }
 }
