@@ -87,7 +87,7 @@ final class NettyHttpServerConnection extends HttpServiceContext implements Nett
         final Single<StreamingHttpRequest> requestSingle =
                 new SpliceFlatStreamToMetaSingle<>(connRequestObjectPublisher,
                         (HttpRequestMetaData hdr, Publisher<Object> pandt) ->
-                        spliceRequest(NettyHttpServerConnection.this.connection.executionContext().bufferAllocator(),
+                        spliceRequest(connection.executionContext().bufferAllocator(),
                                 hdr, pandt));
         return handleRequestAndWriteResponse(requestSingle);
     }
@@ -390,16 +390,12 @@ final class NettyHttpServerConnection extends HttpServiceContext implements Nett
         }
 
         private void updateListener(final WriteEventsListener newListener) {
-            newListener.writeStarted();
             for (;;) {
                 final WriteEventsListener current = currentListener;
-                if (current == CANCELLED) {
-                    newListener.writeCancelled();
-                    return;
-                } else if (current == TERMINATED) {
-                    newListener.writeTerminated();
+                if (current == CANCELLED || current == TERMINATED) {
                     return;
                 } else if (currentListenerUpdater.compareAndSet(this, current, newListener)) {
+                    newListener.writeStarted();
                     // Old listener will not be invoked any more, so send a terminal signal.
                     current.writeTerminated();
                     return;

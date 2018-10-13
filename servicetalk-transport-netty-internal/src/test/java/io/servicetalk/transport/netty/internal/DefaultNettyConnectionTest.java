@@ -102,7 +102,7 @@ public class DefaultNettyConnectionTest {
         when(context.closeAsync()).thenReturn(new NettyFutureCompletable(channel::close));
         when(context.executionContext()).thenReturn(executionContext);
         requestNSupplier = mock(NettyConnection.RequestNSupplier.class);
-        when(requestNSupplier.getRequestNFor(anyLong())).then(invocation1 -> (long) requestNext);
+        when(requestNSupplier.requestNFor(anyLong())).then(invocation1 -> (long) requestNext);
         terminalPredicate = new NettyConnection.TerminalPredicate<>(o -> false);
         readPublisher = new TestPublisher<Buffer>().sendOnSubscribe();
         conn = new DefaultNettyConnection<>(channel, context, readPublisher, terminalPredicate, closeHandler,
@@ -408,7 +408,7 @@ public class DefaultNettyConnectionTest {
         for (Buffer item : items) {
             verify(requestNSupplier).onItemWrite(eq(item), anyLong(), anyLong());
         }
-        verify(requestNSupplier, times(1 + items.length + channelWritabilityChangedCount)).getRequestNFor(anyLong());
+        verify(requestNSupplier, times(1 + items.length + channelWritabilityChangedCount)).requestNFor(anyLong());
     }
 
     private void changeWritability(boolean writable) {

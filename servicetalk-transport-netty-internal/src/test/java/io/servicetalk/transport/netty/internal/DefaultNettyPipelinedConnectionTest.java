@@ -72,7 +72,7 @@ public class DefaultNettyPipelinedConnectionTest {
         writePublisher1.sendOnSubscribe();
         writePublisher2 = new TestPublisher<>();
         writePublisher2.sendOnSubscribe();
-        when(requestNSupplier.getRequestNFor(anyLong())).then(invocation1 -> requestNext);
+        when(requestNSupplier.requestNFor(anyLong())).then(invocation1 -> requestNext);
         connection = new DefaultNettyConnection<>(channel, context, readPublisher,
                 new NettyConnection.TerminalPredicate<>(integer -> true), NOOP_CLOSE_HANDLER, defaultFlushStrategy());
         requester = new DefaultNettyPipelinedConnection<>(connection, MAX_PENDING_REQUESTS);

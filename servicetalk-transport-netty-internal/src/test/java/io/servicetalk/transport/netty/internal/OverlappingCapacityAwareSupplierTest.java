@@ -150,7 +150,7 @@ public class OverlappingCapacityAwareSupplierTest {
     }
 
     private static void requestNAndVerify(OverlappingCapacityAwareSupplier supplier, int writeBufferCapacityInBytes, long expectedRequestN) {
-        long requestN = supplier.getRequestNFor(writeBufferCapacityInBytes);
+        long requestN = supplier.requestNFor(writeBufferCapacityInBytes);
         assertThat("Unexpected requestN", requestN, is(expectedRequestN));
     }
 

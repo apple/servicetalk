@@ -62,7 +62,7 @@ public interface FlushStrategy {
      * For each {@link WriteEventsListener} returned from {@link FlushStrategy#apply(FlushSender)}, following calls
      * will be made:
      * <ul>
-     *     <li>Exactly one call to {@link #writeStarted()}</li>
+     *     <li>At most one call to {@link #writeStarted()}</li>
      *     <li>Zero or more calls to {@link #itemWritten()}</li>
      *     <li>At most one call to {@link #writeTerminated()}</li>
      *     <li>At most one call to {@link #writeCancelled()}</li>
@@ -80,7 +80,7 @@ public interface FlushStrategy {
 
         /**
          * For each new {@link WriteEventsListener} returned from {@link FlushStrategy#apply(FlushSender)}, this method
-         * will be called exactly once before any items are written to the connection.
+         * will be called at most once before any items are written to the connection.
          * <p>
          * This will be followed by zero or more calls to {@link #itemWritten()} and at most one call to
          * {@link #writeTerminated()} and {@link #writeCancelled()} or both.

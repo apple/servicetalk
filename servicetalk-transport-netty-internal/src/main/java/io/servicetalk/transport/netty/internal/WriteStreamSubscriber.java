@@ -253,7 +253,7 @@ final class WriteStreamSubscriber implements org.reactivestreams.Subscriber<Obje
             return;
         }
 
-        long n = requestNSupplier.getRequestNFor(channel.bytesBeforeUnwritable());
+        long n = requestNSupplier.requestNFor(channel.bytesBeforeUnwritable());
         if (n > 0) {
             requestedUpdater.accumulateAndGet(this, n, FlowControlUtil::addWithOverflowProtection);
             subscription.request(n);

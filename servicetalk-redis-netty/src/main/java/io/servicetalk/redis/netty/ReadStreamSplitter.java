@@ -114,7 +114,7 @@ final class ReadStreamSplitter {
         this.original = new SubscribedChannelReadStream(connection.read(),
                 connection.executionContext().bufferAllocator())
                 .groupBy(new GroupSelector(), maxBufferPerGroup, maxConcurrentRequests);
-        NettyConnection.TerminalPredicate<RedisData> terminalMsgPredicate = connection.getTerminalMsgPredicate();
+        NettyConnection.TerminalPredicate<RedisData> terminalMsgPredicate = connection.terminalMsgPredicate();
         // Max pending is enforced by the upstream connection for writes, so this can be unbounded.
         // poll() could be invoked from a group onNext in case of duplicate redis (p)subscribe commands
         // for the same channel name/pattern

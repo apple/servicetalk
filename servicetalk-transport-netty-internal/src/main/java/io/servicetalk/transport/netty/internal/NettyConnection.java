@@ -61,7 +61,7 @@ public interface NettyConnection<Read, Write> extends NettyConnectionContext {
      *
      * @return {@link TerminalPredicate} for this connection.
      */
-    TerminalPredicate<Read> getTerminalMsgPredicate();
+    TerminalPredicate<Read> terminalMsgPredicate();
 
     /**
      * Writes all elements emitted by the passed {@link Publisher} on this connection.
@@ -161,7 +161,7 @@ public interface NettyConnection<Read, Write> extends NettyConnectionContext {
          *
          * @see OverlappingCapacityAwareSupplier
          */
-        long getRequestNFor(long writeBufferCapacityInBytes);
+        long requestNFor(long writeBufferCapacityInBytes);
 
         /**
          * Returns a new instance of a default implementation of {@link RequestNSupplier}.

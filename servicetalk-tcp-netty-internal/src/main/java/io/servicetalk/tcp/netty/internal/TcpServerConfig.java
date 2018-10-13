@@ -148,7 +148,6 @@ public final class TcpServerConfig extends ReadOnlyTcpServerConfig {
         return this;
     }
 
-
     /**
      * Sets {@link FlushStrategy} to use for all connections accepted by this server.
      *

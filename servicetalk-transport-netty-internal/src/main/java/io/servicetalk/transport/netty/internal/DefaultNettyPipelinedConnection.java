@@ -69,7 +69,7 @@ public final class DefaultNettyPipelinedConnection<Req, Resp> implements NettyPi
      */
     public DefaultNettyPipelinedConnection(NettyConnection<Resp, Req> connection, int initialQueueSize) {
         this.connection = requireNonNull(connection);
-        this.terminalMsgPredicate = connection.getTerminalMsgPredicate();
+        this.terminalMsgPredicate = connection.terminalMsgPredicate();
         writeQueue = new WriteQueue<>(terminalMsgPredicate, initialQueueSize);
     }
 

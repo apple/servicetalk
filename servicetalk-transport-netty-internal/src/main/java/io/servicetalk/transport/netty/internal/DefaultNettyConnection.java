@@ -125,7 +125,7 @@ public class DefaultNettyConnection<Read, Write> implements NettyConnection<Read
         this.read = read.onErrorResume(this::enrichErrorPublisher);
         this.terminalMsgPredicate = requireNonNull(terminalMsgPredicate);
         this.closeHandler = requireNonNull(closeHandler);
-        this.flushStrategy = flushStrategy;
+        this.flushStrategy = requireNonNull(flushStrategy);
         if (closeHandler != NOOP_CLOSE_HANDLER) {
             onClosing = new CompletableProcessor();
             closeHandler.registerEventHandler(channel, evt -> { // Called from EventLoop only!
@@ -228,7 +228,7 @@ public class DefaultNettyConnection<Read, Write> implements NettyConnection<Read
     }
 
     @Override
-    public TerminalPredicate<Read> getTerminalMsgPredicate() {
+    public TerminalPredicate<Read> terminalMsgPredicate() {
         return terminalMsgPredicate;
     }
 

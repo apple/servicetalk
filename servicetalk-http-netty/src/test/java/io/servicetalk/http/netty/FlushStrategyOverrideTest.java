@@ -16,6 +16,7 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.client.api.ServiceDiscoverer;
+import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
@@ -108,7 +109,6 @@ public class FlushStrategyOverrideTest {
         clientStrategy.verifyItemWritten(5 /* Header + 3 chunks + trailers*/);
         clientStrategy.verifyWriteTerminated();
         clientFlush.flush();
-        clientStrategy.verifyNoMoreInteractions();
 
         MockFlushStrategy serverStrategy = service.getLastUsedStrategy();
 
@@ -158,7 +158,8 @@ public class FlushStrategyOverrideTest {
         }
     }
 
-    private static final class NoopSD implements ServiceDiscoverer<InetSocketAddress, InetSocketAddress> {
+    private static final class NoopSD implements ServiceDiscoverer<InetSocketAddress, InetSocketAddress,
+            ServiceDiscovererEvent<InetSocketAddress>> {
 
         private final ListenableAsyncCloseable closeable;
         private final InetSocketAddress serverAddr;
@@ -169,8 +170,8 @@ public class FlushStrategyOverrideTest {
         }
 
         @Override
-        public Publisher<Event<InetSocketAddress>> discover(final InetSocketAddress inetSocketAddress) {
-            return from(new Event<InetSocketAddress>() {
+        public Publisher<ServiceDiscovererEvent<InetSocketAddress>> discover(final InetSocketAddress inetSocketAddress) {
+            return from(new ServiceDiscovererEvent<InetSocketAddress>() {
                 @Override
                 public InetSocketAddress address() {
                     return serverAddr;
