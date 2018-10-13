@@ -141,7 +141,7 @@ public final class ZipkinPublisher implements InMemorySpanEventListener, Closeab
          * @param serviceName the service name.
          * @return this.
          */
-        public Builder withServiceName(String serviceName) {
+        public Builder serviceName(String serviceName) {
             this.serviceName = requireNonNull(serviceName);
             return this;
         }
@@ -152,7 +152,7 @@ public final class ZipkinPublisher implements InMemorySpanEventListener, Closeab
          * @param collectorAddress the {@link SocketAddress} of the collector.
          * @return this.
          */
-        public Builder withCollectorAddress(SocketAddress collectorAddress) {
+        public Builder collectorAddress(SocketAddress collectorAddress) {
             this.collectorAddress = requireNonNull(collectorAddress);
             return this;
         }
@@ -163,7 +163,7 @@ public final class ZipkinPublisher implements InMemorySpanEventListener, Closeab
          * @param localAddress the local {@link InetSocketAddress}.
          * @return this.
          */
-        public Builder withLocalAddress(InetSocketAddress localAddress) {
+        public Builder localAddress(InetSocketAddress localAddress) {
             this.localAddress = localAddress;
             return this;
         }
@@ -174,7 +174,7 @@ public final class ZipkinPublisher implements InMemorySpanEventListener, Closeab
          * @param encoder the {@link Encoder} to use.
          * @return this.
          */
-        public Builder withEncoder(Encoder encoder) {
+        public Builder encoder(Encoder encoder) {
             this.encoder = requireNonNull(encoder);
             return this;
         }
@@ -185,7 +185,7 @@ public final class ZipkinPublisher implements InMemorySpanEventListener, Closeab
          * @param transport the {@link Transport} to use.
          * @return this.
          */
-        public Builder withProtocol(Transport transport) {
+        public Builder protocol(Transport transport) {
             this.transport = requireNonNull(transport);
             return this;
         }

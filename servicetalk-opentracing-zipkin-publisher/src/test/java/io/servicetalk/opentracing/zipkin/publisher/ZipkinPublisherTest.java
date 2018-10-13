@@ -158,8 +158,8 @@ public class ZipkinPublisherTest {
 
     private ZipkinPublisher buildPublisher(InetSocketAddress remoteAddress, Encoder encoder) {
         return new ZipkinPublisher.Builder("test", remoteAddress)
-                .withEncoder(encoder)
-                .withProtocol(ZipkinPublisher.Transport.UDP)
+                .encoder(encoder)
+                .protocol(ZipkinPublisher.Transport.UDP)
                 .build();
     }
 
