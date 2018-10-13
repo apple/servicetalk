@@ -15,23 +15,21 @@
  */
 package io.servicetalk.transport.netty.internal;
 
-import io.netty.channel.ChannelHandler;
+final class FlushOnEnd implements FlushStrategy {
 
-import javax.annotation.Nullable;
+    static final FlushOnEnd FLUSH_ON_END = new FlushOnEnd();
 
-/**
- * A {@link ChannelHandler} that contains a {@link NettyConnection}.
- *
- * @param <Read> Type of objects read from this connection.
- * @param <Write> Type of objects written to this connection.
- */
-public interface ConnectionHolderChannelHandler<Read, Write> extends ChannelHandler {
+    private FlushOnEnd() {
+        // No instances.
+    }
 
-    /**
-     * Get the {@link NettyConnection} associated with this object.
-     *
-     * @return the {@link NettyConnection} associated with this object.
-     */
-    @Nullable
-    NettyConnection<Read, Write> getConnection();
+    @Override
+    public WriteEventsListener apply(final FlushSender sender) {
+        return new WriteEventsListenerAdapter() {
+            @Override
+            public void writeTerminated() {
+                sender.flush();
+            }
+        };
+    }
 }

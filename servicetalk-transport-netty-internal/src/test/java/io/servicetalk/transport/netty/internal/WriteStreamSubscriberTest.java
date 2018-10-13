@@ -45,7 +45,7 @@ public class WriteStreamSubscriberTest extends AbstractWriteTest {
         closeHandler = mock(CloseHandler.class);
         subscriber = new WriteStreamSubscriber(channel, requestNSupplier, completableSubscriber, closeHandler);
         subscription = mock(Subscription.class);
-        when(requestNSupplier.getRequestNFor(anyLong())).thenReturn(1L);
+        when(requestNSupplier.requestNFor(anyLong())).thenReturn(1L);
         subscriber.onSubscribe(subscription);
     }
 

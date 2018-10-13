@@ -21,6 +21,7 @@ import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.SequentialCancellable;
 import io.servicetalk.transport.api.ExecutionContext;
+import io.servicetalk.transport.netty.internal.NettyConnection.RequestNSupplier;
 
 import org.reactivestreams.Subscriber;
 import org.slf4j.Logger;
@@ -30,6 +31,7 @@ import java.net.SocketAddress;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+import java.util.function.UnaryOperator;
 import javax.annotation.Nullable;
 import javax.net.ssl.SSLSession;
 
@@ -37,37 +39,37 @@ import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 
 /**
- * Implementation of {@link PipelinedConnection} using a {@link Connection}.
+ * Implementation of {@link NettyPipelinedConnection} using a {@link NettyConnection}.
  *
  * @param <Req> Type of requests sent on this connection.
  * @param <Resp> Type of responses read from this connection.
  */
-public final class DefaultPipelinedConnection<Req, Resp> implements PipelinedConnection<Req, Resp> {
+public final class DefaultNettyPipelinedConnection<Req, Resp> implements NettyPipelinedConnection<Req, Resp> {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(DefaultPipelinedConnection.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(DefaultNettyPipelinedConnection.class);
 
-    private final Connection<Resp, Req> connection;
-    private final Connection.TerminalPredicate<Resp> terminalMsgPredicate;
+    private final NettyConnection<Resp, Req> connection;
+    private final NettyConnection.TerminalPredicate<Resp> terminalMsgPredicate;
     private final WriteQueue<Resp> writeQueue;
 
     /**
      * New instance.
      *
-     * @param connection {@link Connection} requests to which are to be pipelined.
+     * @param connection {@link NettyConnection} requests to which are to be pipelined.
      */
-    public DefaultPipelinedConnection(Connection<Resp, Req> connection) {
+    public DefaultNettyPipelinedConnection(NettyConnection<Resp, Req> connection) {
         this(connection, 2);
     }
 
     /**
      * New instance.
      *
-     * @param connection {@link Connection} requests to which are to be pipelined.
+     * @param connection {@link NettyConnection} requests to which are to be pipelined.
      * @param initialQueueSize Initial size for the write and read queues.
      */
-    public DefaultPipelinedConnection(Connection<Resp, Req> connection, int initialQueueSize) {
+    public DefaultNettyPipelinedConnection(NettyConnection<Resp, Req> connection, int initialQueueSize) {
         this.connection = requireNonNull(connection);
-        this.terminalMsgPredicate = connection.getTerminalMsgPredicate();
+        this.terminalMsgPredicate = connection.terminalMsgPredicate();
         writeQueue = new WriteQueue<>(terminalMsgPredicate, initialQueueSize);
     }
 
@@ -102,24 +104,24 @@ public final class DefaultPipelinedConnection<Req, Resp> implements PipelinedCon
     }
 
     @Override
-    public Publisher<Resp> request(Publisher<Req> request, FlushStrategy flushStrategy) {
-        return writeOrQueue(connection.write(request, flushStrategy), null);
+    public Publisher<Resp> request(Publisher<Req> request) {
+        return writeOrQueue(connection.write(request), null);
     }
 
     @Override
-    public Publisher<Resp> request(Publisher<Req> request, Supplier<Predicate<Resp>> terminalMsgPredicateSupplier, FlushStrategy flushStrategy) {
-        return writeOrQueue(connection.write(request, flushStrategy), terminalMsgPredicateSupplier);
+    public Publisher<Resp> request(Supplier<Predicate<Resp>> terminalMsgPredicateSupplier, Publisher<Req> request) {
+        return writeOrQueue(connection.write(request), terminalMsgPredicateSupplier);
     }
 
     @Override
-    public Publisher<Resp> request(Publisher<Req> request, FlushStrategy flushStrategy, Supplier<Connection.RequestNSupplier> requestNSupplierFactory) {
-        return writeOrQueue(connection.write(request, flushStrategy, requestNSupplierFactory), null);
+    public Publisher<Resp> request(Publisher<Req> request, Supplier<RequestNSupplier> requestNSupplierFactory) {
+        return writeOrQueue(connection.write(request, requestNSupplierFactory), null);
     }
 
     @Override
-    public Publisher<Resp> request(Publisher<Req> request, FlushStrategy flushStrategy, Supplier<Connection.RequestNSupplier> requestNSupplierFactory,
+    public Publisher<Resp> request(Publisher<Req> request, Supplier<RequestNSupplier> requestNSupplierFactory,
                                    Supplier<Predicate<Resp>> terminalMsgPredicateSupplier) {
-        return writeOrQueue(connection.write(request, flushStrategy, requestNSupplierFactory), terminalMsgPredicateSupplier);
+        return writeOrQueue(connection.write(request, requestNSupplierFactory), terminalMsgPredicateSupplier);
     }
 
     private Publisher<Resp> requestWithWriter(Writer writer, @Nullable Supplier<Predicate<Resp>> terminalMsgPredicateSupplier) {
@@ -198,14 +200,19 @@ public final class DefaultPipelinedConnection<Req, Resp> implements PipelinedCon
 
     @Override
     public String toString() {
-        return DefaultPipelinedConnection.class.getSimpleName() + "(" + connection + ")";
+        return DefaultNettyPipelinedConnection.class.getSimpleName() + "(" + connection + ")";
+    }
+
+    @Override
+    public Cancellable updateFlushStrategy(final UnaryOperator<FlushStrategy> strategyProvider) {
+        return connection.updateFlushStrategy(strategyProvider);
     }
 
     private static final class WriteQueue<Resp> extends SequentialTaskQueue<Task<Resp>> {
 
         private final ResponseQueue<Resp> responseQueue;
 
-        WriteQueue(Connection.TerminalPredicate<Resp> terminalMsgPredicate, int initialQueueSize) {
+        WriteQueue(NettyConnection.TerminalPredicate<Resp> terminalMsgPredicate, int initialQueueSize) {
             // Queues are unbounded since max capacity has to be enforced across these two queues
             // i.e. requests queued for write + responses not completed must not exceed maxPendingRequests.
             super(initialQueueSize, UNBOUNDED);
@@ -220,9 +227,9 @@ public final class DefaultPipelinedConnection<Req, Resp> implements PipelinedCon
 
     private static final class ResponseQueue<Resp> extends SequentialTaskQueue<Task<Resp>> {
 
-        private final Connection.TerminalPredicate<Resp> terminalMsgPredicate;
+        private final NettyConnection.TerminalPredicate<Resp> terminalMsgPredicate;
 
-        ResponseQueue(Connection.TerminalPredicate<Resp> terminalMsgPredicate, int initialQueueSize) {
+        ResponseQueue(NettyConnection.TerminalPredicate<Resp> terminalMsgPredicate, int initialQueueSize) {
             // Queues are unbounded since max capacity has to be enforced across these two queues
             // i.e. requests queued for write + responses not completed must not exceed maxPendingRequests.
             super(initialQueueSize, UNBOUNDED);

@@ -28,7 +28,7 @@ final class StreamingHttpServiceToBlockingHttpService extends BlockingHttpServic
     @Override
     public HttpResponse handle(final HttpServiceContext ctx, final HttpRequest request,
                                final HttpResponseFactory responseFactory) throws Exception {
-        return blockingInvocation(service.handle(ctx, request.toStreamingRequest(), ctx.getStreamingResponseFactory())
+        return blockingInvocation(service.handle(ctx, request.toStreamingRequest(), ctx.streamingResponseFactory())
                 .flatMap(StreamingHttpResponse::toResponse));
     }
 

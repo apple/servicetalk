@@ -15,420 +15,237 @@
  */
 package io.servicetalk.transport.netty.internal;
 
-import io.servicetalk.concurrent.Completable.Subscriber;
+import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.api.Completable;
-import io.servicetalk.concurrent.api.CompletableProcessor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.transport.api.ConnectionContext;
-import io.servicetalk.transport.api.ExecutionContext;
-import io.servicetalk.transport.netty.internal.CloseHandler.CloseEvent;
 
-import io.netty.channel.AbstractChannel;
-import io.netty.channel.Channel;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelInboundHandler;
-import io.netty.channel.EventLoop;
-import io.netty.channel.socket.ChannelOutputShutdownEvent;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.reactivestreams.Subscriber;
+import org.reactivestreams.Subscription;
 
-import java.net.SocketAddress;
-import java.nio.channels.ClosedChannelException;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
-import java.util.function.BooleanSupplier;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
-import javax.annotation.Nullable;
-import javax.net.ssl.SSLSession;
 
-import static io.netty.util.ReferenceCountUtil.release;
-import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
-import static io.servicetalk.concurrent.internal.ThrowableUtil.unknownStackTrace;
-import static io.servicetalk.transport.netty.internal.CloseHandler.NOOP_CLOSE_HANDLER;
-import static io.servicetalk.transport.netty.internal.Flush.composeFlushes;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater;
 
 /**
- * Implementation of {@link Connection} backed by a netty {@link Channel}.
+ * A wrapper over a physical connection providing a way to read/write as a {@link Publisher}.
  *
  * @param <Read> Type of objects read from this connection.
  * @param <Write> Type of objects written to this connection.
  */
-public class NettyConnection<Read, Write> implements Connection<Read, Write> {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(NettyConnection.class);
-
-    private static final TerminalPredicate PIPELINE_UNSUPPORTED_PREDICATE = new TerminalPredicate();
-
-    private static final WritableListener PLACE_HOLDER_WRITABLE_LISTENER = new NoopWritableListener();
-    private static final WritableListener SINGLE_ITEM_WRITABLE_LISTENER = new NoopWritableListener();
-
-    private static final ClosedChannelException CLOSED_CHANNEL_INACTIVE =
-            unknownStackTrace(new ClosedChannelException(), NettyConnection.class, "channelInactive(..)");
-    private static final ClosedChannelException CLOSED_FAIL_ACTIVE =
-            unknownStackTrace(new ClosedChannelException(), NettyConnection.class, "failIfWriteActive(..)");
-    private static final AtomicReferenceFieldUpdater<NettyConnection, WritableListener> writableListenerUpdater =
-            newUpdater(NettyConnection.class, WritableListener.class, "writableListener");
-    private volatile WritableListener writableListener = PLACE_HOLDER_WRITABLE_LISTENER;
-
-    private volatile boolean readInProgress;
-    @Nullable
-    private volatile ReadAwareFlushStrategyHolder<Write> readAwareFlushStrategyHolder;
-
-    private final BooleanSupplier readInProgressSupplier = () -> readInProgress;
-    private final Channel channel;
-    private final ConnectionContext context;
-    private final Publisher<Read> read;
-    private final TerminalPredicate<Read> terminalMsgPredicate;
-    private final CloseHandler closeHandler;
-    @Nullable
-    private final CompletableProcessor onClosing;
-
+public interface NettyConnection<Read, Write> extends NettyConnectionContext {
     /**
-     * Potentially contains more information when a protocol or channel level close event was observed.
-     * <p>
-     * Always accessed from the event loop, doesn't require synchronization.
-     */
-    @Nullable
-    private CloseEvent closeReason;
-
-    /**
-     * Create a new instance.
+     * Returns a {@link Completable} that notifies when the connection has begun its closing sequence.
      *
-     * @param channel Netty channel which represents the connection.
-     * @param context The ServiceTalk entity which represents the connection.
-     * @param read {@link Publisher} which emits all data read from the underlying channel.
+     * @return a {@link Completable} that notifies when the connection has begun its closing sequence. A configured
+     * {@link CloseHandler} will determine whether more reads or writes will be allowed on this {@link NettyConnection}.
      */
-    @SuppressWarnings("unchecked")
-    public NettyConnection(Channel channel, ConnectionContext context, Publisher<Read> read) {
-        this(channel, context, read, PIPELINE_UNSUPPORTED_PREDICATE, NOOP_CLOSE_HANDLER);
-    }
+    Completable onClosing();
 
     /**
-     * Create a new instance.
+     * Returns {@link Publisher} that emits all items as read from this connection.
      *
-     * @param channel Netty channel which represents the connection.
-     * @param context The ServiceTalk entity which represents the connection.
-     * @param read {@link Publisher} which emits all data read from the underlying channel.
-     * @param terminalMsgPredicate {@link TerminalPredicate} to detect end of a <i>response</i>.
+     * @return {@link Publisher} that emits all items as read from this connection.
+     * Concurrent subscriptions (call {@link Publisher#subscribe(Subscriber)} when a {@link Subscriber} is already
+     * active) are disallowed but sequential subscriptions (call {@link Publisher#subscribe(Subscriber)} when a previous
+     * {@link Subscriber} has terminated) are allowed.
      */
-    public NettyConnection(Channel channel, ConnectionContext context, Publisher<Read> read,
-                           TerminalPredicate<Read> terminalMsgPredicate) {
-        this(channel, context, read, terminalMsgPredicate, NOOP_CLOSE_HANDLER);
-    }
+    Publisher<Read> read();
 
     /**
-     * Create a new instance.
+     * Returns the {@link TerminalPredicate} associated with this {@link NettyConnection} to detect terminal messages
+     * for the otherwise infinite {@link Publisher} returned by {@link #read()}.
      *
-     * @param channel Netty channel which represents the connection.
-     * @param context The ServiceTalk entity which represents the connection.
-     * @param read {@link Publisher} which emits all data read from the underlying channel.
-     * @param terminalMsgPredicate {@link TerminalPredicate} to detect end of a <i>response</i>.
-     * @param closeHandler handles connection closure and half-closure.
+     * @return {@link TerminalPredicate} for this connection.
      */
-    public NettyConnection(Channel channel, ConnectionContext context, Publisher<Read> read,
-                           TerminalPredicate<Read> terminalMsgPredicate,
-                           CloseHandler closeHandler) {
-        this.channel = requireNonNull(channel);
-        this.context = requireNonNull(context);
-        this.read = read.onErrorResume(this::enrichErrorPublisher);
-        this.terminalMsgPredicate = requireNonNull(terminalMsgPredicate);
-        this.closeHandler = requireNonNull(closeHandler);
-        if (closeHandler != NOOP_CLOSE_HANDLER) {
-            onClosing = new CompletableProcessor();
-            closeHandler.registerEventHandler(channel, evt -> { // Called from EventLoop only!
-                if (closeReason == null) {
-                    closeReason = evt;
-                    LOGGER.debug("{} Emitted CloseEvent: {}", channel, evt);
-                    onClosing.onComplete();
-                }
-            });
-            // Users may depend on onClosing to be notified for all kinds of closures and not just graceful close.
-            // So, we should make sure that onClosing at least terminates with the channel.
-            // Since, onClose is guaranteed to be notified for any kind of closures, we cascade it to onClosing.
-            // An alternative would be to intercept channelInactive() in the pipeline but adding a pipeline handler
-            // in the pipeline may race with closure as we have already created the channel. If that happens, we may
-            // miss channelInactive event.
-            context.onClose().subscribe(onClosing);
-        } else {
-            onClosing = null;
-        }
-        channel.pipeline().addLast(new ChannelInboundHandler() {
-            @Override
-            public void channelWritabilityChanged(ChannelHandlerContext ctx) {
-                if (ctx.channel().isWritable()) {
-                    writableListener.channelWritable();
-                }
-            }
-
-            @Override
-            public void handlerAdded(ChannelHandlerContext ctx) {
-            }
-
-            @Override
-            public void handlerRemoved(ChannelHandlerContext ctx) {
-            }
-
-            @Override
-            public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-                LOGGER.error("unexpected exception reached the end of the pipeline for channel={}", ctx.channel(), cause);
-            }
-
-            @Override
-            public void channelRead(ChannelHandlerContext ctx, Object msg) {
-                if (!readInProgress) {
-                    readInProgress = true;
-                }
-                release(msg);
-            }
-
-            @Override
-            public void channelReadComplete(ChannelHandlerContext ctx) {
-                readInProgress = false;
-                ReadAwareFlushStrategyHolder<Write> holder = NettyConnection.this.readAwareFlushStrategyHolder;
-                if (holder != null) {
-                    holder.readComplete();
-                }
-            }
-
-            @Override
-            public void userEventTriggered(ChannelHandlerContext ctx, Object evt) {
-                // Inbound shutdown event is handled in AbstractChannelReadHandler
-                if (evt == ChannelOutputShutdownEvent.INSTANCE) {
-                    closeHandler.channelClosedOutbound(ctx);
-                    writableListener.channelClosedOutbound();
-                }
-                release(evt);
-            }
-
-            @Override
-            public void channelRegistered(ChannelHandlerContext ctx) {
-            }
-
-            @Override
-            public void channelUnregistered(ChannelHandlerContext ctx) {
-            }
-
-            @Override
-            public void channelActive(ChannelHandlerContext ctx) {
-            }
-
-            @Override
-            public void channelInactive(ChannelHandlerContext ctx) {
-                writableListener.channelClosed(CLOSED_CHANNEL_INACTIVE);
-            }
-        });
-    }
-
-    private Publisher<Read> enrichErrorPublisher(final Throwable t) {
-        return Publisher.error(enrichError(t));
-    }
-
-    private Completable enrichErrorCompletable(final Throwable t) {
-        return Completable.error(enrichError(t));
-    }
-
-    private Throwable enrichError(final Throwable t) {
-        return closeReason != null ? closeReason.wrapError(t) : t;
-    }
-
-    private void cleanupOnWriteTerminated() {
-        readAwareFlushStrategyHolder = null;
-        writableListener = PLACE_HOLDER_WRITABLE_LISTENER;
-    }
-
-    @Override
-    public Publisher<Read> read() {
-        return read;
-    }
-
-    @Override
-    public TerminalPredicate<Read> getTerminalMsgPredicate() {
-        return terminalMsgPredicate;
-    }
-
-    @Override
-    public Completable write(Publisher<Write> write, FlushStrategy flushStrategy) {
-        return write(write, flushStrategy, RequestNSupplier::newDefaultSupplier);
-    }
-
-    @Override
-    public Completable write(Publisher<Write> write, FlushStrategy flushStrategy, Supplier<RequestNSupplier> requestNSupplierFactory) {
-        return write(flushStrategy.apply(requireNonNull(write)), requestNSupplierFactory);
-    }
-
-    private Completable write(FlushStrategyHolder<Write> writeWithFlush, Supplier<RequestNSupplier> requestNSupplierFactory) {
-        return cleanupStateWhenDone(new Completable() {
-            @Override
-            protected void handleSubscribe(Subscriber completableSubscriber) {
-                WriteStreamSubscriber subscriber = new WriteStreamSubscriber(channel, requestNSupplierFactory.get(),
-                        completableSubscriber, closeHandler);
-                if (failIfWriteActive(subscriber, completableSubscriber)) {
-                    if (writeWithFlush instanceof ReadAwareFlushStrategyHolder) {
-                        ReadAwareFlushStrategyHolder<Write> holder = (ReadAwareFlushStrategyHolder<Write>) writeWithFlush;
-                        holder.setReadInProgressSupplier(readInProgressSupplier);
-                        readAwareFlushStrategyHolder = holder;
-                    }
-                    composeFlushes(channel, writeWithFlush.getSource(), writeWithFlush.getFlushSignals())
-                            .subscribe(subscriber);
-                }
-            }
-        }).onErrorResume(this::enrichErrorCompletable);
-    }
-
-    @Override
-    public Completable writeAndFlush(Single<Write> write) {
-        requireNonNull(write);
-        return cleanupStateWhenDone(new Completable() {
-            @Override
-            protected void handleSubscribe(Subscriber completableSubscriber) {
-                WriteSingleSubscriber subscriber = new WriteSingleSubscriber(
-                        channel, requireNonNull(completableSubscriber), closeHandler);
-                if (failIfWriteActive(subscriber, completableSubscriber)) {
-                    write.subscribe(subscriber);
-                }
-            }
-        }).onErrorResume(this::enrichErrorCompletable);
-    }
-
-    @Override
-    public Completable writeAndFlush(Write write) {
-        requireNonNull(write);
-        return cleanupStateWhenDone(new NettyFutureCompletable(() -> {
-            if (writableListenerUpdater.compareAndSet(NettyConnection.this, PLACE_HOLDER_WRITABLE_LISTENER, SINGLE_ITEM_WRITABLE_LISTENER)) {
-                return channel.writeAndFlush(write);
-            }
-            return channel.newFailedFuture(new IllegalStateException("A write is already active on this connection."));
-        })).onErrorResume(this::enrichErrorCompletable);
-    }
+    TerminalPredicate<Read> terminalMsgPredicate();
 
     /**
-     * This connection does not allow concurrent writes and so this method can determine if there is a writing pending.
+     * Writes all elements emitted by the passed {@link Publisher} on this connection.
      *
-     * @return {@code true} if a write is already active.
+     * @param write {@link Publisher}, all objects emitted from which are written on this connection.
+     *
+     * @return {@link Completable} that terminates as follows:
+     * <ul>
+     *     <li>With an error, if any item emitted can not be written successfully on the connection.</li>
+     *     <li>With an error, if {@link Publisher} emits an error.</li>
+     *     <li>With an error, if there is a already an active write on this connection.</li>
+     *     <li>Successfully when {@link Publisher} completes and all items emitted are written successfully.</li>
+     * </ul>
      */
-    boolean isWriteActive() {
-        return writableListener != PLACE_HOLDER_WRITABLE_LISTENER;
-    }
+    Completable write(Publisher<Write> write);
 
-    @Override
-    public Completable closeAsync() {
-        return context.closeAsync();
-    }
+    /**
+     * Writes all elements emitted by the passed {@link Publisher} on this connection.
+     *
+     * @param write {@link Publisher}, all objects emitted from which are written on this connection.
+     * @param requestNSupplierFactory A {@link Supplier} of {@link RequestNSupplier} for this write.
+     *
+     * @return {@link Completable} that terminates as follows:
+     * <ul>
+     *     <li>With an error, if any item emitted can not be written successfully on the connection.</li>
+     *     <li>With an error, if {@link Publisher} emits an error.</li>
+     *     <li>With an error, if there is a already an active write on this connection.</li>
+     *     <li>Successfully when {@link Publisher} completes and all items emitted are written successfully.</li>
+     * </ul>
+     */
+    Completable write(Publisher<Write> write, Supplier<RequestNSupplier> requestNSupplierFactory);
 
-    @Override
-    public Completable closeAsyncGracefully() {
-        return new Completable() {
-            @Override
-            protected void handleSubscribe(final Subscriber subscriber) {
-                onClose().subscribe(subscriber);
-                EventLoop eventLoop = channel.eventLoop();
-                if (eventLoop.inEventLoop()) {
-                    invokeUserCloseHandler();
-                } else {
-                    eventLoop.execute(NettyConnection.this::invokeUserCloseHandler);
-                }
-            }
-        };
-    }
+    /**
+     * Write and flushes the object emitted by the passed {@link Single} on this connection.
+     * @param write {@link Single}, result of which is written on this connection.
+     *
+     * @return {@link Completable} that terminates as follows:
+     * <ul>
+     *     <li>With an error, if the item emitted can not be written successfully on the connection.</li>
+     *     <li>With an error, If {@link Single} emits an error.</li>
+     *     <li>With an error, if there is a already an active write on this connection.</li>
+     *     <li>Successfully when result of the {@link Single} is written successfully.</li>
+     * </ul>
+     */
+    Completable writeAndFlush(Single<Write> write);
 
-    @Override
-    public Completable onClose() {
-        return context.onClose();
-    }
+    /**
+     * Write and flushes the passed {@link Buffer} on this connection.
+     * @param write {@link Buffer} to write on this connection.
+     *
+     * @return {@link Completable} that terminates as follows:
+     * <ul>
+     *     <li>With an error, if {@link Buffer} could not be written successfully on the connection.</li>
+     *     <li>With an error, if there is a already an active write on this connection.</li>
+     *     <li>Successfully, if {@link Buffer} could was written successfully on the connection.</li>
+     * </ul>
+     */
+    Completable writeAndFlush(Write write);
 
-    @Override
-    public SocketAddress localAddress() {
-        return context.localAddress();
-    }
-
-    @Override
-    public SocketAddress remoteAddress() {
-        return context.remoteAddress();
-    }
-
-    @Override
-    public SSLSession sslSession() {
-        return context.sslSession();
-    }
-
-    @Override
-    public ExecutionContext executionContext() {
-        return context.executionContext();
-    }
-
-    private void invokeUserCloseHandler() {
-        closeHandler.userClosing(channel);
-    }
-
-    @Override
-    public Completable onClosing() {
-        return onClosing == null ? onClose() : onClosing.publishOn(executionContext().executor());
-    }
-
-    @Override
-    public String toString() {
-        return channel.toString();
-    }
-
-    private Completable cleanupStateWhenDone(Completable completable) {
-        // This must happen before we actually trigger the original Subscribers methods so using doBefore* variants.
-        return completable.doBeforeFinally(this::cleanupOnWriteTerminated);
-    }
-
-    private boolean failIfWriteActive(WritableListener newWritableListener, Subscriber subscriber) {
-        if (writableListenerUpdater.compareAndSet(this, PLACE_HOLDER_WRITABLE_LISTENER, newWritableListener)) {
-            // It is possible that we have set the writeSubscriber, then the channel becomes inactive, and we will
-            // never notify the write writeSubscriber of the inactive event. So if the channel is inactive we notify
-            // the writeSubscriber.
-            if (!channel.isActive()) {
-                newWritableListener.channelClosed(CLOSED_FAIL_ACTIVE);
-                return false;
-            }
-            return true;
-        }
-        subscriber.onSubscribe(IGNORE_CANCEL);
-        subscriber.onError(new IllegalStateException("A write is already active on this connection."));
-        return false;
-    }
-
-    interface WritableListener {
+    /**
+     * A supplier that provides a correct value of {@code n} for calls to {@link Subscription#request(long)} per
+     * {@link Subscription}.
+     * A new {@link RequestNSupplier} is created for each {@link Publisher} that is written.
+     *
+     * <em>Any method of an instance of {@link RequestNSupplier} will never be called concurrently with the same or
+     * other methods of the same instance.</em>
+     * This means that implementations do not have to worry about thread-safety.
+     */
+    interface RequestNSupplier {
         /**
-         * Notification that the writability of the channel has changed.
-         * <p>
-         * Always called from the event loop thread.
-         */
-        void channelWritable();
-
-        /**
-         * Notification that the channel has been closed.
-         * <p>
-         * This may not always be called from the event loop. For example if the channel is closed when a new write
-         * happens then this method will be called from the writer thread.
+         * Callback whenever an item is written on the connection.
+         *<p>
+         * Write buffer capacity may not correctly reflect size of the object written.
+         * Hence capacity before may not necessarily be more than capacity after write.
          *
-         * @param closedException the exception which describes the close rational.
+         * @param written Item that was written.
+         * @param writeBufferCapacityBeforeWrite Capacity of the write buffer before this item was written.
+         * @param writeBufferCapacityAfterWrite Capacity of the write buffer after this item was written.
          */
-        void channelClosed(Throwable closedException);
+        void onItemWrite(Object written, long writeBufferCapacityBeforeWrite, long writeBufferCapacityAfterWrite);
 
         /**
-         * Notification that the channel outbound path has been closed.
-         * <p>
-         * This may indicate a write failed and was implicitly closed by the {@link AbstractChannel} or a {@link
-         * CloseHandler} performing a graceful or forced close. This methods will always be called from the event loop.
+         * Given the current capacity of the write buffer, supply how many items to request next from the associated
+         * {@link Subscription}.
+         *<p>
+         * This method is invoked every time there could be a need to request more items from the write
+         * {@link Publisher}.
+         * This means that the supplied {@code writeBufferCapacityInBytes} may include the capacity for which we have
+         * already requested the write {@link Publisher}. For suppliers that must only request more when there is an
+         * increase in capacity, use {@link OverlappingCapacityAwareSupplier}.
+         *
+         * @param writeBufferCapacityInBytes Current write buffer capacity. This will always be non-negative and will
+         * be 0 if buffer is full.
+         *
+         * @return Number of items to request next from the associated {@link Subscription}.
+         * Implementation may assume that whatever is retuned here is sent as-is to the associated {@link Subscription}.
+         *
+         * @see OverlappingCapacityAwareSupplier
          */
-        default void channelClosedOutbound() {
-            // Do nothing
+        long requestNFor(long writeBufferCapacityInBytes);
+
+        /**
+         * Returns a new instance of a default implementation of {@link RequestNSupplier}.
+         *
+         * @return A new instance of a default implementation of {@link RequestNSupplier}.
+         */
+        static RequestNSupplier newDefaultSupplier() {
+            return new MaxSizeBasedRequestNSupplier();
         }
     }
 
-    private static final class NoopWritableListener implements WritableListener {
-        @Override
-        public void channelWritable() {
+    /**
+     * A dynamic {@link Predicate} to detect terminal message in a stream as returned by {@link NettyConnection#read()}.
+     * Use {@link #replaceCurrent(Predicate)} for replacing the current {@link Predicate} and
+     * {@link #discardIfCurrent(Predicate)} to revert back to the original {@link Predicate}.
+     * <p>
+     * If a dynamic predicate (as set by {@link #replaceCurrent(Predicate)} terminates the stream,
+     * this will automatically revert to the original {@link Predicate} as done by calling
+     * {@link #discardIfCurrent(Predicate)}.
+     *
+     * @param <Read> Type of objects tested by this {@link Predicate}.
+     */
+    final class TerminalPredicate<Read> implements Predicate<Read> {
+
+        private static final AtomicReferenceFieldUpdater<TerminalPredicate, Predicate> currentUpdater =
+                newUpdater(TerminalPredicate.class, Predicate.class, "current");
+
+        private final Predicate<Read> original;
+        private final boolean unsupported;
+        private volatile Predicate<Read> current;
+
+        /**
+         * New instance.
+         * @param original {@link Predicate}. This is the {@link Predicate} that will be set as <i>current</i> after
+         * {@link #discardIfCurrent(Predicate)} is called.
+         */
+        public TerminalPredicate(Predicate<Read> original) {
+            this.original = requireNonNull(original);
+            current = original;
+            unsupported = false;
+        }
+
+        TerminalPredicate() {
+            original = read1 -> false;
+            current = original;
+            unsupported = true;
+        }
+
+        /**
+         * Sets <i>current</i> {@link Predicate} to {@code next}.
+         *
+         * @param next {@link Predicate} to set as <i>current</i>.
+         */
+        public void replaceCurrent(Predicate<Read> next) {
+            checkUnsupported();
+            current = requireNonNull(next);
+        }
+
+        /**
+         * Discards the <i>current</i> {@link Predicate} (if same as passed {@code current}) and sets <i>current</i> as
+         * the original {@link Predicate}.
+         *
+         * @param current {@link Predicate} to discard if current.
+         * @return {@code true} if the predicate was discarded.
+         */
+        public boolean discardIfCurrent(Predicate<Read> current) {
+            return currentUpdater.compareAndSet(this, current, original);
         }
 
         @Override
-        public void channelClosed(Throwable closedException) {
+        public boolean test(Read read) {
+            final Predicate<Read> current = this.current;
+            boolean terminated = current.test(read);
+            if (terminated) {
+                // Reset to original predicate when the dynamic predicate terminated.
+                currentUpdater.compareAndSet(this, current, original);
+            }
+            return terminated;
+        }
+
+        private void checkUnsupported() {
+            if (unsupported) {
+                throw new UnsupportedOperationException("Dynamic predicates not supported.");
+            }
         }
     }
 }

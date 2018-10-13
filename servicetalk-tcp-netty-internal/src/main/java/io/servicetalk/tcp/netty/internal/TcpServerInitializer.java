@@ -47,8 +47,9 @@ import javax.annotation.Nullable;
 import static io.netty.channel.ChannelOption.ALLOW_HALF_CLOSURE;
 import static io.netty.channel.ChannelOption.AUTO_CLOSE;
 import static io.servicetalk.transport.netty.internal.BuilderUtils.toNettyAddress;
+import static io.servicetalk.transport.netty.internal.DefaultNettyConnectionContext.newContext;
 import static io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutors.toEventLoopAwareNettyIoExecutor;
-import static io.servicetalk.transport.netty.internal.NettyConnectionContext.newContext;
+import static io.servicetalk.transport.netty.internal.FlushStrategies.defaultFlushStrategy;
 import static io.servicetalk.transport.netty.internal.NettyIoExecutors.fromNettyEventLoop;
 import static java.util.Objects.requireNonNull;
 
@@ -149,7 +150,7 @@ public final class TcpServerInitializer {
                                 fromNettyEventLoop(channel.eventLoop()), executionContext.executor()),
                         channel,
                         channelInitializer,
-                        checkForRefCountedTrapper);
+                        checkForRefCountedTrapper, defaultFlushStrategy());
             }
         });
 

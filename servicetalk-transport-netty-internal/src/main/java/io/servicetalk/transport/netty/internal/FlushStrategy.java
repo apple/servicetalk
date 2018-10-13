@@ -15,66 +15,103 @@
  */
 package io.servicetalk.transport.netty.internal;
 
-import io.servicetalk.concurrent.api.Publisher;
-
-import static io.servicetalk.transport.netty.internal.FlushBeforeEnd.FLUSH_BEFORE_END;
-import static io.servicetalk.transport.netty.internal.FlushOnEach.FLUSH_ON_EACH;
-
 /**
- * A strategy to decorate a {@link Publisher} with flush boundaries.
+ * A strategy that defines how to flush writes on a connection.
  */
 @FunctionalInterface
 public interface FlushStrategy {
 
     /**
-     * Applies this flush strategy to the passed {@link Publisher}.<p>
-     *<b>This strategy will apply only on the {@link Publisher} returned by {@link FlushStrategyHolder#getSource()} and not on the passed {@code source} here.</b>
-     *<p>
-     * <em>Generally a {@link FlushStrategy} will generate a {@link FlushStrategyHolder} for each distinct write operation.
-     * If the {@link FlushStrategyHolder} returned by this method shares state between multiple calls the flush behavior maybe unexpected.</em>
+     * Every time a new write that requires custom flushes is initiated, this method is invoked. Passed
+     * {@link FlushSender} is used to {@link FlushSender#flush() signal} to the connection that writes should now be
+     * flushed.
      *
-     *
-     * @param <T> The type of data being flushed.
-     * @param source {@link Publisher} to apply this strategy on.
-     * @return A {@link FlushStrategyHolder} that contains flush signals and the decorated {@link Publisher} to emit the signals.
+     * @param sender {@link FlushSender} to signal flushes to the connection.
+     * @return {@link WriteEventsListener} that would listen to write events on the connection for which custom flushes
+     * are required.
      */
-    <T> FlushStrategyHolder<T> apply(Publisher<T> source);
+    WriteEventsListener apply(FlushSender sender);
 
     /**
-     * Creates a default {@link FlushStrategy}.<p>
+     * Returns {@code true} if pending writes, if any, MUST be flushed when the connection is not writable. <p>
+     * This method is expected to be idempotent.
      *
-     * @return Default {@link FlushStrategy}.
+     * @return {@code true} if pending writes, if any, MUST be flushed when the connection is not writable.
      */
-    static FlushStrategy defaultFlushStrategy() {
-        return flushOnEach();
+    default boolean flushOnUnwritable() {
+        return true;
     }
 
     /**
-     * Creates a new {@link FlushStrategy} that flushes the connection on each item emitted from a {@link Publisher} that this strategy is applied.<p>
-     *
-     * @return {@link FlushStrategy}.
+     * An abstraction for a {@link FlushStrategy} to flush writes by calling {@link #flush()}.
      */
-    static FlushStrategy flushOnEach() {
-        return FLUSH_ON_EACH;
+    @FunctionalInterface
+    interface FlushSender {
+
+        /**
+         * Sends a flush on the associated connection. This method can be invoked from any thread, however, when a
+         * deterministic write-flush ordering is required, it should be called from within a relevant method of
+         * {@link WriteEventsListener}.
+         */
+        void flush();
     }
 
     /**
-     * Flush writes in a batch of {@code batchSize} or on expiration of a batch duration i.e. when an item is emitted from {@code durationBoundaries}.<p>
-     *
-     * @param batchSize          Number of items in each batch which needs flushing.
-     * @param durationBoundaries Time durations
-     * @return {@link FlushStrategy}
+     * A listener of write events from the connection on which the related {@link FlushStrategy} is
+     * {@link FlushStrategy#apply(FlushSender) applied}.
+     * For each {@link WriteEventsListener} returned from {@link FlushStrategy#apply(FlushSender)}, following calls
+     * will be made:
+     * <ul>
+     *     <li>At most one call to {@link #writeStarted()}</li>
+     *     <li>Zero or more calls to {@link #itemWritten()}</li>
+     *     <li>At most one call to {@link #writeTerminated()}</li>
+     *     <li>At most one call to {@link #writeCancelled()}</li>
+     *     <li>At least one call to either {@link #writeTerminated()} or {@link #writeCancelled()}</li>
+     * </ul>
+     * {@link #writeStarted()} always
+     * <a href="https://docs.oracle.com/javase/specs/jls/se8/html/jls-17.html#jls-17.4.5">happens-before</a> a call to
+     * any other methods.
+     * <p>
+     * None of {@link #writeStarted()}, {@link #itemWritten()} and {@link #writeTerminated()} can be called concurrently
+     * with each other but {@link #writeCancelled()} can be called concurrently with {@link #itemWritten()} or
+     * {@link #writeTerminated()}.
      */
-    static FlushStrategy batchFlush(int batchSize, Publisher<Long> durationBoundaries) {
-        return new BatchFlush(durationBoundaries, batchSize);
-    }
+    interface WriteEventsListener {
 
-    /**
-     * Creates a new {@link FlushStrategy} that flushes the connection upon completion or error of the {@link Publisher} that this strategy is applied.<p>
-     *
-     * @return {@link FlushStrategy}.
-     */
-    static FlushStrategy flushBeforeEnd() {
-        return FLUSH_BEFORE_END;
+        /**
+         * For each new {@link WriteEventsListener} returned from {@link FlushStrategy#apply(FlushSender)}, this method
+         * will be called at most once before any items are written to the connection.
+         * <p>
+         * This will be followed by zero or more calls to {@link #itemWritten()} and at most one call to
+         * {@link #writeTerminated()} and {@link #writeCancelled()} or both.
+         */
+        void writeStarted();
+
+        /**
+         * For each new {@link WriteEventsListener} returned from {@link FlushStrategy#apply(FlushSender)}, this method
+         * will be called once after any item is written to the connection.
+         * <p>
+         * This will be followed by zero or more calls to this method and at most one call to {@link #writeTerminated()}
+         * and {@link #writeCancelled()} or both.
+         * {@link #writeCancelled()} can be called concurrently with this method.
+         */
+        void itemWritten();
+
+        /**
+         * For each new {@link WriteEventsListener} returned from {@link FlushStrategy#apply(FlushSender)}, this method
+         * will be called at most once when all other items are written to the connection.
+         * <p>
+         * {@link #writeCancelled()} <em>MAY</em> be called concurrently or after this method.
+         */
+        void writeTerminated();
+
+        /**
+         * For each new {@link WriteEventsListener} returned from {@link FlushStrategy#apply(FlushSender)}, this method
+         * will be called at most once when writes are cancelled.
+         * <p>
+         * {@link #itemWritten()} or {@link #writeTerminated()} <em>MAY</em> be called concurrently or after this
+         * method.
+         */
+        void writeCancelled();
     }
 }

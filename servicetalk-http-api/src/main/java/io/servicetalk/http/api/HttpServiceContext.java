@@ -49,15 +49,30 @@ public abstract class HttpServiceContext implements ConnectionContext {
         this(other.factory, other.streamingFactory, other.blockingFactory);
     }
 
-    final HttpResponseFactory getResponseFactory() {
+    /**
+     * Returns the {@link HttpResponseFactory} associated with this {@link HttpServiceContext}.
+     *
+     * @return {@link HttpResponseFactory} associated with this {@link HttpServiceContext}.
+     */
+    protected final HttpResponseFactory responseFactory() {
         return factory;
     }
 
-    final StreamingHttpResponseFactory getStreamingResponseFactory() {
+    /**
+     * Returns the {@link StreamingHttpResponseFactory} associated with this {@link HttpServiceContext}.
+     *
+     * @return {@link StreamingHttpResponseFactory} associated with this {@link HttpServiceContext}.
+     */
+    protected final StreamingHttpResponseFactory streamingResponseFactory() {
         return streamingFactory;
     }
 
-    final BlockingStreamingHttpResponseFactory getStreamingBlockingResponseFactory() {
+    /**
+     * Returns the {@link BlockingStreamingHttpResponseFactory} associated with this {@link HttpServiceContext}.
+     *
+     * @return {@link BlockingStreamingHttpResponseFactory} associated with this {@link HttpServiceContext}.
+     */
+    protected final BlockingStreamingHttpResponseFactory streamingBlockingResponseFactory() {
         return blockingFactory;
     }
 }

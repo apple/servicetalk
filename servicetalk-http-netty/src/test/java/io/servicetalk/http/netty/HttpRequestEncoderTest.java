@@ -41,8 +41,8 @@ import io.servicetalk.tcp.netty.internal.TcpServerInitializer;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
 import io.servicetalk.transport.netty.internal.CloseHandler;
-import io.servicetalk.transport.netty.internal.Connection;
 import io.servicetalk.transport.netty.internal.ExecutionContextRule;
+import io.servicetalk.transport.netty.internal.NettyConnection;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
@@ -441,7 +441,7 @@ public class HttpRequestEncoderTest {
 
             Predicate<Object> predicate = (Object h) -> h instanceof HttpHeaders;
 
-            Connection<Object, Object> conn = resources.prepend(awaitIndefinitelyNonNull(
+            NettyConnection<Object, Object> conn = resources.prepend(awaitIndefinitelyNonNull(
                     new TcpConnector<>(cConfig.getTcpClientConfig().asReadOnly(), initializer, () -> predicate, null,
                             closeHandler).connect(CEC, serverContext.listenAddress(), false)));
 

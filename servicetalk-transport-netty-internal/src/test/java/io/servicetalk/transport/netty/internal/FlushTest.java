@@ -17,17 +17,16 @@ package io.servicetalk.transport.netty.internal;
 
 import io.servicetalk.concurrent.api.MockedSubscriberRule;
 import io.servicetalk.concurrent.api.PublisherRule;
+import io.servicetalk.transport.netty.internal.FlushStrategy.FlushSender;
 
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
 import static io.servicetalk.concurrent.api.DeliberateException.DELIBERATE_EXCEPTION;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
-import static org.mockito.Mockito.when;
 
 public class FlushTest extends AbstractFlushTest {
 
@@ -35,14 +34,14 @@ public class FlushTest extends AbstractFlushTest {
     public final MockedSubscriberRule<String> subscriber = new MockedSubscriberRule<>();
     @Rule
     public final PublisherRule<String> source = new PublisherRule<>();
+    private FlushSender flushSender;
+    private MockFlushStrategy strategy;
 
     @Before
     public void setUp() {
-        @SuppressWarnings("unchecked")
-        FlushStrategyHolder<String> holder = (FlushStrategyHolder<String>) mock(FlushStrategyHolder.class);
-        when(holder.getSource()).thenReturn(source.getPublisher());
-        when(holder.getFlushSignals()).thenReturn(new FlushStrategyHolder.FlushSignals());
-        subscriber.subscribe(super.setup(holder));
+        strategy = new MockFlushStrategy();
+        subscriber.subscribe(super.setup(source.getPublisher(), strategy));
+        flushSender = strategy.verifyApplied();
     }
 
     @Test
@@ -82,21 +81,21 @@ public class FlushTest extends AbstractFlushTest {
         verifyZeroInteractions(channel);
         subscriber.verifyNoEmissions();
         source.verifyCancelled();
-        verifyFlushSignalListenerRemoved();
+        strategy.verifyWriteCancelled();
     }
 
     @Test
     public void testSourceComplete() {
         source.complete();
         subscriber.verifySuccess();
-        verifyFlushSignalListenerRemoved();
+        strategy.verifyWriteTerminated();
     }
 
     @Test
     public void testSourceEmitError() {
         source.fail();
         subscriber.verifyFailure(DELIBERATE_EXCEPTION);
-        verifyFlushSignalListenerRemoved();
+        strategy.verifyWriteTerminated();
     }
 
     private void writeAndFlush(String... items) {
@@ -105,12 +104,13 @@ public class FlushTest extends AbstractFlushTest {
         }
         subscriber.request(items.length);
         source.sendItems(items);
-        flushSignals.signalFlush();
+        flushSender.flush();
     }
 
     @Override
     void verifyWriteAndFlushAfter(final String... items) {
         super.verifyWriteAndFlushAfter(items);
         subscriber.verifyItems(items);
+        strategy.verifyItemWritten(items.length);
     }
 }

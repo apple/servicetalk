@@ -25,8 +25,8 @@ import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.api.SslConfig;
 import io.servicetalk.transport.api.SslConfigBuilder;
 import io.servicetalk.transport.netty.IoThreadFactory;
-import io.servicetalk.transport.netty.internal.Connection;
 import io.servicetalk.transport.netty.internal.ExecutionContextRule;
+import io.servicetalk.transport.netty.internal.NettyConnection;
 
 import org.junit.After;
 import org.junit.Before;
@@ -56,7 +56,7 @@ public abstract class AbstractTcpServerTest {
             Executors::newCachedThreadExecutor);
 
     private ContextFilter contextFilter = ACCEPT_ALL;
-    private Function<Connection<Buffer, Buffer>, Completable> service =
+    private Function<NettyConnection<Buffer, Buffer>, Completable> service =
             conn -> conn.write(conn.read());
     ServerContext serverContext;
     int serverPort;
@@ -68,7 +68,7 @@ public abstract class AbstractTcpServerTest {
         this.contextFilter = contextFilter;
     }
 
-    void setService(final Function<Connection<Buffer, Buffer>, Completable> service) {
+    void setService(final Function<NettyConnection<Buffer, Buffer>, Completable> service) {
         this.service = service;
     }
 

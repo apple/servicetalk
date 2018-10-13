@@ -31,7 +31,7 @@ import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.SslConfig;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
 import io.servicetalk.transport.netty.internal.CloseHandler;
-import io.servicetalk.transport.netty.internal.Connection;
+import io.servicetalk.transport.netty.internal.NettyConnection;
 
 import java.io.InputStream;
 import java.net.SocketOption;
@@ -110,7 +110,7 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress> implements Http
 
     private static <ResolvedAddress> Single<StreamingHttpConnection> buildStreaming(
             final ExecutionContext executionContext, ResolvedAddress resolvedAddress, ReadOnlyHttpClientConfig roConfig,
-            final Function<Connection<Object, Object>, StreamingHttpConnection> mapper) {
+            final Function<NettyConnection<Object, Object>, StreamingHttpConnection> mapper) {
         return new Single<StreamingHttpConnection>() {
             @Override
             protected void handleSubscribe(

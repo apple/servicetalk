@@ -25,7 +25,8 @@ import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.netty.internal.AbstractContextFilterAwareChannelReadHandler;
 import io.servicetalk.transport.netty.internal.BufferHandler;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
-import io.servicetalk.transport.netty.internal.Connection;
+import io.servicetalk.transport.netty.internal.DefaultNettyConnection;
+import io.servicetalk.transport.netty.internal.FlushStrategy;
 import io.servicetalk.transport.netty.internal.NettyConnection;
 
 import io.netty.channel.ChannelHandlerContext;
@@ -78,7 +79,7 @@ public class TcpServer {
      * @throws InterruptedException If the calling thread was interrupted waiting for the server to start.
      */
     public ServerContext start(ExecutionContext executionContext, int port,
-                               Function<Connection<Buffer, Buffer>, Completable> service)
+                               Function<NettyConnection<Buffer, Buffer>, Completable> service)
             throws ExecutionException, InterruptedException {
         return start(executionContext, port, ACCEPT_ALL, service);
     }
@@ -97,7 +98,7 @@ public class TcpServer {
      * @throws InterruptedException If the calling thread was interrupted waiting for the server to start.
      */
     public ServerContext start(ExecutionContext executionContext, int port, ContextFilter contextFilter,
-                               Function<Connection<Buffer, Buffer>, Completable> service)
+                               Function<NettyConnection<Buffer, Buffer>, Completable> service)
             throws ExecutionException, InterruptedException {
         TcpServerInitializer initializer = new TcpServerInitializer(executionContext, config);
         return awaitIndefinitelyNonNull(initializer.start(new InetSocketAddress(port), contextFilter,
@@ -108,11 +109,11 @@ public class TcpServer {
     }
 
     // Visible to allow tests to override.
-    ChannelInitializer getChannelInitializer(final Function<Connection<Buffer, Buffer>, Completable> service,
+    ChannelInitializer getChannelInitializer(final Function<NettyConnection<Buffer, Buffer>, Completable> service,
                                              final ExecutionContext executionContext) {
         return (channel, context) -> {
             channel.pipeline().addLast(new BufferHandler(executionContext.bufferAllocator()));
-            channel.pipeline().addLast(new TcpServerChannelReadHandler(context, service));
+            channel.pipeline().addLast(new TcpServerChannelReadHandler(context, service, config.getFlushStrategy()));
             return context;
         };
     }
@@ -132,21 +133,23 @@ public class TcpServer {
     private static class TcpServerChannelReadHandler extends AbstractContextFilterAwareChannelReadHandler<Buffer> {
 
         private final ConnectionContext context;
-        private final Function<Connection<Buffer, Buffer>, Completable> service;
+        private final Function<NettyConnection<Buffer, Buffer>, Completable> service;
+        private final FlushStrategy flushStrategy;
         @Nullable
-        private Connection<Buffer, Buffer> conn;
+        private NettyConnection<Buffer, Buffer> conn;
 
         TcpServerChannelReadHandler(final ConnectionContext context,
-                                    final Function<Connection<Buffer, Buffer>, Completable> service) {
+                                    final Function<NettyConnection<Buffer, Buffer>, Completable> service,
+                                    final FlushStrategy flushStrategy) {
             super(buffer -> false, NOOP_CLOSE_HANDLER);
             this.context = context;
             this.service = service;
+            this.flushStrategy = flushStrategy;
         }
 
         @Override
         protected void onPublisherCreation(ChannelHandlerContext ctx, Publisher<Buffer> newPublisher) {
-            conn = new NettyConnection<>(ctx.channel(), context,
-                    newPublisher);
+            conn = new DefaultNettyConnection<>(ctx.channel(), context, newPublisher, flushStrategy);
         }
 
         @Override

@@ -34,7 +34,7 @@ final class BlockingHttpServiceToStreamingHttpService extends StreamingHttpServi
                                                 final StreamingHttpRequest request,
                                                 final StreamingHttpResponseFactory responseFactory) {
         return request.toRequest().flatMap(req -> blockingToSingle(() -> service.handle(
-                ctx, req, ctx.getResponseFactory())) .map(HttpResponse::toStreamingResponse));
+                ctx, req, ctx.responseFactory())) .map(HttpResponse::toStreamingResponse));
     }
 
     @Override

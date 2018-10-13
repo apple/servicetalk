@@ -86,7 +86,7 @@ final class NettyChannelListenableAsyncCloseable implements ListenableAsyncClose
 
                 final ConnectionHolderChannelHandler<?, ?> holder =
                         channel.pipeline().get(ConnectionHolderChannelHandler.class);
-                Connection<?, ?> connection = holder == null ? null : holder.getConnection();
+                NettyConnection<?, ?> connection = holder == null ? null : holder.getConnection();
                 if (connection != null) {
                     connection.closeAsyncGracefully().subscribe(subscriber);
                 } else {

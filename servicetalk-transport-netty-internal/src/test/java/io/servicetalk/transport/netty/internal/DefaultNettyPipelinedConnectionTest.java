@@ -32,14 +32,15 @@ import org.mockito.stubbing.Answer;
 import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.Publisher.just;
 import static io.servicetalk.concurrent.api.Single.success;
-import static io.servicetalk.transport.netty.internal.FlushStrategy.defaultFlushStrategy;
+import static io.servicetalk.transport.netty.internal.CloseHandler.NOOP_CLOSE_HANDLER;
+import static io.servicetalk.transport.netty.internal.FlushStrategies.defaultFlushStrategy;
 import static java.lang.Integer.MAX_VALUE;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class DefaultPipelinedConnectionTest {
+public class DefaultNettyPipelinedConnectionTest {
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
     @Rule
@@ -52,8 +53,8 @@ public class DefaultPipelinedConnectionTest {
     private TestPublisher<Integer> writePublisher1;
     private TestPublisher<Integer> writePublisher2;
     private int requestNext = MAX_VALUE;
-    private DefaultPipelinedConnection<Integer, Integer> requester;
-    private NettyConnection<Integer, Integer> connection;
+    private DefaultNettyPipelinedConnection<Integer, Integer> requester;
+    private DefaultNettyConnection<Integer, Integer> connection;
 
     @Before
     public void setUp() {
@@ -64,22 +65,23 @@ public class DefaultPipelinedConnectionTest {
         when(context.executionContext()).thenReturn(executionContext);
         when(context.executionContext().executor()).thenReturn(immediate());
         when(executionContext.executor()).thenReturn(immediate());
-        Connection.RequestNSupplier requestNSupplier = mock(Connection.RequestNSupplier.class);
+        NettyConnection.RequestNSupplier requestNSupplier = mock(NettyConnection.RequestNSupplier.class);
         readPublisher = new TestPublisher<>(false, false);
         readPublisher.sendOnSubscribe();
         writePublisher1 = new TestPublisher<>();
         writePublisher1.sendOnSubscribe();
         writePublisher2 = new TestPublisher<>();
         writePublisher2.sendOnSubscribe();
-        when(requestNSupplier.getRequestNFor(anyLong())).then(invocation1 -> requestNext);
-        connection = new NettyConnection<>(channel, context, readPublisher, new Connection.TerminalPredicate<>(integer -> true));
-        requester = new DefaultPipelinedConnection<>(connection, MAX_PENDING_REQUESTS);
+        when(requestNSupplier.requestNFor(anyLong())).then(invocation1 -> requestNext);
+        connection = new DefaultNettyConnection<>(channel, context, readPublisher,
+                new NettyConnection.TerminalPredicate<>(integer -> true), NOOP_CLOSE_HANDLER, defaultFlushStrategy());
+        requester = new DefaultNettyPipelinedConnection<>(connection, MAX_PENDING_REQUESTS);
     }
 
     @Test
     public void testSequencing() {
-        readSubscriber.subscribe(requester.request(writePublisher1, defaultFlushStrategy())).request(1);
-        secondReadSubscriber.subscribe(requester.request(writePublisher2, defaultFlushStrategy())).request(1);
+        readSubscriber.subscribe(requester.request(writePublisher1)).request(1);
+        secondReadSubscriber.subscribe(requester.request(writePublisher2)).request(1);
         writePublisher1.verifySubscribed();
         readPublisher.verifyNotSubscribed();
         writePublisher2.verifyNotSubscribed();
@@ -109,15 +111,15 @@ public class DefaultPipelinedConnectionTest {
 
     @Test
     public void testPublisherWrite() {
-        readSubscriber.subscribe(requester.request(just(1), defaultFlushStrategy())).request(1);
+        readSubscriber.subscribe(requester.request(just(1))).request(1);
         readPublisher.onComplete();
         readSubscriber.verifySuccess();
     }
 
     @Test
     public void testPipelinedRequests() {
-        readSubscriber.subscribe(requester.request(writePublisher1, defaultFlushStrategy())).request(1);
-        secondReadSubscriber.subscribe(requester.request(writePublisher2, defaultFlushStrategy())).request(1);
+        readSubscriber.subscribe(requester.request(writePublisher1)).request(1);
+        secondReadSubscriber.subscribe(requester.request(writePublisher2)).request(1);
         writePublisher1.verifySubscribed().sendItems(1).onComplete();
         readPublisher.onComplete();
         readSubscriber.verifySuccess();
@@ -128,8 +130,8 @@ public class DefaultPipelinedConnectionTest {
 
     @Test
     public void testWriteCancelAndThenWrite() {
-        readSubscriber.subscribe(requester.request(writePublisher1, defaultFlushStrategy())).request(1);
-        secondReadSubscriber.subscribe(requester.request(writePublisher2, defaultFlushStrategy())).request(1);
+        readSubscriber.subscribe(requester.request(writePublisher1)).request(1);
+        secondReadSubscriber.subscribe(requester.request(writePublisher2)).request(1);
         readSubscriber.cancel();
         writePublisher1.verifyCancelled();
         writePublisher2.verifySubscribed().sendItems(1).onComplete();
@@ -139,8 +141,8 @@ public class DefaultPipelinedConnectionTest {
 
     @Test
     public void testReadCancelAndThenWrite() {
-        readSubscriber.subscribe(requester.request(writePublisher1, defaultFlushStrategy())).request(1);
-        secondReadSubscriber.subscribe(requester.request(writePublisher2, defaultFlushStrategy())).request(1);
+        readSubscriber.subscribe(requester.request(writePublisher1)).request(1);
+        secondReadSubscriber.subscribe(requester.request(writePublisher2)).request(1);
         writePublisher1.verifySubscribed().sendItems(1).onComplete();
         readSubscriber.cancel();
         writePublisher2.verifySubscribed().sendItems(1).onComplete();
@@ -150,7 +152,7 @@ public class DefaultPipelinedConnectionTest {
 
     @Test
     public void testWriter() {
-        PipelinedConnection.Writer writer = mock(PipelinedConnection.Writer.class);
+        NettyPipelinedConnection.Writer writer = mock(NettyPipelinedConnection.Writer.class);
         when(writer.write()).then((Answer<Completable>) invocation -> connection.writeAndFlush(1));
         readSubscriber.subscribe(requester.request(writer)).request(1);
         verify(writer).write();

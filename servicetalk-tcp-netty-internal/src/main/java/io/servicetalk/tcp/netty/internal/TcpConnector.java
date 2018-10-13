@@ -27,7 +27,7 @@ import io.servicetalk.transport.api.FileDescriptorSocketAddress;
 import io.servicetalk.transport.netty.internal.AbstractChannelReadHandler;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
 import io.servicetalk.transport.netty.internal.CloseHandler;
-import io.servicetalk.transport.netty.internal.Connection;
+import io.servicetalk.transport.netty.internal.DefaultNettyConnection;
 import io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutor;
 import io.servicetalk.transport.netty.internal.NettyConnection;
 import io.servicetalk.transport.netty.internal.RefCountedTrapper;
@@ -56,8 +56,9 @@ import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.transport.netty.internal.BuilderUtils.socketChannel;
 import static io.servicetalk.transport.netty.internal.BuilderUtils.toNettyAddress;
 import static io.servicetalk.transport.netty.internal.CloseHandler.NOOP_CLOSE_HANDLER;
+import static io.servicetalk.transport.netty.internal.DefaultNettyConnectionContext.newContext;
 import static io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutors.toEventLoopAwareNettyIoExecutor;
-import static io.servicetalk.transport.netty.internal.NettyConnectionContext.newContext;
+import static io.servicetalk.transport.netty.internal.FlushStrategies.defaultFlushStrategy;
 import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 
@@ -114,11 +115,11 @@ public final class TcpConnector<Read, Write> {
      * @param remote address to connect.
      * @return {@link Single} that contains the {@link ConnectionContext} for the connection.
      */
-    public Single<Connection<Read, Write>> connect(ExecutionContext executionContext, Object remote) {
+    public Single<NettyConnection<Read, Write>> connect(ExecutionContext executionContext, Object remote) {
         requireNonNull(remote);
-        return new Single<Connection<Read, Write>>() {
+        return new Single<NettyConnection<Read, Write>>() {
             @Override
-            protected void handleSubscribe(Subscriber<? super Connection<Read, Write>> subscriber) {
+            protected void handleSubscribe(Subscriber<? super NettyConnection<Read, Write>> subscriber) {
                 connectFutureToListener(connect0(remote, executionContext, subscriber, true), subscriber, remote);
             }
         }.publishOn(executionContext.executor());
@@ -132,12 +133,12 @@ public final class TcpConnector<Read, Write> {
      * @param checkForRefCountedTrapper log a warning if a {@link RefCountedTrapper} is not found in the pipeline
      * @return {@link Single} that contains the {@link ConnectionContext} for the connection.
      */
-    public Single<Connection<Read, Write>> connect(ExecutionContext executionContext,
-                                                   Object remote, boolean checkForRefCountedTrapper) {
+    public Single<NettyConnection<Read, Write>> connect(ExecutionContext executionContext,
+                                                        Object remote, boolean checkForRefCountedTrapper) {
         requireNonNull(remote);
-        return new Single<Connection<Read, Write>>() {
+        return new Single<NettyConnection<Read, Write>>() {
             @Override
-            protected void handleSubscribe(Subscriber<? super Connection<Read, Write>> subscriber) {
+            protected void handleSubscribe(Subscriber<? super NettyConnection<Read, Write>> subscriber) {
                 connectFutureToListener(connect0(remote, executionContext, subscriber,
                         checkForRefCountedTrapper), subscriber, remote);
             }
@@ -145,7 +146,7 @@ public final class TcpConnector<Read, Write> {
     }
 
     private Future<?> connect0(Object resolvedAddress, ExecutionContext executionContext,
-                               Single.Subscriber<? super Connection<Read, Write>> subscriber,
+                               Single.Subscriber<? super NettyConnection<Read, Write>> subscriber,
                                boolean checkForRefCountedTrapper) {
         // We have to subscribe before any possibility that we complete the single, so subscribe now and hookup the
         // cancellable after we get the future.
@@ -172,7 +173,7 @@ public final class TcpConnector<Read, Write> {
                         // Create ExecutionContext with selected IO thread
                         context = newContext(new DefaultExecutionContext(executionContext.bufferAllocator(),
                                         ioExecutorThread, executionContext.executor()),
-                                channel, channelInitializer, checkForRefCountedTrapper);
+                                channel, channelInitializer, checkForRefCountedTrapper, defaultFlushStrategy());
                         readHandler = channel.pipeline().get(AbstractChannelReadHandler.class);
                     } catch (Throwable cause) {
                         channel.close();
@@ -186,15 +187,15 @@ public final class TcpConnector<Read, Write> {
                                         readHandler, AbstractChannelReadHandler.class.getName())));
                     } else {
                         try {
-                            Connection.TerminalPredicate<Read> predicate =
-                                    new Connection.TerminalPredicate<>(terminalItemPredicate.get());
+                            NettyConnection.TerminalPredicate<Read> predicate =
+                                    new NettyConnection.TerminalPredicate<>(terminalItemPredicate.get());
                             channel.pipeline().addLast(new AbstractChannelReadHandler<Read>(predicate, closeHandler) {
                                 @Override
                                 protected void onPublisherCreation(ChannelHandlerContext ctx, Publisher<Read> newPublisher) {
-                                    final Connection<Read, Write> connection;
+                                    final NettyConnection<Read, Write> connection;
                                     try {
-                                        connection = new NettyConnection<>(channel, context, newPublisher, predicate,
-                                                closeHandler);
+                                        connection = new DefaultNettyConnection<>(channel, context, newPublisher, predicate,
+                                                closeHandler, config.getFlushStrategy());
                                     } catch (Throwable cause) {
                                         channel.close();
                                         subscriber.onError(cause);
@@ -310,7 +311,7 @@ public final class TcpConnector<Read, Write> {
     }
 
     private void connectFutureToListener(Future<?> future,
-                                         Single.Subscriber<? super Connection<Read, Write>> subscriber,
+                                         Single.Subscriber<? super NettyConnection<Read, Write>> subscriber,
                                          Object resolvedAddress) {
         future.addListener(f -> {
             Throwable cause = f.cause();

@@ -17,6 +17,7 @@ package io.servicetalk.transport.netty.internal;
 
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
+import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.api.MockedCompletableListenerRule;
 import io.servicetalk.concurrent.api.MockedSubscriberRule;
 import io.servicetalk.concurrent.api.Publisher;
@@ -40,14 +41,15 @@ import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.api.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.Publisher.from;
+import static io.servicetalk.concurrent.api.Publisher.just;
+import static io.servicetalk.concurrent.api.Publisher.never;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.transport.netty.internal.CloseHandler.CloseEvent.CHANNEL_CLOSED_INBOUND;
 import static io.servicetalk.transport.netty.internal.CloseHandler.CloseEvent.CHANNEL_CLOSED_OUTBOUND;
 import static io.servicetalk.transport.netty.internal.CloseHandler.NOOP_CLOSE_HANDLER;
-import static io.servicetalk.transport.netty.internal.FlushStrategy.defaultFlushStrategy;
-import static io.servicetalk.transport.netty.internal.FlushStrategy.flushBeforeEnd;
-import static io.servicetalk.transport.netty.internal.FlushStrategy.flushOnEach;
-import static io.servicetalk.transport.netty.internal.ReadAwareFlushStrategyHolder.flushOnReadComplete;
+import static io.servicetalk.transport.netty.internal.FlushStrategies.batchFlush;
+import static io.servicetalk.transport.netty.internal.FlushStrategies.defaultFlushStrategy;
+import static io.servicetalk.transport.netty.internal.FlushStrategies.flushOnEnd;
 import static java.lang.Integer.MAX_VALUE;
 import static java.nio.charset.Charset.defaultCharset;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -64,7 +66,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
-public class NettyConnectionTest {
+public class DefaultNettyConnectionTest {
 
     private TestPublisher<Buffer> publisher;
     @Rule
@@ -79,10 +81,10 @@ public class NettyConnectionTest {
     private BufferAllocator allocator;
     private EmbeddedChannel channel;
     private ConnectionContext context;
-    private Connection.RequestNSupplier requestNSupplier;
+    private NettyConnection.RequestNSupplier requestNSupplier;
     private int requestNext = MAX_VALUE;
-    private NettyConnection<Buffer, Buffer> conn;
-    private Connection.TerminalPredicate<Buffer> terminalPredicate;
+    private DefaultNettyConnection<Buffer, Buffer> conn;
+    private NettyConnection.TerminalPredicate<Buffer> terminalPredicate;
     private TestPublisher<Buffer> readPublisher;
 
     @Before
@@ -99,11 +101,12 @@ public class NettyConnectionTest {
         when(context.onClose()).thenReturn(new NettyFutureCompletable(channel::closeFuture));
         when(context.closeAsync()).thenReturn(new NettyFutureCompletable(channel::close));
         when(context.executionContext()).thenReturn(executionContext);
-        requestNSupplier = mock(Connection.RequestNSupplier.class);
-        when(requestNSupplier.getRequestNFor(anyLong())).then(invocation1 -> (long) requestNext);
-        terminalPredicate = new Connection.TerminalPredicate<>(o -> false);
+        requestNSupplier = mock(NettyConnection.RequestNSupplier.class);
+        when(requestNSupplier.requestNFor(anyLong())).then(invocation1 -> (long) requestNext);
+        terminalPredicate = new NettyConnection.TerminalPredicate<>(o -> false);
         readPublisher = new TestPublisher<Buffer>().sendOnSubscribe();
-        conn = new NettyConnection<>(channel, context, readPublisher, terminalPredicate, closeHandler);
+        conn = new DefaultNettyConnection<>(channel, context, readPublisher, terminalPredicate, closeHandler,
+                defaultFlushStrategy());
         publisher = new TestPublisher<Buffer>().sendOnSubscribe();
     }
 
@@ -129,7 +132,7 @@ public class NettyConnectionTest {
 
     @Test
     public void testAsPipelinedConnection() {
-        final PipelinedConnection<Buffer, Buffer> c = new DefaultPipelinedConnection<>(conn, 2);
+        final NettyPipelinedConnection<Buffer, Buffer> c = new DefaultNettyPipelinedConnection<>(conn, 2);
         subscriberRule.subscribe(c.request(newBuffer("Hello"))).request(1);
         readPublisher.onComplete();
         subscriberRule.verifySuccess();
@@ -277,7 +280,7 @@ public class NettyConnectionTest {
     @Test
     public void testPublisherWithPredictor() {
         requestNext = 1;
-        writeListener.listen(conn.write(publisher, defaultFlushStrategy(), () -> requestNSupplier));
+        writeListener.listen(conn.write(publisher, () -> requestNSupplier));
         requestNext = 0;
         Buffer hello1 = newBuffer("Hello1");
         Buffer hello2 = newBuffer("Hello2");
@@ -294,15 +297,27 @@ public class NettyConnectionTest {
     }
 
     @Test
-    public void testFlushOnReadComplete() {
-        writeListener.listen(conn.write(publisher, flushOnReadComplete(10)));
-        channel.pipeline().fireChannelRead("ReadingMessage");
-        publisher.sendItems(newBuffer("Hello"));
-        pollChannelAndVerifyWrites();
-        channel.pipeline().fireChannelReadComplete();
-        pollChannelAndVerifyWrites("Hello");
+    public void testUpdateFlushStrategy() {
+        writeListener.listen(conn.write(just(newBuffer("Hello"))));
+        writeListener.verifyCompletion();
+        pollChannelAndVerifyWrites("Hello"); // Flush on each (default)
+
+        writeListener.reset();
+        Cancellable c = conn.updateFlushStrategy(old -> batchFlush(2, never()));
+        writeListener.listen(conn.write(publisher));
+        publisher.sendItems(newBuffer("Hello1"));
+        pollChannelAndVerifyWrites(); // No flush
+        publisher.sendItems(newBuffer("Hello2"));
+        pollChannelAndVerifyWrites("Hello1", "Hello2"); // Batch flush of 2
         publisher.onComplete();
         writeListener.verifyCompletion();
+
+        c.cancel();
+
+        writeListener.reset();
+        writeListener.listen(conn.write(just(newBuffer("Hello3"))));
+        writeListener.verifyCompletion();
+        pollChannelAndVerifyWrites("Hello3"); // Reverted to flush on each
     }
 
     @Test
@@ -314,7 +329,8 @@ public class NettyConnectionTest {
 
     @Test
     public void testCloseAsync() {
-        writeListener.listen(conn.write(publisher, flushBeforeEnd()));
+        conn.updateFlushStrategy(fs -> flushOnEnd());
+        writeListener.listen(conn.write(publisher));
         Buffer hello1 = newBuffer("Hello1");
         Buffer hello2 = newBuffer("Hello2");
         publisher.sendItems(hello1);
@@ -392,7 +408,7 @@ public class NettyConnectionTest {
         for (Buffer item : items) {
             verify(requestNSupplier).onItemWrite(eq(item), anyLong(), anyLong());
         }
-        verify(requestNSupplier, times(1 + items.length + channelWritabilityChangedCount)).getRequestNFor(anyLong());
+        verify(requestNSupplier, times(1 + items.length + channelWritabilityChangedCount)).requestNFor(anyLong());
     }
 
     private void changeWritability(boolean writable) {
@@ -407,7 +423,7 @@ public class NettyConnectionTest {
         setupWithCloseHandler(closeHandler);
         closeHandler.channelClosedOutbound(channel.pipeline().firstContext());
         assertThat(channel.isActive(), is(false));
-        writeListener.listen(conn.write(publisher, flushOnEach()));
+        writeListener.listen(conn.write(publisher));
 
         ArgumentCaptor<Throwable> exCaptor = ArgumentCaptor.forClass(Throwable.class);
         subscriberRule.subscribe(conn.read());
@@ -440,7 +456,7 @@ public class NettyConnectionTest {
     @Test
     public void testNoErrorEnrichmentWithoutCloseHandlerOnError() {
         channel.close().syncUninterruptibly();
-        writeListener.listen(conn.write(publisher, flushOnEach()));
+        writeListener.listen(conn.write(publisher));
 
         ArgumentCaptor<Throwable> exCaptor = ArgumentCaptor.forClass(Throwable.class);
         writeListener.verifyFailure(exCaptor);
@@ -448,6 +464,6 @@ public class NettyConnectionTest {
         // Exception should NOT be of type CloseEventObservedException
         assertThat(exCaptor.getValue(), instanceOf(ClosedChannelException.class));
         assertThat(exCaptor.getValue().getCause(), nullValue());
-        assertThat(exCaptor.getValue().getStackTrace()[0].getClassName(), equalTo(NettyConnection.class.getName()));
+        assertThat(exCaptor.getValue().getStackTrace()[0].getClassName(), equalTo(DefaultNettyConnection.class.getName()));
     }
 }

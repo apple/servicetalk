@@ -28,8 +28,8 @@ import io.servicetalk.http.api.StreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.tcp.netty.internal.TcpClientConfig;
-import io.servicetalk.transport.netty.internal.Connection;
 import io.servicetalk.transport.netty.internal.ExecutionContextRule;
+import io.servicetalk.transport.netty.internal.NettyConnection;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -56,7 +56,7 @@ public class PipelinedHttpConnectionTest {
     public final ExecutionContextRule ctx = immediate();
 
     @SuppressWarnings("unchecked")
-    private final Connection<Object, Object> connection = mock(Connection.class);
+    private final NettyConnection<Object, Object> connection = mock(NettyConnection.class);
 
     @Rule
     public final MockedSubscriberRule<StreamingHttpResponse> dataSubscriber1 = new MockedSubscriberRule<>();
@@ -87,7 +87,7 @@ public class PipelinedHttpConnectionTest {
         readPublisher2 = new TestPublisher<>();
         writePublisher1 = new TestPublisher<>();
         writePublisher2 = new TestPublisher<>();
-        when(connection.write(any(), any())).then(inv -> {
+        when(connection.write(any())).then(inv -> {
             Publisher<Object> publisher = inv.getArgument(0);
             return publisher.ignoreElements(); // simulate write consuming all
         });
@@ -117,7 +117,7 @@ public class PipelinedHttpConnectionTest {
     public void http11RequestShouldCompleteSuccessfully() {
         reset(connection); // Simplified mocking
         when(connection.executionContext()).thenReturn(ctx);
-        when(connection.write(any(), any())).thenReturn(completed());
+        when(connection.write(any())).thenReturn(completed());
         when(connection.read()).thenReturn(Publisher.from(reqRespFactory.ok(), emptyLastChunk));
         Single<StreamingHttpResponse> request = pipe.request(
                 reqRespFactory.get("/Foo"));

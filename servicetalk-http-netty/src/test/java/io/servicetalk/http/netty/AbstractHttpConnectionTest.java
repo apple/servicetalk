@@ -29,8 +29,8 @@ import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.tcp.netty.internal.TcpClientConfig;
-import io.servicetalk.transport.netty.internal.Connection;
 import io.servicetalk.transport.netty.internal.ExecutionContextRule;
+import io.servicetalk.transport.netty.internal.NettyConnection;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -86,8 +86,8 @@ public final class AbstractHttpConnectionTest {
     private final StreamingHttpRequestResponseFactory reqRespFactory =
             new DefaultStreamingHttpRequestResponseFactory(allocator, headersFactory);
 
-    private class MockStreamingHttpConnection extends AbstractStreamingHttpConnection<Connection<Object, Object>> {
-        protected MockStreamingHttpConnection(final Connection<Object, Object> connection,
+    private class MockStreamingHttpConnection extends AbstractStreamingHttpConnection<NettyConnection<Object, Object>> {
+        protected MockStreamingHttpConnection(final NettyConnection<Object, Object> connection,
                                               final ReadOnlyHttpClientConfig config) {
             super(connection, never(), config, ctx, reqRespFactory);
         }
@@ -103,7 +103,7 @@ public final class AbstractHttpConnectionTest {
     public void setup() {
         reqResp = mock(Function.class);
         config.setMaxPipelinedRequests(101);
-        http = new MockStreamingHttpConnection(mock(Connection.class), config.asReadOnly());
+        http = new MockStreamingHttpConnection(mock(NettyConnection.class), config.asReadOnly());
     }
 
     @Test

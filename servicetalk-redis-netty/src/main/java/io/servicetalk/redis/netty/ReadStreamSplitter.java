@@ -31,7 +31,7 @@ import io.servicetalk.redis.netty.SubscribedChannelReadStream.PubSubChannelMessa
 import io.servicetalk.redis.netty.SubscribedChannelReadStream.PubSubChannelMessage.KeyType;
 import io.servicetalk.redis.netty.SubscribedChannelReadStream.PubSubChannelMessage.MessageType;
 import io.servicetalk.redis.netty.TerminalMessagePredicates.TerminalMessagePredicate;
-import io.servicetalk.transport.netty.internal.Connection;
+import io.servicetalk.transport.netty.internal.NettyConnection;
 
 import io.netty.buffer.ByteBuf;
 import org.reactivestreams.Subscriber;
@@ -67,7 +67,7 @@ import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 
 /**
- * A splitter of {@link Connection#read()} {@link Publisher} so that it can be used concurrently with multiple
+ * A splitter of {@link NettyConnection#read()} {@link Publisher} so that it can be used concurrently with multiple
  * {@link Command#SUBSCRIBE}, {@link Command#PSUBSCRIBE} or {@link Command#PING} commands.
  *
  * <h2>Assumptions</h2>
@@ -98,7 +98,7 @@ final class ReadStreamSplitter {
     private final Publisher<GroupedPublisher<Key, PubSubChannelMessage>> original;
     private final Queue<Subscriber<? super PubSubChannelMessage>> subscribers;
     private final LinkedPredicate predicate;
-    private final Connection<RedisData, ByteBuf> connection;
+    private final NettyConnection<RedisData, ByteBuf> connection;
     private final Function<RedisRequest, Completable> unsubscribeWriter;
 
     @SuppressWarnings("unused")
@@ -108,13 +108,13 @@ final class ReadStreamSplitter {
     @Nullable
     private volatile Subscription groupSubscription;
 
-    ReadStreamSplitter(Connection<RedisData, ByteBuf> connection, int maxConcurrentRequests, int maxBufferPerGroup, Function<RedisRequest, Completable> unsubscribeWriter) {
+    ReadStreamSplitter(NettyConnection<RedisData, ByteBuf> connection, int maxConcurrentRequests, int maxBufferPerGroup, Function<RedisRequest, Completable> unsubscribeWriter) {
         this.connection = requireNonNull(connection);
         this.unsubscribeWriter = requireNonNull(unsubscribeWriter);
         this.original = new SubscribedChannelReadStream(connection.read(),
                 connection.executionContext().bufferAllocator())
                 .groupBy(new GroupSelector(), maxBufferPerGroup, maxConcurrentRequests);
-        Connection.TerminalPredicate<RedisData> terminalMsgPredicate = connection.getTerminalMsgPredicate();
+        NettyConnection.TerminalPredicate<RedisData> terminalMsgPredicate = connection.terminalMsgPredicate();
         // Max pending is enforced by the upstream connection for writes, so this can be unbounded.
         // poll() could be invoked from a group onNext in case of duplicate redis (p)subscribe commands
         // for the same channel name/pattern

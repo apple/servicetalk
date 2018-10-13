@@ -17,7 +17,7 @@ package io.servicetalk.tcp.netty.internal;
 
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.client.api.ConnectException;
-import io.servicetalk.transport.netty.internal.Connection;
+import io.servicetalk.transport.netty.internal.NettyConnection;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
@@ -51,7 +51,7 @@ public final class TcpConnectorTest extends AbstractTcpServerTest {
         testWriteAndRead(client.connectBlocking(CLIENT_CTX, serverPort));
     }
 
-    private static void testWriteAndRead(Connection<Buffer, Buffer> connection)
+    private static void testWriteAndRead(NettyConnection<Buffer, Buffer> connection)
             throws ExecutionException, InterruptedException {
         awaitIndefinitely(connection.writeAndFlush(
                 connection.executionContext().bufferAllocator().fromAscii("Hello")));
@@ -101,7 +101,7 @@ public final class TcpConnectorTest extends AbstractTcpServerTest {
                     });
                     return context;
                 }, () -> v -> true);
-        Connection<Buffer, Buffer> connection = awaitIndefinitely(connector.connect(CLIENT_CTX,
+        NettyConnection<Buffer, Buffer> connection = awaitIndefinitely(connector.connect(CLIENT_CTX,
                 serverContext.listenAddress()));
         assert connection != null;
         awaitIndefinitely(connection.closeAsync());

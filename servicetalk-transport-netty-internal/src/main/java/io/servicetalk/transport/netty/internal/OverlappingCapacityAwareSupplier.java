@@ -15,7 +15,7 @@
  */
 package io.servicetalk.transport.netty.internal;
 
-import io.servicetalk.transport.netty.internal.Connection.RequestNSupplier;
+import io.servicetalk.transport.netty.internal.NettyConnection.RequestNSupplier;
 
 import io.netty.channel.FileRegion;
 
@@ -25,7 +25,7 @@ import static java.util.Objects.requireNonNull;
 
 /**
  * An implementation of {@link RequestNSupplier} that stores the last seen write buffer capacity as
- * provided by {@link #getRequestNFor(long)} and only fills any increase in capacity in a subsequent call to {@link #getRequestNFor(long)}.
+ * provided by {@link #requestNFor(long)} and only fills any increase in capacity in a subsequent call to {@link #requestNFor(long)}.
  */
 abstract class OverlappingCapacityAwareSupplier implements RequestNSupplier {
 
@@ -54,7 +54,7 @@ abstract class OverlappingCapacityAwareSupplier implements RequestNSupplier {
     }
 
     @Override
-    public final long getRequestNFor(long writeBufferCapacityInBytes) {
+    public final long requestNFor(long writeBufferCapacityInBytes) {
         assert writeBufferCapacityInBytes >= 0 : "Write buffer capacity must be non-negative.";
         long capacityToFill = outstandingRequested == 0 ? writeBufferCapacityInBytes : writeBufferCapacityInBytes - lastSeenCapacity;
         lastSeenCapacity = writeBufferCapacityInBytes;

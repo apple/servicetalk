@@ -15,23 +15,31 @@
  */
 package io.servicetalk.transport.netty.internal;
 
-import io.netty.channel.ChannelHandler;
-
-import javax.annotation.Nullable;
+import io.servicetalk.transport.netty.internal.FlushStrategy.WriteEventsListener;
 
 /**
- * A {@link ChannelHandler} that contains a {@link NettyConnection}.
- *
- * @param <Read> Type of objects read from this connection.
- * @param <Write> Type of objects written to this connection.
+ * A {@link WriteEventsListener} that by default does nothing for all method. This can be used to selectively implement
+ * relevant methods.
  */
-public interface ConnectionHolderChannelHandler<Read, Write> extends ChannelHandler {
+public abstract class WriteEventsListenerAdapter implements WriteEventsListener {
 
-    /**
-     * Get the {@link NettyConnection} associated with this object.
-     *
-     * @return the {@link NettyConnection} associated with this object.
-     */
-    @Nullable
-    NettyConnection<Read, Write> getConnection();
+    @Override
+    public void writeStarted() {
+        // No op
+    }
+
+    @Override
+    public void itemWritten() {
+        // No op
+    }
+
+    @Override
+    public void writeTerminated() {
+        // No op
+    }
+
+    @Override
+    public void writeCancelled() {
+        // No op
+    }
 }

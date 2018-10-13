@@ -18,11 +18,11 @@ package io.servicetalk.http.netty;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.transport.api.ExecutionContext;
-import io.servicetalk.transport.netty.internal.Connection;
+import io.servicetalk.transport.netty.internal.NettyConnection;
 
-final class NonPipelinedStreamingHttpConnection extends AbstractStreamingHttpConnection<Connection<Object, Object>> {
+final class NonPipelinedStreamingHttpConnection extends AbstractStreamingHttpConnection<NettyConnection<Object, Object>> {
 
-    NonPipelinedStreamingHttpConnection(final Connection<Object, Object> connection,
+    NonPipelinedStreamingHttpConnection(final NettyConnection<Object, Object> connection,
                                         final ReadOnlyHttpClientConfig config,
                                         final ExecutionContext executionContext,
                                         final StreamingHttpRequestResponseFactory reqRespFactory) {

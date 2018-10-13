@@ -37,7 +37,7 @@ public abstract class AbstractSslChannelInitializer implements ChannelInitialize
 
     @Override
     public ConnectionContext init(Channel channel, ConnectionContext context) {
-        final NettyConnectionContext nettyServiceContext = (NettyConnectionContext) context;
+        final DefaultNettyConnectionContext nettyServiceContext = (DefaultNettyConnectionContext) context;
         ChannelPipeline pipeline = channel.pipeline();
         @Nullable
         SslHandler sslHandler = addNettySslHandler(channel, context);
@@ -57,11 +57,11 @@ public abstract class AbstractSslChannelInitializer implements ChannelInitialize
 
     private static class SslSessionExtractor extends ChannelInboundHandlerAdapter {
 
-        private final NettyConnectionContext nettyServiceContext;
+        private final DefaultNettyConnectionContext nettyServiceContext;
         @Nullable
         private final SslHandler sslHandler;
 
-        SslSessionExtractor(NettyConnectionContext nettyServiceContext, @Nullable SslHandler sslHandler) {
+        SslSessionExtractor(DefaultNettyConnectionContext nettyServiceContext, @Nullable SslHandler sslHandler) {
             this.nettyServiceContext = nettyServiceContext;
             this.sslHandler = sslHandler;
         }

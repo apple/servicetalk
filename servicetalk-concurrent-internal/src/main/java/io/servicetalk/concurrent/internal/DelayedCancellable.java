@@ -20,6 +20,7 @@ import io.servicetalk.concurrent.Cancellable;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import javax.annotation.Nullable;
 
+import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater;
 
 /**
@@ -38,7 +39,7 @@ public class DelayedCancellable implements Cancellable {
      * @param delayedCancellable The delayed {@link Cancellable}.
      */
     public final void setDelayedCancellable(Cancellable delayedCancellable) {
-        if (!currentUpdater.compareAndSet(this, null, delayedCancellable)) {
+        if (!currentUpdater.compareAndSet(this, null, requireNonNull(delayedCancellable))) {
             delayedCancellable.cancel();
         }
     }

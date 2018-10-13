@@ -15,14 +15,7 @@
  */
 package io.servicetalk.transport.netty.internal;
 
-import io.servicetalk.transport.netty.internal.FlushStrategyHolder.FlushSignals;
-
-import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
-
-import static java.util.Objects.requireNonNull;
-
-final class FlushOnEach extends AbstractFlushStrategy {
+final class FlushOnEach implements FlushStrategy {
 
     static final FlushOnEach FLUSH_ON_EACH = new FlushOnEach();
 
@@ -31,40 +24,12 @@ final class FlushOnEach extends AbstractFlushStrategy {
     }
 
     @Override
-    <T> Subscriber<? super T> newFlushSourceSubscriber(final Subscriber<? super T> original,
-                                                       final FlushSignals flushSignals) {
-        return new FlushOnEachSubscriber<>(original, flushSignals);
-    }
-
-    private static final class FlushOnEachSubscriber<T> implements Subscriber<T> {
-
-        private final Subscriber<T> original;
-        private final FlushSignals signals;
-
-        FlushOnEachSubscriber(Subscriber<T> original, FlushSignals signals) {
-            this.original = requireNonNull(original);
-            this.signals = requireNonNull(signals);
-        }
-
-        @Override
-        public void onSubscribe(Subscription s) {
-            original.onSubscribe(s);
-        }
-
-        @Override
-        public void onNext(T t) {
-            original.onNext(t);
-            signals.signalFlush();
-        }
-
-        @Override
-        public void onError(Throwable t) {
-            original.onError(t);
-        }
-
-        @Override
-        public void onComplete() {
-            original.onComplete();
-        }
+    public WriteEventsListener apply(final FlushSender sender) {
+        return new WriteEventsListenerAdapter() {
+            @Override
+            public void itemWritten() {
+                sender.flush();
+            }
+        };
     }
 }

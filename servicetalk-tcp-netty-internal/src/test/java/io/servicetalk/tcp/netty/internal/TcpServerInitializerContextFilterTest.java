@@ -24,7 +24,7 @@ import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ContextFilter;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
-import io.servicetalk.transport.netty.internal.Connection;
+import io.servicetalk.transport.netty.internal.NettyConnection;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -118,7 +118,7 @@ public class TcpServerInitializerContextFilterTest extends AbstractTcpServerTest
         if (filterMode.initializerThrow) {
             return new TcpServer() {
                 @Override
-                ChannelInitializer getChannelInitializer(Function<Connection<Buffer, Buffer>, Completable> service,
+                ChannelInitializer getChannelInitializer(Function<NettyConnection<Buffer, Buffer>, Completable> service,
                                                          ExecutionContext executionContext) {
                     return (channel, context) -> {
                         throw DELIBERATE_EXCEPTION;
@@ -142,7 +142,7 @@ public class TcpServerInitializerContextFilterTest extends AbstractTcpServerTest
 
     @Test
     public void testAcceptConnection() throws Exception {
-        Connection<Buffer, Buffer> connection = client.connectBlocking(CLIENT_CTX, serverPort);
+        NettyConnection<Buffer, Buffer> connection = client.connectBlocking(CLIENT_CTX, serverPort);
         final Buffer buffer = connection.executionContext().bufferAllocator().fromAscii("Hello");
 
         // Write something, then try to read something and wait for a result.
