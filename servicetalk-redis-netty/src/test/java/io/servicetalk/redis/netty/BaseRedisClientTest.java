@@ -17,7 +17,10 @@ package io.servicetalk.redis.netty;
 
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
+import io.servicetalk.redis.api.RedisClient;
+import io.servicetalk.redis.api.RedisClient.ReservedRedisConnection;
 import io.servicetalk.redis.api.RedisData.CompleteBulkString;
+import io.servicetalk.redis.api.RedisProtocolSupport.Command;
 
 import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
@@ -28,6 +31,8 @@ import org.junit.Rule;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.Timeout;
 
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.CountDownLatch;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Executors.immediate;
@@ -39,9 +44,20 @@ import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.either;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
+import static org.mockito.AdditionalAnswers.delegatesTo;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public abstract class BaseRedisClientTest {
     protected static final int PING_PERIOD_SECONDS = 1;
+
+    static final String EVAL_SLEEP_SCRIPT = "local key = \"delayKey\"\n" +
+            "redis.call(\"SETEX\", key, 1, \"someval\")\n" +
+            "while redis.call(\"TTL\", key) > 0 do\n" +
+            "end";
 
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
@@ -50,6 +66,9 @@ public abstract class BaseRedisClientTest {
 
     @Nullable
     private RedisTestEnvironment env;
+
+    final CountDownLatch postReleaseLatch = new CountDownLatch(1);
+    final CountDownLatch postCloseLatch = new CountDownLatch(1);
 
     @Before
     public void startClient() throws Exception {
@@ -76,6 +95,29 @@ public abstract class BaseRedisClientTest {
         return env;
     }
 
+    RedisClient getMockRedisClient() {
+        RedisClient client = getEnv().client;
+        RedisClient mockClient = mock(RedisClient.class, delegatesTo(client));
+        doAnswer(invocation -> {
+            Command command = invocation.getArgument(0);
+            return client.reserveConnection(command).map(rconn -> {
+                ReservedRedisConnection mockConnection = mock(ReservedRedisConnection.class, delegatesTo(rconn));
+                when(mockConnection.releaseAsync()).then(__ -> {
+                    return rconn.releaseAsync().doAfterComplete(() -> {
+                        postReleaseLatch.countDown();
+                    });
+                });
+                when(mockConnection.closeAsync()).then(__ -> {
+                    return rconn.closeAsync().doAfterComplete(() -> {
+                        postCloseLatch.countDown();
+                    });
+                });
+                return mockConnection;
+            });
+        }).when(mockClient).reserveConnection(any(Command.class));
+        return mockClient;
+    }
+
     protected static Matcher<Buffer> bufStartingWith(final Buffer buf) {
         return new BaseMatcher<Buffer>() {
             @Override
@@ -92,6 +134,19 @@ public abstract class BaseRedisClientTest {
                         .appendText("}");
             }
         };
+    }
+
+    protected interface RunnableCheckedException {
+        void run() throws Exception;
+    }
+
+    protected static void assertThrowsCancellationException(final RunnableCheckedException o) throws Exception {
+        try {
+            o.run();
+            fail("Expected " + CancellationException.class.getSimpleName());
+        } catch (CancellationException e) {
+            // expected
+        }
     }
 
     void publishTestMessage(final String channel) throws Exception {

@@ -15,18 +15,23 @@
  */
 package io.servicetalk.redis.api;
 
+import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.internal.SingleProcessor;
 import io.servicetalk.concurrent.internal.DuplicateSubscribeException;
+import io.servicetalk.redis.api.RedisClient.ReservedRedisConnection;
 
 import java.util.List;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.redis.api.RedisData.QUEUED;
+import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 
 final class CommanderUtils {
 
@@ -98,18 +103,28 @@ final class CommanderUtils {
 
     static final class DiscardSingle<T> extends Single<String> {
 
+        private static final AtomicIntegerFieldUpdater<DiscardSingle> terminatedUpdater =
+                newUpdater(DiscardSingle.class, "terminated");
+
         private final T commander;
         private final Single<String> queued;
         private final List<SingleProcessor<?>> singles;
         @SuppressWarnings("AtomicFieldUpdaterNotStaticFinal")
         private final AtomicIntegerFieldUpdater<T> stateUpdater;
+        @Nullable
+        private final ReservedRedisConnection reservedCnx;
+
+        @SuppressWarnings("unused")
+        private volatile int terminated;
 
         DiscardSingle(final T commander, final Single<String> queued, final List<SingleProcessor<?>> singles,
-                      final AtomicIntegerFieldUpdater<T> stateUpdater) {
+                      final AtomicIntegerFieldUpdater<T> stateUpdater,
+                      @Nullable final ReservedRedisConnection reservedCnx) {
             this.commander = commander;
             this.queued = queued;
             this.singles = singles;
             this.stateUpdater = stateUpdater;
+            this.reservedCnx = reservedCnx;
         }
 
         @Override
@@ -119,24 +134,69 @@ final class CommanderUtils {
                 subscriber.onError(new DuplicateSubscribeException(stateUpdater.get(commander), subscriber));
                 return;
             }
-            abortSingles(queued, singles).subscribe(subscriber);
+            abortSingles(queued, singles).subscribe(new Subscriber<String>() {
+                @Override
+                public void onSubscribe(final Cancellable cancellable) {
+                    subscriber.onSubscribe(() -> {
+                        if (terminatedUpdater.compareAndSet(DiscardSingle.this, 0, 1)) {
+                            cancellable.cancel();
+                            for (SingleProcessor<?> single : singles) {
+                                single.onError(new CancellationException());
+                            }
+                            if (reservedCnx != null) {
+                                reservedCnx.closeAsync().subscribe();
+                            }
+                        }
+                    });
+                }
+
+                @Override
+                public void onSuccess(@Nullable final String result) {
+                    if (terminatedUpdater.compareAndSet(DiscardSingle.this, 0, 1)) {
+                        if (reservedCnx != null) {
+                            reservedCnx.releaseAsync().subscribe();
+                        }
+                        subscriber.onSuccess(result);
+                    }
+                }
+
+                @Override
+                public void onError(final Throwable t) {
+                    if (terminatedUpdater.compareAndSet(DiscardSingle.this, 0, 1)) {
+                        if (reservedCnx != null) {
+                            reservedCnx.releaseAsync().subscribe();
+                        }
+                        subscriber.onError(t);
+                    }
+                }
+            });
         }
     }
 
     static final class ExecCompletable<T> extends Completable {
+
+        private static final AtomicIntegerFieldUpdater<ExecCompletable> terminatedUpdater =
+                newUpdater(ExecCompletable.class, "terminated");
 
         private final T commander;
         private final Single<List<Object>> results;
         private final List<SingleProcessor<?>> singles;
         @SuppressWarnings("AtomicFieldUpdaterNotStaticFinal")
         private final AtomicIntegerFieldUpdater<T> stateUpdater;
+        @Nullable
+        private final ReservedRedisConnection reservedCnx;
+
+        @SuppressWarnings("unused")
+        private volatile int terminated;
 
         ExecCompletable(final T commander, final Single<List<Object>> results, final List<SingleProcessor<?>> singles,
-                        final AtomicIntegerFieldUpdater<T> stateUpdater) {
+                        final AtomicIntegerFieldUpdater<T> stateUpdater,
+                        @Nullable final ReservedRedisConnection reservedCnx) {
             this.commander = commander;
             this.results = results;
             this.singles = singles;
             this.stateUpdater = stateUpdater;
+            this.reservedCnx = reservedCnx;
         }
 
         @Override
@@ -146,7 +206,43 @@ final class CommanderUtils {
                 subscriber.onError(new DuplicateSubscribeException(stateUpdater.get(commander), subscriber));
                 return;
             }
-            completeSingles(results, singles).subscribe(subscriber);
+
+            completeSingles(results, singles).subscribe(new Subscriber() {
+                @Override
+                public void onSubscribe(final Cancellable cancellable) {
+                    subscriber.onSubscribe(() -> {
+                        if (terminatedUpdater.compareAndSet(ExecCompletable.this, 0, 1)) {
+                            cancellable.cancel();
+                            for (SingleProcessor<?> single : singles) {
+                                single.onError(new CancellationException());
+                            }
+                            if (reservedCnx != null) {
+                                reservedCnx.closeAsync().subscribe();
+                            }
+                        }
+                    });
+                }
+
+                @Override
+                public void onComplete() {
+                    if (terminatedUpdater.compareAndSet(ExecCompletable.this, 0, 1)) {
+                        if (reservedCnx != null) {
+                            reservedCnx.releaseAsync().subscribe();
+                        }
+                        subscriber.onComplete();
+                    }
+                }
+
+                @Override
+                public void onError(final Throwable t) {
+                    if (terminatedUpdater.compareAndSet(ExecCompletable.this, 0, 1)) {
+                        if (reservedCnx != null) {
+                            reservedCnx.releaseAsync().subscribe();
+                        }
+                        subscriber.onError(t);
+                    }
+                }
+            });
         }
     }
 }
