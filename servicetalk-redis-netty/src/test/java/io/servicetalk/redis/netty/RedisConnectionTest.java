@@ -280,7 +280,7 @@ public class RedisConnectionTest extends BaseRedisClientTest {
         rawConnectionToCommanderWithFilterDoesNotThrowClassCast(false);
     }
 
-    private static void rawConnectionToCommanderWithFilterDoesNotThrowClassCast(boolean monitor)
+    private void rawConnectionToCommanderWithFilterDoesNotThrowClassCast(boolean monitor)
             throws ExecutionException, InterruptedException {
         final RedisTestEnvironment env = getEnv();
         RedisConnection rawConnection =
