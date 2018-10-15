@@ -332,11 +332,12 @@ final class NettyHttpServerConnection extends HttpServiceContext implements Nett
                 // updated strategy.
                 if (currentListener == prev) {
                     WriteEventsListener listener = originalStrategy.apply(flushSender);
-                    listener.writeStarted();
                     if (currentListenerUpdater.compareAndSet(CompositeFlushStrategy.this, prev, listener)) {
-                        prev.writeTerminated();
-                    } else {
-                        listener.writeTerminated();
+                        try {
+                            prev.writeTerminated();
+                        } finally {
+                            listener.writeStarted();
+                        }
                     }
                 }
             };
@@ -395,9 +396,12 @@ final class NettyHttpServerConnection extends HttpServiceContext implements Nett
                 if (current == CANCELLED || current == TERMINATED) {
                     return;
                 } else if (currentListenerUpdater.compareAndSet(this, current, newListener)) {
-                    newListener.writeStarted();
-                    // Old listener will not be invoked any more, so send a terminal signal.
-                    current.writeTerminated();
+                    try {
+                        // Old listener will not be invoked any more, so send a terminal signal.
+                        current.writeTerminated();
+                    } finally {
+                        newListener.writeStarted();
+                    }
                     return;
                 }
             }
