@@ -106,8 +106,9 @@ public final class ActiveConnectionsLimitingFactory<ResolvedAddress, C extends L
      * <p>
      * The following rules apply:
      * <ul>
-     *     <li>{@link #isConnectAllowed(Object)} <em>MUST</em> be called before calling {@link #onClose()}.</li>
-     *     <li>{@link #onClose()} <em>MAY</em> be called at most once for each call to
+     *     <li>{@link #isConnectAllowed(Object)} <em>MUST</em> be called before calling
+     *     {@link #onConnectionClose(Object)}.</li>
+     *     <li>{@link #onConnectionClose(Object)} <em>MAY</em> be called at most once for each call to
      *     {@link #isConnectAllowed(Object)}.</li>
      * </ul>
      *
@@ -129,8 +130,8 @@ public final class ActiveConnectionsLimitingFactory<ResolvedAddress, C extends L
         boolean isConnectAllowed(ResolvedAddress target);
 
         /**
-         * Callback invoked when a connection created after getting permission from {@link #isConnectAllowed(Object)}
-         * is closed.
+         * Callback invoked when a connection created after getting permission from
+         * {@link #isConnectAllowed(Object)} is closed.
          *
          * @param target {@link ResolvedAddress} to which connection was created.
          */
