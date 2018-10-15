@@ -18,8 +18,8 @@ package io.servicetalk.transport.netty.internal;
 import io.servicetalk.concurrent.api.AsyncCloseable;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.CompositeCloseable;
-import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
+import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.ServerContext;
 
 import io.netty.channel.Channel;
@@ -36,10 +36,13 @@ public final class NettyServerContext implements ServerContext {
 
     private final Channel listenChannel;
     private final ListenableAsyncCloseable closeable;
+    private final ExecutionContext context;
 
-    private NettyServerContext(Channel listenChannel, final ListenableAsyncCloseable closeable) {
+    private NettyServerContext(Channel listenChannel, final ListenableAsyncCloseable closeable,
+                               final ExecutionContext context) {
         this.listenChannel = listenChannel;
         this.closeable = closeable;
+        this.context = context;
     }
 
     /**
@@ -51,7 +54,8 @@ public final class NettyServerContext implements ServerContext {
      */
     public static ServerContext wrap(NettyServerContext toWrap, AsyncCloseable closeBefore) {
         return new NettyServerContext(toWrap.listenChannel,
-                toListenableAsyncCloseable(newCompositeCloseable().appendAll(closeBefore, toWrap.closeable)));
+                toListenableAsyncCloseable(newCompositeCloseable().appendAll(closeBefore, toWrap.closeable)),
+                toWrap.context);
     }
 
     /**
@@ -60,22 +64,26 @@ public final class NettyServerContext implements ServerContext {
      * @param listenChannel {@link Channel} to wrap.
      * @param channelSetCloseable {@link ChannelSet} to wrap.
      * @param closeBefore {@link Completable} which needs to closed first before {@code listenChannel} will be closed.
-     * @param offloadingExecutor {@link Executor} used to offload any signals to any asynchronous created by the
-     * returned {@link ServerContext} which could interact with the EventLoop.
+     * @param executionContext {@link ExecutionContext} used by this server.
      * @return A new {@link NettyServerContext} instance.
      */
     public static ServerContext wrap(Channel listenChannel, ListenableAsyncCloseable channelSetCloseable,
-                                     AsyncCloseable closeBefore, Executor offloadingExecutor) {
+                                     AsyncCloseable closeBefore, ExecutionContext executionContext) {
         final NettyChannelListenableAsyncCloseable channelCloseable =
-                new NettyChannelListenableAsyncCloseable(listenChannel, offloadingExecutor);
+                new NettyChannelListenableAsyncCloseable(listenChannel, executionContext.executor());
         final CompositeCloseable closeAsync = newCompositeCloseable().appendAll(
                 closeBefore, channelCloseable, channelSetCloseable);
-        return new NettyServerContext(listenChannel, toListenableAsyncCloseable(closeAsync));
+        return new NettyServerContext(listenChannel, toListenableAsyncCloseable(closeAsync), executionContext);
     }
 
     @Override
     public SocketAddress listenAddress() {
         return listenChannel.localAddress();
+    }
+
+    @Override
+    public ExecutionContext executionContext() {
+        return context;
     }
 
     @Override

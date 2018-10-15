@@ -27,7 +27,6 @@ import io.netty.channel.nio.NioEventLoopGroup;
 
 import java.util.concurrent.ThreadFactory;
 
-import static java.lang.Thread.NORM_PRIORITY;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -97,19 +96,5 @@ public final class NettyIoExecutors {
      */
     public static NettyIoExecutor fromNettyEventLoopGroup(EventLoopGroup eventLoopGroup) {
         return new EventLoopGroupIoExecutor(eventLoopGroup, true);
-    }
-
-    private static final class GlobalIoExecutorInitializer {
-
-        static final NettyIoExecutor INSTANCE;
-
-        static {
-            INSTANCE = createIoExecutor(0, new io.netty.util.concurrent.DefaultThreadFactory(
-                    "servicetalk-global-io-executor", true, NORM_PRIORITY));
-        }
-
-        private GlobalIoExecutorInitializer() {
-            // No instances
-        }
     }
 }
