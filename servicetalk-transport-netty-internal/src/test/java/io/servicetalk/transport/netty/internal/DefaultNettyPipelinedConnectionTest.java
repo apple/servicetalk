@@ -97,8 +97,8 @@ public class DefaultNettyPipelinedConnectionTest {
 
     @Test
     public void testWriteCancelAndPreviousRead() {
-        readSubscriber.subscribe(requester.request(writePublisher1, defaultFlushStrategy())).request(1);
-        secondReadSubscriber.subscribe(requester.request(writePublisher2, defaultFlushStrategy())).request(1);
+        readSubscriber.subscribe(requester.request(writePublisher1)).request(1);
+        secondReadSubscriber.subscribe(requester.request(writePublisher2)).request(1);
         writePublisher1.verifySubscribed();
         readPublisher.verifyNotSubscribed();
         writePublisher2.verifyNotSubscribed();
