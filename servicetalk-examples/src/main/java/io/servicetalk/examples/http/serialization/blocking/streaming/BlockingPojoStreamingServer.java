@@ -21,26 +21,33 @@ import io.servicetalk.data.jackson.JacksonSerializationProvider;
 import io.servicetalk.examples.http.serialization.MyPojo;
 import io.servicetalk.examples.http.serialization.PojoRequest;
 import io.servicetalk.http.api.HttpSerializationProvider;
+import io.servicetalk.http.netty.HttpServers;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 
+import static io.servicetalk.http.api.HttpHeaderNames.ALLOW;
+import static io.servicetalk.http.api.HttpRequestMethods.POST;
 import static io.servicetalk.http.api.HttpSerializationProviders.jsonSerializer;
-import static io.servicetalk.http.netty.HttpServers.newHttpServerBuilder;
 
 public final class BlockingPojoStreamingServer {
 
     public static void main(String[] args) throws Exception {
         HttpSerializationProvider serializer = jsonSerializer(new JacksonSerializationProvider());
-        newHttpServerBuilder(8080)
+        HttpServers.newHttpServerBuilder(8080)
                 .listenBlockingStreamingAndAwait((ctx, request, responseFactory) -> {
-                    BlockingIterable<PojoRequest> ids = request.payloadBody(serializer.deserializerFor(PojoRequest.class));
+                    if (request.method() != POST) {
+                        return responseFactory.methodNotAllowed().addHeader(ALLOW, POST.name());
+                    }
+                    BlockingIterable<PojoRequest> ids = request
+                            .payloadBody(serializer.deserializerFor(PojoRequest.class));
                     List<MyPojo> pojos = new ArrayList<>();
                     try (BlockingIterator<PojoRequest> iterator = ids.iterator()) {
                         while (iterator.hasNext()) {
                             PojoRequest req = iterator.next();
                             if (req != null) {
-                                pojos.add(new MyPojo(req.getId(), "foo"));
+                                pojos.add(new MyPojo(ThreadLocalRandom.current().nextInt(100), req.getValue()));
                             }
                         }
                     }

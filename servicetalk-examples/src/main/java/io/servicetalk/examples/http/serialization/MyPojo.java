@@ -20,22 +20,22 @@ package io.servicetalk.examples.http.serialization;
  */
 public final class MyPojo {
 
-    private String id;
+    private Integer id;
     private String value;
 
     public MyPojo() {
     }
 
-    public MyPojo(String id, String value) {
+    public MyPojo(Integer id, String value) {
         this.id = id;
         this.value = value;
     }
 
-    public String getId() {
+    public Integer getId() {
         return id;
     }
 
-    public void setId(final String id) {
+    public void setId(final Integer id) {
         this.id = id;
     }
 

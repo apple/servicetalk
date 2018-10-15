@@ -21,7 +21,11 @@ import io.servicetalk.examples.http.serialization.PojoRequest;
 import io.servicetalk.http.api.HttpSerializationProvider;
 import io.servicetalk.http.netty.HttpServers;
 
+import java.util.concurrent.ThreadLocalRandom;
+
 import static io.servicetalk.concurrent.api.Single.success;
+import static io.servicetalk.http.api.HttpHeaderNames.ALLOW;
+import static io.servicetalk.http.api.HttpRequestMethods.POST;
 import static io.servicetalk.http.api.HttpSerializationProviders.jsonSerializer;
 
 public final class PojoServer {
@@ -30,9 +34,13 @@ public final class PojoServer {
         HttpSerializationProvider serializer = jsonSerializer(new JacksonSerializationProvider());
         HttpServers.newHttpServerBuilder(8080)
                 .listenAndAwait((ctx, request, responseFactory) -> {
+                    if (request.method() != POST) {
+                        return success(responseFactory.methodNotAllowed().addHeader(ALLOW, POST.name()));
+                    }
                     PojoRequest req = request.payloadBody(serializer.deserializerFor(PojoRequest.class));
                     return success(responseFactory.ok()
-                            .payloadBody(new MyPojo(req.getId(), "foo"), serializer.serializerFor(MyPojo.class)));
+                            .payloadBody(new MyPojo(ThreadLocalRandom.current().nextInt(100), req.getValue()),
+                                    serializer.serializerFor(MyPojo.class)));
                 })
                 .awaitShutdown();
     }

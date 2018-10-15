@@ -19,21 +19,30 @@ import io.servicetalk.data.jackson.JacksonSerializationProvider;
 import io.servicetalk.examples.http.serialization.MyPojo;
 import io.servicetalk.examples.http.serialization.PojoRequest;
 import io.servicetalk.http.api.HttpSerializationProvider;
+import io.servicetalk.http.netty.HttpServers;
+
+import java.util.concurrent.ThreadLocalRandom;
 
 import static io.servicetalk.concurrent.api.Single.success;
+import static io.servicetalk.http.api.HttpHeaderNames.ALLOW;
+import static io.servicetalk.http.api.HttpRequestMethods.POST;
 import static io.servicetalk.http.api.HttpSerializationProviders.jsonSerializer;
-import static io.servicetalk.http.netty.HttpServers.newHttpServerBuilder;
 
 public final class PojoStreamingServer {
 
     public static void main(String[] args) throws Exception {
         HttpSerializationProvider serializer = jsonSerializer(new JacksonSerializationProvider());
-        newHttpServerBuilder(8080)
-                .listenStreamingAndAwait((ctx, request, responseFactory) ->
-                        success(responseFactory.ok()
-                                .payloadBody(request.payloadBody(serializer.deserializerFor(PojoRequest.class))
-                                                .map(req -> new MyPojo(req.getId(), "foo")),
-                                        serializer.serializerFor(MyPojo.class))))
+        HttpServers.newHttpServerBuilder(8080)
+                .listenStreamingAndAwait((ctx, request, responseFactory) -> {
+                    if (request.method() != POST) {
+                        return success(responseFactory.methodNotAllowed().addHeader(ALLOW, POST.name()));
+                    }
+                    return success(responseFactory.ok()
+                            .payloadBody(request.payloadBody(serializer.deserializerFor(PojoRequest.class))
+                                    .map(req -> new MyPojo(ThreadLocalRandom.current().nextInt(100),
+                                            req.getValue())),
+                                    serializer.serializerFor(MyPojo.class)));
+                })
                 .awaitShutdown();
     }
 }

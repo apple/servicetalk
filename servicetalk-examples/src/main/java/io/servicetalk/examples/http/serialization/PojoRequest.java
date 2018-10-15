@@ -20,27 +20,27 @@ package io.servicetalk.examples.http.serialization;
  */
 public final class PojoRequest {
 
-    private String id;
+    private String value;
 
     public PojoRequest() {
     }
 
-    public PojoRequest(String id) {
-        this.id = id;
+    public PojoRequest(String value) {
+        this.value = value;
     }
 
-    public String getId() {
-        return id;
+    public String getValue() {
+        return value;
     }
 
-    public void setId(String id) {
-        this.id = id;
+    public void setValue(String value) {
+        this.value = value;
     }
 
     @Override
     public String toString() {
         return "PojoRequest{" +
-                "id='" + id + '\'' +
+                "value='" + value + '\'' +
                 '}';
     }
 }

@@ -71,8 +71,8 @@ A similar to "Hello World" examples, which demonstrate [asynchronous-aggregated]
 [asynchronous-streaming](serialization/async/streaming), [blocking-aggregated](serialization/blocking), and
 [blocking-streaming](serialization/blocking/streaming) client and server with JSON serialization of simple pojo classes.
 
-Client sends a `GET` request with JSON payload [PojoRequest](serialization/PojoRequest.java) and expects a response with
-`Content-Type: application/json` and [MyPojo](serialization/MyPojo.java) as a payload.
+Client sends a `POST` request with a JSON payload [PojoRequest](serialization/PojoRequest.java) and expects a response
+with `Content-Type: application/json` and [MyPojo](serialization/MyPojo.java) as a payload.
 
 
 
