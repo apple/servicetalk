@@ -18,9 +18,11 @@ package io.servicetalk.http.api;
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.Charset;
 import java.nio.charset.UnsupportedCharsetException;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.BiFunction;
 import javax.annotation.Nullable;
 
@@ -44,7 +46,7 @@ class DefaultHttpRequestMetaData extends AbstractHttpMetaData implements HttpReq
     private String requestTarget;
 
     @Nullable
-    private Map<String, List<String>> queryString;
+    private HttpQuery httpQuery;
     @Nullable
     private HttpUri requestTargetUri;
     @Nullable
@@ -64,7 +66,7 @@ class DefaultHttpRequestMetaData extends AbstractHttpMetaData implements HttpReq
         super(requestMetaData);
         this.method = requestMetaData.method;
         this.requestTarget = requestMetaData.requestTarget;
-        this.queryString = requestMetaData.queryString;
+        this.httpQuery = requestMetaData.httpQuery;
         this.requestTargetUri = requestMetaData.requestTargetUri;
         this.effectiveRequestHost = requestMetaData.effectiveRequestHost;
         this.effectiveRequestPort = requestMetaData.effectiveRequestPort;
@@ -129,6 +131,15 @@ class DefaultHttpRequestMetaData extends AbstractHttpMetaData implements HttpReq
     }
 
     @Override
+    public HttpRequestMetaData rawPath(final String path) {
+        if (!path.isEmpty() && path.charAt(0) != '/') {
+            throw new IllegalArgumentException("Path must be empty or start with '/'");
+        }
+        requestTarget(encodeRequestTarget(path, rawQuery(), null));
+        return this;
+    }
+
+    @Override
     public final String path() {
         return lazyParseRequestTarget().getPath();
     }
@@ -166,20 +177,6 @@ class DefaultHttpRequestMetaData extends AbstractHttpMetaData implements HttpReq
     }
 
     @Override
-    public HttpRequestMetaData rawPath(final String path) {
-        if (!path.isEmpty() && path.charAt(0) != '/') {
-            throw new IllegalArgumentException("Path must be empty or start with '/'");
-        }
-        requestTarget(encodeRequestTarget(path, rawQuery(), null));
-        return this;
-    }
-
-    @Override
-    public final HttpQuery query() {
-        return new DefaultHttpQuery(lazyParseQueryString(), this::setQueryParams);
-    }
-
-    @Override
     public final String rawQuery() {
         return lazyParseRequestTarget().getRawQuery();
     }
@@ -187,6 +184,85 @@ class DefaultHttpRequestMetaData extends AbstractHttpMetaData implements HttpReq
     @Override
     public HttpRequestMetaData rawQuery(final String query) {
         requestTarget(encodeRequestTarget(rawPath(), requireNonNull(query), null));
+        return this;
+    }
+
+    @Nullable
+    @Override
+    public String queryParameter(final String key) {
+        return lazyParseQueryString().get(key);
+    }
+
+    @Override
+    public Iterable<Map.Entry<String, String>> queryParameters() {
+        return lazyParseQueryString();
+    }
+
+    @Override
+    public Iterator<String> queryParameters(final String key) {
+        return lazyParseQueryString().values(key);
+    }
+
+    @Override
+    public Set<String> queryParametersKeys() {
+        return lazyParseQueryString().keys();
+    }
+
+    @Override
+    public boolean hasQueryParameter(final String key, final String value) {
+        return lazyParseQueryString().contains(key, value);
+    }
+
+    @Override
+    public int queryParametersCount() {
+        return lazyParseQueryString().size();
+    }
+
+    @Override
+    public HttpRequestMetaData addQueryParameter(final String key, final String value) {
+        lazyParseQueryString().add(key, value);
+        return this;
+    }
+
+    @Override
+    public HttpRequestMetaData addQueryParameters(final String key, final Iterable<String> values) {
+        lazyParseQueryString().add(key, values);
+        return this;
+    }
+
+    @Override
+    public HttpRequestMetaData addQueryParameters(final String key, final String... values) {
+        lazyParseQueryString().add(key, values);
+        return this;
+    }
+
+    @Override
+    public HttpRequestMetaData setQueryParameter(final String key, final String value) {
+        lazyParseQueryString().set(key, value);
+        return this;
+    }
+
+    @Override
+    public HttpRequestMetaData setQueryParameters(final String key, final Iterable<String> values) {
+        lazyParseQueryString().set(key, values);
+        return this;
+    }
+
+    @Override
+    public HttpRequestMetaData setQueryParameters(final String key, final String... values) {
+        lazyParseQueryString().set(key, values);
+        return this;
+    }
+
+    @Override
+    public HttpRequestMetaData removeQueryParameters(final String key) {
+        lazyParseQueryString().remove(key);
+        return this;
+    }
+
+    @Override
+    public HttpRequestMetaData removeQueryParameters(final String key, final String value) {
+        lazyParseQueryString().remove(key, value);
         return this;
     }
 
@@ -203,11 +279,11 @@ class DefaultHttpRequestMetaData extends AbstractHttpMetaData implements HttpReq
         return effectiveRequestPort;
     }
 
-    private Map<String, List<String>> lazyParseQueryString() {
-        if (queryString == null) {
-            queryString = decodeParams(lazyParseRequestTarget().getRawQuery());
+    private HttpQuery lazyParseQueryString() {
+        if (httpQuery == null) {
+            httpQuery = new HttpQuery(decodeParams(lazyParseRequestTarget().getRawQuery()), this::setQueryParams);
         }
-        return queryString;
+        return httpQuery;
     }
 
     private HttpUri lazyParseRequestTarget() {
@@ -260,7 +336,7 @@ class DefaultHttpRequestMetaData extends AbstractHttpMetaData implements HttpReq
         effectiveRequestPort = PORT_NOT_ASSIGNED;
         effectiveRequestHost = null;
         effectiveRequestHostHeader = null;
-        queryString = null;
+        httpQuery = null;
     }
 
     @Override

@@ -15,6 +15,9 @@
  */
 package io.servicetalk.http.api;
 
+import java.util.Iterator;
+import java.util.Map.Entry;
+import java.util.Set;
 import javax.annotation.Nullable;
 
 /**
@@ -160,47 +163,6 @@ public interface HttpRequestMetaData extends HttpMetaData {
     HttpRequestMetaData appendPathSegments(String... segments);
 
     /**
-     * The <a href="https://tools.ietf.org/html/rfc3986#section-3.4">query component</a> of the request target,
-     * returning an {@link HttpQuery} that may be used for reading and manipulating the query component.
-     *
-     * @return an {@link HttpQuery} that reflects the current state of the query component.
-     */
-    HttpQuery query();
-
-    /**
-     * Adds a new query parameter with the specified {@code key} and {@code value}, which will be
-     * <a href="https://tools.ietf.org/html/rfc3986#section-2.1">percent-encoded</a> if needed.
-     *
-     * Each add <strong>MAY</strong> parse the query string and hence bulk modifications may be more efficient
-     * using {@link #query()}.
-     *
-     * @param key the query parameter key.
-     * @param value the query parameter value.
-     * @return {@code this}.
-     */
-    default HttpRequestMetaData addQueryParameter(String key, String value) {
-        query().add(key, value);
-        return this;
-    }
-
-    /**
-     * Sets a query parameter with the specified {@code key} and {@code value}, which will be
-     * <a href="https://tools.ietf.org/html/rfc3986#section-2.1">percent-encoded</a> if needed.
-     * Any existing query parameters with the same key are overwritten.
-     *
-     * Each add <strong>MAY</strong> parse the query string and hence bulk modifications may be more efficient
-     * using {@link #query()}.
-     *
-     * @param key the query parameter key.
-     * @param value the query parameter value.
-     * @return {@code this}.
-     */
-    default HttpRequestMetaData setQueryParameter(String key, String value) {
-        query().set(key, value);
-        return this;
-    }
-
-    /**
      * The <a href="https://tools.ietf.org/html/rfc3986#section-3.4">query component</a> derived
      * from {@link #requestTarget()}.
      * <p>
@@ -225,6 +187,154 @@ public interface HttpRequestMetaData extends HttpMetaData {
      * @return {@code this}.
      */
     HttpRequestMetaData rawQuery(String query);
+
+    /**
+     * Returns the value of a query parameter with the specified key. If there is more than one value for the specified
+     * key, the first value in insertion order is returned.
+
+     * @param key the key of the query parameter to retrieve.
+     * @return the first query parameter value if the key is found. {@code null} if there's no such key.
+     */
+    @Nullable
+    String queryParameter(String key);
+
+    /**
+     * Returns all query parameters as key/value pairs.
+     *
+     * @return an {@link Iterable} of query parameter key/value pairs or an empty {@link Iterable} if none present.
+     */
+    Iterable<Entry<String, String>> queryParameters();
+
+    /**
+     * Returns all values for the query parameter with the specified key.
+     *
+     * @param key the key of the query parameter to retrieve.
+     * @return an {@link Iterator} of query parameter values or an empty {@link Iterator} if no values are found.
+     */
+    Iterator<String> queryParameters(String key);
+
+    /**
+     * Returns a {@link Set} of all query parameter keys. The returned {@link Set} cannot be modified.
+     * @return a {@link Set} of all query parameter keys. The returned {@link Set} cannot be modified.
+     */
+    Set<String> queryParametersKeys();
+
+    /**
+     * Returns {@code true} if a query parameter with the {@code key} and {@code value} exists, {@code false} otherwise.
+     *
+     * @param key the query parameter key.
+     * @param value the query parameter value of the query parameter to find.
+     * @return {@code true} if a {@code key}, {@code value} pair exists.
+     */
+    boolean hasQueryParameter(String key, String value);
+
+    /**
+     * Returns the number of query parameters.
+     * @return the number of query parameters.
+     */
+    int queryParametersCount();
+
+    /**
+     * Adds a new query parameter with the specified {@code key} and {@code value}, which will be
+     * <a href="https://tools.ietf.org/html/rfc3986#section-2.1">percent-encoded</a> if needed.
+     *
+     * @param key the query parameter key.
+     * @param value the query parameter value.
+     * @return {@code this}.
+     */
+    HttpRequestMetaData addQueryParameter(String key, String value);
+
+    /**
+     * Adds new query parameters with the specified {@code key} and {@code values}. This method is semantically
+     * equivalent to:
+     *
+     * <pre>
+     * for (T value : values) {
+     *     addQueryParameter(key, value);
+     * }
+     * </pre>
+     *
+     * @param key the query parameter key.
+     * @param values the query parameter values.
+     * @return {@code this}.
+     */
+    HttpRequestMetaData addQueryParameters(String key, Iterable<String> values);
+
+    /**
+     * Adds new query parameters with the specified {@code key} and {@code values}. This method is semantically
+     * equivalent to:
+     *
+     * <pre>
+     * for (T value : values) {
+     *     query.addQueryParameter(key, value);
+     * }
+     * </pre>
+     *
+     * @param key the query parameter key.
+     * @param values the query parameter values.
+     * @return {@code this}.
+     */
+    HttpRequestMetaData addQueryParameters(String key, String... values);
+
+    /**
+     * Sets a query parameter with the specified {@code key} and {@code value}, which will be
+     * <a href="https://tools.ietf.org/html/rfc3986#section-2.1">percent-encoded</a> if needed.
+     * Any existing query parameters with the same key are overwritten.
+     *
+     * @param key the query parameter key.
+     * @param value the query parameter value.
+     * @return {@code this}.
+     */
+    HttpRequestMetaData setQueryParameter(String key, String value);
+
+    /**
+     * Sets new query parameters with the specified {@code key} and {@code values}. This method is equivalent to:
+     *
+     * <pre>
+     * removeQueryParameter(key);
+     * for (T value : values) {
+     *     query.addQueryParameter(key, value);
+     * }
+     * </pre>
+     *
+     * @param key the query parameter key.
+     * @param values the query parameter values.
+     * @return {@code this}.
+     */
+    HttpRequestMetaData setQueryParameters(String key, Iterable<String> values);
+
+    /**
+     * Sets new query parameters with the specified {@code key} and {@code values}. This method is equivalent to:
+     *
+     * <pre>
+     * removeQueryParameter(key);
+     * for (T value : values) {
+     *     query.addQueryParameter(key, value);
+     * }
+     * </pre>
+     *
+     * @param key the query parameter key.
+     * @param values the query parameter values.
+     * @return {@code this}.
+     */
+    HttpRequestMetaData setQueryParameters(String key, String... values);
+
+    /**
+     * Removes all query parameters with the specified {@code key}.
+     *
+     * @param key the query parameter key.
+     * @return {@code true} if at least one entry has been removed.
+     */
+    HttpRequestMetaData removeQueryParameters(String key);
+
+    /**
+     * Removes all query parameters with the specified {@code key} and {@code value}.
+     *
+     * @param key the query parameter key.
+     * @param value the query parameter value.
+     * @return {@code true} if at least one entry has been removed.
+     */
+    HttpRequestMetaData removeQueryParameters(String key, String value);
 
     /**
      * The <a href="https://tools.ietf.org/html/rfc3986#section-3.2.2">host component</a> derived

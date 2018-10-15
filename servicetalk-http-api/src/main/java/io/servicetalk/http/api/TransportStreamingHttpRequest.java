@@ -89,6 +89,54 @@ final class TransportStreamingHttpRequest extends DefaultHttpRequestMetaData imp
     }
 
     @Override
+    public StreamingHttpRequest addQueryParameter(String key, String value) {
+        super.addQueryParameter(key, value);
+        return this;
+    }
+
+    @Override
+    public StreamingHttpRequest addQueryParameters(String key, Iterable<String> values) {
+        super.addQueryParameters(key, values);
+        return this;
+    }
+
+    @Override
+    public StreamingHttpRequest addQueryParameters(String key, String... values) {
+        super.addQueryParameters(key, values);
+        return this;
+    }
+
+    @Override
+    public StreamingHttpRequest setQueryParameter(String key, String value) {
+        super.setQueryParameter(key, value);
+        return this;
+    }
+
+    @Override
+    public StreamingHttpRequest setQueryParameters(String key, Iterable<String> values) {
+        super.setQueryParameters(key, values);
+        return this;
+    }
+
+    @Override
+    public StreamingHttpRequest setQueryParameters(String key, String... values) {
+        super.setQueryParameters(key, values);
+        return this;
+    }
+
+    @Override
+    public StreamingHttpRequest removeQueryParameters(String key) {
+        super.removeQueryParameters(key);
+        return this;
+    }
+
+    @Override
+    public StreamingHttpRequest removeQueryParameters(String key, String value) {
+        super.removeQueryParameters(key, value);
+        return this;
+    }
+
+    @Override
     public Publisher<Buffer> payloadBody() {
         return payloadAndTrailers.liftSynchronous(HttpTransportBufferFilterOperator.INSTANCE);
     }

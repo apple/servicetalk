@@ -15,179 +15,259 @@
  */
 package io.servicetalk.http.api;
 
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.NoSuchElementException;
 import java.util.Set;
-import java.util.Spliterator;
-import java.util.Spliterators;
+import java.util.function.Consumer;
 import javax.annotation.Nullable;
 
-/**
- * A structured representation of the <a href="https://tools.ietf.org/html/rfc3986#section-3.4">query component</a> of a
- * request. May be used for reading and manipulating the query component.
- */
-public interface HttpQuery extends Iterable<Map.Entry<String, String>> {
+import static java.util.Collections.addAll;
+import static java.util.Collections.emptyIterator;
+import static java.util.Collections.unmodifiableSet;
+import static java.util.Objects.requireNonNull;
+
+final class HttpQuery implements Iterable<Map.Entry<String, String>> {
+
+    private static final int DEFAULT_LIST_SIZE = 2;
+
+    private final Consumer<Map<String, List<String>>> queryParamsUpdater;
+    private final Map<String, List<String>> params;
 
     /**
-     * Returns the value of a query parameter with the specified key. If there is more than one value for the specified
-     * key, the first value in insertion order is returned.
-
-     * @param key the key of the query parameter to retrieve.
-     * @return the first query parameter value if the key is found. {@code null} if there's no such key.
+     * Create a new instance.
+     *
+     * @param params Map of query parameters.
+     * @param queryParamsUpdater callback for setting the query parameters on a request.
      */
-    @Nullable
-    String get(String key);
-
-    /**
-     * Returns all values for the query parameter with the specified key.
-     *
-     * @param key the key of the query parameter to retrieve.
-     * @return a {@link Iterator} of query parameter values or an empty {@link Iterator} if no values are found.
-     */
-    Iterator<String> values(String key);
-
-    /**
-     * Returns a {@link Set} of all query parameter keys in this object. The returned {@link Set} cannot be modified.
-     * @return a {@link Set} of all query parameter keys in this object. The returned {@link Set} cannot be modified.
-     */
-    Set<String> keys();
-
-    /**
-     * Adds a new query parameter with the specified {@code key} and {@code value}.
-     *
-     * @param key the query parameter key.
-     * @param value the query parameter value.
-     * @return {@code this}.
-     */
-    HttpQuery add(String key, String value);
-
-    /**
-     * Adds new query parameters with the specified {@code key} and {@code values}. This method is semantically
-     * equivalent to:
-     *
-     * <pre>
-     * for (T value : values) {
-     *     query.add(key, value);
-     * }
-     * </pre>
-     *
-     * @param key the query parameter key.
-     * @param values the query parameter values.
-     * @return {@code this}.
-     */
-    HttpQuery add(String key, Iterable<String> values);
-
-    /**
-     * Adds new query parameters with the specified {@code key} and {@code values}. This method is semantically
-     * equivalent to:
-     *
-     * <pre>
-     * for (T value : values) {
-     *     query.add(key, value);
-     * }
-     * </pre>
-     *
-     * @param key the query parameter key.
-     * @param values the query parameter values.
-     * @return {@code this}.
-     */
-    HttpQuery add(String key, String... values);
-
-    /**
-     * Sets a query parameter with the specified {@code key} and {@code value}. Any existing query parameters with the same key are
-     * overwritten.
-     *
-     * @param key the query parameter key.
-     * @param value the query parameter value.
-     * @return {@code this}.
-     */
-    HttpQuery set(String key, String value);
-
-    /**
-     * Sets a new query parameter with the specified {@code key} and {@code values}. This method is equivalent to:
-     *
-     * <pre>
-     * query.remove(key);
-     * for (T value : values) {
-     *     query.add(key, value);
-     * }
-     * </pre>
-     *
-     * @param key the query parameter key.
-     * @param values the query parameter values.
-     * @return {@code this}.
-     */
-    HttpQuery set(String key, Iterable<String> values);
-
-    /**
-     * Sets a new query parameter with the specified {@code key} and {@code values}. This method is equivalent to:
-     *
-     * <pre>
-     * query.remove(key);
-     * for (T value : values) {
-     *     query.add(key, value);
-     * }
-     * </pre>
-     *
-     * @param key the query parameter key.
-     * @param values the query parameter value.
-     * @return {@code this}.
-     */
-    HttpQuery set(String key, String... values);
-
-    /**
-     * Returns {@code true} if a query parameter with the {@code key} exists, {@code false} otherwise.
-     *
-     * @param key the query parameter name.
-     * @return {@code true} if {@code key} exists.
-     */
-    default boolean contains(final String key) {
-        return get(key) != null;
+    HttpQuery(final Map<String, List<String>> params, final Consumer<Map<String, List<String>>> queryParamsUpdater) {
+        this.queryParamsUpdater = requireNonNull(queryParamsUpdater);
+        this.params = requireNonNull(params);
     }
 
-    /**
-     * Returns {@code true} if a query parameter with the {@code key} and {@code value} exists, {@code false} otherwise.
-     *
-     * @param key the query parameter key.
-     * @param value the query parameter value of the query parameter to find.
-     * @return {@code true} if a {@code key}, {@code value} pair exists.
-     */
-    boolean contains(String key, String value);
+    @Nullable
+    public String get(final String key) {
+        final List<String> values = params.get(key);
+        if (values == null || values.isEmpty()) {
+            return null;
+        }
+        return values.get(0);
+    }
 
-    /**
-     * Removes all query parameters with the specified {@code key}.
-     *
-     * @param key the query parameter key.
-     * @return {@code true} if at least one entry has been removed.
-     */
-    boolean remove(String key);
+    public Iterator<String> values(final String key) {
+        final List<String> values = params.get(key);
+        if (values == null) {
+            return emptyIterator();
+        }
+        return new ValuesIterator(values.iterator(), this::updateQueryParams);
+    }
 
-    /**
-     * Removes all query parameters with the specified {@code key} and {@code value}.
-     *
-     * @param key the query parameter key.
-     * @param value the query parameter value.
-     * @return {@code true} if at least one entry has been removed.
-     */
-    boolean remove(String key, String value);
+    public Set<String> keys() {
+        return unmodifiableSet(params.keySet());
+    }
 
-    /**
-     * Returns the number of query parameters in this object.
-     * @return the number of query parameters in this object.
-     */
-    int size();
+    public HttpQuery add(final String key, final String value) {
+        if (getValues(key).add(value)) {
+            updateQueryParams();
+        }
+        return this;
+    }
 
-    /**
-     * Returns {@code true} if {@link #size()} equals {@code 0}.
-     * @return {@code true} if {@link #size()} equals {@code 0}.
-     */
-    boolean isEmpty();
+    public HttpQuery add(final String key, final Iterable<String> values) {
+        final List<String> paramValues = getValues(key);
+        boolean changed = false;
+        for (final String value : values) {
+            changed |= paramValues.add(value);
+        }
+        if (changed) {
+            updateQueryParams();
+        }
+        return this;
+    }
+
+    public HttpQuery add(final String key, final String... values) {
+        final List<String> paramValues = getValues(key);
+        if (addAll(paramValues, values)) {
+            updateQueryParams();
+        }
+        return this;
+    }
+
+    public HttpQuery set(final String key, final String value) {
+        final ArrayList<String> list = new ArrayList<>(DEFAULT_LIST_SIZE);
+        final boolean changed = list.add(value);
+        params.put(key, list);
+        if (changed) {
+            updateQueryParams();
+        }
+        return this;
+    }
+
+    public HttpQuery set(final String key, final Iterable<String> values) {
+        final ArrayList<String> list = new ArrayList<>(DEFAULT_LIST_SIZE);
+        boolean changed = false;
+        for (final String value : values) {
+            changed |= list.add(value);
+        }
+        params.put(key, list);
+        if (changed) {
+            updateQueryParams();
+        }
+        return this;
+    }
+
+    public HttpQuery set(final String key, final String... values) {
+        final ArrayList<String> list = new ArrayList<>(DEFAULT_LIST_SIZE);
+        final boolean changed = addAll(list, values);
+        params.put(key, list);
+        if (changed) {
+            updateQueryParams();
+        }
+        return this;
+    }
+
+    public boolean contains(final String key, final String value) {
+        final Iterator<String> values = values(key);
+        while (values.hasNext()) {
+            if (value.equals(values.next())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public boolean remove(final String key) {
+        final List<String> removedValues = params.remove(key);
+        boolean removed = removedValues != null && !removedValues.isEmpty();
+        if (removed) {
+            updateQueryParams();
+        }
+        return removed;
+    }
+
+    public boolean remove(final String key, final String value) {
+        final Iterator<String> values = values(key);
+        while (values.hasNext()) {
+            if (value.equals(values.next())) {
+                values.remove();
+                updateQueryParams();
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public int size() {
+        int size = 0;
+        for (final Entry<String, List<String>> entry : params.entrySet()) {
+            size += entry.getValue().size();
+        }
+        return size;
+    }
 
     @Override
-    Iterator<Map.Entry<String, String>> iterator();
+    public Iterator<Entry<String, String>> iterator() {
+        return new QueryIterator(params.entrySet().iterator(), this::updateQueryParams);
+    }
 
-    @Override
-    default Spliterator<Map.Entry<String, String>> spliterator() {
-        return Spliterators.spliterator(iterator(), size(), Spliterator.SIZED);
+    private void updateQueryParams() {
+        queryParamsUpdater.accept(params);
+    }
+
+    private List<String> getValues(final String key) {
+        return params.computeIfAbsent(key, k -> new ArrayList<>(DEFAULT_LIST_SIZE));
+    }
+
+    private static final class ValuesIterator implements Iterator<String> {
+        private final Iterator<String> listIterator;
+        private final Runnable queryParamsUpdater;
+
+        private ValuesIterator(final Iterator<String> listIterator, final Runnable queryParamsUpdater) {
+            this.listIterator = listIterator;
+            this.queryParamsUpdater = queryParamsUpdater;
+        }
+
+        @Override
+        public boolean hasNext() {
+            return listIterator.hasNext();
+        }
+
+        @Override
+        public String next() {
+            return listIterator.next();
+        }
+
+        @Override
+        public void remove() {
+            listIterator.remove();
+            queryParamsUpdater.run();
+        }
+    }
+
+    private static final class QueryIterator implements Iterator<Entry<String, String>> {
+
+        private final Iterator<Entry<String, List<String>>> mapIterator;
+        private final Runnable queryParamsUpdater;
+        @Nullable
+        private String key;
+        private Iterator<String> listIterator;
+
+        private QueryIterator(final Iterator<Entry<String, List<String>>> mapIterator,
+                              final Runnable queryParamsUpdater) {
+            this.mapIterator = mapIterator;
+            this.queryParamsUpdater = queryParamsUpdater;
+            listIterator = emptyIterator();
+        }
+
+        @Override
+        public boolean hasNext() {
+            if (listIterator.hasNext()) {
+                return true;
+            }
+            while (mapIterator.hasNext()) {
+                final Entry<String, List<String>> entry = mapIterator.next();
+                key = entry.getKey();
+                listIterator = entry.getValue().iterator();
+                if (listIterator.hasNext()) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        @Override
+        public Entry<String, String> next() {
+            if (!hasNext()) {
+                throw new NoSuchElementException();
+            }
+            final String value = listIterator.next();
+            assert key != null;
+            return new Entry<String, String>() {
+
+                @Override
+                public String getKey() {
+                    return key;
+                }
+
+                @Override
+                public String getValue() {
+                    return value;
+                }
+
+                @Override
+                public String setValue(final String value) {
+                    throw new UnsupportedOperationException();
+                }
+            };
+        }
+
+        @Override
+        public void remove() {
+            listIterator.remove();
+            queryParamsUpdater.run();
+        }
     }
 }

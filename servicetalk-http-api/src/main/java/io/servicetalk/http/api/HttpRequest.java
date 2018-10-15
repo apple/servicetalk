@@ -81,19 +81,31 @@ public interface HttpRequest extends HttpRequestMetaData, TrailersHolder {
     HttpRequest appendPathSegments(String... segments);
 
     @Override
-    default HttpRequest addQueryParameter(String key, String value) {
-        HttpRequestMetaData.super.addQueryParameter(key, value);
-        return this;
-    }
-
-    @Override
-    default HttpRequest setQueryParameter(String key, String value) {
-        HttpRequestMetaData.super.setQueryParameter(key, value);
-        return this;
-    }
-
-    @Override
     HttpRequest rawQuery(String query);
+
+    @Override
+    HttpRequest addQueryParameter(String key, String value);
+
+    @Override
+    HttpRequest addQueryParameters(String key, Iterable<String> values);
+
+    @Override
+    HttpRequest addQueryParameters(String key, String... values);
+
+    @Override
+    HttpRequest setQueryParameter(String key, String value);
+
+    @Override
+    HttpRequest setQueryParameters(String key, Iterable<String> values);
+
+    @Override
+    HttpRequest setQueryParameters(String key, String... values);
+
+    @Override
+    HttpRequest removeQueryParameters(String key);
+
+    @Override
+    HttpRequest removeQueryParameters(String key, String value);
 
     @Override
     HttpRequest version(HttpProtocolVersion version);

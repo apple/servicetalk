@@ -180,19 +180,31 @@ public interface StreamingHttpRequest extends HttpRequestMetaData {
     StreamingHttpRequest appendPathSegments(String... segments);
 
     @Override
-    default StreamingHttpRequest addQueryParameter(String key, String value) {
-        HttpRequestMetaData.super.addQueryParameter(key, value);
-        return this;
-    }
-
-    @Override
-    default StreamingHttpRequest setQueryParameter(String key, String value) {
-        HttpRequestMetaData.super.setQueryParameter(key, value);
-        return this;
-    }
-
-    @Override
     StreamingHttpRequest rawQuery(String query);
+
+    @Override
+    StreamingHttpRequest addQueryParameter(String key, String value);
+
+    @Override
+    StreamingHttpRequest addQueryParameters(String key, Iterable<String> values);
+
+    @Override
+    StreamingHttpRequest addQueryParameters(String key, String... values);
+
+    @Override
+    StreamingHttpRequest setQueryParameter(String key, String value);
+
+    @Override
+    StreamingHttpRequest setQueryParameters(String key, Iterable<String> values);
+
+    @Override
+    StreamingHttpRequest setQueryParameters(String key, String... values);
+
+    @Override
+    StreamingHttpRequest removeQueryParameters(String key);
+
+    @Override
+    StreamingHttpRequest removeQueryParameters(String key, String value);
 
     @Override
     StreamingHttpRequest version(HttpProtocolVersion version);

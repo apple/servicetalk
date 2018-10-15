@@ -22,7 +22,6 @@ import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.DefaultHttpHeadersFactory;
 import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.HttpHeaders;
-import io.servicetalk.http.api.HttpQuery;
 import io.servicetalk.http.api.HttpResponseStatus;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StreamingHttpRequest;
@@ -76,8 +75,6 @@ public abstract class BaseHttpPredicateRouterBuilderTest {
     @Mock
     HttpHeaders headers;
     @Mock
-    HttpQuery query;
-    @Mock
     Single<StreamingHttpResponse> responseA, responseB, responseC, responseD, responseE, fallbackResponse;
 
     @Before
@@ -86,7 +83,6 @@ public abstract class BaseHttpPredicateRouterBuilderTest {
         when(executionCtx.executor()).thenReturn(immediate());
         when(request.version()).thenReturn(HTTP_1_1);
         when(request.headers()).thenReturn(headers);
-        when(request.query()).thenReturn(query);
         when(factory.newResponse(any(HttpResponseStatus.class))).thenAnswer(new Answer<StreamingHttpResponse>() {
             @Override
             public StreamingHttpResponse answer(final InvocationOnMock invocation) throws Throwable {
