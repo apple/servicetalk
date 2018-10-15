@@ -15,7 +15,6 @@
  */
 package io.servicetalk.examples.http.helloworld.async;
 
-import io.servicetalk.http.api.HttpRequestHandler;
 import io.servicetalk.http.netty.HttpServers;
 
 import static io.servicetalk.concurrent.api.Single.success;

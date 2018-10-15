@@ -18,7 +18,6 @@ package io.servicetalk.examples.http.serialization.async;
 import io.servicetalk.data.jackson.JacksonSerializationProvider;
 import io.servicetalk.examples.http.serialization.MyPojo;
 import io.servicetalk.examples.http.serialization.PojoRequest;
-import io.servicetalk.http.api.HttpRequestHandler;
 import io.servicetalk.http.api.HttpSerializationProvider;
 import io.servicetalk.http.netty.HttpServers;
 

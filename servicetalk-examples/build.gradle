@@ -33,7 +33,6 @@ dependencies {
   // The version for all ServiceTalk dependencies will be resolved based on information in `servicetalk-bom`.
   implementation "io.servicetalk:servicetalk-annotations"
   implementation "io.servicetalk:servicetalk-buffer-netty"
-  implementation "io.servicetalk:servicetalk-concurrent-internal" // hmm
   implementation "io.servicetalk:servicetalk-data-jackson"
   // We could use jersey-media-json-jackson instead. Using servicetalk-data-jackson-jersey allows us to avoid the
   // input stream adaptation that kicks in with out-of-the-box body readers and also allows accepting/returning

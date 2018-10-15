@@ -25,7 +25,6 @@ import io.servicetalk.transport.api.ServerContext;
 
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.concurrent.api.Completable.completed;
-import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.examples.http.service.composition.backends.MetadataBackend.newMetadataService;
 import static io.servicetalk.examples.http.service.composition.backends.PortRegistry.METADATA_BACKEND_ADDRESS;
 import static io.servicetalk.examples.http.service.composition.backends.PortRegistry.RATINGS_BACKEND_ADDRESS;
@@ -54,7 +53,8 @@ public final class BackendsStarter {
             // Use Jackson for serialization and deserialization.
             // HttpSerializer validates HTTP metadata for serialization/deserialization and also provides higher level
             // HTTP focused serialization APIs.
-            HttpSerializationProvider httpSerializer = HttpSerializationProviders.jsonSerializer(new JacksonSerializationProvider());
+            HttpSerializationProvider httpSerializer = HttpSerializationProviders
+                    .jsonSerializer(new JacksonSerializationProvider());
 
             // This is a single Completable used to await closing of all backends started by this class. It is used to
             // provide a way to not let main() exit.
@@ -82,7 +82,7 @@ public final class BackendsStarter {
             allServicesOnClose = allServicesOnClose.merge(ratingService.onClose());
 
             // Await termination of all backends started by this class.
-            awaitIndefinitely(allServicesOnClose);
+            allServicesOnClose.toFuture().get();
         }
     }
 }

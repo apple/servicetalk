@@ -26,6 +26,7 @@ import io.servicetalk.http.netty.HttpClients;
 import static io.servicetalk.http.api.HttpSerializationProviders.jsonSerializer;
 
 public final class BlockingPojoClient {
+
     public static void main(String[] args) throws Exception {
         HttpSerializationProvider serializer = jsonSerializer(new JacksonSerializationProvider());
         try (BlockingHttpClient client = HttpClients.forSingleAddress("localhost", 8080).buildBlocking()) {

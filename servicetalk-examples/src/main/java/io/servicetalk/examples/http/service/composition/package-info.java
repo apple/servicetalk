@@ -13,18 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.examples.http.helloworld.blocking;
+@ElementsAreNonnullByDefault
+package io.servicetalk.examples.http.service.composition;
 
-import io.servicetalk.http.netty.HttpServers;
-
-import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
-
-public final class BlockingHelloWorldServer {
-
-    public static void main(String[] args) throws Exception {
-        HttpServers.newHttpServerBuilder(8080)
-                .listenBlockingAndAwait((ctx, request, responseFactory) ->
-                        responseFactory.ok().payloadBody("Hello World!", textSerializer()))
-                .awaitShutdown();
-    }
-}
+import io.servicetalk.annotations.ElementsAreNonnullByDefault;

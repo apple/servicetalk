@@ -27,7 +27,7 @@ import io.servicetalk.http.netty.HttpClients;
 import static io.servicetalk.http.api.HttpSerializationProviders.jsonSerializer;
 import static java.util.Arrays.asList;
 
-public class BlockingPojoStreamingClient {
+public final class BlockingPojoStreamingClient {
 
     public static void main(String[] args) throws Exception {
         HttpSerializationProvider serializer = jsonSerializer(new JacksonSerializationProvider());

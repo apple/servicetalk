@@ -54,28 +54,4 @@ public final class MyPojo {
                 ", value='" + value + '\'' +
                 '}';
     }
-
-    @Override
-    public boolean equals(final Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-
-        final MyPojo myPojo = (MyPojo) o;
-
-        if (id != null ? !id.equals(myPojo.id) : myPojo.id != null) {
-            return false;
-        }
-        return value != null ? value.equals(myPojo.value) : myPojo.value == null;
-    }
-
-    @Override
-    public int hashCode() {
-        int result = id != null ? id.hashCode() : 0;
-        result = 31 * result + (value != null ? value.hashCode() : 0);
-        return result;
-    }
 }

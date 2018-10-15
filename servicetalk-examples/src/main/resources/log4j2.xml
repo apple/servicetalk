@@ -28,8 +28,13 @@
     -->
     <Logger name="servicetalk-tests-client-wire-logger" level="TRACE"/>
     <Logger name="servicetalk-tests-server-wire-logger" level="TRACE"/>
-    <Logger name="io.servicetalk.http.netty.NettyHttpServer" level="DEBUG"/> <!-- Prints server start and shutdown -->
-    <Logger name="io.servicetalk.concurrent.api" level="DEBUG"/> <!-- Prints default subscriber errors-->
+
+    <!-- Prints server start and shutdown -->
+    <Logger name="io.servicetalk.http.netty.NettyHttpServer" level="DEBUG"/>
+
+    <!-- Prints default subscriber errors-->
+    <Logger name="io.servicetalk.concurrent.api" level="DEBUG"/>
+
     <!-- Use `-Dservicetalk.logger.level=DEBUG` to change the root logger level via command line  -->
     <Root level="${sys:servicetalk.logger.level:-INFO}">
       <AppenderRef ref="Console"/>

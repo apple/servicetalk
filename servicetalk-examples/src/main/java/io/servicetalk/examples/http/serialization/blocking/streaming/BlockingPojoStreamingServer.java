@@ -20,7 +20,6 @@ import io.servicetalk.concurrent.BlockingIterator;
 import io.servicetalk.data.jackson.JacksonSerializationProvider;
 import io.servicetalk.examples.http.serialization.MyPojo;
 import io.servicetalk.examples.http.serialization.PojoRequest;
-import io.servicetalk.http.api.BlockingStreamingHttpRequestHandler;
 import io.servicetalk.http.api.HttpSerializationProvider;
 
 import java.util.ArrayList;
@@ -29,7 +28,7 @@ import java.util.List;
 import static io.servicetalk.http.api.HttpSerializationProviders.jsonSerializer;
 import static io.servicetalk.http.netty.HttpServers.newHttpServerBuilder;
 
-public class BlockingPojoStreamingServer {
+public final class BlockingPojoStreamingServer {
 
     public static void main(String[] args) throws Exception {
         HttpSerializationProvider serializer = jsonSerializer(new JacksonSerializationProvider());

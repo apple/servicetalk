@@ -34,7 +34,7 @@ public interface ServerContext extends ListenableAsyncCloseable, AutoCloseable {
     SocketAddress listenAddress();
 
     /**
-     * Blocks and await shutdown of the server, this {@link ServerContext} represents.
+     * Blocks and awaits shutdown of the server, this {@link ServerContext} represents.
      * <p>
      * This method will return when {@link #onClose()} terminates either successfully or unsuccessfully.
      */

@@ -36,4 +36,11 @@ public final class PojoRequest {
     public void setId(String id) {
         this.id = id;
     }
+
+    @Override
+    public String toString() {
+        return "PojoRequest{" +
+                "id='" + id + '\'' +
+                '}';
+    }
 }

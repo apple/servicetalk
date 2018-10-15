@@ -35,7 +35,7 @@ import java.util.List;
 
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Single.success;
-import static io.servicetalk.examples.http.service.composition.AsyncUtil.zip;
+import static io.servicetalk.examples.http.service.composition.AsyncUtils.zip;
 
 /**
  * This service provides an API that fetches recommendations in parallel but provides an aggregated JSON array as a
@@ -43,8 +43,10 @@ import static io.servicetalk.examples.http.service.composition.AsyncUtil.zip;
  */
 final class GatewayService extends HttpService {
 
-    private static final TypeHolder<List<Recommendation>> typeOfRecommendation = new TypeHolder<List<Recommendation>>(){ };
-    private static final TypeHolder<List<FullRecommendation>> typeOfFullRecommendation = new TypeHolder<List<FullRecommendation>>(){ };
+    private static final TypeHolder<List<Recommendation>> typeOfRecommendation =
+            new TypeHolder<List<Recommendation>>() { };
+    private static final TypeHolder<List<FullRecommendation>> typeOfFullRecommendation =
+            new TypeHolder<List<FullRecommendation>>() { };
 
     private static final String USER_ID_QP_NAME = "userId";
 
@@ -67,17 +69,17 @@ final class GatewayService extends HttpService {
     @Override
     public Single<HttpResponse> handle(final HttpServiceContext ctx,
                                        final HttpRequest request,
-                                       final HttpResponseFactory factory) {
+                                       final HttpResponseFactory responseFactory) {
         final String userId = request.parseQuery().get(USER_ID_QP_NAME);
         if (userId == null) {
-            return success(factory.badRequest());
+            return success(responseFactory.badRequest());
         }
 
         return recommendationsClient.request(recommendationsClient.get("/recommendations/aggregated?userId=" + userId))
                 // Since HTTP payload is a buffer, we deserialize into List<Recommendation>>.
                 .map(response -> response.payloadBody(serializers.deserializerFor(typeOfRecommendation)))
                 .flatMap(this::queryRecommendationDetails)
-                .map(fullRecommendations -> factory.ok()
+                .map(fullRecommendations -> responseFactory.ok()
                         .payloadBody(fullRecommendations, serializers.serializerFor(typeOfFullRecommendation)));
     }
 

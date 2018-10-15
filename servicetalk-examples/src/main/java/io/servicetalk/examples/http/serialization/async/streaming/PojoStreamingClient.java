@@ -27,7 +27,7 @@ import java.util.concurrent.CountDownLatch;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.http.api.HttpSerializationProviders.jsonSerializer;
 
-public class PojoStreamingClient {
+public final class PojoStreamingClient {
 
     public static void main(String[] args) throws Exception {
         HttpSerializationProvider serializer = jsonSerializer(new JacksonSerializationProvider());

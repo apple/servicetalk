@@ -25,10 +25,8 @@ import io.servicetalk.http.api.HttpService;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.router.predicate.HttpPredicateRouterBuilder;
 
-import java.util.concurrent.ThreadLocalRandom;
-
 import static io.servicetalk.concurrent.api.Single.success;
-import static java.util.concurrent.ThreadLocalRandom.current;
+import static io.servicetalk.examples.http.service.composition.backends.StringUtils.randomString;
 
 /**
  * A service that returns {@link Metadata}s for an entity.
@@ -51,7 +49,7 @@ final class MetadataBackend extends HttpService {
         }
 
         // Create random names and author for the metadata
-        Metadata metadata = new Metadata(entityId, createRandomString(15), createRandomString(5));
+        Metadata metadata = new Metadata(entityId, randomString(15), randomString(5));
         return success(responseFactory.ok().payloadBody(metadata, serializer.serializerFor(Metadata.class)));
     }
 
@@ -60,14 +58,5 @@ final class MetadataBackend extends HttpService {
         return routerBuilder.whenPathStartsWith("/metadata")
                 .thenRouteTo(new MetadataBackend(serializer))
                 .build();
-    }
-
-    private String createRandomString(int size) {
-        final ThreadLocalRandom random = current();
-        char[] randomChars = new char[size];
-        for (int i = 0; i < size; i++) {
-            randomChars[i] = (char) random.nextInt(97, 122);
-        }
-        return new String(randomChars);
     }
 }

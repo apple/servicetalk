@@ -34,7 +34,6 @@ import io.servicetalk.serialization.api.TypeHolder;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
-import javax.annotation.Nonnull;
 
 import static io.servicetalk.concurrent.api.Single.defer;
 import static io.servicetalk.concurrent.api.Single.success;
@@ -47,9 +46,14 @@ import static java.util.concurrent.TimeUnit.SECONDS;
  */
 final class RecommendationBackend {
 
-    private static final TypeHolder<List<Recommendation>> typeOfRecommendation = new TypeHolder<List<Recommendation>>() { };
+    private static final TypeHolder<List<Recommendation>> typeOfRecommendation =
+            new TypeHolder<List<Recommendation>>() { };
     private static final String USER_ID_QP_NAME = "userId";
     private static final String EXPECTED_ENTITY_COUNT_QP_NAME = "expectedEntityCount";
+
+    private RecommendationBackend() {
+        // No instances.
+    }
 
     static StreamingHttpService newRecommendationsService(HttpSerializationProvider serializer) {
         HttpPredicateRouterBuilder routerBuilder = new HttpPredicateRouterBuilder();
@@ -60,12 +64,12 @@ final class RecommendationBackend {
         return routerBuilder.buildStreaming();
     }
 
-    @Nonnull
-    private static Recommendation newRecommendation(final ThreadLocalRandom random) {
+    private static Recommendation newRecommendation() {
+        final ThreadLocalRandom random = ThreadLocalRandom.current();
         // Generate random IDs for recommended entity IDs
         final int entityId = random.nextInt();
         // Generate random ID for recommended by user Id.
-        return new Recommendation(valueOf(entityId), valueOf(random.nextInt()));
+        return new Recommendation(valueOf(entityId), valueOf(random.nextInt(1000)));
     }
 
     private static final class StreamingService extends StreamingHttpService {
@@ -78,10 +82,10 @@ final class RecommendationBackend {
 
         @Override
         public Single<StreamingHttpResponse> handle(HttpServiceContext ctx, StreamingHttpRequest request,
-                                                    StreamingHttpResponseFactory factory) {
+                                                    StreamingHttpResponseFactory responseFactory) {
             final String userId = request.parseQuery().get(USER_ID_QP_NAME);
             if (userId == null) {
-                return success(factory.badRequest());
+                return success(responseFactory.badRequest());
             }
 
             // Create a new random recommendation every 1 SECOND.
@@ -89,13 +93,13 @@ final class RecommendationBackend {
                     // We use defer() here so that we do not eagerly create a Recommendation which will get emitted for
                     // every schedule. defer() helps us lazily create a new Recommendation object every time we the
                     // scheduler emits a tick.
-                    .andThen(defer(() -> success(newRecommendation(ThreadLocalRandom.current()))))
+                    .andThen(defer(() -> success(newRecommendation())))
                     // Since schedule() only schedules a single tick, we repeat the ticks to generate infinite
                     // recommendations. This simulates a push based API which pushes new recommendations as and when
                     // they are available.
                     .repeat(count -> true);
 
-            return success(factory.ok()
+            return success(responseFactory.ok()
                     .payloadBody(recommendations, serializer.serializerFor(Recommendation.class)));
         }
     }
@@ -121,9 +125,8 @@ final class RecommendationBackend {
                 expectedEntitiesCount = parseInt(expectedEntitiesCountStr);
             }
             List<Recommendation> recommendations = new ArrayList<>(expectedEntitiesCount);
-            final ThreadLocalRandom random = ThreadLocalRandom.current();
             for (int i = 0; i < expectedEntitiesCount; i++) {
-                recommendations.add(newRecommendation(random));
+                recommendations.add(newRecommendation());
             }
 
             // Serialize the Recommendation list to a single Buffer containing JSON and use it as the response payload.

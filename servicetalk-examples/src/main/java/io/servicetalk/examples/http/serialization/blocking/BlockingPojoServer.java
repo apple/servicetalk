@@ -18,13 +18,12 @@ package io.servicetalk.examples.http.serialization.blocking;
 import io.servicetalk.data.jackson.JacksonSerializationProvider;
 import io.servicetalk.examples.http.serialization.MyPojo;
 import io.servicetalk.examples.http.serialization.PojoRequest;
-import io.servicetalk.http.api.BlockingHttpRequestHandler;
 import io.servicetalk.http.api.HttpSerializationProvider;
 import io.servicetalk.http.netty.HttpServers;
 
 import static io.servicetalk.http.api.HttpSerializationProviders.jsonSerializer;
 
-public class BlockingPojoServer {
+public final class BlockingPojoServer {
 
     public static void main(String[] args) throws Exception {
         HttpSerializationProvider serializer = jsonSerializer(new JacksonSerializationProvider());

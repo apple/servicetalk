@@ -44,9 +44,9 @@ final class BlockingGatewayService extends BlockingHttpService {
     private static final Logger LOGGER = LoggerFactory.getLogger(BlockingGatewayService.class);
 
     private static final TypeHolder<List<Recommendation>> typeOfRecommendation =
-            new TypeHolder<List<Recommendation>>(){ };
+            new TypeHolder<List<Recommendation>>() { };
     private static final TypeHolder<List<FullRecommendation>> typeOfFullRecommendations =
-            new TypeHolder<List<FullRecommendation>>(){ };
+            new TypeHolder<List<FullRecommendation>>() { };
     private static final String USER_ID_QP_NAME = "userId";
 
     private final HttpSerializationProvider serializers;
@@ -56,11 +56,11 @@ final class BlockingGatewayService extends BlockingHttpService {
     private final BlockingHttpClient ratingClient;
     private final BlockingHttpClient userClient;
 
-    public BlockingGatewayService(final BlockingHttpClient recommendationClient,
-                                  final BlockingHttpClient metadataClient,
-                                  final BlockingHttpClient ratingClient,
-                                  final BlockingHttpClient userClient,
-                                  final HttpSerializationProvider serializers) {
+    BlockingGatewayService(final BlockingHttpClient recommendationClient,
+                           final BlockingHttpClient metadataClient,
+                           final BlockingHttpClient ratingClient,
+                           final BlockingHttpClient userClient,
+                           final HttpSerializationProvider serializers) {
         this.recommendationClient = recommendationClient;
         this.metadataClient = metadataClient;
         this.ratingClient = ratingClient;
