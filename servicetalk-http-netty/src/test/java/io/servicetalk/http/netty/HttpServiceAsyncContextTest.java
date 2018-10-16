@@ -80,7 +80,7 @@ public class HttpServiceAsyncContextTest {
         StreamingHttpService service = newEmptyAsyncContextService();
         CompositeCloseable compositeCloseable = AsyncCloseables.newCompositeCloseable();
         HttpServerBuilder serverBuilder = newHttpServerBuilder(LOCAL_0);
-        ServerContext ctx = (useImmediate ? serverBuilder.executionContext(immediateExecutor) : serverBuilder)
+        ServerContext ctx = (useImmediate ? serverBuilder.executor(immediateExecutor.executor()) : serverBuilder)
                 .listenStreamingAndAwait(service);
 
         ExecutorService executorService = Executors.newCachedThreadPool();
@@ -98,8 +98,9 @@ public class HttpServiceAsyncContextTest {
                                 new DefaultHttpConnectionBuilder<SocketAddress>()
                                 .setMaxPipelinedRequests(numRequests);
                         StreamingHttpConnection connection = (useImmediate ?
-                                connectionBuilder.executionContext(immediateExecutor)
-                                        .buildStreaming(ctx.listenAddress()) :
+                                connectionBuilder.ioExecutor(immediateExecutor.ioExecutor())
+                                .executor(immediateExecutor.executor())
+                                .buildStreaming(ctx.listenAddress()) :
                                 connectionBuilder.buildStreaming(ctx.listenAddress())).toFuture().get();
                         barrier.await();
                         for (int x = 0; x < numRequests; ++x) {

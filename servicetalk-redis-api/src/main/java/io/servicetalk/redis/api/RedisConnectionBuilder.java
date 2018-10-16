@@ -15,11 +15,13 @@
  */
 package io.servicetalk.redis.api;
 
+import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.client.api.ConnectionFactory;
 import io.servicetalk.concurrent.api.Completable;
+import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.transport.api.ExecutionContext;
+import io.servicetalk.transport.api.IoExecutor;
 
 import static io.servicetalk.concurrent.api.AsyncCloseables.emptyAsyncCloseable;
 
@@ -31,12 +33,28 @@ import static io.servicetalk.concurrent.api.AsyncCloseables.emptyAsyncCloseable;
 public interface RedisConnectionBuilder<ResolvedAddress> {
 
     /**
-     * Sets an {@link ExecutionContext} for all connections created from this {@link RedisConnectionBuilder}.
+     * Sets the {@link IoExecutor} for all connections created from this {@link RedisConnectionBuilder}.
      *
-     * @param context {@link ExecutionContext} to use.
+     * @param ioExecutor {@link IoExecutor} to use.
      * @return {@code this}.
      */
-    RedisConnectionBuilder<ResolvedAddress> executionContext(ExecutionContext context);
+    RedisConnectionBuilder<ResolvedAddress> ioExecutor(IoExecutor ioExecutor);
+
+    /**
+     * Sets the {@link Executor} for all connections created from this {@link RedisConnectionBuilder}.
+     *
+     * @param executor {@link Executor} to use.
+     * @return {@code this}.
+     */
+    RedisConnectionBuilder<ResolvedAddress> executor(Executor executor);
+
+    /**
+     * Sets the {@link BufferAllocator} for all connections created from this {@link RedisConnectionBuilder}.
+     *
+     * @param allocator {@link BufferAllocator} to use.
+     * @return {@code this}.
+     */
+    RedisConnectionBuilder<ResolvedAddress> bufferAllocator(BufferAllocator allocator);
 
     /**
      * Create a new {@link RedisConnection}.

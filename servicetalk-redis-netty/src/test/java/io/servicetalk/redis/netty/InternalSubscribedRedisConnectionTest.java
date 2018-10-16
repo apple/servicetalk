@@ -23,7 +23,6 @@ import io.servicetalk.redis.api.RedisData;
 import io.servicetalk.redis.api.RedisData.CompleteBulkString;
 import io.servicetalk.redis.api.RedisRequest;
 import io.servicetalk.tcp.netty.internal.TcpClientConfig;
-import io.servicetalk.transport.api.DefaultExecutionContext;
 import io.servicetalk.transport.netty.internal.NettyIoExecutor;
 
 import org.junit.AfterClass;
@@ -43,7 +42,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.LinkedBlockingQueue;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.redis.api.RedisProtocolSupport.Command.SUBSCRIBE;
@@ -102,9 +100,8 @@ public class InternalSubscribedRedisConnectionTest {
         assert builder != null && redisAddress != null && ioExecutor != null;
         CountDownLatch requestStreamCancelled = new CountDownLatch(1);
 
-        RedisConnection connection = awaitIndefinitely(
-                builder.executionContext(new DefaultExecutionContext(DEFAULT_ALLOCATOR, ioExecutor, immediate()))
-                        .build(redisAddress));
+        RedisConnection connection = awaitIndefinitely(builder.ioExecutor(ioExecutor).executor(immediate())
+                .build(redisAddress));
         assert connection != null;
 
         final RedisRequest subReq = newRequest(SUBSCRIBE,
@@ -125,8 +122,7 @@ public class InternalSubscribedRedisConnectionTest {
         assert builder != null && redisAddress != null && ioExecutor != null;
 
         RedisConnection connection = awaitIndefinitely(
-                builder.executionContext(new DefaultExecutionContext(DEFAULT_ALLOCATOR, ioExecutor, immediate()))
-                .build(redisAddress));
+                builder.ioExecutor(ioExecutor).executor(immediate()).build(redisAddress));
         assert connection != null;
 
         final CountDownLatch latch = new CountDownLatch(1);
@@ -145,8 +141,7 @@ public class InternalSubscribedRedisConnectionTest {
         latch.await();
 
         RedisConnection publishConnection = awaitIndefinitely(forPipeline()
-                .executionContext(new DefaultExecutionContext(DEFAULT_ALLOCATOR, ioExecutor, immediate()))
-                .build(redisAddress));
+                .ioExecutor(ioExecutor).executor(immediate()).build(redisAddress));
         assert publishConnection != null;
 
         awaitIndefinitely(publishConnection.asCommander().publish(channelToSubscribe, randomStringOfLength(32)));

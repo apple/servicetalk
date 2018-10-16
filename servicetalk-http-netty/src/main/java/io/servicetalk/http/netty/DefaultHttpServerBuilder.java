@@ -15,15 +15,17 @@
  */
 package io.servicetalk.http.netty;
 
+import io.servicetalk.buffer.api.BufferAllocator;
+import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.api.HttpServerBuilder;
 import io.servicetalk.http.api.StreamingHttpRequestHandler;
 import io.servicetalk.transport.api.ContextFilter;
-import io.servicetalk.transport.api.ExecutionContext;
+import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.api.SslConfig;
-import io.servicetalk.transport.netty.internal.GlobalExecutionContext;
+import io.servicetalk.transport.netty.internal.ExecutionContextBuilder;
 
 import java.net.SocketAddress;
 import java.net.SocketOption;
@@ -36,9 +38,9 @@ import static java.util.Objects.requireNonNull;
 final class DefaultHttpServerBuilder implements HttpServerBuilder {
 
     private final HttpServerConfig config = new HttpServerConfig();
+    private final ExecutionContextBuilder executionContextBuilder = new ExecutionContextBuilder();
     private ContextFilter contextFilter = ContextFilter.ACCEPT_ALL;
     private SocketAddress address;
-    private ExecutionContext context = GlobalExecutionContext.globalExecutionContext();
 
     DefaultHttpServerBuilder(SocketAddress address) {
         this.address = address;
@@ -129,14 +131,26 @@ final class DefaultHttpServerBuilder implements HttpServerBuilder {
     }
 
     @Override
-    public HttpServerBuilder executionContext(final ExecutionContext context) {
-        this.context = requireNonNull(context);
+    public HttpServerBuilder ioExecutor(final IoExecutor ioExecutor) {
+        executionContextBuilder.ioExecutor(ioExecutor);
+        return this;
+    }
+
+    @Override
+    public HttpServerBuilder executor(final Executor executor) {
+        executionContextBuilder.executor(executor);
+        return this;
+    }
+
+    @Override
+    public HttpServerBuilder bufferAllocator(final BufferAllocator allocator) {
+        executionContextBuilder.bufferAllocator(allocator);
         return this;
     }
 
     @Override
     public Single<ServerContext> listenStreaming(final StreamingHttpRequestHandler handler) {
         ReadOnlyHttpServerConfig roConfig = this.config.asReadOnly();
-        return bind(context, roConfig, address, contextFilter, handler.asStreamingService());
+        return bind(executionContextBuilder.build(), roConfig, address, contextFilter, handler.asStreamingService());
     }
 }

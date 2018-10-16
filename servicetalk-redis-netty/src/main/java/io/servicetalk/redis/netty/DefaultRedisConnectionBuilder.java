@@ -15,6 +15,8 @@
  */
 package io.servicetalk.redis.netty;
 
+import io.servicetalk.buffer.api.BufferAllocator;
+import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.redis.api.RedisConnection;
 import io.servicetalk.redis.api.RedisConnectionBuilder;
@@ -25,8 +27,10 @@ import io.servicetalk.tcp.netty.internal.TcpClientChannelInitializer;
 import io.servicetalk.tcp.netty.internal.TcpClientConfig;
 import io.servicetalk.tcp.netty.internal.TcpConnector;
 import io.servicetalk.transport.api.ExecutionContext;
+import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.SslConfig;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
+import io.servicetalk.transport.netty.internal.ExecutionContextBuilder;
 import io.servicetalk.transport.netty.internal.NettyConnection;
 
 import io.netty.buffer.ByteBuf;
@@ -41,7 +45,6 @@ import javax.annotation.Nullable;
 import static io.servicetalk.redis.api.RedisConnectionFilterFactory.identity;
 import static io.servicetalk.redis.netty.InternalSubscribedRedisConnection.newSubscribedConnection;
 import static io.servicetalk.redis.netty.PipelinedRedisConnection.newPipelinedConnection;
-import static io.servicetalk.transport.netty.internal.GlobalExecutionContext.globalExecutionContext;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -52,8 +55,8 @@ import static java.util.Objects.requireNonNull;
 public final class DefaultRedisConnectionBuilder<ResolvedAddress> implements RedisConnectionBuilder<ResolvedAddress> {
     private final RedisClientConfig config;
     private final boolean forSubscribe;
+    private final ExecutionContextBuilder executionContextBuilder = new ExecutionContextBuilder();
     private RedisConnectionFilterFactory connectionFilterFactory = identity();
-    private ExecutionContext context = globalExecutionContext();
 
     private DefaultRedisConnectionBuilder(boolean forSubscribe) {
         this(forSubscribe, new RedisClientConfig(new TcpClientConfig(false)));
@@ -65,8 +68,20 @@ public final class DefaultRedisConnectionBuilder<ResolvedAddress> implements Red
     }
 
     @Override
-    public RedisConnectionBuilder<ResolvedAddress> executionContext(final ExecutionContext context) {
-        this.context = requireNonNull(context);
+    public RedisConnectionBuilder<ResolvedAddress> ioExecutor(final IoExecutor ioExecutor) {
+        executionContextBuilder.ioExecutor(ioExecutor);
+        return this;
+    }
+
+    @Override
+    public RedisConnectionBuilder<ResolvedAddress> executor(final Executor executor) {
+        executionContextBuilder.executor(executor);
+        return this;
+    }
+
+    @Override
+    public RedisConnectionBuilder<ResolvedAddress> bufferAllocator(final BufferAllocator allocator) {
+        executionContextBuilder.bufferAllocator(allocator);
         return this;
     }
 
@@ -210,6 +225,7 @@ public final class DefaultRedisConnectionBuilder<ResolvedAddress> implements Red
     @Override
     public Single<RedisConnection> build(final ResolvedAddress resolvedAddress) {
         final ReadOnlyRedisClientConfig roConfig = config.asReadOnly();
+        ExecutionContext context = executionContextBuilder.build();
         // ConcurrencyFilter -> User Filters -> IdleReaper -> Connection
         return forSubscribe ?
                 buildForSubscribe(context, resolvedAddress, roConfig, connectionFilterFactory)

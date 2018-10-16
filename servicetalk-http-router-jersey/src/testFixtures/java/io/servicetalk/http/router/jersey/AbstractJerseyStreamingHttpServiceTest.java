@@ -102,8 +102,11 @@ public abstract class AbstractJerseyStreamingHttpServiceTest {
         streamingJsonEnabled = getValue(config.getProperties(), config.getRuntimeType(), JSON_FEATURE, "",
                 String.class).toLowerCase().contains("servicetalk");
 
+        ExecutionContext serverExecutionContext = getServerExecutionContext();
         serverContext = newHttpServerBuilder(0)
-                .executionContext(getServerExecutionContext())
+                .ioExecutor(serverExecutionContext.ioExecutor())
+                .executor(serverExecutionContext.executor())
+                .bufferAllocator(serverExecutionContext.bufferAllocator())
                 .listenStreamingAndAwait(router);
 
         final InetSocketAddress serverAddress = (InetSocketAddress) serverContext.listenAddress();

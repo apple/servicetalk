@@ -15,6 +15,7 @@
  */
 package io.servicetalk.redis.api;
 
+import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.client.api.ConnectionFactory;
 import io.servicetalk.client.api.ConnectionFactoryFilter;
 import io.servicetalk.client.api.LoadBalancer;
@@ -23,7 +24,8 @@ import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.client.api.partition.PartitionMapFactory;
 import io.servicetalk.client.api.partition.PartitionedServiceDiscovererEvent;
-import io.servicetalk.transport.api.ExecutionContext;
+import io.servicetalk.concurrent.api.Executor;
+import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.SslConfig;
 
 import org.reactivestreams.Subscriber;
@@ -43,12 +45,28 @@ import javax.annotation.Nullable;
 public interface PartitionedRedisClientBuilder<U, R> {
 
     /**
-     * Sets an {@link ExecutionContext} for all clients created from this {@link RedisClientBuilder}.
+     * Sets the {@link IoExecutor} for all clients created from this {@link RedisClientBuilder}.
      *
-     * @param context {@link ExecutionContext} to use.
+     * @param ioExecutor {@link IoExecutor} to use.
      * @return {@code this}.
      */
-    PartitionedRedisClientBuilder<U, R> executionContext(ExecutionContext context);
+    PartitionedRedisClientBuilder<U, R> ioExecutor(IoExecutor ioExecutor);
+
+    /**
+     * Sets the {@link Executor} for all clients created from this {@link RedisClientBuilder}.
+     *
+     * @param executor {@link Executor} to use.
+     * @return {@code this}.
+     */
+    PartitionedRedisClientBuilder<U, R> executor(Executor executor);
+
+    /**
+     * Sets the {@link BufferAllocator} for all clients created from this {@link RedisClientBuilder}.
+     *
+     * @param allocator {@link BufferAllocator} to use.
+     * @return {@code this}.
+     */
+    PartitionedRedisClientBuilder<U, R> bufferAllocator(BufferAllocator allocator);
 
     /**
      * Enable SSL/TLS using the provided {@link SslConfig}. To disable SSL pass in {@code null}.

@@ -72,7 +72,8 @@ public class HttpAuthConnectionFactoryClientTest {
     @Test
     public void simulateAuth() throws Exception {
         serverContext = newHttpServerBuilder(0)
-                .executionContext(CTX)
+                .ioExecutor(CTX.ioExecutor())
+                .executor(CTX.executor())
                 .listenStreamingAndAwait(
                         new StreamingHttpService() {
                             @Override
@@ -85,7 +86,8 @@ public class HttpAuthConnectionFactoryClientTest {
         client = HttpClients.forSingleAddress("localhost",
                 ((InetSocketAddress) serverContext.listenAddress()).getPort())
                 .appendConnectionFactoryFilter(TestHttpAuthConnectionFactory::new)
-                .executionContext(CTX)
+                .ioExecutor(CTX.ioExecutor())
+                .executor(CTX.executor())
                 .buildStreaming();
 
         StreamingHttpResponse response = awaitIndefinitely(client.request(newTestRequest(client, "/foo")));

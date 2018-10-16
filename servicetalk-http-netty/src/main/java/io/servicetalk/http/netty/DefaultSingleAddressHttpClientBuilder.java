@@ -15,6 +15,7 @@
  */
 package io.servicetalk.http.netty;
 
+import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.client.api.ConnectionFactory;
 import io.servicetalk.client.api.ConnectionFactoryFilter;
 import io.servicetalk.client.api.LoadBalancer;
@@ -22,6 +23,7 @@ import io.servicetalk.client.api.LoadBalancerFactory;
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.concurrent.api.CompositeCloseable;
+import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.HttpClientFilterFactory;
@@ -35,7 +37,9 @@ import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.tcp.netty.internal.TcpClientConfig;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.HostAndPort;
+import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.SslConfig;
+import io.servicetalk.transport.netty.internal.ExecutionContextBuilder;
 
 import java.net.InetSocketAddress;
 import java.net.SocketOption;
@@ -45,7 +49,6 @@ import javax.annotation.Nullable;
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.http.netty.GlobalDnsServiceDiscoverer.globalDnsServiceDiscoverer;
 import static io.servicetalk.loadbalancer.RoundRobinLoadBalancer.newRoundRobinFactory;
-import static io.servicetalk.transport.netty.internal.GlobalExecutionContext.globalExecutionContext;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -67,7 +70,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
 
     private final U address;
     private final HttpClientConfig config;
-    private ExecutionContext executionContext = globalExecutionContext();
+    private final ExecutionContextBuilder executionContextBuilder = new ExecutionContextBuilder();
     private LoadBalancerFactory<R, StreamingHttpConnection> loadBalancerFactory;
     private ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>> serviceDiscoverer;
     private Function<U, HttpConnectionFilterFactory> hostHeaderFilterFunction =
@@ -116,12 +119,14 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
         return forHostAndPort(UNKNOWN);
     }
 
-    @SuppressWarnings("unchecked")
     @Override
     public StreamingHttpClient buildStreaming() {
+        return buildStreaming(buildExecutionContext());
+    }
+
+    StreamingHttpClient buildStreaming(ExecutionContext exec) {
         assert UNKNOWN != address : "Attempted to buildStreaming with an unknown address";
         final ReadOnlyHttpClientConfig roConfig = config.asReadOnly();
-        final ExecutionContext exec = executionContext;
         // Track resources that potentially need to be closed when an exception is thrown during buildStreaming
         final CompositeCloseable closeOnException = newCompositeCloseable();
         try {
@@ -140,7 +145,8 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
                             new PipelinedLBHttpConnectionFactory<>(roConfig, exec, connectionFilters, reqRespFactory)));
 
             LoadBalancer<? extends StreamingHttpConnection> lbfUntypedForCast = closeOnException.prepend(
-                     loadBalancerFactory.newLoadBalancer(sdEvents, connectionFactory));
+                    loadBalancerFactory.newLoadBalancer(sdEvents, connectionFactory));
+            @SuppressWarnings("unchecked")
             LoadBalancer<LoadBalancedStreamingHttpConnection> lb =
                     (LoadBalancer<LoadBalancedStreamingHttpConnection>) lbfUntypedForCast;
 
@@ -150,6 +156,10 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
             closeOnException.closeAsync().subscribe();
             throw t;
         }
+    }
+
+    ExecutionContext buildExecutionContext() {
+        return executionContextBuilder.build();
     }
 
     private static <U> HttpConnectionFilterFactory defaultHostClientFilterFactory(final U address) {
@@ -163,31 +173,43 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
     }
 
     @Override
-    public SingleAddressHttpClientBuilder<U, R> executionContext(final ExecutionContext context) {
-        this.executionContext = requireNonNull(context);
+    public DefaultSingleAddressHttpClientBuilder<U, R> ioExecutor(final IoExecutor ioExecutor) {
+        executionContextBuilder.ioExecutor(ioExecutor);
         return this;
     }
 
     @Override
-    public <T> SingleAddressHttpClientBuilder<U, R> socketOption(SocketOption<T> option, T value) {
+    public DefaultSingleAddressHttpClientBuilder<U, R> executor(final Executor executor) {
+        executionContextBuilder.executor(executor);
+        return this;
+    }
+
+    @Override
+    public DefaultSingleAddressHttpClientBuilder<U, R> bufferAllocator(final BufferAllocator allocator) {
+        executionContextBuilder.bufferAllocator(allocator);
+        return this;
+    }
+
+    @Override
+    public <T> DefaultSingleAddressHttpClientBuilder<U, R> socketOption(SocketOption<T> option, T value) {
         config.getTcpClientConfig().setSocketOption(option, value);
         return this;
     }
 
     @Override
-    public SingleAddressHttpClientBuilder<U, R> enableWireLogging(final String loggerName) {
+    public DefaultSingleAddressHttpClientBuilder<U, R> enableWireLogging(final String loggerName) {
         config.getTcpClientConfig().enableWireLogging(loggerName);
         return this;
     }
 
     @Override
-    public SingleAddressHttpClientBuilder<U, R> disableWireLogging() {
+    public DefaultSingleAddressHttpClientBuilder<U, R> disableWireLogging() {
         config.getTcpClientConfig().disableWireLogging();
         return this;
     }
 
     @Override
-    public SingleAddressHttpClientBuilder<U, R> headersFactory(final HttpHeadersFactory headersFactory) {
+    public DefaultSingleAddressHttpClientBuilder<U, R> headersFactory(final HttpHeadersFactory headersFactory) {
         config.setHeadersFactory(headersFactory);
         return this;
     }
@@ -197,89 +219,89 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
     }
 
     @Override
-    public SingleAddressHttpClientBuilder<U, R> maxInitialLineLength(final int maxInitialLineLength) {
+    public DefaultSingleAddressHttpClientBuilder<U, R> maxInitialLineLength(final int maxInitialLineLength) {
         config.setMaxInitialLineLength(maxInitialLineLength);
         return this;
     }
 
     @Override
-    public SingleAddressHttpClientBuilder<U, R> maxHeaderSize(final int maxHeaderSize) {
+    public DefaultSingleAddressHttpClientBuilder<U, R> maxHeaderSize(final int maxHeaderSize) {
         config.setMaxHeaderSize(maxHeaderSize);
         return this;
     }
 
     @Override
-    public SingleAddressHttpClientBuilder<U, R> headersEncodedSizeEstimate(final int headersEncodedSizeEstimate) {
+    public DefaultSingleAddressHttpClientBuilder<U, R> headersEncodedSizeEstimate(final int headersEncodedSizeEstimate) {
         config.setHeadersEncodedSizeEstimate(headersEncodedSizeEstimate);
         return this;
     }
 
     @Override
-    public SingleAddressHttpClientBuilder<U, R> trailersEncodedSizeEstimate(final int trailersEncodedSizeEstimate) {
+    public DefaultSingleAddressHttpClientBuilder<U, R> trailersEncodedSizeEstimate(final int trailersEncodedSizeEstimate) {
         config.setTrailersEncodedSizeEstimate(trailersEncodedSizeEstimate);
         return this;
     }
 
     @Override
-    public SingleAddressHttpClientBuilder<U, R> maxPipelinedRequests(final int maxPipelinedRequests) {
+    public DefaultSingleAddressHttpClientBuilder<U, R> maxPipelinedRequests(final int maxPipelinedRequests) {
         config.setMaxPipelinedRequests(maxPipelinedRequests);
         return this;
     }
 
     @Override
-    public SingleAddressHttpClientBuilder<U, R> appendConnectionFilter(final HttpConnectionFilterFactory factory) {
+    public DefaultSingleAddressHttpClientBuilder<U, R> appendConnectionFilter(final HttpConnectionFilterFactory factory) {
         connectionFilterFunction = connectionFilterFunction.append(requireNonNull(factory));
         return this;
     }
 
     @Override
-    public SingleAddressHttpClientBuilder<U, R> appendConnectionFactoryFilter(
+    public DefaultSingleAddressHttpClientBuilder<U, R> appendConnectionFactoryFilter(
             final ConnectionFactoryFilter<R, StreamingHttpConnection> factory) {
         connectionFactoryFilter = connectionFactoryFilter.append(factory);
         return this;
     }
 
     @Override
-    public SingleAddressHttpClientBuilder<U, R> disableHostHeaderFallback() {
+    public DefaultSingleAddressHttpClientBuilder<U, R> disableHostHeaderFallback() {
         hostHeaderFilterFunction = address -> HttpConnectionFilterFactory.identity();
         return this;
     }
 
     @Override
-    public SingleAddressHttpClientBuilder<U, R> disableWaitForLoadBalancer() {
+    public DefaultSingleAddressHttpClientBuilder<U, R> disableWaitForLoadBalancer() {
         lbReadyFilter = HttpClientFilterFactory.identity();
         return this;
     }
 
     @Override
-    public SingleAddressHttpClientBuilder<U, R> enableHostHeaderFallback(final CharSequence hostHeader) {
+    public DefaultSingleAddressHttpClientBuilder<U, R> enableHostHeaderFallback(final CharSequence hostHeader) {
         hostHeaderFilterFunction = address -> connection ->
                 new HostHeaderHttpConnectionFilter(hostHeader, connection);
         return this;
     }
 
     @Override
-    public SingleAddressHttpClientBuilder<U, R> appendClientFilter(final HttpClientFilterFactory function) {
+    public DefaultSingleAddressHttpClientBuilder<U, R> appendClientFilter(final HttpClientFilterFactory function) {
         clientFilterFunction = clientFilterFunction.append(function);
         return this;
     }
 
     @Override
-    public SingleAddressHttpClientBuilder<U, R> serviceDiscoverer(
+    public DefaultSingleAddressHttpClientBuilder<U, R> serviceDiscoverer(
             final ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>> serviceDiscoverer) {
         this.serviceDiscoverer = requireNonNull(serviceDiscoverer);
         return this;
     }
 
     @Override
-    public SingleAddressHttpClientBuilder<U, R> loadBalancerFactory(
+    public DefaultSingleAddressHttpClientBuilder<U, R> loadBalancerFactory(
             final LoadBalancerFactory<R, StreamingHttpConnection> loadBalancerFactory) {
         this.loadBalancerFactory = requireNonNull(loadBalancerFactory);
         return this;
     }
 
     @Override
-    public SingleAddressHttpClientBuilder<U, R> sslConfig(@Nullable final SslConfig sslConfig) {
+    public DefaultSingleAddressHttpClientBuilder<U, R> sslConfig(@Nullable final SslConfig sslConfig) {
         config.getTcpClientConfig().setSslConfig(sslConfig);
         return this;
     }
