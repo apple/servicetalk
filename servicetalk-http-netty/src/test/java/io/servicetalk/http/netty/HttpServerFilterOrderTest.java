@@ -67,7 +67,7 @@ public class HttpServerFilterOrderTest {
         return orig -> {
             when(filter.handle(any(), any(), any()))
                     .thenAnswer(i -> orig.handle(i.getArgument(0), i.getArgument(1), i.getArgument(2)));
-            return filter;
+            return filter.asStreamingService();
         };
     }
 }
