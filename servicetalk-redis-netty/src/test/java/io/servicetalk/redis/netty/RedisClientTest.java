@@ -21,6 +21,7 @@ import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.redis.api.BufferRedisCommander;
 import io.servicetalk.redis.api.RedisClient;
+import io.servicetalk.redis.api.RedisClient.ReservedRedisConnection;
 import io.servicetalk.redis.api.RedisCommander;
 import io.servicetalk.redis.api.RedisData;
 import io.servicetalk.redis.api.RedisData.ArraySize;
@@ -43,6 +44,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
+import static io.servicetalk.concurrent.internal.Await.awaitIndefinitelyNonNull;
 import static io.servicetalk.redis.api.RedisProtocolSupport.Command.CLIENT;
 import static io.servicetalk.redis.api.RedisProtocolSupport.Command.COMMAND;
 import static io.servicetalk.redis.api.RedisProtocolSupport.Command.GET;
@@ -80,6 +82,30 @@ public class RedisClientTest extends BaseRedisClientTest {
         assertThat(awaitIndefinitely(getEnv().client.reserveConnection(PING).flatMapPublisher(conn ->
                 conn.request(newRequest(QUIT)).doAfterFinally(() -> conn.releaseAsync()))),
                 contains(redisSimpleString("OK")));
+    }
+
+    @Test
+    public void closeAsync() throws Exception {
+        ReservedRedisConnection connection = awaitIndefinitelyNonNull(getEnv().client.reserveConnection(PING));
+        awaitIndefinitely(connection.closeAsync());
+    }
+
+    @Test
+    public void closeAsyncViaContext() throws Exception {
+        ReservedRedisConnection connection = awaitIndefinitelyNonNull(getEnv().client.reserveConnection(PING));
+        awaitIndefinitely(connection.connectionContext().closeAsync());
+    }
+
+    @Test
+    public void closeAsyncGracefully() throws Exception {
+        ReservedRedisConnection connection = awaitIndefinitelyNonNull(getEnv().client.reserveConnection(PING));
+        awaitIndefinitely(connection.closeAsyncGracefully());
+    }
+
+    @Test
+    public void closeAsyncGracefullyViaContext() throws Exception {
+        ReservedRedisConnection connection = awaitIndefinitelyNonNull(getEnv().client.reserveConnection(PING));
+        awaitIndefinitely(connection.connectionContext().closeAsyncGracefully());
     }
 
     @Test
