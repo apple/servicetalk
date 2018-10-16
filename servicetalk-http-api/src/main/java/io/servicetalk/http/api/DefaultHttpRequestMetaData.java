@@ -256,15 +256,13 @@ class DefaultHttpRequestMetaData extends AbstractHttpMetaData implements HttpReq
     }
 
     @Override
-    public HttpRequestMetaData removeQueryParameters(final String key) {
-        lazyParseQueryString().remove(key);
-        return this;
+    public boolean removeQueryParameters(final String key) {
+        return lazyParseQueryString().remove(key);
     }
 
     @Override
-    public HttpRequestMetaData removeQueryParameters(final String key, final String value) {
-        lazyParseQueryString().remove(key, value);
-        return this;
+    public boolean removeQueryParameters(final String key, final String value) {
+        return lazyParseQueryString().remove(key, value);
     }
 
     @Nullable

@@ -201,12 +201,6 @@ public interface StreamingHttpRequest extends HttpRequestMetaData {
     StreamingHttpRequest setQueryParameters(String key, String... values);
 
     @Override
-    StreamingHttpRequest removeQueryParameters(String key);
-
-    @Override
-    StreamingHttpRequest removeQueryParameters(String key, String value);
-
-    @Override
     StreamingHttpRequest version(HttpProtocolVersion version);
 
     @Override

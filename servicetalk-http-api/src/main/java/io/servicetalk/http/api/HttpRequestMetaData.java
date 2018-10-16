@@ -335,7 +335,7 @@ public interface HttpRequestMetaData extends HttpMetaData {
      * @param key the query parameter key.
      * @return {@code true} if at least one entry has been removed.
      */
-    HttpRequestMetaData removeQueryParameters(String key);
+    boolean removeQueryParameters(String key);
 
     /**
      * Removes all query parameters with the specified {@code key} and {@code value}.
@@ -344,7 +344,7 @@ public interface HttpRequestMetaData extends HttpMetaData {
      * @param value the query parameter value.
      * @return {@code true} if at least one entry has been removed.
      */
-    HttpRequestMetaData removeQueryParameters(String key, String value);
+    boolean removeQueryParameters(String key, String value);
 
     /**
      * The <a href="https://tools.ietf.org/html/rfc3986#section-3.2.2">host component</a> derived

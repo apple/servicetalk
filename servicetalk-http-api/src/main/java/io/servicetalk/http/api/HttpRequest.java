@@ -102,12 +102,6 @@ public interface HttpRequest extends HttpRequestMetaData, TrailersHolder {
     HttpRequest setQueryParameters(String key, String... values);
 
     @Override
-    HttpRequest removeQueryParameters(String key);
-
-    @Override
-    HttpRequest removeQueryParameters(String key, String value);
-
-    @Override
     HttpRequest version(HttpProtocolVersion version);
 
     @Override

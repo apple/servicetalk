@@ -238,12 +238,6 @@ public interface BlockingStreamingHttpRequest extends HttpRequestMetaData {
     BlockingStreamingHttpRequest setQueryParameters(String key, String... values);
 
     @Override
-    BlockingStreamingHttpRequest removeQueryParameters(String key);
-
-    @Override
-    BlockingStreamingHttpRequest removeQueryParameters(String key, String value);
-
-    @Override
     BlockingStreamingHttpRequest version(HttpProtocolVersion version);
 
     @Override

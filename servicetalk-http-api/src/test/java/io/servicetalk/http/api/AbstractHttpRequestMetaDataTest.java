@@ -38,6 +38,7 @@ import static java.util.Collections.singletonList;
 import static java.util.Spliterators.spliteratorUnknownSize;
 import static java.util.stream.Collectors.toList;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
@@ -358,13 +359,14 @@ public abstract class AbstractHttpRequestMetaDataTest<T extends HttpRequestMetaD
         fixture.addQueryParameters("foo", asList("bar", "baz"));
         assertEquals("/some/path?abc=new&foo=bar&foo=baz", fixture.requestTarget());
 
-        fixture.removeQueryParameters("foo");
+        assertTrue(fixture.removeQueryParameters("foo"));
         assertEquals("/some/path?abc=new", fixture.requestTarget());
+        assertFalse(fixture.removeQueryParameters("foo"));
 
         fixture.addQueryParameters("foo", "bar", "baz");
         assertEquals("/some/path?abc=new&foo=bar&foo=baz", fixture.requestTarget());
 
-        fixture.removeQueryParameters("foo", "baz");
+        assertTrue(fixture.removeQueryParameters("foo", "baz"));
         assertEquals("/some/path?abc=new&foo=bar", fixture.requestTarget());
 
         fixture.setQueryParameters("foo", singletonList("baz"));

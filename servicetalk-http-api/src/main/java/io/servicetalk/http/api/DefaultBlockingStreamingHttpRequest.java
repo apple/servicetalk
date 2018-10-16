@@ -161,18 +161,6 @@ class DefaultBlockingStreamingHttpRequest<P> extends DefaultHttpRequestMetaData 
     }
 
     @Override
-    public BlockingStreamingHttpRequest removeQueryParameters(String key) {
-        super.removeQueryParameters(key);
-        return this;
-    }
-
-    @Override
-    public BlockingStreamingHttpRequest removeQueryParameters(String key, String value) {
-        super.removeQueryParameters(key, value);
-        return this;
-    }
-
-    @Override
     public BlockingIterable<Buffer> payloadBody() {
         return new HttpBufferFilterIterable(payloadBody);
     }

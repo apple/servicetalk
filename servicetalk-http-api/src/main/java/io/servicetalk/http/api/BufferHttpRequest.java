@@ -134,18 +134,6 @@ final class BufferHttpRequest extends DefaultHttpRequestMetaData implements Http
     }
 
     @Override
-    public HttpRequest removeQueryParameters(String key) {
-        super.removeQueryParameters(key);
-        return this;
-    }
-
-    @Override
-    public HttpRequest removeQueryParameters(String key, String value) {
-        super.removeQueryParameters(key, value);
-        return this;
-    }
-
-    @Override
     public HttpRequest version(final HttpProtocolVersion version) {
         super.version(version);
         return this;

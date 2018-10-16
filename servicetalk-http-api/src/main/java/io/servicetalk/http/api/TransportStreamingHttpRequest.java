@@ -125,18 +125,6 @@ final class TransportStreamingHttpRequest extends DefaultHttpRequestMetaData imp
     }
 
     @Override
-    public StreamingHttpRequest removeQueryParameters(String key) {
-        super.removeQueryParameters(key);
-        return this;
-    }
-
-    @Override
-    public StreamingHttpRequest removeQueryParameters(String key, String value) {
-        super.removeQueryParameters(key, value);
-        return this;
-    }
-
-    @Override
     public Publisher<Buffer> payloadBody() {
         return payloadAndTrailers.liftSynchronous(HttpTransportBufferFilterOperator.INSTANCE);
     }

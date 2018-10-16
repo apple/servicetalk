@@ -157,18 +157,6 @@ class DefaultStreamingHttpRequest<P> extends DefaultHttpRequestMetaData implemen
     }
 
     @Override
-    public StreamingHttpRequest removeQueryParameters(String key) {
-        super.removeQueryParameters(key);
-        return this;
-    }
-
-    @Override
-    public StreamingHttpRequest removeQueryParameters(String key, String value) {
-        super.removeQueryParameters(key, value);
-        return this;
-    }
-
-    @Override
     public Publisher<Buffer> payloadBody() {
         return payloadBody.liftSynchronous(HttpBufferFilterOperator.INSTANCE);
     }
