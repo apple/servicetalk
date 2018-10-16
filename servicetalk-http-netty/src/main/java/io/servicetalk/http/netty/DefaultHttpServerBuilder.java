@@ -20,6 +20,7 @@ import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.api.HttpServerBuilder;
+import io.servicetalk.http.api.HttpServiceFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequestHandler;
 import io.servicetalk.transport.api.ContextFilter;
 import io.servicetalk.transport.api.IoExecutor;
@@ -32,6 +33,7 @@ import java.net.SocketOption;
 import java.util.Map;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.http.api.HttpServiceFilterFactory.identity;
 import static io.servicetalk.http.netty.NettyHttpServer.bind;
 import static java.util.Objects.requireNonNull;
 
@@ -41,6 +43,7 @@ final class DefaultHttpServerBuilder implements HttpServerBuilder {
     private final ExecutionContextBuilder executionContextBuilder = new ExecutionContextBuilder();
     private ContextFilter contextFilter = ContextFilter.ACCEPT_ALL;
     private SocketAddress address;
+    private HttpServiceFilterFactory serviceFilter = identity();
 
     DefaultHttpServerBuilder(SocketAddress address) {
         this.address = address;
@@ -125,6 +128,12 @@ final class DefaultHttpServerBuilder implements HttpServerBuilder {
     }
 
     @Override
+    public HttpServerBuilder appendServiceFilter(final HttpServiceFilterFactory factory) {
+        serviceFilter = serviceFilter.append(factory);
+        return this;
+    }
+
+    @Override
     public HttpServerBuilder address(final SocketAddress address) {
         this.address = requireNonNull(address);
         return this;
@@ -151,6 +160,7 @@ final class DefaultHttpServerBuilder implements HttpServerBuilder {
     @Override
     public Single<ServerContext> listenStreaming(final StreamingHttpRequestHandler handler) {
         ReadOnlyHttpServerConfig roConfig = this.config.asReadOnly();
-        return bind(executionContextBuilder.build(), roConfig, address, contextFilter, handler.asStreamingService());
+        return bind(executionContextBuilder.build(), roConfig, address, contextFilter,
+                serviceFilter.apply(handler.asStreamingService()).asStreamingService());
     }
 }
