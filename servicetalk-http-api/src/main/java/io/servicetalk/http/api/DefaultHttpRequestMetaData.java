@@ -161,8 +161,9 @@ class DefaultHttpRequestMetaData extends AbstractHttpMetaData implements HttpReq
             throw new IllegalArgumentException("At least one path segment must be provided");
         }
 
-        final StringBuilder builder = new StringBuilder(path().length() + 8 * segments.length).append(path());
-        if (!path().isEmpty() && !path().endsWith("/")) {
+        final String path = path();
+        final StringBuilder builder = new StringBuilder(path.length() + 8 * segments.length).append(path);
+        if (!path.isEmpty() && !path.endsWith("/")) {
             builder.append('/');
         }
         for (int i = 0; i < segments.length; i++) {
