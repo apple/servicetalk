@@ -37,7 +37,7 @@ public final class BlockingPojoServer {
                         return responseFactory.methodNotAllowed().addHeader(ALLOW, POST.name());
                     }
                     PojoRequest req = request.payloadBody(serializer.deserializerFor(PojoRequest.class));
-                    return responseFactory.ok()
+                    return responseFactory.created()
                             .payloadBody(new MyPojo(ThreadLocalRandom.current().nextInt(100), req.getValue()),
                                     serializer.serializerFor(MyPojo.class));
                 })

@@ -37,7 +37,7 @@ public final class PojoStreamingServer {
                     if (request.method() != POST) {
                         return success(responseFactory.methodNotAllowed().addHeader(ALLOW, POST.name()));
                     }
-                    return success(responseFactory.ok()
+                    return success(responseFactory.created()
                             .payloadBody(request.payloadBody(serializer.deserializerFor(PojoRequest.class))
                                     .map(req -> new MyPojo(ThreadLocalRandom.current().nextInt(100),
                                             req.getValue())),

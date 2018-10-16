@@ -37,12 +37,12 @@ public final class PojoStreamingUrlClient {
             // demonstration purposes.
             CountDownLatch responseProcessedLatch = new CountDownLatch(1);
 
-            client.request(client.post("http://localhost:8080/pojo")
+            client.request(client.post("http://localhost:8080/pojos")
                     .payloadBody(from("value1", "value2", "value3").map(PojoRequest::new),
                             serializer.serializerFor(PojoRequest.class)))
                     .doBeforeSuccess(response -> System.out.println(response.toString((name, value) -> value)))
-                    .flatMapPublisher(resp -> resp.payloadBody(serializer.deserializerFor(MyPojo.class)))
                     .doFinally(responseProcessedLatch::countDown)
+                    .flatMapPublisher(resp -> resp.payloadBody(serializer.deserializerFor(MyPojo.class)))
                     .forEach(System.out::println);
 
             responseProcessedLatch.await();

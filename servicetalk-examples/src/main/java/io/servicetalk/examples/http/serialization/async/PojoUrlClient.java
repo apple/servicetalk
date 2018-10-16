@@ -36,7 +36,7 @@ public final class PojoUrlClient {
             // demonstration purposes.
             CountDownLatch responseProcessedLatch = new CountDownLatch(1);
 
-            client.request(client.post("http://localhost:8080/pojo")
+            client.request(client.post("http://localhost:8080/pojos")
                     .payloadBody(new PojoRequest("value"), serializer.serializerFor(PojoRequest.class)))
                     .doFinally(responseProcessedLatch::countDown)
                     .subscribe(resp -> {

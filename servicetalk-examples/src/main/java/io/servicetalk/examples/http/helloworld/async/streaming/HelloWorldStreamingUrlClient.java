@@ -31,8 +31,8 @@ public final class HelloWorldStreamingUrlClient {
             // demonstration purposes.
             CountDownLatch responseProcessedLatch = new CountDownLatch(1);
             client.request(client.get("http://localhost:8080/sayHello"))
-                    .doFinally(responseProcessedLatch::countDown)
                     .doBeforeSuccess(response -> System.out.println(response.toString((name, value) -> value)))
+                    .doFinally(responseProcessedLatch::countDown)
                     .flatMapPublisher(resp -> resp.payloadBody(textDeserializer()))
                     .forEach(System.out::println);
 

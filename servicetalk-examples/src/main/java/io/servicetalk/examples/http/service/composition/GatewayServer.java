@@ -116,7 +116,7 @@ public final class GatewayServer {
 
             LOGGER.info("Listening on {}", serverContext.listenAddress());
 
-            // Blocks and awaits shutdown of the server, this ServerContext represents.
+            // Blocks and awaits shutdown of the server this ServerContext represents.
             serverContext.awaitShutdown();
         }
     }

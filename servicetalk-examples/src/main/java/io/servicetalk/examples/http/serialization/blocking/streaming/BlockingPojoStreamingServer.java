@@ -51,7 +51,7 @@ public final class BlockingPojoStreamingServer {
                             }
                         }
                     }
-                    return responseFactory.ok()
+                    return responseFactory.created()
                             .payloadBody(pojos, serializer.serializerFor(MyPojo.class));
                 })
                 .awaitShutdown();

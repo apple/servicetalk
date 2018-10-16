@@ -33,7 +33,7 @@ public final class BlockingPojoStreamingClient {
         HttpSerializationProvider serializer = jsonSerializer(new JacksonSerializationProvider());
         try (BlockingStreamingHttpClient client =
                      HttpClients.forSingleAddress("localhost", 8080).buildBlockingStreaming()) {
-            BlockingStreamingHttpResponse response = client.request(client.post("pojo")
+            BlockingStreamingHttpResponse response = client.request(client.post("/pojos")
                     .payloadBody(asList(
                             new PojoRequest("value1"), new PojoRequest("value2"), new PojoRequest("value3")),
                             serializer.serializerFor(PojoRequest.class)));
