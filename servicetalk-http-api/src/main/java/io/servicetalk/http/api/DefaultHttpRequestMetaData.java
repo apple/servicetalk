@@ -215,7 +215,7 @@ class DefaultHttpRequestMetaData extends AbstractHttpMetaData implements HttpReq
     }
 
     @Override
-    public int queryParametersCount() {
+    public int queryParametersSize() {
         return lazyParseQueryString().size();
     }
 

@@ -242,7 +242,7 @@ public interface HttpRequestMetaData extends HttpMetaData {
      * Returns the number of query parameters.
      * @return the number of query parameters.
      */
-    int queryParametersCount();
+    int queryParametersSize();
 
     /**
      * Adds a new query parameter with the specified {@code key} and {@code value}, which will be
