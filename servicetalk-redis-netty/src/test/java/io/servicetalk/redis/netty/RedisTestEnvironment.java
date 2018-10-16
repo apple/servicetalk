@@ -83,6 +83,7 @@ final class RedisTestEnvironment implements AutoCloseable {
                 .deferSubscribeTillConnect(true)
                 .executionContext(executionContext)
                 .maxPipelinedRequests(10)
+                .idleConnectionTimeout(ofSeconds(2))
                 .pingPeriod(ofSeconds(PING_PERIOD_SECONDS))
                 .build();
         client = newBuilder(rawClient).exponentialBackoff(ofMillis(10)).build(10);
