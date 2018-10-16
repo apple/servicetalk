@@ -23,7 +23,6 @@ import io.servicetalk.transport.api.IoExecutor;
 
 import javax.annotation.Nullable;
 
-import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.transport.netty.internal.GlobalExecutionContext.globalExecutionContext;
 import static java.util.Objects.requireNonNull;
 
@@ -86,7 +85,7 @@ public final class ExecutionContextBuilder {
         if (ioExecutor == null && executor == null && allocator == null) {
             return globalExecutionContext();
         }
-        return new DefaultExecutionContext(allocator == null ? DEFAULT_ALLOCATOR : allocator,
+        return new DefaultExecutionContext(allocator == null ? globalExecutionContext().bufferAllocator() : allocator,
                 ioExecutor == null ? globalExecutionContext().ioExecutor() : ioExecutor,
                 executor == null ? globalExecutionContext().executor() : executor);
     }

@@ -24,7 +24,6 @@ import io.servicetalk.transport.api.ServerContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
 import static io.servicetalk.http.netty.HttpServers.newHttpServerBuilder;
 import static java.util.Objects.requireNonNull;
 
@@ -47,7 +46,6 @@ final class BackendStarter {
         // Starting the server will start listening for incoming client requests.
         final ServerContext ctx = newHttpServerBuilder(listenPort)
                 .ioExecutor(ioExecutor)
-                .executor(newCachedThreadExecutor())
                 .listenStreamingAndAwait(service);
         LOGGER.info("Started {} listening on {}.", name, ctx.listenAddress());
         return ctx;

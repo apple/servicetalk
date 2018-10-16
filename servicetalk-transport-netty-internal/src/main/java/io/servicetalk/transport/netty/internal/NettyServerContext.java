@@ -36,13 +36,13 @@ public final class NettyServerContext implements ServerContext {
 
     private final Channel listenChannel;
     private final ListenableAsyncCloseable closeable;
-    private final ExecutionContext context;
+    private final ExecutionContext executionContext;
 
     private NettyServerContext(Channel listenChannel, final ListenableAsyncCloseable closeable,
-                               final ExecutionContext context) {
+                               final ExecutionContext executionContext) {
         this.listenChannel = listenChannel;
         this.closeable = closeable;
-        this.context = context;
+        this.executionContext = executionContext;
     }
 
     /**
@@ -55,7 +55,7 @@ public final class NettyServerContext implements ServerContext {
     public static ServerContext wrap(NettyServerContext toWrap, AsyncCloseable closeBefore) {
         return new NettyServerContext(toWrap.listenChannel,
                 toListenableAsyncCloseable(newCompositeCloseable().appendAll(closeBefore, toWrap.closeable)),
-                toWrap.context);
+                toWrap.executionContext);
     }
 
     /**
@@ -83,7 +83,7 @@ public final class NettyServerContext implements ServerContext {
 
     @Override
     public ExecutionContext executionContext() {
-        return context;
+        return executionContext;
     }
 
     @Override
