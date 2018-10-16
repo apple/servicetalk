@@ -27,7 +27,7 @@ public interface HttpServiceFilterFactory {
      * @param service the {@link StreamingHttpService} to filter
      * @return the filtered {@link StreamingHttpService}
      */
-    StreamingHttpRequestHandler apply(StreamingHttpService service);
+    StreamingHttpService apply(StreamingHttpService service);
 
     /**
      * Returns a composed function that first applies the {@code before} function to its input, and then applies
@@ -47,7 +47,7 @@ public interface HttpServiceFilterFactory {
      */
     default HttpServiceFilterFactory append(HttpServiceFilterFactory before) {
         requireNonNull(before);
-        return service -> apply(before.apply(service).asStreamingService());
+        return service -> apply(before.apply(service));
     }
 
     /**
