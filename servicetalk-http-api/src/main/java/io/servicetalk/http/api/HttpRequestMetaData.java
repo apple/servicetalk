@@ -220,6 +220,16 @@ public interface HttpRequestMetaData extends HttpMetaData {
     Set<String> queryParametersKeys();
 
     /**
+     * Returns {@code true} if a query parameter with the {@code key} exists, {@code false} otherwise.
+     *
+     * @param key the query parameter name.
+     * @return {@code true} if {@code key} exists.
+     */
+    default boolean hasQueryParameter(final String key) {
+        return queryParameter(key) != null;
+    }
+
+    /**
      * Returns {@code true} if a query parameter with the {@code key} and {@code value} exists, {@code false} otherwise.
      *
      * @param key the query parameter key.

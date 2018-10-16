@@ -370,7 +370,7 @@ public abstract class AbstractHttpRequestMetaDataTest<T extends HttpRequestMetaD
         fixture.setQueryParameters("foo", singletonList("baz"));
         fixture.setQueryParameters("abc", "ghi", "jkl");
         assertEquals("/some/path?abc=ghi&abc=jkl&foo=baz", fixture.requestTarget());
-        assertTrue(fixture.queryParametersKeys().contains("foo"));
+        assertTrue(fixture.hasQueryParameter("foo"));
         assertTrue(fixture.hasQueryParameter("abc", "jkl"));
         assertEquals(fixture.queryParametersCount(), 3);
 
