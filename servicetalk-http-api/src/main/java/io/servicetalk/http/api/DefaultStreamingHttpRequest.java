@@ -103,6 +103,12 @@ class DefaultStreamingHttpRequest<P> extends DefaultHttpRequestMetaData implemen
     }
 
     @Override
+    public final StreamingHttpRequest appendPathSegments(final String... segments) {
+        super.appendPathSegments(segments);
+        return this;
+    }
+
+    @Override
     public final StreamingHttpRequest rawPath(final String path) {
         super.rawPath(path);
         return this;
@@ -111,6 +117,42 @@ class DefaultStreamingHttpRequest<P> extends DefaultHttpRequestMetaData implemen
     @Override
     public final StreamingHttpRequest rawQuery(final String query) {
         super.rawQuery(query);
+        return this;
+    }
+
+    @Override
+    public StreamingHttpRequest addQueryParameter(String key, String value) {
+        super.addQueryParameter(key, value);
+        return this;
+    }
+
+    @Override
+    public StreamingHttpRequest addQueryParameters(String key, Iterable<String> values) {
+        super.addQueryParameters(key, values);
+        return this;
+    }
+
+    @Override
+    public StreamingHttpRequest addQueryParameters(String key, String... values) {
+        super.addQueryParameters(key, values);
+        return this;
+    }
+
+    @Override
+    public StreamingHttpRequest setQueryParameter(String key, String value) {
+        super.setQueryParameter(key, value);
+        return this;
+    }
+
+    @Override
+    public StreamingHttpRequest setQueryParameters(String key, Iterable<String> values) {
+        super.setQueryParameters(key, values);
+        return this;
+    }
+
+    @Override
+    public StreamingHttpRequest setQueryParameters(String key, String... values) {
+        super.setQueryParameters(key, values);
         return this;
     }
 

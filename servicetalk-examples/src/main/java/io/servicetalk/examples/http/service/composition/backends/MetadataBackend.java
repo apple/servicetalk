@@ -45,7 +45,7 @@ final class MetadataBackend extends HttpService {
     @Override
     public Single<? extends HttpResponse> handle(HttpServiceContext ctx, HttpRequest request,
                                                  HttpResponseFactory responseFactory) {
-        final String entityId = request.parseQuery().get(ENTITY_ID_QP_NAME);
+        final String entityId = request.queryParameter(ENTITY_ID_QP_NAME);
         if (entityId == null) {
             return success(responseFactory.badRequest());
         }

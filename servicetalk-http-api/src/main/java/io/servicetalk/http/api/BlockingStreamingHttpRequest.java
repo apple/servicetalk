@@ -214,7 +214,28 @@ public interface BlockingStreamingHttpRequest extends HttpRequestMetaData {
     BlockingStreamingHttpRequest path(String path);
 
     @Override
+    BlockingStreamingHttpRequest appendPathSegments(String... segments);
+
+    @Override
     BlockingStreamingHttpRequest rawQuery(String query);
+
+    @Override
+    BlockingStreamingHttpRequest addQueryParameter(String key, String value);
+
+    @Override
+    BlockingStreamingHttpRequest addQueryParameters(String key, Iterable<String> values);
+
+    @Override
+    BlockingStreamingHttpRequest addQueryParameters(String key, String... values);
+
+    @Override
+    BlockingStreamingHttpRequest setQueryParameter(String key, String value);
+
+    @Override
+    BlockingStreamingHttpRequest setQueryParameters(String key, Iterable<String> values);
+
+    @Override
+    BlockingStreamingHttpRequest setQueryParameters(String key, String... values);
 
     @Override
     BlockingStreamingHttpRequest version(HttpProtocolVersion version);

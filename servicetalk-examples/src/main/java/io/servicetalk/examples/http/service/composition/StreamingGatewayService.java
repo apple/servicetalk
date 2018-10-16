@@ -66,7 +66,7 @@ final class StreamingGatewayService extends StreamingHttpService {
     @Override
     public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx, final StreamingHttpRequest request,
                                                 final StreamingHttpResponseFactory factory) {
-        final String userId = request.parseQuery().get(USER_ID_QP_NAME);
+        final String userId = request.queryParameter(USER_ID_QP_NAME);
         if (userId == null) {
             return success(factory.badRequest());
         }

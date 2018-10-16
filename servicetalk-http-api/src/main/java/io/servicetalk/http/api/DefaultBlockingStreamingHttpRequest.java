@@ -107,6 +107,12 @@ class DefaultBlockingStreamingHttpRequest<P> extends DefaultHttpRequestMetaData 
     }
 
     @Override
+    public final BlockingStreamingHttpRequest appendPathSegments(final String... segments) {
+        super.appendPathSegments(segments);
+        return this;
+    }
+
+    @Override
     public final BlockingStreamingHttpRequest rawPath(final String path) {
         super.rawPath(path);
         return this;
@@ -115,6 +121,42 @@ class DefaultBlockingStreamingHttpRequest<P> extends DefaultHttpRequestMetaData 
     @Override
     public final BlockingStreamingHttpRequest rawQuery(final String query) {
         super.rawQuery(query);
+        return this;
+    }
+
+    @Override
+    public BlockingStreamingHttpRequest addQueryParameter(String key, String value) {
+        super.addQueryParameter(key, value);
+        return this;
+    }
+
+    @Override
+    public BlockingStreamingHttpRequest addQueryParameters(String key, Iterable<String> values) {
+        super.addQueryParameters(key, values);
+        return this;
+    }
+
+    @Override
+    public BlockingStreamingHttpRequest addQueryParameters(String key, String... values) {
+        super.addQueryParameters(key, values);
+        return this;
+    }
+
+    @Override
+    public BlockingStreamingHttpRequest setQueryParameter(String key, String value) {
+        super.setQueryParameter(key, value);
+        return this;
+    }
+
+    @Override
+    public BlockingStreamingHttpRequest setQueryParameters(String key, Iterable<String> values) {
+        super.setQueryParameters(key, values);
+        return this;
+    }
+
+    @Override
+    public BlockingStreamingHttpRequest setQueryParameters(String key, String... values) {
+        super.setQueryParameters(key, values);
         return this;
     }
 
