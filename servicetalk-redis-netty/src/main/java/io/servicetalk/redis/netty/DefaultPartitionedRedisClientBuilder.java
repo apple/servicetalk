@@ -15,6 +15,7 @@
  */
 package io.servicetalk.redis.netty;
 
+import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.client.api.ConnectionFactoryFilter;
 import io.servicetalk.client.api.LoadBalancerFactory;
 import io.servicetalk.client.api.ServiceDiscoverer;
@@ -26,6 +27,7 @@ import io.servicetalk.client.api.partition.UnknownPartitionException;
 import io.servicetalk.client.internal.partition.PowerSetPartitionMapFactory;
 import io.servicetalk.concurrent.api.AsyncCloseable;
 import io.servicetalk.concurrent.api.Completable;
+import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.GroupedPublisher;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Publisher;
@@ -44,6 +46,7 @@ import io.servicetalk.redis.api.RedisPartitionAttributesBuilder;
 import io.servicetalk.redis.api.RedisProtocolSupport.Command;
 import io.servicetalk.redis.api.RedisRequest;
 import io.servicetalk.transport.api.ExecutionContext;
+import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.SslConfig;
 
 import org.reactivestreams.Subscriber;
@@ -89,8 +92,20 @@ final class DefaultPartitionedRedisClientBuilder<U, R> implements PartitionedRed
     }
 
     @Override
-    public PartitionedRedisClientBuilder<U, R> executionContext(final ExecutionContext context) {
-        builderTemplate.executionContext(context);
+    public PartitionedRedisClientBuilder<U, R> ioExecutor(final IoExecutor ioExecutor) {
+        builderTemplate.ioExecutor(ioExecutor);
+        return this;
+    }
+
+    @Override
+    public PartitionedRedisClientBuilder<U, R> executor(final Executor executor) {
+        builderTemplate.executor(executor);
+        return this;
+    }
+
+    @Override
+    public PartitionedRedisClientBuilder<U, R> bufferAllocator(final BufferAllocator allocator) {
+        builderTemplate.bufferAllocator(allocator);
         return this;
     }
 
@@ -230,7 +245,7 @@ final class DefaultPartitionedRedisClientBuilder<U, R> implements PartitionedRed
             sequentialCancellable = new SequentialCancellable();
             this.partitionMap = partitionMap;
             final DefaultRedisClientBuilder<U, R> builder = builderTemplate.copy();
-            executionContext = builder.executionContext();
+            executionContext = builder.buildExecutionContext();
             @SuppressWarnings("unchecked")
             ServiceDiscoverer<U, R, PartitionedServiceDiscovererEvent<R>> sd =
                     (ServiceDiscoverer<U, R, PartitionedServiceDiscovererEvent<R>>) builder.serviceDiscoverer();
@@ -252,7 +267,8 @@ final class DefaultPartitionedRedisClientBuilder<U, R> implements PartitionedRed
                         @Override
                         public void onNext(GroupedPublisher<Partition, PartitionedServiceDiscovererEvent<R>> newGroup) {
                             final Partition partition = newGroup.getKey();
-                            partition.setClient(builder.build(new PartitionServiceDiscoverer<>(newGroup, partition)));
+                            partition.setClient(builder.build(new PartitionServiceDiscoverer<>(newGroup, partition),
+                                    executionContext));
                         }
 
                         @Override

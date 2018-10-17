@@ -15,9 +15,11 @@
  */
 package io.servicetalk.http.api;
 
+import io.servicetalk.buffer.api.BufferAllocator;
+import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.transport.api.ContextFilter;
-import io.servicetalk.transport.api.ExecutionContext;
+import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.api.SslConfig;
 
@@ -159,6 +161,26 @@ public interface HttpServerBuilder {
     HttpServerBuilder contextFilter(ContextFilter contextFilter);
 
     /**
+     * Append the filter to the chain of filters used to decorate the {@link StreamingHttpService} used by this
+     * builder.
+     * <p>
+     * Note this method will be used to decorate the {@link StreamingHttpRequestHandler} passed to
+     * {@link #listenStreaming(StreamingHttpRequestHandler)} before it is used by the server.
+     * <p>
+     * The order of execution of these filters are in order of append. If 3 filters are added as follows:
+     * <pre>
+     *     builder.append(filter1).append(filter2).append(filter3)
+     * </pre>
+     * accepting a request by a service wrapped by this filter chain, the order of invocation of these filters will be:
+     * <pre>
+     *     filter1 =&gt; filter2 =&gt; filter3 =&gt; service
+     * </pre>
+     * @param factory {@link HttpServiceFilterFactory} to append.
+     * @return {@code this}
+     */
+    HttpServerBuilder appendServiceFilter(HttpServiceFilterFactory factory);
+
+    /**
      * Sets the address to listen on.
      *
      * @param address The listen address for the server.
@@ -179,13 +201,28 @@ public interface HttpServerBuilder {
     }
 
     /**
-     * Optionally define the {@link ExecutionContext} to use for this server, otherwise a default {@link
-     * ExecutionContext} is used.
+     * Sets the {@link IoExecutor} to be used by this server.
      *
-     * @param context The {@link ExecutionContext} used for this server.
+     * @param ioExecutor {@link IoExecutor} to use.
      * @return {@code this}.
      */
-    HttpServerBuilder executionContext(ExecutionContext context);
+    HttpServerBuilder ioExecutor(IoExecutor ioExecutor);
+
+    /**
+     * Sets the {@link Executor} to be used by this server.
+     *
+     * @param executor {@link Executor} to use.
+     * @return {@code this}.
+     */
+    HttpServerBuilder executor(Executor executor);
+
+    /**
+     * Sets the {@link BufferAllocator} to be used by this server.
+     *
+     * @param allocator {@link BufferAllocator} to use.
+     * @return {@code this}.
+     */
+    HttpServerBuilder bufferAllocator(BufferAllocator allocator);
 
     /**
      * Starts this server and returns the {@link ServerContext} after the server has been successfully started.

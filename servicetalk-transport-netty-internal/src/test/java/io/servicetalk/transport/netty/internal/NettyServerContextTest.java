@@ -126,8 +126,8 @@ public class NettyServerContextTest {
         });
         when(channel.pipeline()).thenReturn(channelPipeline);
         when(channelPipeline.get(ConnectionHolderChannelHandler.class)).thenReturn(connectionHolderChannelHandler);
-
-        fixture = NettyServerContext.wrap(channel, channelSetCloseable, closeBefore, immediate());
+        fixture = NettyServerContext.wrap(channel, channelSetCloseable, closeBefore,
+                new ExecutionContextBuilder().executor(immediate()).build());
     }
 
     @Test

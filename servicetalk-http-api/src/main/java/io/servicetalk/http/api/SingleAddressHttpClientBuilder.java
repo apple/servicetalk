@@ -15,13 +15,15 @@
  */
 package io.servicetalk.http.api;
 
+import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.client.api.ConnectionFactoryFilter;
 import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.api.LoadBalancerFactory;
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
-import io.servicetalk.transport.api.ExecutionContext;
+import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.transport.api.HostAndPort;
+import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.SslConfig;
 
 import java.io.InputStream;
@@ -40,7 +42,13 @@ import javax.annotation.Nullable;
 public interface SingleAddressHttpClientBuilder<U, R> extends HttpClientBuilder<U, R> {
 
     @Override
-    SingleAddressHttpClientBuilder<U, R> executionContext(ExecutionContext context);
+    SingleAddressHttpClientBuilder<U, R> ioExecutor(IoExecutor ioExecutor);
+
+    @Override
+    SingleAddressHttpClientBuilder<U, R> executor(Executor executor);
+
+    @Override
+    SingleAddressHttpClientBuilder<U, R> bufferAllocator(BufferAllocator allocator);
 
     @Override
     <T> SingleAddressHttpClientBuilder<U, R> socketOption(SocketOption<T> option, T value);

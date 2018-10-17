@@ -164,7 +164,7 @@ public final class TcpServerInitializer {
                     Throwable cause = f.cause();
                     if (cause == null) {
                         subscriber.onSuccess(NettyServerContext.wrap(channel, channelSet, contextFilter,
-                                executionContext.executor()));
+                                executionContext));
                     } else {
                         channel.close();
                         subscriber.onError(f.cause());

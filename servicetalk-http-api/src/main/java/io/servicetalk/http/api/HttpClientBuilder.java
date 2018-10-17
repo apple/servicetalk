@@ -15,13 +15,16 @@
  */
 package io.servicetalk.http.api;
 
+import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.client.api.ConnectionFactory;
 import io.servicetalk.client.api.ConnectionFactoryFilter;
 import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.api.LoadBalancerFactory;
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
+import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.transport.api.ExecutionContext;
+import io.servicetalk.transport.api.IoExecutor;
 
 import java.net.SocketOption;
 import java.util.function.Function;
@@ -35,12 +38,28 @@ import java.util.function.Function;
 public interface HttpClientBuilder<U, R> {
 
     /**
-     * Sets an {@link ExecutionContext} for all clients created from this {@link HttpClientBuilder}.
+     * Sets the {@link IoExecutor} for all clients created from this {@link HttpClientBuilder}.
      *
-     * @param context {@link ExecutionContext} to use.
+     * @param ioExecutor {@link IoExecutor} to use.
      * @return {@code this}.
      */
-    HttpClientBuilder<U, R> executionContext(ExecutionContext context);
+    HttpClientBuilder<U, R> ioExecutor(IoExecutor ioExecutor);
+
+    /**
+     * Sets the {@link Executor} for all clients created from this {@link HttpClientBuilder}.
+     *
+     * @param executor {@link Executor} to use.
+     * @return {@code this}.
+     */
+    HttpClientBuilder<U, R> executor(Executor executor);
+
+    /**
+     * Sets the {@link BufferAllocator} for all clients created from this {@link HttpClientBuilder}.
+     *
+     * @param allocator {@link BufferAllocator} to use.
+     * @return {@code this}.
+     */
+    HttpClientBuilder<U, R> bufferAllocator(BufferAllocator allocator);
 
     /**
      * Add a {@link SocketOption} for all connections created by this client.

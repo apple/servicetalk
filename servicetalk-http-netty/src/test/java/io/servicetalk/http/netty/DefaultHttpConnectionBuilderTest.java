@@ -50,7 +50,8 @@ public class DefaultHttpConnectionBuilderTest extends AbstractEchoServerBasedHtt
     @Test
     public void requestFromConnectionFactory() throws ExecutionException, InterruptedException {
         ConnectionFactory<SocketAddress, StreamingHttpConnection> cf =
-                prepareBuilder(1).executionContext(CTX).asConnectionFactory();
+                prepareBuilder(1).ioExecutor(CTX.ioExecutor()).executor(CTX.executor())
+                        .asConnectionFactory();
         Single<StreamingHttpConnection> connectionSingle =
                 cf.newConnection(serverContext.listenAddress());
         makeRequestValidateResponseAndClose(awaitIndefinitelyNonNull(connectionSingle));
@@ -84,7 +85,8 @@ public class DefaultHttpConnectionBuilderTest extends AbstractEchoServerBasedHtt
     public void requestFromConnectionFactoryWithFilter() throws ExecutionException, InterruptedException {
 
         Single<DummyFanoutFilter> connectionSingle = prepareBuilder(10)
-                .executionContext(CTX)
+                .ioExecutor(CTX.ioExecutor())
+                .executor(CTX.executor())
                 .asConnectionFactory()
                 .newConnection(serverContext.listenAddress())
                 .map(DummyFanoutFilter::new);
@@ -101,7 +103,8 @@ public class DefaultHttpConnectionBuilderTest extends AbstractEchoServerBasedHtt
         DefaultHttpConnectionBuilder<SocketAddress> defaultBuilder = prepareBuilder(pipelinedRequests);
 
         Single<StreamingHttpConnection> connectionSingle =
-                defaultBuilder.executionContext(CTX).buildStreaming(serverContext.listenAddress());
+                defaultBuilder.ioExecutor(CTX.ioExecutor()).executor(CTX.executor())
+                .buildStreaming(serverContext.listenAddress());
 
         makeRequestValidateResponseAndClose(awaitIndefinitelyNonNull(connectionSingle));
     }

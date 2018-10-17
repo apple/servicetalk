@@ -23,7 +23,6 @@ import io.servicetalk.redis.api.RedisConnection;
 import io.servicetalk.redis.api.RedisServerException;
 import io.servicetalk.redis.utils.RedisAuthConnectionFactory;
 import io.servicetalk.redis.utils.RedisAuthorizationException;
-import io.servicetalk.transport.api.DefaultExecutionContext;
 import io.servicetalk.transport.netty.internal.NettyIoExecutor;
 
 import org.junit.After;
@@ -35,7 +34,6 @@ import java.net.InetSocketAddress;
 import java.util.function.Consumer;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.Single.success;
@@ -127,7 +125,8 @@ public class RedisAuthConnectionFactoryConnectionTest {
         connectionSingle = new RedisAuthConnectionFactory<>(
                 DefaultRedisConnectionBuilder.<InetSocketAddress>forPipeline()
                         .maxPipelinedRequests(10)
-                        .executionContext(new DefaultExecutionContext(DEFAULT_ALLOCATOR, ioExecutor, immediate()))
+                        .ioExecutor(ioExecutor)
+                        .executor(immediate())
                         .asConnectionFactory(),
                 ctx -> ctx.executionContext().bufferAllocator().fromAscii(password))
                 .newConnection(new InetSocketAddress(redisHost, redisPort));

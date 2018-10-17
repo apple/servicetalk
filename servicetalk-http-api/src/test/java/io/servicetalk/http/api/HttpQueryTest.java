@@ -42,7 +42,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
-public class DefaultHttpQueryTest {
+public class HttpQueryTest {
 
     @Rule
     public MockitoRule rule = MockitoJUnit.rule();
@@ -57,14 +57,14 @@ public class DefaultHttpQueryTest {
     @Test
     public void testGetFirstValue() {
         params.put("foo", newList("bar", "baz"));
-        final DefaultHttpQuery query = new DefaultHttpQuery(params, queryParamsUpdater);
+        final HttpQuery query = new HttpQuery(params, queryParamsUpdater);
 
         assertEquals("bar", query.get("foo"));
     }
 
     @Test
     public void testGetFirstValueNone() {
-        final DefaultHttpQuery query = new DefaultHttpQuery(params, queryParamsUpdater);
+        final HttpQuery query = new HttpQuery(params, queryParamsUpdater);
 
         assertNull(query.get("foo"));
     }
@@ -72,14 +72,14 @@ public class DefaultHttpQueryTest {
     @Test
     public void testGetAll() {
         params.put("foo", newList("bar", "baz"));
-        final DefaultHttpQuery query = new DefaultHttpQuery(params, queryParamsUpdater);
+        final HttpQuery query = new HttpQuery(params, queryParamsUpdater);
 
         assertEquals(asList("bar", "baz"), iteratorAsList(query.values("foo")));
     }
 
     @Test
     public void testGetAllEmpty() {
-        final DefaultHttpQuery query = new DefaultHttpQuery(params, queryParamsUpdater);
+        final HttpQuery query = new HttpQuery(params, queryParamsUpdater);
 
         assertFalse(query.values("foo").hasNext());
     }
@@ -87,7 +87,7 @@ public class DefaultHttpQueryTest {
     @Test
     public void testGetKeys() {
         params.put("foo", newList("bar", "baz"));
-        final DefaultHttpQuery query = new DefaultHttpQuery(params, queryParamsUpdater);
+        final HttpQuery query = new HttpQuery(params, queryParamsUpdater);
 
         assertEquals(asList("bar", "baz"), iteratorAsList(query.values("foo")));
     }
@@ -96,7 +96,7 @@ public class DefaultHttpQueryTest {
     public void testSet() {
         params.put("foo", newList("bar", "baz"));
         params.put("abc", newList("def"));
-        final DefaultHttpQuery query = new DefaultHttpQuery(params, queryParamsUpdater);
+        final HttpQuery query = new HttpQuery(params, queryParamsUpdater);
         query.set("abc", "new");
 
         assertEquals(singletonList("new"), iteratorAsList(query.values("abc")));
@@ -107,7 +107,7 @@ public class DefaultHttpQueryTest {
     public void testSetValues() {
         params.put("foo", newList("bar", "baz"));
         params.put("abc", newList("def"));
-        final DefaultHttpQuery query = new DefaultHttpQuery(params, queryParamsUpdater);
+        final HttpQuery query = new HttpQuery(params, queryParamsUpdater);
         query.set("abc", newList("new1", "new2"));
 
         assertEquals(asList("new1", "new2"), iteratorAsList(query.values("abc")));
@@ -118,7 +118,7 @@ public class DefaultHttpQueryTest {
     public void testAdd() {
         params.put("foo", newList("bar", "baz"));
         params.put("abc", newList("def"));
-        final DefaultHttpQuery query = new DefaultHttpQuery(params, queryParamsUpdater);
+        final HttpQuery query = new HttpQuery(params, queryParamsUpdater);
         query.add("abc", "new");
 
         assertEquals(asList("def", "new"), iteratorAsList(query.values("abc")));
@@ -129,9 +129,8 @@ public class DefaultHttpQueryTest {
     public void testAddValues() {
         params.put("foo", newList("bar", "baz"));
         params.put("abc", newList("def"));
-        final DefaultHttpQuery query = new DefaultHttpQuery(params, queryParamsUpdater);
+        final HttpQuery query = new HttpQuery(params, queryParamsUpdater);
         query.add("abc", newList("new1", "new2"));
-        query.encodeToRequestTarget();
 
         assertEquals(asList("def", "new1", "new2"), iteratorAsList(query.values("abc")));
         assertEquals(asList("bar", "baz"), iteratorAsList(query.values("foo")));
@@ -140,16 +139,16 @@ public class DefaultHttpQueryTest {
     @Test
     public void testContainsKey() {
         params.put("foo", newList("bar", "baz"));
-        final DefaultHttpQuery query = new DefaultHttpQuery(params, queryParamsUpdater);
+        final HttpQuery query = new HttpQuery(params, queryParamsUpdater);
 
-        assertTrue(query.contains("foo"));
-        assertFalse(query.contains("abc"));
+        assertTrue(query.keys().contains("foo"));
+        assertFalse(query.keys().contains("abc"));
     }
 
     @Test
     public void testContainsKeyAndValue() {
         params.put("foo", newList("bar", "baz"));
-        final DefaultHttpQuery query = new DefaultHttpQuery(params, queryParamsUpdater);
+        final HttpQuery query = new HttpQuery(params, queryParamsUpdater);
 
         assertTrue(query.contains("foo", "bar"));
         assertFalse(query.contains("foo", "new"));
@@ -158,22 +157,22 @@ public class DefaultHttpQueryTest {
     @Test
     public void testRemoveKey() {
         params.put("foo", newList("bar", "baz"));
-        final DefaultHttpQuery query = new DefaultHttpQuery(params, queryParamsUpdater);
+        final HttpQuery query = new HttpQuery(params, queryParamsUpdater);
         assertTrue(query.remove("foo"));
-        assertFalse(query.contains("foo"));
+        assertFalse(query.keys().contains("foo"));
         assertFalse(query.remove("foo"));
 
         query.add("foo", "bar");
         assertTrue(query.remove("foo", "bar"));
         assertFalse(query.remove("foo"));
 
-        assertFalse(query.contains("foo"));
+        assertFalse(query.keys().contains("foo"));
     }
 
     @Test
     public void testRemoveKeyAndValue() {
         params.put("foo", newList("bar", "baz"));
-        final DefaultHttpQuery query = new DefaultHttpQuery(params, queryParamsUpdater);
+        final HttpQuery query = new HttpQuery(params, queryParamsUpdater);
         assertTrue(query.remove("foo", "bar"));
         assertFalse(query.remove("foo", "bar"));
 
@@ -185,7 +184,7 @@ public class DefaultHttpQueryTest {
     public void testSize() {
         params.put("foo", newList("bar", "baz"));
         params.put("abc", newList("def", "123"));
-        final DefaultHttpQuery query = new DefaultHttpQuery(params, queryParamsUpdater);
+        final HttpQuery query = new HttpQuery(params, queryParamsUpdater);
 
         assertEquals(4, query.size());
         query.remove("abc", "123");
@@ -202,7 +201,7 @@ public class DefaultHttpQueryTest {
     public void testIterator() {
         params.put("foo", newList("bar", "baz"));
         params.put("abc", newList("def", "123"));
-        final DefaultHttpQuery query = new DefaultHttpQuery(params, queryParamsUpdater);
+        final HttpQuery query = new HttpQuery(params, queryParamsUpdater);
 
         final Iterator<Map.Entry<String, String>> iterator = query.iterator();
 
@@ -236,7 +235,7 @@ public class DefaultHttpQueryTest {
     public void testIteratorAfterRemoval() {
         params.put("foo", newList("bar", "baz"));
         params.put("abc", newList("def", "123"));
-        final DefaultHttpQuery query = new DefaultHttpQuery(params, queryParamsUpdater);
+        final HttpQuery query = new HttpQuery(params, queryParamsUpdater);
 
         query.remove("abc", "def");
         query.remove("abc", "123");
@@ -263,7 +262,7 @@ public class DefaultHttpQueryTest {
     public void testIteratorRemove() {
         params.put("foo", newList("bar", "baz"));
         params.put("abc", newList("def", "123"));
-        final DefaultHttpQuery query = new DefaultHttpQuery(params, queryParamsUpdater);
+        final HttpQuery query = new HttpQuery(params, queryParamsUpdater);
 
         final Iterator<Map.Entry<String, String>> iterator = query.iterator();
 
@@ -303,7 +302,7 @@ public class DefaultHttpQueryTest {
     public void testIteratorRemoveTwice() {
         params.put("foo", newList("bar", "baz"));
         params.put("abc", newList("def", "123"));
-        final DefaultHttpQuery query = new DefaultHttpQuery(params, queryParamsUpdater);
+        final HttpQuery query = new HttpQuery(params, queryParamsUpdater);
 
         final Iterator<Map.Entry<String, String>> iterator = query.iterator();
 

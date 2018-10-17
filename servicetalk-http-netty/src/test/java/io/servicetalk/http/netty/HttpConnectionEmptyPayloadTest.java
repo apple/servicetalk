@@ -63,7 +63,8 @@ public class HttpConnectionEmptyPayloadTest {
             byte[] expectedPayload = new byte[expectedContentLength];
             ThreadLocalRandom.current().nextBytes(expectedPayload);
             ServerContext serverContext = closeable.merge(newHttpServerBuilder(0)
-                    .executionContext(executionContextRule)
+                    .ioExecutor(executionContextRule.ioExecutor())
+                    .executor(executionContextRule.executor())
                     .listenStreamingAndAwait(
                             new StreamingHttpService() {
                                 @Override
@@ -80,7 +81,8 @@ public class HttpConnectionEmptyPayloadTest {
                             }));
 
             StreamingHttpConnection connection = closeable.merge(awaitIndefinitelyNonNull(new DefaultHttpConnectionBuilder<>()
-                    .executionContext(executionContextRule)
+                    .ioExecutor(executionContextRule.ioExecutor())
+                    .executor(executionContextRule.executor())
                     .setMaxPipelinedRequests(3)
                     .buildStreaming(serverContext.listenAddress())));
 

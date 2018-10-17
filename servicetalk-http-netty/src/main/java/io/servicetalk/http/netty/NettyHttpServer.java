@@ -109,6 +109,11 @@ final class NettyHttpServer {
         }
 
         @Override
+        public ExecutionContext executionContext() {
+            return delegate.executionContext();
+        }
+
+        @Override
         public Completable closeAsync() {
             return asyncCloseable.closeAsync()
                     .doFinally(() -> LOGGER.debug("Stopped HTTP server for address {}.", listenAddress()));

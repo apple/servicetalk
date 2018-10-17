@@ -15,6 +15,7 @@
  */
 package io.servicetalk.http.netty;
 
+import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.client.api.ConnectionFactoryFilter;
 import io.servicetalk.client.api.DefaultGroupKey;
 import io.servicetalk.client.api.GroupKey;
@@ -24,6 +25,7 @@ import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.concurrent.api.AsyncCloseable;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.CompositeCloseable;
+import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.ClientGroupFilterFunction;
@@ -35,7 +37,6 @@ import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpScheme;
 import io.servicetalk.http.api.MultiAddressHttpClientBuilder;
-import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
 import io.servicetalk.http.api.SslConfigProvider;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpClientGroup;
@@ -46,6 +47,7 @@ import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.utils.RedirectingStreamingHttpClientGroup;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.HostAndPort;
+import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.SslConfig;
 
 import org.slf4j.Logger;
@@ -66,7 +68,6 @@ import static io.servicetalk.http.api.HttpClientGroups.newHttpClientGroup;
 import static io.servicetalk.http.api.HttpHeaderNames.HOST;
 import static io.servicetalk.http.api.SslConfigProviders.plainByDefault;
 import static io.servicetalk.transport.api.SslConfigBuilder.forClient;
-import static io.servicetalk.transport.netty.internal.GlobalExecutionContext.globalExecutionContext;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -88,7 +89,6 @@ final class DefaultMultiAddressUrlHttpClientBuilder
     private static final int DEFAULT_MAX_REDIRECTS = 5;
 
     private final DefaultSingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> builderTemplate;
-    private ExecutionContext executionContext = globalExecutionContext();
     private SslConfigProvider sslConfigProvider = plainByDefault();
     private ClientGroupFilterFunction<HostAndPort> clientGroupFilterFunction = ClientGroupFilterFunction.identity();
     private int maxRedirects = DEFAULT_MAX_REDIRECTS;
@@ -103,13 +103,13 @@ final class DefaultMultiAddressUrlHttpClientBuilder
 
     @Override
     public StreamingHttpClient buildStreaming() {
-        final ExecutionContext executionContext = this.executionContext;
+        final ExecutionContext executionContext = builderTemplate.buildExecutionContext();
         final CompositeCloseable closeables = newCompositeCloseable();
         // Tracks StreamingHttpClient dependencies for clean-up on exception during buildStreaming
         final CompositeCloseable closeOnException = newCompositeCloseable();
         try {
             final ClientBuilderFactory clientBuilderFactory = new ClientBuilderFactory(builderTemplate,
-                    sslConfigProvider, clientFilterFunction, hostHeaderTransformer, executionContext);
+                    sslConfigProvider, clientFilterFunction, hostHeaderTransformer);
 
             final DefaultStreamingHttpRequestResponseFactory reqRespFactory =
                     new DefaultStreamingHttpRequestResponseFactory(executionContext.bufferAllocator(),
@@ -118,7 +118,7 @@ final class DefaultMultiAddressUrlHttpClientBuilder
             StreamingHttpClientGroup<HostAndPort> clientGroup = closeOnException.prepend(
                     clientGroupFilterFunction.apply(
                     newHttpClientGroup(reqRespFactory, (gk, md) ->
-                            clientBuilderFactory.apply(gk, md).buildStreaming())));
+                            clientBuilderFactory.apply(gk, md).buildStreaming(gk.executionContext()))));
             final CacheableGroupKeyFactory groupKeyFactory = closeables.prepend(closeOnException.prepend(
                     new CacheableGroupKeyFactory(executionContext, sslConfigProvider)));
             clientGroup = maxRedirects <= 0 ? clientGroup : new RedirectingStreamingHttpClientGroup<>(
@@ -189,33 +189,30 @@ final class DefaultMultiAddressUrlHttpClientBuilder
      * {@link HostAndPort}.
      */
     private static final class ClientBuilderFactory implements BiFunction<GroupKey<HostAndPort>, HttpRequestMetaData,
-            SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress>> {
+            DefaultSingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress>> {
 
         private final DefaultSingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> builderTemplate;
         private final SslConfigProvider sslConfigProvider;
         private final HttpClientGroupFilterFactory<HostAndPort> clientFilterFunction;
         @Nullable
         private final Function<HostAndPort, CharSequence> hostHeaderTransformer;
-        private final ExecutionContext executionContext;
 
         @SuppressWarnings("unchecked")
         ClientBuilderFactory(
                 final DefaultSingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> builderTemplate,
                 final SslConfigProvider sslConfigProvider,
                 final HttpClientGroupFilterFactory<HostAndPort> clientFilterFunction,
-                @Nullable final Function<HostAndPort, CharSequence> hostHeaderTransformer,
-                final ExecutionContext executionContext) {
+                @Nullable final Function<HostAndPort, CharSequence> hostHeaderTransformer) {
             // Copy existing builder to prevent runtime changes after buildStreaming() was invoked
             this.builderTemplate = builderTemplate.copy();
             this.sslConfigProvider = sslConfigProvider;
             this.clientFilterFunction = clientFilterFunction;
             this.hostHeaderTransformer = hostHeaderTransformer;
-            this.executionContext = executionContext;
         }
 
         @SuppressWarnings("unchecked")
         @Override
-        public SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> apply(
+        public DefaultSingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> apply(
                 final GroupKey<HostAndPort> groupKey, final HttpRequestMetaData requestMetaData) {
             final HttpScheme scheme = HttpScheme.schemeForValue(requestMetaData.scheme());
             final HostAndPort hostAndPort = groupKey.address();
@@ -238,7 +235,7 @@ final class DefaultMultiAddressUrlHttpClientBuilder
             }
 
             // Copy existing builder to prevent changes at runtime when concurrently creating clients for new addresses
-            SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> builder = builderTemplate.copy(hostAndPort);
+            DefaultSingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> builder = builderTemplate.copy(hostAndPort);
             if (hostHeaderTransformer != null) {
                 try {
                     builder.enableHostHeaderFallback(hostHeaderTransformer.apply(hostAndPort));
@@ -246,9 +243,8 @@ final class DefaultMultiAddressUrlHttpClientBuilder
                     LOGGER.error("Failed to transform address for host header override", e);
                 }
             }
-            return builder.executionContext(executionContext)
-                    .sslConfig(sslConfig)
-                    .appendClientFilter(clientFilterFunction.asClientFilter(groupKey.address()));
+            return builder.sslConfig(sslConfig)
+                            .appendClientFilter(clientFilterFunction.asClientFilter(groupKey.address()));
         }
 
         HttpHeadersFactory headersFactory() {
@@ -307,9 +303,21 @@ final class DefaultMultiAddressUrlHttpClientBuilder
     }
 
     @Override
-    public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> executionContext(
-            final ExecutionContext context) {
-        this.executionContext = requireNonNull(context);
+    public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> ioExecutor(final IoExecutor ioExecutor) {
+        builderTemplate.ioExecutor(ioExecutor);
+        return this;
+    }
+
+    @Override
+    public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> executor(final Executor executor) {
+        builderTemplate.executor(executor);
+        return this;
+    }
+
+    @Override
+    public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> bufferAllocator(
+            final BufferAllocator allocator) {
+        builderTemplate.bufferAllocator(allocator);
         return this;
     }
 

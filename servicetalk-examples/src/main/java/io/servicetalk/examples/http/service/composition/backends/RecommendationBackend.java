@@ -83,7 +83,7 @@ final class RecommendationBackend {
         @Override
         public Single<StreamingHttpResponse> handle(HttpServiceContext ctx, StreamingHttpRequest request,
                                                     StreamingHttpResponseFactory responseFactory) {
-            final String userId = request.parseQuery().get(USER_ID_QP_NAME);
+            final String userId = request.queryParameter(USER_ID_QP_NAME);
             if (userId == null) {
                 return success(responseFactory.badRequest());
             }
@@ -115,12 +115,12 @@ final class RecommendationBackend {
         @Override
         public Single<? extends HttpResponse> handle(HttpServiceContext ctx,
                                                      HttpRequest request, HttpResponseFactory responseFactory) {
-            final String userId = request.parseQuery().get(USER_ID_QP_NAME);
+            final String userId = request.queryParameter(USER_ID_QP_NAME);
             if (userId == null) {
                 return success(responseFactory.badRequest());
             }
             int expectedEntitiesCount = 10;
-            final String expectedEntitiesCountStr = request.parseQuery().get(EXPECTED_ENTITY_COUNT_QP_NAME);
+            final String expectedEntitiesCountStr = request.queryParameter(EXPECTED_ENTITY_COUNT_QP_NAME);
             if (expectedEntitiesCountStr != null) {
                 expectedEntitiesCount = parseInt(expectedEntitiesCountStr);
             }

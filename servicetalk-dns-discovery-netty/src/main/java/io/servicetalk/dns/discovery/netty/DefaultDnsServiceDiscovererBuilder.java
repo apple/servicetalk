@@ -15,25 +15,24 @@
  */
 package io.servicetalk.dns.discovery.netty;
 
+import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.concurrent.api.BiIntFunction;
 import io.servicetalk.concurrent.api.Completable;
-import io.servicetalk.transport.api.ExecutionContext;
+import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.transport.api.HostAndPort;
+import io.servicetalk.transport.api.IoExecutor;
+import io.servicetalk.transport.netty.internal.ExecutionContextBuilder;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.transport.netty.internal.GlobalExecutionContext.globalExecutionContext;
-import static java.util.Objects.requireNonNull;
-
 /**
  * Builder use to create objects of type {@link DefaultDnsServiceDiscoverer}.
  */
 public final class DefaultDnsServiceDiscovererBuilder {
-    private final ExecutionContext executionContext;
     @Nullable
     private DnsServerAddressStreamProvider dnsServerAddressStreamProvider;
     @Nullable
@@ -44,26 +43,8 @@ public final class DefaultDnsServiceDiscovererBuilder {
     private Boolean optResourceEnabled;
     @Nullable
     private BiIntFunction<Throwable, Completable> retryStrategy;
+    private final ExecutionContextBuilder executionContextBuilder = new ExecutionContextBuilder();
     private int minTTLSeconds = 2;
-
-    /**
-     * Create a new instance, using a default {@link ExecutionContext}.
-     *
-     * @see #DefaultDnsServiceDiscovererBuilder(ExecutionContext)
-     */
-    public DefaultDnsServiceDiscovererBuilder() {
-        this(globalExecutionContext());
-    }
-
-    /**
-     * Create a new instance.
-     *
-     * @param executionContext The {@link ExecutionContext} which determines the threading model for I/O and calling
-     * user code.
-     */
-    public DefaultDnsServiceDiscovererBuilder(ExecutionContext executionContext) {
-        this.executionContext = requireNonNull(executionContext);
-    }
 
     /**
      * The minimum allowed TTL. This will be the minimum poll interval.
@@ -149,6 +130,39 @@ public final class DefaultDnsServiceDiscovererBuilder {
     }
 
     /**
+     * Sets the {@link IoExecutor}.
+     *
+     * @param ioExecutor {@link IoExecutor} to use.
+     * @return {@code this}.
+     */
+    DefaultDnsServiceDiscovererBuilder ioExecutor(IoExecutor ioExecutor) {
+        executionContextBuilder.ioExecutor(ioExecutor);
+        return this;
+    }
+
+    /**
+     * Sets the {@link Executor}.
+     *
+     * @param executor {@link Executor} to use.
+     * @return {@code this}.
+     */
+    DefaultDnsServiceDiscovererBuilder executor(Executor executor) {
+        executionContextBuilder.executor(executor);
+        return this;
+    }
+
+    /**
+     * Sets the {@link BufferAllocator}.
+     *
+     * @param allocator {@link BufferAllocator} to use.
+     * @return {@code this}.
+     */
+    DefaultDnsServiceDiscovererBuilder bufferAllocator(BufferAllocator allocator) {
+        executionContextBuilder.bufferAllocator(allocator);
+        return this;
+    }
+
+    /**
      * Build a new instance of {@link ServiceDiscoverer ServiceDiscoverer&lt;HostAndPort, InetSocketAddress&gt;}.
      *
      * @return a new instance of {@link ServiceDiscoverer ServiceDiscoverer&lt;HostAndPort, InetSocketAddress&gt;}.
@@ -159,7 +173,7 @@ public final class DefaultDnsServiceDiscovererBuilder {
     }
 
     private DefaultDnsServiceDiscoverer newDefaultDnsServiceDiscoverer() {
-        return new DefaultDnsServiceDiscoverer(executionContext, retryStrategy, minTTLSeconds, ndots,
+        return new DefaultDnsServiceDiscoverer(executionContextBuilder.build(), retryStrategy, minTTLSeconds, ndots,
                 optResourceEnabled, dnsResolverAddressTypes, dnsServerAddressStreamProvider);
     }
 }

@@ -70,7 +70,7 @@ final class GatewayService extends HttpService {
     public Single<HttpResponse> handle(final HttpServiceContext ctx,
                                        final HttpRequest request,
                                        final HttpResponseFactory responseFactory) {
-        final String userId = request.parseQuery().get(USER_ID_QP_NAME);
+        final String userId = request.queryParameter(USER_ID_QP_NAME);
         if (userId == null) {
             return success(responseFactory.badRequest());
         }

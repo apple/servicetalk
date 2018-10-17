@@ -43,7 +43,7 @@ final class UserBackend extends HttpService {
     @Override
     public Single<? extends HttpResponse> handle(HttpServiceContext ctx, HttpRequest request,
                                                  HttpResponseFactory responseFactory) {
-        final String userId = request.parseQuery().get(USER_ID_QP_NAME);
+        final String userId = request.queryParameter(USER_ID_QP_NAME);
         if (userId == null) {
             return success(responseFactory.badRequest());
         }

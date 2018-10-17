@@ -28,7 +28,6 @@ import io.servicetalk.redis.api.PartitionedRedisClient;
 import io.servicetalk.redis.api.RedisData;
 import io.servicetalk.redis.api.RedisPartitionAttributesBuilder;
 import io.servicetalk.redis.api.RedisProtocolSupport.Command;
-import io.servicetalk.transport.api.DefaultExecutionContext;
 import io.servicetalk.transport.netty.internal.NettyIoExecutor;
 
 import org.junit.After;
@@ -43,7 +42,6 @@ import java.util.Map;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.redis.api.RedisProtocolSupport.Command.INFO;
@@ -143,7 +141,8 @@ public abstract class AbstractPartitionedRedisClientTest {
         client = RedisClients.forPartitionedAddress(sd, "ignored", partitionAttributesBuilderFactory)
                 .maxPipelinedRequests(10)
                 .pingPeriod(ofSeconds(1))
-                .executionContext(new DefaultExecutionContext(DEFAULT_ALLOCATOR, ioExecutor, immediate()))
+                .ioExecutor(ioExecutor)
+                .executor(immediate())
                 .build();
 
         sendHost1ServiceDiscoveryEvent(true);

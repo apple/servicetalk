@@ -34,6 +34,13 @@ public interface ServerContext extends ListenableAsyncCloseable, AutoCloseable {
     SocketAddress listenAddress();
 
     /**
+     * Returns {@link ExecutionContext} used by this server.
+     *
+     * @return {@link ExecutionContext} used by this server.
+     */
+    ExecutionContext executionContext();
+
+    /**
      * Blocks and awaits shutdown of the server, this {@link ServerContext} represents.
      * <p>
      * This method will return when {@link #onClose()} terminates either successfully or unsuccessfully.
