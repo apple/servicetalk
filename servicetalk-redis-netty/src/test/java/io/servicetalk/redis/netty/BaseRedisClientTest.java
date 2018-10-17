@@ -31,12 +31,14 @@ import org.junit.Rule;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.Timeout;
 
-import java.util.concurrent.CancellationException;
+import java.nio.channels.ClosedChannelException;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
+import static io.servicetalk.concurrent.internal.PlatformDependent.throwException;
 import static io.servicetalk.redis.api.RedisProtocolSupport.Command.PUBLISH;
 import static io.servicetalk.redis.api.RedisRequests.newRequest;
 import static io.servicetalk.redis.netty.RedisDataMatcher.redisInteger;
@@ -140,11 +142,15 @@ public abstract class BaseRedisClientTest {
         void run() throws Exception;
     }
 
-    protected static void assertThrowsCancellationException(final RunnableCheckedException o) throws Exception {
+    protected static void assertThrowsClosedChannelException(final RunnableCheckedException o) throws Exception {
         try {
-            o.run();
-            fail("Expected " + CancellationException.class.getSimpleName());
-        } catch (CancellationException e) {
+            try {
+                o.run();
+                fail("Expected " + ExecutionException.class.getSimpleName());
+            } catch (ExecutionException e) {
+                throwException(e.getCause());
+            }
+        } catch (ClosedChannelException e) {
             // expected
         }
     }

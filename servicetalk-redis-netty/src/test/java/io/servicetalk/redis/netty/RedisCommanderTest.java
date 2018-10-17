@@ -333,10 +333,10 @@ public class RedisCommanderTest extends BaseRedisClientTest {
         tcc.exec().toFuture().cancel(true);
         postCloseLatch.await();
 
-        assertThrowsCancellationException(future::get);
+        assertThrowsClosedChannelException(future::get);
 
         // Wait for Redis to stop being busy.
-        assertThrowsCancellationException(longFuture::get);
+        assertThrowsClosedChannelException(longFuture::get);
     }
 
     @Test
@@ -351,7 +351,7 @@ public class RedisCommanderTest extends BaseRedisClientTest {
         tcc.exec().toFuture().cancel(true);
         postCloseLatch.await();
 
-        assertThrowsCancellationException(future::get);
+        assertThrowsClosedChannelException(future::get);
 
         // Wait for Redis to stop being busy.
         longFuture.get();
@@ -368,10 +368,10 @@ public class RedisCommanderTest extends BaseRedisClientTest {
         tcc.discard().toFuture().cancel(true);
         postCloseLatch.await();
 
-        assertThrowsCancellationException(future::get);
+        assertThrowsClosedChannelException(future::get);
 
         // Wait for Redis to stop being busy.
-        assertThrowsCancellationException(longFuture::get);
+        assertThrowsClosedChannelException(longFuture::get);
     }
 
     @Test
@@ -386,7 +386,7 @@ public class RedisCommanderTest extends BaseRedisClientTest {
         tcc.discard().toFuture().cancel(true);
         postCloseLatch.await();
 
-        assertThrowsCancellationException(future::get);
+        assertThrowsClosedChannelException(future::get);
 
         // Wait for Redis to stop being busy.
         longFuture.get();

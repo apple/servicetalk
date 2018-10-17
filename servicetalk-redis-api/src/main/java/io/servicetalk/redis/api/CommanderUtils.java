@@ -22,14 +22,15 @@ import io.servicetalk.concurrent.api.internal.SingleProcessor;
 import io.servicetalk.concurrent.internal.DuplicateSubscribeException;
 import io.servicetalk.redis.api.RedisClient.ReservedRedisConnection;
 
+import java.nio.channels.ClosedChannelException;
 import java.util.List;
-import java.util.concurrent.CancellationException;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
+import static io.servicetalk.concurrent.internal.ThrowableUtil.unknownStackTrace;
 import static io.servicetalk.redis.api.RedisData.QUEUED;
 import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 
@@ -103,6 +104,9 @@ final class CommanderUtils {
 
     static final class DiscardSingle<T> extends Single<String> {
 
+        private static final ClosedChannelException CANCELLATION_EXCEPTION =
+                unknownStackTrace(new ClosedChannelException(),
+                        DiscardSingle.CloseOnCancelCancellable.class, "cancel");
         private static final AtomicIntegerFieldUpdater<DiscardSingle> terminatedUpdater =
                 newUpdater(DiscardSingle.class, "terminated");
 
@@ -138,15 +142,7 @@ final class CommanderUtils {
             abortSingles(queued, singles).subscribe(new Subscriber<String>() {
                 @Override
                 public void onSubscribe(final Cancellable cancellable) {
-                    subscriber.onSubscribe(() -> {
-                        if (terminatedUpdater.compareAndSet(DiscardSingle.this, 0, 1)) {
-                            cancellable.cancel();
-                            for (SingleProcessor<?> single : singles) {
-                                single.onError(new CancellationException());
-                            }
-                            reservedCnx.closeAsync().subscribe();
-                        }
-                    });
+                    subscriber.onSubscribe(new CloseOnCancelCancellable(cancellable));
                 }
 
                 @Override
@@ -170,10 +166,33 @@ final class CommanderUtils {
                 }
             });
         }
+
+        private final class CloseOnCancelCancellable implements Cancellable {
+            private final Cancellable cancellable;
+
+            private CloseOnCancelCancellable(final Cancellable cancellable) {
+                this.cancellable = cancellable;
+            }
+
+            @Override
+            public void cancel() {
+                if (terminatedUpdater.compareAndSet(DiscardSingle.this, 0, 1)) {
+                    cancellable.cancel();
+                    reservedCnx.closeAsync().doAfterComplete(() -> {
+                        for (SingleProcessor<?> single : singles) {
+                            single.onError(CANCELLATION_EXCEPTION);
+                        }
+                    }).subscribe();
+                }
+            }
+        }
     }
 
     static final class ExecCompletable<T> extends Completable {
 
+        private static final ClosedChannelException CANCELLATION_EXCEPTION =
+                unknownStackTrace(new ClosedChannelException(),
+                        ExecCompletable.CloseOnCancelCancellable.class, "cancel");
         private static final AtomicIntegerFieldUpdater<ExecCompletable> terminatedUpdater =
                 newUpdater(ExecCompletable.class, "terminated");
 
@@ -210,15 +229,7 @@ final class CommanderUtils {
             completeSingles(results, singles).subscribe(new Subscriber() {
                 @Override
                 public void onSubscribe(final Cancellable cancellable) {
-                    subscriber.onSubscribe(() -> {
-                        if (terminatedUpdater.compareAndSet(ExecCompletable.this, 0, 1)) {
-                            cancellable.cancel();
-                            for (SingleProcessor<?> single : singles) {
-                                single.onError(new CancellationException());
-                            }
-                            reservedCnx.closeAsync().subscribe();
-                        }
-                    });
+                    subscriber.onSubscribe(new CloseOnCancelCancellable(cancellable));
                 }
 
                 @Override
@@ -241,6 +252,26 @@ final class CommanderUtils {
                     }
                 }
             });
+        }
+
+        private final class CloseOnCancelCancellable implements Cancellable {
+            private final Cancellable cancellable;
+
+            private CloseOnCancelCancellable(final Cancellable cancellable) {
+                this.cancellable = cancellable;
+            }
+
+            @Override
+            public void cancel() {
+                if (terminatedUpdater.compareAndSet(ExecCompletable.this, 0, 1)) {
+                    cancellable.cancel();
+                    reservedCnx.closeAsync().doAfterComplete(() -> {
+                        for (SingleProcessor<?> single : singles) {
+                            single.onError(CANCELLATION_EXCEPTION);
+                        }
+                    }).subscribe();
+                }
+            }
         }
     }
 }
