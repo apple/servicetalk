@@ -45,7 +45,7 @@ import javax.net.ssl.SSLSession;
 import static io.netty.util.ReferenceCountUtil.release;
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.internal.ThrowableUtil.unknownStackTrace;
-import static io.servicetalk.transport.netty.internal.CloseHandler.NOOP_CLOSE_HANDLER;
+import static io.servicetalk.transport.netty.internal.CloseHandler.UNSUPPORTED_PROTOCOL_CLOSE_HANDLER;
 import static io.servicetalk.transport.netty.internal.Flush.composeFlushes;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater;
@@ -104,7 +104,7 @@ public class DefaultNettyConnection<Read, Write> implements NettyConnection<Read
     @SuppressWarnings("unchecked")
     public DefaultNettyConnection(Channel channel, ConnectionContext context, Publisher<Read> read,
                                   FlushStrategy flushStrategy) {
-        this(channel, context, read, PIPELINE_UNSUPPORTED_PREDICATE, NOOP_CLOSE_HANDLER, flushStrategy);
+        this(channel, context, read, PIPELINE_UNSUPPORTED_PREDICATE, UNSUPPORTED_PROTOCOL_CLOSE_HANDLER, flushStrategy);
     }
 
     /**
@@ -126,7 +126,7 @@ public class DefaultNettyConnection<Read, Write> implements NettyConnection<Read
         this.terminalMsgPredicate = requireNonNull(terminalMsgPredicate);
         this.closeHandler = requireNonNull(closeHandler);
         this.flushStrategy = requireNonNull(flushStrategy);
-        if (closeHandler != NOOP_CLOSE_HANDLER) {
+        if (closeHandler != UNSUPPORTED_PROTOCOL_CLOSE_HANDLER) {
             onClosing = new CompletableProcessor();
             closeHandler.registerEventHandler(channel, evt -> { // Called from EventLoop only!
                 if (closeReason == null) {
@@ -165,7 +165,8 @@ public class DefaultNettyConnection<Read, Write> implements NettyConnection<Read
 
             @Override
             public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-                LOGGER.error("unexpected exception reached the end of the pipeline for channel={}", ctx.channel(), cause);
+                LOGGER.error("unexpected exception reached the end of the pipeline for channel={}", ctx.channel(),
+                        cause);
             }
 
             @Override
@@ -270,7 +271,8 @@ public class DefaultNettyConnection<Read, Write> implements NettyConnection<Read
     public Completable writeAndFlush(Write write) {
         requireNonNull(write);
         return cleanupStateWhenDone(new NettyFutureCompletable(() -> {
-            if (writableListenerUpdater.compareAndSet(DefaultNettyConnection.this, PLACE_HOLDER_WRITABLE_LISTENER, SINGLE_ITEM_WRITABLE_LISTENER)) {
+            if (writableListenerUpdater.compareAndSet(DefaultNettyConnection.this, PLACE_HOLDER_WRITABLE_LISTENER,
+                    SINGLE_ITEM_WRITABLE_LISTENER)) {
                 return channel.writeAndFlush(write);
             }
             return channel.newFailedFuture(new IllegalStateException("A write is already active on this connection."));

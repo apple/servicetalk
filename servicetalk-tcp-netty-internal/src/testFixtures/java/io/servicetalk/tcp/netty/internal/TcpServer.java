@@ -41,7 +41,7 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitelyNonNull;
 import static io.servicetalk.transport.api.ContextFilter.ACCEPT_ALL;
-import static io.servicetalk.transport.netty.internal.CloseHandler.NOOP_CLOSE_HANDLER;
+import static io.servicetalk.transport.netty.internal.CloseHandler.UNSUPPORTED_PROTOCOL_CLOSE_HANDLER;
 
 /**
  * A utility to create a TCP server for tests.
@@ -141,7 +141,7 @@ public class TcpServer {
         TcpServerChannelReadHandler(final ConnectionContext context,
                                     final Function<NettyConnection<Buffer, Buffer>, Completable> service,
                                     final FlushStrategy flushStrategy) {
-            super(buffer -> false, NOOP_CLOSE_HANDLER);
+            super(buffer -> false, UNSUPPORTED_PROTOCOL_CLOSE_HANDLER);
             this.context = context;
             this.service = service;
             this.flushStrategy = flushStrategy;

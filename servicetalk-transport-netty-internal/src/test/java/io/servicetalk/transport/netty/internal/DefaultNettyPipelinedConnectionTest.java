@@ -32,7 +32,7 @@ import org.mockito.stubbing.Answer;
 import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.Publisher.just;
 import static io.servicetalk.concurrent.api.Single.success;
-import static io.servicetalk.transport.netty.internal.CloseHandler.NOOP_CLOSE_HANDLER;
+import static io.servicetalk.transport.netty.internal.CloseHandler.UNSUPPORTED_PROTOCOL_CLOSE_HANDLER;
 import static io.servicetalk.transport.netty.internal.FlushStrategies.defaultFlushStrategy;
 import static java.lang.Integer.MAX_VALUE;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -74,7 +74,8 @@ public class DefaultNettyPipelinedConnectionTest {
         writePublisher2.sendOnSubscribe();
         when(requestNSupplier.requestNFor(anyLong())).then(invocation1 -> requestNext);
         connection = new DefaultNettyConnection<>(channel, context, readPublisher,
-                new NettyConnection.TerminalPredicate<>(integer -> true), NOOP_CLOSE_HANDLER, defaultFlushStrategy());
+                new NettyConnection.TerminalPredicate<>(integer -> true), UNSUPPORTED_PROTOCOL_CLOSE_HANDLER,
+                defaultFlushStrategy());
         requester = new DefaultNettyPipelinedConnection<>(connection, MAX_PENDING_REQUESTS);
     }
 

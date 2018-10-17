@@ -46,7 +46,7 @@ import static io.servicetalk.concurrent.api.Publisher.never;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.transport.netty.internal.CloseHandler.CloseEvent.CHANNEL_CLOSED_INBOUND;
 import static io.servicetalk.transport.netty.internal.CloseHandler.CloseEvent.CHANNEL_CLOSED_OUTBOUND;
-import static io.servicetalk.transport.netty.internal.CloseHandler.NOOP_CLOSE_HANDLER;
+import static io.servicetalk.transport.netty.internal.CloseHandler.UNSUPPORTED_PROTOCOL_CLOSE_HANDLER;
 import static io.servicetalk.transport.netty.internal.FlushStrategies.batchFlush;
 import static io.servicetalk.transport.netty.internal.FlushStrategies.defaultFlushStrategy;
 import static io.servicetalk.transport.netty.internal.FlushStrategies.flushOnEnd;
@@ -89,7 +89,7 @@ public class DefaultNettyConnectionTest {
 
     @Before
     public void setUp() {
-        setupWithCloseHandler(NOOP_CLOSE_HANDLER);
+        setupWithCloseHandler(UNSUPPORTED_PROTOCOL_CLOSE_HANDLER);
     }
 
     private void setupWithCloseHandler(final CloseHandler closeHandler) {
@@ -153,7 +153,8 @@ public class DefaultNettyConnectionTest {
     @Test
     public void testConcurrentWritePubAndItem() {
         writeListener.listen(conn.write(Publisher.never())).verifyNoEmissions();
-        secondWriteListener.listen(conn.writeAndFlush(newBuffer("Hello"))).verifyFailure(IllegalStateException.class);
+        secondWriteListener.listen(conn.writeAndFlush(newBuffer("Hello")))
+                .verifyFailure(IllegalStateException.class);
     }
 
     @Test
@@ -171,7 +172,8 @@ public class DefaultNettyConnectionTest {
     @Test
     public void testConcurrentWriteSingleAndItem() {
         writeListener.listen(conn.writeAndFlush(Single.never())).verifyNoEmissions();
-        secondWriteListener.listen(conn.writeAndFlush(newBuffer("Hello"))).verifyFailure(IllegalStateException.class);
+        secondWriteListener.listen(conn.writeAndFlush(newBuffer("Hello")))
+                .verifyFailure(IllegalStateException.class);
     }
 
     @Test
@@ -274,7 +276,8 @@ public class DefaultNettyConnectionTest {
 
     @Test
     public void testSingleErrorFailsWrite() {
-        writeListener.listen(conn.writeAndFlush(Single.error(DELIBERATE_EXCEPTION))).verifyFailure(DELIBERATE_EXCEPTION);
+        writeListener.listen(conn.writeAndFlush(Single.error(DELIBERATE_EXCEPTION)))
+                .verifyFailure(DELIBERATE_EXCEPTION);
     }
 
     @Test
@@ -408,7 +411,8 @@ public class DefaultNettyConnectionTest {
         for (Buffer item : items) {
             verify(requestNSupplier).onItemWrite(eq(item), anyLong(), anyLong());
         }
-        verify(requestNSupplier, times(1 + items.length + channelWritabilityChangedCount)).requestNFor(anyLong());
+        verify(requestNSupplier, times(1 + items.length + channelWritabilityChangedCount))
+                .requestNFor(anyLong());
     }
 
     private void changeWritability(boolean writable) {

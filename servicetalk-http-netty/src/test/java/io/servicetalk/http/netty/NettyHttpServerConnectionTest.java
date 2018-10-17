@@ -52,7 +52,7 @@ import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.http.api.HttpRequestMethods.GET;
 import static io.servicetalk.http.netty.DefaultHttpServiceContext.newInstance;
 import static io.servicetalk.http.netty.NettyHttpServerConnection.newConnection;
-import static io.servicetalk.transport.netty.internal.CloseHandler.NOOP_CLOSE_HANDLER;
+import static io.servicetalk.transport.netty.internal.CloseHandler.UNSUPPORTED_PROTOCOL_CLOSE_HANDLER;
 import static io.servicetalk.transport.netty.internal.ExecutionContextRule.immediate;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -98,8 +98,8 @@ public class NettyHttpServerConnectionTest {
         originalStrategy = new MockFlushStrategy();
         customStrategy = new MockFlushStrategy();
         final NettyHttpServerConnection conn = newConnection(channel, connReadPublisherRule.getPublisher(),
-                new TerminalPredicate<>(obj -> obj instanceof HttpHeaders), NOOP_CLOSE_HANDLER, serviceContext,
-                httpService, originalStrategy, DefaultHttpHeadersFactory.INSTANCE);
+                new TerminalPredicate<>(obj -> obj instanceof HttpHeaders), UNSUPPORTED_PROTOCOL_CLOSE_HANDLER,
+                serviceContext, httpService, originalStrategy, DefaultHttpHeadersFactory.INSTANCE);
         conn.process().subscribe();
     }
 
