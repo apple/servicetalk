@@ -22,6 +22,7 @@ import io.servicetalk.http.api.HttpSerializationProvider;
 import io.servicetalk.http.netty.HttpServers;
 
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static io.servicetalk.concurrent.api.Single.success;
 import static io.servicetalk.http.api.HttpHeaderNames.ALLOW;
@@ -37,10 +38,10 @@ public final class PojoStreamingServer {
                     if (request.method() != POST) {
                         return success(responseFactory.methodNotAllowed().addHeader(ALLOW, POST.name()));
                     }
+                    AtomicInteger newId = new AtomicInteger(ThreadLocalRandom.current().nextInt(100));
                     return success(responseFactory.created()
                             .payloadBody(request.payloadBody(serializer.deserializerFor(PojoRequest.class))
-                                    .map(req -> new MyPojo(ThreadLocalRandom.current().nextInt(100),
-                                            req.getValue())),
+                                    .map(req -> new MyPojo(newId.getAndIncrement(), req.getValue())),
                                     serializer.serializerFor(MyPojo.class)));
                 })
                 .awaitShutdown();

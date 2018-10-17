@@ -26,6 +26,7 @@ import io.servicetalk.http.netty.HttpServers;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static io.servicetalk.http.api.HttpHeaderNames.ALLOW;
 import static io.servicetalk.http.api.HttpRequestMethods.POST;
@@ -40,14 +41,15 @@ public final class BlockingPojoStreamingServer {
                     if (request.method() != POST) {
                         return responseFactory.methodNotAllowed().addHeader(ALLOW, POST.name());
                     }
-                    BlockingIterable<PojoRequest> ids = request
+                    BlockingIterable<PojoRequest> values = request
                             .payloadBody(serializer.deserializerFor(PojoRequest.class));
                     List<MyPojo> pojos = new ArrayList<>();
-                    try (BlockingIterator<PojoRequest> iterator = ids.iterator()) {
+                    AtomicInteger newId = new AtomicInteger(ThreadLocalRandom.current().nextInt(100));
+                    try (BlockingIterator<PojoRequest> iterator = values.iterator()) {
                         while (iterator.hasNext()) {
                             PojoRequest req = iterator.next();
                             if (req != null) {
-                                pojos.add(new MyPojo(ThreadLocalRandom.current().nextInt(100), req.getValue()));
+                                pojos.add(new MyPojo(newId.getAndIncrement(), req.getValue()));
                             }
                         }
                     }
