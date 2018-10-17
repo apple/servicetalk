@@ -59,11 +59,9 @@ import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
 import static io.servicetalk.redis.api.RedisProtocolSupport.Command.MONITOR;
 import static io.servicetalk.redis.api.RedisProtocolSupport.Command.PING;
 import static io.servicetalk.redis.api.RedisProtocolSupport.Command.PSUBSCRIBE;
-import static io.servicetalk.redis.api.RedisProtocolSupport.Command.PUBLISH;
 import static io.servicetalk.redis.api.RedisProtocolSupport.Command.SUBSCRIBE;
 import static io.servicetalk.redis.api.RedisRequests.newRequest;
 import static io.servicetalk.redis.netty.RedisDataMatcher.redisCompleteBulkString;
-import static io.servicetalk.redis.netty.RedisDataMatcher.redisInteger;
 import static io.servicetalk.redis.netty.RedisDataMatcher.redisSimpleString;
 import static io.servicetalk.redis.netty.SubscribedChannelReadStream.PubSubChannelMessage.KeyType.Channel;
 import static io.servicetalk.redis.netty.SubscribedChannelReadStream.PubSubChannelMessage.KeyType.Pattern;
@@ -71,8 +69,6 @@ import static io.servicetalk.redis.netty.SubscribedChannelReadStream.PubSubChann
 import static io.servicetalk.redis.netty.SubscribedChannelReadStream.PubSubChannelMessage.MessageType.DATA;
 import static java.lang.Thread.currentThread;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.either;
 import static org.hamcrest.Matchers.emptyCollectionOf;
 import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.hasSize;
@@ -201,7 +197,7 @@ public class SubscribedRedisClientTest extends BaseRedisClientTest {
         awaitIndefinitely(cnx.releaseAsync());
     }
 
-    private static void testSubscribeUnsubscribe(final RedisConnection cnx, final Publisher<RedisData> messages)
+    private void testSubscribeUnsubscribe(final RedisConnection cnx, final Publisher<RedisData> messages)
             throws Exception {
         final AccumulatingSubscriber<RedisData> messagesSubscriber = new AccumulatingSubscriber<RedisData>()
                 .subscribe(messages);
@@ -453,7 +449,7 @@ public class SubscribedRedisClientTest extends BaseRedisClientTest {
         }
     }
 
-    private static void sendConcurrentPings(final ReservedRedisConnection cnx) throws Exception {
+    private void sendConcurrentPings(final ReservedRedisConnection cnx) throws Exception {
         final CyclicBarrier barrier = new CyclicBarrier(11);
         final ExecutorService executor = Executors.newFixedThreadPool(10);
         final List<Throwable> throwables = new CopyOnWriteArrayList<>();
@@ -477,7 +473,7 @@ public class SubscribedRedisClientTest extends BaseRedisClientTest {
         assertThat(throwables, is(emptyCollectionOf(Throwable.class)));
     }
 
-    private static void sendSequentialPings(final ReservedRedisConnection cnx) throws Exception {
+    private void sendSequentialPings(final ReservedRedisConnection cnx) throws Exception {
         for (int i = 0; i < 100; i++) {
             final String pingMessage = "ping-" + currentThread().getName() + "-" + i;
             final Buffer ping = buf(pingMessage);
@@ -491,16 +487,6 @@ public class SubscribedRedisClientTest extends BaseRedisClientTest {
             }
             checkValidPing(pong, ping);
         }
-    }
-
-    static void publishTestMessage(final String channel) throws Exception {
-        publishTestMessage(buf(channel));
-    }
-
-    static void publishTestMessage(final Buffer channel) throws Exception {
-        assertThat(awaitIndefinitely(getEnv().client.request(newRequest(PUBLISH, new CompleteBulkString(channel),
-                new CompleteBulkString(buf("test-message"))))),
-                contains(redisInteger(either(is(0L)).or(is(1L)))));
     }
 
     static void checkValidPing(@Nullable final RedisData pongRaw, final Buffer expectedData) {
