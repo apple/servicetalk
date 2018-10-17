@@ -18,14 +18,14 @@ package io.servicetalk.examples.http.serialization;
 /**
  * A request object to request {@link MyPojo} from the server.
  */
-public final class PojoRequest {
+public final class CreatePojoRequest {
 
     private String value;
 
-    public PojoRequest() {
+    public CreatePojoRequest() {
     }
 
-    public PojoRequest(String value) {
+    public CreatePojoRequest(String value) {
         this.value = value;
     }
 
@@ -39,7 +39,7 @@ public final class PojoRequest {
 
     @Override
     public String toString() {
-        return "PojoRequest{" +
+        return "CreatePojoRequest{" +
                 "value='" + value + '\'' +
                 '}';
     }

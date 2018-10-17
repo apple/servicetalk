@@ -17,7 +17,7 @@ package io.servicetalk.examples.http.serialization.blocking;
 
 import io.servicetalk.data.jackson.JacksonSerializationProvider;
 import io.servicetalk.examples.http.serialization.MyPojo;
-import io.servicetalk.examples.http.serialization.PojoRequest;
+import io.servicetalk.examples.http.serialization.CreatePojoRequest;
 import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.HttpSerializationProvider;
@@ -31,7 +31,7 @@ public final class BlockingPojoClient {
         HttpSerializationProvider serializer = jsonSerializer(new JacksonSerializationProvider());
         try (BlockingHttpClient client = HttpClients.forSingleAddress("localhost", 8080).buildBlocking()) {
             HttpResponse resp = client.request(client.post("/pojos")
-                    .payloadBody(new PojoRequest("value"), serializer.serializerFor(PojoRequest.class)));
+                    .payloadBody(new CreatePojoRequest("value"), serializer.serializerFor(CreatePojoRequest.class)));
             System.out.println(resp.toString((name, value) -> value));
             System.out.println(resp.payloadBody(serializer.deserializerFor(MyPojo.class)));
         }

@@ -16,8 +16,8 @@
 package io.servicetalk.examples.http.serialization.blocking;
 
 import io.servicetalk.data.jackson.JacksonSerializationProvider;
+import io.servicetalk.examples.http.serialization.CreatePojoRequest;
 import io.servicetalk.examples.http.serialization.MyPojo;
-import io.servicetalk.examples.http.serialization.PojoRequest;
 import io.servicetalk.http.api.HttpSerializationProvider;
 import io.servicetalk.http.netty.HttpServers;
 
@@ -36,7 +36,7 @@ public final class BlockingPojoServer {
                     if (request.method() != POST) {
                         return responseFactory.methodNotAllowed().addHeader(ALLOW, POST.name());
                     }
-                    PojoRequest req = request.payloadBody(serializer.deserializerFor(PojoRequest.class));
+                    CreatePojoRequest req = request.payloadBody(serializer.deserializerFor(CreatePojoRequest.class));
                     return responseFactory.created()
                             .payloadBody(new MyPojo(ThreadLocalRandom.current().nextInt(100), req.getValue()),
                                     serializer.serializerFor(MyPojo.class));

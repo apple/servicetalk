@@ -17,7 +17,7 @@ package io.servicetalk.examples.http.serialization.async.streaming;
 
 import io.servicetalk.data.jackson.JacksonSerializationProvider;
 import io.servicetalk.examples.http.serialization.MyPojo;
-import io.servicetalk.examples.http.serialization.PojoRequest;
+import io.servicetalk.examples.http.serialization.CreatePojoRequest;
 import io.servicetalk.http.api.HttpSerializationProvider;
 import io.servicetalk.http.netty.HttpServers;
 
@@ -40,7 +40,7 @@ public final class PojoStreamingServer {
                     }
                     AtomicInteger newId = new AtomicInteger(ThreadLocalRandom.current().nextInt(100));
                     return success(responseFactory.created()
-                            .payloadBody(request.payloadBody(serializer.deserializerFor(PojoRequest.class))
+                            .payloadBody(request.payloadBody(serializer.deserializerFor(CreatePojoRequest.class))
                                     .map(req -> new MyPojo(newId.getAndIncrement(), req.getValue())),
                                     serializer.serializerFor(MyPojo.class)));
                 })

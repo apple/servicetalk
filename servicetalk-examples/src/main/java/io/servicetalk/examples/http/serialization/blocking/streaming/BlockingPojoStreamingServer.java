@@ -18,8 +18,8 @@ package io.servicetalk.examples.http.serialization.blocking.streaming;
 import io.servicetalk.concurrent.BlockingIterable;
 import io.servicetalk.concurrent.BlockingIterator;
 import io.servicetalk.data.jackson.JacksonSerializationProvider;
+import io.servicetalk.examples.http.serialization.CreatePojoRequest;
 import io.servicetalk.examples.http.serialization.MyPojo;
-import io.servicetalk.examples.http.serialization.PojoRequest;
 import io.servicetalk.http.api.HttpSerializationProvider;
 import io.servicetalk.http.netty.HttpServers;
 
@@ -41,13 +41,13 @@ public final class BlockingPojoStreamingServer {
                     if (request.method() != POST) {
                         return responseFactory.methodNotAllowed().addHeader(ALLOW, POST.name());
                     }
-                    BlockingIterable<PojoRequest> values = request
-                            .payloadBody(serializer.deserializerFor(PojoRequest.class));
+                    BlockingIterable<CreatePojoRequest> values = request
+                            .payloadBody(serializer.deserializerFor(CreatePojoRequest.class));
                     List<MyPojo> pojos = new ArrayList<>();
                     AtomicInteger newId = new AtomicInteger(ThreadLocalRandom.current().nextInt(100));
-                    try (BlockingIterator<PojoRequest> iterator = values.iterator()) {
+                    try (BlockingIterator<CreatePojoRequest> iterator = values.iterator()) {
                         while (iterator.hasNext()) {
-                            PojoRequest req = iterator.next();
+                            CreatePojoRequest req = iterator.next();
                             if (req != null) {
                                 pojos.add(new MyPojo(newId.getAndIncrement(), req.getValue()));
                             }

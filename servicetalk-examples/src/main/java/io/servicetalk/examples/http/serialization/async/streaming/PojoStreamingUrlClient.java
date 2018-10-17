@@ -17,7 +17,7 @@ package io.servicetalk.examples.http.serialization.async.streaming;
 
 import io.servicetalk.data.jackson.JacksonSerializationProvider;
 import io.servicetalk.examples.http.serialization.MyPojo;
-import io.servicetalk.examples.http.serialization.PojoRequest;
+import io.servicetalk.examples.http.serialization.CreatePojoRequest;
 import io.servicetalk.http.api.HttpSerializationProvider;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.netty.HttpClients;
@@ -38,8 +38,8 @@ public final class PojoStreamingUrlClient {
             CountDownLatch responseProcessedLatch = new CountDownLatch(1);
 
             client.request(client.post("http://localhost:8080/pojos")
-                    .payloadBody(from("value1", "value2", "value3").map(PojoRequest::new),
-                            serializer.serializerFor(PojoRequest.class)))
+                    .payloadBody(from("value1", "value2", "value3").map(CreatePojoRequest::new),
+                            serializer.serializerFor(CreatePojoRequest.class)))
                     .doBeforeSuccess(response -> System.out.println(response.toString((name, value) -> value)))
                     .doFinally(responseProcessedLatch::countDown)
                     .flatMapPublisher(resp -> resp.payloadBody(serializer.deserializerFor(MyPojo.class)))
