@@ -1224,8 +1224,8 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.DISCARD, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.DISCARD, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        final Single<String> result = new DiscardSingle<>(this, queued, singles, stateUpdater,
-                    releaseAfterDone ? reservedCnx : null);
+        final Single<String> result = new DiscardSingle<>(this, queued, singles, stateUpdater, reservedCnx,
+                    releaseAfterDone);
         return result;
     }
 
@@ -1402,8 +1402,8 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.EXEC, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.EXEC, cb);
         final Single<List<Object>> queued = (Single) reservedCnx.request(request, List.class);
-        final Completable result = new ExecCompletable<>(this, queued, singles, stateUpdater,
-                    releaseAfterDone ? reservedCnx : null);
+        final Completable result = new ExecCompletable<>(this, queued, singles, stateUpdater, reservedCnx,
+                    releaseAfterDone);
         return result;
     }
 

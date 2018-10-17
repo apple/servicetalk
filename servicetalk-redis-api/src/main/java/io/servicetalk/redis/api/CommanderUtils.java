@@ -111,20 +111,21 @@ final class CommanderUtils {
         private final List<SingleProcessor<?>> singles;
         @SuppressWarnings("AtomicFieldUpdaterNotStaticFinal")
         private final AtomicIntegerFieldUpdater<T> stateUpdater;
-        @Nullable
         private final ReservedRedisConnection reservedCnx;
+        private final boolean releaseAfterDone;
 
         @SuppressWarnings("unused")
         private volatile int terminated;
 
         DiscardSingle(final T commander, final Single<String> queued, final List<SingleProcessor<?>> singles,
-                      final AtomicIntegerFieldUpdater<T> stateUpdater,
-                      @Nullable final ReservedRedisConnection reservedCnx) {
+                      final AtomicIntegerFieldUpdater<T> stateUpdater, final ReservedRedisConnection reservedCnx,
+                      final boolean releaseAfterDone) {
             this.commander = commander;
             this.queued = queued;
             this.singles = singles;
             this.stateUpdater = stateUpdater;
             this.reservedCnx = reservedCnx;
+            this.releaseAfterDone = releaseAfterDone;
         }
 
         @Override
@@ -143,9 +144,7 @@ final class CommanderUtils {
                             for (SingleProcessor<?> single : singles) {
                                 single.onError(new CancellationException());
                             }
-                            if (reservedCnx != null) {
-                                reservedCnx.closeAsync().subscribe();
-                            }
+                            reservedCnx.closeAsync().subscribe();
                         }
                     });
                 }
@@ -153,7 +152,7 @@ final class CommanderUtils {
                 @Override
                 public void onSuccess(@Nullable final String result) {
                     if (terminatedUpdater.compareAndSet(DiscardSingle.this, 0, 1)) {
-                        if (reservedCnx != null) {
+                        if (releaseAfterDone) {
                             reservedCnx.releaseAsync().subscribe();
                         }
                         subscriber.onSuccess(result);
@@ -163,7 +162,7 @@ final class CommanderUtils {
                 @Override
                 public void onError(final Throwable t) {
                     if (terminatedUpdater.compareAndSet(DiscardSingle.this, 0, 1)) {
-                        if (reservedCnx != null) {
+                        if (releaseAfterDone) {
                             reservedCnx.releaseAsync().subscribe();
                         }
                         subscriber.onError(t);
@@ -183,20 +182,21 @@ final class CommanderUtils {
         private final List<SingleProcessor<?>> singles;
         @SuppressWarnings("AtomicFieldUpdaterNotStaticFinal")
         private final AtomicIntegerFieldUpdater<T> stateUpdater;
-        @Nullable
         private final ReservedRedisConnection reservedCnx;
+        private final boolean releaseAfterDone;
 
         @SuppressWarnings("unused")
         private volatile int terminated;
 
         ExecCompletable(final T commander, final Single<List<Object>> results, final List<SingleProcessor<?>> singles,
-                        final AtomicIntegerFieldUpdater<T> stateUpdater,
-                        @Nullable final ReservedRedisConnection reservedCnx) {
+                        final AtomicIntegerFieldUpdater<T> stateUpdater, final ReservedRedisConnection reservedCnx,
+                        final boolean releaseAfterDone) {
             this.commander = commander;
             this.results = results;
             this.singles = singles;
             this.stateUpdater = stateUpdater;
             this.reservedCnx = reservedCnx;
+            this.releaseAfterDone = releaseAfterDone;
         }
 
         @Override
@@ -216,9 +216,7 @@ final class CommanderUtils {
                             for (SingleProcessor<?> single : singles) {
                                 single.onError(new CancellationException());
                             }
-                            if (reservedCnx != null) {
-                                reservedCnx.closeAsync().subscribe();
-                            }
+                            reservedCnx.closeAsync().subscribe();
                         }
                     });
                 }
@@ -226,7 +224,7 @@ final class CommanderUtils {
                 @Override
                 public void onComplete() {
                     if (terminatedUpdater.compareAndSet(ExecCompletable.this, 0, 1)) {
-                        if (reservedCnx != null) {
+                        if (releaseAfterDone) {
                             reservedCnx.releaseAsync().subscribe();
                         }
                         subscriber.onComplete();
@@ -236,7 +234,7 @@ final class CommanderUtils {
                 @Override
                 public void onError(final Throwable t) {
                     if (terminatedUpdater.compareAndSet(ExecCompletable.this, 0, 1)) {
-                        if (reservedCnx != null) {
+                        if (releaseAfterDone) {
                             reservedCnx.releaseAsync().subscribe();
                         }
                         subscriber.onError(t);
