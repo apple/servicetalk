@@ -92,8 +92,9 @@ final class PublisherFlatMapSingle<T, R> extends AbstractAsynchronousPublisherOp
                 AtomicLongFieldUpdater.newUpdater(FlatMapSubscriber.class, "sourceEmitted");
         private static final AtomicIntegerFieldUpdater<FlatMapSubscriber> activeUpdater =
                 AtomicIntegerFieldUpdater.newUpdater(FlatMapSubscriber.class, "active");
-        private static final AtomicReferenceFieldUpdater<FlatMapSubscriber, TerminalNotification> terminalNotificationUpdater =
-                newUpdater(FlatMapSubscriber.class, TerminalNotification.class, "terminalNotification");
+        private static final AtomicReferenceFieldUpdater<FlatMapSubscriber, TerminalNotification>
+                terminalNotificationUpdater = newUpdater(FlatMapSubscriber.class, TerminalNotification.class,
+                "terminalNotification");
 
         @SuppressWarnings("unused")
         @Nullable
@@ -147,7 +148,8 @@ final class PublisherFlatMapSingle<T, R> extends AbstractAsynchronousPublisherOp
             }
 
             requestedUpdater.accumulateAndGet(this, n, FlowControlUtil::addWithOverflowProtection);
-            int actualSourceRequestN = calculateSourceRequested(requestedUpdater, sourceRequestedUpdater, sourceEmittedUpdater, source.maxConcurrency, this);
+            int actualSourceRequestN = calculateSourceRequested(requestedUpdater, sourceRequestedUpdater,
+                    sourceEmittedUpdater, source.maxConcurrency, this);
             if (actualSourceRequestN != 0) {
                 s.request(actualSourceRequestN);
             }
@@ -176,7 +178,8 @@ final class PublisherFlatMapSingle<T, R> extends AbstractAsynchronousPublisherOp
             if (terminalNotification != null || cancellable.isCancelled()) {
                 /*
                  * When a Single emits error and delayError is false, we cancel upstream and send error downstream.
-                 * Since cancel is racy, we may get more items even when terminalNotification is non-null. Ignore next in such cases.
+                 * Since cancel is racy, we may get more items even when terminalNotification is non-null. Ignore next
+                 * in such cases.
                  */
                 return;
             }
@@ -200,9 +203,11 @@ final class PublisherFlatMapSingle<T, R> extends AbstractAsynchronousPublisherOp
 
         @Override
         public void onComplete() {
-            // active must be checked after setting the terminal event, because they are accessed in the reverse way in FlatMapSingleSubscriber
-            // and if it were reversed here the FlatMapSingleSubscriber would be racy and may not detect the terminal event.
-            if (!cancellable.isCancelled() && trySetTerminal(complete(), false, terminalNotificationUpdater, this) && active == 0) {
+            // active must be checked after setting the terminal event, because they are accessed in the reverse way in
+            // FlatMapSingleSubscriber and if it were reversed here the FlatMapSingleSubscriber would be racy and may
+            // not detect the terminal event.
+            if (!cancellable.isCancelled() && trySetTerminal(complete(), false,
+                    terminalNotificationUpdater, this) && active == 0) {
                 // Since onComplete and onNext can not be concurrent and onNext must not be invoked post onComplete,
                 // if we see active == 0 here, active must not change after this.
                 enqueueAndDrain(complete());
@@ -226,7 +231,8 @@ final class PublisherFlatMapSingle<T, R> extends AbstractAsynchronousPublisherOp
             assert s != null : "Subscription can not be null.";
 
             if (!pending.offer(item)) {
-                IllegalStateException exception = new IllegalStateException("Unexpected reject from pending queue while enqueuing item: " + item);
+                IllegalStateException exception =
+                        new IllegalStateException("Unexpected reject from pending queue while enqueuing item: " + item);
                 if (item instanceof TerminalNotification) {
                     LOGGER.error("Queue should be unbounded, but an offer failed!", exception);
                     throw exception;
@@ -240,9 +246,11 @@ final class PublisherFlatMapSingle<T, R> extends AbstractAsynchronousPublisherOp
         private void drainPending(Subscription subscription) {
             long drainedCount = drainSingleConsumerQueue(pending, this::sendToTarget, emittingUpdater, this);
             if (drainedCount != 0) {
-                // We ignore overflow here because once we get to this extreme, we won't be able to account for more data anyways.
+                // We ignore overflow here because once we get to this extreme, we won't be able to account for more
+                // data anyways.
                 sourceEmittedUpdater.addAndGet(this, drainedCount);
-                int actualSourceRequestN = calculateSourceRequested(requestedUpdater, sourceRequestedUpdater, sourceEmittedUpdater, source.maxConcurrency, this);
+                int actualSourceRequestN = calculateSourceRequested(requestedUpdater, sourceRequestedUpdater,
+                        sourceEmittedUpdater, source.maxConcurrency, this);
                 if (actualSourceRequestN != 0) {
                     subscription.request(actualSourceRequestN);
                 }
@@ -252,7 +260,8 @@ final class PublisherFlatMapSingle<T, R> extends AbstractAsynchronousPublisherOp
         /**
          * Cancel and cleanup.
          * @param cancelSubscription enforces the
-         * <a href="https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.1/README.md#2.3">reactive streams rule 2.3</a>.
+         * <a href="https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.1/README.md#2.3">
+         *     reactive streams rule 2.3</a>.
          */
         private void doCancel(boolean cancelSubscription) {
             cancellable.cancel();
@@ -279,7 +288,8 @@ final class PublisherFlatMapSingle<T, R> extends AbstractAsynchronousPublisherOp
             }
             if (item instanceof TerminalNotification) {
                 targetTerminated = true;
-                // Load the terminal notification in case an error happened after an onComplete and we override the terminal value.
+                // Load the terminal notification in case an error happened after an onComplete and we override the
+                // terminal value.
                 TerminalNotification terminalNotification = this.terminalNotification;
                 assert terminalNotification != null;
                 CompositeException de = this.delayedError;
@@ -302,18 +312,20 @@ final class PublisherFlatMapSingle<T, R> extends AbstractAsynchronousPublisherOp
 
             @Override
             public void onSubscribe(Cancellable singleCancellable) {
-                // It is possible we have been cancelled at this point, and cancellable/FlatMapSingleSubscriber will take care of propagating the
-                // cancel to next. We also don't care if the active count becomes inaccurate because we will not terminate the Subscriber
-                // after this point anyways.
+                // It is possible we have been cancelled at this point, and cancellable/FlatMapSingleSubscriber will
+                // take care of propagating the cancel to next. We also don't care if the active count becomes
+                // inaccurate because we will not terminate the Subscriber after this point anyways.
                 this.singleCancellable = singleCancellable;
                 cancellable.add(singleCancellable);
             }
 
             @Override
             public void onSuccess(@Nullable R result) {
-                boolean allDone = onSingleTerminated();
+                // First enqueue the result and then decrement active count. Since onComplete() checks for active count,
+                // if we decrement count before enqueuing, onComplete() may emit the terminal event without emitting
+                // the result.
                 enqueueAndDrain(result == null ? NULL_TOKEN : result);
-                if (allDone) {
+                if (onSingleTerminated()) {
                     enqueueAndDrain(complete());
                 }
             }
@@ -342,7 +354,8 @@ final class PublisherFlatMapSingle<T, R> extends AbstractAsynchronousPublisherOp
             private boolean onSingleTerminated() {
                 assert singleCancellable != null;
                 cancellable.remove(singleCancellable);
-                // The ordering of events is important here. If this changes then onComplete must also change otherwise there is a race condition.
+                // The ordering of events is important here. If this changes then onComplete must also change otherwise
+                // there is a race condition.
                 return activeUpdater.decrementAndGet(FlatMapSubscriber.this) == 0 && terminalNotification != null;
             }
         }
