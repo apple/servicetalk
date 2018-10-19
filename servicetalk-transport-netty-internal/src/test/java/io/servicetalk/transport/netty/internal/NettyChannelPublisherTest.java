@@ -44,7 +44,7 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.concurrent.internal.ServiceTalkTestTimeout.DEFAULT_TIMEOUT_SECONDS;
-import static io.servicetalk.transport.netty.internal.CloseHandler.NOOP_CLOSE_HANDLER;
+import static io.servicetalk.transport.netty.internal.CloseHandler.UNSUPPORTED_PROTOCOL_CLOSE_HANDLER;
 import static java.util.Objects.requireNonNull;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
@@ -80,7 +80,7 @@ public class NettyChannelPublisherTest {
     }
 
     public void setUp(Predicate<Integer> terminalPredicate) throws Exception {
-        handler = new AbstractChannelReadHandler<Integer>(terminalPredicate, NOOP_CLOSE_HANDLER) {
+        handler = new AbstractChannelReadHandler<Integer>(terminalPredicate, UNSUPPORTED_PROTOCOL_CLOSE_HANDLER) {
             @Override
             protected void onPublisherCreation(ChannelHandlerContext ctx, Publisher<Integer> newPublisher) {
                 publisher = newPublisher;
@@ -442,7 +442,7 @@ public class NettyChannelPublisherTest {
     }
 
     @Test
-    public void testSubscribeAndRequestWithinOnErrorWithPendingData() throws Exception {
+    public void testSubscribeAndRequestWithinOnErrorWithPendingData() {
         // With data and a fatal error queued up in NettyChannelPublisher, when an existing subscriber terminates and a
         // new Subscriber requests data synchronously from the previous terminal signal, the demand should trigger
         // observing a ClosedChannelException.`

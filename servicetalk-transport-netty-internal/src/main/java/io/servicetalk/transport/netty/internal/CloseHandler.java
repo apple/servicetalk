@@ -28,7 +28,7 @@ import java.util.function.Consumer;
  */
 public abstract class CloseHandler {
 
-    public static final CloseHandler NOOP_CLOSE_HANDLER = new NoopHandler();
+    public static final CloseHandler UNSUPPORTED_PROTOCOL_CLOSE_HANDLER = new UnsupportedProtocolHandler();
 
     /**
      * New {@link CloseHandler} instance.
@@ -182,7 +182,7 @@ public abstract class CloseHandler {
         }
     }
 
-    private static final class NoopHandler extends CloseHandler {
+    private static final class UnsupportedProtocolHandler extends CloseHandler {
 
         @Override
         void registerEventHandler(final Channel channel, final Consumer<CloseEvent> eventHandler) {
@@ -208,6 +208,7 @@ public abstract class CloseHandler {
 
         @Override
         void userClosing(final Channel channel) {
+            channel.close();
         }
 
         @Override
