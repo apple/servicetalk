@@ -52,7 +52,7 @@ public enum HttpScheme {
      * @return A lower case name of this {@link HttpScheme}.
      */
     @Nullable
-    public String getLowerCaseName() {
+    public String lowerCaseName() {
         return name;
     }
 
@@ -61,7 +61,7 @@ public enum HttpScheme {
      *
      * @return A default TCP port number for this {@link HttpScheme}.
      */
-    public int getDefaultPort() {
+    public int defaultPort() {
         return defaultPort;
     }
 

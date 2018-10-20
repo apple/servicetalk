@@ -193,7 +193,7 @@ final class DefaultJerseyStreamingHttpRouter extends StreamingHttpService {
         final ContainerRequest containerRequest = new ContainerRequest(
                 URI.create(baseUri.toString()),
                 URI.create(requestUriBuilder.toString()),
-                req.method().getName(),
+                req.method().methodName(),
                 UNAUTHENTICATED_SECURITY_CONTEXT,
                 new MapPropertiesDelegate());
 
