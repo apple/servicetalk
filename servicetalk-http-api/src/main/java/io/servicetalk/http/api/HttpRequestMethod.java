@@ -34,13 +34,13 @@ public interface HttpRequestMethod {
      * Get the <a href="https://tools.ietf.org/html/rfc7231#section-4.1">method name</a>.
      * @return The <a href="https://tools.ietf.org/html/rfc7231#section-4.1">method name</a>.
      */
-    String getName();
+    String methodName();
 
     /**
      * Get the {@link Properties} associated with this object.
      * @return the {@link Properties} associated with this object.
      */
-    Properties getMethodProperties();
+    Properties methodProperties();
 
     /**
      * <a href="https://tools.ietf.org/html/rfc7231#section-4.2">Common Http Method Properties</a>.
@@ -50,20 +50,20 @@ public interface HttpRequestMethod {
          * <a href="https://tools.ietf.org/html/rfc7231#section-4.2.1">Safe Methods</a> are those that are essentially read-only.
          * @return {@code true} if a <a href="https://tools.ietf.org/html/rfc7231#section-4.2.1">safe method</a>.
          */
-        boolean isSafe();
+        boolean safe();
 
         /**
          * <a href="https://tools.ietf.org/html/rfc7231#section-4.2.2">Idempotent Methods</a> are those that the same action can be
          * repeated indefinitely without changing semantics.
          * @return {@code true} if a <a href="https://tools.ietf.org/html/rfc7231#section-4.2.2">idempotent method</a>.
          */
-        boolean isIdempotent();
+        boolean idempotent();
 
         /**
          * <a href="https://tools.ietf.org/html/rfc7231#section-4.2.3">Cacheable Methods</a> are those that allow for responses
          * to be cached for future reuse.
          * @return {@code true} if a <a href="https://tools.ietf.org/html/rfc7231#section-4.2.3">cacheable method</a>.
          */
-        boolean isCacheable();
+        boolean cacheable();
     }
 }

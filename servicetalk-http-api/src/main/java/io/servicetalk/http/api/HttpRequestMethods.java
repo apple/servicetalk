@@ -65,12 +65,12 @@ public enum HttpRequestMethods implements HttpRequestMethod {
     }
 
     @Override
-    public String getName() {
+    public String methodName() {
         return toString();
     }
 
     @Override
-    public Properties getMethodProperties() {
+    public Properties methodProperties() {
         return properties;
     }
 
@@ -118,7 +118,7 @@ public enum HttpRequestMethods implements HttpRequestMethod {
          * @param cacheable {@code true} if a <a href="https://tools.ietf.org/html/rfc7231#section-4.2.3">cacheable method</a>.
          * @return a new {@link Properties}.
          */
-        public static Properties getRequestMethodProperties(final boolean safe, final boolean idempotent, final boolean cacheable) {
+        public static Properties newRequestMethodProperties(final boolean safe, final boolean idempotent, final boolean cacheable) {
             return new DefaultHttpRequestMethodProperties(safe, idempotent, cacheable);
         }
     }
