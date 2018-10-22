@@ -15,13 +15,18 @@
  */
 package io.servicetalk.data.jackson.jersey;
 
+import io.servicetalk.data.jackson.JacksonSerializationProvider;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.ws.rs.core.Configuration;
 import javax.ws.rs.core.Feature;
 import javax.ws.rs.core.FeatureContext;
+import javax.ws.rs.ext.ContextResolver;
 
+import static java.util.Objects.requireNonNull;
 import static org.glassfish.jersey.CommonProperties.getValue;
 import static org.glassfish.jersey.internal.InternalProperties.JSON_FEATURE;
 import static org.glassfish.jersey.internal.util.PropertiesHelper.getPropertyNameForRuntime;
@@ -60,5 +65,26 @@ public final class ServiceTalkJacksonSerializerFeature implements Feature {
         }
 
         return true;
+    }
+
+    /**
+     * Create a new {@link ContextResolver} for {@link JacksonSerializationProvider} used by this feature.
+     *
+     * @param objectMapper the {@link ObjectMapper} to use for creating a {@link JacksonSerializationProvider}.
+     * @return a {@link ContextResolver}.
+     */
+    public static ContextResolver<JacksonSerializationProvider> contextResolverFor(final ObjectMapper objectMapper) {
+        return contextResolverFor(new JacksonSerializationProvider(objectMapper));
+    }
+
+    /**
+     * Create a new {@link ContextResolver} for {@link JacksonSerializationProvider} used by this feature.
+     *
+     * @param serializationProvider the {@link JacksonSerializationProvider} to use.
+     * @return a {@link ContextResolver}.
+     */
+    public static ContextResolver<JacksonSerializationProvider> contextResolverFor(
+            final JacksonSerializationProvider serializationProvider) {
+        return new JacksonSerializationProviderContextResolver(requireNonNull(serializationProvider));
     }
 }
