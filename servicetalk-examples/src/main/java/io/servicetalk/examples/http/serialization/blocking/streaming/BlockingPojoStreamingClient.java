@@ -18,7 +18,7 @@ package io.servicetalk.examples.http.serialization.blocking.streaming;
 import io.servicetalk.concurrent.BlockingIterator;
 import io.servicetalk.data.jackson.JacksonSerializationProvider;
 import io.servicetalk.examples.http.serialization.CreatePojoRequest;
-import io.servicetalk.examples.http.serialization.MyPojo;
+import io.servicetalk.examples.http.serialization.PojoResponse;
 import io.servicetalk.http.api.BlockingStreamingHttpClient;
 import io.servicetalk.http.api.BlockingStreamingHttpResponse;
 import io.servicetalk.http.api.HttpSerializationProvider;
@@ -38,8 +38,8 @@ public final class BlockingPojoStreamingClient {
                             new CreatePojoRequest("value1"), new CreatePojoRequest("value2"), new CreatePojoRequest("value3")),
                             serializer.serializerFor(CreatePojoRequest.class)));
             System.out.println(response);
-            try (BlockingIterator<MyPojo> payload =
-                         response.payloadBody(serializer.deserializerFor(MyPojo.class)).iterator()) {
+            try (BlockingIterator<PojoResponse> payload =
+                         response.payloadBody(serializer.deserializerFor(PojoResponse.class)).iterator()) {
                 while (payload.hasNext()) {
                     System.out.println(payload.next());
                 }

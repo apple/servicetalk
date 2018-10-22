@@ -63,7 +63,7 @@ A [backend service](backends/MetadataBackend.java) that provides details about t
 
 ## User Backend
 
-A [backend service](backends/UserBackend.java) that provides details about a user given an `userId`.
+A [backend service](backends/UserBackend.java) that provides details about a user given a `userId`.
 
 ## Rating Backend
 

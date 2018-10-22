@@ -18,15 +18,15 @@ package io.servicetalk.examples.http.serialization;
 /**
  * A simple POJO class to demonstrate serialization.
  */
-public final class MyPojo {
+public final class PojoResponse {
 
     private Integer id;
     private String value;
 
-    public MyPojo() {
+    public PojoResponse() {
     }
 
-    public MyPojo(Integer id, String value) {
+    public PojoResponse(Integer id, String value) {
         this.id = id;
         this.value = value;
     }
@@ -49,7 +49,7 @@ public final class MyPojo {
 
     @Override
     public String toString() {
-        return "MyPojo{" +
+        return "PojoResponse{" +
                 "id='" + id + '\'' +
                 ", value='" + value + '\'' +
                 '}';

@@ -16,7 +16,7 @@
 package io.servicetalk.examples.http.serialization;
 
 /**
- * A request object to request {@link MyPojo} from the server.
+ * A request object to request creation of a new {@link PojoResponse} on the server.
  */
 public final class CreatePojoRequest {
 
