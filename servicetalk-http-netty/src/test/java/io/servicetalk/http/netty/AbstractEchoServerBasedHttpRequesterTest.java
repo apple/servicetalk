@@ -44,7 +44,6 @@ import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitelyNonNull;
 import static io.servicetalk.http.api.HttpHeaderValues.CHUNKED;
 import static io.servicetalk.http.api.HttpRequestMethods.GET;
-import static io.servicetalk.http.netty.HttpServers.newHttpServerBuilder;
 import static io.servicetalk.transport.netty.internal.ExecutionContextRule.immediate;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -63,7 +62,7 @@ public abstract class AbstractEchoServerBasedHttpRequesterTest {
 
     @BeforeClass
     public static void startServer() throws Exception {
-        serverContext = newHttpServerBuilder(0)
+        serverContext = HttpServers.forPort(0)
                 .ioExecutor(CTX.ioExecutor())
                 .executor(CTX.executor())
                 .listenStreamingAndAwait(new EchoServiceStreaming());

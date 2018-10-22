@@ -56,7 +56,7 @@ public class HostHeaderHttpConnectionFilterTest {
     }
 
     private ServerContext buildServer() throws Exception {
-        return HttpServers.newHttpServerBuilder(0)
+        return HttpServers.forPort(0)
                 .listenStreamingAndAwait((ctx, request, responseFactory) ->
                             success(responseFactory.ok().payloadBody(
                                     just(requireNonNull(request.headers().get(HOST)).toString()), textSerializer())));

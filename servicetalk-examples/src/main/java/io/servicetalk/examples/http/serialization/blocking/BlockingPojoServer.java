@@ -18,7 +18,6 @@ package io.servicetalk.examples.http.serialization.blocking;
 import io.servicetalk.data.jackson.JacksonSerializationProvider;
 import io.servicetalk.examples.http.serialization.MyPojo;
 import io.servicetalk.examples.http.serialization.PojoRequest;
-import io.servicetalk.http.api.BlockingHttpRequestHandler;
 import io.servicetalk.http.api.HttpSerializationProvider;
 import io.servicetalk.http.netty.HttpServers;
 
@@ -28,7 +27,7 @@ public class BlockingPojoServer {
 
     public static void main(String[] args) throws Exception {
         HttpSerializationProvider serializer = jsonSerializer(new JacksonSerializationProvider());
-        HttpServers.newHttpServerBuilder(8080)
+        HttpServers.forPort(8080)
                 .listenBlockingAndAwait((ctx, request, responseFactory) -> {
                     PojoRequest req = request.payloadBody(serializer.deserializerFor(PojoRequest.class));
                     return responseFactory.ok()

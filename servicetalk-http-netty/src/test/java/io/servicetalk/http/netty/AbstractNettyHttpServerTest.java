@@ -135,7 +135,7 @@ public abstract class AbstractNettyHttpServerTest {
         // A small SNDBUF is needed to test that the server defers closing the connection until writes are complete.
         // However, if it is too small, tests that expect certain chunks of data will see those chunks broken up
         // differently.
-        final HttpServerBuilder serverBuilder = HttpServers.newHttpServerBuilder(bindAddress)
+        final HttpServerBuilder serverBuilder = HttpServers.forAddress(bindAddress)
                 .socketOption(StandardSocketOptions.SO_SNDBUF, 100);
         if (sslEnabled) {
             final SslConfig sslConfig = SslConfigBuilder.forServer(

@@ -15,7 +15,6 @@
  */
 package io.servicetalk.examples.http.helloworld.async;
 
-import io.servicetalk.http.api.HttpRequestHandler;
 import io.servicetalk.http.netty.HttpServers;
 
 import static io.servicetalk.concurrent.api.Single.success;
@@ -24,7 +23,7 @@ import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
 public final class HelloWorldServer {
 
     public static void main(String[] args) throws Exception {
-        HttpServers.newHttpServerBuilder(8080)
+        HttpServers.forPort(8080)
                 .listenAndAwait((ctx, request, responseFactory) ->
                         success(responseFactory.ok()
                                 .payloadBody("Hello World!", textSerializer())))

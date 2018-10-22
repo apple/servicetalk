@@ -15,7 +15,6 @@
  */
 package io.servicetalk.examples.http.helloworld.async.streaming;
 
-import io.servicetalk.http.api.StreamingHttpRequestHandler;
 import io.servicetalk.http.netty.HttpServers;
 
 import static io.servicetalk.concurrent.api.Publisher.from;
@@ -24,7 +23,7 @@ import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
 
 public final class HelloWorldStreamingServer {
     public static void main(String[] args) throws Exception {
-        HttpServers.newHttpServerBuilder(8080)
+        HttpServers.forPort(8080)
                 .listenStreamingAndAwait((ctx, request, responseFactory) ->
                         success(responseFactory.ok()
                                 .payloadBody(from("Hello\n", "World\n", "From\n", "ServiceTalk\n"), textSerializer())))

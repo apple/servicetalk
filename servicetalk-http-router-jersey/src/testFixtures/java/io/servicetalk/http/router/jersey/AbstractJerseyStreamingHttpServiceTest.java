@@ -27,6 +27,7 @@ import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.http.netty.HttpClients;
+import io.servicetalk.http.netty.HttpServers;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.netty.IoThreadFactory;
@@ -66,7 +67,6 @@ import static io.servicetalk.http.api.HttpRequestMethods.HEAD;
 import static io.servicetalk.http.api.HttpRequestMethods.OPTIONS;
 import static io.servicetalk.http.api.HttpRequestMethods.POST;
 import static io.servicetalk.http.api.HttpRequestMethods.PUT;
-import static io.servicetalk.http.netty.HttpServers.newHttpServerBuilder;
 import static io.servicetalk.http.router.jersey.TestUtils.getContentAsString;
 import static io.servicetalk.transport.api.HostAndPort.of;
 import static io.servicetalk.transport.netty.NettyIoExecutors.createIoExecutor;
@@ -103,7 +103,7 @@ public abstract class AbstractJerseyStreamingHttpServiceTest {
                 String.class).toLowerCase().contains("servicetalk");
 
         ExecutionContext serverExecutionContext = getServerExecutionContext();
-        serverContext = newHttpServerBuilder(0)
+        serverContext = HttpServers.forPort(0)
                 .ioExecutor(serverExecutionContext.ioExecutor())
                 .executor(serverExecutionContext.executor())
                 .bufferAllocator(serverExecutionContext.bufferAllocator())
