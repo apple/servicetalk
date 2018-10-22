@@ -28,7 +28,6 @@ import java.net.InetSocketAddress;
 
 import static io.servicetalk.http.api.HttpResponseStatuses.OK;
 import static io.servicetalk.http.netty.HttpClients.forSingleAddress;
-import static io.servicetalk.http.netty.HttpServers.newHttpServerBuilder;
 import static io.servicetalk.transport.api.HostAndPort.of;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -43,7 +42,7 @@ public class HttpServerFilterOrderTest {
     public void prependOrder() throws Exception {
         StreamingHttpRequestHandler filter1 = newMockHandler();
         StreamingHttpRequestHandler filter2 = newMockHandler();
-        ServerContext serverContext = newHttpServerBuilder(0)
+        ServerContext serverContext = HttpServers.forPort(0)
                 .appendServiceFilter(addFilter(filter1))
                 .appendServiceFilter(addFilter(filter2))
                 .listenBlockingAndAwait((ctx, request, responseFactory) -> responseFactory.ok());

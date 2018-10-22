@@ -15,15 +15,14 @@
  */
 package io.servicetalk.examples.http.helloworld.blocking.streaming;
 
-import io.servicetalk.http.api.BlockingStreamingHttpRequestHandler;
+import io.servicetalk.http.netty.HttpServers;
 
 import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
-import static io.servicetalk.http.netty.HttpServers.newHttpServerBuilder;
 import static java.util.Arrays.asList;
 
 public final class BlockingHelloWorldStreamingServer {
     public static void main(String[] args) throws Exception {
-        newHttpServerBuilder(8080)
+        HttpServers.forPort(8080)
                 .listenBlockingStreamingAndAwait((ctx, request, responseFactory) ->
                         responseFactory.ok().payloadBody(
                                 asList("Hello\n", "World\n", "From\n", "ServiceTalk\n"), textSerializer()))

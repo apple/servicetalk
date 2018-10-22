@@ -45,7 +45,6 @@ import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderValues.ZERO;
 import static io.servicetalk.http.api.HttpResponseStatuses.OK;
-import static io.servicetalk.http.netty.HttpServers.newHttpServerBuilder;
 import static java.util.Objects.requireNonNull;
 import static org.junit.Assert.assertEquals;
 
@@ -71,7 +70,7 @@ public class HttpAuthConnectionFactoryClientTest {
 
     @Test
     public void simulateAuth() throws Exception {
-        serverContext = newHttpServerBuilder(0)
+        serverContext = HttpServers.forPort(0)
                 .ioExecutor(CTX.ioExecutor())
                 .executor(CTX.executor())
                 .listenStreamingAndAwait(

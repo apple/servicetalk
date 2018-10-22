@@ -37,7 +37,7 @@ public final class HttpServers {
      * @return a new builder.
      * @see HttpServerBuilder#port(int)
      */
-    public static HttpServerBuilder newHttpServerBuilder(int port) {
+    public static HttpServerBuilder forPort(int port) {
         return new DefaultHttpServerBuilder(new InetSocketAddress(port));
     }
 
@@ -48,7 +48,7 @@ public final class HttpServers {
      * @return a new builder.
      * @see HttpServerBuilder#address(SocketAddress)
      */
-    public static HttpServerBuilder newHttpServerBuilder(SocketAddress socketAddress) {
+    public static HttpServerBuilder forAddress(SocketAddress socketAddress) {
         return new DefaultHttpServerBuilder(socketAddress);
     }
 }

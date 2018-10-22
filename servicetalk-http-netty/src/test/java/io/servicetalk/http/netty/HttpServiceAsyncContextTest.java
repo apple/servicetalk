@@ -51,7 +51,6 @@ import static io.servicetalk.http.api.CharSequences.newAsciiString;
 import static io.servicetalk.http.api.HttpResponseStatuses.BAD_REQUEST;
 import static io.servicetalk.http.api.HttpResponseStatuses.INTERNAL_SERVER_ERROR;
 import static io.servicetalk.http.api.HttpResponseStatuses.OK;
-import static io.servicetalk.http.netty.HttpServers.newHttpServerBuilder;
 import static java.net.InetAddress.getLoopbackAddress;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
@@ -79,7 +78,7 @@ public class HttpServiceAsyncContextTest {
     private void newRequestsGetFreshContext(boolean useImmediate) throws Exception {
         StreamingHttpService service = newEmptyAsyncContextService();
         CompositeCloseable compositeCloseable = AsyncCloseables.newCompositeCloseable();
-        HttpServerBuilder serverBuilder = newHttpServerBuilder(LOCAL_0);
+        HttpServerBuilder serverBuilder = HttpServers.forAddress(LOCAL_0);
         ServerContext ctx = (useImmediate ? serverBuilder.executor(immediateExecutor.executor()) : serverBuilder)
                 .listenStreamingAndAwait(service);
 
@@ -152,7 +151,7 @@ public class HttpServiceAsyncContextTest {
             }
         };
         CompositeCloseable compositeCloseable = AsyncCloseables.newCompositeCloseable();
-        ServerContext ctx = compositeCloseable.append(newHttpServerBuilder(LOCAL_0)
+        ServerContext ctx = compositeCloseable.append(HttpServers.forAddress(LOCAL_0)
                 .listenStreamingAndAwait(filter));
         try {
             StreamingHttpConnection connection = compositeCloseable.append(new DefaultHttpConnectionBuilder<SocketAddress>()
@@ -167,7 +166,7 @@ public class HttpServiceAsyncContextTest {
     public void connectionContextFilterContextDoesNotLeak() throws Exception {
         StreamingHttpService service = newEmptyAsyncContextService();
         CompositeCloseable compositeCloseable = AsyncCloseables.newCompositeCloseable();
-        ServerContext ctx = compositeCloseable.append(HttpServers.newHttpServerBuilder(LOCAL_0)
+        ServerContext ctx = compositeCloseable.append(HttpServers.forAddress(LOCAL_0)
                 .contextFilter(context -> {
                     AsyncContext.put(K1, "v1");
                     return success(true);

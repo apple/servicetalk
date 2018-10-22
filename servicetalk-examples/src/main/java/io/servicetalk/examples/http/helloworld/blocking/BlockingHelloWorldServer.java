@@ -21,7 +21,7 @@ import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
 
 public class BlockingHelloWorldServer {
     public static void main(String[] args) throws Exception {
-        HttpServers.newHttpServerBuilder(8080)
+        HttpServers.forPort(8080)
                 .listenBlockingAndAwait((ctx, request, responseFactory) ->
                         responseFactory.ok().payloadBody("Hello World!", textSerializer()))
                 .awaitShutdown();
