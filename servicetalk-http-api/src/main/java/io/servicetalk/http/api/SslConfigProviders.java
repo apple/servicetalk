@@ -32,9 +32,9 @@ public final class SslConfigProviders {
         @Override
         public int defaultPort(final HttpScheme scheme, final String effectiveHost) {
             if (scheme == NONE) {
-                return HTTP.getDefaultPort();
+                return HTTP.defaultPort();
             }
-            return scheme.getDefaultPort();
+            return scheme.defaultPort();
         }
 
         @Override
@@ -47,9 +47,9 @@ public final class SslConfigProviders {
         @Override
         public int defaultPort(final HttpScheme scheme, final String effectiveHost) {
             if (scheme == NONE) {
-                return HTTPS.getDefaultPort();
+                return HTTPS.defaultPort();
             }
-            return scheme.getDefaultPort();
+            return scheme.defaultPort();
         }
 
         @Override

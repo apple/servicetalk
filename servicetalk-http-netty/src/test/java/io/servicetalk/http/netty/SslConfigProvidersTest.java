@@ -33,19 +33,19 @@ public class SslConfigProvidersTest {
 
     @Test
     public void testPlainByDefault() {
-        assertEquals(HTTP.getDefaultPort(), plainByDefault().defaultPort(NONE, "test"));
-        assertEquals(HTTP.getDefaultPort(), plainByDefault().defaultPort(HTTP, "test"));
-        assertEquals(HTTPS.getDefaultPort(), plainByDefault().defaultPort(HTTPS, "test"));
+        assertEquals(HTTP.defaultPort(), plainByDefault().defaultPort(NONE, "test"));
+        assertEquals(HTTP.defaultPort(), plainByDefault().defaultPort(HTTP, "test"));
+        assertEquals(HTTPS.defaultPort(), plainByDefault().defaultPort(HTTPS, "test"));
 
         assertNull(plainByDefault().forHostAndPort(mock(HostAndPort.class)));
     }
 
     @Test
     public void testSecureByDefault() {
-        assertEquals(HTTPS.getDefaultPort(), secureByDefault().defaultPort(NONE, "test"));
-        assertEquals(HTTP.getDefaultPort(), secureByDefault().defaultPort(HTTP, "test"));
-        assertEquals(HTTPS.getDefaultPort(), secureByDefault().defaultPort(HTTPS, "test"));
+        assertEquals(HTTPS.defaultPort(), secureByDefault().defaultPort(NONE, "test"));
+        assertEquals(HTTP.defaultPort(), secureByDefault().defaultPort(HTTP, "test"));
+        assertEquals(HTTPS.defaultPort(), secureByDefault().defaultPort(HTTPS, "test"));
 
-        assertNotNull(secureByDefault().forHostAndPort(HostAndPort.of("test", HTTPS.getDefaultPort())));
+        assertNotNull(secureByDefault().forHostAndPort(HostAndPort.of("test", HTTPS.defaultPort())));
     }
 }

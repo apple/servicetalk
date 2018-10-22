@@ -38,7 +38,7 @@ import io.servicetalk.transport.netty.internal.CloseHandler;
 import java.util.Queue;
 
 import static io.netty.handler.codec.http.HttpConstants.SP;
-import static io.servicetalk.transport.netty.internal.CloseHandler.NOOP_CLOSE_HANDLER;
+import static io.servicetalk.transport.netty.internal.CloseHandler.UNSUPPORTED_PROTOCOL_CLOSE_HANDLER;
 import static java.util.Objects.requireNonNull;
 
 final class HttpRequestEncoder extends HttpObjectEncoder<HttpRequestMetaData> {
@@ -59,7 +59,8 @@ final class HttpRequestEncoder extends HttpObjectEncoder<HttpRequestMetaData> {
      */
     HttpRequestEncoder(Queue<HttpRequestMethod> methodQueue,
                        int headersEncodedSizeAccumulator, int trailersEncodedSizeAccumulator) {
-        this(methodQueue, headersEncodedSizeAccumulator, trailersEncodedSizeAccumulator, NOOP_CLOSE_HANDLER);
+        this(methodQueue, headersEncodedSizeAccumulator, trailersEncodedSizeAccumulator,
+                UNSUPPORTED_PROTOCOL_CLOSE_HANDLER);
     }
 
     /**

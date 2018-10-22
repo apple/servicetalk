@@ -94,7 +94,7 @@ public final class RetryingHttpClientFilter extends StreamingHttpClientAdapter {
         private Duration initialDelay;
         private Predicate<Throwable> causeFilter = throwable -> throwable instanceof RetryableException;
         private Predicate<HttpRequestMetaData> retryableFilter =
-                meta -> meta.method().getMethodProperties().isIdempotent();
+                meta -> meta.method().methodProperties().idempotent();
 
         /**
          * New instance.

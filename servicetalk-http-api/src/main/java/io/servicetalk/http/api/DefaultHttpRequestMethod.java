@@ -43,12 +43,12 @@ final class DefaultHttpRequestMethod implements HttpRequestMethod {
     }
 
     @Override
-    public String getName() {
+    public String methodName() {
         return nameString;
     }
 
     @Override
-    public Properties getMethodProperties() {
+    public Properties methodProperties() {
         return properties;
     }
 
@@ -88,17 +88,17 @@ final class DefaultHttpRequestMethod implements HttpRequestMethod {
         }
 
         @Override
-        public boolean isSafe() {
+        public boolean safe() {
             return safe;
         }
 
         @Override
-        public boolean isIdempotent() {
+        public boolean idempotent() {
             return idempotent;
         }
 
         @Override
-        public boolean isCacheable() {
+        public boolean cacheable() {
             return cacheable;
         }
 
