@@ -14,7 +14,7 @@ An obligatory "Hello World" example for HTTP.
 This example demonstrates asynchronous request processing where the payload body is aggregated into a single object
 instead of a stream.
 
-- [HelloWorldServer](helloworld/async/HelloWorldClient.java) - a server that demonstrates the asynchronous API and
+- [HelloWorldServer](helloworld/async/HelloWorldServer.java) - a server that demonstrates the asynchronous API and
 responds with a simple `Hello World!` response body as a `text/plain`.
 - [HelloWorldClient](helloworld/async/HelloWorldClient.java) - a client that sends a `GET` request to the configured
 single address of the [server](helloworld/async/HelloWorldServer.java) and receives the response as a single content.
