@@ -34,6 +34,7 @@ import java.io.IOException;
 
 import static io.servicetalk.buffer.api.Buffer.asOutputStream;
 import static io.servicetalk.concurrent.internal.PlatformDependent.throwException;
+import static java.util.Objects.requireNonNull;
 
 /**
  * {@link SerializationProvider} implementation using jackson.
@@ -55,7 +56,7 @@ public final class JacksonSerializationProvider implements SerializationProvider
      * @param mapper {@link ObjectMapper} to use.
      */
     public JacksonSerializationProvider(final ObjectMapper mapper) {
-        this.mapper = mapper;
+        this.mapper = requireNonNull(mapper);
     }
 
     @Override
