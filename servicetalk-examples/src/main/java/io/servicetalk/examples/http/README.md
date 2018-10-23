@@ -16,8 +16,8 @@ instead of a stream.
 
 - [HelloWorldServer](helloworld/async/HelloWorldClient.java) - a server that demonstrates the asynchronous API and
 responds with a simple `Hello World!` response body as a `text/plain`.
-- [HelloWorldClient](helloworld/async/HelloWorldClient.java) - a client that sends a `GET` request to the configured
-single address of the [server](helloworld/async/HelloWorldServer.java) and receives the response as a single content.
+- [HelloWorldClient](helloworld/async/HelloWorldClient.java) - a client that sends a `GET` request to the
+[server](helloworld/async/HelloWorldServer.java) and receives the response as a single content.
 - [HelloWorldUrlClient](helloworld/async/HelloWorldUrlClient.java) - a client that sends a `GET` request to the
 specified URL in absolute-form and receives the response as a single content.
 
@@ -29,8 +29,8 @@ This example demonstrates asynchronous request processing where the payload body
 - [HelloWorldStreamingServer](helloworld/async/streaming/HelloWorldStreamingServer.java) - a server that responds with a
 stream of `text/plain` payload body for every request.
 - [HelloWorldStreamingClient](helloworld/async/streaming/HelloWorldStreamingClient.java) - a client that sends a `GET`
-request to the configured single address of the [server](helloworld/async/streaming/HelloWorldStreamingServer.java) and
-receives the response payload body as a stream of buffers.
+request to the [server](helloworld/async/streaming/HelloWorldStreamingServer.java) and receives the response payload
+body as a stream of buffers.
 - [HelloWorldStreamingUrlClient](helloworld/async/streaming/HelloWorldStreamingUrlClient.java) - a client that sends a
 `GET` request to the specified URL in absolute-form and receives the response payload body as a stream of buffers.
 
@@ -43,8 +43,8 @@ APIs will block if content is requested but there is no content available.
 - [BlockingHelloWorldServer](helloworld/blocking/BlockingHelloWorldServer.java) - a server that demonstrates the
 blocking API and responds with a simple `Hello World!` response body as a `text/plain`.
 - [BlockingHelloWorldClient](helloworld/blocking/BlockingHelloWorldClient.java) - a client that sends a `GET` request to
-the configured single address of the [server](helloworld/blocking/BlockingHelloWorldServer.java) and receives the
-response payload body as one aggregated object.
+the [server](helloworld/blocking/BlockingHelloWorldServer.java) and receives the response payload body as one aggregated
+object.
 - [BlockingHelloWorldUrlClient](helloworld/blocking/BlockingHelloWorldUrlClient.java) - a client that sends a `GET`
 request to the specified URL in absolute-form and receives the response payload body as one aggregated object.
 
@@ -56,9 +56,8 @@ This example demonstrates blocking request processing where the payload body is 
 - [BlockingHelloWorldStreamingServer](helloworld/blocking/streaming/BlockingHelloWorldStreamingServer.java) - a server
 that responds with an iterable stream of `text/plain` payload body for every request.
 - [BlockingHelloWorldStreamingClient](helloworld/blocking/streaming/BlockingHelloWorldStreamingClient.java) - a client
-that sends a `GET` request to the configured single address of the
-[server](helloworld/blocking/streaming/BlockingHelloWorldStreamingServer.java) and receives the response payload body as
-a blocking iterable stream of buffers.
+that sends a `GET` request to the [server](helloworld/blocking/streaming/BlockingHelloWorldStreamingServer.java) and
+receives the response payload body as a blocking iterable stream of buffers.
 - [BlockingHelloWorldStreamingUrlClient](helloworld/blocking/streaming/BlockingHelloWorldStreamingUrlClient.java) - a
 client that sends a `GET` request to the specified URL in absolute-form and receives the response payload body as a
 blocking iterable stream of buffers.
