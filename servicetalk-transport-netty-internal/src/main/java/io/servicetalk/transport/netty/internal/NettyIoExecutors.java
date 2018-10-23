@@ -27,6 +27,7 @@ import io.netty.channel.nio.NioEventLoopGroup;
 
 import java.util.concurrent.ThreadFactory;
 
+import static java.lang.Runtime.getRuntime;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -41,7 +42,18 @@ public final class NettyIoExecutors {
     /**
      * Create a new {@link NettyIoExecutor}.
      *
-     * @param ioThreads number of threads.  Using {@code 0} defers to Netty's default.
+     * @param threadFactory the {@link ThreadFactory} to use.
+     * @return The created {@link IoExecutor}
+     */
+    public static NettyIoExecutor createIoExecutor(ThreadFactory threadFactory) {
+        return new EventLoopGroupIoExecutor(createEventLoopGroup(getRuntime().availableProcessors() * 2,
+                threadFactory), true);
+    }
+
+    /**
+     * Create a new {@link NettyIoExecutor}.
+     *
+     * @param ioThreads number of threads.
      * @param threadFactory the {@link ThreadFactory} to use.
      * @return The created {@link IoExecutor}
      */
@@ -53,7 +65,7 @@ public final class NettyIoExecutors {
      * Create a new {@link EventLoopGroup}.
      *
      * @param ioThreads number of threads
-     * @param threadFactory the {@link ThreadFactory} to use.  Using {@code 0} defers to Netty's default.
+     * @param threadFactory the {@link ThreadFactory} to use.
      * @return The created {@link IoExecutor}
      */
     public static EventLoopGroup createEventLoopGroup(int ioThreads, ThreadFactory threadFactory) {

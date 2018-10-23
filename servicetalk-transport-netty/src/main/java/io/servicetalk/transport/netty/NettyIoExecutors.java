@@ -20,8 +20,6 @@ import io.servicetalk.transport.netty.internal.NettyIoExecutor;
 
 import java.util.concurrent.ThreadFactory;
 
-import static java.lang.Runtime.getRuntime;
-
 /**
  * Factory methods to create {@link IoExecutor}s using netty as the transport.
  */
@@ -34,7 +32,7 @@ public final class NettyIoExecutors {
     /**
      * Creates a new {@link IoExecutor} with the specified number of {@code ioThreads}.
      *
-     * @param ioThreads number of threads. Using {@code 0} defers to Netty's default.
+     * @param ioThreads number of threads.
      * @param threadFactory the {@link ThreadFactory} to use. If possible you should use an instance
      * of {@link IoThreadFactory} as it allows internal optimizations.
      * @return The created {@link IoExecutor}
@@ -46,7 +44,7 @@ public final class NettyIoExecutors {
     /**
      * Creates a new {@link IoExecutor} with the specified number of {@code ioThreads}.
      *
-     * @param ioThreads number of threads.  Using {@code 0} defers to Netty's default.
+     * @param ioThreads number of threads.
      * @return The created {@link IoExecutor}
      */
     public static IoExecutor createIoExecutor(int ioThreads) {
@@ -54,24 +52,22 @@ public final class NettyIoExecutors {
     }
 
     /**
-     * Creates a new {@link IoExecutor} with the default number of {@code ioThreads}
-     * ({@code Runtime.getRuntime().availableProcessors() * 2}).
+     * Creates a new {@link IoExecutor} with the default number of {@code ioThreads}.
      *
      * @param threadFactory the {@link ThreadFactory} to use. If possible you should use an instance
      * of {@link IoThreadFactory} as it allows internal optimizations.
      * @return The created {@link IoExecutor}
      */
     public static IoExecutor createIoExecutor(ThreadFactory threadFactory) {
-        return createIoExecutor(getRuntime().availableProcessors() * 2, threadFactory);
+        return io.servicetalk.transport.netty.internal.NettyIoExecutors.createIoExecutor(threadFactory);
     }
 
     /**
-     * Creates a new {@link IoExecutor} with the default number of {@code ioThreads}
-     * ({@code Runtime.getRuntime().availableProcessors() * 2}).
+     * Creates a new {@link IoExecutor} with the default number of {@code ioThreads}.
      *
      * @return The created {@link IoExecutor}
      */
     public static IoExecutor createIoExecutor() {
-        return createIoExecutor(getRuntime().availableProcessors() * 2);
+        return createIoExecutor(new IoThreadFactory(NettyIoExecutor.class.getSimpleName()));
     }
 }
