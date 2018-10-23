@@ -113,7 +113,7 @@ public final class NettyIoExecutors {
 
     private static void validateIoThreads(final int ioThreads) {
         if (ioThreads <= 0) {
-            throw new IllegalArgumentException("ioThreads must be >0");
+            throw new IllegalArgumentException("ioThreads: " + ioThreads + " (expected >0)");
         }
     }
 }
