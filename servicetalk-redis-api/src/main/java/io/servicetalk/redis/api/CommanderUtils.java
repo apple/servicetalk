@@ -15,6 +15,8 @@
  */
 package io.servicetalk.redis.api;
 
+import io.servicetalk.concurrent.Cancellable;
+import io.servicetalk.concurrent.Single.Subscriber;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.internal.SingleProcessor;
@@ -24,6 +26,7 @@ import java.util.List;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.redis.api.RedisData.QUEUED;
@@ -59,6 +62,21 @@ final class CommanderUtils {
                 return single;
             }
             return Single.error(new RedisClientException("Read '" + status + "' but expected 'QUEUED'"));
+        }).<T>liftSynchronous(sub -> new Subscriber<T>() {
+            @Override
+            public void onSubscribe(final Cancellable cancellable) {
+                sub.onSubscribe(IGNORE_CANCEL);
+            }
+
+            @Override
+            public void onSuccess(@Nullable final T result) {
+                sub.onSuccess(result);
+            }
+
+            @Override
+            public void onError(final Throwable t) {
+                sub.onError(t);
+            }
         }).toFuture();
     }
 
