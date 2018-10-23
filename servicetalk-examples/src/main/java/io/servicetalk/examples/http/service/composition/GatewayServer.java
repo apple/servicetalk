@@ -103,7 +103,7 @@ public final class GatewayServer {
 
             // Create configurable starter for HTTP server.
             // Starting the server will start listening for incoming client requests.
-            ServerContext serverContext = HttpServers.newHttpServerBuilder(8080)
+            ServerContext serverContext = HttpServers.forPort(8080)
                     .ioExecutor(ioExecutor)
                     .listenStreamingAndAwait(gatewayService);
 

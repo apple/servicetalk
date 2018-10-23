@@ -23,7 +23,7 @@ import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
 public final class HelloWorldServer {
 
     public static void main(String[] args) throws Exception {
-        HttpServers.newHttpServerBuilder(8080)
+        HttpServers.forPort(8080)
                 .listenAndAwait((ctx, request, responseFactory) ->
                         success(responseFactory.ok()
                                 .payloadBody("Hello World!", textSerializer())))

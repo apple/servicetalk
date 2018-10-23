@@ -32,7 +32,7 @@ public final class PojoServer {
 
     public static void main(String[] args) throws Exception {
         HttpSerializationProvider serializer = jsonSerializer(new JacksonSerializationProvider());
-        HttpServers.newHttpServerBuilder(8080)
+        HttpServers.forPort(8080)
                 .listenAndAwait((ctx, request, responseFactory) -> {
                     if (!"/pojos".equals(request.requestTarget())) {
                         return success(responseFactory.notFound());

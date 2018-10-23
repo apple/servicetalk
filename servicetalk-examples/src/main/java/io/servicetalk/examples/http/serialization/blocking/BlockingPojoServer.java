@@ -31,7 +31,7 @@ public final class BlockingPojoServer {
 
     public static void main(String[] args) throws Exception {
         HttpSerializationProvider serializer = jsonSerializer(new JacksonSerializationProvider());
-        HttpServers.newHttpServerBuilder(8080)
+        HttpServers.forPort(8080)
                 .listenBlockingAndAwait((ctx, request, responseFactory) -> {
                     if (!"/pojos".equals(request.requestTarget())) {
                         return responseFactory.notFound();
