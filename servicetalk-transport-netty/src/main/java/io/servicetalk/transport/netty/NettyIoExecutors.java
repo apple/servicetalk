@@ -48,7 +48,7 @@ public final class NettyIoExecutors {
      * @return The created {@link IoExecutor}
      */
     public static IoExecutor createIoExecutor(int ioThreads) {
-        return createIoExecutor(ioThreads, new IoThreadFactory(NettyIoExecutor.class.getSimpleName()));
+        return createIoExecutor(ioThreads, newIoThreadFactory());
     }
 
     /**
@@ -68,6 +68,10 @@ public final class NettyIoExecutors {
      * @return The created {@link IoExecutor}
      */
     public static IoExecutor createIoExecutor() {
-        return createIoExecutor(new IoThreadFactory(NettyIoExecutor.class.getSimpleName()));
+        return createIoExecutor(newIoThreadFactory());
+    }
+
+    private static IoThreadFactory newIoThreadFactory() {
+        return new IoThreadFactory(NettyIoExecutor.class.getSimpleName());
     }
 }
