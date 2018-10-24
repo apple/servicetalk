@@ -329,11 +329,11 @@ public class RedisCommanderTest extends BaseRedisClientTest {
         // Keep Redis busy for approximately 1 second so that it can't finish the transaction before we cancel.
         Future<Long> longFuture = tcc.evalLong(EVAL_SLEEP_SCRIPT, 0, emptyList(), emptyList());
 
-        Future<String> future = tcc.ping("in-transac");
+        Future<String> pingFuture = tcc.ping("in-transac");
         tcc.exec().toFuture().cancel(true);
         postCloseLatch.await();
 
-        assertThrowsClosedChannelException(future::get);
+        assertThrowsClosedChannelException(pingFuture::get);
 
         // Wait for Redis to stop being busy.
         assertThrowsClosedChannelException(longFuture::get);
@@ -347,11 +347,11 @@ public class RedisCommanderTest extends BaseRedisClientTest {
         // cancel before Redis can return any responses.
         Future<Long> longFuture = commandClient.evalLong(EVAL_SLEEP_SCRIPT, 0, emptyList(), emptyList()).toFuture();
 
-        Future<String> future = tcc.ping("in-transac");
+        Future<String> pingFuture = tcc.ping("in-transac");
         tcc.exec().toFuture().cancel(true);
         postCloseLatch.await();
 
-        assertThrowsClosedChannelException(future::get);
+        assertThrowsClosedChannelException(pingFuture::get);
 
         // Wait for Redis to stop being busy.
         longFuture.get();
@@ -364,11 +364,11 @@ public class RedisCommanderTest extends BaseRedisClientTest {
         // Keep Redis busy for approximately 1 second so that it can't discard the transaction before we cancel.
         Future<Long> longFuture = tcc.evalLong(EVAL_SLEEP_SCRIPT, 0, emptyList(), emptyList());
 
-        Future<String> future = tcc.ping("in-transac");
+        Future<String> pingFuture = tcc.ping("in-transac");
         tcc.discard().toFuture().cancel(true);
         postCloseLatch.await();
 
-        assertThrowsClosedChannelException(future::get);
+        assertThrowsClosedChannelException(pingFuture::get);
 
         // Wait for Redis to stop being busy.
         assertThrowsClosedChannelException(longFuture::get);
@@ -382,11 +382,11 @@ public class RedisCommanderTest extends BaseRedisClientTest {
         // cancel before Redis can return any responses.
         Future<Long> longFuture = commandClient.evalLong(EVAL_SLEEP_SCRIPT, 0, emptyList(), emptyList()).toFuture();
 
-        Future<String> future = tcc.ping("in-transac");
+        Future<String> pingFuture = tcc.ping("in-transac");
         tcc.discard().toFuture().cancel(true);
         postCloseLatch.await();
 
-        assertThrowsClosedChannelException(future::get);
+        assertThrowsClosedChannelException(pingFuture::get);
 
         // Wait for Redis to stop being busy.
         longFuture.get();

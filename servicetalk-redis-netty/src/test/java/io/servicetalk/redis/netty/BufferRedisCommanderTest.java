@@ -328,11 +328,11 @@ public class BufferRedisCommanderTest extends BaseRedisClientTest {
         Future<Long> longFuture = tcc.evalLong(buf(EVAL_SLEEP_SCRIPT), 0, emptyList(),
                 asList(buf("1000"), buf("100000000")));
 
-        Future<Buffer> future = tcc.ping(buf("in-transac"));
+        Future<Buffer> pingFuture = tcc.ping(buf("in-transac"));
         tcc.exec().toFuture().cancel(true);
         postCloseLatch.await();
 
-        assertThrowsClosedChannelException(future::get);
+        assertThrowsClosedChannelException(pingFuture::get);
 
         // Wait for Redis to stop being busy.
         assertThrowsClosedChannelException(longFuture::get);
@@ -347,11 +347,11 @@ public class BufferRedisCommanderTest extends BaseRedisClientTest {
         Future<Long> longFuture = commandClient.evalLong(buf(EVAL_SLEEP_SCRIPT), 0, emptyList(),
                 asList(buf("1000"), buf("100000000"))).toFuture();
 
-        Future<Buffer> future = tcc.ping(buf("in-transac"));
+        Future<Buffer> pingFuture = tcc.ping(buf("in-transac"));
         tcc.exec().toFuture().cancel(true);
         postCloseLatch.await();
 
-        assertThrowsClosedChannelException(future::get);
+        assertThrowsClosedChannelException(pingFuture::get);
 
         // Wait for Redis to stop being busy.
         longFuture.get();
@@ -365,11 +365,11 @@ public class BufferRedisCommanderTest extends BaseRedisClientTest {
         Future<Long> longFuture = tcc.evalLong(buf(EVAL_SLEEP_SCRIPT), 0, emptyList(),
                 asList(buf("1000"), buf("100000000")));
 
-        Future<Buffer> future = tcc.ping(buf("in-transac"));
+        Future<Buffer> pingFuture = tcc.ping(buf("in-transac"));
         tcc.discard().toFuture().cancel(true);
         postCloseLatch.await();
 
-        assertThrowsClosedChannelException(future::get);
+        assertThrowsClosedChannelException(pingFuture::get);
 
         // Wait for Redis to stop being busy.
         assertThrowsClosedChannelException(longFuture::get);
@@ -384,11 +384,11 @@ public class BufferRedisCommanderTest extends BaseRedisClientTest {
         Future<Long> longFuture = commandClient.evalLong(buf(EVAL_SLEEP_SCRIPT), 0, emptyList(),
                 asList(buf("1000"), buf("100000000"))).toFuture();
 
-        Future<Buffer> future = tcc.ping(buf("in-transac"));
+        Future<Buffer> pingFuture = tcc.ping(buf("in-transac"));
         tcc.discard().toFuture().cancel(true);
         postCloseLatch.await();
 
-        assertThrowsClosedChannelException(future::get);
+        assertThrowsClosedChannelException(pingFuture::get);
 
         // Wait for Redis to stop being busy.
         longFuture.get();

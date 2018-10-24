@@ -22,6 +22,9 @@ import io.servicetalk.concurrent.api.internal.SingleProcessor;
 import io.servicetalk.concurrent.internal.DuplicateSubscribeException;
 import io.servicetalk.redis.api.RedisClient.ReservedRedisConnection;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.nio.channels.ClosedChannelException;
 import java.util.List;
 import java.util.concurrent.Future;
@@ -35,6 +38,8 @@ import static io.servicetalk.redis.api.RedisData.QUEUED;
 import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 
 final class CommanderUtils {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(CommanderUtils.class);
 
     static final int STATE_PENDING = 0;
     static final int STATE_EXECUTED = 1;
@@ -104,9 +109,12 @@ final class CommanderUtils {
 
     static final class DiscardSingle<T> extends Single<String> {
 
+        private static final Logger LOGGER = LoggerFactory.getLogger(DiscardSingle.class);
+
         private static final ClosedChannelException CANCELLATION_EXCEPTION =
-                unknownStackTrace(new ClosedChannelException(),
-                        DiscardSingle.CloseOnCancelCancellable.class, "cancel");
+                unknownStackTrace(new ConnectionClosedException(),
+                        CommanderUtils.class, "closeOnCancel");
+
         private static final AtomicIntegerFieldUpdater<DiscardSingle> terminatedUpdater =
                 newUpdater(DiscardSingle.class, "terminated");
 
@@ -142,14 +150,17 @@ final class CommanderUtils {
             abortSingles(queued, singles).subscribe(new Subscriber<String>() {
                 @Override
                 public void onSubscribe(final Cancellable cancellable) {
-                    subscriber.onSubscribe(new CloseOnCancelCancellable(cancellable));
+                    subscriber.onSubscribe(() ->
+                            closeOnCancel(terminatedUpdater.compareAndSet(DiscardSingle.this, 0, 1), cancellable,
+                                    reservedCnx, singles, CANCELLATION_EXCEPTION));
                 }
 
                 @Override
                 public void onSuccess(@Nullable final String result) {
                     if (terminatedUpdater.compareAndSet(DiscardSingle.this, 0, 1)) {
                         if (releaseAfterDone) {
-                            reservedCnx.releaseAsync().subscribe();
+                            reservedCnx.releaseAsync().andThen(Single.success(result)).subscribe(subscriber);
+                            return;
                         }
                         subscriber.onSuccess(result);
                     }
@@ -159,7 +170,11 @@ final class CommanderUtils {
                 public void onError(final Throwable t) {
                     if (terminatedUpdater.compareAndSet(DiscardSingle.this, 0, 1)) {
                         if (releaseAfterDone) {
-                            reservedCnx.releaseAsync().subscribe();
+                            reservedCnx.releaseAsync().doBeforeError(e -> {
+                                LOGGER.warn("Encountered error while releasing connection due to error. " +
+                                        "Original cause:", t);
+                            }).andThen(Single.<String>error(t)).subscribe(subscriber);
+                            return;
                         }
                         subscriber.onError(t);
                     }
@@ -167,32 +182,22 @@ final class CommanderUtils {
             });
         }
 
-        private final class CloseOnCancelCancellable implements Cancellable {
-            private final Cancellable cancellable;
-
-            private CloseOnCancelCancellable(final Cancellable cancellable) {
-                this.cancellable = cancellable;
-            }
-
+        private static final class ConnectionClosedException extends ClosedChannelException {
             @Override
-            public void cancel() {
-                if (terminatedUpdater.compareAndSet(DiscardSingle.this, 0, 1)) {
-                    cancellable.cancel();
-                    reservedCnx.closeAsync().doAfterComplete(() -> {
-                        for (SingleProcessor<?> single : singles) {
-                            single.onError(CANCELLATION_EXCEPTION);
-                        }
-                    }).subscribe();
-                }
+            public String getMessage() {
+                return "Connection closed due to discard() cancellation.";
             }
         }
     }
 
     static final class ExecCompletable<T> extends Completable {
 
+        private static final Logger LOGGER = LoggerFactory.getLogger(ExecCompletable.class);
+
         private static final ClosedChannelException CANCELLATION_EXCEPTION =
-                unknownStackTrace(new ClosedChannelException(),
-                        ExecCompletable.CloseOnCancelCancellable.class, "cancel");
+                unknownStackTrace(new ConnectionClosedException(),
+                        CommanderUtils.class, "closeOnCancel");
+
         private static final AtomicIntegerFieldUpdater<ExecCompletable> terminatedUpdater =
                 newUpdater(ExecCompletable.class, "terminated");
 
@@ -229,14 +234,17 @@ final class CommanderUtils {
             completeSingles(results, singles).subscribe(new Subscriber() {
                 @Override
                 public void onSubscribe(final Cancellable cancellable) {
-                    subscriber.onSubscribe(new CloseOnCancelCancellable(cancellable));
+                    subscriber.onSubscribe(() ->
+                            closeOnCancel(terminatedUpdater.compareAndSet(ExecCompletable.this, 0, 1), cancellable,
+                                    reservedCnx, singles, CANCELLATION_EXCEPTION));
                 }
 
                 @Override
                 public void onComplete() {
                     if (terminatedUpdater.compareAndSet(ExecCompletable.this, 0, 1)) {
                         if (releaseAfterDone) {
-                            reservedCnx.releaseAsync().subscribe();
+                            reservedCnx.releaseAsync().subscribe(subscriber);
+                            return;
                         }
                         subscriber.onComplete();
                     }
@@ -246,7 +254,11 @@ final class CommanderUtils {
                 public void onError(final Throwable t) {
                     if (terminatedUpdater.compareAndSet(ExecCompletable.this, 0, 1)) {
                         if (releaseAfterDone) {
-                            reservedCnx.releaseAsync().subscribe();
+                            reservedCnx.releaseAsync().doBeforeError(e -> {
+                                LOGGER.warn("Encountered error while releasing connection due to error. " +
+                                        "Original cause:", t);
+                            }).andThen(Completable.error(t)).subscribe(subscriber);
+                            return;
                         }
                         subscriber.onError(t);
                     }
@@ -254,24 +266,29 @@ final class CommanderUtils {
             });
         }
 
-        private final class CloseOnCancelCancellable implements Cancellable {
-            private final Cancellable cancellable;
-
-            private CloseOnCancelCancellable(final Cancellable cancellable) {
-                this.cancellable = cancellable;
-            }
-
+        private static final class ConnectionClosedException extends ClosedChannelException {
             @Override
-            public void cancel() {
-                if (terminatedUpdater.compareAndSet(ExecCompletable.this, 0, 1)) {
-                    cancellable.cancel();
-                    reservedCnx.closeAsync().doAfterComplete(() -> {
-                        for (SingleProcessor<?> single : singles) {
-                            single.onError(CANCELLATION_EXCEPTION);
-                        }
-                    }).subscribe();
-                }
+            public String getMessage() {
+                return "Connection closed due to exec() cancellation.";
             }
+        }
+    }
+
+    private static void closeOnCancel(final boolean terminated, final Cancellable cancellable,
+                                      final ReservedRedisConnection reservedCnx,
+                                      final List<SingleProcessor<?>> singles,
+                                      final ClosedChannelException cancellationException) {
+        if (terminated) {
+            cancellable.cancel();
+            // After cancelling an exec() or discard(), we don't know what state the connection is in. It wouldn't be
+            // safe to release its back to be reused, so we close it instead.
+            reservedCnx.closeAsync().doBeforeError(e -> {
+                LOGGER.warn("Encountered error while closing connection due to cancel.", e);
+            }).andThen(Completable.error(cancellationException)).doAfterError(e -> {
+                for (SingleProcessor<?> single : singles) {
+                    single.onError(e);
+                }
+            }).subscribe();
         }
     }
 }
