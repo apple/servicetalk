@@ -1558,11 +1558,10 @@ public abstract class BlockingRedisCommander implements AutoCloseable {
      * @param key the key
      * @param field the field
      * @return a {@link List} result
-     * @param <T> the type of elements
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.HMGET)
-    public abstract <T> List<T> hmget(@RedisProtocolSupport.Key CharSequence key, CharSequence field) throws Exception;
+    public abstract List<String> hmget(@RedisProtocolSupport.Key CharSequence key, CharSequence field) throws Exception;
 
     /**
      * Get the values of all the given hash fields.
@@ -1571,12 +1570,11 @@ public abstract class BlockingRedisCommander implements AutoCloseable {
      * @param field1 the field1
      * @param field2 the field2
      * @return a {@link List} result
-     * @param <T> the type of elements
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.HMGET)
-    public abstract <T> List<T> hmget(@RedisProtocolSupport.Key CharSequence key, CharSequence field1,
-                                      CharSequence field2) throws Exception;
+    public abstract List<String> hmget(@RedisProtocolSupport.Key CharSequence key, CharSequence field1,
+                                       CharSequence field2) throws Exception;
 
     /**
      * Get the values of all the given hash fields.
@@ -1586,12 +1584,11 @@ public abstract class BlockingRedisCommander implements AutoCloseable {
      * @param field2 the field2
      * @param field3 the field3
      * @return a {@link List} result
-     * @param <T> the type of elements
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.HMGET)
-    public abstract <T> List<T> hmget(@RedisProtocolSupport.Key CharSequence key, CharSequence field1,
-                                      CharSequence field2, CharSequence field3) throws Exception;
+    public abstract List<String> hmget(@RedisProtocolSupport.Key CharSequence key, CharSequence field1,
+                                       CharSequence field2, CharSequence field3) throws Exception;
 
     /**
      * Get the values of all the given hash fields.
@@ -1599,12 +1596,11 @@ public abstract class BlockingRedisCommander implements AutoCloseable {
      * @param key the key
      * @param fields the fields
      * @return a {@link List} result
-     * @param <T> the type of elements
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.HMGET)
-    public abstract <T> List<T> hmget(@RedisProtocolSupport.Key CharSequence key,
-                                      Collection<? extends CharSequence> fields) throws Exception;
+    public abstract List<String> hmget(@RedisProtocolSupport.Key CharSequence key,
+                                       Collection<? extends CharSequence> fields) throws Exception;
 
     /**
      * Set multiple hash fields to multiple values.
@@ -2051,11 +2047,10 @@ public abstract class BlockingRedisCommander implements AutoCloseable {
      *
      * @param key the key
      * @return a {@link List} result
-     * @param <T> the type of elements
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.MGET)
-    public abstract <T> List<T> mget(@RedisProtocolSupport.Key CharSequence key) throws Exception;
+    public abstract List<String> mget(@RedisProtocolSupport.Key CharSequence key) throws Exception;
 
     /**
      * Get the values of all the given keys.
@@ -2063,12 +2058,11 @@ public abstract class BlockingRedisCommander implements AutoCloseable {
      * @param key1 the key1
      * @param key2 the key2
      * @return a {@link List} result
-     * @param <T> the type of elements
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.MGET)
-    public abstract <T> List<T> mget(@RedisProtocolSupport.Key CharSequence key1,
-                                     @RedisProtocolSupport.Key CharSequence key2) throws Exception;
+    public abstract List<String> mget(@RedisProtocolSupport.Key CharSequence key1,
+                                      @RedisProtocolSupport.Key CharSequence key2) throws Exception;
 
     /**
      * Get the values of all the given keys.
@@ -2077,24 +2071,22 @@ public abstract class BlockingRedisCommander implements AutoCloseable {
      * @param key2 the key2
      * @param key3 the key3
      * @return a {@link List} result
-     * @param <T> the type of elements
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.MGET)
-    public abstract <T> List<T> mget(@RedisProtocolSupport.Key CharSequence key1,
-                                     @RedisProtocolSupport.Key CharSequence key2,
-                                     @RedisProtocolSupport.Key CharSequence key3) throws Exception;
+    public abstract List<String> mget(@RedisProtocolSupport.Key CharSequence key1,
+                                      @RedisProtocolSupport.Key CharSequence key2,
+                                      @RedisProtocolSupport.Key CharSequence key3) throws Exception;
 
     /**
      * Get the values of all the given keys.
      *
      * @param keys the keys
      * @return a {@link List} result
-     * @param <T> the type of elements
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.MGET)
-    public abstract <T> List<T> mget(@RedisProtocolSupport.Key Collection<? extends CharSequence> keys) throws Exception;
+    public abstract List<String> mget(@RedisProtocolSupport.Key Collection<? extends CharSequence> keys) throws Exception;
 
     /**
      * Listen for all requests received by the server in real time.

@@ -2580,7 +2580,7 @@ final class DefaultPartitionedBufferRedisCommander extends BufferRedisCommander 
     }
 
     @Override
-    public <T> Single<List<T>> hmget(@RedisProtocolSupport.Key final Buffer key, final Buffer field) {
+    public Single<List<Buffer>> hmget(@RedisProtocolSupport.Key final Buffer key, final Buffer field) {
         requireNonNull(key);
         requireNonNull(field);
         final BufferAllocator allocator = partitionedRedisClient.executionContext().bufferAllocator();
@@ -2593,14 +2593,14 @@ final class DefaultPartitionedBufferRedisCommander extends BufferRedisCommander 
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.HMGET);
         partitionAttributesBuilder.addKey(key);
-        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
+        final Single<List<Buffer>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
                     request, List.class);
         return result;
     }
 
     @Override
-    public <T> Single<List<T>> hmget(@RedisProtocolSupport.Key final Buffer key, final Buffer field1,
-                                     final Buffer field2) {
+    public Single<List<Buffer>> hmget(@RedisProtocolSupport.Key final Buffer key, final Buffer field1,
+                                      final Buffer field2) {
         requireNonNull(key);
         requireNonNull(field1);
         requireNonNull(field2);
@@ -2615,14 +2615,14 @@ final class DefaultPartitionedBufferRedisCommander extends BufferRedisCommander 
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.HMGET);
         partitionAttributesBuilder.addKey(key);
-        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
+        final Single<List<Buffer>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
                     request, List.class);
         return result;
     }
 
     @Override
-    public <T> Single<List<T>> hmget(@RedisProtocolSupport.Key final Buffer key, final Buffer field1,
-                                     final Buffer field2, final Buffer field3) {
+    public Single<List<Buffer>> hmget(@RedisProtocolSupport.Key final Buffer key, final Buffer field1,
+                                      final Buffer field2, final Buffer field3) {
         requireNonNull(key);
         requireNonNull(field1);
         requireNonNull(field2);
@@ -2639,13 +2639,13 @@ final class DefaultPartitionedBufferRedisCommander extends BufferRedisCommander 
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.HMGET);
         partitionAttributesBuilder.addKey(key);
-        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
+        final Single<List<Buffer>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
                     request, List.class);
         return result;
     }
 
     @Override
-    public <T> Single<List<T>> hmget(@RedisProtocolSupport.Key final Buffer key, final Collection<Buffer> fields) {
+    public Single<List<Buffer>> hmget(@RedisProtocolSupport.Key final Buffer key, final Collection<Buffer> fields) {
         requireNonNull(key);
         requireNonNull(fields);
         final BufferAllocator allocator = partitionedRedisClient.executionContext().bufferAllocator();
@@ -2659,7 +2659,7 @@ final class DefaultPartitionedBufferRedisCommander extends BufferRedisCommander 
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.HMGET);
         partitionAttributesBuilder.addKey(key);
-        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
+        final Single<List<Buffer>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
                     request, List.class);
         return result;
     }
@@ -3385,7 +3385,7 @@ final class DefaultPartitionedBufferRedisCommander extends BufferRedisCommander 
     }
 
     @Override
-    public <T> Single<List<T>> mget(@RedisProtocolSupport.Key final Buffer key) {
+    public Single<List<Buffer>> mget(@RedisProtocolSupport.Key final Buffer key) {
         requireNonNull(key);
         final BufferAllocator allocator = partitionedRedisClient.executionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
@@ -3396,14 +3396,14 @@ final class DefaultPartitionedBufferRedisCommander extends BufferRedisCommander 
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.MGET);
         partitionAttributesBuilder.addKey(key);
-        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
+        final Single<List<Buffer>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
                     request, List.class);
         return result;
     }
 
     @Override
-    public <T> Single<List<T>> mget(@RedisProtocolSupport.Key final Buffer key1,
-                                    @RedisProtocolSupport.Key final Buffer key2) {
+    public Single<List<Buffer>> mget(@RedisProtocolSupport.Key final Buffer key1,
+                                     @RedisProtocolSupport.Key final Buffer key2) {
         requireNonNull(key1);
         requireNonNull(key2);
         final BufferAllocator allocator = partitionedRedisClient.executionContext().bufferAllocator();
@@ -3417,15 +3417,15 @@ final class DefaultPartitionedBufferRedisCommander extends BufferRedisCommander 
                     .apply(RedisProtocolSupport.Command.MGET);
         partitionAttributesBuilder.addKey(key1);
         partitionAttributesBuilder.addKey(key2);
-        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
+        final Single<List<Buffer>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
                     request, List.class);
         return result;
     }
 
     @Override
-    public <T> Single<List<T>> mget(@RedisProtocolSupport.Key final Buffer key1,
-                                    @RedisProtocolSupport.Key final Buffer key2,
-                                    @RedisProtocolSupport.Key final Buffer key3) {
+    public Single<List<Buffer>> mget(@RedisProtocolSupport.Key final Buffer key1,
+                                     @RedisProtocolSupport.Key final Buffer key2,
+                                     @RedisProtocolSupport.Key final Buffer key3) {
         requireNonNull(key1);
         requireNonNull(key2);
         requireNonNull(key3);
@@ -3442,13 +3442,13 @@ final class DefaultPartitionedBufferRedisCommander extends BufferRedisCommander 
         partitionAttributesBuilder.addKey(key1);
         partitionAttributesBuilder.addKey(key2);
         partitionAttributesBuilder.addKey(key3);
-        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
+        final Single<List<Buffer>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
                     request, List.class);
         return result;
     }
 
     @Override
-    public <T> Single<List<T>> mget(@RedisProtocolSupport.Key final Collection<Buffer> keys) {
+    public Single<List<Buffer>> mget(@RedisProtocolSupport.Key final Collection<Buffer> keys) {
         requireNonNull(keys);
         final BufferAllocator allocator = partitionedRedisClient.executionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
@@ -3460,7 +3460,7 @@ final class DefaultPartitionedBufferRedisCommander extends BufferRedisCommander 
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.MGET);
         addBufferKeysToAttributeBuilder(keys, partitionAttributesBuilder);
-        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
+        final Single<List<Buffer>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
                     request, List.class);
         return result;
     }
@@ -6022,7 +6022,7 @@ final class DefaultPartitionedBufferRedisCommander extends BufferRedisCommander 
     }
 
     @Override
-    public Single<List<String>> srandmember(@RedisProtocolSupport.Key final Buffer key, final long count) {
+    public Single<List<Buffer>> srandmember(@RedisProtocolSupport.Key final Buffer key, final long count) {
         requireNonNull(key);
         final BufferAllocator allocator = partitionedRedisClient.executionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
@@ -6034,7 +6034,7 @@ final class DefaultPartitionedBufferRedisCommander extends BufferRedisCommander 
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.SRANDMEMBER);
         partitionAttributesBuilder.addKey(key);
-        final Single<List<String>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
+        final Single<List<Buffer>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
                     request, List.class);
         return result;
     }

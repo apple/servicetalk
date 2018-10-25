@@ -2594,7 +2594,7 @@ final class DefaultPartitionedRedisCommander extends RedisCommander {
     }
 
     @Override
-    public <T> Single<List<T>> hmget(@RedisProtocolSupport.Key final CharSequence key, final CharSequence field) {
+    public Single<List<String>> hmget(@RedisProtocolSupport.Key final CharSequence key, final CharSequence field) {
         requireNonNull(key);
         requireNonNull(field);
         final BufferAllocator allocator = partitionedRedisClient.executionContext().bufferAllocator();
@@ -2607,14 +2607,14 @@ final class DefaultPartitionedRedisCommander extends RedisCommander {
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.HMGET);
         partitionAttributesBuilder.addKey(key);
-        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
+        final Single<List<String>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
                     request, RedisUtils.ListWithBuffersCoercedToCharSequences.class);
         return result;
     }
 
     @Override
-    public <T> Single<List<T>> hmget(@RedisProtocolSupport.Key final CharSequence key, final CharSequence field1,
-                                     final CharSequence field2) {
+    public Single<List<String>> hmget(@RedisProtocolSupport.Key final CharSequence key, final CharSequence field1,
+                                      final CharSequence field2) {
         requireNonNull(key);
         requireNonNull(field1);
         requireNonNull(field2);
@@ -2629,14 +2629,14 @@ final class DefaultPartitionedRedisCommander extends RedisCommander {
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.HMGET);
         partitionAttributesBuilder.addKey(key);
-        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
+        final Single<List<String>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
                     request, RedisUtils.ListWithBuffersCoercedToCharSequences.class);
         return result;
     }
 
     @Override
-    public <T> Single<List<T>> hmget(@RedisProtocolSupport.Key final CharSequence key, final CharSequence field1,
-                                     final CharSequence field2, final CharSequence field3) {
+    public Single<List<String>> hmget(@RedisProtocolSupport.Key final CharSequence key, final CharSequence field1,
+                                      final CharSequence field2, final CharSequence field3) {
         requireNonNull(key);
         requireNonNull(field1);
         requireNonNull(field2);
@@ -2653,14 +2653,14 @@ final class DefaultPartitionedRedisCommander extends RedisCommander {
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.HMGET);
         partitionAttributesBuilder.addKey(key);
-        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
+        final Single<List<String>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
                     request, RedisUtils.ListWithBuffersCoercedToCharSequences.class);
         return result;
     }
 
     @Override
-    public <T> Single<List<T>> hmget(@RedisProtocolSupport.Key final CharSequence key,
-                                     final Collection<? extends CharSequence> fields) {
+    public Single<List<String>> hmget(@RedisProtocolSupport.Key final CharSequence key,
+                                      final Collection<? extends CharSequence> fields) {
         requireNonNull(key);
         requireNonNull(fields);
         final BufferAllocator allocator = partitionedRedisClient.executionContext().bufferAllocator();
@@ -2674,7 +2674,7 @@ final class DefaultPartitionedRedisCommander extends RedisCommander {
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.HMGET);
         partitionAttributesBuilder.addKey(key);
-        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
+        final Single<List<String>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
                     request, RedisUtils.ListWithBuffersCoercedToCharSequences.class);
         return result;
     }
@@ -3411,7 +3411,7 @@ final class DefaultPartitionedRedisCommander extends RedisCommander {
     }
 
     @Override
-    public <T> Single<List<T>> mget(@RedisProtocolSupport.Key final CharSequence key) {
+    public Single<List<String>> mget(@RedisProtocolSupport.Key final CharSequence key) {
         requireNonNull(key);
         final BufferAllocator allocator = partitionedRedisClient.executionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
@@ -3422,14 +3422,14 @@ final class DefaultPartitionedRedisCommander extends RedisCommander {
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.MGET);
         partitionAttributesBuilder.addKey(key);
-        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
+        final Single<List<String>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
                     request, RedisUtils.ListWithBuffersCoercedToCharSequences.class);
         return result;
     }
 
     @Override
-    public <T> Single<List<T>> mget(@RedisProtocolSupport.Key final CharSequence key1,
-                                    @RedisProtocolSupport.Key final CharSequence key2) {
+    public Single<List<String>> mget(@RedisProtocolSupport.Key final CharSequence key1,
+                                     @RedisProtocolSupport.Key final CharSequence key2) {
         requireNonNull(key1);
         requireNonNull(key2);
         final BufferAllocator allocator = partitionedRedisClient.executionContext().bufferAllocator();
@@ -3443,15 +3443,15 @@ final class DefaultPartitionedRedisCommander extends RedisCommander {
                     .apply(RedisProtocolSupport.Command.MGET);
         partitionAttributesBuilder.addKey(key1);
         partitionAttributesBuilder.addKey(key2);
-        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
+        final Single<List<String>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
                     request, RedisUtils.ListWithBuffersCoercedToCharSequences.class);
         return result;
     }
 
     @Override
-    public <T> Single<List<T>> mget(@RedisProtocolSupport.Key final CharSequence key1,
-                                    @RedisProtocolSupport.Key final CharSequence key2,
-                                    @RedisProtocolSupport.Key final CharSequence key3) {
+    public Single<List<String>> mget(@RedisProtocolSupport.Key final CharSequence key1,
+                                     @RedisProtocolSupport.Key final CharSequence key2,
+                                     @RedisProtocolSupport.Key final CharSequence key3) {
         requireNonNull(key1);
         requireNonNull(key2);
         requireNonNull(key3);
@@ -3468,13 +3468,13 @@ final class DefaultPartitionedRedisCommander extends RedisCommander {
         partitionAttributesBuilder.addKey(key1);
         partitionAttributesBuilder.addKey(key2);
         partitionAttributesBuilder.addKey(key3);
-        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
+        final Single<List<String>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
                     request, RedisUtils.ListWithBuffersCoercedToCharSequences.class);
         return result;
     }
 
     @Override
-    public <T> Single<List<T>> mget(@RedisProtocolSupport.Key final Collection<? extends CharSequence> keys) {
+    public Single<List<String>> mget(@RedisProtocolSupport.Key final Collection<? extends CharSequence> keys) {
         requireNonNull(keys);
         final BufferAllocator allocator = partitionedRedisClient.executionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
@@ -3486,7 +3486,7 @@ final class DefaultPartitionedRedisCommander extends RedisCommander {
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.MGET);
         addCharSequenceKeysToAttributeBuilder(keys, partitionAttributesBuilder);
-        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
+        final Single<List<String>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
                     request, RedisUtils.ListWithBuffersCoercedToCharSequences.class);
         return result;
     }

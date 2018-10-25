@@ -744,25 +744,25 @@ final class BlockingPartitionedRedisCommanderToPartitionedRedisCommander extends
     }
 
     @Override
-    public <T> Single<List<T>> hmget(@RedisProtocolSupport.Key final CharSequence key, final CharSequence field) {
+    public Single<List<String>> hmget(@RedisProtocolSupport.Key final CharSequence key, final CharSequence field) {
         return blockingToSingle(() -> partitionedRedisClient.hmget(key, field));
     }
 
     @Override
-    public <T> Single<List<T>> hmget(@RedisProtocolSupport.Key final CharSequence key, final CharSequence field1,
-                                     final CharSequence field2) {
+    public Single<List<String>> hmget(@RedisProtocolSupport.Key final CharSequence key, final CharSequence field1,
+                                      final CharSequence field2) {
         return blockingToSingle(() -> partitionedRedisClient.hmget(key, field1, field2));
     }
 
     @Override
-    public <T> Single<List<T>> hmget(@RedisProtocolSupport.Key final CharSequence key, final CharSequence field1,
-                                     final CharSequence field2, final CharSequence field3) {
+    public Single<List<String>> hmget(@RedisProtocolSupport.Key final CharSequence key, final CharSequence field1,
+                                      final CharSequence field2, final CharSequence field3) {
         return blockingToSingle(() -> partitionedRedisClient.hmget(key, field1, field2, field3));
     }
 
     @Override
-    public <T> Single<List<T>> hmget(@RedisProtocolSupport.Key final CharSequence key,
-                                     final Collection<? extends CharSequence> fields) {
+    public Single<List<String>> hmget(@RedisProtocolSupport.Key final CharSequence key,
+                                      final Collection<? extends CharSequence> fields) {
         return blockingToSingle(() -> partitionedRedisClient.hmget(key, fields));
     }
 
@@ -970,25 +970,25 @@ final class BlockingPartitionedRedisCommanderToPartitionedRedisCommander extends
     }
 
     @Override
-    public <T> Single<List<T>> mget(@RedisProtocolSupport.Key final CharSequence key) {
+    public Single<List<String>> mget(@RedisProtocolSupport.Key final CharSequence key) {
         return blockingToSingle(() -> partitionedRedisClient.mget(key));
     }
 
     @Override
-    public <T> Single<List<T>> mget(@RedisProtocolSupport.Key final CharSequence key1,
-                                    @RedisProtocolSupport.Key final CharSequence key2) {
+    public Single<List<String>> mget(@RedisProtocolSupport.Key final CharSequence key1,
+                                     @RedisProtocolSupport.Key final CharSequence key2) {
         return blockingToSingle(() -> partitionedRedisClient.mget(key1, key2));
     }
 
     @Override
-    public <T> Single<List<T>> mget(@RedisProtocolSupport.Key final CharSequence key1,
-                                    @RedisProtocolSupport.Key final CharSequence key2,
-                                    @RedisProtocolSupport.Key final CharSequence key3) {
+    public Single<List<String>> mget(@RedisProtocolSupport.Key final CharSequence key1,
+                                     @RedisProtocolSupport.Key final CharSequence key2,
+                                     @RedisProtocolSupport.Key final CharSequence key3) {
         return blockingToSingle(() -> partitionedRedisClient.mget(key1, key2, key3));
     }
 
     @Override
-    public <T> Single<List<T>> mget(@RedisProtocolSupport.Key final Collection<? extends CharSequence> keys) {
+    public Single<List<String>> mget(@RedisProtocolSupport.Key final Collection<? extends CharSequence> keys) {
         return blockingToSingle(() -> partitionedRedisClient.mget(keys));
     }
 
