@@ -214,7 +214,8 @@ final class PublisherFlatMapSingle<T, R> extends AbstractAsynchronousPublisherOp
             }
         }
 
-        private boolean onError0(Throwable throwable, boolean overrideComplete, boolean cancelSubscriberIfNecessary) {
+        private boolean onError0(Throwable throwable, boolean overrideComplete,
+                                 boolean cancelSubscriberIfNecessary) {
             final TerminalNotification notification = TerminalNotification.error(throwable);
             if (trySetTerminal(notification, overrideComplete, terminalNotificationUpdater, this)) {
                 enqueueAndDrain(notification);
@@ -295,7 +296,11 @@ final class PublisherFlatMapSingle<T, R> extends AbstractAsynchronousPublisherOp
                 CompositeException de = this.delayedError;
                 if (de != null) {
                     de.addAllPendingSuppressed();
-                    terminalNotification.terminate(target, de);
+                    if (terminalNotification.getCause() == de) {
+                        terminalNotification.terminate(target);
+                    } else {
+                        terminalNotification.terminate(target, de);
+                    }
                 } else {
                     terminalNotification.terminate(target);
                 }
@@ -332,8 +337,7 @@ final class PublisherFlatMapSingle<T, R> extends AbstractAsynchronousPublisherOp
 
             @Override
             public void onError(Throwable t) {
-                boolean allDone = onSingleTerminated();
-                if (allDone || !source.delayError) {
+                if (!source.delayError) {
                     onError0(t, true, true);
                 } else {
                     CompositeException de = FlatMapSubscriber.this.delayedError;
@@ -347,7 +351,19 @@ final class PublisherFlatMapSingle<T, R> extends AbstractAsynchronousPublisherOp
                     } else {
                         de.add(t);
                     }
-                    enqueueAndDrain(SINGLE_ERROR);
+                    if (onSingleTerminated()) {
+                        if (trySetTerminal(TerminalNotification.error(de), true, terminalNotificationUpdater,
+                                FlatMapSubscriber.this)) {
+                            // Since we have already added error to delayedError, we use complete() TerminalNotification
+                            // as a dummy signal to start draining and termination.
+                            enqueueAndDrain(complete());
+                            // We can not call cancel before drainPending as drainPending will drain the queue.
+                            // If we mark as cancelled, queue will not be drained as in drainPending we bail if we are cancelled.
+                            doCancel(false);
+                        }
+                    } else {
+                        enqueueAndDrain(SINGLE_ERROR);
+                    }
                 }
             }
 

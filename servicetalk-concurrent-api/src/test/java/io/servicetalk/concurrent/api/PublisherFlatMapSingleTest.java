@@ -33,7 +33,6 @@ import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -47,6 +46,7 @@ import static java.util.stream.IntStream.range;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
@@ -82,18 +82,45 @@ public class PublisherFlatMapSingleTest {
     }
 
     @Test
-    public void concurrentSingleAndPublisherTermination() throws ExecutionException, InterruptedException {
+    public void concurrentSingleAndPublisherTermination() throws Exception {
         final List<String> elements = range(0, 1000).mapToObj(Integer::toString).collect(toList());
         final Publisher<String> publisher = Publisher.from(elements);
         final Single<List<String>> single = publisher.flatMapSingle(x -> executor.submit(() -> x), 1024)
-                .reduce(ArrayList::new,
-                        (strings, s) -> {
-                            strings.add(s);
-                            return strings;
-                        });
+                .reduce(ArrayList::new, (strings, s) -> {
+                    strings.add(s);
+                    return strings;
+                });
         for (int i = 0; i < 10; i++) {
             List<String> list = single.toFuture().get();
             assertThat("Unexpected items received", list, hasSize(1000));
+        }
+    }
+
+    @Test
+    public void concurrentSingleErrorAndPublisherTermination() throws Exception {
+        final Publisher<Integer> publisher = Publisher.from(() -> range(0, 1000).iterator());
+        AtomicReference<Throwable> error = new AtomicReference<>();
+        final Single<List<Integer>> single = publisher.flatMapSingleDelayError(x -> executor.submit(() -> {
+            if (x % 2 == 0) {
+                return x;
+            }
+            throw new DeliberateException();
+        }), 1024).onErrorResume(t -> {
+            error.set(t);
+            return Publisher.empty();
+        }).reduce(ArrayList::new, (ints, s) -> {
+            ints.add(s);
+            return ints;
+        });
+
+        for (int i = 0; i < 10; i++) {
+            List<Integer> list = single.toFuture().get();
+            assertThat("Unexpected items received", list, hasSize(500));
+            Throwable cause = error.get();
+            assertThat("Unexpected exception.", cause, instanceOf(CompositeException.class));
+            assertThat("Unexpected exception.", cause.getCause(), instanceOf(DeliberateException.class));
+            assertThat("Unexpected exception.", cause.getSuppressed().length,
+                    equalTo(499/*everything but the first error is suppressed*/));
         }
     }
 
