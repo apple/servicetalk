@@ -81,7 +81,7 @@ import static io.servicetalk.http.api.HttpProtocolVersions.HTTP_1_1;
 import static io.servicetalk.http.api.HttpRequestMetaDataFactory.newRequestMetaData;
 import static io.servicetalk.http.api.HttpRequestMethods.GET;
 import static io.servicetalk.transport.api.ContextFilter.ACCEPT_ALL;
-import static io.servicetalk.transport.netty.internal.NettyIoExecutors.createIoExecutor;
+import static io.servicetalk.transport.netty.NettyIoExecutors.createIoExecutor;
 import static java.lang.Boolean.TRUE;
 import static java.lang.Integer.toHexString;
 import static java.lang.String.valueOf;
@@ -107,11 +107,11 @@ public class HttpRequestEncoderTest {
 
     @ClassRule
     public static final ExecutionContextRule SEC = new ExecutionContextRule(() -> allocator,
-            () -> createIoExecutor(0, new DefaultThreadFactory("server-io", false, NORM_PRIORITY)),
+            () -> createIoExecutor(new DefaultThreadFactory("server-io", false, NORM_PRIORITY)),
             Executors::immediate);
     @ClassRule
     public static final ExecutionContextRule CEC = new ExecutionContextRule(() -> allocator,
-            () -> createIoExecutor(0, new DefaultThreadFactory("client-io", false, NORM_PRIORITY)),
+            () -> createIoExecutor(new DefaultThreadFactory("client-io", false, NORM_PRIORITY)),
             Executors::newCachedThreadExecutor);
 
     private enum TransferEncoding {

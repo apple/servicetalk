@@ -27,6 +27,7 @@ import io.netty.channel.nio.NioEventLoopGroup;
 
 import java.util.concurrent.ThreadFactory;
 
+import static java.lang.Runtime.getRuntime;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -39,13 +40,24 @@ public final class NettyIoExecutors {
     }
 
     /**
+     * Create a new {@link NettyIoExecutor} with the default number of {@code ioThreads}.
+     *
+     * @param threadFactory the {@link ThreadFactory} to use.
+     * @return The created {@link IoExecutor}
+     */
+    public static NettyIoExecutor createIoExecutor(ThreadFactory threadFactory) {
+        return createIoExecutor(getRuntime().availableProcessors() * 2, threadFactory);
+    }
+
+    /**
      * Create a new {@link NettyIoExecutor}.
      *
-     * @param ioThreads number of threads
+     * @param ioThreads number of threads.
      * @param threadFactory the {@link ThreadFactory} to use.
      * @return The created {@link IoExecutor}
      */
     public static NettyIoExecutor createIoExecutor(int ioThreads, ThreadFactory threadFactory) {
+        validateIoThreads(ioThreads);
         return new EventLoopGroupIoExecutor(createEventLoopGroup(ioThreads, threadFactory), true);
     }
 
@@ -57,6 +69,7 @@ public final class NettyIoExecutors {
      * @return The created {@link IoExecutor}
      */
     public static EventLoopGroup createEventLoopGroup(int ioThreads, ThreadFactory threadFactory) {
+        validateIoThreads(ioThreads);
         return Epoll.isAvailable() ? new EpollEventLoopGroup(ioThreads, threadFactory) :
                 KQueue.isAvailable() ? new KQueueEventLoopGroup(ioThreads, threadFactory) :
                         new NioEventLoopGroup(ioThreads, threadFactory);
@@ -96,5 +109,11 @@ public final class NettyIoExecutors {
      */
     public static NettyIoExecutor fromNettyEventLoopGroup(EventLoopGroup eventLoopGroup) {
         return new EventLoopGroupIoExecutor(eventLoopGroup, true);
+    }
+
+    private static void validateIoThreads(final int ioThreads) {
+        if (ioThreads <= 0) {
+            throw new IllegalArgumentException("ioThreads: " + ioThreads + " (expected >0)");
+        }
     }
 }
