@@ -65,6 +65,9 @@ final class CommanderUtils {
         }).<T>liftSynchronous(sub -> new Subscriber<T>() {
             @Override
             public void onSubscribe(final Cancellable cancellable) {
+                // Allowing cancellation of commands within a transaction would require needing to know whether the
+                // server has accepted the command, and disallowing the cancel if it had, since it can't truly
+                // be cancelled then. This would be unpredictable, so instead we disallow cancel entirely.
                 sub.onSubscribe(IGNORE_CANCEL);
             }
 
