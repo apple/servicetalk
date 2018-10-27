@@ -16,8 +16,8 @@
 package io.servicetalk.examples.http.serialization.async;
 
 import io.servicetalk.data.jackson.JacksonSerializationProvider;
-import io.servicetalk.examples.http.serialization.MyPojo;
-import io.servicetalk.examples.http.serialization.PojoRequest;
+import io.servicetalk.examples.http.serialization.CreatePojoRequest;
+import io.servicetalk.examples.http.serialization.PojoResponse;
 import io.servicetalk.http.api.HttpClient;
 import io.servicetalk.http.api.HttpSerializationProvider;
 import io.servicetalk.http.netty.HttpClients;
@@ -27,6 +27,7 @@ import java.util.concurrent.CountDownLatch;
 import static io.servicetalk.http.api.HttpSerializationProviders.jsonSerializer;
 
 public final class PojoClient {
+
     public static void main(String[] args) throws Exception {
         HttpSerializationProvider serializer = jsonSerializer(new JacksonSerializationProvider());
         try (HttpClient client = HttpClients.forSingleAddress("localhost", 8080).build()) {
@@ -35,12 +36,12 @@ public final class PojoClient {
             // demonstration purposes.
             CountDownLatch responseProcessedLatch = new CountDownLatch(1);
 
-            client.request(client.get("pojo")
-                    .payloadBody(new PojoRequest("1"), serializer.serializerFor(PojoRequest.class)))
+            client.request(client.post("/pojos")
+                    .payloadBody(new CreatePojoRequest("value"), serializer.serializerFor(CreatePojoRequest.class)))
                     .doFinally(responseProcessedLatch::countDown)
                     .subscribe(resp -> {
                         System.out.println(resp.toString((name, value) -> value));
-                        System.out.println(resp.payloadBody(serializer.deserializerFor(MyPojo.class)));
+                        System.out.println(resp.payloadBody(serializer.deserializerFor(PojoResponse.class)));
                     });
 
             responseProcessedLatch.await();

@@ -35,7 +35,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static io.servicetalk.concurrent.api.Single.success;
-import static io.servicetalk.examples.http.service.composition.AsyncUtil.zip;
+import static io.servicetalk.examples.http.service.composition.AsyncUtils.zip;
 
 /**
  * This service provides an API that fetches recommendations in parallel and responds with a stream of
@@ -65,10 +65,10 @@ final class StreamingGatewayService extends StreamingHttpService {
 
     @Override
     public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx, final StreamingHttpRequest request,
-                                                final StreamingHttpResponseFactory factory) {
+                                                final StreamingHttpResponseFactory responseFactory) {
         final String userId = request.queryParameter(USER_ID_QP_NAME);
         if (userId == null) {
-            return success(factory.badRequest());
+            return success(responseFactory.badRequest());
         }
 
         return recommendationsClient.request(recommendationsClient.get("/recommendations/stream?userId=" + userId))
@@ -97,7 +97,8 @@ final class StreamingGatewayService extends StreamingHttpService {
                             // with a static "unavailable" rating when the rating service is unavailable or provides
                             // a bad response. This is typically referred to as a "fallback".
                             .onErrorResume(cause -> {
-                                LOGGER.error("Error querying ratings service. Ignoring and providing a fallback.", cause);
+                                LOGGER.error("Error querying ratings service. Ignoring and providing a fallback.",
+                                        cause);
                                 return success(new Rating(recommendation.getEntityId(), -1));
                             });
 

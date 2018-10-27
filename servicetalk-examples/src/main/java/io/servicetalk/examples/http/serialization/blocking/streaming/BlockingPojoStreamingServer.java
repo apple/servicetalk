@@ -18,34 +18,46 @@ package io.servicetalk.examples.http.serialization.blocking.streaming;
 import io.servicetalk.concurrent.BlockingIterable;
 import io.servicetalk.concurrent.BlockingIterator;
 import io.servicetalk.data.jackson.JacksonSerializationProvider;
-import io.servicetalk.examples.http.serialization.MyPojo;
-import io.servicetalk.examples.http.serialization.PojoRequest;
+import io.servicetalk.examples.http.serialization.CreatePojoRequest;
+import io.servicetalk.examples.http.serialization.PojoResponse;
 import io.servicetalk.http.api.HttpSerializationProvider;
 import io.servicetalk.http.netty.HttpServers;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicInteger;
 
+import static io.servicetalk.http.api.HttpHeaderNames.ALLOW;
+import static io.servicetalk.http.api.HttpRequestMethods.POST;
 import static io.servicetalk.http.api.HttpSerializationProviders.jsonSerializer;
 
-public class BlockingPojoStreamingServer {
+public final class BlockingPojoStreamingServer {
 
     public static void main(String[] args) throws Exception {
         HttpSerializationProvider serializer = jsonSerializer(new JacksonSerializationProvider());
         HttpServers.forPort(8080)
                 .listenBlockingStreamingAndAwait((ctx, request, responseFactory) -> {
-                    BlockingIterable<PojoRequest> ids = request.payloadBody(serializer.deserializerFor(PojoRequest.class));
-                    List<MyPojo> pojos = new ArrayList<>();
-                    try (BlockingIterator<PojoRequest> iterator = ids.iterator()) {
+                    if (!"/pojos".equals(request.requestTarget())) {
+                        return responseFactory.notFound();
+                    }
+                    if (request.method() != POST) {
+                        return responseFactory.methodNotAllowed().addHeader(ALLOW, POST.name());
+                    }
+                    BlockingIterable<CreatePojoRequest> values = request
+                            .payloadBody(serializer.deserializerFor(CreatePojoRequest.class));
+                    List<PojoResponse> pojos = new ArrayList<>();
+                    AtomicInteger newId = new AtomicInteger(ThreadLocalRandom.current().nextInt(100));
+                    try (BlockingIterator<CreatePojoRequest> iterator = values.iterator()) {
                         while (iterator.hasNext()) {
-                            PojoRequest req = iterator.next();
+                            CreatePojoRequest req = iterator.next();
                             if (req != null) {
-                                pojos.add(new MyPojo(req.getId(), "foo"));
+                                pojos.add(new PojoResponse(newId.getAndIncrement(), req.getValue()));
                             }
                         }
                     }
-                    return responseFactory.ok()
-                            .payloadBody(pojos, serializer.serializerFor(MyPojo.class));
+                    return responseFactory.created()
+                            .payloadBody(pojos, serializer.serializerFor(PojoResponse.class));
                 })
                 .awaitShutdown();
     }

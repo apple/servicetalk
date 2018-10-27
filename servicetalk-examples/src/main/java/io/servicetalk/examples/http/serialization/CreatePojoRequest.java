@@ -13,18 +13,34 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.examples.http.helloworld.blocking;
+package io.servicetalk.examples.http.serialization;
 
-import io.servicetalk.http.netty.HttpServers;
+/**
+ * A request object to request creation of a new {@link PojoResponse} on the server.
+ */
+public final class CreatePojoRequest {
 
-import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
+    private String value;
 
-public final class BlockingHelloWorldServer {
+    public CreatePojoRequest() {
+    }
 
-    public static void main(String[] args) throws Exception {
-        HttpServers.forPort(8080)
-                .listenBlockingAndAwait((ctx, request, responseFactory) ->
-                        responseFactory.ok().payloadBody("Hello World!", textSerializer()))
-                .awaitShutdown();
+    public CreatePojoRequest(String value) {
+        this.value = value;
+    }
+
+    public String getValue() {
+        return value;
+    }
+
+    public void setValue(String value) {
+        this.value = value;
+    }
+
+    @Override
+    public String toString() {
+        return "CreatePojoRequest{" +
+                "value='" + value + '\'' +
+                '}';
     }
 }

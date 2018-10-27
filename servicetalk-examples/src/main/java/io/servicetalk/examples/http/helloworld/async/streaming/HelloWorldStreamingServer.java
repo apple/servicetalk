@@ -22,6 +22,7 @@ import static io.servicetalk.concurrent.api.Single.success;
 import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
 
 public final class HelloWorldStreamingServer {
+
     public static void main(String[] args) throws Exception {
         HttpServers.forPort(8080)
                 .listenStreamingAndAwait((ctx, request, responseFactory) ->

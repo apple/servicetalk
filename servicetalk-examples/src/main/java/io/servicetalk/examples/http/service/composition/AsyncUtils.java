@@ -18,11 +18,15 @@ package io.servicetalk.examples.http.service.composition;
 import io.servicetalk.concurrent.api.Single;
 
 // This class exists to fill the gap for missing operators in our async primitives.
-final class AsyncUtil {
+final class AsyncUtils {
+
+    private AsyncUtils() {
+        // No instances.
+    }
 
     /**
      * This operator is not currently available in ServiceTalk hence we provide a workaround to achieve the same
-     * results as a zip. This operator merges heterogenous {@link Single} into a single holder object.
+     * results as a zip. This operator merges heterogeneous {@link Single} into a single holder object.
      *
      * @param first First {@link Single} to be zipped.
      * @param second Second {@link Single} to be zipped.
@@ -38,7 +42,7 @@ final class AsyncUtil {
     static <T1, T2, T3, R> Single<R> zip(Single<T1> first, Single<T2> second, Single<T3> third,
                                          Zipper<T1, T2, T3, R> zipper) {
 
-        @SuppressWarnings("unchecked")
+        @SuppressWarnings({"unchecked", "rawtypes"})
         Single<R> resp = first.concatWith((Single) second).concatWith(third)
                 .reduce(Collector::new, (collector, aEntity) -> {
                     @SuppressWarnings("unchecked")
@@ -58,13 +62,12 @@ final class AsyncUtil {
     interface Zipper<T1, T2, T3, R> {
 
         R zip(T1 first, T2 second, T3 third);
-
     }
 
     private static final class Collector<T1, T2, T3, R> {
 
         private final Object[] holder = new Object[3];
-        private int index = 0;
+        private int index;
 
         Collector<T1, T2, T3, R> add(Object entity) {
             holder[index++] = entity;

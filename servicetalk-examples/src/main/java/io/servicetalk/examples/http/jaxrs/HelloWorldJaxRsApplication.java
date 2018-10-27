@@ -13,18 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.examples.http.helloworld.blocking;
+package io.servicetalk.examples.http.jaxrs;
 
-import io.servicetalk.http.netty.HttpServers;
+import java.util.Set;
+import javax.ws.rs.core.Application;
 
-import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
+import static java.util.Collections.singleton;
 
-public final class BlockingHelloWorldServer {
-
-    public static void main(String[] args) throws Exception {
-        HttpServers.forPort(8080)
-                .listenBlockingAndAwait((ctx, request, responseFactory) ->
-                        responseFactory.ok().payloadBody("Hello World!", textSerializer()))
-                .awaitShutdown();
+/**
+ * JAX-RS Hello World {@link Application}.
+ */
+public class HelloWorldJaxRsApplication extends Application {
+    @Override
+    public Set<Class<?>> getClasses() {
+        return singleton(HelloWorldJaxRsResource.class);
     }
 }

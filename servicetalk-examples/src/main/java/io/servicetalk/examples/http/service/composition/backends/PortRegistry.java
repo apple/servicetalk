@@ -30,4 +30,8 @@ public final class PortRegistry {
     public static final HostAndPort RATINGS_BACKEND_ADDRESS = HostAndPort.of("127.0.0.1", 8083);
 
     public static final HostAndPort USER_BACKEND_ADDRESS = HostAndPort.of("127.0.0.1", 8084);
+
+    private PortRegistry() {
+        // No instances.
+    }
 }
