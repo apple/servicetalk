@@ -1424,10 +1424,9 @@ public abstract class BufferRedisCommander implements AsyncCloseable {
      * @param key the key
      * @param field the field
      * @return a {@link Single} result
-     * @param <T> the type of elements
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.HMGET)
-    public abstract <T> Single<List<T>> hmget(@RedisProtocolSupport.Key Buffer key, Buffer field);
+    public abstract Single<List<Buffer>> hmget(@RedisProtocolSupport.Key Buffer key, Buffer field);
 
     /**
      * Get the values of all the given hash fields.
@@ -1436,10 +1435,9 @@ public abstract class BufferRedisCommander implements AsyncCloseable {
      * @param field1 the field1
      * @param field2 the field2
      * @return a {@link Single} result
-     * @param <T> the type of elements
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.HMGET)
-    public abstract <T> Single<List<T>> hmget(@RedisProtocolSupport.Key Buffer key, Buffer field1, Buffer field2);
+    public abstract Single<List<Buffer>> hmget(@RedisProtocolSupport.Key Buffer key, Buffer field1, Buffer field2);
 
     /**
      * Get the values of all the given hash fields.
@@ -1449,11 +1447,10 @@ public abstract class BufferRedisCommander implements AsyncCloseable {
      * @param field2 the field2
      * @param field3 the field3
      * @return a {@link Single} result
-     * @param <T> the type of elements
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.HMGET)
-    public abstract <T> Single<List<T>> hmget(@RedisProtocolSupport.Key Buffer key, Buffer field1, Buffer field2,
-                                              Buffer field3);
+    public abstract Single<List<Buffer>> hmget(@RedisProtocolSupport.Key Buffer key, Buffer field1, Buffer field2,
+                                               Buffer field3);
 
     /**
      * Get the values of all the given hash fields.
@@ -1461,10 +1458,9 @@ public abstract class BufferRedisCommander implements AsyncCloseable {
      * @param key the key
      * @param fields the fields
      * @return a {@link Single} result
-     * @param <T> the type of elements
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.HMGET)
-    public abstract <T> Single<List<T>> hmget(@RedisProtocolSupport.Key Buffer key, Collection<Buffer> fields);
+    public abstract Single<List<Buffer>> hmget(@RedisProtocolSupport.Key Buffer key, Collection<Buffer> fields);
 
     /**
      * Set multiple hash fields to multiple values.
@@ -1865,10 +1861,9 @@ public abstract class BufferRedisCommander implements AsyncCloseable {
      *
      * @param key the key
      * @return a {@link Single} result
-     * @param <T> the type of elements
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.MGET)
-    public abstract <T> Single<List<T>> mget(@RedisProtocolSupport.Key Buffer key);
+    public abstract Single<List<Buffer>> mget(@RedisProtocolSupport.Key Buffer key);
 
     /**
      * Get the values of all the given keys.
@@ -1876,11 +1871,10 @@ public abstract class BufferRedisCommander implements AsyncCloseable {
      * @param key1 the key1
      * @param key2 the key2
      * @return a {@link Single} result
-     * @param <T> the type of elements
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.MGET)
-    public abstract <T> Single<List<T>> mget(@RedisProtocolSupport.Key Buffer key1,
-                                             @RedisProtocolSupport.Key Buffer key2);
+    public abstract Single<List<Buffer>> mget(@RedisProtocolSupport.Key Buffer key1,
+                                              @RedisProtocolSupport.Key Buffer key2);
 
     /**
      * Get the values of all the given keys.
@@ -1889,22 +1883,20 @@ public abstract class BufferRedisCommander implements AsyncCloseable {
      * @param key2 the key2
      * @param key3 the key3
      * @return a {@link Single} result
-     * @param <T> the type of elements
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.MGET)
-    public abstract <T> Single<List<T>> mget(@RedisProtocolSupport.Key Buffer key1,
-                                             @RedisProtocolSupport.Key Buffer key2,
-                                             @RedisProtocolSupport.Key Buffer key3);
+    public abstract Single<List<Buffer>> mget(@RedisProtocolSupport.Key Buffer key1,
+                                              @RedisProtocolSupport.Key Buffer key2,
+                                              @RedisProtocolSupport.Key Buffer key3);
 
     /**
      * Get the values of all the given keys.
      *
      * @param keys the keys
      * @return a {@link Single} result
-     * @param <T> the type of elements
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.MGET)
-    public abstract <T> Single<List<T>> mget(@RedisProtocolSupport.Key Collection<Buffer> keys);
+    public abstract Single<List<Buffer>> mget(@RedisProtocolSupport.Key Collection<Buffer> keys);
 
     /**
      * Listen for all requests received by the server in real time.
@@ -3223,7 +3215,7 @@ public abstract class BufferRedisCommander implements AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SRANDMEMBER)
-    public abstract Single<List<String>> srandmember(@RedisProtocolSupport.Key Buffer key, long count);
+    public abstract Single<List<Buffer>> srandmember(@RedisProtocolSupport.Key Buffer key, long count);
 
     /**
      * Remove one or more members from a set.

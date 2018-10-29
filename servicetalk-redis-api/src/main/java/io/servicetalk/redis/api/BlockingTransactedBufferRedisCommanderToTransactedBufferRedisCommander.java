@@ -740,24 +740,24 @@ final class BlockingTransactedBufferRedisCommanderToTransactedBufferRedisCommand
     }
 
     @Override
-    public <T> Future<List<T>> hmget(@RedisProtocolSupport.Key final Buffer key, final Buffer field) {
+    public Future<List<Buffer>> hmget(@RedisProtocolSupport.Key final Buffer key, final Buffer field) {
         return reservedCnx.hmget(key, field);
     }
 
     @Override
-    public <T> Future<List<T>> hmget(@RedisProtocolSupport.Key final Buffer key, final Buffer field1,
-                                     final Buffer field2) {
+    public Future<List<Buffer>> hmget(@RedisProtocolSupport.Key final Buffer key, final Buffer field1,
+                                      final Buffer field2) {
         return reservedCnx.hmget(key, field1, field2);
     }
 
     @Override
-    public <T> Future<List<T>> hmget(@RedisProtocolSupport.Key final Buffer key, final Buffer field1,
-                                     final Buffer field2, final Buffer field3) {
+    public Future<List<Buffer>> hmget(@RedisProtocolSupport.Key final Buffer key, final Buffer field1,
+                                      final Buffer field2, final Buffer field3) {
         return reservedCnx.hmget(key, field1, field2, field3);
     }
 
     @Override
-    public <T> Future<List<T>> hmget(@RedisProtocolSupport.Key final Buffer key, final Collection<Buffer> fields) {
+    public Future<List<Buffer>> hmget(@RedisProtocolSupport.Key final Buffer key, final Collection<Buffer> fields) {
         return reservedCnx.hmget(key, fields);
     }
 
@@ -953,25 +953,25 @@ final class BlockingTransactedBufferRedisCommanderToTransactedBufferRedisCommand
     }
 
     @Override
-    public <T> Future<List<T>> mget(@RedisProtocolSupport.Key final Buffer key) {
+    public Future<List<Buffer>> mget(@RedisProtocolSupport.Key final Buffer key) {
         return reservedCnx.mget(key);
     }
 
     @Override
-    public <T> Future<List<T>> mget(@RedisProtocolSupport.Key final Buffer key1,
-                                    @RedisProtocolSupport.Key final Buffer key2) {
+    public Future<List<Buffer>> mget(@RedisProtocolSupport.Key final Buffer key1,
+                                     @RedisProtocolSupport.Key final Buffer key2) {
         return reservedCnx.mget(key1, key2);
     }
 
     @Override
-    public <T> Future<List<T>> mget(@RedisProtocolSupport.Key final Buffer key1,
-                                    @RedisProtocolSupport.Key final Buffer key2,
-                                    @RedisProtocolSupport.Key final Buffer key3) {
+    public Future<List<Buffer>> mget(@RedisProtocolSupport.Key final Buffer key1,
+                                     @RedisProtocolSupport.Key final Buffer key2,
+                                     @RedisProtocolSupport.Key final Buffer key3) {
         return reservedCnx.mget(key1, key2, key3);
     }
 
     @Override
-    public <T> Future<List<T>> mget(@RedisProtocolSupport.Key final Collection<Buffer> keys) {
+    public Future<List<Buffer>> mget(@RedisProtocolSupport.Key final Collection<Buffer> keys) {
         return reservedCnx.mget(keys);
     }
 
@@ -1627,7 +1627,7 @@ final class BlockingTransactedBufferRedisCommanderToTransactedBufferRedisCommand
     }
 
     @Override
-    public Future<List<String>> srandmember(@RedisProtocolSupport.Key final Buffer key, final long count) {
+    public Future<List<Buffer>> srandmember(@RedisProtocolSupport.Key final Buffer key, final long count) {
         return reservedCnx.srandmember(key, count);
     }
 

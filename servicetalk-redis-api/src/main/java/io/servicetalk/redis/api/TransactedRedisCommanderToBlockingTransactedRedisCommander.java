@@ -743,25 +743,25 @@ final class TransactedRedisCommanderToBlockingTransactedRedisCommander extends B
     }
 
     @Override
-    public <T> Future<List<T>> hmget(@RedisProtocolSupport.Key final CharSequence key, final CharSequence field) {
+    public Future<List<String>> hmget(@RedisProtocolSupport.Key final CharSequence key, final CharSequence field) {
         return commander.hmget(key, field);
     }
 
     @Override
-    public <T> Future<List<T>> hmget(@RedisProtocolSupport.Key final CharSequence key, final CharSequence field1,
-                                     final CharSequence field2) {
+    public Future<List<String>> hmget(@RedisProtocolSupport.Key final CharSequence key, final CharSequence field1,
+                                      final CharSequence field2) {
         return commander.hmget(key, field1, field2);
     }
 
     @Override
-    public <T> Future<List<T>> hmget(@RedisProtocolSupport.Key final CharSequence key, final CharSequence field1,
-                                     final CharSequence field2, final CharSequence field3) {
+    public Future<List<String>> hmget(@RedisProtocolSupport.Key final CharSequence key, final CharSequence field1,
+                                      final CharSequence field2, final CharSequence field3) {
         return commander.hmget(key, field1, field2, field3);
     }
 
     @Override
-    public <T> Future<List<T>> hmget(@RedisProtocolSupport.Key final CharSequence key,
-                                     final Collection<? extends CharSequence> fields) {
+    public Future<List<String>> hmget(@RedisProtocolSupport.Key final CharSequence key,
+                                      final Collection<? extends CharSequence> fields) {
         return commander.hmget(key, fields);
     }
 
@@ -968,25 +968,25 @@ final class TransactedRedisCommanderToBlockingTransactedRedisCommander extends B
     }
 
     @Override
-    public <T> Future<List<T>> mget(@RedisProtocolSupport.Key final CharSequence key) {
+    public Future<List<String>> mget(@RedisProtocolSupport.Key final CharSequence key) {
         return commander.mget(key);
     }
 
     @Override
-    public <T> Future<List<T>> mget(@RedisProtocolSupport.Key final CharSequence key1,
-                                    @RedisProtocolSupport.Key final CharSequence key2) {
+    public Future<List<String>> mget(@RedisProtocolSupport.Key final CharSequence key1,
+                                     @RedisProtocolSupport.Key final CharSequence key2) {
         return commander.mget(key1, key2);
     }
 
     @Override
-    public <T> Future<List<T>> mget(@RedisProtocolSupport.Key final CharSequence key1,
-                                    @RedisProtocolSupport.Key final CharSequence key2,
-                                    @RedisProtocolSupport.Key final CharSequence key3) {
+    public Future<List<String>> mget(@RedisProtocolSupport.Key final CharSequence key1,
+                                     @RedisProtocolSupport.Key final CharSequence key2,
+                                     @RedisProtocolSupport.Key final CharSequence key3) {
         return commander.mget(key1, key2, key3);
     }
 
     @Override
-    public <T> Future<List<T>> mget(@RedisProtocolSupport.Key final Collection<? extends CharSequence> keys) {
+    public Future<List<String>> mget(@RedisProtocolSupport.Key final Collection<? extends CharSequence> keys) {
         return commander.mget(keys);
     }
 

@@ -2158,7 +2158,7 @@ final class DefaultRedisCommander extends RedisCommander {
     }
 
     @Override
-    public <T> Single<List<T>> hmget(@RedisProtocolSupport.Key final CharSequence key, final CharSequence field) {
+    public Single<List<String>> hmget(@RedisProtocolSupport.Key final CharSequence key, final CharSequence field) {
         requireNonNull(key);
         requireNonNull(field);
         final BufferAllocator allocator = requester.executionContext().bufferAllocator();
@@ -2168,14 +2168,14 @@ final class DefaultRedisCommander extends RedisCommander {
         addRequestArgument(key, cb, allocator);
         addRequestArgument(field, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.HMGET, cb);
-        final Single<List<T>> result = (Single) requester.request(request,
+        final Single<List<String>> result = (Single) requester.request(request,
                     RedisUtils.ListWithBuffersCoercedToCharSequences.class);
         return result;
     }
 
     @Override
-    public <T> Single<List<T>> hmget(@RedisProtocolSupport.Key final CharSequence key, final CharSequence field1,
-                                     final CharSequence field2) {
+    public Single<List<String>> hmget(@RedisProtocolSupport.Key final CharSequence key, final CharSequence field1,
+                                      final CharSequence field2) {
         requireNonNull(key);
         requireNonNull(field1);
         requireNonNull(field2);
@@ -2187,14 +2187,14 @@ final class DefaultRedisCommander extends RedisCommander {
         addRequestArgument(field1, cb, allocator);
         addRequestArgument(field2, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.HMGET, cb);
-        final Single<List<T>> result = (Single) requester.request(request,
+        final Single<List<String>> result = (Single) requester.request(request,
                     RedisUtils.ListWithBuffersCoercedToCharSequences.class);
         return result;
     }
 
     @Override
-    public <T> Single<List<T>> hmget(@RedisProtocolSupport.Key final CharSequence key, final CharSequence field1,
-                                     final CharSequence field2, final CharSequence field3) {
+    public Single<List<String>> hmget(@RedisProtocolSupport.Key final CharSequence key, final CharSequence field1,
+                                      final CharSequence field2, final CharSequence field3) {
         requireNonNull(key);
         requireNonNull(field1);
         requireNonNull(field2);
@@ -2208,14 +2208,14 @@ final class DefaultRedisCommander extends RedisCommander {
         addRequestArgument(field2, cb, allocator);
         addRequestArgument(field3, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.HMGET, cb);
-        final Single<List<T>> result = (Single) requester.request(request,
+        final Single<List<String>> result = (Single) requester.request(request,
                     RedisUtils.ListWithBuffersCoercedToCharSequences.class);
         return result;
     }
 
     @Override
-    public <T> Single<List<T>> hmget(@RedisProtocolSupport.Key final CharSequence key,
-                                     final Collection<? extends CharSequence> fields) {
+    public Single<List<String>> hmget(@RedisProtocolSupport.Key final CharSequence key,
+                                      final Collection<? extends CharSequence> fields) {
         requireNonNull(key);
         requireNonNull(fields);
         final BufferAllocator allocator = requester.executionContext().bufferAllocator();
@@ -2226,7 +2226,7 @@ final class DefaultRedisCommander extends RedisCommander {
         addRequestArgument(key, cb, allocator);
         addRequestCharSequenceArguments(fields, null, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.HMGET, cb);
-        final Single<List<T>> result = (Single) requester.request(request,
+        final Single<List<String>> result = (Single) requester.request(request,
                     RedisUtils.ListWithBuffersCoercedToCharSequences.class);
         return result;
     }
@@ -2831,7 +2831,7 @@ final class DefaultRedisCommander extends RedisCommander {
     }
 
     @Override
-    public <T> Single<List<T>> mget(@RedisProtocolSupport.Key final CharSequence key) {
+    public Single<List<String>> mget(@RedisProtocolSupport.Key final CharSequence key) {
         requireNonNull(key);
         final BufferAllocator allocator = requester.executionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
@@ -2839,14 +2839,14 @@ final class DefaultRedisCommander extends RedisCommander {
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.MGET, allocator);
         addRequestArgument(key, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.MGET, cb);
-        final Single<List<T>> result = (Single) requester.request(request,
+        final Single<List<String>> result = (Single) requester.request(request,
                     RedisUtils.ListWithBuffersCoercedToCharSequences.class);
         return result;
     }
 
     @Override
-    public <T> Single<List<T>> mget(@RedisProtocolSupport.Key final CharSequence key1,
-                                    @RedisProtocolSupport.Key final CharSequence key2) {
+    public Single<List<String>> mget(@RedisProtocolSupport.Key final CharSequence key1,
+                                     @RedisProtocolSupport.Key final CharSequence key2) {
         requireNonNull(key1);
         requireNonNull(key2);
         final BufferAllocator allocator = requester.executionContext().bufferAllocator();
@@ -2856,15 +2856,15 @@ final class DefaultRedisCommander extends RedisCommander {
         addRequestArgument(key1, cb, allocator);
         addRequestArgument(key2, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.MGET, cb);
-        final Single<List<T>> result = (Single) requester.request(request,
+        final Single<List<String>> result = (Single) requester.request(request,
                     RedisUtils.ListWithBuffersCoercedToCharSequences.class);
         return result;
     }
 
     @Override
-    public <T> Single<List<T>> mget(@RedisProtocolSupport.Key final CharSequence key1,
-                                    @RedisProtocolSupport.Key final CharSequence key2,
-                                    @RedisProtocolSupport.Key final CharSequence key3) {
+    public Single<List<String>> mget(@RedisProtocolSupport.Key final CharSequence key1,
+                                     @RedisProtocolSupport.Key final CharSequence key2,
+                                     @RedisProtocolSupport.Key final CharSequence key3) {
         requireNonNull(key1);
         requireNonNull(key2);
         requireNonNull(key3);
@@ -2876,13 +2876,13 @@ final class DefaultRedisCommander extends RedisCommander {
         addRequestArgument(key2, cb, allocator);
         addRequestArgument(key3, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.MGET, cb);
-        final Single<List<T>> result = (Single) requester.request(request,
+        final Single<List<String>> result = (Single) requester.request(request,
                     RedisUtils.ListWithBuffersCoercedToCharSequences.class);
         return result;
     }
 
     @Override
-    public <T> Single<List<T>> mget(@RedisProtocolSupport.Key final Collection<? extends CharSequence> keys) {
+    public Single<List<String>> mget(@RedisProtocolSupport.Key final Collection<? extends CharSequence> keys) {
         requireNonNull(keys);
         final BufferAllocator allocator = requester.executionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
@@ -2891,7 +2891,7 @@ final class DefaultRedisCommander extends RedisCommander {
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.MGET, allocator);
         addRequestCharSequenceArguments(keys, null, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.MGET, cb);
-        final Single<List<T>> result = (Single) requester.request(request,
+        final Single<List<String>> result = (Single) requester.request(request,
                     RedisUtils.ListWithBuffersCoercedToCharSequences.class);
         return result;
     }
