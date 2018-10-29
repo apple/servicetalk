@@ -60,7 +60,6 @@ import static io.servicetalk.concurrent.internal.Await.awaitIndefinitelyNonNull;
 import static io.servicetalk.http.api.HttpResponseStatuses.OK;
 import static io.servicetalk.http.api.StreamingHttpConnection.SettingKey.MAX_CONCURRENCY;
 import static io.servicetalk.http.netty.HttpClients.forSingleAddress;
-import static io.servicetalk.http.netty.HttpServers.newHttpServerBuilder;
 import static io.servicetalk.transport.netty.internal.ExecutionContextRule.cached;
 import static java.lang.Long.MAX_VALUE;
 import static java.lang.Thread.currentThread;
@@ -96,7 +95,7 @@ public class HttpOffloadingTest {
     public void beforeTest() throws Exception {
         final InetSocketAddress bindAddress = new InetSocketAddress(LOOPBACK_ADDRESS, 0);
         service = new OffloadingVerifyingServiceStreaming();
-        serverContext = newHttpServerBuilder(bindAddress)
+        serverContext = HttpServers.forAddress(bindAddress)
                 .ioExecutor(SERVER_CTX.ioExecutor())
                 .executor(SERVER_CTX.executor())
                 .listenStreamingAndAwait(service);

@@ -58,7 +58,6 @@ import static io.servicetalk.http.api.HttpHeaderValues.ZERO;
 import static io.servicetalk.http.api.HttpResponseStatuses.OK;
 import static io.servicetalk.http.api.SslConfigProviders.plainByDefault;
 import static io.servicetalk.http.api.SslConfigProviders.secureByDefault;
-import static io.servicetalk.http.netty.HttpServers.newHttpServerBuilder;
 import static io.servicetalk.transport.api.SslConfigBuilder.forClient;
 import static io.servicetalk.transport.netty.internal.ExecutionContextRule.immediate;
 import static java.lang.String.format;
@@ -108,7 +107,7 @@ public class MultiAddressUrlHttpClientSslTest {
                 });
         when(STREAMING_HTTP_SERVICE.closeAsync()).thenReturn(completed());
         when(STREAMING_HTTP_SERVICE.closeAsyncGracefully()).thenReturn(completed());
-        serverCtx = newHttpServerBuilder(new InetSocketAddress(HOSTNAME, 0))
+        serverCtx = HttpServers.forAddress(new InetSocketAddress(HOSTNAME, 0))
                 .ioExecutor(CTX.ioExecutor())
                 .executor(CTX.executor())
                 .listenStreamingAndAwait(STREAMING_HTTP_SERVICE);
@@ -125,7 +124,7 @@ public class MultiAddressUrlHttpClientSslTest {
                 });
         when(SECURE_STREAMING_HTTP_SERVICE.closeAsync()).thenReturn(completed());
         when(SECURE_STREAMING_HTTP_SERVICE.closeAsyncGracefully()).thenReturn(completed());
-        secureServerCtx = newHttpServerBuilder(new InetSocketAddress(HOSTNAME, 0))
+        secureServerCtx = HttpServers.forAddress(new InetSocketAddress(HOSTNAME, 0))
                 .sslConfig(SslConfigBuilder.forServer(DefaultTestCerts::loadServerPem,
                         DefaultTestCerts::loadServerKey).build())
                 .ioExecutor(CTX.ioExecutor())

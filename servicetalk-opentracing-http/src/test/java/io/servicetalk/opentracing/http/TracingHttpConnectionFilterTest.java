@@ -138,7 +138,7 @@ public class TracingHttpConnectionFilterTest {
     }
 
     private ServerContext buildServer() throws Exception {
-        return HttpServers.newHttpServerBuilder(0)
+        return HttpServers.forPort(0)
                 .listenStreamingAndAwait((ctx, request, responseFactory) ->
                         success(responseFactory.ok().payloadBody(just(new TestSpanState(
                         valueOf(request.headers().get(TRACE_ID)),

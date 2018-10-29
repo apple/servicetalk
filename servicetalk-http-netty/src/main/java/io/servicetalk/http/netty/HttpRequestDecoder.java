@@ -39,7 +39,7 @@ import static io.servicetalk.http.api.HttpRequestMethods.POST;
 import static io.servicetalk.http.api.HttpRequestMethods.PUT;
 import static io.servicetalk.http.api.HttpRequestMethods.TRACE;
 import static io.servicetalk.http.api.HttpRequestMethods.newRequestMethod;
-import static io.servicetalk.transport.netty.internal.CloseHandler.NOOP_CLOSE_HANDLER;
+import static io.servicetalk.transport.netty.internal.CloseHandler.UNSUPPORTED_PROTOCOL_CLOSE_HANDLER;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.util.Objects.requireNonNull;
 
@@ -62,7 +62,7 @@ final class HttpRequestDecoder extends HttpObjectDecoder<HttpRequestMetaData> {
 
     HttpRequestDecoder(Queue<HttpRequestMethod> methodQueue,
                        HttpHeadersFactory headersFactory, int maxInitialLineLength, int maxHeaderSize) {
-        this(methodQueue, headersFactory, maxInitialLineLength, maxHeaderSize, NOOP_CLOSE_HANDLER);
+        this(methodQueue, headersFactory, maxInitialLineLength, maxHeaderSize, UNSUPPORTED_PROTOCOL_CLOSE_HANDLER);
     }
 
     HttpRequestDecoder(Queue<HttpRequestMethod> methodQueue, HttpHeadersFactory headersFactory,

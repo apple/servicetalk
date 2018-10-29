@@ -33,8 +33,6 @@ import org.glassfish.jersey.internal.util.collection.Ref;
 import org.glassfish.jersey.server.ApplicationHandler;
 import org.glassfish.jersey.server.ContainerRequest;
 import org.glassfish.jersey.server.spi.Container;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.net.URI;
 import java.security.Principal;
@@ -57,8 +55,6 @@ import static java.util.Objects.requireNonNull;
 import static org.glassfish.jersey.server.internal.ContainerUtils.encodeUnsafeCharacters;
 
 final class DefaultJerseyStreamingHttpRouter extends StreamingHttpService {
-    private static final Logger LOGGER = LoggerFactory.getLogger(DefaultJerseyStreamingHttpRouter.class);
-
     private static final SecurityContext UNAUTHENTICATED_SECURITY_CONTEXT = new SecurityContext() {
         @Nullable
         @Override
@@ -197,7 +193,7 @@ final class DefaultJerseyStreamingHttpRouter extends StreamingHttpService {
         final ContainerRequest containerRequest = new ContainerRequest(
                 URI.create(baseUri.toString()),
                 URI.create(requestUriBuilder.toString()),
-                req.method().getName(),
+                req.method().methodName(),
                 UNAUTHENTICATED_SECURITY_CONTEXT,
                 new MapPropertiesDelegate());
 

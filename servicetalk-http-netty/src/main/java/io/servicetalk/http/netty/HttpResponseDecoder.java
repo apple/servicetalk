@@ -37,7 +37,7 @@ import static io.servicetalk.http.api.HttpResponseStatuses.NOT_MODIFIED;
 import static io.servicetalk.http.api.HttpResponseStatuses.NO_CONTENT;
 import static io.servicetalk.http.api.HttpResponseStatuses.SWITCHING_PROTOCOLS;
 import static io.servicetalk.http.api.HttpResponseStatuses.getResponseStatus;
-import static io.servicetalk.transport.netty.internal.CloseHandler.NOOP_CLOSE_HANDLER;
+import static io.servicetalk.transport.netty.internal.CloseHandler.UNSUPPORTED_PROTOCOL_CLOSE_HANDLER;
 import static java.lang.Integer.parseInt;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.util.Objects.requireNonNull;
@@ -47,7 +47,7 @@ final class HttpResponseDecoder extends HttpObjectDecoder<HttpResponseMetaData> 
 
     HttpResponseDecoder(Queue<HttpRequestMethod> methodQueue, HttpHeadersFactory headersFactory,
                         int maxInitialLineLength, int maxHeaderSize) {
-        this(methodQueue, headersFactory, maxInitialLineLength, maxHeaderSize, NOOP_CLOSE_HANDLER);
+        this(methodQueue, headersFactory, maxInitialLineLength, maxHeaderSize, UNSUPPORTED_PROTOCOL_CLOSE_HANDLER);
     }
 
     HttpResponseDecoder(Queue<HttpRequestMethod> methodQueue, HttpHeadersFactory headersFactory,

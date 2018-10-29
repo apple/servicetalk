@@ -13,27 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.examples.http.serialization;
+@ElementsAreNonnullByDefault
+package io.servicetalk.examples.http.serialization.blocking;
 
-/**
- * A request object to request {@link MyPojo} from the server.
- */
-public final class PojoRequest {
-
-    private String id;
-
-    public PojoRequest() {
-    }
-
-    public PojoRequest(String id) {
-        this.id = id;
-    }
-
-    public String getId() {
-        return id;
-    }
-
-    public void setId(String id) {
-        this.id = id;
-    }
-}
+import io.servicetalk.annotations.ElementsAreNonnullByDefault;

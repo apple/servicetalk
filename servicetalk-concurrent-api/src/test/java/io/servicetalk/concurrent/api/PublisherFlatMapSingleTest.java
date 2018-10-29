@@ -40,12 +40,13 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static io.servicetalk.concurrent.api.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.concurrent.api.Executors.immediate;
-import static io.servicetalk.concurrent.internal.ServiceTalkTestTimeout.DEFAULT_TIMEOUT_SECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.stream.Collectors.toList;
+import static java.util.stream.IntStream.range;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
@@ -61,22 +62,66 @@ public class PublisherFlatMapSingleTest {
     public final MockedSubscriberRule<Integer> subscriber = new MockedSubscriberRule<>();
 
     private TestPublisher<Integer> source;
-    private static ExecutorService executor;
+    private static ExecutorService executorService;
+    private static Executor executor;
 
     @BeforeClass
     public static void beforeClass() {
-        executor = Executors.newCachedThreadPool();
+        executorService = Executors.newFixedThreadPool(10);
+        executor = io.servicetalk.concurrent.api.Executors.from(executorService);
     }
 
     @AfterClass
-    public static void afterClass() throws InterruptedException {
-        executor.shutdown();
-        executor.awaitTermination(DEFAULT_TIMEOUT_SECONDS, SECONDS);
+    public static void afterClass() throws Exception {
+        executor.closeAsync().toFuture().get();
     }
 
     @Before
     public void setUp() throws Exception {
         source = new TestPublisher<Integer>().sendOnSubscribe();
+    }
+
+    @Test
+    public void concurrentSingleAndPublisherTermination() throws Exception {
+        final List<String> elements = range(0, 1000).mapToObj(Integer::toString).collect(toList());
+        final Publisher<String> publisher = Publisher.from(elements);
+        final Single<List<String>> single = publisher.flatMapSingle(x -> executor.submit(() -> x), 1024)
+                .reduce(ArrayList::new, (strings, s) -> {
+                    strings.add(s);
+                    return strings;
+                });
+        for (int i = 0; i < 10; i++) {
+            List<String> list = single.toFuture().get();
+            assertThat("Unexpected items received", list, hasSize(1000));
+        }
+    }
+
+    @Test
+    public void concurrentSingleErrorAndPublisherTermination() throws Exception {
+        final Publisher<Integer> publisher = Publisher.from(() -> range(0, 1000).iterator());
+        AtomicReference<Throwable> error = new AtomicReference<>();
+        final Single<List<Integer>> single = publisher.flatMapSingleDelayError(x -> executor.submit(() -> {
+            if (x % 2 == 0) {
+                return x;
+            }
+            throw new DeliberateException();
+        }), 1024).onErrorResume(t -> {
+            error.set(t);
+            return Publisher.empty();
+        }).reduce(ArrayList::new, (ints, s) -> {
+            ints.add(s);
+            return ints;
+        });
+
+        for (int i = 0; i < 10; i++) {
+            List<Integer> list = single.toFuture().get();
+            assertThat("Unexpected items received", list, hasSize(500));
+            Throwable cause = error.get();
+            assertThat("Unexpected exception.", cause, instanceOf(CompositeException.class));
+            assertThat("Unexpected exception.", cause.getCause(), instanceOf(DeliberateException.class));
+            assertThat("Unexpected exception.", cause.getSuppressed().length,
+                    equalTo(499/*everything but the first error is suppressed*/));
+        }
     }
 
     @Test
@@ -421,7 +466,7 @@ public class PublisherFlatMapSingleTest {
 
         TestSingle<Integer> single1 = emittedSingles.remove(0);
         TestSingle<Integer> single2 = emittedSingles.remove(0);
-        executor.execute(() -> {
+        executorService.execute(() -> {
             single1.onSuccess(2);
             single2.onSuccess(3);
         });
@@ -441,7 +486,7 @@ public class PublisherFlatMapSingleTest {
         Set<Integer> received = new LinkedHashSet<>(totalToRequest);
         subscriber.subscribe(source.flatMapSingle(Single::success, 2).doBeforeNext(received::add));
         CountDownLatch requestingStarting = new CountDownLatch(1);
-        Future<?> submit = executor.submit(() -> {
+        Future<?> submit = executorService.submit(() -> {
             requestingStarting.countDown();
             for (int i = 0; i < totalToRequest; i++) {
                 subscriber.request(1);

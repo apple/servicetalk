@@ -72,7 +72,7 @@ public class FlushStrategyOverrideTest {
     @Before
     public void setUp() throws Exception {
         service = new FlushingService();
-        serverCtx = HttpServers.newHttpServerBuilder(0)
+        serverCtx = HttpServers.forPort(0)
                 .ioExecutor(ctx.ioExecutor())
                 .executor(ctx.executor())
                 .listenStreaming(service)

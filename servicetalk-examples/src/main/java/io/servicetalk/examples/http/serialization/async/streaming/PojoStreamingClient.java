@@ -16,8 +16,8 @@
 package io.servicetalk.examples.http.serialization.async.streaming;
 
 import io.servicetalk.data.jackson.JacksonSerializationProvider;
-import io.servicetalk.examples.http.serialization.MyPojo;
-import io.servicetalk.examples.http.serialization.PojoRequest;
+import io.servicetalk.examples.http.serialization.CreatePojoRequest;
+import io.servicetalk.examples.http.serialization.PojoResponse;
 import io.servicetalk.http.api.HttpSerializationProvider;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.netty.HttpClients;
@@ -27,7 +27,7 @@ import java.util.concurrent.CountDownLatch;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.http.api.HttpSerializationProviders.jsonSerializer;
 
-public class PojoStreamingClient {
+public final class PojoStreamingClient {
 
     public static void main(String[] args) throws Exception {
         HttpSerializationProvider serializer = jsonSerializer(new JacksonSerializationProvider());
@@ -37,11 +37,11 @@ public class PojoStreamingClient {
             // demonstration purposes.
             CountDownLatch responseProcessedLatch = new CountDownLatch(1);
 
-            client.request(client.get("pojo")
-                    .payloadBody(from("1", "2", "3").map(PojoRequest::new),
-                            serializer.serializerFor(PojoRequest.class)))
+            client.request(client.post("/pojos")
+                    .payloadBody(from("value1", "value2", "value3").map(CreatePojoRequest::new),
+                            serializer.serializerFor(CreatePojoRequest.class)))
                     .doBeforeSuccess(response -> System.out.println(response.toString((name, value) -> value)))
-                    .flatMapPublisher(resp -> resp.payloadBody(serializer.deserializerFor(MyPojo.class)))
+                    .flatMapPublisher(resp -> resp.payloadBody(serializer.deserializerFor(PojoResponse.class)))
                     .doFinally(responseProcessedLatch::countDown)
                     .forEach(System.out::println);
 

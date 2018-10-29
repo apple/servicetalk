@@ -731,24 +731,24 @@ final class BlockingBufferRedisCommanderToBufferRedisCommander extends BufferRed
     }
 
     @Override
-    public <T> Single<List<T>> hmget(@RedisProtocolSupport.Key final Buffer key, final Buffer field) {
+    public Single<List<Buffer>> hmget(@RedisProtocolSupport.Key final Buffer key, final Buffer field) {
         return blockingToSingle(() -> blockingCommander.hmget(key, field));
     }
 
     @Override
-    public <T> Single<List<T>> hmget(@RedisProtocolSupport.Key final Buffer key, final Buffer field1,
-                                     final Buffer field2) {
+    public Single<List<Buffer>> hmget(@RedisProtocolSupport.Key final Buffer key, final Buffer field1,
+                                      final Buffer field2) {
         return blockingToSingle(() -> blockingCommander.hmget(key, field1, field2));
     }
 
     @Override
-    public <T> Single<List<T>> hmget(@RedisProtocolSupport.Key final Buffer key, final Buffer field1,
-                                     final Buffer field2, final Buffer field3) {
+    public Single<List<Buffer>> hmget(@RedisProtocolSupport.Key final Buffer key, final Buffer field1,
+                                      final Buffer field2, final Buffer field3) {
         return blockingToSingle(() -> blockingCommander.hmget(key, field1, field2, field3));
     }
 
     @Override
-    public <T> Single<List<T>> hmget(@RedisProtocolSupport.Key final Buffer key, final Collection<Buffer> fields) {
+    public Single<List<Buffer>> hmget(@RedisProtocolSupport.Key final Buffer key, final Collection<Buffer> fields) {
         return blockingToSingle(() -> blockingCommander.hmget(key, fields));
     }
 
@@ -944,25 +944,25 @@ final class BlockingBufferRedisCommanderToBufferRedisCommander extends BufferRed
     }
 
     @Override
-    public <T> Single<List<T>> mget(@RedisProtocolSupport.Key final Buffer key) {
+    public Single<List<Buffer>> mget(@RedisProtocolSupport.Key final Buffer key) {
         return blockingToSingle(() -> blockingCommander.mget(key));
     }
 
     @Override
-    public <T> Single<List<T>> mget(@RedisProtocolSupport.Key final Buffer key1,
-                                    @RedisProtocolSupport.Key final Buffer key2) {
+    public Single<List<Buffer>> mget(@RedisProtocolSupport.Key final Buffer key1,
+                                     @RedisProtocolSupport.Key final Buffer key2) {
         return blockingToSingle(() -> blockingCommander.mget(key1, key2));
     }
 
     @Override
-    public <T> Single<List<T>> mget(@RedisProtocolSupport.Key final Buffer key1,
-                                    @RedisProtocolSupport.Key final Buffer key2,
-                                    @RedisProtocolSupport.Key final Buffer key3) {
+    public Single<List<Buffer>> mget(@RedisProtocolSupport.Key final Buffer key1,
+                                     @RedisProtocolSupport.Key final Buffer key2,
+                                     @RedisProtocolSupport.Key final Buffer key3) {
         return blockingToSingle(() -> blockingCommander.mget(key1, key2, key3));
     }
 
     @Override
-    public <T> Single<List<T>> mget(@RedisProtocolSupport.Key final Collection<Buffer> keys) {
+    public Single<List<Buffer>> mget(@RedisProtocolSupport.Key final Collection<Buffer> keys) {
         return blockingToSingle(() -> blockingCommander.mget(keys));
     }
 
@@ -1637,7 +1637,7 @@ final class BlockingBufferRedisCommanderToBufferRedisCommander extends BufferRed
     }
 
     @Override
-    public Single<List<String>> srandmember(@RedisProtocolSupport.Key final Buffer key, final long count) {
+    public Single<List<Buffer>> srandmember(@RedisProtocolSupport.Key final Buffer key, final long count) {
         return blockingToSingle(() -> blockingCommander.srandmember(key, count));
     }
 

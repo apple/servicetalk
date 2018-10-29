@@ -25,10 +25,8 @@ import io.servicetalk.http.api.HttpService;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.router.predicate.HttpPredicateRouterBuilder;
 
-import java.util.concurrent.ThreadLocalRandom;
-
 import static io.servicetalk.concurrent.api.Single.success;
-import static java.util.concurrent.ThreadLocalRandom.current;
+import static io.servicetalk.examples.http.service.composition.backends.StringUtils.randomString;
 
 /**
  * A service that returns {@link User} for an entity.
@@ -51,7 +49,7 @@ final class UserBackend extends HttpService {
         }
 
         // Create a random rating
-        User user = new User(userId, createRandomString(5), createRandomString(3));
+        User user = new User(userId, randomString(5), randomString(3));
         return success(responseFactory.ok().payloadBody(user, serializer.serializerFor(User.class)));
     }
 
@@ -60,14 +58,5 @@ final class UserBackend extends HttpService {
         return routerBuilder.whenPathStartsWith("/user")
                 .thenRouteTo(new UserBackend(serializer))
                 .build();
-    }
-
-    private String createRandomString(int size) {
-        final ThreadLocalRandom random = current();
-        char[] randomChars = new char[size];
-        for (int i = 0; i < size; i++) {
-            randomChars[i] = (char) random.nextInt(97, 122);
-        }
-        return new String(randomChars);
     }
 }

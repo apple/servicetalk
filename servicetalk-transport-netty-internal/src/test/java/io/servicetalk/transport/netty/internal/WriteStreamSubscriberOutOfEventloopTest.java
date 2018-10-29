@@ -26,7 +26,7 @@ import java.util.concurrent.ExecutionException;
 
 import static io.servicetalk.concurrent.api.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
-import static io.servicetalk.transport.netty.internal.CloseHandler.NOOP_CLOSE_HANDLER;
+import static io.servicetalk.transport.netty.internal.CloseHandler.UNSUPPORTED_PROTOCOL_CLOSE_HANDLER;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.is;
@@ -42,7 +42,8 @@ public class WriteStreamSubscriberOutOfEventloopTest extends AbstractOutOfEventl
     public void setup0() {
         Completable.Subscriber completableSubscriber = mock(Completable.Subscriber.class);
         NettyConnection.RequestNSupplier requestNSupplier = mock(NettyConnection.RequestNSupplier.class);
-        subscriber = new WriteStreamSubscriber(channel, requestNSupplier, completableSubscriber, NOOP_CLOSE_HANDLER);
+        subscriber = new WriteStreamSubscriber(channel, requestNSupplier, completableSubscriber,
+                UNSUPPORTED_PROTOCOL_CLOSE_HANDLER);
     }
 
     @Test
@@ -98,7 +99,8 @@ public class WriteStreamSubscriberOutOfEventloopTest extends AbstractOutOfEventl
             }
         };
         NettyConnection.RequestNSupplier requestNSupplier = mock(NettyConnection.RequestNSupplier.class);
-        this.subscriber = new WriteStreamSubscriber(channel, requestNSupplier, subscriber, NOOP_CLOSE_HANDLER);
+        this.subscriber = new WriteStreamSubscriber(channel, requestNSupplier, subscriber,
+                UNSUPPORTED_PROTOCOL_CLOSE_HANDLER);
 
         this.subscriber.onNext(1);
         this.subscriber.onError(DELIBERATE_EXCEPTION);

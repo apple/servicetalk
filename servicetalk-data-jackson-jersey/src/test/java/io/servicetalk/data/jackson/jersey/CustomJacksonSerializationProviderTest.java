@@ -15,7 +15,6 @@
  */
 package io.servicetalk.data.jackson.jersey;
 
-import io.servicetalk.data.jackson.JacksonSerializationProvider;
 import io.servicetalk.data.jackson.jersey.resources.SingleJsonResources;
 import io.servicetalk.http.router.jersey.AbstractJerseyStreamingHttpServiceTest;
 
@@ -23,11 +22,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Test;
 
 import java.util.Set;
-import javax.annotation.Nullable;
 import javax.ws.rs.core.Application;
-import javax.ws.rs.ext.ContextResolver;
 
 import static com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES;
+import static io.servicetalk.data.jackson.jersey.ServiceTalkJacksonSerializerFeature.contextResolverFor;
 import static io.servicetalk.data.jackson.jersey.resources.SingleJsonResources.PATH;
 import static io.servicetalk.http.api.HttpHeaderValues.APPLICATION_JSON;
 import static io.servicetalk.http.api.HttpResponseStatuses.OK;
@@ -43,17 +41,7 @@ public class CustomJacksonSerializationProviderTest extends AbstractJerseyStream
 
         @Override
         public Set<Object> getSingletons() {
-            return singleton(new ContextResolver<JacksonSerializationProvider>() {
-                @Nullable
-                @Override
-                public JacksonSerializationProvider getContext(final Class<?> type) {
-                    if (!JacksonSerializationProvider.class.isAssignableFrom(type)) {
-                        return null;
-                    }
-
-                    return new JacksonSerializationProvider(new ObjectMapper().disable(FAIL_ON_UNKNOWN_PROPERTIES));
-                }
-            });
+            return singleton(contextResolverFor(new ObjectMapper().disable(FAIL_ON_UNKNOWN_PROPERTIES)));
         }
     }
 

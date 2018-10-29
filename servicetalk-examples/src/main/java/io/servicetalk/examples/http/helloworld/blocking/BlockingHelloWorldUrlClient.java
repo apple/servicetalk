@@ -22,6 +22,7 @@ import io.servicetalk.http.netty.HttpClients;
 import static io.servicetalk.http.api.HttpSerializationProviders.textDeserializer;
 
 public final class BlockingHelloWorldUrlClient {
+
     public static void main(String[] args) throws Exception {
         try (BlockingHttpClient client = HttpClients.forMultiAddressUrl().buildBlocking()) {
             HttpResponse response = client.request(client.get("http://localhost:8080/sayHello"));

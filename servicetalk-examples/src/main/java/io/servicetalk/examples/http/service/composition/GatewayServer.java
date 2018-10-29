@@ -37,7 +37,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
-import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.examples.http.service.composition.backends.PortRegistry.METADATA_BACKEND_ADDRESS;
 import static io.servicetalk.examples.http.service.composition.backends.PortRegistry.RATINGS_BACKEND_ADDRESS;
 import static io.servicetalk.examples.http.service.composition.backends.PortRegistry.RECOMMENDATIONS_BACKEND_ADDRESS;
@@ -103,14 +102,14 @@ public final class GatewayServer {
 
             // Create configurable starter for HTTP server.
             // Starting the server will start listening for incoming client requests.
-            ServerContext serverContext = HttpServers.newHttpServerBuilder(8080)
+            ServerContext serverContext = HttpServers.forPort(8080)
                     .ioExecutor(ioExecutor)
                     .listenStreamingAndAwait(gatewayService);
 
-            LOGGER.info("listening on {}", serverContext.listenAddress());
+            LOGGER.info("Listening on {}", serverContext.listenAddress());
 
-            // Stop listening/accepting more sockets and gracefully shutdown all open sockets.
-            awaitIndefinitely(serverContext.onClose());
+            // Blocks and awaits shutdown of the server this ServerContext represents.
+            serverContext.awaitShutdown();
         }
     }
 

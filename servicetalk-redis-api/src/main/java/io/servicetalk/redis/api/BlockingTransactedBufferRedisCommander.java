@@ -1433,10 +1433,9 @@ public abstract class BlockingTransactedBufferRedisCommander implements AutoClos
      * @param key the key
      * @param field the field
      * @return a {@link Future} result
-     * @param <T> the type of elements
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.HMGET)
-    public abstract <T> Future<List<T>> hmget(@RedisProtocolSupport.Key Buffer key, Buffer field);
+    public abstract Future<List<Buffer>> hmget(@RedisProtocolSupport.Key Buffer key, Buffer field);
 
     /**
      * Get the values of all the given hash fields.
@@ -1445,10 +1444,9 @@ public abstract class BlockingTransactedBufferRedisCommander implements AutoClos
      * @param field1 the field1
      * @param field2 the field2
      * @return a {@link Future} result
-     * @param <T> the type of elements
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.HMGET)
-    public abstract <T> Future<List<T>> hmget(@RedisProtocolSupport.Key Buffer key, Buffer field1, Buffer field2);
+    public abstract Future<List<Buffer>> hmget(@RedisProtocolSupport.Key Buffer key, Buffer field1, Buffer field2);
 
     /**
      * Get the values of all the given hash fields.
@@ -1458,11 +1456,10 @@ public abstract class BlockingTransactedBufferRedisCommander implements AutoClos
      * @param field2 the field2
      * @param field3 the field3
      * @return a {@link Future} result
-     * @param <T> the type of elements
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.HMGET)
-    public abstract <T> Future<List<T>> hmget(@RedisProtocolSupport.Key Buffer key, Buffer field1, Buffer field2,
-                                              Buffer field3);
+    public abstract Future<List<Buffer>> hmget(@RedisProtocolSupport.Key Buffer key, Buffer field1, Buffer field2,
+                                               Buffer field3);
 
     /**
      * Get the values of all the given hash fields.
@@ -1470,10 +1467,9 @@ public abstract class BlockingTransactedBufferRedisCommander implements AutoClos
      * @param key the key
      * @param fields the fields
      * @return a {@link Future} result
-     * @param <T> the type of elements
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.HMGET)
-    public abstract <T> Future<List<T>> hmget(@RedisProtocolSupport.Key Buffer key, Collection<Buffer> fields);
+    public abstract Future<List<Buffer>> hmget(@RedisProtocolSupport.Key Buffer key, Collection<Buffer> fields);
 
     /**
      * Set multiple hash fields to multiple values.
@@ -1874,10 +1870,9 @@ public abstract class BlockingTransactedBufferRedisCommander implements AutoClos
      *
      * @param key the key
      * @return a {@link Future} result
-     * @param <T> the type of elements
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.MGET)
-    public abstract <T> Future<List<T>> mget(@RedisProtocolSupport.Key Buffer key);
+    public abstract Future<List<Buffer>> mget(@RedisProtocolSupport.Key Buffer key);
 
     /**
      * Get the values of all the given keys.
@@ -1885,11 +1880,10 @@ public abstract class BlockingTransactedBufferRedisCommander implements AutoClos
      * @param key1 the key1
      * @param key2 the key2
      * @return a {@link Future} result
-     * @param <T> the type of elements
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.MGET)
-    public abstract <T> Future<List<T>> mget(@RedisProtocolSupport.Key Buffer key1,
-                                             @RedisProtocolSupport.Key Buffer key2);
+    public abstract Future<List<Buffer>> mget(@RedisProtocolSupport.Key Buffer key1,
+                                              @RedisProtocolSupport.Key Buffer key2);
 
     /**
      * Get the values of all the given keys.
@@ -1898,22 +1892,20 @@ public abstract class BlockingTransactedBufferRedisCommander implements AutoClos
      * @param key2 the key2
      * @param key3 the key3
      * @return a {@link Future} result
-     * @param <T> the type of elements
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.MGET)
-    public abstract <T> Future<List<T>> mget(@RedisProtocolSupport.Key Buffer key1,
-                                             @RedisProtocolSupport.Key Buffer key2,
-                                             @RedisProtocolSupport.Key Buffer key3);
+    public abstract Future<List<Buffer>> mget(@RedisProtocolSupport.Key Buffer key1,
+                                              @RedisProtocolSupport.Key Buffer key2,
+                                              @RedisProtocolSupport.Key Buffer key3);
 
     /**
      * Get the values of all the given keys.
      *
      * @param keys the keys
      * @return a {@link Future} result
-     * @param <T> the type of elements
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.MGET)
-    public abstract <T> Future<List<T>> mget(@RedisProtocolSupport.Key Collection<Buffer> keys);
+    public abstract Future<List<Buffer>> mget(@RedisProtocolSupport.Key Collection<Buffer> keys);
 
     /**
      * Move a key to another database.
@@ -3206,7 +3198,7 @@ public abstract class BlockingTransactedBufferRedisCommander implements AutoClos
      * @return a {@link Future} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SRANDMEMBER)
-    public abstract Future<List<String>> srandmember(@RedisProtocolSupport.Key Buffer key, long count);
+    public abstract Future<List<Buffer>> srandmember(@RedisProtocolSupport.Key Buffer key, long count);
 
     /**
      * Remove one or more members from a set.

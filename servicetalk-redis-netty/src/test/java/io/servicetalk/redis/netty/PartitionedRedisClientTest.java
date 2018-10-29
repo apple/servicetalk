@@ -168,7 +168,7 @@ public class PartitionedRedisClientTest extends AbstractPartitionedRedisClientTe
 
         sendHost1ServiceDiscoveryEvent(false);
 
-        Single<List<Object>> mgetCommand = commander.mget("key1", "key3", "key5")
+        Single<List<String>> mgetCommand = commander.mget("key1", "key3", "key5")
                 .retry((i, t) -> {
                     if (i > 1 || !(t instanceof UnknownPartitionException)) {
                         return false;

@@ -2290,7 +2290,7 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
     }
 
     @Override
-    public <T> Future<List<T>> hmget(@RedisProtocolSupport.Key final CharSequence key, final CharSequence field) {
+    public Future<List<String>> hmget(@RedisProtocolSupport.Key final CharSequence key, final CharSequence field) {
         requireNonNull(key);
         requireNonNull(field);
         final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
@@ -2301,13 +2301,13 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         addRequestArgument(field, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.HMGET, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<List<T>> result = enqueueForExecute(state, singles, queued);
+        Future<List<String>> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
     @Override
-    public <T> Future<List<T>> hmget(@RedisProtocolSupport.Key final CharSequence key, final CharSequence field1,
-                                     final CharSequence field2) {
+    public Future<List<String>> hmget(@RedisProtocolSupport.Key final CharSequence key, final CharSequence field1,
+                                      final CharSequence field2) {
         requireNonNull(key);
         requireNonNull(field1);
         requireNonNull(field2);
@@ -2320,13 +2320,13 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         addRequestArgument(field2, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.HMGET, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<List<T>> result = enqueueForExecute(state, singles, queued);
+        Future<List<String>> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
     @Override
-    public <T> Future<List<T>> hmget(@RedisProtocolSupport.Key final CharSequence key, final CharSequence field1,
-                                     final CharSequence field2, final CharSequence field3) {
+    public Future<List<String>> hmget(@RedisProtocolSupport.Key final CharSequence key, final CharSequence field1,
+                                      final CharSequence field2, final CharSequence field3) {
         requireNonNull(key);
         requireNonNull(field1);
         requireNonNull(field2);
@@ -2341,13 +2341,13 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         addRequestArgument(field3, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.HMGET, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<List<T>> result = enqueueForExecute(state, singles, queued);
+        Future<List<String>> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
     @Override
-    public <T> Future<List<T>> hmget(@RedisProtocolSupport.Key final CharSequence key,
-                                     final Collection<? extends CharSequence> fields) {
+    public Future<List<String>> hmget(@RedisProtocolSupport.Key final CharSequence key,
+                                      final Collection<? extends CharSequence> fields) {
         requireNonNull(key);
         requireNonNull(fields);
         final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
@@ -2359,7 +2359,7 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         addRequestCharSequenceArguments(fields, null, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.HMGET, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<List<T>> result = enqueueForExecute(state, singles, queued);
+        Future<List<String>> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -2992,7 +2992,7 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
     }
 
     @Override
-    public <T> Future<List<T>> mget(@RedisProtocolSupport.Key final CharSequence key) {
+    public Future<List<String>> mget(@RedisProtocolSupport.Key final CharSequence key) {
         requireNonNull(key);
         final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
@@ -3001,13 +3001,13 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         addRequestArgument(key, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.MGET, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<List<T>> result = enqueueForExecute(state, singles, queued);
+        Future<List<String>> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
     @Override
-    public <T> Future<List<T>> mget(@RedisProtocolSupport.Key final CharSequence key1,
-                                    @RedisProtocolSupport.Key final CharSequence key2) {
+    public Future<List<String>> mget(@RedisProtocolSupport.Key final CharSequence key1,
+                                     @RedisProtocolSupport.Key final CharSequence key2) {
         requireNonNull(key1);
         requireNonNull(key2);
         final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
@@ -3018,14 +3018,14 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         addRequestArgument(key2, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.MGET, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<List<T>> result = enqueueForExecute(state, singles, queued);
+        Future<List<String>> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
     @Override
-    public <T> Future<List<T>> mget(@RedisProtocolSupport.Key final CharSequence key1,
-                                    @RedisProtocolSupport.Key final CharSequence key2,
-                                    @RedisProtocolSupport.Key final CharSequence key3) {
+    public Future<List<String>> mget(@RedisProtocolSupport.Key final CharSequence key1,
+                                     @RedisProtocolSupport.Key final CharSequence key2,
+                                     @RedisProtocolSupport.Key final CharSequence key3) {
         requireNonNull(key1);
         requireNonNull(key2);
         requireNonNull(key3);
@@ -3038,12 +3038,12 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         addRequestArgument(key3, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.MGET, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<List<T>> result = enqueueForExecute(state, singles, queued);
+        Future<List<String>> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
     @Override
-    public <T> Future<List<T>> mget(@RedisProtocolSupport.Key final Collection<? extends CharSequence> keys) {
+    public Future<List<String>> mget(@RedisProtocolSupport.Key final Collection<? extends CharSequence> keys) {
         requireNonNull(keys);
         final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
@@ -3053,7 +3053,7 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         addRequestCharSequenceArguments(keys, null, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.MGET, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<List<T>> result = enqueueForExecute(state, singles, queued);
+        Future<List<String>> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 

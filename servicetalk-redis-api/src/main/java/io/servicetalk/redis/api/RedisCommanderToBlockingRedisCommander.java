@@ -737,26 +737,26 @@ final class RedisCommanderToBlockingRedisCommander extends BlockingRedisCommande
     }
 
     @Override
-    public <T> List<T> hmget(@RedisProtocolSupport.Key final CharSequence key,
-                             final CharSequence field) throws Exception {
+    public List<String> hmget(@RedisProtocolSupport.Key final CharSequence key,
+                              final CharSequence field) throws Exception {
         return blockingInvocation(commander.hmget(key, field));
     }
 
     @Override
-    public <T> List<T> hmget(@RedisProtocolSupport.Key final CharSequence key, final CharSequence field1,
-                             final CharSequence field2) throws Exception {
+    public List<String> hmget(@RedisProtocolSupport.Key final CharSequence key, final CharSequence field1,
+                              final CharSequence field2) throws Exception {
         return blockingInvocation(commander.hmget(key, field1, field2));
     }
 
     @Override
-    public <T> List<T> hmget(@RedisProtocolSupport.Key final CharSequence key, final CharSequence field1,
-                             final CharSequence field2, final CharSequence field3) throws Exception {
+    public List<String> hmget(@RedisProtocolSupport.Key final CharSequence key, final CharSequence field1,
+                              final CharSequence field2, final CharSequence field3) throws Exception {
         return blockingInvocation(commander.hmget(key, field1, field2, field3));
     }
 
     @Override
-    public <T> List<T> hmget(@RedisProtocolSupport.Key final CharSequence key,
-                             final Collection<? extends CharSequence> fields) throws Exception {
+    public List<String> hmget(@RedisProtocolSupport.Key final CharSequence key,
+                              final Collection<? extends CharSequence> fields) throws Exception {
         return blockingInvocation(commander.hmget(key, fields));
     }
 
@@ -965,25 +965,25 @@ final class RedisCommanderToBlockingRedisCommander extends BlockingRedisCommande
     }
 
     @Override
-    public <T> List<T> mget(@RedisProtocolSupport.Key final CharSequence key) throws Exception {
+    public List<String> mget(@RedisProtocolSupport.Key final CharSequence key) throws Exception {
         return blockingInvocation(commander.mget(key));
     }
 
     @Override
-    public <T> List<T> mget(@RedisProtocolSupport.Key final CharSequence key1,
-                            @RedisProtocolSupport.Key final CharSequence key2) throws Exception {
+    public List<String> mget(@RedisProtocolSupport.Key final CharSequence key1,
+                             @RedisProtocolSupport.Key final CharSequence key2) throws Exception {
         return blockingInvocation(commander.mget(key1, key2));
     }
 
     @Override
-    public <T> List<T> mget(@RedisProtocolSupport.Key final CharSequence key1,
-                            @RedisProtocolSupport.Key final CharSequence key2,
-                            @RedisProtocolSupport.Key final CharSequence key3) throws Exception {
+    public List<String> mget(@RedisProtocolSupport.Key final CharSequence key1,
+                             @RedisProtocolSupport.Key final CharSequence key2,
+                             @RedisProtocolSupport.Key final CharSequence key3) throws Exception {
         return blockingInvocation(commander.mget(key1, key2, key3));
     }
 
     @Override
-    public <T> List<T> mget(@RedisProtocolSupport.Key final Collection<? extends CharSequence> keys) throws Exception {
+    public List<String> mget(@RedisProtocolSupport.Key final Collection<? extends CharSequence> keys) throws Exception {
         return blockingInvocation(commander.mget(keys));
     }
 

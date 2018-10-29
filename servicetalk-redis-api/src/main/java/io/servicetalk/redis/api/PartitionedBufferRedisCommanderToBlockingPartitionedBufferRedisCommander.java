@@ -728,25 +728,25 @@ final class PartitionedBufferRedisCommanderToBlockingPartitionedBufferRedisComma
     }
 
     @Override
-    public <T> List<T> hmget(@RedisProtocolSupport.Key final Buffer key, final Buffer field) throws Exception {
+    public List<Buffer> hmget(@RedisProtocolSupport.Key final Buffer key, final Buffer field) throws Exception {
         return blockingInvocation(commander.hmget(key, field));
     }
 
     @Override
-    public <T> List<T> hmget(@RedisProtocolSupport.Key final Buffer key, final Buffer field1,
-                             final Buffer field2) throws Exception {
+    public List<Buffer> hmget(@RedisProtocolSupport.Key final Buffer key, final Buffer field1,
+                              final Buffer field2) throws Exception {
         return blockingInvocation(commander.hmget(key, field1, field2));
     }
 
     @Override
-    public <T> List<T> hmget(@RedisProtocolSupport.Key final Buffer key, final Buffer field1, final Buffer field2,
-                             final Buffer field3) throws Exception {
+    public List<Buffer> hmget(@RedisProtocolSupport.Key final Buffer key, final Buffer field1, final Buffer field2,
+                              final Buffer field3) throws Exception {
         return blockingInvocation(commander.hmget(key, field1, field2, field3));
     }
 
     @Override
-    public <T> List<T> hmget(@RedisProtocolSupport.Key final Buffer key,
-                             final Collection<Buffer> fields) throws Exception {
+    public List<Buffer> hmget(@RedisProtocolSupport.Key final Buffer key,
+                              final Collection<Buffer> fields) throws Exception {
         return blockingInvocation(commander.hmget(key, fields));
     }
 
@@ -952,24 +952,24 @@ final class PartitionedBufferRedisCommanderToBlockingPartitionedBufferRedisComma
     }
 
     @Override
-    public <T> List<T> mget(@RedisProtocolSupport.Key final Buffer key) throws Exception {
+    public List<Buffer> mget(@RedisProtocolSupport.Key final Buffer key) throws Exception {
         return blockingInvocation(commander.mget(key));
     }
 
     @Override
-    public <T> List<T> mget(@RedisProtocolSupport.Key final Buffer key1,
-                            @RedisProtocolSupport.Key final Buffer key2) throws Exception {
+    public List<Buffer> mget(@RedisProtocolSupport.Key final Buffer key1,
+                             @RedisProtocolSupport.Key final Buffer key2) throws Exception {
         return blockingInvocation(commander.mget(key1, key2));
     }
 
     @Override
-    public <T> List<T> mget(@RedisProtocolSupport.Key final Buffer key1, @RedisProtocolSupport.Key final Buffer key2,
-                            @RedisProtocolSupport.Key final Buffer key3) throws Exception {
+    public List<Buffer> mget(@RedisProtocolSupport.Key final Buffer key1, @RedisProtocolSupport.Key final Buffer key2,
+                             @RedisProtocolSupport.Key final Buffer key3) throws Exception {
         return blockingInvocation(commander.mget(key1, key2, key3));
     }
 
     @Override
-    public <T> List<T> mget(@RedisProtocolSupport.Key final Collection<Buffer> keys) throws Exception {
+    public List<Buffer> mget(@RedisProtocolSupport.Key final Collection<Buffer> keys) throws Exception {
         return blockingInvocation(commander.mget(keys));
     }
 
@@ -1645,7 +1645,7 @@ final class PartitionedBufferRedisCommanderToBlockingPartitionedBufferRedisComma
     }
 
     @Override
-    public List<String> srandmember(@RedisProtocolSupport.Key final Buffer key, final long count) throws Exception {
+    public List<Buffer> srandmember(@RedisProtocolSupport.Key final Buffer key, final long count) throws Exception {
         return blockingInvocation(commander.srandmember(key, count));
     }
 

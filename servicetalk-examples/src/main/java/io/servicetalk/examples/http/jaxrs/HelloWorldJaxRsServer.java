@@ -22,8 +22,6 @@ import io.servicetalk.transport.api.ServerContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
-
 /**
  * A hello world JAX-RS server starter.
  */
@@ -42,12 +40,12 @@ public final class HelloWorldJaxRsServer {
      */
     public static void main(String[] args) throws Exception {
         // Create configurable starter for HTTP server.
-        ServerContext serverContext = HttpServers.newHttpServerBuilder(8080)
-                .listenStreamingAndAwait(new HttpJerseyRouterBuilder().build(new HelloWorldJaxrsApplication()));
+        ServerContext serverContext = HttpServers.forPort(8080)
+                .listenStreamingAndAwait(new HttpJerseyRouterBuilder().build(new HelloWorldJaxRsApplication()));
 
-        LOGGER.info("listening on {}", serverContext.listenAddress());
+        LOGGER.info("Listening on {}", serverContext.listenAddress());
 
-        // Stop listening/accepting more sockets and gracefully shutdown all open sockets.
-        awaitIndefinitely(serverContext.onClose());
+        // Blocks and awaits shutdown of the server this ServerContext represents.
+        serverContext.awaitShutdown();
     }
 }

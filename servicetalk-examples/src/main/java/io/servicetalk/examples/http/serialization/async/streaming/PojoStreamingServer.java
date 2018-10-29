@@ -16,26 +16,37 @@
 package io.servicetalk.examples.http.serialization.async.streaming;
 
 import io.servicetalk.data.jackson.JacksonSerializationProvider;
-import io.servicetalk.examples.http.serialization.MyPojo;
-import io.servicetalk.examples.http.serialization.PojoRequest;
+import io.servicetalk.examples.http.serialization.CreatePojoRequest;
+import io.servicetalk.examples.http.serialization.PojoResponse;
 import io.servicetalk.http.api.HttpSerializationProvider;
-import io.servicetalk.http.api.StreamingHttpRequestHandler;
+import io.servicetalk.http.netty.HttpServers;
+
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static io.servicetalk.concurrent.api.Single.success;
+import static io.servicetalk.http.api.HttpHeaderNames.ALLOW;
+import static io.servicetalk.http.api.HttpRequestMethods.POST;
 import static io.servicetalk.http.api.HttpSerializationProviders.jsonSerializer;
-import static io.servicetalk.http.netty.HttpServers.newHttpServerBuilder;
 
-public class PojoStreamingServer {
+public final class PojoStreamingServer {
 
     public static void main(String[] args) throws Exception {
         HttpSerializationProvider serializer = jsonSerializer(new JacksonSerializationProvider());
-        newHttpServerBuilder(8080)
-                .listenStreamingAndAwait((ctx, request, responseFactory) ->
-                        success(responseFactory.ok()
-                                .payloadBody(request.payloadBody(serializer.deserializerFor(PojoRequest.class))
-                                                .map(req -> new MyPojo(req.getId(), "foo")),
-                                        serializer.serializerFor(MyPojo.class))))
-
+        HttpServers.forPort(8080)
+                .listenStreamingAndAwait((ctx, request, responseFactory) -> {
+                    if (!"/pojos".equals(request.requestTarget())) {
+                        return success(responseFactory.notFound());
+                    }
+                    if (request.method() != POST) {
+                        return success(responseFactory.methodNotAllowed().addHeader(ALLOW, POST.name()));
+                    }
+                    AtomicInteger newId = new AtomicInteger(ThreadLocalRandom.current().nextInt(100));
+                    return success(responseFactory.created()
+                            .payloadBody(request.payloadBody(serializer.deserializerFor(CreatePojoRequest.class))
+                                    .map(req -> new PojoResponse(newId.getAndIncrement(), req.getValue())),
+                                    serializer.serializerFor(PojoResponse.class)));
+                })
                 .awaitShutdown();
     }
 }

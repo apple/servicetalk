@@ -55,7 +55,7 @@ import static io.netty.channel.ChannelOption.AUTO_CLOSE;
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.transport.netty.internal.BuilderUtils.socketChannel;
 import static io.servicetalk.transport.netty.internal.BuilderUtils.toNettyAddress;
-import static io.servicetalk.transport.netty.internal.CloseHandler.NOOP_CLOSE_HANDLER;
+import static io.servicetalk.transport.netty.internal.CloseHandler.UNSUPPORTED_PROTOCOL_CLOSE_HANDLER;
 import static io.servicetalk.transport.netty.internal.DefaultNettyConnectionContext.newContext;
 import static io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutors.toEventLoopAwareNettyIoExecutor;
 import static io.servicetalk.transport.netty.internal.FlushStrategies.defaultFlushStrategy;
@@ -105,7 +105,7 @@ public final class TcpConnector<Read, Write> {
      */
     public TcpConnector(ReadOnlyTcpClientConfig config, ChannelInitializer channelInitializer,
                         Supplier<Predicate<Read>> terminalItemPredicate) {
-        this(config, channelInitializer, terminalItemPredicate, null, NOOP_CLOSE_HANDLER);
+        this(config, channelInitializer, terminalItemPredicate, null, UNSUPPORTED_PROTOCOL_CLOSE_HANDLER);
     }
 
     /**
@@ -120,7 +120,8 @@ public final class TcpConnector<Read, Write> {
         return new Single<NettyConnection<Read, Write>>() {
             @Override
             protected void handleSubscribe(Subscriber<? super NettyConnection<Read, Write>> subscriber) {
-                connectFutureToListener(connect0(remote, executionContext, subscriber, true), subscriber, remote);
+                connectFutureToListener(connect0(remote, executionContext, subscriber, true),
+                        subscriber, remote);
             }
         }.publishOn(executionContext.executor());
     }
@@ -191,11 +192,12 @@ public final class TcpConnector<Read, Write> {
                                     new NettyConnection.TerminalPredicate<>(terminalItemPredicate.get());
                             channel.pipeline().addLast(new AbstractChannelReadHandler<Read>(predicate, closeHandler) {
                                 @Override
-                                protected void onPublisherCreation(ChannelHandlerContext ctx, Publisher<Read> newPublisher) {
+                                protected void onPublisherCreation(ChannelHandlerContext ctx,
+                                                                   Publisher<Read> newPublisher) {
                                     final NettyConnection<Read, Write> connection;
                                     try {
-                                        connection = new DefaultNettyConnection<>(channel, context, newPublisher, predicate,
-                                                closeHandler, config.getFlushStrategy());
+                                        connection = new DefaultNettyConnection<>(channel, context, newPublisher,
+                                                predicate, closeHandler, config.getFlushStrategy());
                                     } catch (Throwable cause) {
                                         channel.close();
                                         subscriber.onError(cause);
@@ -222,7 +224,8 @@ public final class TcpConnector<Read, Write> {
             }
             Channel channel = socketChannel(loop, (FileDescriptorSocketAddress) resolvedAddress);
             if (channel == null) {
-                throw new IllegalArgumentException(FileDescriptorSocketAddress.class.getSimpleName() + " not supported");
+                throw new IllegalArgumentException(FileDescriptorSocketAddress.class.getSimpleName() +
+                        " not supported");
             }
             return attachCancelSubscriber(initFileDescriptorBasedChannel(loop, channel,
                     executionContext.bufferAllocator(), handler), cancellable);
@@ -256,7 +259,7 @@ public final class TcpConnector<Read, Write> {
             bs.option(ChannelOption.MAX_MESSAGES_PER_READ, 1);
         }
 
-        if (closeHandler != NOOP_CLOSE_HANDLER) {
+        if (closeHandler != UNSUPPORTED_PROTOCOL_CLOSE_HANDLER) {
             bs.option(ALLOW_HALF_CLOSURE, true);
             bs.option(AUTO_CLOSE, false);
         }

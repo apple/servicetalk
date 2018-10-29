@@ -123,6 +123,6 @@ public final class ExecutionContextRule extends ExternalResource implements Exec
     }
 
     private static Supplier<IoExecutor> newIoExecutor(ThreadFactory threadFactory) {
-        return () -> createIoExecutor(0, threadFactory);
+        return () -> createIoExecutor(threadFactory);
     }
 }

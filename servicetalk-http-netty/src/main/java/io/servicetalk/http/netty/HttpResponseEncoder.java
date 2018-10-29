@@ -49,7 +49,7 @@ import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.SUCCESS_2XX
 import static io.servicetalk.http.api.HttpResponseStatuses.NOT_MODIFIED;
 import static io.servicetalk.http.api.HttpResponseStatuses.NO_CONTENT;
 import static io.servicetalk.http.api.HttpResponseStatuses.SWITCHING_PROTOCOLS;
-import static io.servicetalk.transport.netty.internal.CloseHandler.NOOP_CLOSE_HANDLER;
+import static io.servicetalk.transport.netty.internal.CloseHandler.UNSUPPORTED_PROTOCOL_CLOSE_HANDLER;
 import static java.util.Objects.requireNonNull;
 
 final class HttpResponseEncoder extends HttpObjectEncoder<HttpResponseMetaData> {
@@ -80,7 +80,8 @@ final class HttpResponseEncoder extends HttpObjectEncoder<HttpResponseMetaData> 
      */
     HttpResponseEncoder(Queue<HttpRequestMethod> methodQueue,
                         int headersEncodedSizeAccumulator, int trailersEncodedSizeAccumulator) {
-        this(methodQueue, headersEncodedSizeAccumulator, trailersEncodedSizeAccumulator, NOOP_CLOSE_HANDLER);
+        this(methodQueue, headersEncodedSizeAccumulator, trailersEncodedSizeAccumulator,
+                UNSUPPORTED_PROTOCOL_CLOSE_HANDLER);
     }
 
     @Override

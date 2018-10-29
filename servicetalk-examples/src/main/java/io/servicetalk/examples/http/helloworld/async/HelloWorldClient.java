@@ -23,6 +23,7 @@ import java.util.concurrent.CountDownLatch;
 import static io.servicetalk.http.api.HttpSerializationProviders.textDeserializer;
 
 public final class HelloWorldClient {
+
     public static void main(String[] args) throws Exception {
         try (HttpClient client = HttpClients.forSingleAddress("localhost", 8080).build()) {
             // This example is demonstrating asynchronous execution, but needs to prevent the main thread from exiting

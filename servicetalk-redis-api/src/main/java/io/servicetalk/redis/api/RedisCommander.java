@@ -1445,10 +1445,9 @@ public abstract class RedisCommander implements AsyncCloseable {
      * @param key the key
      * @param field the field
      * @return a {@link Single} result
-     * @param <T> the type of elements
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.HMGET)
-    public abstract <T> Single<List<T>> hmget(@RedisProtocolSupport.Key CharSequence key, CharSequence field);
+    public abstract Single<List<String>> hmget(@RedisProtocolSupport.Key CharSequence key, CharSequence field);
 
     /**
      * Get the values of all the given hash fields.
@@ -1457,11 +1456,10 @@ public abstract class RedisCommander implements AsyncCloseable {
      * @param field1 the field1
      * @param field2 the field2
      * @return a {@link Single} result
-     * @param <T> the type of elements
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.HMGET)
-    public abstract <T> Single<List<T>> hmget(@RedisProtocolSupport.Key CharSequence key, CharSequence field1,
-                                              CharSequence field2);
+    public abstract Single<List<String>> hmget(@RedisProtocolSupport.Key CharSequence key, CharSequence field1,
+                                               CharSequence field2);
 
     /**
      * Get the values of all the given hash fields.
@@ -1471,11 +1469,10 @@ public abstract class RedisCommander implements AsyncCloseable {
      * @param field2 the field2
      * @param field3 the field3
      * @return a {@link Single} result
-     * @param <T> the type of elements
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.HMGET)
-    public abstract <T> Single<List<T>> hmget(@RedisProtocolSupport.Key CharSequence key, CharSequence field1,
-                                              CharSequence field2, CharSequence field3);
+    public abstract Single<List<String>> hmget(@RedisProtocolSupport.Key CharSequence key, CharSequence field1,
+                                               CharSequence field2, CharSequence field3);
 
     /**
      * Get the values of all the given hash fields.
@@ -1483,11 +1480,10 @@ public abstract class RedisCommander implements AsyncCloseable {
      * @param key the key
      * @param fields the fields
      * @return a {@link Single} result
-     * @param <T> the type of elements
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.HMGET)
-    public abstract <T> Single<List<T>> hmget(@RedisProtocolSupport.Key CharSequence key,
-                                              Collection<? extends CharSequence> fields);
+    public abstract Single<List<String>> hmget(@RedisProtocolSupport.Key CharSequence key,
+                                               Collection<? extends CharSequence> fields);
 
     /**
      * Set multiple hash fields to multiple values.
@@ -1894,10 +1890,9 @@ public abstract class RedisCommander implements AsyncCloseable {
      *
      * @param key the key
      * @return a {@link Single} result
-     * @param <T> the type of elements
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.MGET)
-    public abstract <T> Single<List<T>> mget(@RedisProtocolSupport.Key CharSequence key);
+    public abstract Single<List<String>> mget(@RedisProtocolSupport.Key CharSequence key);
 
     /**
      * Get the values of all the given keys.
@@ -1905,11 +1900,10 @@ public abstract class RedisCommander implements AsyncCloseable {
      * @param key1 the key1
      * @param key2 the key2
      * @return a {@link Single} result
-     * @param <T> the type of elements
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.MGET)
-    public abstract <T> Single<List<T>> mget(@RedisProtocolSupport.Key CharSequence key1,
-                                             @RedisProtocolSupport.Key CharSequence key2);
+    public abstract Single<List<String>> mget(@RedisProtocolSupport.Key CharSequence key1,
+                                              @RedisProtocolSupport.Key CharSequence key2);
 
     /**
      * Get the values of all the given keys.
@@ -1918,22 +1912,20 @@ public abstract class RedisCommander implements AsyncCloseable {
      * @param key2 the key2
      * @param key3 the key3
      * @return a {@link Single} result
-     * @param <T> the type of elements
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.MGET)
-    public abstract <T> Single<List<T>> mget(@RedisProtocolSupport.Key CharSequence key1,
-                                             @RedisProtocolSupport.Key CharSequence key2,
-                                             @RedisProtocolSupport.Key CharSequence key3);
+    public abstract Single<List<String>> mget(@RedisProtocolSupport.Key CharSequence key1,
+                                              @RedisProtocolSupport.Key CharSequence key2,
+                                              @RedisProtocolSupport.Key CharSequence key3);
 
     /**
      * Get the values of all the given keys.
      *
      * @param keys the keys
      * @return a {@link Single} result
-     * @param <T> the type of elements
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.MGET)
-    public abstract <T> Single<List<T>> mget(@RedisProtocolSupport.Key Collection<? extends CharSequence> keys);
+    public abstract Single<List<String>> mget(@RedisProtocolSupport.Key Collection<? extends CharSequence> keys);
 
     /**
      * Listen for all requests received by the server in real time.
