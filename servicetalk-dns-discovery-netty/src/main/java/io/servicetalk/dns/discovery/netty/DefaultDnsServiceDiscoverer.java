@@ -126,6 +126,8 @@ final class DefaultDnsServiceDiscoverer
             builder.resolvedAddressTypes(toNettyType(dnsResolverAddressTypes));
         }
         resolver = builder.build();
+        LOGGER.debug("Created a new DNS discoverer {} with minimum TTL (seconds): {}, ndots: {}, optResourceEnabled {}, dnsResolverAddressTypes {}, dnsServerAddressStreamProvider {}.",
+                this, minTTL, ndots, optResourceEnabled, dnsResolverAddressTypes, dnsServerAddressStreamProvider);
     }
 
     @Override
