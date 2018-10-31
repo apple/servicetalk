@@ -430,6 +430,9 @@ final class DefaultDnsServiceDiscoverer
                             } catch (Throwable error) {
                                 handleError(error);
                             }
+                        } else {
+                            LOGGER.debug("DNS discoverer {}, resolution done but no changes observed for {}. Resolution result: (size {}) {}",
+                                    DefaultDnsServiceDiscoverer.this, inetHost, addresses.size(), addresses);
                         }
                     }
                 }
