@@ -424,10 +424,8 @@ final class DefaultDnsServiceDiscoverer
                         if (events != null) {
                             activeAddresses = addresses;
                             try {
-                                if (LOGGER.isDebugEnabled()) {
-                                    LOGGER.debug("DNS discoverer {}, sending events for address {}: (size {}) {}.",
-                                            DefaultDnsServiceDiscoverer.this, inetHost, events.size(), events);
-                                }
+                                LOGGER.debug("DNS discoverer {}, sending events for address {}: (size {}) {}.",
+                                        DefaultDnsServiceDiscoverer.this, inetHost, events.size(), events);
                                 subscriber.onNext(events);
                             } catch (Throwable error) {
                                 handleError(error);

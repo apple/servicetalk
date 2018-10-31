@@ -172,10 +172,8 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends ListenableA
                             return refreshedAddresses;
                         });
 
-                if (LOGGER.isDebugEnabled()) {
-                    LOGGER.debug("Load balancer {} now using {} addresses: {}", RoundRobinLoadBalancer.this,
-                            activeAddresses.size(), activeAddresses);
-                }
+                LOGGER.debug("Load balancer {} now using {} addresses: {}", RoundRobinLoadBalancer.this,
+                        activeAddresses.size(), activeAddresses);
 
                 if (event.available()) {
                     if (activeAddresses.size() == 1) {
@@ -196,11 +194,9 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends ListenableA
 
             @Override
             public void onComplete() {
-                if (LOGGER.isDebugEnabled()) {
-                    List<Host<ResolvedAddress, C>> hosts = activeHosts;
-                    LOGGER.error("Load balancer {}. Service discoverer {} completed. Last seen addresses (size {}) {}",
-                            RoundRobinLoadBalancer.this, eventPublisher, hosts.size(), hosts);
-                }
+                List<Host<ResolvedAddress, C>> hosts = activeHosts;
+                LOGGER.error("Load balancer {}. Service discoverer {} completed. Last seen addresses (size {}) {}",
+                        RoundRobinLoadBalancer.this, eventPublisher, hosts.size(), hosts);
             }
         });
         asyncCloseable = toAsyncCloseable(graceful -> {
