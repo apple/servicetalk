@@ -146,6 +146,8 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends ListenableA
             @SuppressWarnings("unchecked")
             @Override
             public void onNext(final ServiceDiscovererEvent<ResolvedAddress> event) {
+                LOGGER.debug("Load balancer {}, received new ServiceDiscoverer event {}.", RoundRobinLoadBalancer.this,
+                        event);
                 final List<Host<ResolvedAddress, C>> activeAddresses =
                         activeHostsUpdater.updateAndGet(RoundRobinLoadBalancer.this, currentAddresses -> {
                             final List<Host<ResolvedAddress, C>> refreshedAddresses = new ArrayList<>(currentAddresses);
@@ -170,6 +172,11 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends ListenableA
                             return refreshedAddresses;
                         });
 
+                if (LOGGER.isDebugEnabled()) {
+                    LOGGER.debug("Load balancer {} now using {} addresses: {}", RoundRobinLoadBalancer.this,
+                            activeAddresses.size(), activeAddresses);
+                }
+
                 if (event.available()) {
                     if (activeAddresses.size() == 1) {
                         eventStream.sendOnNext(LOAD_BALANCER_READY_EVENT);
@@ -177,18 +184,23 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends ListenableA
                 } else if (activeAddresses.isEmpty()) {
                     eventStream.sendOnNext(LOAD_BALANCER_NOT_READY_EVENT);
                 }
-
-                LOGGER.debug("Running with {} active addresses", activeAddresses.size());
             }
 
             @Override
             public void onError(final Throwable t) {
-                LOGGER.error("Service discoverer {} failure.", eventPublisher, t);
+                List<Host<ResolvedAddress, C>> hosts = activeHosts;
+                LOGGER.error(
+                        "Load balancer {}. Service discoverer {} emitted an error. Last seen addresses (size {}) {}",
+                        RoundRobinLoadBalancer.this, eventPublisher, hosts.size(), hosts, t);
             }
 
             @Override
             public void onComplete() {
-                LOGGER.debug("Service discoverer {} has completed.", eventPublisher);
+                if (LOGGER.isDebugEnabled()) {
+                    List<Host<ResolvedAddress, C>> hosts = activeHosts;
+                    LOGGER.error("Load balancer {}. Service discoverer {} completed. Last seen addresses (size {}) {}",
+                            RoundRobinLoadBalancer.this, eventPublisher, hosts.size(), hosts);
+                }
             }
         });
         asyncCloseable = toAsyncCloseable(graceful -> {
@@ -367,6 +379,14 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends ListenableA
             return connections == null ? completed() :
                     completed().mergeDelayError(connections.stream()
                             .map(AsyncCloseable::closeAsyncGracefully)::iterator);
+        }
+
+        @Override
+        public String toString() {
+            return "Host{" +
+                    "address=" + address +
+                    ", removed=" + removed +
+                    '}';
         }
     }
 

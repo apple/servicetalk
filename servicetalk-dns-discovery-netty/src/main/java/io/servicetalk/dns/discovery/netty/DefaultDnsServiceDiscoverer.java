@@ -168,6 +168,8 @@ final class DefaultDnsServiceDiscoverer
     }
 
     private void removeEntry0(DiscoverEntry entry) {
+        LOGGER.debug("DNS discoverer {}, cancelled DNS resolution for {}.", DefaultDnsServiceDiscoverer.this,
+                entry.inetHost);
         List<DiscoverEntry> entries = registerMap.get(entry.inetHost);
         if (entries == null) {
             return;
@@ -324,6 +326,8 @@ final class DefaultDnsServiceDiscoverer
 
         @Override
         protected void handleSubscribe(Subscriber<? super Iterable<ServiceDiscovererEvent<InetAddress>>> subscriber) {
+            LOGGER.debug("DNS discoverer {}, starting DNS resolution for {}.", DefaultDnsServiceDiscoverer.this,
+                    inetHost);
             subscriber.onSubscribe(new Subscription() {
                 private long pendingRequests;
                 private List<InetAddress> activeAddresses = Collections.emptyList();
@@ -373,6 +377,8 @@ final class DefaultDnsServiceDiscoverer
                 }
 
                 private void doQuery() {
+                    LOGGER.debug("DNS discoverer {}, querying DNS for {}.", DefaultDnsServiceDiscoverer.this, inetHost);
+
                     cancellableForQuery = IGNORE_CANCEL;
                     Future<List<InetAddress>> addressFuture = resolver.resolveAll(inetHost);
                     if (addressFuture.isDone()) {
@@ -391,6 +397,8 @@ final class DefaultDnsServiceDiscoverer
                 }
 
                 private void scheduleQuery(long nanos) {
+                    LOGGER.debug("DNS discoverer {}, scheduling DNS query for {} after {} nanos.",
+                            DefaultDnsServiceDiscoverer.this, inetHost, nanos);
                     // This value is coming from DNS TTL for which the unit is seconds and the minimum value we accept
                     // in the constructor is 1 second.
                     cancellableForQuery = nettyIoExecutor.asExecutor().schedule(this::doQuery, nanos, NANOSECONDS);
@@ -416,6 +424,10 @@ final class DefaultDnsServiceDiscoverer
                         if (events != null) {
                             activeAddresses = addresses;
                             try {
+                                if (LOGGER.isDebugEnabled()) {
+                                    LOGGER.debug("DNS discoverer {}, sending events for address {}: (size {}) {}.",
+                                            DefaultDnsServiceDiscoverer.this, inetHost, events.size(), events);
+                                }
                                 subscriber.onNext(events);
                             } catch (Throwable error) {
                                 handleError(error);
@@ -425,6 +437,8 @@ final class DefaultDnsServiceDiscoverer
                 }
 
                 private void handleError(Throwable cause) {
+                    LOGGER.debug("DNS discoverer {}, DNS lookup failed for {}.", DefaultDnsServiceDiscoverer.this,
+                            inetHost, cause);
                     DiscoverEntry.this.subscriber = null; // allow sequential subscriptions
                     cancel0();
                     subscriber.onError(cause);

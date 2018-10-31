@@ -44,4 +44,12 @@ public final class DefaultServiceDiscovererEvent<T> implements ServiceDiscoverer
     public boolean available() {
         return isAvailable;
     }
+
+    @Override
+    public String toString() {
+        return "DefaultServiceDiscovererEvent{" +
+                "address=" + address +
+                ", isAvailable=" + isAvailable +
+                '}';
+    }
 }
