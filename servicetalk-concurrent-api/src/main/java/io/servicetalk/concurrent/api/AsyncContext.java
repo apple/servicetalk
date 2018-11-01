@@ -19,6 +19,7 @@ import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.BiPredicate;
@@ -33,6 +34,7 @@ import static io.servicetalk.concurrent.api.AsyncContextSinglePlugin.SINGLE_PLUG
 import static io.servicetalk.concurrent.api.DefaultAsyncContextProvider.INSTANCE;
 import static io.servicetalk.concurrent.api.Executors.EXECUTOR_PLUGINS;
 import static io.servicetalk.concurrent.internal.ConcurrentPlugins.addPlugin;
+import static io.servicetalk.concurrent.internal.ConcurrentPlugins.removePlugin;
 
 /**
  * Presents a static interface to retain state in an asynchronous environment.
@@ -42,6 +44,17 @@ import static io.servicetalk.concurrent.internal.ConcurrentPlugins.addPlugin;
  * overhead required to maintain this context.
  */
 public final class AsyncContext {
+    private static final int STATE_DISABLED = -1;
+    private static final int STATE_INIT = 0;
+    private static final int STATE_AUTO_ENABLED = 1;
+    private static final int STATE_ENABLED = 2;
+    /**
+     * Note this mechanism is racy. Currently only the {@link #disable()} method is exposed publicly and
+     * {@link #STATE_DISABLED} is a terminal state. Because we favor going to the disabled state we don't have to worry
+     * about concurrent {@link #enable()} and {@link #disable()} calls.
+     */
+    private static final AtomicInteger ENABLED_STATE = new AtomicInteger(STATE_INIT);
+
     /**
      * A listener that is notified when ever the {@link AsyncContextProvider} changes.
      */
@@ -336,10 +349,65 @@ public final class AsyncContext {
         return INSTANCE.wrap(func);
     }
 
+    /**
+     * Disable AsyncContext. It is assumed the application will call this in a well orchestrated fashion. For example
+     * the behavior of in flight AsyncContext is undefined, objects that are already initialized with AsyncContext
+     * enabled may continue to preserve AsyncContext in an unreliable fashion. and also how this behaves relative to
+     * concurrent invocation is undefined.
+     */
+    public static void disable() {
+        if (ENABLED_STATE.getAndSet(STATE_DISABLED) != STATE_DISABLED) {
+            disable0();
+        }
+    }
+
+    /**
+     * This method is currently internal only! If it is exposed publicly, and {@link #STATE_DISABLED} is no longer a
+     * terminal state the racy {@link #ENABLED_STATE} should be re-evaluated. We currently don't try to account for an
+     * application calling {@link #enable()} and {@link #disable()} concurrently, and this may result in inconsistent
+     * plugin enabled/disable state.
+     */
+    static void enable() {
+        for (;;) {
+            final int enabledState = ENABLED_STATE.get();
+            if (ENABLED_STATE.compareAndSet(enabledState, STATE_ENABLED)) {
+                if (enabledState != STATE_ENABLED && enabledState != STATE_AUTO_ENABLED) {
+                    enable0();
+                }
+                break;
+            }
+        }
+    }
+
     static void autoEnable() {
+        for (;;) {
+            final int enabledState = ENABLED_STATE.get();
+            if (enabledState == STATE_AUTO_ENABLED) {
+                break;
+            } else if (ENABLED_STATE.compareAndSet(enabledState, STATE_AUTO_ENABLED)) {
+                if (enabledState != STATE_ENABLED) {
+                    enable0();
+                }
+                break;
+            }
+        }
+    }
+
+    private static void enable0() {
         addPlugin(COMPLETABLE_PLUGIN);
         addPlugin(SINGLE_PLUGIN);
         addPlugin(PUBLISHER_PLUGIN);
         EXECUTOR_PLUGINS.add(EXECUTOR_PLUGIN);
+
+        if (ENABLED_STATE.get() == STATE_DISABLED) {
+            disable0();
+        }
+    }
+
+    private static void disable0() {
+        removePlugin(COMPLETABLE_PLUGIN);
+        removePlugin(SINGLE_PLUGIN);
+        removePlugin(PUBLISHER_PLUGIN);
+        EXECUTOR_PLUGINS.remove(EXECUTOR_PLUGIN);
     }
 }
