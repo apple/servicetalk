@@ -411,19 +411,19 @@ final class DefaultDnsServiceDiscoverer
                     if (cause != null) {
                         handleError(cause);
                     } else {
-                        // TODO(scott): the TTL value should be derived from the cache.
-                        ttlNanos = TimeUnit.SECONDS.toNanos(2);
-                        --pendingRequests;
-                        if (pendingRequests > 0) {
-                            scheduleQuery(ttlNanos);
-                        } else {
-                            resolveDoneNoScheduleTime = System.nanoTime();
-                            cancellableForQuery = null;
-                        }
                         List<InetAddress> addresses = addressFuture.getNow();
                         List<ServiceDiscovererEvent<InetAddress>> events = calculateDifference(activeAddresses,
                                 addresses, INET_ADDRESS_COMPARATOR);
+                        // TODO(scott): the TTL value should be derived from the cache.
+                        ttlNanos = TimeUnit.SECONDS.toNanos(2);
                         if (events != null) {
+                            --pendingRequests;
+                            if (pendingRequests > 0) {
+                                scheduleQuery(ttlNanos);
+                            } else {
+                                resolveDoneNoScheduleTime = System.nanoTime();
+                                cancellableForQuery = null;
+                            }
                             activeAddresses = addresses;
                             try {
                                 LOGGER.debug("DNS discoverer {}, sending events for address {}: (size {}) {}.",
@@ -435,6 +435,7 @@ final class DefaultDnsServiceDiscoverer
                         } else {
                             LOGGER.debug("DNS discoverer {}, resolution done but no changes observed for {}. Resolution result: (size {}) {}",
                                     DefaultDnsServiceDiscoverer.this, inetHost, addresses.size(), addresses);
+                            scheduleQuery(ttlNanos);
                         }
                     }
                 }
