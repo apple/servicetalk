@@ -27,7 +27,6 @@ import java.nio.channels.ClosedChannelException;
 import java.util.List;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
-import java.util.function.Supplier;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
@@ -124,14 +123,25 @@ final class CommanderUtils {
 
     private static void handleCancel(final ReservedRedisConnection reservedCnx,
                                      final List<SingleProcessor<?>> singles,
-                                     final Supplier<Exception> exceptionSupplier) {
-        reservedCnx.closeAsync()
-                .doAfterComplete(() -> completeSinglesWithException(exceptionSupplier.get(), singles))
-                .doAfterError(releaseThrowable -> {
-                    final Exception e = exceptionSupplier.get();
-                    e.addSuppressed(releaseThrowable);
-                    completeSinglesWithException(e, singles);
-                }).subscribe();
+                                     final String exceptionMessage) {
+        reservedCnx.closeAsync().subscribe(new io.servicetalk.concurrent.Completable.Subscriber() {
+            @Override
+            public void onSubscribe(final Cancellable cancellable) {
+                // no-op
+            }
+
+            @Override
+            public void onComplete() {
+                completeSinglesWithException(new ConnectionClosedException(exceptionMessage), singles);
+            }
+
+            @Override
+            public void onError(final Throwable releaseThrowable) {
+                final Exception e = new ConnectionClosedException(exceptionMessage);
+                e.addSuppressed(releaseThrowable);
+                completeSinglesWithException(e, singles);
+            }
+        });
     }
 
     static final class DiscardSingle<T> extends Single<String> {
@@ -165,22 +175,19 @@ final class CommanderUtils {
             Single<String> discardSingle = abortSingles(queued, singles);
             if (releaseAfterDone) {
                 discardSingle = discardSingle.onErrorResume(discardThrowable -> reservedCnx.releaseAsync()
+                        // If releaseAsync() fails then add as a suppressed exception.
                         .onErrorResume(releaseThrowable -> {
                             discardThrowable.addSuppressed(releaseThrowable);
                             return Completable.error(discardThrowable);
                         })
+                        // If releaseAsync() completes successfully, emit the original error.
                         .andThen(error(discardThrowable)))
+                        // If discard succeeds, release the connection.
                         .concatWith(reservedCnx.releaseAsync());
             }
-            discardSingle.doAfterCancel(() -> handleCancel(reservedCnx, singles, ConnectionClosedException::new))
+            discardSingle.doAfterCancel(() -> handleCancel(reservedCnx, singles,
+                    "Connection closed due to discard() cancellation."))
                     .subscribe(subscriber);
-        }
-
-        private static final class ConnectionClosedException extends ClosedChannelException {
-            @Override
-            public String getMessage() {
-                return "Connection closed due to discard() cancellation.";
-            }
         }
     }
 
@@ -216,22 +223,33 @@ final class CommanderUtils {
             Completable execCompletable = completeSingles(results, singles);
             if (releaseAfterDone) {
                 execCompletable = execCompletable.onErrorResume(discardThrowable -> reservedCnx.releaseAsync()
+                        // If releaseAsync() fails then add as a suppressed exception.
                         .onErrorResume(releaseThrowable -> {
                             discardThrowable.addSuppressed(releaseThrowable);
                             return error(discardThrowable);
                         })
+                        // If releaseAsync() completes successfully, emit the original error.
                         .andThen(error(discardThrowable)))
+                        // If exec succeeds, release the connection.
                         .andThen(reservedCnx.releaseAsync());
             }
-            execCompletable.doAfterCancel(() -> handleCancel(reservedCnx, singles, ConnectionClosedException::new))
+            execCompletable.doAfterCancel(() -> handleCancel(reservedCnx, singles,
+                    "Connection closed due to exec() cancellation."))
                     .subscribe(subscriber);
         }
+    }
 
-        private static final class ConnectionClosedException extends ClosedChannelException {
-            @Override
-            public String getMessage() {
-                return "Connection closed due to exec() cancellation.";
-            }
+    private static final class ConnectionClosedException extends ClosedChannelException {
+
+        private final String message;
+
+        private ConnectionClosedException(final String message) {
+            this.message = message;
+        }
+
+        @Override
+        public String getMessage() {
+            return message;
         }
     }
 }
