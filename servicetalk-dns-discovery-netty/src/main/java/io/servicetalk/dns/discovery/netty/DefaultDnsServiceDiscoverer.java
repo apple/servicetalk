@@ -48,7 +48,6 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.client.internal.ServiceDiscovererUtils.calculateDifference;
@@ -57,9 +56,11 @@ import static io.servicetalk.concurrent.api.Publisher.error;
 import static io.servicetalk.concurrent.internal.EmptySubscription.EMPTY_SUBSCRIPTION;
 import static io.servicetalk.transport.netty.internal.BuilderUtils.datagramChannel;
 import static io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutors.toEventLoopAwareNettyIoExecutor;
+import static java.lang.System.nanoTime;
 import static java.nio.ByteBuffer.wrap;
 import static java.util.Comparator.comparing;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.function.Function.identity;
 
 /**
@@ -368,7 +369,7 @@ final class DefaultDnsServiceDiscoverer
                         if (ttlNanos < 0) {
                             doQuery();
                         } else {
-                            long durationNs = System.nanoTime() - resolveDoneNoScheduleTime;
+                            long durationNs = nanoTime() - resolveDoneNoScheduleTime;
                             if (durationNs > ttlNanos) {
                                 doQuery();
                             } else {
@@ -415,13 +416,13 @@ final class DefaultDnsServiceDiscoverer
                         List<ServiceDiscovererEvent<InetAddress>> events = calculateDifference(activeAddresses,
                                 addresses, INET_ADDRESS_COMPARATOR);
                         // TODO(scott): the TTL value should be derived from the cache.
-                        ttlNanos = TimeUnit.SECONDS.toNanos(2);
+                        ttlNanos = SECONDS.toNanos(2);
                         if (events != null) {
                             --pendingRequests;
                             if (pendingRequests > 0) {
                                 scheduleQuery(ttlNanos);
                             } else {
-                                resolveDoneNoScheduleTime = System.nanoTime();
+                                resolveDoneNoScheduleTime = nanoTime();
                                 cancellableForQuery = null;
                             }
                             activeAddresses = addresses;
