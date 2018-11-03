@@ -55,6 +55,7 @@ import static io.servicetalk.concurrent.api.PublisherDoOnUtils.doOnNextSupplier;
 import static io.servicetalk.concurrent.api.PublisherDoOnUtils.doOnRequestSupplier;
 import static io.servicetalk.concurrent.api.PublisherDoOnUtils.doOnSubscribeSupplier;
 import static io.servicetalk.concurrent.internal.ConcurrentPlugins.getPublisherPlugin;
+import static io.servicetalk.concurrent.internal.EmptySubscription.EMPTY_SUBSCRIPTION;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -1993,11 +1994,16 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
     @Override
     public final void subscribe(Subscriber<? super T> subscriber) {
         requireNonNull(subscriber);
-        // This is a user-driven subscribe i.e. there is no SignalOffloader override, so create a new SignalOffloader to
-        // use.
-        final SignalOffloader signalOffloader = newOffloaderFor(executor);
-        // Since this is a user-driven subscribe (end of the execution chain), offload subscription methods
-        subscribe(signalOffloader.offloadSubscription(subscriber), signalOffloader);
+        try {
+            // This is a user-driven subscribe i.e. there is no SignalOffloader override, so create a new SignalOffloader to
+            // use.
+            final SignalOffloader signalOffloader = newOffloaderFor(executor);
+            // Since this is a user-driven subscribe (end of the execution chain), offload subscription methods
+            subscribe(signalOffloader.offloadSubscription(subscriber), signalOffloader);
+        } catch (Throwable t) {
+            subscriber.onSubscribe(EMPTY_SUBSCRIPTION);
+            subscriber.onError(t);
+        }
     }
 
     /**

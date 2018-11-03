@@ -31,6 +31,7 @@ import java.util.function.IntFunction;
 import java.util.function.IntPredicate;
 import java.util.function.Supplier;
 
+import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.api.CompletableDoOnUtils.doOnCompleteSupplier;
 import static io.servicetalk.concurrent.api.CompletableDoOnUtils.doOnErrorSupplier;
 import static io.servicetalk.concurrent.api.CompletableDoOnUtils.doOnSubscribeSupplier;
@@ -1092,11 +1093,17 @@ public abstract class Completable implements io.servicetalk.concurrent.Completab
 
     @Override
     public final void subscribe(Subscriber subscriber) {
-        // This is a user-driven subscribe i.e. there is no SignalOffloader override, so create a new SignalOffloader
-        // to use.
-        final SignalOffloader signalOffloader = newOffloaderFor(executor);
-        // Since this is a user-driven subscribe (end of the execution chain), offload Cancellable
-        subscribe(signalOffloader.offloadCancellable(subscriber), signalOffloader);
+        requireNonNull(subscriber);
+        try {
+            // This is a user-driven subscribe i.e. there is no SignalOffloader override, so create a new SignalOffloader
+            // to use.
+            final SignalOffloader signalOffloader = newOffloaderFor(executor);
+            // Since this is a user-driven subscribe (end of the execution chain), offload Cancellable
+            subscribe(signalOffloader.offloadCancellable(subscriber), signalOffloader);
+        } catch (Throwable t) {
+            subscriber.onSubscribe(IGNORE_CANCEL);
+            subscriber.onError(t);
+        }
     }
 
     /**
