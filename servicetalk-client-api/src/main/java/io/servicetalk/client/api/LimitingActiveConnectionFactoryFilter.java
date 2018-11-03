@@ -34,14 +34,14 @@ import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
  * @param <ResolvedAddress> The type of a resolved address that can be used for connecting.
  * @param <C> The type of connections created by this factory.
  */
-public final class ActiveConnectionsLimitingFactory<ResolvedAddress, C extends ListenableAsyncCloseable>
-        implements ConnectionFactory<ResolvedAddress, C> {
+public final class LimitingActiveConnectionFactoryFilter<ResolvedAddress, C extends ListenableAsyncCloseable>
+  implements ConnectionFactory<ResolvedAddress, C> {
 
     private final ConnectionFactory<ResolvedAddress, C> original;
     private final ConnectionLimiter<ResolvedAddress> limiter;
 
-    private ActiveConnectionsLimitingFactory(final ConnectionFactory<ResolvedAddress, C> original,
-                                             final ConnectionLimiter<ResolvedAddress> limiter) {
+    private LimitingActiveConnectionFactoryFilter(final ConnectionFactory<ResolvedAddress, C> original,
+                                                  final ConnectionLimiter<ResolvedAddress> limiter) {
         this.original = original;
         this.limiter = limiter;
     }
@@ -98,11 +98,11 @@ public final class ActiveConnectionsLimitingFactory<ResolvedAddress, C extends L
      */
     public static <A, C extends ListenableAsyncCloseable> ConnectionFactory<A, C> withLimiter(
             ConnectionFactory<A, C> original, ConnectionLimiter<A> limiter) {
-        return new ActiveConnectionsLimitingFactory<>(original, limiter);
+        return new LimitingActiveConnectionFactoryFilter<>(original, limiter);
     }
 
     /**
-     * A contract to limit number of connections created by {@link ActiveConnectionsLimitingFactory}.
+     * A contract to limit number of connections created by {@link LimitingActiveConnectionFactoryFilter}.
      * <p>
      * The following rules apply:
      * <ul>
