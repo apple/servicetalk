@@ -314,6 +314,9 @@ class RequestResponseCloseHandler extends CloseHandler {
         } else if (pending != 0) { // Server && CHANNEL_CLOSED_OUTBOUND
             // pending > 0 => ensures we finish reading current request, abort others we can't respond to anyway
             closeAndResetChannel(channel, evt);
+        } else if (!has(state, READ)) { // Server && CHANNEL_CLOSED_OUTBOUND && pending == 0
+            // last response, we are not reading and OUTBOUND is closed, so just close the channel.
+            closeChannel(channel, evt);
         }
     }
 
