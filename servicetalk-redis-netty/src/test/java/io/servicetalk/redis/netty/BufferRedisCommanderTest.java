@@ -91,7 +91,7 @@ public class BufferRedisCommanderTest extends BaseRedisClientTest {
 
     @Before
     public void createCommandClient() {
-        commandClient = getEnv().client.asBufferCommander();
+        commandClient = getMockRedisClient().asBufferCommander();
     }
 
     @Test
@@ -264,7 +264,8 @@ public class BufferRedisCommanderTest extends BaseRedisClientTest {
         Future<String> value2 = tcc.set(key("a-key"), buf("a-value3"));
         Future<Buffer> value3 = tcc.ping(buf("in-transac"));
         Future<Buffer> value4 = tcc.get(key("a-key"));
-        awaitIndefinitely(tcc.exec());
+        tcc.exec().toFuture().get();
+        postReleaseLatch.await();
         assertThat(value1.get(), is(1L));
         assertThat(value2.get(), is("OK"));
         assertThat(value3.get(), is(buf("in-transac")));
@@ -277,6 +278,7 @@ public class BufferRedisCommanderTest extends BaseRedisClientTest {
 
         Future<Buffer> future = tcc.ping(buf("in-transac"));
         tcc.discard().toFuture().get();
+        postReleaseLatch.await();
 
         thrown.expect(ExecutionException.class);
         thrown.expectCause(instanceOf(TransactionAbortedException.class));
@@ -316,6 +318,80 @@ public class BufferRedisCommanderTest extends BaseRedisClientTest {
         thrown.expectCause(is(instanceOf(RedisServerException.class)));
         thrown.expectCause(hasProperty("message", startsWith("WRONGTYPE")));
         r2.get();
+    }
+
+    @Test
+    public void transactionExecCancel() throws Exception {
+        final TransactedBufferRedisCommander tcc = awaitIndefinitelyNonNull(commandClient.multi());
+
+        // Keep Redis busy for approximately 1 second so that it can't finish the transaction before we cancel.
+        Future<Long> longFuture = tcc.evalLong(buf(EVAL_SLEEP_SCRIPT), 0, emptyList(),
+                asList(buf("1000"), buf("100000000")));
+
+        Future<Buffer> pingFuture = tcc.ping(buf("in-transac"));
+        tcc.exec().toFuture().cancel(true);
+        postCloseLatch.await();
+
+        assertThrowsClosedChannelException(pingFuture::get);
+
+        // Wait for Redis to stop being busy.
+        assertThrowsClosedChannelException(longFuture::get);
+    }
+
+    @Test
+    public void transactionExecCancelBusyBackground() throws Exception {
+        final TransactedBufferRedisCommander tcc = awaitIndefinitelyNonNull(commandClient.multi());
+
+        // Keep Redis busy for approximately 1 second so that it can't actually execute the transaction. We want to
+        // cancel before Redis can return any responses.
+        Future<Long> longFuture = commandClient.evalLong(buf(EVAL_SLEEP_SCRIPT), 0, emptyList(),
+                asList(buf("1000"), buf("100000000"))).toFuture();
+
+        Future<Buffer> pingFuture = tcc.ping(buf("in-transac"));
+        tcc.exec().toFuture().cancel(true);
+        postCloseLatch.await();
+
+        assertThrowsClosedChannelException(pingFuture::get);
+
+        // Wait for Redis to stop being busy.
+        longFuture.get();
+    }
+
+    @Test
+    public void transactionDiscardCancel() throws Exception {
+        final TransactedBufferRedisCommander tcc = awaitIndefinitelyNonNull(commandClient.multi());
+
+        // Keep Redis busy for approximately 1 second so that it can't discard the transaction before we cancel.
+        Future<Long> longFuture = tcc.evalLong(buf(EVAL_SLEEP_SCRIPT), 0, emptyList(),
+                asList(buf("1000"), buf("100000000")));
+
+        Future<Buffer> pingFuture = tcc.ping(buf("in-transac"));
+        tcc.discard().toFuture().cancel(true);
+        postCloseLatch.await();
+
+        assertThrowsClosedChannelException(pingFuture::get);
+
+        // Wait for Redis to stop being busy.
+        assertThrowsClosedChannelException(longFuture::get);
+    }
+
+    @Test
+    public void transactionDiscardCancelBusyBackground() throws Exception {
+        final TransactedBufferRedisCommander tcc = awaitIndefinitelyNonNull(commandClient.multi());
+
+        // Keep Redis busy for approximately 1 second so that it can't actually discard the transaction. We want to
+        // cancel before Redis can return any responses.
+        Future<Long> longFuture = commandClient.evalLong(buf(EVAL_SLEEP_SCRIPT), 0, emptyList(),
+                asList(buf("1000"), buf("100000000"))).toFuture();
+
+        Future<Buffer> pingFuture = tcc.ping(buf("in-transac"));
+        tcc.discard().toFuture().cancel(true);
+        postCloseLatch.await();
+
+        assertThrowsClosedChannelException(pingFuture::get);
+
+        // Wait for Redis to stop being busy.
+        longFuture.get();
     }
 
     @Test

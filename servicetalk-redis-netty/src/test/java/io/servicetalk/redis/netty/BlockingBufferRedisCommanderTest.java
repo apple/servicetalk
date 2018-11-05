@@ -93,7 +93,7 @@ public class BlockingBufferRedisCommanderTest extends BaseRedisClientTest {
 
     @Before
     public void createCommandClient() {
-        commandClient = getEnv().client.asBlockingBufferCommander();
+        commandClient = getMockRedisClient().asBlockingBufferCommander();
     }
 
     @Test
@@ -265,6 +265,7 @@ public class BlockingBufferRedisCommanderTest extends BaseRedisClientTest {
         Future<Buffer> value3 = tcc.ping(buf("in-transac"));
         Future<Buffer> value4 = tcc.get(key("a-key"));
         tcc.exec();
+        postReleaseLatch.await();
         assertThat(value1.get(), is(1L));
         assertThat(value2.get(), is("OK"));
         assertThat(value3.get(), is(buf("in-transac")));
@@ -276,6 +277,7 @@ public class BlockingBufferRedisCommanderTest extends BaseRedisClientTest {
         BlockingTransactedBufferRedisCommander tcc = commandClient.multi();
         Future<Buffer> future = tcc.ping(buf("in-transac"));
         final String result = tcc.discard();
+        postReleaseLatch.await();
 
         assertThat(result, is("OK"));
 

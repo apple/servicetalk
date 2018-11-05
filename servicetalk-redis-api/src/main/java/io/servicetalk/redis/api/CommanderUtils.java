@@ -21,7 +21,9 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.internal.SingleProcessor;
 import io.servicetalk.concurrent.internal.DuplicateSubscribeException;
+import io.servicetalk.redis.api.RedisClient.ReservedRedisConnection;
 
+import java.nio.channels.ClosedChannelException;
 import java.util.List;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
@@ -84,11 +86,7 @@ final class CommanderUtils {
     }
 
     static Single<String> abortSingles(final Single<String> result, final List<SingleProcessor<?>> singles) {
-        return result.doBeforeSuccess(__ -> {
-            for (SingleProcessor<?> single : singles) {
-                single.onError(new TransactionAbortedException());
-            }
-        });
+        return result.doBeforeSuccess(__ -> completeSinglesWithException(new TransactionAbortedException(), singles));
     }
 
     static Completable completeSingles(final Single<List<Object>> results, final List<SingleProcessor<?>> singles) {
@@ -112,9 +110,38 @@ final class CommanderUtils {
         }).ignoreResult();
     }
 
+    private static void completeSinglesWithException(final Exception e, final List<SingleProcessor<?>> singles) {
+        for (SingleProcessor<?> single : singles) {
+            single.onError(e);
+        }
+    }
+
     @SuppressWarnings("unchecked")
     private static void onSuccessUnchecked(final Object obj, final SingleProcessor single) {
         single.onSuccess(obj);
+    }
+
+    private static void handleCancel(final ReservedRedisConnection reservedCnx,
+                                     final List<SingleProcessor<?>> singles,
+                                     final String exceptionMessage) {
+        reservedCnx.closeAsync().subscribe(new io.servicetalk.concurrent.Completable.Subscriber() {
+            @Override
+            public void onSubscribe(final Cancellable cancellable) {
+                // no-op
+            }
+
+            @Override
+            public void onComplete() {
+                completeSinglesWithException(new ConnectionClosedException(exceptionMessage), singles);
+            }
+
+            @Override
+            public void onError(final Throwable releaseThrowable) {
+                final Exception e = new ConnectionClosedException(exceptionMessage);
+                e.addSuppressed(releaseThrowable);
+                completeSinglesWithException(e, singles);
+            }
+        });
     }
 
     static final class DiscardSingle<T> extends Single<String> {
@@ -124,13 +151,18 @@ final class CommanderUtils {
         private final List<SingleProcessor<?>> singles;
         @SuppressWarnings("AtomicFieldUpdaterNotStaticFinal")
         private final AtomicIntegerFieldUpdater<T> stateUpdater;
+        private final ReservedRedisConnection reservedCnx;
+        private final boolean releaseAfterDone;
 
         DiscardSingle(final T commander, final Single<String> queued, final List<SingleProcessor<?>> singles,
-                      final AtomicIntegerFieldUpdater<T> stateUpdater) {
+                      final AtomicIntegerFieldUpdater<T> stateUpdater, final ReservedRedisConnection reservedCnx,
+                      final boolean releaseAfterDone) {
             this.commander = commander;
             this.queued = queued;
             this.singles = singles;
             this.stateUpdater = stateUpdater;
+            this.reservedCnx = reservedCnx;
+            this.releaseAfterDone = releaseAfterDone;
         }
 
         @Override
@@ -140,7 +172,21 @@ final class CommanderUtils {
                 subscriber.onError(new DuplicateSubscribeException(stateUpdater.get(commander), subscriber));
                 return;
             }
-            abortSingles(queued, singles).subscribe(subscriber);
+            Single<String> discardSingle = abortSingles(queued, singles);
+            if (releaseAfterDone) {
+                discardSingle = discardSingle.onErrorResume(discardThrowable -> reservedCnx.releaseAsync()
+                        // If releaseAsync() fails then add as a suppressed exception.
+                        .onErrorResume(releaseThrowable -> {
+                            discardThrowable.addSuppressed(releaseThrowable);
+                            return Completable.error(discardThrowable);
+                        })
+                        // If releaseAsync() completes successfully, emit the original error.
+                        .andThen(error(discardThrowable))
+                ).concatWith(reservedCnx.releaseAsync()); // If discard succeeds, release the connection.
+            }
+            discardSingle.doAfterCancel(() -> handleCancel(reservedCnx, singles,
+                    "Connection closed due to discard() cancellation."))
+                    .subscribe(subscriber);
         }
     }
 
@@ -151,13 +197,18 @@ final class CommanderUtils {
         private final List<SingleProcessor<?>> singles;
         @SuppressWarnings("AtomicFieldUpdaterNotStaticFinal")
         private final AtomicIntegerFieldUpdater<T> stateUpdater;
+        private final ReservedRedisConnection reservedCnx;
+        private final boolean releaseAfterDone;
 
         ExecCompletable(final T commander, final Single<List<Object>> results, final List<SingleProcessor<?>> singles,
-                        final AtomicIntegerFieldUpdater<T> stateUpdater) {
+                        final AtomicIntegerFieldUpdater<T> stateUpdater, final ReservedRedisConnection reservedCnx,
+                        final boolean releaseAfterDone) {
             this.commander = commander;
             this.results = results;
             this.singles = singles;
             this.stateUpdater = stateUpdater;
+            this.reservedCnx = reservedCnx;
+            this.releaseAfterDone = releaseAfterDone;
         }
 
         @Override
@@ -167,7 +218,36 @@ final class CommanderUtils {
                 subscriber.onError(new DuplicateSubscribeException(stateUpdater.get(commander), subscriber));
                 return;
             }
-            completeSingles(results, singles).subscribe(subscriber);
+
+            Completable execCompletable = completeSingles(results, singles);
+            if (releaseAfterDone) {
+                execCompletable = execCompletable.onErrorResume(discardThrowable -> reservedCnx.releaseAsync()
+                        // If releaseAsync() fails then add as a suppressed exception.
+                        .onErrorResume(releaseThrowable -> {
+                            discardThrowable.addSuppressed(releaseThrowable);
+                            return error(discardThrowable);
+                        })
+                        // If releaseAsync() completes successfully, emit the original error.
+                        .andThen(error(discardThrowable))
+                ).andThen(reservedCnx.releaseAsync()); // If exec succeeds, release the connection.
+            }
+            execCompletable.doAfterCancel(() -> handleCancel(reservedCnx, singles,
+                    "Connection closed due to exec() cancellation."))
+                    .subscribe(subscriber);
+        }
+    }
+
+    private static final class ConnectionClosedException extends ClosedChannelException {
+
+        private final String message;
+
+        private ConnectionClosedException(final String message) {
+            this.message = message;
+        }
+
+        @Override
+        public String getMessage() {
+            return message;
         }
     }
 }
