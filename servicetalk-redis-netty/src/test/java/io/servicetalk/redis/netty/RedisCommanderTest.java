@@ -61,6 +61,8 @@ import static io.servicetalk.redis.api.RedisProtocolSupport.IntegerType.U04;
 import static io.servicetalk.redis.api.RedisProtocolSupport.IntegerType.U08;
 import static io.servicetalk.redis.api.RedisProtocolSupport.SetCondition.NX;
 import static io.servicetalk.redis.api.RedisProtocolSupport.SetExpire.EX;
+import static java.lang.Boolean.FALSE;
+import static java.lang.Boolean.parseBoolean;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
@@ -424,6 +426,7 @@ public class RedisCommanderTest extends BaseRedisClientTest {
 
     @Test
     public void pubSubMultipleSubscribes() throws Exception {
+        assumeThat("Ignored flaky test", parseBoolean(System.getenv("CI")), is(FALSE));
         final PubSubRedisConnection pubSubClient1 = awaitIndefinitely(commandClient.subscribe(key("channel-1")));
         final AccumulatingSubscriber<PubSubRedisMessage> subscriber1 = new AccumulatingSubscriber<>();
 
