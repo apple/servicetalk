@@ -15,11 +15,15 @@
  */
 package io.servicetalk.concurrent.api;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.concurrent.Future;
 
 import static java.util.Objects.requireNonNull;
 
 final class FutureToSingle<T> extends Single<T> {
+    private static final Logger LOGGER = LoggerFactory.getLogger(FutureToSingle.class);
     private final Future<T> future;
 
     FutureToSingle(Future<T> future) {
@@ -28,7 +32,11 @@ final class FutureToSingle<T> extends Single<T> {
 
     @Override
     protected void handleSubscribe(final Subscriber<? super T> subscriber) {
-        subscriber.onSubscribe(() -> future.cancel(true));
+        try {
+            subscriber.onSubscribe(() -> future.cancel(true));
+        } catch (Throwable t) {
+            LOGGER.debug("Ignoring exception from onSubscribe of Subscriber {}.", subscriber, t);
+        }
 
         final T value;
         try {
@@ -37,6 +45,10 @@ final class FutureToSingle<T> extends Single<T> {
             subscriber.onError(cause);
             return;
         }
-        subscriber.onSuccess(value);
+        try {
+            subscriber.onSuccess(value);
+        } catch (Throwable t) {
+            LOGGER.debug("Ignoring exception from onSuccess of Subscriber {}.", subscriber, t);
+        }
     }
 }

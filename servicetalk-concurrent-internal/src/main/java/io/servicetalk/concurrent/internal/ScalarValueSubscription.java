@@ -17,6 +17,8 @@ package io.servicetalk.concurrent.internal;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static io.servicetalk.concurrent.internal.SubscriberUtils.isRequestNValid;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.newExceptionForInvalidRequestN;
@@ -28,6 +30,7 @@ import static java.util.Objects.requireNonNull;
  * @param <T> Type of value emitted by this {@link Subscription}.
  */
 public final class ScalarValueSubscription<T> implements Subscription {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ScalarValueSubscription.class);
 
     private final T value;
     private final Subscriber<? super T> subscriber;
@@ -53,12 +56,24 @@ public final class ScalarValueSubscription<T> implements Subscription {
                 try {
                     subscriber.onNext(value);
                 } catch (Throwable cause) {
-                    subscriber.onError(cause);
+                    try {
+                        subscriber.onError(cause);
+                    } catch (Throwable t) {
+                        LOGGER.debug("Ignoring exception from onError of Subscriber {}.", subscriber, t);
+                    }
                     return;
                 }
-                subscriber.onComplete();
+                try {
+                    subscriber.onComplete();
+                } catch (Throwable t) {
+                    LOGGER.debug("Ignoring exception from onComplete of Subscriber {}.", subscriber, t);
+                }
             } else {
-                subscriber.onError(newExceptionForInvalidRequestN(n));
+                try {
+                    subscriber.onError(newExceptionForInvalidRequestN(n));
+                } catch (Throwable t) {
+                    LOGGER.debug("Ignoring exception from onError of Subscriber {}.", subscriber, t);
+                }
             }
         }
     }

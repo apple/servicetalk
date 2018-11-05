@@ -16,11 +16,13 @@
 package io.servicetalk.concurrent.api;
 
 import org.reactivestreams.Subscriber;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static io.servicetalk.concurrent.internal.EmptySubscription.EMPTY_SUBSCRIPTION;
 
 final class EmptyPublisher<T> extends AbstractSynchronousPublisher<T> {
-
+    private static final Logger LOGGER = LoggerFactory.getLogger(EmptyPublisher.class);
     private static final EmptyPublisher EMPTY_PUBLISHER = new EmptyPublisher();
 
     private EmptyPublisher() {
@@ -29,8 +31,17 @@ final class EmptyPublisher<T> extends AbstractSynchronousPublisher<T> {
 
     @Override
     void doSubscribe(Subscriber<? super T> subscriber) {
-        subscriber.onSubscribe(EMPTY_SUBSCRIPTION);
-        subscriber.onComplete();
+        try {
+            subscriber.onSubscribe(EMPTY_SUBSCRIPTION);
+        } catch (Throwable t) {
+            LOGGER.debug("Ignoring exception from onSubscribe of Subscriber {}.", subscriber, t);
+            return;
+        }
+        try {
+            subscriber.onComplete();
+        } catch (Throwable t) {
+            LOGGER.debug("Ignoring exception from onComplete of Subscriber {}.", subscriber, t);
+        }
     }
 
     @SuppressWarnings("unchecked")

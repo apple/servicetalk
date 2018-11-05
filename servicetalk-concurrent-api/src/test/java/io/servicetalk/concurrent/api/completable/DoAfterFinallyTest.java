@@ -21,9 +21,6 @@ import io.servicetalk.concurrent.api.DeliberateException;
 import org.junit.Test;
 
 import static io.servicetalk.concurrent.api.DeliberateException.DELIBERATE_EXCEPTION;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.sameInstance;
-import static org.junit.Assert.fail;
 
 public class DoAfterFinallyTest extends AbstractDoFinallyTest {
     @Override
@@ -34,31 +31,17 @@ public class DoAfterFinallyTest extends AbstractDoFinallyTest {
     @Test
     @Override
     public void testCallbackThrowsErrorOnComplete() {
-        thrown.expect(is(sameInstance(DELIBERATE_EXCEPTION)));
-
-        try {
-            listener.listen(doFinally(Completable.completed(), () -> {
-                throw DELIBERATE_EXCEPTION;
-            }));
-            fail();
-        } finally {
-            listener.verifyCompletion();
-        }
+        listener.listen(doFinally(Completable.completed(), () -> {
+            throw DELIBERATE_EXCEPTION;
+        })).verifyCompletion();
     }
 
     @Test
     @Override
     public void testCallbackThrowsErrorOnError() {
-        thrown.expect(is(sameInstance(DELIBERATE_EXCEPTION)));
-
         DeliberateException exception = new DeliberateException();
-        try {
-            listener.listen(doFinally(Completable.error(exception), () -> {
-                throw DELIBERATE_EXCEPTION;
-            }));
-            fail();
-        } finally {
-            listener.verifyFailure(exception);
-        }
+        listener.listen(doFinally(Completable.error(exception), () -> {
+            throw DELIBERATE_EXCEPTION;
+        })).verifyFailure(exception);
     }
 }

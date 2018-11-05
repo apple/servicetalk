@@ -27,8 +27,6 @@ import org.reactivestreams.Subscription;
 import java.util.function.Consumer;
 
 import static io.servicetalk.concurrent.api.DeliberateException.DELIBERATE_EXCEPTION;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.sameInstance;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -57,12 +55,10 @@ public abstract class AbstractDoSubscribeTest {
 
     @Test
     public void testCallbackThrowsError() {
-        thrown.expect(is(sameInstance(DELIBERATE_EXCEPTION)));
-
         Publisher<String> src = doSubscribe(Publisher.just("Hello"), s -> {
             throw DELIBERATE_EXCEPTION;
         });
-        rule.subscribe(src).request(1);
+        rule.subscribe(src).request(1).verifySuccess("Hello");
     }
 
     protected abstract <T> Publisher<T> doSubscribe(Publisher<T> publisher, Consumer<Subscription> consumer);

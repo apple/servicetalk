@@ -2011,10 +2011,6 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
     // Static Utility Methods Begin
     //
 
-    //
-    // Static Utility Methods End
-    //
-
     /**
      * Creates a new {@link Publisher} that emits {@code value} to its {@link Subscriber} and then
      * {@link Subscriber#onComplete()}.
@@ -2192,6 +2188,10 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
         }
         return new ReactiveStreamsPublisher<>(publisher);
     }
+
+    //
+    // Static Utility Methods End
+    //
 
     //
     // Internal Methods Begin

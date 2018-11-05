@@ -17,6 +17,8 @@ package io.servicetalk.concurrent.api;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Iterator;
 import java.util.concurrent.TimeoutException;
@@ -28,6 +30,7 @@ import static io.servicetalk.concurrent.internal.SubscriberUtils.newExceptionFor
 import static java.util.Objects.requireNonNull;
 
 final class FromIterablePublisher<T> extends AbstractSynchronousPublisher<T> {
+    private static final Logger LOGGER = LoggerFactory.getLogger(FromIterablePublisher.class);
 
     private final Iterable<T> iterable;
 
@@ -37,7 +40,11 @@ final class FromIterablePublisher<T> extends AbstractSynchronousPublisher<T> {
 
     @Override
     void doSubscribe(final Subscriber<? super T> subscriber) {
-        subscriber.onSubscribe(new FromIterableSubscription<>(iterable.iterator(), subscriber));
+        try {
+            subscriber.onSubscribe(new FromIterableSubscription<>(iterable.iterator(), subscriber));
+        } catch (Throwable t) {
+            LOGGER.debug("Ignoring exception from onSubscribe of Subscriber {}.", subscriber, t);
+        }
     }
 
     static class FromIterableSubscription<T, I extends Iterator<T>> implements Subscription {
@@ -111,12 +118,20 @@ final class FromIterablePublisher<T> extends AbstractSynchronousPublisher<T> {
 
         private void sendOnError(Throwable cause) {
             cancel();
-            subscriber.onError(cause);
+            try {
+                subscriber.onError(cause);
+            } catch (Throwable t) {
+                LOGGER.debug("Ignoring exception from onError of Subscriber {}.", subscriber, t);
+            }
         }
 
         private void sendOnComplete() {
             cleanupForCancel();
-            subscriber.onComplete();
+            try {
+                subscriber.onComplete();
+            } catch (Throwable t) {
+                LOGGER.debug("Ignoring exception from onComplete of Subscriber {}.", subscriber, t);
+            }
         }
     }
 }

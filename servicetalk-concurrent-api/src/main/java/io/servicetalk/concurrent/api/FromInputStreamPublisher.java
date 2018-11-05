@@ -17,6 +17,8 @@ package io.servicetalk.concurrent.api;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -40,7 +42,7 @@ import static java.util.Objects.requireNonNull;
  * blocking, however by reading data faster than the writer is sending, blocking is inevitable.
  */
 final class FromInputStreamPublisher extends Publisher<byte[]> {
-
+    private static final Logger LOGGER = LoggerFactory.getLogger(FromInputStreamPublisher.class);
     private static final AtomicIntegerFieldUpdater<FromInputStreamPublisher> subscribedUpdater =
             AtomicIntegerFieldUpdater.newUpdater(FromInputStreamPublisher.class, "subscribed");
 
@@ -71,10 +73,23 @@ final class FromInputStreamPublisher extends Publisher<byte[]> {
     @Override
     protected void handleSubscribe(final Subscriber<? super byte[]> subscriber) {
         if (subscribedUpdater.compareAndSet(this, 0, 1)) {
-            subscriber.onSubscribe(new InputStreamPublisherSubscription(stream, subscriber));
+            try {
+                subscriber.onSubscribe(new InputStreamPublisherSubscription(stream, subscriber));
+            } catch (Throwable t) {
+                LOGGER.debug("Ignoring exception from onSubscribe of Subscriber {}.", subscriber, t);
+            }
         } else {
-            subscriber.onSubscribe(EMPTY_SUBSCRIPTION);
-            subscriber.onError(new IllegalStateException("Publisher already subscribed to"));
+            try {
+                subscriber.onSubscribe(EMPTY_SUBSCRIPTION);
+            } catch (Throwable t) {
+                LOGGER.debug("Ignoring exception from onSubscribe of Subscriber {}.", subscriber, t);
+                return;
+            }
+            try {
+                subscriber.onError(new IllegalStateException("Publisher already subscribed to"));
+            } catch (Throwable t) {
+                LOGGER.debug("Ignoring exception from onError of Subscriber {}.", subscriber, t);
+            }
         }
     }
 
@@ -191,13 +206,21 @@ final class FromInputStreamPublisher extends Publisher<byte[]> {
         private void sendOnComplete(final Subscriber<? super byte[]> subscriber) {
             closeStream(subscriber);
             if (trySetTerminalSent()) {
-                subscriber.onComplete();
+                try {
+                    subscriber.onComplete();
+                } catch (Throwable t) {
+                    LOGGER.debug("Ignoring exception from onComplete of Subscriber {}.", subscriber, t);
+                }
             }
         }
 
         private <T extends Throwable> void sendOnError(final Subscriber<? super byte[]> subscriber, final T t) {
             if (trySetTerminalSent()) {
-                subscriber.onError(t);
+                try {
+                    subscriber.onError(t);
+                } catch (Throwable tt) {
+                    LOGGER.debug("Ignoring exception from onError of Subscriber {}.", subscriber, tt);
+                }
             }
         }
 

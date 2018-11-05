@@ -27,8 +27,6 @@ import org.mockito.Mockito;
 import java.util.function.Consumer;
 
 import static io.servicetalk.concurrent.api.DeliberateException.DELIBERATE_EXCEPTION;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.sameInstance;
 import static org.mockito.Mockito.verify;
 
 public abstract class AbstractDoErrorTest {
@@ -50,12 +48,10 @@ public abstract class AbstractDoErrorTest {
 
     @Test
     public void testCallbackThrowsError() {
-        thrown.expect(is(sameInstance(DELIBERATE_EXCEPTION)));
-
         DeliberateException srcEx = new DeliberateException();
         listener.listen(doError(Single.error(srcEx), t -> {
             throw DELIBERATE_EXCEPTION;
-        }));
+        })).verifyFailure(srcEx);
     }
 
     protected abstract <T> Single<T> doError(Single<T> single, Consumer<Throwable> consumer);

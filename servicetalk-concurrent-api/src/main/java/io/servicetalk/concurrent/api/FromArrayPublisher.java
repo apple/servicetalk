@@ -17,6 +17,8 @@ package io.servicetalk.concurrent.api;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static io.servicetalk.concurrent.internal.EmptySubscription.EMPTY_SUBSCRIPTION;
 import static io.servicetalk.concurrent.internal.FlowControlUtil.addWithOverflowProtection;
@@ -30,6 +32,7 @@ import static java.util.Objects.requireNonNull;
  * @param <T> Type of items emitted by this {@link Publisher}.
  */
 final class FromArrayPublisher<T> extends AbstractSynchronousPublisher<T> {
+    private static final Logger LOGGER = LoggerFactory.getLogger(FromArrayPublisher.class);
     private final T[] values;
 
     @SafeVarargs
@@ -40,10 +43,23 @@ final class FromArrayPublisher<T> extends AbstractSynchronousPublisher<T> {
     @Override
     void doSubscribe(Subscriber<? super T> s) {
         if (values.length != 0) {
-            s.onSubscribe(new FromArraySubscription<>(values, s));
+            try {
+                s.onSubscribe(new FromArraySubscription<>(values, s));
+            } catch (Throwable t) {
+                LOGGER.debug("Ignoring exception from onSubscribe of Subscriber {}.", s, t);
+            }
         } else {
-            s.onSubscribe(EMPTY_SUBSCRIPTION);
-            s.onComplete();
+            try {
+                s.onSubscribe(EMPTY_SUBSCRIPTION);
+            } catch (Throwable t) {
+                LOGGER.debug("Ignoring exception from onSubscribe of Subscriber {}.", s, t);
+                return;
+            }
+            try {
+                s.onComplete();
+            } catch (Throwable t) {
+                LOGGER.debug("Ignoring exception from onComplete of Subscriber {}.", s, t);
+            }
         }
     }
 
@@ -96,12 +112,20 @@ final class FromArrayPublisher<T> extends AbstractSynchronousPublisher<T> {
 
         private void sendOnError(Throwable cause) {
             cancel();
-            subscriber.onError(cause);
+            try {
+                subscriber.onError(cause);
+            } catch (Throwable t) {
+                LOGGER.debug("Ignoring exception from onError of Subscriber {}.", subscriber, t);
+            }
         }
 
         private void sendComplete() {
             cancel();
-            subscriber.onComplete();
+            try {
+                subscriber.onComplete();
+            } catch (Throwable t) {
+                LOGGER.debug("Ignoring exception from onComplete of Subscriber {}.", subscriber, t);
+            }
         }
     }
 }
