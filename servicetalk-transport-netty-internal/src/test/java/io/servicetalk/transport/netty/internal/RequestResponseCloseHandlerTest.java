@@ -258,6 +258,8 @@ public class RequestResponseCloseHandlerTest {
                     {S, e(IB, IE, IB, OB, IS, SR, OE, OB, OE, FC), CCI, "inbound closed while writing pipelined, 1 pending"},
                     {S, e(IB, IE, IB, IE, IB, IS, SR, OB, OE, OB, OE, OB, OE, FC), CCI, "inbound closed while not writing pipelined, >2 pending"},
                     {S, e(IB, IE, IB, IE, IB, OB, IS, SR, OE, OB, OE, OB, OE, FC), CCI, "inbound closed while writing pipelined, >2 pending"},
+                    {S, e(IB, IE, IS, OB, OS, FC), CCI, "Input closed after read, outbound closed while writing"},
+                    {S, e(IB, IE, IS, OS, FC), CCI, "Input closed after read, outbound closed while writing"},
             });
             String fileName = se.getFileName();
             int offset = se.getLineNumber() + 3; // Lines between `se` and first parameter
@@ -519,7 +521,7 @@ public class RequestResponseCloseHandlerTest {
             bs.channel(serverChannel(loop, InetSocketAddress.class));
             bs.childHandler(new ChannelInitializer() {
                 @Override
-                protected void initChannel(final Channel ch) throws Exception {
+                protected void initChannel(final Channel ch) {
                     sChannel = (SocketChannel) ch;
                     ch.pipeline().addLast(new ChannelInboundHandlerAdapter() {
                         @Override
@@ -557,7 +559,7 @@ public class RequestResponseCloseHandlerTest {
             bs.channel(socketChannel(loop, InetSocketAddress.class));
             bs.handler(new ChannelInitializer() {
                 @Override
-                protected void initChannel(final Channel ch) throws Exception {
+                protected void initChannel(final Channel ch) {
                     ch.pipeline().addLast(new ChannelInboundHandlerAdapter() {
                         @Override
                         public void userEventTriggered(final ChannelHandlerContext ctx, final Object evt) {
@@ -583,7 +585,7 @@ public class RequestResponseCloseHandlerTest {
         }
 
         @Test
-        public void clientCloseEmitsNoShutdownEventsOnClient() throws Exception {
+        public void clientCloseEmitsNoShutdownEventsOnClient() {
             cChannel.close().syncUninterruptibly();
             assertThat(clientOutputShutdownLatch.getCount(), equalTo(1L));
             assertThat(clientInputShutdownLatch.getCount(), equalTo(1L));
@@ -635,7 +637,7 @@ public class RequestResponseCloseHandlerTest {
         }
 
         @Test
-        public void serverCloseEmitsNoShutdownEventsOnServer() throws Exception {
+        public void serverCloseEmitsNoShutdownEventsOnServer() {
             sChannel.close().syncUninterruptibly();
             assertThat(serverOutputShutdownLatch.getCount(), equalTo(1L));
             assertThat(serverInputShutdownLatch.getCount(), equalTo(1L));
