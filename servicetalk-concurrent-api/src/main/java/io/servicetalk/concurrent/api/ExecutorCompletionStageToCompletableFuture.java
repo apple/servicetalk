@@ -30,7 +30,7 @@ import javax.annotation.Nullable;
 final class ExecutorCompletionStageToCompletableFuture<T> extends CompletableFuture<T> {
     private final ExecutorCompletionStage<T> stage;
 
-    ExecutorCompletionStageToCompletableFuture(ExecutorCompletionStage<T> stage) {
+    private ExecutorCompletionStageToCompletableFuture(ExecutorCompletionStage<T> stage) {
         this.stage = stage;
     }
 
@@ -295,22 +295,26 @@ final class ExecutorCompletionStageToCompletableFuture<T> extends CompletableFut
 
     @Override
     public boolean complete(@Nullable T value) {
-        return stage.complete(value);
+        stage.complete(value);
+        return super.complete(value);
     }
 
     @Override
     public boolean completeExceptionally(Throwable ex) {
-        return stage.completeExceptionally(ex);
+        stage.completeExceptionally(ex);
+        return super.completeExceptionally(ex);
     }
 
     @Override
     public void obtrudeValue(@Nullable T value) {
         stage.obtrudeValue(value);
+        super.obtrudeValue(value);
     }
 
     @Override
     public void obtrudeException(Throwable ex) {
         stage.obtrudeException(ex);
+        super.obtrudeException(ex);
     }
 
     @Override
@@ -321,6 +325,25 @@ final class ExecutorCompletionStageToCompletableFuture<T> extends CompletableFut
     @Override
     public String toString() {
         return "F(" + stage.toString() + ")";
+    }
+
+    /**
+     * Creates a {@link CompletableFuture} for the passed {@link ExecutorCompletionStage}.
+     *
+     * @param stage {@link ExecutorCompletionStage} for which the {@link CompletableFuture} is to be created.
+     * @param <T> Type of the result for the returned {@link CompletableFuture}.
+     * @return {@link CompletableFuture} for the passed {@link ExecutorCompletionStage}.
+     */
+    static <T> CompletableFuture<T> forStage(ExecutorCompletionStage<T> stage) {
+        ExecutorCompletionStageToCompletableFuture<T> f = new ExecutorCompletionStageToCompletableFuture<>(stage);
+        stage.whenComplete((t, throwable) -> {
+            if (throwable == null) {
+                f.complete(t);
+            } else {
+                f.completeExceptionally(throwable);
+            }
+        });
+        return f;
     }
 
     private static <U> CompletableFuture<U> toCompletableFuture(CompletionStage<U> stage) {

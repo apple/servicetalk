@@ -33,221 +33,216 @@ import static java.util.Objects.requireNonNull;
 final class ContextPreservingCompletableFuture<T> extends CompletableFuture<T> {
     final CompletableFuture<T> delegate;
 
-    ContextPreservingCompletableFuture(CompletableFuture<T> delegate) {
+    private ContextPreservingCompletableFuture(CompletableFuture<T> delegate) {
         this.delegate = requireNonNull(delegate);
     }
 
     @Override
     public <U> CompletableFuture<U> thenApply(final Function<? super T, ? extends U> fn) {
-        return new ContextPreservingCompletableFuture<>(delegate.thenApply(INSTANCE.wrap(fn)));
+        return wrap(delegate.thenApply(INSTANCE.wrap(fn)));
     }
 
     @Override
     public <U> CompletableFuture<U> thenApplyAsync(final Function<? super T, ? extends U> fn) {
-        return new ContextPreservingCompletableFuture<>(delegate.thenApplyAsync(INSTANCE.wrap(fn)));
+        return wrap(delegate.thenApplyAsync(INSTANCE.wrap(fn)));
     }
 
     @Override
     public <U> CompletableFuture<U> thenApplyAsync(final Function<? super T, ? extends U> fn,
                                                    final java.util.concurrent.Executor executor) {
-        return new ContextPreservingCompletableFuture<>(delegate.thenApplyAsync(INSTANCE.wrap(fn), executor));
+        return wrap(delegate.thenApplyAsync(INSTANCE.wrap(fn), executor));
     }
 
     @Override
     public CompletableFuture<Void> thenAccept(final Consumer<? super T> action) {
-        return new ContextPreservingCompletableFuture<>(delegate.thenAccept(INSTANCE.wrap(action)));
+        return wrap(delegate.thenAccept(INSTANCE.wrap(action)));
     }
 
     @Override
     public CompletableFuture<Void> thenAcceptAsync(final Consumer<? super T> action) {
-        return new ContextPreservingCompletableFuture<>(delegate.thenAcceptAsync(INSTANCE.wrap(action)));
+        return wrap(delegate.thenAcceptAsync(INSTANCE.wrap(action)));
     }
 
     @Override
     public CompletableFuture<Void> thenAcceptAsync(final Consumer<? super T> action,
                                                    final java.util.concurrent.Executor executor) {
-        return new ContextPreservingCompletableFuture<>(delegate.thenAcceptAsync(INSTANCE.wrap(action), executor));
+        return wrap(delegate.thenAcceptAsync(INSTANCE.wrap(action), executor));
     }
 
     @Override
     public CompletableFuture<Void> thenRun(final Runnable action) {
-        return new ContextPreservingCompletableFuture<>(delegate.thenRun(INSTANCE.wrap(action)));
+        return wrap(delegate.thenRun(INSTANCE.wrap(action)));
     }
 
     @Override
     public CompletableFuture<Void> thenRunAsync(final Runnable action) {
-        return new ContextPreservingCompletableFuture<>(delegate.thenRunAsync(INSTANCE.wrap(action)));
+        return wrap(delegate.thenRunAsync(INSTANCE.wrap(action)));
     }
 
     @Override
     public CompletableFuture<Void> thenRunAsync(final Runnable action, final java.util.concurrent.Executor executor) {
-        return new ContextPreservingCompletableFuture<>(delegate.thenRunAsync(INSTANCE.wrap(action), executor));
+        return wrap(delegate.thenRunAsync(INSTANCE.wrap(action), executor));
     }
 
     @Override
     public <U, V> CompletableFuture<V> thenCombine(final CompletionStage<? extends U> other,
                                                    final BiFunction<? super T, ? super U, ? extends V> fn) {
-        return new ContextPreservingCompletableFuture<>(delegate.thenCombine(other, INSTANCE.wrap(fn)));
+        return wrap(delegate.thenCombine(other, INSTANCE.wrap(fn)));
     }
 
     @Override
     public <U, V> CompletableFuture<V> thenCombineAsync(final CompletionStage<? extends U> other,
                                                         final BiFunction<? super T, ? super U, ? extends V> fn) {
-        return new ContextPreservingCompletableFuture<>(delegate.thenCombineAsync(other, INSTANCE.wrap(fn)));
+        return wrap(delegate.thenCombineAsync(other, INSTANCE.wrap(fn)));
     }
 
     @Override
     public <U, V> CompletableFuture<V> thenCombineAsync(final CompletionStage<? extends U> other,
                                                         final BiFunction<? super T, ? super U, ? extends V> fn,
                                                         final java.util.concurrent.Executor executor) {
-        return new ContextPreservingCompletableFuture<>(delegate.thenCombineAsync(other, INSTANCE.wrap(fn), executor));
+        return wrap(delegate.thenCombineAsync(other, INSTANCE.wrap(fn), executor));
     }
 
     @Override
     public <U> CompletableFuture<Void> thenAcceptBoth(final CompletionStage<? extends U> other,
                                                       final BiConsumer<? super T, ? super U> action) {
-        return new ContextPreservingCompletableFuture<>(delegate.thenAcceptBoth(other, INSTANCE.wrap(action)));
+        return wrap(delegate.thenAcceptBoth(other, INSTANCE.wrap(action)));
     }
 
     @Override
     public <U> CompletableFuture<Void> thenAcceptBothAsync(final CompletionStage<? extends U> other,
                                                            final BiConsumer<? super T, ? super U> action) {
-        return new ContextPreservingCompletableFuture<>(delegate.thenAcceptBothAsync(other, INSTANCE.wrap(action)));
+        return wrap(delegate.thenAcceptBothAsync(other, INSTANCE.wrap(action)));
     }
 
     @Override
     public <U> CompletableFuture<Void> thenAcceptBothAsync(final CompletionStage<? extends U> other,
                                                            final BiConsumer<? super T, ? super U> action,
                                                            final java.util.concurrent.Executor executor) {
-        return new ContextPreservingCompletableFuture<>(
-                delegate.thenAcceptBothAsync(other, INSTANCE.wrap(action), executor));
+        return wrap(delegate.thenAcceptBothAsync(other, INSTANCE.wrap(action), executor));
     }
 
     @Override
     public CompletableFuture<Void> runAfterBoth(final CompletionStage<?> other, final Runnable action) {
-        return new ContextPreservingCompletableFuture<>(delegate.runAfterBoth(other, INSTANCE.wrap(action)));
+        return wrap(delegate.runAfterBoth(other, INSTANCE.wrap(action)));
     }
 
     @Override
     public CompletableFuture<Void> runAfterBothAsync(final CompletionStage<?> other, final Runnable action) {
-        return new ContextPreservingCompletableFuture<>(delegate.runAfterBothAsync(other, INSTANCE.wrap(action)));
+        return wrap(delegate.runAfterBothAsync(other, INSTANCE.wrap(action)));
     }
 
     @Override
     public CompletableFuture<Void> runAfterBothAsync(final CompletionStage<?> other, final Runnable action,
                                                      final java.util.concurrent.Executor executor) {
-        return new ContextPreservingCompletableFuture<>(
-                delegate.runAfterBothAsync(other, INSTANCE.wrap(action), executor));
+        return wrap(delegate.runAfterBothAsync(other, INSTANCE.wrap(action), executor));
     }
 
     @Override
     public <U> CompletableFuture<U> applyToEither(final CompletionStage<? extends T> other,
                                                   final Function<? super T, U> fn) {
-        return new ContextPreservingCompletableFuture<>(delegate.applyToEither(other, INSTANCE.wrap(fn)));
+        return wrap(delegate.applyToEither(other, INSTANCE.wrap(fn)));
     }
 
     @Override
     public <U> CompletableFuture<U> applyToEitherAsync(final CompletionStage<? extends T> other,
                                                        final Function<? super T, U> fn) {
-        return new ContextPreservingCompletableFuture<>(delegate.applyToEitherAsync(other, INSTANCE.wrap(fn)));
+        return wrap(delegate.applyToEitherAsync(other, INSTANCE.wrap(fn)));
     }
 
     @Override
     public <U> CompletableFuture<U> applyToEitherAsync(final CompletionStage<? extends T> other,
                                                        final Function<? super T, U> fn,
                                                        final java.util.concurrent.Executor executor) {
-        return new ContextPreservingCompletableFuture<>(
-                delegate.applyToEitherAsync(other, INSTANCE.wrap(fn), executor));
+        return wrap(delegate.applyToEitherAsync(other, INSTANCE.wrap(fn), executor));
     }
 
     @Override
     public CompletableFuture<Void> acceptEither(final CompletionStage<? extends T> other,
                                                 final Consumer<? super T> action) {
-        return new ContextPreservingCompletableFuture<>(delegate.acceptEither(other, INSTANCE.wrap(action)));
+        return wrap(delegate.acceptEither(other, INSTANCE.wrap(action)));
     }
 
     @Override
     public CompletableFuture<Void> acceptEitherAsync(final CompletionStage<? extends T> other,
                                                      final Consumer<? super T> action) {
-        return new ContextPreservingCompletableFuture<>(delegate.acceptEitherAsync(other, INSTANCE.wrap(action)));
+        return wrap(delegate.acceptEitherAsync(other, INSTANCE.wrap(action)));
     }
 
     @Override
     public CompletableFuture<Void> acceptEitherAsync(final CompletionStage<? extends T> other,
                                                      final Consumer<? super T> action,
                                                      final java.util.concurrent.Executor executor) {
-        return new ContextPreservingCompletableFuture<>(
-                delegate.acceptEitherAsync(other, INSTANCE.wrap(action), executor));
+        return wrap(delegate.acceptEitherAsync(other, INSTANCE.wrap(action), executor));
     }
 
     @Override
     public CompletableFuture<Void> runAfterEither(final CompletionStage<?> other, final Runnable action) {
-        return new ContextPreservingCompletableFuture<>(delegate.runAfterEither(other, INSTANCE.wrap(action)));
+        return wrap(delegate.runAfterEither(other, INSTANCE.wrap(action)));
     }
 
     @Override
     public CompletableFuture<Void> runAfterEitherAsync(final CompletionStage<?> other, final Runnable action) {
-        return new ContextPreservingCompletableFuture<>(delegate.runAfterEitherAsync(other, INSTANCE.wrap(action)));
+        return wrap(delegate.runAfterEitherAsync(other, INSTANCE.wrap(action)));
     }
 
     @Override
     public CompletableFuture<Void> runAfterEitherAsync(final CompletionStage<?> other, final Runnable action,
                                                        final java.util.concurrent.Executor executor) {
-        return new ContextPreservingCompletableFuture<>(
-                delegate.runAfterEitherAsync(other, INSTANCE.wrap(action), executor));
+        return wrap(delegate.runAfterEitherAsync(other, INSTANCE.wrap(action), executor));
     }
 
     @Override
     public <U> CompletableFuture<U> thenCompose(final Function<? super T, ? extends CompletionStage<U>> fn) {
-        return new ContextPreservingCompletableFuture<>(delegate.thenCompose(INSTANCE.wrap(fn)));
+        return wrap(delegate.thenCompose(INSTANCE.wrap(fn)));
     }
 
     @Override
     public <U> CompletableFuture<U> thenComposeAsync(final Function<? super T, ? extends CompletionStage<U>> fn) {
-        return new ContextPreservingCompletableFuture<>(delegate.thenComposeAsync(INSTANCE.wrap(fn)));
+        return wrap(delegate.thenComposeAsync(INSTANCE.wrap(fn)));
     }
 
     @Override
     public <U> CompletableFuture<U> thenComposeAsync(final Function<? super T, ? extends CompletionStage<U>> fn,
                                                      final java.util.concurrent.Executor executor) {
-        return new ContextPreservingCompletableFuture<>(delegate.thenComposeAsync(INSTANCE.wrap(fn), executor));
+        return wrap(delegate.thenComposeAsync(INSTANCE.wrap(fn), executor));
     }
 
     @Override
     public CompletableFuture<T> exceptionally(final Function<Throwable, ? extends T> fn) {
-        return new ContextPreservingCompletableFuture<>(delegate.exceptionally(INSTANCE.wrap(fn)));
+        return wrap(delegate.exceptionally(INSTANCE.wrap(fn)));
     }
 
     @Override
     public CompletableFuture<T> whenComplete(final BiConsumer<? super T, ? super Throwable> action) {
-        return new ContextPreservingCompletableFuture<>(delegate.whenComplete(INSTANCE.wrap(action)));
+        return wrap(delegate.whenComplete(INSTANCE.wrap(action)));
     }
 
     @Override
     public CompletableFuture<T> whenCompleteAsync(final BiConsumer<? super T, ? super Throwable> action) {
-        return new ContextPreservingCompletableFuture<>(delegate.whenCompleteAsync(INSTANCE.wrap(action)));
+        return wrap(delegate.whenCompleteAsync(INSTANCE.wrap(action)));
     }
 
     @Override
     public CompletableFuture<T> whenCompleteAsync(final BiConsumer<? super T, ? super Throwable> action,
                                                   final java.util.concurrent.Executor executor) {
-        return new ContextPreservingCompletableFuture<>(delegate.whenCompleteAsync(INSTANCE.wrap(action), executor));
+        return wrap(delegate.whenCompleteAsync(INSTANCE.wrap(action), executor));
     }
 
     @Override
     public <U> CompletableFuture<U> handle(final BiFunction<? super T, Throwable, ? extends U> fn) {
-        return new ContextPreservingCompletableFuture<>(delegate.handle(INSTANCE.wrap(fn)));
+        return wrap(delegate.handle(INSTANCE.wrap(fn)));
     }
 
     @Override
     public <U> CompletableFuture<U> handleAsync(final BiFunction<? super T, Throwable, ? extends U> fn) {
-        return new ContextPreservingCompletableFuture<>(delegate.handleAsync(INSTANCE.wrap(fn)));
+        return wrap(delegate.handleAsync(INSTANCE.wrap(fn)));
     }
 
     @Override
     public <U> CompletableFuture<U> handleAsync(final BiFunction<? super T, Throwable, ? extends U> fn,
                                                 final Executor executor) {
-        return new ContextPreservingCompletableFuture<>(delegate.handleAsync(INSTANCE.wrap(fn), executor));
+        return wrap(delegate.handleAsync(INSTANCE.wrap(fn), executor));
     }
 
     @Override
@@ -297,22 +292,26 @@ final class ContextPreservingCompletableFuture<T> extends CompletableFuture<T> {
 
     @Override
     public boolean complete(@Nullable T value) {
-        return delegate.complete(value);
+        delegate.complete(value);
+        return super.complete(value);
     }
 
     @Override
     public boolean completeExceptionally(Throwable ex) {
-        return delegate.completeExceptionally(ex);
+        delegate.completeExceptionally(ex);
+        return super.completeExceptionally(ex);
     }
 
     @Override
     public void obtrudeValue(@Nullable T value) {
         delegate.obtrudeValue(value);
+        super.obtrudeValue(value);
     }
 
     @Override
     public void obtrudeException(Throwable ex) {
         delegate.obtrudeException(ex);
+        super.obtrudeException(ex);
     }
 
     @Override
@@ -323,5 +322,25 @@ final class ContextPreservingCompletableFuture<T> extends CompletableFuture<T> {
     @Override
     public String toString() {
         return delegate.toString();
+    }
+
+    /**
+     * Wraps the passed {@link CompletableFuture} to a {@link CompletableFuture} that preserves {@link AsyncContext}.
+     *
+     * @param original {@link CompletableFuture} to wrap.
+     * @param <T> Type of result of the returned {@link CompletableFuture}
+     * @return {@link CompletableFuture} wrapping the passed {@link CompletableFuture} and preserves
+     * {@link AsyncContext}.
+     */
+    static <T> ContextPreservingCompletableFuture<T> wrap(CompletableFuture<T> original) {
+        ContextPreservingCompletableFuture<T> f = new ContextPreservingCompletableFuture<>(original);
+        original.whenComplete((t, throwable) -> {
+            if (throwable == null) {
+                f.complete(t);
+            } else {
+                f.completeExceptionally(throwable);
+            }
+        });
+        return f;
     }
 }

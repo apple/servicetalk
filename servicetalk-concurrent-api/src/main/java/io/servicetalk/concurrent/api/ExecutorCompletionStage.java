@@ -463,7 +463,7 @@ abstract class ExecutorCompletionStage<T> implements CompletionStage<T>, Future<
 
     @Override
     public final CompletableFuture<T> toCompletableFuture() {
-        return new ExecutorCompletionStageToCompletableFuture<>(this);
+        return ExecutorCompletionStageToCompletableFuture.forStage(this);
     }
 
     @Override
