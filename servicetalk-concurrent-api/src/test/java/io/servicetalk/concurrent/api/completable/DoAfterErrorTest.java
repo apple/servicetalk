@@ -40,7 +40,7 @@ public class DoAfterErrorTest extends AbstractDoErrorTest {
     @Override
     public void testCallbackThrowsError() {
         DeliberateException srcEx = new DeliberateException();
-        listener.listen(doError(Completable.error(srcEx), t -> {
+        listener.listen(doError(Completable.error(srcEx), __ -> {
             throw DELIBERATE_EXCEPTION;
         })).verifyFailure(srcEx);
     }

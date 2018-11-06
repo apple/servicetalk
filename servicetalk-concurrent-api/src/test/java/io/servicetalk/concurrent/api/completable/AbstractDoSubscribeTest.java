@@ -55,7 +55,7 @@ public abstract class AbstractDoSubscribeTest {
 
     @Test
     public void testCallbackThrowsError() {
-        listener.listen(doSubscribe(Completable.completed(), $ -> {
+        listener.listen(doSubscribe(Completable.completed(), __ -> {
             throw DELIBERATE_EXCEPTION;
         }));
     }
