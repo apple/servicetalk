@@ -224,7 +224,8 @@ final class NettyHttpServerConnection extends HttpServiceContext implements Nett
             } catch (final Throwable cause) {
                 return newErrorResponse(exec, cause, request);
             }
-        }).flatMap(identity()).onErrorResume(t -> newErrorResponse(exec, t, request));
+        }).flatMap(identity())// exec.submit() returns a Single<Single<response>>, so flatten the nested Single.
+                .onErrorResume(t -> newErrorResponse(exec, t, request));
     }
 
     private static StreamingHttpResponse processResponse(final HttpRequestMethod requestMethod,
@@ -245,12 +246,12 @@ final class NettyHttpServerConnection extends HttpServiceContext implements Nett
         if (cause instanceof RejectedExecutionException) {
             LOGGER.error("Task rejected by Executor {} for service={}, connection={}", executor, service, this, cause);
             StreamingHttpResponse resp = streamingResponseFactory().serviceUnavailable().version(request.version());
-            resp.headers().set(CONTENT_LENGTH, ZERO);
+            resp.setHeader(CONTENT_LENGTH, ZERO);
             return success(resp);
         } else {
             LOGGER.error("Internal server error service={} connection={}", service, this, cause);
             StreamingHttpResponse resp = streamingResponseFactory().internalServerError().version(request.version());
-            resp.headers().set(CONTENT_LENGTH, ZERO);
+            resp.setHeader(CONTENT_LENGTH, ZERO);
             return success(resp);
         }
     }
