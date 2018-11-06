@@ -30,6 +30,7 @@ import java.util.function.IntPredicate;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.Executors.newOffloaderFor;
 import static io.servicetalk.concurrent.api.NeverSingle.neverSingle;
@@ -1001,11 +1002,17 @@ public abstract class Single<T> implements io.servicetalk.concurrent.Single<T> {
 
     @Override
     public final void subscribe(Subscriber<? super T> subscriber) {
-        // This is a user-driven subscribe i.e. there is no SignalOffloader override, so create a new SignalOffloader
-        // to use.
-        final SignalOffloader signalOffloader = newOffloaderFor(executor);
-        // Since this is a user-driven subscribe (end of the execution chain), offload Cancellable
-        subscribe(signalOffloader.offloadCancellable(subscriber), signalOffloader);
+        requireNonNull(subscriber);
+        try {
+            // This is a user-driven subscribe i.e. there is no SignalOffloader override, so create a new SignalOffloader
+            // to use.
+            final SignalOffloader signalOffloader = newOffloaderFor(executor);
+            // Since this is a user-driven subscribe (end of the execution chain), offload Cancellable
+            subscribe(signalOffloader.offloadCancellable(subscriber), signalOffloader);
+        } catch (Throwable t) {
+            subscriber.onSubscribe(IGNORE_CANCEL);
+            subscriber.onError(t);
+        }
     }
 
     /**
