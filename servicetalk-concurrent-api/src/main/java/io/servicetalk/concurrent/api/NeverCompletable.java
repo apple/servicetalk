@@ -15,9 +15,13 @@
  */
 package io.servicetalk.concurrent.api;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 
 final class NeverCompletable extends AbstractSynchronousCompletable {
+    private static final Logger LOGGER = LoggerFactory.getLogger(NeverCompletable.class);
     static final NeverCompletable INSTANCE = new NeverCompletable();
 
     private NeverCompletable() {
@@ -26,6 +30,10 @@ final class NeverCompletable extends AbstractSynchronousCompletable {
 
     @Override
     void doSubscribe(final Subscriber subscriber) {
-        subscriber.onSubscribe(IGNORE_CANCEL);
+        try {
+            subscriber.onSubscribe(IGNORE_CANCEL);
+        } catch (Throwable t) {
+            LOGGER.debug("Ignoring exception from onSubscribe of Subscriber {}.", subscriber, t);
+        }
     }
 }

@@ -76,8 +76,8 @@ final class DoBeforeSubscriberSingle<T> extends AbstractSynchronousSingleOperato
             try {
                 subscriber.onError(t);
             } catch (Throwable cause) {
-                cause.addSuppressed(t);
-                subscriber.onError(cause);
+                t.addSuppressed(cause);
+                original.onError(t);
                 return;
             }
             original.onError(t);

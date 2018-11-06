@@ -18,7 +18,6 @@ package io.servicetalk.concurrent.api.completable;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.MockedCompletableListenerRule;
-import io.servicetalk.concurrent.api.TestCompletable;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -28,9 +27,7 @@ import org.junit.rules.ExpectedException;
 import java.util.function.Consumer;
 
 import static io.servicetalk.concurrent.api.DeliberateException.DELIBERATE_EXCEPTION;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.sameInstance;
-import static org.mockito.Matchers.any;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
@@ -58,10 +55,7 @@ public abstract class AbstractDoSubscribeTest {
 
     @Test
     public void testCallbackThrowsError() {
-        thrown.expect(is(sameInstance(DELIBERATE_EXCEPTION)));
-
-        TestCompletable completable = new TestCompletable();
-        listener.listen(doSubscribe(completable, $ -> {
+        listener.listen(doSubscribe(Completable.completed(), __ -> {
             throw DELIBERATE_EXCEPTION;
         }));
     }

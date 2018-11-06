@@ -35,9 +35,9 @@ public class DoBeforeErrorTest extends AbstractDoErrorTest {
     @Test
     public void testCallbackThrowsError() {
         DeliberateException srcEx = new DeliberateException();
-        rule.subscribe(doError(Publisher.<String>error(srcEx), t -> {
+        rule.subscribe(doError(Publisher.error(srcEx), t -> {
             throw DELIBERATE_EXCEPTION;
         })).request(1);
-        rule.verifyFailure(DELIBERATE_EXCEPTION);
+        rule.verifyFailure(srcEx).verifySuppressedFailure(DELIBERATE_EXCEPTION);
     }
 }

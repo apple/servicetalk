@@ -52,8 +52,8 @@ final class DoBeforeSubscriberPublisher<T> extends AbstractSynchronousPublisherO
                 try {
                     original.onSubscribe(s);
                 } catch (Throwable err) {
-                    err.addSuppressed(cause);
-                    throw err;
+                    cause.addSuppressed(err);
+                    throw cause;
                 }
                 throw cause;
             }
@@ -82,8 +82,8 @@ final class DoBeforeSubscriberPublisher<T> extends AbstractSynchronousPublisherO
             try {
                 subscriber.onError(t);
             } catch (Throwable cause) {
-                cause.addSuppressed(t);
-                original.onError(cause);
+                t.addSuppressed(cause);
+                original.onError(t);
                 return;
             }
             original.onError(t);

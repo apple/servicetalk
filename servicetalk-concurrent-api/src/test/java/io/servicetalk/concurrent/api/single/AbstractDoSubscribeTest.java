@@ -18,7 +18,6 @@ package io.servicetalk.concurrent.api.single;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.api.MockedSingleListenerRule;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.concurrent.api.TestSingle;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -28,8 +27,6 @@ import org.junit.rules.ExpectedException;
 import java.util.function.Consumer;
 
 import static io.servicetalk.concurrent.api.DeliberateException.DELIBERATE_EXCEPTION;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.sameInstance;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -58,10 +55,7 @@ public abstract class AbstractDoSubscribeTest {
 
     @Test
     public void testCallbackThrowsError() {
-        thrown.expect(is(sameInstance(DELIBERATE_EXCEPTION)));
-        TestSingle<String> single = new TestSingle<>();
-
-        listener.listen(doSubscribe(single, $ -> {
+        listener.listen(doSubscribe(Single.success("Hello"), $ -> {
             throw DELIBERATE_EXCEPTION;
         }));
     }

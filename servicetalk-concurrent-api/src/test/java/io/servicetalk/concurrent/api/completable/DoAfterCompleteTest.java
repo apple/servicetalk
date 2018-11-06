@@ -22,8 +22,6 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import static io.servicetalk.concurrent.api.DeliberateException.DELIBERATE_EXCEPTION;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.sameInstance;
 
 public class DoAfterCompleteTest extends AbstractDoCompleteTest {
 
@@ -37,14 +35,8 @@ public class DoAfterCompleteTest extends AbstractDoCompleteTest {
 
     @Test
     public void testCallbackThrowsError() {
-        thrown.expect(is(sameInstance(DELIBERATE_EXCEPTION)));
-
-        try {
-            listener.listen(doComplete(Completable.completed(), () -> {
-                throw DELIBERATE_EXCEPTION;
-            }));
-        } finally {
-            listener.verifyCompletion();
-        }
+        listener.listen(doComplete(Completable.completed(), () -> {
+            throw DELIBERATE_EXCEPTION;
+        })).verifyCompletion();
     }
 }

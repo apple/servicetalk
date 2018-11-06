@@ -15,6 +15,9 @@
  */
 package io.servicetalk.concurrent.api;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Future;
@@ -24,6 +27,7 @@ import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static java.util.Objects.requireNonNull;
 
 final class CompletionStageToSingle<T> extends Single<T> {
+    private static final Logger LOGGER = LoggerFactory.getLogger(CompletionStageToSingle.class);
     private final CompletionStage<T> stage;
 
     CompletionStageToSingle(CompletionStage<T> stage) {
@@ -33,21 +37,41 @@ final class CompletionStageToSingle<T> extends Single<T> {
     @Override
     protected void handleSubscribe(final Subscriber<? super T> subscriber) {
         if (stage instanceof Future) {
-            subscriber.onSubscribe(() -> ((Future<?>) stage).cancel(true));
+            try {
+                subscriber.onSubscribe(() -> ((Future<?>) stage).cancel(true));
+            } catch (Throwable t) {
+                LOGGER.debug("Ignoring exception from onSubscribe of Subscriber {}.", subscriber, t);
+            }
         } else {
             CompletableFuture<T> future = toCompletableFuture();
             if (future != null) {
-                subscriber.onSubscribe(() -> future.cancel(true));
+                try {
+                    subscriber.onSubscribe(() -> future.cancel(true));
+                } catch (Throwable t) {
+                    LOGGER.debug("Ignoring exception from onSubscribe of Subscriber {}.", subscriber, t);
+                }
             } else {
-                subscriber.onSubscribe(IGNORE_CANCEL);
+                try {
+                    subscriber.onSubscribe(IGNORE_CANCEL);
+                } catch (Throwable t) {
+                    LOGGER.debug("Ignoring exception from onSubscribe of Subscriber {}.", subscriber, t);
+                }
             }
         }
 
         stage.whenComplete((value, cause) -> {
            if (cause != null) {
-               subscriber.onError(cause);
+               try {
+                   subscriber.onError(cause);
+               } catch (Throwable t) {
+                   LOGGER.debug("Ignoring exception from onError of Subscriber {}.", subscriber, t);
+               }
            } else {
-               subscriber.onSuccess(value);
+               try {
+                   subscriber.onSuccess(value);
+               } catch (Throwable t) {
+                   LOGGER.debug("Ignoring exception from onSuccess of Subscriber {}.", subscriber, t);
+               }
            }
         });
     }

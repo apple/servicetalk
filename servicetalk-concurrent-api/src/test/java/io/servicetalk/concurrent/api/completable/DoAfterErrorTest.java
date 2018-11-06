@@ -25,9 +25,6 @@ import org.junit.rules.ExpectedException;
 import java.util.function.Consumer;
 
 import static io.servicetalk.concurrent.api.DeliberateException.DELIBERATE_EXCEPTION;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.sameInstance;
-import static org.junit.Assert.fail;
 
 public class DoAfterErrorTest extends AbstractDoErrorTest {
 
@@ -42,16 +39,9 @@ public class DoAfterErrorTest extends AbstractDoErrorTest {
     @Test
     @Override
     public void testCallbackThrowsError() {
-        thrown.expect(is(sameInstance(DELIBERATE_EXCEPTION)));
-
         DeliberateException srcEx = new DeliberateException();
-        try {
-            listener.listen(doError(Completable.error(srcEx), t -> {
-                throw DELIBERATE_EXCEPTION;
-            }));
-            fail();
-        } finally {
-            listener.verifyFailure(srcEx);
-        }
+        listener.listen(doError(Completable.error(srcEx), __ -> {
+            throw DELIBERATE_EXCEPTION;
+        })).verifyFailure(srcEx);
     }
 }

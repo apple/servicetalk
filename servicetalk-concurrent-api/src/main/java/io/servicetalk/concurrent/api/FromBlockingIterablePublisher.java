@@ -20,6 +20,8 @@ import io.servicetalk.concurrent.BlockingIterator;
 import io.servicetalk.concurrent.api.FromIterablePublisher.FromIterableSubscription;
 
 import org.reactivestreams.Subscriber;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -29,6 +31,7 @@ import javax.annotation.Nullable;
 import static java.util.Objects.requireNonNull;
 
 final class FromBlockingIterablePublisher<T> extends AbstractSynchronousPublisher<T> {
+    private static final Logger LOGGER = LoggerFactory.getLogger(FromBlockingIterablePublisher.class);
 
     private final BlockingIterable<T> iterable;
     private final LongSupplier timeoutSupplier;
@@ -44,7 +47,11 @@ final class FromBlockingIterablePublisher<T> extends AbstractSynchronousPublishe
 
     @Override
     void doSubscribe(final Subscriber<? super T> subscriber) {
-        subscriber.onSubscribe(new FromBlockingIterableSubscription<>(iterable.iterator(), subscriber, this));
+        try {
+            subscriber.onSubscribe(new FromBlockingIterableSubscription<>(iterable.iterator(), subscriber, this));
+        } catch (Throwable t) {
+            LOGGER.debug("Ignoring exception from onSubscribe of Subscriber {}.", subscriber, t);
+        }
     }
 
     private static final class FromBlockingIterableSubscription<T> extends

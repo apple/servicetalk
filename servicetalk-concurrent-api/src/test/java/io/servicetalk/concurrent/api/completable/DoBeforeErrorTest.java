@@ -34,8 +34,8 @@ public class DoBeforeErrorTest extends AbstractDoErrorTest {
     @Override
     public void testCallbackThrowsError() {
         DeliberateException srcEx = new DeliberateException();
-        listener.listen(doError(Completable.error(DELIBERATE_EXCEPTION), t -> {
-            throw srcEx;
+        listener.listen(doError(Completable.error(srcEx), t -> {
+            throw DELIBERATE_EXCEPTION;
         }));
         listener.verifyFailure(srcEx).verifySuppressedFailure(DELIBERATE_EXCEPTION);
     }
