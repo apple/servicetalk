@@ -259,6 +259,7 @@ public class RequestResponseCloseHandlerTest {
                     {S, e(IB, IE, IB, IE, IB, IS, SR, OB, OE, OB, OE, OB, OE, FC), CCI, "inbound closed while not writing pipelined, >2 pending"},
                     {S, e(IB, IE, IB, IE, IB, OB, IS, SR, OE, OB, OE, OB, OE, FC), CCI, "inbound closed while writing pipelined, >2 pending"},
                     {S, e(IB, IE, IS, OB, OS, FC), CCI, "Input closed after read, outbound closed while writing"},
+                    {S, e(IB, IE, IS, OS, FC), CCI, "Input closed after read, outbound closed while writing"},
             });
             String fileName = se.getFileName();
             int offset = se.getLineNumber() + 3; // Lines between `se` and first parameter
