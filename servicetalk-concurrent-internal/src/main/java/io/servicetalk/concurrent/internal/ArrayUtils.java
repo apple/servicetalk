@@ -15,6 +15,8 @@
  */
 package io.servicetalk.concurrent.internal;
 
+import static java.util.Objects.requireNonNull;
+
 /**
  * Utilities for arrays.
  */
@@ -31,9 +33,9 @@ public final class ArrayUtils {
      * @return The index of {@code l} in {@code array}, or {@code <0}.
      */
     public static <X> int indexOf(X l, X[] array) {
+        requireNonNull(l);
         for (int i = 0; i < array.length; ++i) {
-            // Null elements are not permitted in the array, so no null check is necessary.
-            if (array[i].equals(l)) {
+            if (l.equals(array[i])) {
                 return i;
             }
         }
