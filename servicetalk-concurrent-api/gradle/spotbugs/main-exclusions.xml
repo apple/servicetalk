@@ -52,4 +52,12 @@
     </Or>
     <Bug pattern="NP_PARAMETER_MUST_BE_NONNULL_BUT_MARKED_AS_NULLABLE"/>
   </Match>
+
+  <Match>
+    <Class name="io.servicetalk.concurrent.api.ExecutorCompletionStageToCompletableFuture"/>
+    <Or>
+      <Method name="obtrudeValue"/>
+    </Or>
+    <Bug pattern="NP_PARAMETER_MUST_BE_NONNULL_BUT_MARKED_AS_NULLABLE"/>
+  </Match>
 </FindBugsFilter>

@@ -254,6 +254,6 @@ final class ContextPreservingCompletionStage<T> implements CompletionStage<T> {
 
     @Override
     public CompletableFuture<T> toCompletableFuture() {
-        return new ContextPreservingCompletableFuture<>(delegate.toCompletableFuture());
+        return ContextPreservingCompletableFuture.wrap(delegate.toCompletableFuture());
     }
 }
