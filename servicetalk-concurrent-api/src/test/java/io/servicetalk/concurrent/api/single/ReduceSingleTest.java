@@ -15,18 +15,25 @@
  */
 package io.servicetalk.concurrent.api.single;
 
+import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.MockedSingleListenerRule;
+import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.PublisherRule;
 
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Verifier;
 
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 
 import static io.servicetalk.concurrent.api.DeliberateException.DELIBERATE_EXCEPTION;
+import static io.servicetalk.concurrent.api.Executors.from;
+import static io.servicetalk.concurrent.api.Executors.newFixedSizeExecutor;
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 
 public class ReduceSingleTest {
@@ -40,42 +47,42 @@ public class ReduceSingleTest {
     public final ReducerRule reducerRule = new ReducerRule();
 
     @Test
-    public void testSingleItem() throws Exception {
+    public void testSingleItem() {
         reducerRule.listen(publisherRule, listenerRule);
         publisherRule.sendItems("Hello").complete();
         listenerRule.verifySuccess("Hello");
     }
 
     @Test
-    public void testEmpty() throws Exception {
+    public void testEmpty() {
         reducerRule.listen(publisherRule, listenerRule);
         publisherRule.complete();
         listenerRule.verifySuccess(""); // Empty string as exactly one item is required.
     }
 
     @Test
-    public void testMultipleItems() throws Exception {
+    public void testMultipleItems() {
         reducerRule.listen(publisherRule, listenerRule);
         publisherRule.sendItems("Hello1", "Hello2", "Hello3").complete();
         listenerRule.verifySuccess("Hello1Hello2Hello3");
     }
 
     @Test
-    public void testError() throws Exception {
+    public void testError() {
         reducerRule.listen(publisherRule, listenerRule);
         publisherRule.fail();
         listenerRule.verifyFailure(DELIBERATE_EXCEPTION);
     }
 
     @Test
-    public void testFactoryReturnsNull() throws Exception {
+    public void testFactoryReturnsNull() {
         listenerRule.listen(publisherRule.getPublisher().reduce(() -> null, (o, s) -> o));
         publisherRule.sendItems("foo").complete();
         listenerRule.verifySuccess(null);
     }
 
     @Test
-    public void testAggregatorReturnsNull() throws Exception {
+    public void testAggregatorReturnsNull() {
         listenerRule.listen(publisherRule.getPublisher().reduce(() -> "", (o, s) -> null));
         publisherRule.sendItems("foo").complete();
         listenerRule.verifySuccess(null);
@@ -97,6 +104,20 @@ public class ReduceSingleTest {
         }));
 
         verifyThrows(cause -> assertSame(testException, cause));
+    }
+
+    @Test
+    public void reduceShouldOffloadOnce() throws Exception {
+        Executor executor = newFixedSizeExecutor(1);
+        AtomicInteger taskCount = new AtomicInteger();
+        Executor wrapped = from(task -> {
+            taskCount.incrementAndGet();
+            executor.execute(task);
+        });
+        int sum = Publisher.from(1, 2, 3, 4).publishAndSubscribeOn(wrapped)
+                .reduce(() -> 0, (cumulative, integer) -> cumulative + integer).toFuture().get();
+        assertThat("Unexpected sum.", sum, is(10));
+        assertThat("Unexpected tasks submitted.", taskCount.get(), is(1));
     }
 
     private void verifyThrows(Consumer<Throwable> assertFunction) {

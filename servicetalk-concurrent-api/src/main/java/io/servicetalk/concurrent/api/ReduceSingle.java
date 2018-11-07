@@ -16,6 +16,7 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.internal.ConcurrentSubscription;
+import io.servicetalk.concurrent.internal.SignalOffloader;
 
 import org.reactivestreams.Subscription;
 
@@ -33,7 +34,7 @@ import static java.util.Objects.requireNonNull;
  * @param <R> Item emitted from this.
  * @param <T> Items emitted from the source {@link Publisher}.
  */
-final class ReduceSingle<R, T> extends Single<R> {
+final class ReduceSingle<R, T> extends AbstractNoHandleSubscribeSingle<R> {
     private final Publisher<T> source;
     private final Supplier<R> resultFactory;
     private final BiFunction<R, ? super T, R> reducer;
@@ -54,7 +55,7 @@ final class ReduceSingle<R, T> extends Single<R> {
     }
 
     @Override
-    protected void handleSubscribe(Subscriber<? super R> singleSubscriber) {
+    void handleSubscribe(final Subscriber<? super R> singleSubscriber, final SignalOffloader signalOffloader) {
         final R r;
         try {
             r = resultFactory.get();
@@ -63,7 +64,9 @@ final class ReduceSingle<R, T> extends Single<R> {
             singleSubscriber.onError(t);
             return;
         }
-        source.subscribe(new ReduceSubscriber<>(r, reducer, singleSubscriber));
+        // Since we are not creating any new sources by reducing, we should use the same offloader to subscribe to the
+        // original Publisher.
+        source.subscribe(new ReduceSubscriber<>(r, reducer, singleSubscriber), signalOffloader);
     }
 
     private static final class ReduceSubscriber<R, T> implements org.reactivestreams.Subscriber<T> {
