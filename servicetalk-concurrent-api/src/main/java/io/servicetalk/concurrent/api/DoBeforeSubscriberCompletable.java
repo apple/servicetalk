@@ -46,17 +46,8 @@ final class DoBeforeSubscriberCompletable extends AbstractSynchronousCompletable
 
         @Override
         public void onSubscribe(Cancellable cancellable) {
-            try {
-                subscriber.onSubscribe(cancellable);
-            } catch (Throwable cause) {
-                try {
-                    original.onSubscribe(cancellable);
-                } catch (Throwable err) {
-                    cause.addSuppressed(err);
-                    throw cause;
-                }
-                throw cause;
-            }
+            // If this throws we expect the source to bail on this Subscriber.
+            subscriber.onSubscribe(cancellable);
             original.onSubscribe(cancellable);
         }
 

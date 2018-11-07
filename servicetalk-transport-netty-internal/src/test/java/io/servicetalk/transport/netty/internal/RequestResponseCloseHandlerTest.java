@@ -302,28 +302,28 @@ public class RequestResponseCloseHandlerTest {
             when(loop.inEventLoop()).thenReturn(true);
             when(scc.isAllowHalfClosure()).thenReturn(true);
 
-            when(channel.isOutputShutdown()).then($ -> outputShutdown.get());
-            when(channel.isInputShutdown()).then($ -> inputShutdown.get());
-            when(channel.isOpen()).then($ -> !closed.get());
+            when(channel.isOutputShutdown()).then(__ -> outputShutdown.get());
+            when(channel.isInputShutdown()).then(__ -> inputShutdown.get());
+            when(channel.isOpen()).then(__ -> !closed.get());
             ChannelFuture future = mock(ChannelFuture.class);
-            when(channel.shutdownInput()).then($ -> {
+            when(channel.shutdownInput()).then(__ -> {
                 inputShutdown.set(true);
                 LOGGER.debug("channel.shutdownInput()");
                 h.channelClosedInbound(ctx); // OutputShutDownEvent observed from transport
                 return future;
             });
-            when(channel.shutdownOutput()).then($ -> {
+            when(channel.shutdownOutput()).then(__ -> {
                 outputShutdown.set(true);
                 LOGGER.debug("channel.shutdownOutput()");
                 h.channelClosedOutbound(ctx); // InputShutDownReadComplete observed from transport
                 return future;
             });
-            when(channel.close()).then($ -> {
+            when(channel.close()).then(__ -> {
                 closed.set(true);
                 LOGGER.debug("channel.close()");
                 return future;
             });
-            when(scc.setSoLinger(0)).then($ -> {
+            when(scc.setSoLinger(0)).then(__ -> {
                 LOGGER.debug("channel.config().setSoLinger(0)");
                 if (inputShutdown.get() && outputShutdown.get()) {
                     fail("mock => setsockopt() failed - output already shutdown!");

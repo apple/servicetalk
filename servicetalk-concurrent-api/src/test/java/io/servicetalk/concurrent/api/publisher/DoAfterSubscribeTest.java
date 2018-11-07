@@ -17,11 +17,22 @@ package io.servicetalk.concurrent.api.publisher;
 
 import io.servicetalk.concurrent.api.Publisher;
 
+import org.junit.Test;
 import org.reactivestreams.Subscription;
 
 import java.util.function.Consumer;
 
+import static io.servicetalk.concurrent.api.DeliberateException.DELIBERATE_EXCEPTION;
+
 public class DoAfterSubscribeTest extends AbstractDoSubscribeTest {
+
+    @Test
+    public void testCallbackThrowsError() {
+        Publisher<String> src = doSubscribe(Publisher.just("Hello"), s -> {
+            throw DELIBERATE_EXCEPTION;
+        });
+        rule.subscribe(src).verifyNoEmissions();
+    }
 
     @Override
     protected <T> Publisher<T> doSubscribe(Publisher<T> publisher, Consumer<Subscription> consumer) {

@@ -17,11 +17,48 @@ package io.servicetalk.concurrent.api.publisher;
 
 import io.servicetalk.concurrent.api.Publisher;
 
+import org.junit.Test;
+import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Consumer;
 
+import static io.servicetalk.concurrent.api.DeliberateException.DELIBERATE_EXCEPTION;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.hasSize;
+
 public class DoBeforeSubscribeTest extends AbstractDoSubscribeTest {
+
+    @Test
+    public void testCallbackThrowsError() {
+        List<AssertionError> failures = new ArrayList<>();
+        doSubscribe(Publisher.just("Hello"), s -> {
+            throw DELIBERATE_EXCEPTION;
+        }).subscribe(new Subscriber<String>() {
+            @Override
+            public void onSubscribe(final Subscription s) {
+                failures.add(new AssertionError("onSubscribe invoked unexpectedly."));
+            }
+
+            @Override
+            public void onNext(final String s) {
+                failures.add(new AssertionError("onNext invoked unexpectedly with value: " + s));
+            }
+
+            @Override
+            public void onError(final Throwable t) {
+                failures.add(new AssertionError("onError invoked unexpectedly.", t));
+            }
+
+            @Override
+            public void onComplete() {
+                failures.add(new AssertionError("onComplete invoked unexpectedly."));
+            }
+        });
+        assertThat("Unexpected errors: " + failures, failures, hasSize(0));
+    }
 
     @Override
     protected <T> Publisher<T> doSubscribe(Publisher<T> publisher, Consumer<Subscription> consumer) {

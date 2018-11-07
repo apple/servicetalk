@@ -45,17 +45,8 @@ final class DoAfterSubscriberSingle<T> extends AbstractSynchronousSingleOperator
 
         @Override
         public void onSubscribe(Cancellable cancellable) {
-            try {
-                original.onSubscribe(cancellable);
-            } catch (Throwable cause) {
-                try {
-                    subscriber.onSubscribe(cancellable);
-                } catch (Throwable err) {
-                    err.addSuppressed(cause);
-                    throw err;
-                }
-                throw cause;
-            }
+            original.onSubscribe(cancellable);
+            // If this throws we expect the source to bail on this Subscriber.
             subscriber.onSubscribe(cancellable);
         }
 

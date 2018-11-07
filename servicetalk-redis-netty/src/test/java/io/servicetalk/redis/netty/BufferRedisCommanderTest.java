@@ -414,7 +414,7 @@ public class BufferRedisCommanderTest extends BaseRedisClientTest {
 
         assertThat(subscriber
                 .subscribe(commandClient.monitor()
-                        .doAfterNext($ -> awaitIndefinitelyUnchecked(commandClient.ping().ignoreResult()))
+                        .doAfterNext(__ -> awaitIndefinitelyUnchecked(commandClient.ping().ignoreResult()))
                         .doAfterCancel(cancelled::countDown))
                 .request(2)
                 .awaitUntilAtLeastNReceived(2, DEFAULT_TIMEOUT_SECONDS, SECONDS), is(true));

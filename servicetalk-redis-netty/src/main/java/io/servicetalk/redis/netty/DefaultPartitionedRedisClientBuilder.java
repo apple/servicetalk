@@ -369,14 +369,14 @@ final class DefaultPartitionedRedisClientBuilder<U, R> implements PartitionedRed
         public Completable closeAsync() {
             // Cancel doesn't provide any status and is assumed to complete immediately so we just cancel when subscribe
             // is called.
-            return partitionMap.closeAsync().doBeforeSubscribe($ -> sequentialCancellable.cancel());
+            return partitionMap.closeAsync().doBeforeSubscribe(__ -> sequentialCancellable.cancel());
         }
 
         @Override
         public Completable closeAsyncGracefully() {
             // Cancel doesn't provide any status and is assumed to complete immediately so we just cancel when subscribe
             // is called.
-            return partitionMap.closeAsyncGracefully().doBeforeSubscribe($ -> sequentialCancellable.cancel());
+            return partitionMap.closeAsyncGracefully().doBeforeSubscribe(__ -> sequentialCancellable.cancel());
         }
     }
 

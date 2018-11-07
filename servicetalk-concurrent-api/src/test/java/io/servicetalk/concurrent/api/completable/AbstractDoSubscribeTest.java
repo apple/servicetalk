@@ -26,7 +26,6 @@ import org.junit.rules.ExpectedException;
 
 import java.util.function.Consumer;
 
-import static io.servicetalk.concurrent.api.DeliberateException.DELIBERATE_EXCEPTION;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -51,13 +50,6 @@ public abstract class AbstractDoSubscribeTest {
     public void testOnSubscribe() {
         listener.listen(doSubscribe(Completable.completed(), doOnListen)).verifyCompletion();
         verify(doOnListen).accept(any(Cancellable.class));
-    }
-
-    @Test
-    public void testCallbackThrowsError() {
-        listener.listen(doSubscribe(Completable.completed(), __ -> {
-            throw DELIBERATE_EXCEPTION;
-        }));
     }
 
     protected abstract Completable doSubscribe(Completable completable, Consumer<Cancellable> consumer);

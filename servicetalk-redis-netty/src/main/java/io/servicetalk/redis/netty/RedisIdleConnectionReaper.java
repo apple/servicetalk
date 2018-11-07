@@ -157,7 +157,7 @@ final class RedisIdleConnectionReaper implements UnaryOperator<RedisConnection> 
         @Override
         public Publisher<RedisData> request(final RedisRequest request) {
             return delegate.request(request)
-                    .doBeforeSubscribe($ -> onRequestStarted())
+                    .doBeforeSubscribe(__ -> onRequestStarted())
                     .doBeforeFinally(this::onRequestFinished);
         }
 
@@ -169,7 +169,7 @@ final class RedisIdleConnectionReaper implements UnaryOperator<RedisConnection> 
         @Override
         public <R> Single<R> request(final RedisRequest request, final Class<R> responseType) {
             return delegate.request(request, responseType)
-                    .doBeforeSubscribe($ -> onRequestStarted())
+                    .doBeforeSubscribe(__ -> onRequestStarted())
                     .doBeforeFinally(this::onRequestFinished);
         }
 

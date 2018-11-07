@@ -16,11 +16,44 @@
 package io.servicetalk.concurrent.api.completable;
 
 import io.servicetalk.concurrent.Cancellable;
+import io.servicetalk.concurrent.Completable.Subscriber;
 import io.servicetalk.concurrent.api.Completable;
 
+import org.junit.Test;
+
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Consumer;
 
+import static io.servicetalk.concurrent.api.DeliberateException.DELIBERATE_EXCEPTION;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.hasSize;
+
 public class DoBeforeSubscribeTest extends AbstractDoSubscribeTest {
+
+    @Test
+    public void testCallbackThrowsError() {
+        List<AssertionError> failures = new ArrayList<>();
+        doSubscribe(Completable.completed(), s -> {
+            throw DELIBERATE_EXCEPTION;
+        }).subscribe(new Subscriber() {
+            @Override
+            public void onSubscribe(final Cancellable c) {
+                failures.add(new AssertionError("onSubscribe invoked unexpectedly."));
+            }
+
+            @Override
+            public void onError(final Throwable t) {
+                failures.add(new AssertionError("onError invoked unexpectedly.", t));
+            }
+
+            @Override
+            public void onComplete() {
+                failures.add(new AssertionError("onComplete invoked unexpectedly."));
+            }
+        });
+        assertThat("Unexpected errors: " + failures, failures, hasSize(0));
+    }
 
     @Override
     protected Completable doSubscribe(Completable completable, Consumer<Cancellable> consumer) {

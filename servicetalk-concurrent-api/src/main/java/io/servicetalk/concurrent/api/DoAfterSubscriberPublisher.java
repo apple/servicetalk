@@ -46,17 +46,8 @@ final class DoAfterSubscriberPublisher<T> extends AbstractSynchronousPublisherOp
 
         @Override
         public void onSubscribe(Subscription s) {
-            try {
-                original.onSubscribe(s);
-            } catch (Throwable cause) {
-                try {
-                    subscriber.onSubscribe(s);
-                } catch (Throwable err) {
-                    err.addSuppressed(cause);
-                    throw err;
-                }
-                throw cause;
-            }
+            original.onSubscribe(s);
+            // If this throws we expect the source to bail on this Subscriber.
             subscriber.onSubscribe(s);
         }
 

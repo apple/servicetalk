@@ -105,7 +105,7 @@ class RequestResponseCloseHandler extends CloseHandler {
     /**
      * Feed back events to {@link DefaultNettyConnection} bypassing the pipeline.
      */
-    private Consumer<CloseEvent> eventHandler = $ -> { };
+    private Consumer<CloseEvent> eventHandler = __ -> { };
 
     RequestResponseCloseHandler(final boolean client) {
         isClient = client;

@@ -109,12 +109,12 @@ public class PublishAndSubscribeOnTest {
         Thread[] capturedThreads = new Thread[2];
 
         Single<String> original = new SingleWithExecutor<>(originalSourceExecutorRule.getExecutor(), success("Hello"))
-                .doBeforeSuccess($ -> capturedThreads[0] = Thread.currentThread());
+                .doBeforeSuccess(__ -> capturedThreads[0] = Thread.currentThread());
 
         Single<String> offloaded = offloadingFunction.apply(original, executorRule.getExecutor());
 
         offloaded.doAfterFinally(allDone::countDown)
-                .doBeforeSuccess($ -> capturedThreads[1] = Thread.currentThread())
+                .doBeforeSuccess(__ -> capturedThreads[1] = Thread.currentThread())
                 .subscribe(val -> { });
         allDone.await();
 
