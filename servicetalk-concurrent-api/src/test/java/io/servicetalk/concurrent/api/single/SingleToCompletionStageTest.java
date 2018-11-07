@@ -16,6 +16,7 @@
 package io.servicetalk.concurrent.api.single;
 
 import io.servicetalk.concurrent.api.ExecutorRule;
+import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.TestSingle;
 import io.servicetalk.concurrent.internal.DefaultThreadFactory;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
@@ -89,6 +90,14 @@ public class SingleToCompletionStageTest {
     @Before
     public void beforeTest() {
         source = new TestSingle<>(executorRule.getExecutor(), true, true);
+    }
+
+    @Test
+    public void nestedInADifferentFuture() throws Exception {
+        String result = CompletableFuture.completedFuture("foo")
+                .thenCompose(s -> Single.success(s + "bar").toCompletionStage())
+                .get();
+        assertThat("Unexpected result.", result, is("foobar"));
     }
 
     @Test
