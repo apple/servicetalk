@@ -339,7 +339,7 @@ public class RoundRobinLoadBalancerTest {
     public void connectionFactoryErrorPropagation() throws Exception {
         thrown.expect(instanceOf(ExecutionException.class));
         thrown.expectCause(instanceOf(DeliberateException.class));
-        connectionFactory = new DelegatingConnectionFactory($ -> error(DELIBERATE_EXCEPTION));
+        connectionFactory = new DelegatingConnectionFactory(__ -> error(DELIBERATE_EXCEPTION));
         lb = newTestLoadBalancer(connectionFactory);
         sendServiceDiscoveryEvents(upEvent("address-1"));
         awaitIndefinitely(lb.selectConnection(identity()));
@@ -398,7 +398,7 @@ public class RoundRobinLoadBalancerTest {
     private TestLoadBalancedConnection newConnection(final String address) {
         final TestLoadBalancedConnection cnx = mock(TestLoadBalancedConnection.class);
         final CompletableProcessor closeCompletable = new CompletableProcessor();
-        when(cnx.closeAsync()).thenAnswer($ -> {
+        when(cnx.closeAsync()).thenAnswer(__ -> {
             closeCompletable.onComplete();
             return closeCompletable;
         });

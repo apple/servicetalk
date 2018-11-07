@@ -18,9 +18,20 @@ package io.servicetalk.concurrent.api.completable;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.api.Completable;
 
+import org.junit.Test;
+
 import java.util.function.Consumer;
 
+import static io.servicetalk.concurrent.api.DeliberateException.DELIBERATE_EXCEPTION;
+
 public class DoAfterSubscribeTest extends AbstractDoSubscribeTest {
+
+    @Test
+    public void testCallbackThrowsError() {
+        listener.listen(doSubscribe(Completable.completed(), __ -> {
+            throw DELIBERATE_EXCEPTION;
+        })).verifyNoEmissions();
+    }
 
     @Override
     protected Completable doSubscribe(Completable completable, Consumer<Cancellable> consumer) {

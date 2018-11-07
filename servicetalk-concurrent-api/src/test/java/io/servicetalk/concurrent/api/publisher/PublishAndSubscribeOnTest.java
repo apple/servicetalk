@@ -131,14 +131,14 @@ public class PublishAndSubscribeOnTest {
 
         Publisher<String> original = new PublisherWithExecutor<>(originalSourceExecutorRule.getExecutor(),
                 just("Hello"))
-                .doBeforeNext($ -> capturedThreads[ORIGINAL_SUBSCRIBER_THREAD] = Thread.currentThread())
-                .doBeforeRequest($ -> capturedThreads[ORIGINAL_SUBSCRIPTION_THREAD] = Thread.currentThread());
+                .doBeforeNext(__ -> capturedThreads[ORIGINAL_SUBSCRIBER_THREAD] = Thread.currentThread())
+                .doBeforeRequest(__ -> capturedThreads[ORIGINAL_SUBSCRIPTION_THREAD] = Thread.currentThread());
 
         final Executor executor = executorRule.getExecutor();
         Publisher<String> offloaded = offloadingFunction.apply(original, executor);
 
-        offloaded.doBeforeNext($ -> capturedThreads[OFFLOADED_SUBSCRIBER_THREAD] = Thread.currentThread())
-                .doBeforeRequest($ -> capturedThreads[OFFLOADED_SUBSCRIPTION_THREAD] = Thread.currentThread())
+        offloaded.doBeforeNext(__ -> capturedThreads[OFFLOADED_SUBSCRIBER_THREAD] = Thread.currentThread())
+                .doBeforeRequest(__ -> capturedThreads[OFFLOADED_SUBSCRIPTION_THREAD] = Thread.currentThread())
                 .doAfterFinally(allDone::countDown)
                 .subscribe(new Subscriber<String>() {
                     @Override

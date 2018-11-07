@@ -26,7 +26,6 @@ import org.reactivestreams.Subscription;
 
 import java.util.function.Consumer;
 
-import static io.servicetalk.concurrent.api.DeliberateException.DELIBERATE_EXCEPTION;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -51,14 +50,6 @@ public abstract class AbstractDoSubscribeTest {
     public void testOnSubscribe() {
         rule.subscribe(doSubscribe(Publisher.just("Hello"), doOnSubscribe)).verifySuccess("Hello");
         verify(doOnSubscribe).accept(any());
-    }
-
-    @Test
-    public void testCallbackThrowsError() {
-        Publisher<String> src = doSubscribe(Publisher.just("Hello"), s -> {
-            throw DELIBERATE_EXCEPTION;
-        });
-        rule.subscribe(src).request(1).verifySuccess("Hello");
     }
 
     protected abstract <T> Publisher<T> doSubscribe(Publisher<T> publisher, Consumer<Subscription> consumer);

@@ -18,9 +18,21 @@ package io.servicetalk.concurrent.api.single;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.api.Single;
 
+import org.junit.Test;
+
 import java.util.function.Consumer;
 
+import static io.servicetalk.concurrent.api.DeliberateException.DELIBERATE_EXCEPTION;
+
 public class DoAfterSubscribeTest extends AbstractDoSubscribeTest {
+
+    @Test
+    public void testCallbackThrowsError() {
+        listener.listen(doSubscribe(Single.success("Hello"), __ -> {
+            throw DELIBERATE_EXCEPTION;
+        })).verifyNoEmissions();
+    }
+
     @Override
     protected <T> Single<T> doSubscribe(Single<T> single, Consumer<Cancellable> consumer) {
         return single.doAfterSubscribe(consumer);
