@@ -49,6 +49,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.SocketAddress;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.UnaryOperator;
 import javax.annotation.Nullable;
@@ -62,6 +63,7 @@ import static io.servicetalk.http.api.StreamingHttpRequests.newRequestWithTraile
 import static io.servicetalk.http.netty.HeaderUtils.addResponseTransferEncodingIfNecessary;
 import static io.servicetalk.http.netty.SpliceFlatStreamToMetaSingle.flatten;
 import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater;
+import static java.util.function.Function.identity;
 
 final class NettyHttpServerConnection extends HttpServiceContext implements NettyConnectionContext {
 
@@ -211,25 +213,19 @@ final class NettyHttpServerConnection extends HttpServiceContext implements Nett
     }
 
     private Single<StreamingHttpResponse> handleRequest(final StreamingHttpRequest request) {
-        return new Single<StreamingHttpResponse>() {
-            @Override
-            protected void handleSubscribe(final Subscriber<? super StreamingHttpResponse> subscriber) {
-                // Since we do not offload data path for the request single, this method will be invoked from the
-                // EventLoop. So, we offload the call to StreamingHttpService.
-                Executor exec = executionContext().executor();
-                exec.execute(() -> {
-                    Single<StreamingHttpResponse> source;
-                    try {
-                        source = service.handle(NettyHttpServerConnection.this,
-                                request.transformPayloadBody(bdy -> bdy.publishOn(exec)), streamingResponseFactory())
-                                .onErrorResume(cause -> newErrorResponse(cause, request));
-                    } catch (final Throwable cause) {
-                        source = newErrorResponse(cause, request);
-                    }
-                    source.subscribe(subscriber);
-                });
+        // Since we do not offload data path for the request single, this method will be invoked from the
+        // EventLoop. So, we offload the call to StreamingHttpService.
+        Executor exec = executionContext().executor();
+        return exec.submit(() -> {
+            try {
+                return service.handle(NettyHttpServerConnection.this,
+                        request.transformPayloadBody(bdy -> bdy.publishOn(exec)), streamingResponseFactory())
+                        .onErrorResume(cause -> newErrorResponse(exec, cause, request));
+            } catch (final Throwable cause) {
+                return newErrorResponse(exec, cause, request);
             }
-        };
+        }).flatMap(identity())// exec.submit() returns a Single<Single<response>>, so flatten the nested Single.
+                .onErrorResume(t -> newErrorResponse(exec, t, request));
     }
 
     private static StreamingHttpResponse processResponse(final HttpRequestMethod requestMethod,
@@ -244,12 +240,20 @@ final class NettyHttpServerConnection extends HttpServiceContext implements Nett
         return response.transformPayloadBody(responsePayload -> responsePayload.concatWith(drainRequestPayloadBody));
     }
 
-    private Single<StreamingHttpResponse> newErrorResponse(final Throwable cause,
+    private Single<StreamingHttpResponse> newErrorResponse(final Executor executor,
+                                                           final Throwable cause,
                                                            final StreamingHttpRequest request) {
-        LOGGER.error("internal server error service={} connection={}", service, this, cause);
-        StreamingHttpResponse resp = streamingResponseFactory().internalServerError().version(request.version());
-        resp.headers().set(CONTENT_LENGTH, ZERO);
-        return success(resp);
+        if (cause instanceof RejectedExecutionException) {
+            LOGGER.error("Task rejected by Executor {} for service={}, connection={}", executor, service, this, cause);
+            StreamingHttpResponse resp = streamingResponseFactory().serviceUnavailable().version(request.version());
+            resp.setHeader(CONTENT_LENGTH, ZERO);
+            return success(resp);
+        } else {
+            LOGGER.error("Internal server error service={} connection={}", service, this, cause);
+            StreamingHttpResponse resp = streamingResponseFactory().internalServerError().version(request.version());
+            resp.setHeader(CONTENT_LENGTH, ZERO);
+            return success(resp);
+        }
     }
 
     @Override
