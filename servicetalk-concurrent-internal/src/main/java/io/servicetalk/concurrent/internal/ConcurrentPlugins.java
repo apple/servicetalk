@@ -104,21 +104,4 @@ public final class ConcurrentPlugins {
     public static PublisherPlugin getPublisherPlugin() {
         return PUBLISHER_PLUGINS;
     }
-
-    /**
-     * Find the index of {@code l} in {@code array}.
-     * @param l The element to find.
-     * @param array The array to search in.
-     * @param <X> The type of object.
-     * @return The index of {@code l} in {@code array}, or {@code <0}.
-     */
-    public static <X> int indexOf(X l, X[] array) {
-        for (int i = 0; i < array.length; ++i) {
-            // Null elements are not permitted in the array, so no null check is necessary.
-            if (array[i].equals(l)) {
-                return i;
-            }
-        }
-        return -1;
-    }
 }

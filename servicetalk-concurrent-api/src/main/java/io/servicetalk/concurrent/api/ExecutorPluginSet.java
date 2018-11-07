@@ -17,7 +17,7 @@ package io.servicetalk.concurrent.api;
 
 import java.util.concurrent.atomic.AtomicReference;
 
-import static io.servicetalk.concurrent.internal.ConcurrentPlugins.indexOf;
+import static io.servicetalk.concurrent.internal.ArrayUtils.indexOf;
 import static java.lang.System.arraycopy;
 import static java.util.Arrays.copyOf;
 import static java.util.Objects.requireNonNull;
