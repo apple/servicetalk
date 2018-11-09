@@ -216,16 +216,11 @@ final class NettyHttpServerConnection extends HttpServiceContext implements Nett
         // Since we do not offload data path for the request single, this method will be invoked from the
         // EventLoop. So, we offload the call to StreamingHttpService.
         Executor exec = executionContext().executor();
-        return exec.submit(() -> {
-            try {
-                return service.handle(NettyHttpServerConnection.this,
-                        request.transformPayloadBody(bdy -> bdy.publishOn(exec)), streamingResponseFactory())
-                        .onErrorResume(cause -> newErrorResponse(exec, cause, request));
-            } catch (final Throwable cause) {
-                return newErrorResponse(exec, cause, request);
-            }
-        }).flatMap(identity())// exec.submit() returns a Single<Single<response>>, so flatten the nested Single.
-                .onErrorResume(t -> newErrorResponse(exec, t, request));
+        return exec.submit(() ->
+                service.handle(NettyHttpServerConnection.this, request.transformPayloadBody(bdy -> bdy.publishOn(exec)),
+                               streamingResponseFactory())
+        ).flatMap(identity()) // exec.submit() returns a Single<Single<response>>, so flatten the nested Single.
+         .onErrorResume(t -> newErrorResponse(exec, t, request));
     }
 
     private static StreamingHttpResponse processResponse(final HttpRequestMethod requestMethod,
