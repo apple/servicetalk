@@ -15,65 +15,51 @@
  */
 package io.servicetalk.concurrent.api.single;
 
-import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.ExecutorRule;
-import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.concurrent.api.SingleWithExecutor;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.Timeout;
 
-import java.util.concurrent.CountDownLatch;
-import java.util.function.BiFunction;
-
-import static io.servicetalk.concurrent.api.Single.success;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
-import static org.hamcrest.Matchers.notNullValue;
 
-public class PublishAndSubscribeOnTest {
+public class PublishAndSubscribeOnTest extends AbstractPublishAndSubscribeOnTest {
 
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
     @Rule
     public final ExecutorRule executorRule = new ExecutorRule();
-    @Rule
-    public final ExecutorRule originalSourceExecutorRule = new ExecutorRule();
 
     @Test
     public void testPublishOnNoOverride() throws InterruptedException {
-        Thread[] capturedThreads = setupAndSubscribe(Single::publishOn);
+        Thread[] capturedThreads = setupAndSubscribe(s -> s.publishOn(executorRule.getExecutor()));
         assertThat("Unexpected threads for original and offloaded source.",
                 capturedThreads[0], not(capturedThreads[1]));
     }
 
     @Test
     public void testPublishOnOverride() throws InterruptedException {
-        Thread[] capturedThreads = setupAndSubscribe(Single::publishOnOverride);
+        Thread[] capturedThreads = setupAndSubscribe(s -> s.publishOnOverride(executorRule.getExecutor()));
         assertThat("Unexpected threads for original and offloaded source.",
                 capturedThreads[0], is(capturedThreads[1]));
     }
 
     @Test
     public void testSubscribeOnNoOverride() throws InterruptedException {
-        Thread[] capturedThreads = setupForCancelAndSubscribe(Single::subscribeOn);
+        Thread[] capturedThreads = setupForCancelAndSubscribe(s -> s.subscribeOn(executorRule.getExecutor()));
         assertThat("Unexpected threads for original and offloaded source.",
                 capturedThreads[0], not(capturedThreads[1]));
     }
 
     @Test
     public void testSubscribeOnOverride() throws InterruptedException {
-        Thread[] capturedThreads = setupForCancelAndSubscribe(Single::subscribeOnOverride);
+        Thread[] capturedThreads = setupForCancelAndSubscribe(s -> s.subscribeOnOverride(executorRule.getExecutor()));
         assertThat("Unexpected threads for original and offloaded source.",
                 capturedThreads[0], is(capturedThreads[1]));
     }
 
     @Test
     public void testNoOverride() throws InterruptedException {
-        Thread[] capturedThreads = setupAndSubscribe(Single::publishAndSubscribeOn);
+        Thread[] capturedThreads = setupAndSubscribe(s -> s.publishAndSubscribeOn(executorRule.getExecutor()));
 
         assertThat("Unexpected threads for original and offloaded source.",
                 capturedThreads[0], not(capturedThreads[1]));
@@ -81,7 +67,7 @@ public class PublishAndSubscribeOnTest {
 
     @Test
     public void testOverride() throws InterruptedException {
-        Thread[] capturedThreads = setupAndSubscribe(Single::publishAndSubscribeOnOverride);
+        Thread[] capturedThreads = setupAndSubscribe(s -> s.publishAndSubscribeOnOverride(executorRule.getExecutor()));
 
         assertThat("Unexpected threads for original and offloaded source.",
                 capturedThreads[0], is(capturedThreads[1]));
@@ -89,7 +75,7 @@ public class PublishAndSubscribeOnTest {
 
     @Test
     public void testNoOverrideWithCancel() throws InterruptedException {
-        Thread[] capturedThreads = setupForCancelAndSubscribe(Single::publishAndSubscribeOn);
+        Thread[] capturedThreads = setupForCancelAndSubscribe(s -> s.publishAndSubscribeOn(executorRule.getExecutor()));
 
         assertThat("Unexpected threads for original and offloaded source.",
                 capturedThreads[0], not(capturedThreads[1]));
@@ -97,57 +83,9 @@ public class PublishAndSubscribeOnTest {
 
     @Test
     public void testOverrideWithCancel() throws InterruptedException {
-        Thread[] capturedThreads = setupForCancelAndSubscribe(Single::publishAndSubscribeOnOverride);
+        Thread[] capturedThreads = setupForCancelAndSubscribe(s -> s.publishAndSubscribeOnOverride(executorRule.getExecutor()));
 
         assertThat("Unexpected threads for original and offloaded source.",
                 capturedThreads[0], is(capturedThreads[1]));
-    }
-
-    private Thread[] setupAndSubscribe(BiFunction<Single<String>, Executor, Single<String>> offloadingFunction)
-            throws InterruptedException {
-        CountDownLatch allDone = new CountDownLatch(1);
-        Thread[] capturedThreads = new Thread[2];
-
-        Single<String> original = new SingleWithExecutor<>(originalSourceExecutorRule.getExecutor(), success("Hello"))
-                .doBeforeSuccess(__ -> capturedThreads[0] = Thread.currentThread());
-
-        Single<String> offloaded = offloadingFunction.apply(original, executorRule.getExecutor());
-
-        offloaded.doAfterFinally(allDone::countDown)
-                .doBeforeSuccess(__ -> capturedThreads[1] = Thread.currentThread())
-                .subscribe(val -> { });
-        allDone.await();
-
-        verifyCapturedThreads(capturedThreads);
-        return capturedThreads;
-    }
-
-    private Thread[] setupForCancelAndSubscribe(BiFunction<Single<String>, Executor, Single<String>> offloadingFunction)
-            throws InterruptedException {
-        CountDownLatch allDone = new CountDownLatch(1);
-        Thread[] capturedThreads = new Thread[2];
-
-        Single<String> original = new SingleWithExecutor<>(originalSourceExecutorRule.getExecutor(),
-                Single.<String>never())
-                .doAfterCancel(() -> {
-                    capturedThreads[0] = Thread.currentThread();
-                    allDone.countDown();
-                });
-
-        Single<String> offloaded = offloadingFunction.apply(original, executorRule.getExecutor());
-
-        offloaded.doBeforeCancel(() -> capturedThreads[1] = Thread.currentThread())
-                .subscribe(val -> { }).cancel();
-        allDone.await();
-
-        verifyCapturedThreads(capturedThreads);
-        return capturedThreads;
-    }
-
-    private void verifyCapturedThreads(final Thread[] capturedThreads) {
-        for (int i = 0; i < capturedThreads.length; i++) {
-            final Thread capturedThread = capturedThreads[i];
-            assertThat("Unexpected captured thread at index: " + i, capturedThread, notNullValue());
-        }
     }
 }

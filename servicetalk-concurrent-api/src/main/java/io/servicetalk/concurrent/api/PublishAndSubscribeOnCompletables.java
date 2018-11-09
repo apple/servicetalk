@@ -17,7 +17,6 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.internal.SignalOffloader;
 
-import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.MergedExecutors.mergeAndOffloadPublish;
 import static io.servicetalk.concurrent.api.MergedExecutors.mergeAndOffloadSubscribe;
 
@@ -32,33 +31,27 @@ final class PublishAndSubscribeOnCompletables {
     }
 
     static Completable publishAndSubscribeOn(Completable original, Executor executor) {
-        return original.getExecutor() == executor || executor == immediate() ?
-                original : new PublishAndSubscribeOn(executor, original);
+        return original.getExecutor() == executor ? original : new PublishAndSubscribeOn(executor, original);
     }
 
     static Completable publishAndSubscribeOnOverride(Completable original, Executor executor) {
-        return original.getExecutor() == executor || executor == immediate() ?
-                original : new PublishAndSubscribeOnOverride(original, executor);
+        return original.getExecutor() == executor ? original : new PublishAndSubscribeOnOverride(original, executor);
     }
 
     static Completable publishOn(Completable original, Executor executor) {
-        return original.getExecutor() == executor || executor == immediate() ?
-                original : new PublishOn(executor, original);
+        return original.getExecutor() == executor ? original : new PublishOn(executor, original);
     }
 
     static Completable publishOnOverride(Completable original, Executor executor) {
-        return original.getExecutor() == executor || executor == immediate() ?
-                original : new PublishOnOverride(original, executor);
+        return original.getExecutor() == executor ? original : new PublishOnOverride(original, executor);
     }
 
     static Completable subscribeOn(Completable original, Executor executor) {
-        return original.getExecutor() == executor || executor == immediate() ?
-                original : new SubscribeOn(executor, original);
+        return original.getExecutor() == executor ? original : new SubscribeOn(executor, original);
     }
 
     static Completable subscribeOnOverride(Completable original, Executor executor) {
-        return original.getExecutor() == executor || executor == immediate() ?
-                original : new SubscribeOnOverride(original, executor);
+        return original.getExecutor() == executor ? original : new SubscribeOnOverride(original, executor);
     }
 
     private static final class PublishAndSubscribeOn extends AbstractNoHandleSubscribeCompletable {
