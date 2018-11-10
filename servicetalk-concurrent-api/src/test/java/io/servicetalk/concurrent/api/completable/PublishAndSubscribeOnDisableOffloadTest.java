@@ -17,6 +17,8 @@ package io.servicetalk.concurrent.api.completable;
 
 import org.junit.Test;
 
+import java.util.concurrent.atomic.AtomicReferenceArray;
+
 import static io.servicetalk.concurrent.api.Executors.immediate;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -25,29 +27,31 @@ public class PublishAndSubscribeOnDisableOffloadTest extends AbstractPublishAndS
 
     @Test
     public void testPublishOnDisable() throws InterruptedException {
-        Thread[] capturedThreads = setupAndSubscribe(c -> c.publishOnOverride(immediate()));
+        AtomicReferenceArray<Thread> capturedThreads = setupAndSubscribe(c -> c.publishOnOverride(immediate()));
         assertThat("Unexpected threads for original and offloaded source.",
-                capturedThreads[ORIGINAL_SUBSCRIBER_THREAD], is(capturedThreads[OFFLOADED_SUBSCRIBER_THREAD]));
+                capturedThreads.get(ORIGINAL_SUBSCRIBER_THREAD), is(capturedThreads.get(OFFLOADED_SUBSCRIBER_THREAD)));
     }
 
     @Test
     public void testSubscribeOnDisable() throws InterruptedException {
-        Thread[] capturedThreads = setupAndSubscribe(c -> c.subscribeOnOverride(immediate()));
+        AtomicReferenceArray<Thread> capturedThreads = setupAndSubscribe(c -> c.subscribeOnOverride(immediate()));
         assertThat("Unexpected threads for original and offloaded source.",
-                capturedThreads[ORIGINAL_SUBSCRIBER_THREAD], is(capturedThreads[OFFLOADED_SUBSCRIBER_THREAD]));
+                capturedThreads.get(ORIGINAL_SUBSCRIBER_THREAD), is(capturedThreads.get(OFFLOADED_SUBSCRIBER_THREAD)));
     }
 
     @Test
     public void testPublishAndSubscribeOnDisable() throws InterruptedException {
-        Thread[] capturedThreads = setupAndSubscribe(c -> c.publishAndSubscribeOnOverride(immediate()));
+        AtomicReferenceArray<Thread> capturedThreads = setupAndSubscribe(
+                c -> c.publishAndSubscribeOnOverride(immediate()));
         assertThat("Unexpected threads for original and offloaded source.",
-                capturedThreads[ORIGINAL_SUBSCRIBER_THREAD], is(capturedThreads[OFFLOADED_SUBSCRIBER_THREAD]));
+                capturedThreads.get(ORIGINAL_SUBSCRIBER_THREAD), is(capturedThreads.get(OFFLOADED_SUBSCRIBER_THREAD)));
     }
 
     @Test
     public void testPublishAndSubscribeOnDisableWithCancel() throws InterruptedException {
-        Thread[] capturedThreads = setupForCancelAndSubscribe(c -> c.publishAndSubscribeOnOverride(immediate()));
+        AtomicReferenceArray<Thread> capturedThreads = setupForCancelAndSubscribe(
+                c -> c.publishAndSubscribeOnOverride(immediate()));
         assertThat("Unexpected threads for original and offloaded source.",
-                capturedThreads[ORIGINAL_SUBSCRIBER_THREAD], is(capturedThreads[OFFLOADED_SUBSCRIBER_THREAD]));
+                capturedThreads.get(ORIGINAL_SUBSCRIBER_THREAD), is(capturedThreads.get(OFFLOADED_SUBSCRIBER_THREAD)));
     }
 }

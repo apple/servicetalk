@@ -24,10 +24,12 @@ import org.junit.Rule;
 import org.junit.rules.Timeout;
 
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.function.Function;
 
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Completable.never;
+import static java.lang.Thread.currentThread;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.notNullValue;
 
@@ -40,18 +42,18 @@ public abstract class AbstractPublishAndSubscribeOnTest {
     @Rule
     public final ExecutorRule originalSourceExecutorRule = new ExecutorRule();
 
-    protected Thread[] setupAndSubscribe(Function<Completable, Completable> offloadingFunction)
+    protected AtomicReferenceArray<Thread> setupAndSubscribe(Function<Completable, Completable> offloadingFunction)
             throws InterruptedException {
         CountDownLatch allDone = new CountDownLatch(1);
-        Thread[] capturedThreads = new Thread[2];
+        AtomicReferenceArray<Thread> capturedThreads = new AtomicReferenceArray<>(2);
 
         Completable original = new CompletableWithExecutor(originalSourceExecutorRule.getExecutor(), completed())
-                .doAfterComplete(() -> capturedThreads[0] = Thread.currentThread());
+                .doAfterComplete(() -> capturedThreads.set(0, currentThread()));
 
         Completable offloaded = offloadingFunction.apply(original);
 
         offloaded.doAfterFinally(allDone::countDown)
-                .doBeforeComplete(() -> capturedThreads[1] = Thread.currentThread())
+                .doBeforeComplete(() -> capturedThreads.set(1, currentThread()))
                 .subscribe();
         allDone.await();
 
@@ -59,20 +61,20 @@ public abstract class AbstractPublishAndSubscribeOnTest {
         return capturedThreads;
     }
 
-    protected Thread[] setupForCancelAndSubscribe(Function<Completable, Completable> offloadingFunction)
-            throws InterruptedException {
+    protected AtomicReferenceArray<Thread> setupForCancelAndSubscribe(
+            Function<Completable, Completable> offloadingFunction) throws InterruptedException {
         CountDownLatch allDone = new CountDownLatch(1);
-        Thread[] capturedThreads = new Thread[2];
+        AtomicReferenceArray<Thread> capturedThreads = new AtomicReferenceArray<>(2);
 
         Completable original = new CompletableWithExecutor(originalSourceExecutorRule.getExecutor(), never())
                 .doAfterCancel(() -> {
-                    capturedThreads[0] = Thread.currentThread();
+                    capturedThreads.set(0, currentThread());
                     allDone.countDown();
                 });
 
         Completable offloaded = offloadingFunction.apply(original);
 
-        offloaded.doBeforeCancel(() -> capturedThreads[1] = Thread.currentThread())
+        offloaded.doBeforeCancel(() -> capturedThreads.set(1, currentThread()))
                 .subscribe().cancel();
         allDone.await();
 
@@ -80,9 +82,9 @@ public abstract class AbstractPublishAndSubscribeOnTest {
         return capturedThreads;
     }
 
-    private void verifyCapturedThreads(final Thread[] capturedThreads) {
-        for (int i = 0; i < capturedThreads.length; i++) {
-            final Thread capturedThread = capturedThreads[i];
+    public static void verifyCapturedThreads(final AtomicReferenceArray<Thread> capturedThreads) {
+        for (int i = 0; i < capturedThreads.length(); i++) {
+            final Thread capturedThread = capturedThreads.get(i);
             assertThat("Unexpected captured thread at index: " + i, capturedThread, notNullValue());
         }
     }

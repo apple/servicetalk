@@ -27,13 +27,13 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.function.BiFunction;
 
 import static io.servicetalk.concurrent.api.Publisher.just;
+import static io.servicetalk.concurrent.api.completable.AbstractPublishAndSubscribeOnTest.verifyCapturedThreads;
 import static java.lang.Long.MAX_VALUE;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.hasItemInArray;
-import static org.hamcrest.Matchers.notNullValue;
+import static java.lang.Thread.currentThread;
 
 public abstract class AbstractPublishAndSubscribeOnTest {
 
@@ -46,21 +46,21 @@ public abstract class AbstractPublishAndSubscribeOnTest {
     @Rule
     public final ExecutorRule originalSourceExecutorRule = new ExecutorRule();
 
-    protected Thread[] setupAndSubscribe(BiFunction<Publisher<String>, Executor, Publisher<String>> offloadingFunction,
-                                         Executor executor)
+    protected AtomicReferenceArray<Thread> setupAndSubscribe(
+            BiFunction<Publisher<String>, Executor, Publisher<String>> offloadingFunction, Executor executor)
             throws InterruptedException {
         CountDownLatch allDone = new CountDownLatch(1);
-        Thread[] capturedThreads = new Thread[4];
+        AtomicReferenceArray<Thread> capturedThreads = new AtomicReferenceArray<>(4);
 
         Publisher<String> original = new PublisherWithExecutor<>(originalSourceExecutorRule.getExecutor(),
                 just("Hello"))
-                .doBeforeNext(__ -> capturedThreads[ORIGINAL_SUBSCRIBER_THREAD] = Thread.currentThread())
-                .doBeforeRequest(__ -> capturedThreads[ORIGINAL_SUBSCRIPTION_THREAD] = Thread.currentThread());
+                .doBeforeNext(__ -> capturedThreads.set(ORIGINAL_SUBSCRIBER_THREAD, currentThread()))
+                .doBeforeRequest(__ -> capturedThreads.set(ORIGINAL_SUBSCRIPTION_THREAD, currentThread()));
 
         Publisher<String> offloaded = offloadingFunction.apply(original, executor);
 
-        offloaded.doBeforeNext(__ -> capturedThreads[OFFLOADED_SUBSCRIBER_THREAD] = Thread.currentThread())
-                .doBeforeRequest(__ -> capturedThreads[OFFLOADED_SUBSCRIPTION_THREAD] = Thread.currentThread())
+        offloaded.doBeforeNext(__ -> capturedThreads.set(OFFLOADED_SUBSCRIBER_THREAD, currentThread()))
+                .doBeforeRequest(__ -> capturedThreads.set(OFFLOADED_SUBSCRIPTION_THREAD, currentThread()))
                 .doAfterFinally(allDone::countDown)
                 .subscribe(new Subscriber<String>() {
                     @Override
@@ -87,7 +87,7 @@ public abstract class AbstractPublishAndSubscribeOnTest {
                 });
         allDone.await();
 
-        assertThat("All threads were not captured.", capturedThreads, hasItemInArray(notNullValue()));
+        verifyCapturedThreads(capturedThreads);
 
         return capturedThreads;
     }
