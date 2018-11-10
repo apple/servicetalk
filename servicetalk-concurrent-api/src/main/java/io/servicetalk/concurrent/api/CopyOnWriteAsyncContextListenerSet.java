@@ -33,15 +33,15 @@ import static java.util.Objects.requireNonNull;
  * practice. Common {@link Listener} types are for MDC, tracing, and maybe debugging.
  */
 final class CopyOnWriteAsyncContextListenerSet implements AsyncContextListenerSet {
-    private final AtomicReference<ProgressiveListenerSet> setRef =
-            new AtomicReference<>(EmptyProgressiveListenerSet.INSTANCE);
+    private final AtomicReference<CopyOnWriteSet> setRef =
+            new AtomicReference<>(EmptyCopyOnWriteSet.INSTANCE);
 
     @Override
     public boolean add(final Listener listener) {
         requireNonNull(listener);
         for (;;) {
-            ProgressiveListenerSet set = setRef.get();
-            ProgressiveListenerSet afterAddSet = set.add(listener);
+            CopyOnWriteSet set = setRef.get();
+            CopyOnWriteSet afterAddSet = set.add(listener);
             if (set == afterAddSet) {
                 return false;
             } else if (setRef.compareAndSet(set, afterAddSet)) {
@@ -53,8 +53,8 @@ final class CopyOnWriteAsyncContextListenerSet implements AsyncContextListenerSe
     @Override
     public boolean remove(final Listener listener) {
         for (;;) {
-            ProgressiveListenerSet set = setRef.get();
-            ProgressiveListenerSet afterRemoveSet = set.remove(listener);
+            CopyOnWriteSet set = setRef.get();
+            CopyOnWriteSet afterRemoveSet = set.remove(listener);
             if (set == afterRemoveSet) {
                 return false;
             } else if (setRef.compareAndSet(set, afterRemoveSet)) {
@@ -65,7 +65,7 @@ final class CopyOnWriteAsyncContextListenerSet implements AsyncContextListenerSe
 
     @Override
     public void clear() {
-        setRef.set(EmptyProgressiveListenerSet.INSTANCE);
+        setRef.set(EmptyCopyOnWriteSet.INSTANCE);
     }
 
     @Override
@@ -74,29 +74,29 @@ final class CopyOnWriteAsyncContextListenerSet implements AsyncContextListenerSe
         setRef.get().setContextMapAndNotifyListeners(newContextMap, contextLocal);
     }
 
-    private interface ProgressiveListenerSet {
-        ProgressiveListenerSet add(Listener listener);
+    private interface CopyOnWriteSet {
+        CopyOnWriteSet add(Listener listener);
 
-        ProgressiveListenerSet remove(Listener listener);
+        CopyOnWriteSet remove(Listener listener);
 
         void setContextMapAndNotifyListeners(AsyncContextMap newContextMap,
                                              ThreadLocal<AsyncContextMap> contextLocal);
     }
 
-    private static final class EmptyProgressiveListenerSet implements ProgressiveListenerSet {
-        static final EmptyProgressiveListenerSet INSTANCE = new EmptyProgressiveListenerSet();
+    private static final class EmptyCopyOnWriteSet implements CopyOnWriteSet {
+        static final EmptyCopyOnWriteSet INSTANCE = new EmptyCopyOnWriteSet();
 
-        private EmptyProgressiveListenerSet() {
+        private EmptyCopyOnWriteSet() {
             // singleton
         }
 
         @Override
-        public ProgressiveListenerSet add(final Listener listener) {
-            return new OneProgressiveListenerSet(listener);
+        public CopyOnWriteSet add(final Listener listener) {
+            return new OneCopyOnWriteSet(listener);
         }
 
         @Override
-        public ProgressiveListenerSet remove(final Listener listener) {
+        public CopyOnWriteSet remove(final Listener listener) {
             return this;
         }
 
@@ -107,21 +107,21 @@ final class CopyOnWriteAsyncContextListenerSet implements AsyncContextListenerSe
         }
     }
 
-    private static final class OneProgressiveListenerSet implements ProgressiveListenerSet {
+    private static final class OneCopyOnWriteSet implements CopyOnWriteSet {
         private final Listener one;
 
-        OneProgressiveListenerSet(Listener one) {
+        OneCopyOnWriteSet(Listener one) {
             this.one = one;
         }
 
         @Override
-        public ProgressiveListenerSet add(final Listener listener) {
-            return one.equals(listener) ? this : new TwoProgressiveListenerSet(one, listener);
+        public CopyOnWriteSet add(final Listener listener) {
+            return one.equals(listener) ? this : new TwoCopyOnWriteSet(one, listener);
         }
 
         @Override
-        public ProgressiveListenerSet remove(final Listener listener) {
-            return one.equals(listener) ? EmptyProgressiveListenerSet.INSTANCE : this;
+        public CopyOnWriteSet remove(final Listener listener) {
+            return one.equals(listener) ? EmptyCopyOnWriteSet.INSTANCE : this;
         }
 
         @Override
@@ -135,27 +135,27 @@ final class CopyOnWriteAsyncContextListenerSet implements AsyncContextListenerSe
         }
     }
 
-    private static final class TwoProgressiveListenerSet implements ProgressiveListenerSet {
+    private static final class TwoCopyOnWriteSet implements CopyOnWriteSet {
         private final Listener one;
         private final Listener two;
 
-        TwoProgressiveListenerSet(Listener one, Listener two) {
+        TwoCopyOnWriteSet(Listener one, Listener two) {
             this.one = one;
             this.two = two;
         }
 
         @Override
-        public ProgressiveListenerSet add(final Listener listener) {
+        public CopyOnWriteSet add(final Listener listener) {
             return one.equals(listener) || two.equals(listener) ?
-                    this : new ThreeProgressiveListenerSet(one, two, listener);
+                    this : new ThreeCopyOnWriteSet(one, two, listener);
         }
 
         @Override
-        public ProgressiveListenerSet remove(final Listener listener) {
+        public CopyOnWriteSet remove(final Listener listener) {
             if (one.equals(listener)) {
-                return new OneProgressiveListenerSet(two);
+                return new OneCopyOnWriteSet(two);
             } else if (two.equals(listener)) {
-                return new OneProgressiveListenerSet(one);
+                return new OneCopyOnWriteSet(one);
             }
             return this;
         }
@@ -172,31 +172,31 @@ final class CopyOnWriteAsyncContextListenerSet implements AsyncContextListenerSe
         }
     }
 
-    private static final class ThreeProgressiveListenerSet implements ProgressiveListenerSet {
+    private static final class ThreeCopyOnWriteSet implements CopyOnWriteSet {
         private final Listener one;
         private final Listener two;
         private final Listener three;
 
-        ThreeProgressiveListenerSet(Listener one, Listener two, Listener three) {
+        ThreeCopyOnWriteSet(Listener one, Listener two, Listener three) {
             this.one = one;
             this.two = two;
             this.three = three;
         }
 
         @Override
-        public ProgressiveListenerSet add(final Listener listener) {
+        public CopyOnWriteSet add(final Listener listener) {
             return one.equals(listener) || two.equals(listener) || three.equals(listener) ?
-                    this : new FourOrMoreProgressiveListenerSet(one, two, three, listener);
+                    this : new FourOrMoreCopyOnWriteSet(one, two, three, listener);
         }
 
         @Override
-        public ProgressiveListenerSet remove(final Listener listener) {
+        public CopyOnWriteSet remove(final Listener listener) {
             if (one.equals(listener)) {
-                return new TwoProgressiveListenerSet(two, three);
+                return new TwoCopyOnWriteSet(two, three);
             } else if (two.equals(listener)) {
-                return new TwoProgressiveListenerSet(one, three);
+                return new TwoCopyOnWriteSet(one, three);
             } else if (three.equals(listener)) {
-                return new TwoProgressiveListenerSet(one, two);
+                return new TwoCopyOnWriteSet(one, two);
             }
             return this;
         }
@@ -225,26 +225,26 @@ final class CopyOnWriteAsyncContextListenerSet implements AsyncContextListenerSe
      * This implementation is currently optimized for low volume modifications and high volume of
      * {@link #setContextMapAndNotifyListeners(AsyncContextMap, ThreadLocal)}.
      */
-    private static final class FourOrMoreProgressiveListenerSet implements ProgressiveListenerSet {
+    private static final class FourOrMoreCopyOnWriteSet implements CopyOnWriteSet {
         private final Listener[] listeners;
 
-        FourOrMoreProgressiveListenerSet(Listener... listeners) {
+        FourOrMoreCopyOnWriteSet(Listener... listeners) {
             this.listeners = listeners;
         }
 
         @Override
-        public ProgressiveListenerSet add(final Listener listener) {
+        public CopyOnWriteSet add(final Listener listener) {
             int i = indexOf(listener, listeners);
             if (i >= 0) {
                 return this;
             }
             Listener[] newArray = copyOf(listeners, listeners.length + 1);
             newArray[listeners.length] = listener;
-            return new FourOrMoreProgressiveListenerSet(newArray);
+            return new FourOrMoreCopyOnWriteSet(newArray);
         }
 
         @Override
-        public ProgressiveListenerSet remove(final Listener listener) {
+        public CopyOnWriteSet remove(final Listener listener) {
             int i = indexOf(listener, listeners);
             if (i < 0) {
                 return this;
@@ -252,13 +252,13 @@ final class CopyOnWriteAsyncContextListenerSet implements AsyncContextListenerSe
             if (listeners.length == 4) {
                 switch (i) {
                     case 0:
-                        return new ThreeProgressiveListenerSet(listeners[1], listeners[2], listeners[3]);
+                        return new ThreeCopyOnWriteSet(listeners[1], listeners[2], listeners[3]);
                     case 1:
-                        return new ThreeProgressiveListenerSet(listeners[0], listeners[2], listeners[3]);
+                        return new ThreeCopyOnWriteSet(listeners[0], listeners[2], listeners[3]);
                     case 2:
-                        return new ThreeProgressiveListenerSet(listeners[0], listeners[1], listeners[3]);
+                        return new ThreeCopyOnWriteSet(listeners[0], listeners[1], listeners[3]);
                     case 3:
-                        return new ThreeProgressiveListenerSet(listeners[0], listeners[1], listeners[2]);
+                        return new ThreeCopyOnWriteSet(listeners[0], listeners[1], listeners[2]);
                     default:
                         throw new RuntimeException("programming error. i: " + i);
                 }
@@ -266,7 +266,7 @@ final class CopyOnWriteAsyncContextListenerSet implements AsyncContextListenerSe
             Listener[] newArray = new Listener[listeners.length - 1];
             arraycopy(listeners, 0, newArray, 0, i);
             arraycopy(listeners, i + 1, newArray, i, listeners.length - i - 1);
-            return new FourOrMoreProgressiveListenerSet(newArray);
+            return new FourOrMoreCopyOnWriteSet(newArray);
         }
 
         @Override

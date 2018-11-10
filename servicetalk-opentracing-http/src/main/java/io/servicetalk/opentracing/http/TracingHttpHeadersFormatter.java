@@ -16,10 +16,10 @@
 package io.servicetalk.opentracing.http;
 
 import io.servicetalk.http.api.HttpHeaders;
-import io.servicetalk.opentracing.core.internal.DefaultInMemoryTraceState;
-import io.servicetalk.opentracing.core.internal.InMemoryTraceState;
-import io.servicetalk.opentracing.core.internal.InMemoryTraceStateFormat;
-import io.servicetalk.opentracing.core.internal.ZipkinHeaderNames;
+import io.servicetalk.opentracing.inmemory.DefaultInMemoryTraceState;
+import io.servicetalk.opentracing.inmemory.api.InMemoryTraceState;
+import io.servicetalk.opentracing.inmemory.api.InMemoryTraceStateFormat;
+import io.servicetalk.opentracing.internal.utils.ZipkinHeaderNames;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,7 +28,7 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.http.api.CharSequences.contentEqualsIgnoreCase;
 import static io.servicetalk.http.api.CharSequences.newAsciiString;
-import static io.servicetalk.opentracing.core.internal.HexUtil.validateHexBytes;
+import static io.servicetalk.opentracing.internal.utils.HexUtil.validateHexBytes;
 import static java.lang.String.valueOf;
 
 final class TracingHttpHeadersFormatter implements InMemoryTraceStateFormat<HttpHeaders> {

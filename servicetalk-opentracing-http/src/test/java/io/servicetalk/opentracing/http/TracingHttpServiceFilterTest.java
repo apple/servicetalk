@@ -23,8 +23,10 @@ import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.HttpSerializationProvider;
 import io.servicetalk.http.api.StreamingHttpRequestHandler;
 import io.servicetalk.http.netty.HttpServers;
-import io.servicetalk.opentracing.core.internal.DefaultInMemoryTracer;
-import io.servicetalk.opentracing.core.internal.InMemorySpan;
+import io.servicetalk.opentracing.asynccontext.AsyncContextInMemoryScopeManager;
+import io.servicetalk.opentracing.http.TestUtils.CountingInMemorySpanEventListener;
+import io.servicetalk.opentracing.inmemory.DefaultInMemoryTracer;
+import io.servicetalk.opentracing.inmemory.api.InMemorySpan;
 import io.servicetalk.transport.api.ServerContext;
 
 import io.opentracing.Tracer;
@@ -36,25 +38,34 @@ import org.mockito.Mock;
 
 import java.net.InetSocketAddress;
 
+import static io.opentracing.tag.Tags.ERROR;
+import static io.opentracing.tag.Tags.HTTP_METHOD;
+import static io.opentracing.tag.Tags.HTTP_STATUS;
+import static io.opentracing.tag.Tags.HTTP_URL;
+import static io.opentracing.tag.Tags.SPAN_KIND;
+import static io.opentracing.tag.Tags.SPAN_KIND_SERVER;
 import static io.servicetalk.concurrent.api.Publisher.just;
 import static io.servicetalk.concurrent.api.Single.success;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static io.servicetalk.http.api.HttpRequestMethods.GET;
 import static io.servicetalk.http.api.HttpResponseStatuses.INTERNAL_SERVER_ERROR;
+import static io.servicetalk.http.api.HttpResponseStatuses.OK;
 import static io.servicetalk.http.api.HttpSerializationProviders.jsonSerializer;
 import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
 import static io.servicetalk.http.netty.HttpClients.forSingleAddress;
-import static io.servicetalk.opentracing.core.AsyncContextInMemoryScopeManager.SCOPE_MANAGER;
-import static io.servicetalk.opentracing.core.internal.ZipkinHeaderNames.PARENT_SPAN_ID;
-import static io.servicetalk.opentracing.core.internal.ZipkinHeaderNames.SAMPLED;
-import static io.servicetalk.opentracing.core.internal.ZipkinHeaderNames.SPAN_ID;
-import static io.servicetalk.opentracing.core.internal.ZipkinHeaderNames.TRACE_ID;
 import static io.servicetalk.opentracing.http.TestUtils.isHexId;
 import static io.servicetalk.opentracing.http.TestUtils.randomHexId;
+import static io.servicetalk.opentracing.internal.utils.ZipkinHeaderNames.PARENT_SPAN_ID;
+import static io.servicetalk.opentracing.internal.utils.ZipkinHeaderNames.SAMPLED;
+import static io.servicetalk.opentracing.internal.utils.ZipkinHeaderNames.SPAN_ID;
+import static io.servicetalk.opentracing.internal.utils.ZipkinHeaderNames.TRACE_ID;
 import static io.servicetalk.transport.api.HostAndPort.of;
 import static org.hamcrest.Matchers.equalToIgnoringCase;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -74,11 +85,12 @@ public class TracingHttpServiceFilterTest {
         initMocks(this);
     }
 
-    private ServerContext buildServer() throws Exception {
-        DefaultInMemoryTracer tracer = new DefaultInMemoryTracer.Builder(SCOPE_MANAGER).build();
+    private ServerContext buildServer(CountingInMemorySpanEventListener spanListener) throws Exception {
+        DefaultInMemoryTracer tracer = new DefaultInMemoryTracer.Builder(new AsyncContextInMemoryScopeManager())
+                .addListener(spanListener).build();
         return HttpServers.forPort(0)
-                .listenStreamingAndAwait(new TracingHttpServiceFilter(tracer, "testServer",
-                        ((StreamingHttpRequestHandler) (ctx, request, responseFactory) -> {
+                .appendServiceFilter(service -> new TracingHttpServiceFilter(tracer, "testServer", service))
+                .listenStreamingAndAwait(((StreamingHttpRequestHandler) (ctx, request, responseFactory) -> {
                     InMemorySpan span = tracer.activeSpan();
                     if (span == null) {
                         return success(responseFactory.internalServerError().payloadBody(just("span not found"),
@@ -88,14 +100,16 @@ public class TracingHttpServiceFilterTest {
                                     span.traceIdHex(),
                                     span.spanIdHex(),
                                     span.parentSpanIdHex(),
-                                    span.isSampled())),
+                                    span.isSampled(),
+                                    span.tags().containsKey(ERROR.getKey()))),
                             httpSerializer.serializerFor(TestSpanState.class)));
-                }).asStreamingService()));
+                }).asStreamingService());
     }
 
     @Test
     public void testRequestWithTraceKey() throws Exception {
-        try (ServerContext context = buildServer()) {
+        CountingInMemorySpanEventListener spanListener = new CountingInMemorySpanEventListener();
+        try (ServerContext context = buildServer(spanListener)) {
             try (HttpClient client = forSingleAddress(of((InetSocketAddress) context.listenAddress())).build()) {
                 String traceId = randomHexId();
                 String spanId = randomHexId();
@@ -112,15 +126,22 @@ public class TracingHttpServiceFilterTest {
                 assertThat(serverSpanState.spanId, not(equalToIgnoringCase(spanId)));
                 assertThat(serverSpanState.parentSpanId, equalToIgnoringCase(spanId));
                 assertFalse(serverSpanState.sampled);
+                assertFalse(serverSpanState.error);
+                assertEquals(0, spanListener.spanFinishedCount()); // not sampled, so no finish
+
+                InMemorySpan lastFinishedSpan = spanListener.lastFinishedSpan();
+                assertNull(lastFinishedSpan);
             }
         }
     }
 
     @Test
     public void testRequestWithoutTraceKey() throws Exception {
-        try (ServerContext context = buildServer()) {
+        final String requestUrl = "/foo";
+        CountingInMemorySpanEventListener spanListener = new CountingInMemorySpanEventListener();
+        try (ServerContext context = buildServer(spanListener)) {
             try (HttpClient client = forSingleAddress(of((InetSocketAddress) context.listenAddress())).build()) {
-                HttpRequest request = client.get("/");
+                HttpRequest request = client.get(requestUrl);
                 HttpResponse response = client.request(request).toFuture().get();
                 TestSpanState serverSpanState = response.payloadBody(httpSerializer.deserializerFor(
                         TestSpanState.class));
@@ -128,6 +149,16 @@ public class TracingHttpServiceFilterTest {
                 assertThat(serverSpanState.spanId, isHexId());
                 assertNull(serverSpanState.parentSpanId);
                 assertTrue(serverSpanState.sampled);
+                assertFalse(serverSpanState.error);
+                assertEquals(1, spanListener.spanFinishedCount()); // sampled, so only finish once!
+
+                InMemorySpan lastFinishedSpan = spanListener.lastFinishedSpan();
+                assertNotNull(lastFinishedSpan);
+                assertEquals(SPAN_KIND_SERVER, lastFinishedSpan.tags().get(SPAN_KIND.getKey()));
+                assertEquals(GET.methodName(), lastFinishedSpan.tags().get(HTTP_METHOD.getKey()));
+                assertEquals(requestUrl, lastFinishedSpan.tags().get(HTTP_URL.getKey()));
+                assertEquals(OK.code(), lastFinishedSpan.tags().get(HTTP_STATUS.getKey()));
+                assertFalse(lastFinishedSpan.tags().containsKey(ERROR.getKey()));
             }
         }
     }
@@ -136,9 +167,9 @@ public class TracingHttpServiceFilterTest {
     public void tracerThrowsReturnsErrorResponse() throws Exception {
         when(mockTracer.buildSpan(any())).thenThrow(DELIBERATE_EXCEPTION);
         try (ServerContext context = HttpServers.forPort(0)
-                .listenStreamingAndAwait(new TracingHttpServiceFilter(mockTracer, "testServer",
-                        ((StreamingHttpRequestHandler) (ctx, request, responseFactory) ->
-                                success(responseFactory.forbidden())).asStreamingService()))) {
+                .appendServiceFilter(service -> new TracingHttpServiceFilter(mockTracer, "testServer", service))
+                .listenStreamingAndAwait(((StreamingHttpRequestHandler) (ctx, request, responseFactory) ->
+                                success(responseFactory.forbidden())).asStreamingService())) {
             try (HttpClient client = forSingleAddress(of((InetSocketAddress) context.listenAddress())).build()) {
                 HttpRequest request = client.get("/");
                 HttpResponse response = client.request(request).toFuture().get();

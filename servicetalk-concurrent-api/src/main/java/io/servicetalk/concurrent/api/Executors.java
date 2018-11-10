@@ -31,7 +31,7 @@ import static io.servicetalk.concurrent.api.ImmediateExecutor.IMMEDIATE_EXECUTOR
  * Utility methods to create various {@link Executor}s.
  */
 public final class Executors {
-    static final ExecutorPluginSet EXECUTOR_PLUGINS = new ExecutorPluginSet();
+    static final CopyOnWriteExecutorPluginSet EXECUTOR_PLUGINS = new CopyOnWriteExecutorPluginSet();
 
     static {
         AsyncContext.autoEnable();

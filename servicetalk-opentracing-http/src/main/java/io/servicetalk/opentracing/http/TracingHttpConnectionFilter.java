@@ -22,18 +22,20 @@ import io.servicetalk.http.api.StreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpConnectionAdapter;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
-import io.servicetalk.opentracing.core.internal.InMemoryTraceStateFormat;
+import io.servicetalk.opentracing.inmemory.api.InMemoryTraceStateFormat;
 
 import io.opentracing.Scope;
 import io.opentracing.Tracer;
 import io.opentracing.Tracer.SpanBuilder;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import static io.opentracing.tag.Tags.HTTP_METHOD;
 import static io.opentracing.tag.Tags.HTTP_URL;
 import static io.opentracing.tag.Tags.SPAN_KIND;
 import static io.opentracing.tag.Tags.SPAN_KIND_CLIENT;
-import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.opentracing.http.TracingHttpHeadersFormatter.traceStateFormatter;
+import static io.servicetalk.opentracing.http.TracingUtils.handlePrematureException;
 import static io.servicetalk.opentracing.http.TracingUtils.tagErrorAndClose;
 import static io.servicetalk.opentracing.http.TracingUtils.tracingMapper;
 import static java.util.Objects.requireNonNull;
@@ -80,7 +82,11 @@ public class TracingHttpConnectionFilter extends StreamingHttpConnectionAdapter 
         return new Single<StreamingHttpResponse>() {
             @Override
             protected void handleSubscribe(final Subscriber<? super StreamingHttpResponse> subscriber) {
-                final Scope childScope;
+                Scope tempChildScope = null;
+                // We may interact with the Scope/Span from multiple threads (Subscriber & Subscription), and the
+                // Scope/Span class does not provide thread safe behavior. So we ensure that we only close (and add
+                // trailing meta data) from a single thread at any given time via this atomic variable.
+                AtomicBoolean tempScopeClosed = null;
                 final Single<StreamingHttpResponse> responseSingle;
                 try {
                     SpanBuilder spanBuilder = tracer.buildSpan(componentName)
@@ -92,17 +98,19 @@ public class TracingHttpConnectionFilter extends StreamingHttpConnectionAdapter 
                         spanBuilder = spanBuilder.asChildOf(currentScope.span());
                     }
 
-                    childScope = spanBuilder.startActive(true);
-                    tracer.inject(childScope.span().context(), formatter, request.headers());
+                    tempChildScope = spanBuilder.startActive(true);
+                    tempScopeClosed = new AtomicBoolean();
+                    tracer.inject(tempChildScope.span().context(), formatter, request.headers());
                     responseSingle = requireNonNull(delegate().request(request));
                 } catch (Throwable cause) {
-                    subscriber.onSubscribe(IGNORE_CANCEL);
-                    subscriber.onError(cause);
+                    handlePrematureException(tempChildScope, tempScopeClosed, subscriber, cause);
                     return;
                 }
-                responseSingle.map(tracingMapper(childScope, TracingHttpConnectionFilter.this::isError))
-                 .doOnError(cause -> tagErrorAndClose(childScope))
-                 .doOnCancel(() -> tagErrorAndClose(childScope))
+                final Scope childScope = tempChildScope;
+                final AtomicBoolean scopeClosed = tempScopeClosed;
+                responseSingle.map(tracingMapper(childScope, scopeClosed, TracingHttpConnectionFilter.this::isError))
+                 .doOnError(cause -> tagErrorAndClose(childScope, scopeClosed))
+                 .doOnCancel(() -> tagErrorAndClose(childScope, scopeClosed))
                  .subscribe(subscriber);
             }
         };

@@ -29,16 +29,19 @@ public final class TestSpanState {
     @Nullable
     public final String parentSpanId;
     public final boolean sampled;
+    public final boolean error;
 
     @JsonCreator
     public TestSpanState(@JsonProperty("traceId") String traceId,
                          @JsonProperty("spanId") String spanId,
                          @JsonProperty("parentSpanId") @Nullable String parentSpanId,
-                         @JsonProperty("sampled") boolean sampled) {
+                         @JsonProperty("sampled") boolean sampled,
+                         @JsonProperty("error") boolean error) {
         this.traceId = traceId;
         this.spanId = spanId;
         this.parentSpanId = parentSpanId;
         this.sampled = sampled;
+        this.error = error;
     }
 
     @Override
@@ -48,6 +51,7 @@ public final class TestSpanState {
             ", spanId='" + spanId + '\'' +
             ", parentSpanId='" + parentSpanId + '\'' +
             ", sampled=" + sampled +
+            ", error=" + error +
             '}';
     }
 }

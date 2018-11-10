@@ -45,6 +45,7 @@ dependencyManagement {
     dependency "org.jctools:jctools-core:$jcToolsVersion"
     dependency "org.reactivestreams:reactive-streams:$reactiveStreamsVersion"
     dependency "org.slf4j:slf4j-api:$slf4jVersion"
+    dependency "io.opentracing:opentracing-api:$openTracingVersion"
 
     // Testing
     dependency "junit:junit:$junitVersion"

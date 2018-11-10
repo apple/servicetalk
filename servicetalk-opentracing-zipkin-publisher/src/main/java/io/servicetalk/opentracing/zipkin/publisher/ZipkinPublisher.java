@@ -15,9 +15,9 @@
  */
 package io.servicetalk.opentracing.zipkin.publisher;
 
-import io.servicetalk.opentracing.core.internal.InMemorySpan;
-import io.servicetalk.opentracing.core.internal.InMemorySpanEventListener;
-import io.servicetalk.opentracing.core.internal.Log;
+import io.servicetalk.opentracing.inmemory.api.InMemorySpan;
+import io.servicetalk.opentracing.inmemory.api.InMemorySpanEventListener;
+import io.servicetalk.opentracing.inmemory.api.InMemorySpanLog;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.Unpooled;
@@ -41,7 +41,6 @@ import java.io.Closeable;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
-import java.util.List;
 import java.util.Map;
 import javax.annotation.Nullable;
 
@@ -266,7 +265,7 @@ public final class ZipkinPublisher implements InMemorySpanEventListener, Closeab
             .localEndpoint(endpoint)
             .duration(durationMicros);
         span.tags().forEach((k, v) -> builder.putTag(k, v.toString()));
-        List<Log> logs = span.logs();
+        Iterable<? extends InMemorySpanLog> logs = span.logs();
         if (logs != null) {
             logs.forEach(log -> builder.addAnnotation(log.epochMicros(), log.eventName()));
         }
