@@ -196,12 +196,14 @@ public class PublisherFlatMapSingleTest {
 
     @Test
     public void testSourceEmitsErrorPostOnNextsSingleNotCompleted() {
-        TestSingle<Integer> single = new TestSingle<>();
+        TestSingle<Integer> single = new TestSingle<>(true);
         subscriber.subscribe(source.flatMapSingle(integer -> single, 2))
                 .request(1);
         source.sendItems(1).fail();
         subscriber.verifyFailure(DELIBERATE_EXCEPTION);
         single.verifyCancelled();
+        single.onError(new DeliberateException());
+        subscriber.verifyNoEmissions();
     }
 
     @Test
@@ -217,6 +219,7 @@ public class PublisherFlatMapSingleTest {
 
     @Test
     public void testSingleCompletePostCancel() {
+        source = new TestPublisher<Integer>(true).sendOnSubscribe();
         TestSingle<Integer> single = new TestSingle<>(true);
         subscriber.subscribe(source.flatMapSingle(integer -> single, 2))
                 .request(1);
@@ -225,7 +228,9 @@ public class PublisherFlatMapSingleTest {
         single.verifyCancelled();
         subscriber.verifyNoEmissions();
         single.onSuccess(4);
-        subscriber.verifyNoEmissions();
+        subscriber.verifyItems(4);
+        source.onComplete();
+        subscriber.verifySuccess();
     }
 
     @Test
@@ -238,7 +243,7 @@ public class PublisherFlatMapSingleTest {
         single.verifyCancelled();
         subscriber.verifyNoEmissions();
         single.onError(DELIBERATE_EXCEPTION);
-        subscriber.verifyNoEmissions();
+        subscriber.verifyFailure(DELIBERATE_EXCEPTION);
     }
 
     @Test
