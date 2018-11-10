@@ -94,6 +94,7 @@ final class SinglePluginSet implements SinglePlugin {
         @Override
         public void handleSubscribe(Subscriber<?> subscriber, SignalOffloader offloader,
                                     BiConsumer<? super Subscriber, SignalOffloader> handleSubscribe) {
+            handleSubscribe.accept(subscriber, offloader);
         }
 
         @Override
