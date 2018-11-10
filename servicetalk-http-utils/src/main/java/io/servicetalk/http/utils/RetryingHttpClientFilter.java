@@ -87,7 +87,7 @@ public final class RetryingHttpClientFilter extends StreamingHttpClientAdapter {
 
         private final StreamingHttpClient delegate;
         private Executor executor;
-        private int retryCount = 2;
+        private int retryCount = 1;
         private boolean jitter;
         private boolean exponential;
         @Nullable
