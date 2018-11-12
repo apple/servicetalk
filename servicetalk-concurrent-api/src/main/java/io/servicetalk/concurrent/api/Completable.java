@@ -1094,16 +1094,20 @@ public abstract class Completable implements io.servicetalk.concurrent.Completab
     @Override
     public final void subscribe(Subscriber subscriber) {
         requireNonNull(subscriber);
+        final SignalOffloader signalOffloader;
+        final Subscriber offloadedSubscriber;
         try {
             // This is a user-driven subscribe i.e. there is no SignalOffloader override, so create a new SignalOffloader
             // to use.
-            final SignalOffloader signalOffloader = newOffloaderFor(executor);
+            signalOffloader = newOffloaderFor(executor);
             // Since this is a user-driven subscribe (end of the execution chain), offload Cancellable
-            subscribe(signalOffloader.offloadCancellable(subscriber), signalOffloader);
+            offloadedSubscriber = signalOffloader.offloadCancellable(subscriber);
         } catch (Throwable t) {
             subscriber.onSubscribe(IGNORE_CANCEL);
             subscriber.onError(t);
+            return;
         }
+        subscribe(offloadedSubscriber, signalOffloader);
     }
 
     /**
@@ -1227,7 +1231,7 @@ public abstract class Completable implements io.servicetalk.concurrent.Completab
      * @param signalOffloader {@link SignalOffloader} to use for this {@link Subscriber}.
      */
     final void subscribe(Subscriber subscriber, SignalOffloader signalOffloader) {
-        getCompletablePlugin().handleSubscribe(requireNonNull(subscriber), signalOffloader, this::handleSubscribe);
+        getCompletablePlugin().handleSubscribe(requireNonNull(subscriber), signalOffloader, this::handleSubscribe0);
     }
 
     /**
@@ -1245,6 +1249,15 @@ public abstract class Completable implements io.servicetalk.concurrent.Completab
     void handleSubscribe(Subscriber subscriber, SignalOffloader signalOffloader) {
         Subscriber safeSubscriber = signalOffloader.offloadSubscriber(subscriber);
         signalOffloader.offloadSubscribe(safeSubscriber, this::handleSubscribe);
+    }
+
+    private void handleSubscribe0(Subscriber subscriber, SignalOffloader signalOffloader) {
+        try {
+            handleSubscribe(subscriber, signalOffloader);
+        } catch (Throwable t) {
+            subscriber.onSubscribe(IGNORE_CANCEL);
+            subscriber.onError(t);
+        }
     }
 
     /**

@@ -15,6 +15,8 @@
  */
 package io.servicetalk.concurrent.api;
 
+import io.servicetalk.concurrent.internal.SignalOffloader;
+
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -24,9 +26,12 @@ import java.util.concurrent.ExecutionException;
 
 import static io.servicetalk.concurrent.api.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.concurrent.api.Executors.from;
+import static io.servicetalk.concurrent.api.Executors.immediate;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.junit.rules.ExpectedException.none;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 public class SubscribeThrowsTest {
 
@@ -44,6 +49,21 @@ public class SubscribeThrowsTest {
         expectedException.expect(instanceOf(ExecutionException.class));
         expectedException.expectCause(is(DELIBERATE_EXCEPTION));
         p.toFuture().get();
+    }
+
+    @Test
+    public void publisherSubscriberWithOffloaderThrows() {
+        SignalOffloader offloader = ((AbstractOffloaderAwareExecutor) immediate()).newSignalOffloader();
+        @SuppressWarnings("unchecked")
+        Subscriber<String> subscriber = (Subscriber<String>) mock(Subscriber.class);
+        Publisher<String> p = new Publisher<String>() {
+            @Override
+            protected void handleSubscribe(final Subscriber<? super String> subscriber) {
+                throw DELIBERATE_EXCEPTION;
+            }
+        };
+        p.subscribe(subscriber, offloader);
+        verify(subscriber).onError(DELIBERATE_EXCEPTION);
     }
 
     @Test
@@ -71,6 +91,21 @@ public class SubscribeThrowsTest {
     }
 
     @Test
+    public void singleSubscriberWithOffloaderThrows() {
+        SignalOffloader offloader = ((AbstractOffloaderAwareExecutor) immediate()).newSignalOffloader();
+        @SuppressWarnings("unchecked")
+        Single.Subscriber<String> subscriber = (Single.Subscriber<String>) mock(Single.Subscriber.class);
+        Single<String> s = new Single<String>() {
+            @Override
+            protected void handleSubscribe(final Subscriber subscriber) {
+                throw DELIBERATE_EXCEPTION;
+            }
+        };
+        s.subscribe(subscriber, offloader);
+        verify(subscriber).onError(DELIBERATE_EXCEPTION);
+    }
+
+    @Test
     public void singleExecutorThrows() throws Exception {
         Single<String> s = Single.success("Hello")
                 .publishAndSubscribeOn(from(task -> {
@@ -92,6 +127,21 @@ public class SubscribeThrowsTest {
         expectedException.expect(instanceOf(ExecutionException.class));
         expectedException.expectCause(is(DELIBERATE_EXCEPTION));
         c.toFuture().get();
+    }
+
+    @Test
+    public void completableSubscriberWithOffloaderThrows() {
+        SignalOffloader offloader = ((AbstractOffloaderAwareExecutor) immediate()).newSignalOffloader();
+        @SuppressWarnings("unchecked")
+        Completable.Subscriber subscriber = mock(Completable.Subscriber.class);
+        Completable c = new Completable() {
+            @Override
+            protected void handleSubscribe(final Subscriber subscriber) {
+                throw DELIBERATE_EXCEPTION;
+            }
+        };
+        c.subscribe(subscriber, offloader);
+        verify(subscriber).onError(DELIBERATE_EXCEPTION);
     }
 
     @Test

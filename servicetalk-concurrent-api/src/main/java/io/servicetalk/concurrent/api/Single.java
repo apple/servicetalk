@@ -1003,16 +1003,20 @@ public abstract class Single<T> implements io.servicetalk.concurrent.Single<T> {
     @Override
     public final void subscribe(Subscriber<? super T> subscriber) {
         requireNonNull(subscriber);
+        final SignalOffloader signalOffloader;
+        final Subscriber<? super T> offloadedSubscriber;
         try {
             // This is a user-driven subscribe i.e. there is no SignalOffloader override, so create a new SignalOffloader
             // to use.
-            final SignalOffloader signalOffloader = newOffloaderFor(executor);
+            signalOffloader = newOffloaderFor(executor);
             // Since this is a user-driven subscribe (end of the execution chain), offload Cancellable
-            subscribe(signalOffloader.offloadCancellable(subscriber), signalOffloader);
+            offloadedSubscriber = signalOffloader.offloadCancellable(subscriber);
         } catch (Throwable t) {
             subscriber.onSubscribe(IGNORE_CANCEL);
             subscriber.onError(t);
+            return;
         }
+        subscribe(offloadedSubscriber, signalOffloader);
     }
 
     /**
@@ -1155,8 +1159,7 @@ public abstract class Single<T> implements io.servicetalk.concurrent.Single<T> {
      * @param signalOffloader {@link SignalOffloader} to use for this {@link Subscriber}.
      */
     final void subscribe(Subscriber<? super T> subscriber, SignalOffloader signalOffloader) {
-        getSinglePlugin().handleSubscribe(requireNonNull(subscriber),
-                signalOffloader, this::handleSubscribe);
+        getSinglePlugin().handleSubscribe(requireNonNull(subscriber), signalOffloader, this::handleSubscribe0);
     }
 
     /**
@@ -1175,6 +1178,15 @@ public abstract class Single<T> implements io.servicetalk.concurrent.Single<T> {
     void handleSubscribe(Subscriber<? super T> subscriber, SignalOffloader signalOffloader) {
         Subscriber<? super T> offloaded = signalOffloader.offloadSubscriber(subscriber);
         signalOffloader.offloadSubscribe(offloaded, this::handleSubscribe);
+    }
+
+    private void handleSubscribe0(Subscriber<? super T> subscriber, SignalOffloader signalOffloader) {
+        try {
+            handleSubscribe(subscriber, signalOffloader);
+        } catch (Throwable t) {
+            subscriber.onSubscribe(IGNORE_CANCEL);
+            subscriber.onError(t);
+        }
     }
 
     //
