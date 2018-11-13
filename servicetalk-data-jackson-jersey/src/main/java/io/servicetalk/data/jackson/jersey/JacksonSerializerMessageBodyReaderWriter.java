@@ -189,7 +189,8 @@ final class JacksonSerializerMessageBodyReaderWriter implements MessageBodyReade
         return contentLength == -1 ? allocator.newBuffer() : allocator.newBuffer(contentLength);
     }
 
-    private static <T> T deserializeObject(final Publisher<Buffer> bufferPublisher, final Serializer ser,
+    // visible for testing
+    static <T> T deserializeObject(final Publisher<Buffer> bufferPublisher, final Serializer ser,
                                            final Class<T> type, final int contentLength,
                                            final BufferAllocator allocator) {
         try {
@@ -197,6 +198,11 @@ final class JacksonSerializerMessageBodyReaderWriter implements MessageBodyReade
         } catch (InterruptedException e) {
             throw new Error(e);
         } catch (ExecutionException e) {
+            Throwable cause = e.getCause();
+            if (cause instanceof BadRequestException) {
+                throw (BadRequestException) cause;
+            }
+
             throw new BadRequestException("Invalid JSON data", e);
         }
     }
