@@ -39,16 +39,17 @@ public class AsyncContextDisableTest {
             assertEquals(expectedValue, executor.submit(() -> AsyncContext.get(K1)).toFuture().get());
             AtomicReference<String> actualValue = new AtomicReference<>();
             int[] intArray = new int[] {1, 2};
-            Publisher.from(intArray).doOnComplete(() -> actualValue.set(AsyncContext.get(K1)))
+            Publisher.from(intArray).publishOn(executor).doBeforeComplete(() -> actualValue.set(AsyncContext.get(K1)))
                     .toFuture().get();
             assertEquals(expectedValue, actualValue.get());
             actualValue.set(null);
-            Single.success(1).doOnSuccess(i -> actualValue.set(AsyncContext.get(K1)))
+            Single.success(1).publishOn(executor).doBeforeSuccess(i -> actualValue.set(AsyncContext.get(K1)))
                     .toFuture().get();
             assertEquals(expectedValue, actualValue.get());
             actualValue.set(null);
-            Completable.completed().doOnComplete(() -> actualValue.set(AsyncContext.get(K1)))
+            Completable.completed().publishOn(executor).doBeforeComplete(() -> actualValue.set(AsyncContext.get(K1)))
                     .toFuture().get();
+            assertEquals(expectedValue, actualValue.get());
             actualValue.set(null);
 
             AsyncContext.disable();
@@ -66,6 +67,37 @@ public class AsyncContextDisableTest {
                 executor2.closeAsync().toFuture().get();
             }
             executor.closeAsync().toFuture().get();
+        }
+    }
+
+    @Test
+    public void testAutoEnableDoesNotOverrideDisable() throws ExecutionException, InterruptedException {
+        AsyncContext.disable();
+        try {
+            Executor executor = Executors.newCachedThreadExecutor();
+            try {
+                AsyncContext.put(K1, "foo");
+                assertNull(executor.submit(() -> AsyncContext.get(K1)).toFuture().get());
+
+                AtomicReference<String> actualValue = new AtomicReference<>();
+                int[] intArray = new int[] {1, 2};
+                Publisher.from(intArray).publishOn(executor).doBeforeComplete(() -> actualValue.set(AsyncContext.get(K1)))
+                        .toFuture().get();
+                assertNull(actualValue.get());
+                actualValue.set(null);
+                Single.success(1).publishOn(executor).doBeforeSuccess(i -> actualValue.set(AsyncContext.get(K1)))
+                        .toFuture().get();
+                assertNull(actualValue.get());
+                actualValue.set(null);
+                Completable.completed().publishOn(executor).doBeforeComplete(() -> actualValue.set(AsyncContext.get(K1)))
+                        .toFuture().get();
+                assertNull(actualValue.get());
+                actualValue.set(null);
+            } finally {
+                executor.closeAsync().toFuture().get();
+            }
+        } finally {
+            AsyncContext.enable();
         }
     }
 }
