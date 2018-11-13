@@ -29,7 +29,7 @@ import org.junit.rules.ExpectedException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.LinkedBlockingQueue;
 
-import static io.servicetalk.client.api.ActiveConnectionsLimitingFactory.withMaxConnections;
+import static io.servicetalk.client.api.LimitingActiveConnectionFactoryFilter.withMaxConnections;
 import static io.servicetalk.concurrent.api.Single.never;
 import static io.servicetalk.concurrent.api.Single.success;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -39,8 +39,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class ActiveConnectionsLimitingFactoryTest {
-
+public class LimitingActiveConnectionFactoryFilterTest {
     @Rule
     public final ServiceTalkTestTimeout timeout = new ServiceTalkTestTimeout();
     @Rule
