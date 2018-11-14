@@ -24,6 +24,7 @@ import static io.servicetalk.concurrent.internal.PlatformDependent.throwExceptio
  * A set of utilities for interacting with {@link Future}.
  */
 public final class FutureUtils {
+    private static final Object DUMMY = new Object();
 
     private FutureUtils() {
         // No instances.
@@ -35,12 +36,30 @@ public final class FutureUtils {
      * @param future {@link Future} to await termination.
      */
     public static void awaitTermination(Future<Void> future) {
+        awaitResult(future);
+    }
+
+    /**
+     * Await the completion of the passed {@link Future} and return its result.
+     *
+     * @param future {@link Future} to await completion.
+     * @param <T> the result type.
+     * @return the result of the {@link Future}.
+     */
+    public static <T> T awaitResult(Future<T> future) {
         try {
-            future.get();
+            return future.get();
         } catch (InterruptedException e) {
             throwException(e);
         } catch (ExecutionException e) {
             throwException(e.getCause());
         }
+
+        return uncheckedCast(); // Used to fool the compiler, but actually should never be invoked at runtime.
+    }
+
+    @SuppressWarnings("unchecked")
+    private static <T> T uncheckedCast() {
+        return (T) DUMMY;
     }
 }

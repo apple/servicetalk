@@ -36,7 +36,6 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.NoSuchElementException;
-import java.util.concurrent.ExecutionException;
 import javax.annotation.Priority;
 import javax.inject.Provider;
 import javax.ws.rs.BadRequestException;
@@ -53,6 +52,7 @@ import javax.ws.rs.ext.MessageBodyReader;
 import javax.ws.rs.ext.MessageBodyWriter;
 import javax.ws.rs.ext.Providers;
 
+import static io.servicetalk.concurrent.internal.FutureUtils.awaitResult;
 import static io.servicetalk.http.router.jersey.BufferPublisherInputStream.handleEntityStream;
 import static io.servicetalk.http.router.jersey.internal.RequestProperties.setResponseBufferPublisher;
 import static javax.ws.rs.Priorities.ENTITY_CODER;
@@ -191,20 +191,9 @@ final class JacksonSerializerMessageBodyReaderWriter implements MessageBodyReade
 
     // visible for testing
     static <T> T deserializeObject(final Publisher<Buffer> bufferPublisher, final Serializer ser,
-                                           final Class<T> type, final int contentLength,
-                                           final BufferAllocator allocator) {
-        try {
-            return deserialize(bufferPublisher, ser, type, contentLength, allocator).toFuture().get();
-        } catch (InterruptedException e) {
-            throw new Error(e);
-        } catch (ExecutionException e) {
-            Throwable cause = e.getCause();
-            if (cause instanceof BadRequestException) {
-                throw (BadRequestException) cause;
-            }
-
-            throw new BadRequestException("Invalid JSON data", e);
-        }
+                                   final Class<T> type, final int contentLength,
+                                   final BufferAllocator allocator) {
+        return awaitResult(deserialize(bufferPublisher, ser, type, contentLength, allocator).toFuture());
     }
 
     private static boolean isSupportedMediaType(final MediaType mediaType) {
