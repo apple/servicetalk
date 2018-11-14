@@ -38,7 +38,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 /**
  * An {@link HttpSerializer} that serializes a key-value {@link Map} to an urlencoded form.
  */
-public final class FormUrlEncodedHttpSerializer implements HttpSerializer<Map<String, String>> {
+final class FormUrlEncodedHttpSerializer implements HttpSerializer<Map<String, String>> {
 
     static final FormUrlEncodedHttpSerializer UTF8 = new FormUrlEncodedHttpSerializer(UTF_8,
             headers -> headers.set(CONTENT_TYPE, APPLICATION_X_WWW_FORM_URLENCODED + "; charset=UTF-8"));

@@ -32,7 +32,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-
 import javax.annotation.Nullable;
 
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
@@ -41,7 +40,7 @@ import static io.servicetalk.http.api.HttpHeaderValues.APPLICATION_X_WWW_FORM_UR
 /**
  * An {@link HttpDeserializer} that deserializes a key-value {@link Map} from an urlencoded form.
  */
-public class FormUrlEncodedHttpDeserializer implements HttpDeserializer<Map<String, String>> {
+final class FormUrlEncodedHttpDeserializer implements HttpDeserializer<Map<String, String>> {
 
     static final FormUrlEncodedHttpDeserializer UTF_8 = new FormUrlEncodedHttpDeserializer(StandardCharsets.UTF_8,
             headers -> headers.contains(CONTENT_TYPE, APPLICATION_X_WWW_FORM_URLENCODED + "; charset=UTF-8"));
