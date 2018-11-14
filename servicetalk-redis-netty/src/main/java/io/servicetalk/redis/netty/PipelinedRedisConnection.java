@@ -48,7 +48,6 @@ import static io.servicetalk.redis.api.RedisProtocolSupport.Command.PSUBSCRIBE;
 import static io.servicetalk.redis.api.RedisProtocolSupport.Command.QUIT;
 import static io.servicetalk.redis.api.RedisProtocolSupport.Command.SUBSCRIBE;
 import static io.servicetalk.redis.api.RedisRequests.newRequest;
-import static io.servicetalk.redis.internal.RedisUtils.newRequestCompositeBuffer;
 import static io.servicetalk.redis.netty.RedisUtils.encodeRequestContent;
 import static io.servicetalk.redis.netty.TerminalMessagePredicates.forCommand;
 import static io.servicetalk.transport.netty.internal.NettyIoExecutors.toNettyIoExecutor;
@@ -89,11 +88,10 @@ final class PipelinedRedisConnection extends AbstractRedisConnection {
         rawConnection = connection;
     }
 
+    @Override
     @SuppressWarnings("unchecked")
     public Completable doClose() {
-        return request0(newRequest(QUIT, newRequestCompositeBuffer(1, QUIT.toRESPArgument(
-                connection.executionContext().bufferAllocator()),
-                connection.executionContext().bufferAllocator())), true, false)
+        return request0(newRequest(QUIT), true, false)
                 .ignoreElements()
                 .onErrorResume(th -> matches(th, ClosedChannelException.class) ? completed() :
                         connection.closeAsync().andThen(error(th)))

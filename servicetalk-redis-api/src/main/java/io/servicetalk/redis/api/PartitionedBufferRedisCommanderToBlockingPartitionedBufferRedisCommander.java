@@ -2036,9 +2036,9 @@ final class PartitionedBufferRedisCommanderToBlockingPartitionedBufferRedisComma
 
     @Override
     public Long zinterstore(@RedisProtocolSupport.Key final Buffer destination, final long numkeys,
-                            @RedisProtocolSupport.Key final Collection<Buffer> keys, final Collection<Long> weightses,
+                            @RedisProtocolSupport.Key final Collection<Buffer> keys, final Collection<Long> weights,
                             @Nullable final RedisProtocolSupport.ZinterstoreAggregate aggregate) throws Exception {
-        return blockingInvocation(commander.zinterstore(destination, numkeys, keys, weightses, aggregate));
+        return blockingInvocation(commander.zinterstore(destination, numkeys, keys, weights, aggregate));
     }
 
     @Override
@@ -2217,9 +2217,9 @@ final class PartitionedBufferRedisCommanderToBlockingPartitionedBufferRedisComma
 
     @Override
     public Long zunionstore(@RedisProtocolSupport.Key final Buffer destination, final long numkeys,
-                            @RedisProtocolSupport.Key final Collection<Buffer> keys, final Collection<Long> weightses,
+                            @RedisProtocolSupport.Key final Collection<Buffer> keys, final Collection<Long> weights,
                             @Nullable final RedisProtocolSupport.ZunionstoreAggregate aggregate) throws Exception {
-        return blockingInvocation(commander.zunionstore(destination, numkeys, keys, weightses, aggregate));
+        return blockingInvocation(commander.zunionstore(destination, numkeys, keys, weights, aggregate));
     }
 
     public BufferRedisCommander asBufferCommanderInternal() {

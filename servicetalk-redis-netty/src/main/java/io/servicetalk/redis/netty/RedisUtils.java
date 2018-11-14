@@ -51,7 +51,7 @@ final class RedisUtils {
     }
 
     static Publisher<ByteBuf> encodeRequestContent(final RedisRequest request, final BufferAllocator allocator) {
-        return request.content().map(data -> toByteBuf(data.toRESPArgument(allocator)));
+        return request.content().map(data -> toByteBuf(data.asBuffer(allocator)));
     }
 
     @Nullable

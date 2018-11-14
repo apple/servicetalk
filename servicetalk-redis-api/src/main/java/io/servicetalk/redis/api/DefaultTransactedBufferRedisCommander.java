@@ -16,8 +16,6 @@
 package io.servicetalk.redis.api;
 
 import io.servicetalk.buffer.api.Buffer;
-import io.servicetalk.buffer.api.BufferAllocator;
-import io.servicetalk.buffer.api.CompositeBuffer;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.internal.SingleProcessor;
@@ -27,18 +25,16 @@ import io.servicetalk.redis.api.CommanderUtils.ExecCompletable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.RandomAccess;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import javax.annotation.Generated;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.redis.api.CommanderUtils.enqueueForExecute;
-import static io.servicetalk.redis.api.RedisRequests.addRequestArgument;
-import static io.servicetalk.redis.api.RedisRequests.addRequestBufferArguments;
-import static io.servicetalk.redis.api.RedisRequests.addRequestLongArguments;
-import static io.servicetalk.redis.api.RedisRequests.addRequestTupleArguments;
+import static io.servicetalk.redis.api.RedisRequests.calculateInitialCommandBufferSize;
+import static io.servicetalk.redis.api.RedisRequests.calculateRequestArgumentSize;
 import static io.servicetalk.redis.api.RedisRequests.newRequest;
-import static io.servicetalk.redis.api.RedisRequests.newRequestCompositeBuffer;
 import static java.util.Objects.requireNonNull;
 
 @Generated({})
@@ -77,13 +73,15 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     public Future<Long> append(@RedisProtocolSupport.Key final Buffer key, final Buffer value) {
         requireNonNull(key);
         requireNonNull(value);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 3;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.APPEND, allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestArgument(value, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.APPEND, cb);
+        final int len = 3;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.APPEND) +
+                    calculateRequestArgumentSize(key) + calculateRequestArgumentSize(value);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.APPEND.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        RedisRequests.writeRequestArgument(buffer, value);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.APPEND, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -92,12 +90,14 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     @Override
     public Future<String> auth(final Buffer password) {
         requireNonNull(password);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 2;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.AUTH, allocator);
-        addRequestArgument(password, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.AUTH, cb);
+        final int len = 2;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.AUTH) +
+                    calculateRequestArgumentSize(password);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.AUTH.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, password);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.AUTH, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -105,11 +105,12 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
 
     @Override
     public Future<String> bgrewriteaof() {
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 1;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.BGREWRITEAOF, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.BGREWRITEAOF, cb);
+        final int len = 1;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.BGREWRITEAOF);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.BGREWRITEAOF.encodeTo(buffer);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.BGREWRITEAOF, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -117,11 +118,12 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
 
     @Override
     public Future<String> bgsave() {
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 1;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.BGSAVE, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.BGSAVE, cb);
+        final int len = 1;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.BGSAVE);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.BGSAVE.encodeTo(buffer);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.BGSAVE, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -130,12 +132,14 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     @Override
     public Future<Long> bitcount(@RedisProtocolSupport.Key final Buffer key) {
         requireNonNull(key);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 2;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.BITCOUNT, allocator);
-        addRequestArgument(key, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.BITCOUNT, cb);
+        final int len = 2;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.BITCOUNT) +
+                    calculateRequestArgumentSize(key);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.BITCOUNT.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.BITCOUNT, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -145,24 +149,21 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     public Future<Long> bitcount(@RedisProtocolSupport.Key final Buffer key, @Nullable final Long start,
                                  @Nullable final Long end) {
         requireNonNull(key);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 2;
+        final int len = 2 + (start == null ? 0 : 1) + (end == null ? 0 : 1);
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.BITCOUNT) +
+                    calculateRequestArgumentSize(key) + (start == null ? 0 : calculateRequestArgumentSize(start)) +
+                    (end == null ? 0 : calculateRequestArgumentSize(end));
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.BITCOUNT.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
         if (start != null) {
-            len++;
+            RedisRequests.writeRequestArgument(buffer, start);
         }
         if (end != null) {
-            len++;
+            RedisRequests.writeRequestArgument(buffer, end);
         }
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.BITCOUNT, allocator);
-        addRequestArgument(key, cb, allocator);
-        if (start != null) {
-            addRequestArgument(start, cb, allocator);
-        }
-        if (end != null) {
-            addRequestArgument(end, cb, allocator);
-        }
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.BITCOUNT, cb);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.BITCOUNT, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -173,13 +174,49 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
                                        final Collection<RedisProtocolSupport.BitfieldOperation> operations) {
         requireNonNull(key);
         requireNonNull(operations);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        final CompositeBuffer cbOps = allocator.newCompositeBuffer();
-        final int len = 2 + operations.stream().mapToInt(op -> op.writeTo(cbOps, allocator)).sum();
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.BITFIELD, allocator);
-        addRequestArgument(key, cb, allocator);
-        cb.addBuffer(cbOps);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.BITFIELD, cb);
+        int collectionLen = 0;
+        if (operations instanceof List && operations instanceof RandomAccess) {
+            final List<RedisProtocolSupport.BitfieldOperation> list = (List<RedisProtocolSupport.BitfieldOperation>) operations;
+            for (int i = 0; i < list.size(); ++i) {
+                final RedisProtocolSupport.BitfieldOperation arg = list.get(i);
+                collectionLen += arg.argumentCount();
+            }
+        } else {
+            for (RedisProtocolSupport.BitfieldOperation arg : operations) {
+                collectionLen += arg.argumentCount();
+            }
+        }
+        final int len = 2 + collectionLen;
+        int operationsCapacity = 0;
+        if (operations instanceof List && operations instanceof RandomAccess) {
+            final List<RedisProtocolSupport.BitfieldOperation> list = (List<RedisProtocolSupport.BitfieldOperation>) operations;
+            for (int i = 0; i < list.size(); ++i) {
+                final RedisProtocolSupport.BitfieldOperation arg = list.get(i);
+                operationsCapacity += arg.encodedByteCount();
+            }
+        } else {
+            for (RedisProtocolSupport.BitfieldOperation arg : operations) {
+                operationsCapacity += arg.encodedByteCount();
+            }
+        }
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.BITFIELD) +
+                    calculateRequestArgumentSize(key) + operationsCapacity;
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.BITFIELD.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        if (operations instanceof List && operations instanceof RandomAccess) {
+            final List<RedisProtocolSupport.BitfieldOperation> list = (List<RedisProtocolSupport.BitfieldOperation>) operations;
+            for (int i = 0; i < list.size(); ++i) {
+                final RedisProtocolSupport.BitfieldOperation arg = list.get(i);
+                arg.encodeTo(buffer);
+            }
+        } else {
+            for (RedisProtocolSupport.BitfieldOperation arg : operations) {
+                arg.encodeTo(buffer);
+            }
+        }
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.BITFIELD, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<Long>> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -191,14 +228,17 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         requireNonNull(operation);
         requireNonNull(destkey);
         requireNonNull(key);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 4;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.BITOP, allocator);
-        addRequestArgument(operation, cb, allocator);
-        addRequestArgument(destkey, cb, allocator);
-        addRequestArgument(key, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.BITOP, cb);
+        final int len = 4;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.BITOP) +
+                    calculateRequestArgumentSize(operation) + calculateRequestArgumentSize(destkey) +
+                    calculateRequestArgumentSize(key);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.BITOP.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, operation);
+        RedisRequests.writeRequestArgument(buffer, destkey);
+        RedisRequests.writeRequestArgument(buffer, key);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.BITOP, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -212,15 +252,18 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         requireNonNull(destkey);
         requireNonNull(key1);
         requireNonNull(key2);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 5;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.BITOP, allocator);
-        addRequestArgument(operation, cb, allocator);
-        addRequestArgument(destkey, cb, allocator);
-        addRequestArgument(key1, cb, allocator);
-        addRequestArgument(key2, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.BITOP, cb);
+        final int len = 5;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.BITOP) +
+                    calculateRequestArgumentSize(operation) + calculateRequestArgumentSize(destkey) +
+                    calculateRequestArgumentSize(key1) + calculateRequestArgumentSize(key2);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.BITOP.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, operation);
+        RedisRequests.writeRequestArgument(buffer, destkey);
+        RedisRequests.writeRequestArgument(buffer, key1);
+        RedisRequests.writeRequestArgument(buffer, key2);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.BITOP, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -235,16 +278,20 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         requireNonNull(key1);
         requireNonNull(key2);
         requireNonNull(key3);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 6;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.BITOP, allocator);
-        addRequestArgument(operation, cb, allocator);
-        addRequestArgument(destkey, cb, allocator);
-        addRequestArgument(key1, cb, allocator);
-        addRequestArgument(key2, cb, allocator);
-        addRequestArgument(key3, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.BITOP, cb);
+        final int len = 6;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.BITOP) +
+                    calculateRequestArgumentSize(operation) + calculateRequestArgumentSize(destkey) +
+                    calculateRequestArgumentSize(key1) + calculateRequestArgumentSize(key2) +
+                    calculateRequestArgumentSize(key3);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.BITOP.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, operation);
+        RedisRequests.writeRequestArgument(buffer, destkey);
+        RedisRequests.writeRequestArgument(buffer, key1);
+        RedisRequests.writeRequestArgument(buffer, key2);
+        RedisRequests.writeRequestArgument(buffer, key3);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.BITOP, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -256,15 +303,38 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         requireNonNull(operation);
         requireNonNull(destkey);
         requireNonNull(keys);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 3;
-        len += keys.size();
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.BITOP, allocator);
-        addRequestArgument(operation, cb, allocator);
-        addRequestArgument(destkey, cb, allocator);
-        addRequestBufferArguments(keys, null, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.BITOP, cb);
+        final int len = 3 + keys.size();
+        int keysCapacity = 0;
+        if (keys instanceof List && keys instanceof RandomAccess) {
+            final List<Buffer> list = (List<Buffer>) keys;
+            for (int i = 0; i < list.size(); ++i) {
+                final Buffer arg = list.get(i);
+                keysCapacity += calculateRequestArgumentSize(arg);
+            }
+        } else {
+            for (Buffer arg : keys) {
+                keysCapacity += calculateRequestArgumentSize(arg);
+            }
+        }
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.BITOP) +
+                    calculateRequestArgumentSize(operation) + calculateRequestArgumentSize(destkey) + keysCapacity;
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.BITOP.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, operation);
+        RedisRequests.writeRequestArgument(buffer, destkey);
+        if (keys instanceof List && keys instanceof RandomAccess) {
+            final List<Buffer> list = (List<Buffer>) keys;
+            for (int i = 0; i < list.size(); ++i) {
+                final Buffer arg = list.get(i);
+                RedisRequests.writeRequestArgument(buffer, arg);
+            }
+        } else {
+            for (Buffer arg : keys) {
+                RedisRequests.writeRequestArgument(buffer, arg);
+            }
+        }
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.BITOP, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -273,13 +343,15 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     @Override
     public Future<Long> bitpos(@RedisProtocolSupport.Key final Buffer key, final long bit) {
         requireNonNull(key);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 3;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.BITPOS, allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestArgument(bit, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.BITPOS, cb);
+        final int len = 3;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.BITPOS) +
+                    calculateRequestArgumentSize(key) + calculateRequestArgumentSize(bit);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.BITPOS.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        RedisRequests.writeRequestArgument(buffer, bit);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.BITPOS, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -289,25 +361,23 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     public Future<Long> bitpos(@RedisProtocolSupport.Key final Buffer key, final long bit, @Nullable final Long start,
                                @Nullable final Long end) {
         requireNonNull(key);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 3;
+        final int len = 3 + (start == null ? 0 : 1) + (end == null ? 0 : 1);
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.BITPOS) +
+                    calculateRequestArgumentSize(key) + calculateRequestArgumentSize(bit) +
+                    (start == null ? 0 : calculateRequestArgumentSize(start)) +
+                    (end == null ? 0 : calculateRequestArgumentSize(end));
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.BITPOS.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        RedisRequests.writeRequestArgument(buffer, bit);
         if (start != null) {
-            len++;
+            RedisRequests.writeRequestArgument(buffer, start);
         }
         if (end != null) {
-            len++;
+            RedisRequests.writeRequestArgument(buffer, end);
         }
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.BITPOS, allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestArgument(bit, cb, allocator);
-        if (start != null) {
-            addRequestArgument(start, cb, allocator);
-        }
-        if (end != null) {
-            addRequestArgument(end, cb, allocator);
-        }
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.BITPOS, cb);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.BITPOS, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -316,14 +386,37 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     @Override
     public <T> Future<List<T>> blpop(@RedisProtocolSupport.Key final Collection<Buffer> keys, final long timeout) {
         requireNonNull(keys);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 2;
-        len += keys.size();
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.BLPOP, allocator);
-        addRequestBufferArguments(keys, null, cb, allocator);
-        addRequestArgument(timeout, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.BLPOP, cb);
+        final int len = 2 + keys.size();
+        int keysCapacity = 0;
+        if (keys instanceof List && keys instanceof RandomAccess) {
+            final List<Buffer> list = (List<Buffer>) keys;
+            for (int i = 0; i < list.size(); ++i) {
+                final Buffer arg = list.get(i);
+                keysCapacity += calculateRequestArgumentSize(arg);
+            }
+        } else {
+            for (Buffer arg : keys) {
+                keysCapacity += calculateRequestArgumentSize(arg);
+            }
+        }
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.BLPOP) + keysCapacity +
+                    calculateRequestArgumentSize(timeout);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.BLPOP.encodeTo(buffer);
+        if (keys instanceof List && keys instanceof RandomAccess) {
+            final List<Buffer> list = (List<Buffer>) keys;
+            for (int i = 0; i < list.size(); ++i) {
+                final Buffer arg = list.get(i);
+                RedisRequests.writeRequestArgument(buffer, arg);
+            }
+        } else {
+            for (Buffer arg : keys) {
+                RedisRequests.writeRequestArgument(buffer, arg);
+            }
+        }
+        RedisRequests.writeRequestArgument(buffer, timeout);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.BLPOP, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -332,14 +425,37 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     @Override
     public <T> Future<List<T>> brpop(@RedisProtocolSupport.Key final Collection<Buffer> keys, final long timeout) {
         requireNonNull(keys);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 2;
-        len += keys.size();
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.BRPOP, allocator);
-        addRequestBufferArguments(keys, null, cb, allocator);
-        addRequestArgument(timeout, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.BRPOP, cb);
+        final int len = 2 + keys.size();
+        int keysCapacity = 0;
+        if (keys instanceof List && keys instanceof RandomAccess) {
+            final List<Buffer> list = (List<Buffer>) keys;
+            for (int i = 0; i < list.size(); ++i) {
+                final Buffer arg = list.get(i);
+                keysCapacity += calculateRequestArgumentSize(arg);
+            }
+        } else {
+            for (Buffer arg : keys) {
+                keysCapacity += calculateRequestArgumentSize(arg);
+            }
+        }
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.BRPOP) + keysCapacity +
+                    calculateRequestArgumentSize(timeout);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.BRPOP.encodeTo(buffer);
+        if (keys instanceof List && keys instanceof RandomAccess) {
+            final List<Buffer> list = (List<Buffer>) keys;
+            for (int i = 0; i < list.size(); ++i) {
+                final Buffer arg = list.get(i);
+                RedisRequests.writeRequestArgument(buffer, arg);
+            }
+        } else {
+            for (Buffer arg : keys) {
+                RedisRequests.writeRequestArgument(buffer, arg);
+            }
+        }
+        RedisRequests.writeRequestArgument(buffer, timeout);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.BRPOP, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -350,14 +466,17 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
                                      @RedisProtocolSupport.Key final Buffer destination, final long timeout) {
         requireNonNull(source);
         requireNonNull(destination);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 4;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.BRPOPLPUSH, allocator);
-        addRequestArgument(source, cb, allocator);
-        addRequestArgument(destination, cb, allocator);
-        addRequestArgument(timeout, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.BRPOPLPUSH, cb);
+        final int len = 4;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.BRPOPLPUSH) +
+                    calculateRequestArgumentSize(source) + calculateRequestArgumentSize(destination) +
+                    calculateRequestArgumentSize(timeout);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.BRPOPLPUSH.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, source);
+        RedisRequests.writeRequestArgument(buffer, destination);
+        RedisRequests.writeRequestArgument(buffer, timeout);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.BRPOPLPUSH, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Buffer> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -366,14 +485,37 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     @Override
     public <T> Future<List<T>> bzpopmax(@RedisProtocolSupport.Key final Collection<Buffer> keys, final long timeout) {
         requireNonNull(keys);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 2;
-        len += keys.size();
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.BZPOPMAX, allocator);
-        addRequestBufferArguments(keys, null, cb, allocator);
-        addRequestArgument(timeout, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.BZPOPMAX, cb);
+        final int len = 2 + keys.size();
+        int keysCapacity = 0;
+        if (keys instanceof List && keys instanceof RandomAccess) {
+            final List<Buffer> list = (List<Buffer>) keys;
+            for (int i = 0; i < list.size(); ++i) {
+                final Buffer arg = list.get(i);
+                keysCapacity += calculateRequestArgumentSize(arg);
+            }
+        } else {
+            for (Buffer arg : keys) {
+                keysCapacity += calculateRequestArgumentSize(arg);
+            }
+        }
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.BZPOPMAX) +
+                    keysCapacity + calculateRequestArgumentSize(timeout);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.BZPOPMAX.encodeTo(buffer);
+        if (keys instanceof List && keys instanceof RandomAccess) {
+            final List<Buffer> list = (List<Buffer>) keys;
+            for (int i = 0; i < list.size(); ++i) {
+                final Buffer arg = list.get(i);
+                RedisRequests.writeRequestArgument(buffer, arg);
+            }
+        } else {
+            for (Buffer arg : keys) {
+                RedisRequests.writeRequestArgument(buffer, arg);
+            }
+        }
+        RedisRequests.writeRequestArgument(buffer, timeout);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.BZPOPMAX, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -382,14 +524,37 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     @Override
     public <T> Future<List<T>> bzpopmin(@RedisProtocolSupport.Key final Collection<Buffer> keys, final long timeout) {
         requireNonNull(keys);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 2;
-        len += keys.size();
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.BZPOPMIN, allocator);
-        addRequestBufferArguments(keys, null, cb, allocator);
-        addRequestArgument(timeout, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.BZPOPMIN, cb);
+        final int len = 2 + keys.size();
+        int keysCapacity = 0;
+        if (keys instanceof List && keys instanceof RandomAccess) {
+            final List<Buffer> list = (List<Buffer>) keys;
+            for (int i = 0; i < list.size(); ++i) {
+                final Buffer arg = list.get(i);
+                keysCapacity += calculateRequestArgumentSize(arg);
+            }
+        } else {
+            for (Buffer arg : keys) {
+                keysCapacity += calculateRequestArgumentSize(arg);
+            }
+        }
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.BZPOPMIN) +
+                    keysCapacity + calculateRequestArgumentSize(timeout);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.BZPOPMIN.encodeTo(buffer);
+        if (keys instanceof List && keys instanceof RandomAccess) {
+            final List<Buffer> list = (List<Buffer>) keys;
+            for (int i = 0; i < list.size(); ++i) {
+                final Buffer arg = list.get(i);
+                RedisRequests.writeRequestArgument(buffer, arg);
+            }
+        } else {
+            for (Buffer arg : keys) {
+                RedisRequests.writeRequestArgument(buffer, arg);
+            }
+        }
+        RedisRequests.writeRequestArgument(buffer, timeout);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.BZPOPMIN, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -398,39 +563,35 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     @Override
     public Future<Long> clientKill(@Nullable final Long id, @Nullable final RedisProtocolSupport.ClientKillType type,
                                    @Nullable final Buffer addrIpPort, @Nullable final Buffer skipmeYesNo) {
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 2;
+        final int len = 2 + (id == null ? 0 : 2) + (type == null ? 0 : 1) + (addrIpPort == null ? 0 : 2) +
+                    (skipmeYesNo == null ? 0 : 2);
+        final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.CLIENT) +
+                    (id == null ? 0 : RedisProtocolSupport.SubCommand.ID.encodedByteCount()) +
+                    (id == null ? 0 : calculateRequestArgumentSize(id)) + (type == null ? 0 : type.encodedByteCount()) +
+                    (addrIpPort == null ? 0 : RedisProtocolSupport.SubCommand.ADDR.encodedByteCount()) +
+                    (addrIpPort == null ? 0 : calculateRequestArgumentSize(addrIpPort)) +
+                    (skipmeYesNo == null ? 0 : RedisProtocolSupport.SubCommand.SKIPME.encodedByteCount()) +
+                    (skipmeYesNo == null ? 0 : calculateRequestArgumentSize(skipmeYesNo));
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.CLIENT.encodeTo(buffer);
+        RedisProtocolSupport.SubCommand.KILL.encodeTo(buffer);
         if (id != null) {
-            len += 2;
+            RedisProtocolSupport.SubCommand.ID.encodeTo(buffer);
+            RedisRequests.writeRequestArgument(buffer, id);
         }
         if (type != null) {
-            len++;
+            type.encodeTo(buffer);
         }
         if (addrIpPort != null) {
-            len += 2;
+            RedisProtocolSupport.SubCommand.ADDR.encodeTo(buffer);
+            RedisRequests.writeRequestArgument(buffer, addrIpPort);
         }
         if (skipmeYesNo != null) {
-            len += 2;
+            RedisProtocolSupport.SubCommand.SKIPME.encodeTo(buffer);
+            RedisRequests.writeRequestArgument(buffer, skipmeYesNo);
         }
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.CLIENT,
-                    RedisProtocolSupport.SubCommand.KILL, allocator);
-        if (id != null) {
-            addRequestArgument(RedisProtocolSupport.SubCommand.ID, cb, allocator);
-            addRequestArgument(id, cb, allocator);
-        }
-        if (type != null) {
-            addRequestArgument(type, cb, allocator);
-        }
-        if (addrIpPort != null) {
-            addRequestArgument(RedisProtocolSupport.SubCommand.ADDR, cb, allocator);
-            addRequestArgument(addrIpPort, cb, allocator);
-        }
-        if (skipmeYesNo != null) {
-            addRequestArgument(RedisProtocolSupport.SubCommand.SKIPME, cb, allocator);
-            addRequestArgument(skipmeYesNo, cb, allocator);
-        }
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLIENT, cb);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLIENT, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -438,12 +599,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
 
     @Override
     public Future<Buffer> clientList() {
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 2;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.CLIENT,
-                    RedisProtocolSupport.SubCommand.LIST, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLIENT, cb);
+        final int len = 2;
+        final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.CLIENT);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.CLIENT.encodeTo(buffer);
+        RedisProtocolSupport.SubCommand.LIST.encodeTo(buffer);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLIENT, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Buffer> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -451,12 +613,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
 
     @Override
     public Future<Buffer> clientGetname() {
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 2;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.CLIENT,
-                    RedisProtocolSupport.SubCommand.GETNAME, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLIENT, cb);
+        final int len = 2;
+        final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.CLIENT);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.CLIENT.encodeTo(buffer);
+        RedisProtocolSupport.SubCommand.GETNAME.encodeTo(buffer);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLIENT, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Buffer> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -464,13 +627,15 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
 
     @Override
     public Future<String> clientPause(final long timeout) {
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 3;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.CLIENT,
-                    RedisProtocolSupport.SubCommand.PAUSE, allocator);
-        addRequestArgument(timeout, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLIENT, cb);
+        final int len = 3;
+        final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.CLIENT) +
+                    calculateRequestArgumentSize(timeout);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.CLIENT.encodeTo(buffer);
+        RedisProtocolSupport.SubCommand.PAUSE.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, timeout);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLIENT, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -479,13 +644,15 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     @Override
     public Future<String> clientReply(final RedisProtocolSupport.ClientReplyReplyMode replyMode) {
         requireNonNull(replyMode);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 3;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.CLIENT,
-                    RedisProtocolSupport.SubCommand.REPLY, allocator);
-        addRequestArgument(replyMode, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLIENT, cb);
+        final int len = 3;
+        final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.CLIENT) +
+                    replyMode.encodedByteCount();
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.CLIENT.encodeTo(buffer);
+        RedisProtocolSupport.SubCommand.REPLY.encodeTo(buffer);
+        replyMode.encodeTo(buffer);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLIENT, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -494,13 +661,15 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     @Override
     public Future<String> clientSetname(final Buffer connectionName) {
         requireNonNull(connectionName);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 3;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.CLIENT,
-                    RedisProtocolSupport.SubCommand.SETNAME, allocator);
-        addRequestArgument(connectionName, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLIENT, cb);
+        final int len = 3;
+        final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.CLIENT) +
+                    calculateRequestArgumentSize(connectionName);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.CLIENT.encodeTo(buffer);
+        RedisProtocolSupport.SubCommand.SETNAME.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, connectionName);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLIENT, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -508,13 +677,15 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
 
     @Override
     public Future<String> clusterAddslots(final long slot) {
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 3;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.CLUSTER,
-                    RedisProtocolSupport.SubCommand.ADDSLOTS, allocator);
-        addRequestArgument(slot, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, cb);
+        final int len = 3;
+        final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.CLUSTER) +
+                    calculateRequestArgumentSize(slot);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.CLUSTER.encodeTo(buffer);
+        RedisProtocolSupport.SubCommand.ADDSLOTS.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, slot);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -522,14 +693,16 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
 
     @Override
     public Future<String> clusterAddslots(final long slot1, final long slot2) {
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 4;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.CLUSTER,
-                    RedisProtocolSupport.SubCommand.ADDSLOTS, allocator);
-        addRequestArgument(slot1, cb, allocator);
-        addRequestArgument(slot2, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, cb);
+        final int len = 4;
+        final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.CLUSTER) +
+                    calculateRequestArgumentSize(slot1) + calculateRequestArgumentSize(slot2);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.CLUSTER.encodeTo(buffer);
+        RedisProtocolSupport.SubCommand.ADDSLOTS.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, slot1);
+        RedisRequests.writeRequestArgument(buffer, slot2);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -537,15 +710,18 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
 
     @Override
     public Future<String> clusterAddslots(final long slot1, final long slot2, final long slot3) {
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 5;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.CLUSTER,
-                    RedisProtocolSupport.SubCommand.ADDSLOTS, allocator);
-        addRequestArgument(slot1, cb, allocator);
-        addRequestArgument(slot2, cb, allocator);
-        addRequestArgument(slot3, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, cb);
+        final int len = 5;
+        final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.CLUSTER) +
+                    calculateRequestArgumentSize(slot1) + calculateRequestArgumentSize(slot2) +
+                    calculateRequestArgumentSize(slot3);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.CLUSTER.encodeTo(buffer);
+        RedisProtocolSupport.SubCommand.ADDSLOTS.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, slot1);
+        RedisRequests.writeRequestArgument(buffer, slot2);
+        RedisRequests.writeRequestArgument(buffer, slot3);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -554,14 +730,37 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     @Override
     public Future<String> clusterAddslots(final Collection<Long> slots) {
         requireNonNull(slots);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 2;
-        len += slots.size();
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.CLUSTER,
-                    RedisProtocolSupport.SubCommand.ADDSLOTS, allocator);
-        addRequestLongArguments(slots, null, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, cb);
+        final int len = 2 + slots.size();
+        int slotsCapacity = 0;
+        if (slots instanceof List && slots instanceof RandomAccess) {
+            final List<Long> list = (List<Long>) slots;
+            for (int i = 0; i < list.size(); ++i) {
+                final Long arg = list.get(i);
+                slotsCapacity += calculateRequestArgumentSize(arg);
+            }
+        } else {
+            for (Long arg : slots) {
+                slotsCapacity += calculateRequestArgumentSize(arg);
+            }
+        }
+        final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.CLUSTER) +
+                    slotsCapacity;
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.CLUSTER.encodeTo(buffer);
+        RedisProtocolSupport.SubCommand.ADDSLOTS.encodeTo(buffer);
+        if (slots instanceof List && slots instanceof RandomAccess) {
+            final List<Long> list = (List<Long>) slots;
+            for (int i = 0; i < list.size(); ++i) {
+                final Long arg = list.get(i);
+                RedisRequests.writeRequestArgument(buffer, arg);
+            }
+        } else {
+            for (Long arg : slots) {
+                RedisRequests.writeRequestArgument(buffer, arg);
+            }
+        }
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -570,13 +769,15 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     @Override
     public Future<Long> clusterCountFailureReports(final Buffer nodeId) {
         requireNonNull(nodeId);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 3;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.CLUSTER,
-                    RedisProtocolSupport.SubCommand.COUNT_FAILURE_REPORTS, allocator);
-        addRequestArgument(nodeId, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, cb);
+        final int len = 3;
+        final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.CLUSTER) +
+                    calculateRequestArgumentSize(nodeId);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.CLUSTER.encodeTo(buffer);
+        RedisProtocolSupport.SubCommand.COUNT_FAILURE_REPORTS.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, nodeId);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -584,13 +785,15 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
 
     @Override
     public Future<Long> clusterCountkeysinslot(final long slot) {
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 3;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.CLUSTER,
-                    RedisProtocolSupport.SubCommand.COUNTKEYSINSLOT, allocator);
-        addRequestArgument(slot, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, cb);
+        final int len = 3;
+        final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.CLUSTER) +
+                    calculateRequestArgumentSize(slot);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.CLUSTER.encodeTo(buffer);
+        RedisProtocolSupport.SubCommand.COUNTKEYSINSLOT.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, slot);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -598,13 +801,15 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
 
     @Override
     public Future<String> clusterDelslots(final long slot) {
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 3;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.CLUSTER,
-                    RedisProtocolSupport.SubCommand.DELSLOTS, allocator);
-        addRequestArgument(slot, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, cb);
+        final int len = 3;
+        final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.CLUSTER) +
+                    calculateRequestArgumentSize(slot);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.CLUSTER.encodeTo(buffer);
+        RedisProtocolSupport.SubCommand.DELSLOTS.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, slot);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -612,14 +817,16 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
 
     @Override
     public Future<String> clusterDelslots(final long slot1, final long slot2) {
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 4;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.CLUSTER,
-                    RedisProtocolSupport.SubCommand.DELSLOTS, allocator);
-        addRequestArgument(slot1, cb, allocator);
-        addRequestArgument(slot2, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, cb);
+        final int len = 4;
+        final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.CLUSTER) +
+                    calculateRequestArgumentSize(slot1) + calculateRequestArgumentSize(slot2);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.CLUSTER.encodeTo(buffer);
+        RedisProtocolSupport.SubCommand.DELSLOTS.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, slot1);
+        RedisRequests.writeRequestArgument(buffer, slot2);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -627,15 +834,18 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
 
     @Override
     public Future<String> clusterDelslots(final long slot1, final long slot2, final long slot3) {
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 5;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.CLUSTER,
-                    RedisProtocolSupport.SubCommand.DELSLOTS, allocator);
-        addRequestArgument(slot1, cb, allocator);
-        addRequestArgument(slot2, cb, allocator);
-        addRequestArgument(slot3, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, cb);
+        final int len = 5;
+        final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.CLUSTER) +
+                    calculateRequestArgumentSize(slot1) + calculateRequestArgumentSize(slot2) +
+                    calculateRequestArgumentSize(slot3);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.CLUSTER.encodeTo(buffer);
+        RedisProtocolSupport.SubCommand.DELSLOTS.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, slot1);
+        RedisRequests.writeRequestArgument(buffer, slot2);
+        RedisRequests.writeRequestArgument(buffer, slot3);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -644,14 +854,37 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     @Override
     public Future<String> clusterDelslots(final Collection<Long> slots) {
         requireNonNull(slots);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 2;
-        len += slots.size();
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.CLUSTER,
-                    RedisProtocolSupport.SubCommand.DELSLOTS, allocator);
-        addRequestLongArguments(slots, null, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, cb);
+        final int len = 2 + slots.size();
+        int slotsCapacity = 0;
+        if (slots instanceof List && slots instanceof RandomAccess) {
+            final List<Long> list = (List<Long>) slots;
+            for (int i = 0; i < list.size(); ++i) {
+                final Long arg = list.get(i);
+                slotsCapacity += calculateRequestArgumentSize(arg);
+            }
+        } else {
+            for (Long arg : slots) {
+                slotsCapacity += calculateRequestArgumentSize(arg);
+            }
+        }
+        final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.CLUSTER) +
+                    slotsCapacity;
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.CLUSTER.encodeTo(buffer);
+        RedisProtocolSupport.SubCommand.DELSLOTS.encodeTo(buffer);
+        if (slots instanceof List && slots instanceof RandomAccess) {
+            final List<Long> list = (List<Long>) slots;
+            for (int i = 0; i < list.size(); ++i) {
+                final Long arg = list.get(i);
+                RedisRequests.writeRequestArgument(buffer, arg);
+            }
+        } else {
+            for (Long arg : slots) {
+                RedisRequests.writeRequestArgument(buffer, arg);
+            }
+        }
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -659,12 +892,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
 
     @Override
     public Future<String> clusterFailover() {
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 2;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.CLUSTER,
-                    RedisProtocolSupport.SubCommand.FAILOVER, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, cb);
+        final int len = 2;
+        final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.CLUSTER);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.CLUSTER.encodeTo(buffer);
+        RedisProtocolSupport.SubCommand.FAILOVER.encodeTo(buffer);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -672,18 +906,17 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
 
     @Override
     public Future<String> clusterFailover(@Nullable final RedisProtocolSupport.ClusterFailoverOptions options) {
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 2;
+        final int len = 2 + (options == null ? 0 : 1);
+        final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.CLUSTER) +
+                    (options == null ? 0 : options.encodedByteCount());
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.CLUSTER.encodeTo(buffer);
+        RedisProtocolSupport.SubCommand.FAILOVER.encodeTo(buffer);
         if (options != null) {
-            len++;
+            options.encodeTo(buffer);
         }
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.CLUSTER,
-                    RedisProtocolSupport.SubCommand.FAILOVER, allocator);
-        if (options != null) {
-            addRequestArgument(options, cb, allocator);
-        }
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, cb);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -692,13 +925,15 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     @Override
     public Future<String> clusterForget(final Buffer nodeId) {
         requireNonNull(nodeId);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 3;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.CLUSTER,
-                    RedisProtocolSupport.SubCommand.FORGET, allocator);
-        addRequestArgument(nodeId, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, cb);
+        final int len = 3;
+        final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.CLUSTER) +
+                    calculateRequestArgumentSize(nodeId);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.CLUSTER.encodeTo(buffer);
+        RedisProtocolSupport.SubCommand.FORGET.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, nodeId);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -706,14 +941,16 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
 
     @Override
     public <T> Future<List<T>> clusterGetkeysinslot(final long slot, final long count) {
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 4;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.CLUSTER,
-                    RedisProtocolSupport.SubCommand.GETKEYSINSLOT, allocator);
-        addRequestArgument(slot, cb, allocator);
-        addRequestArgument(count, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, cb);
+        final int len = 4;
+        final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.CLUSTER) +
+                    calculateRequestArgumentSize(slot) + calculateRequestArgumentSize(count);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.CLUSTER.encodeTo(buffer);
+        RedisProtocolSupport.SubCommand.GETKEYSINSLOT.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, slot);
+        RedisRequests.writeRequestArgument(buffer, count);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -721,12 +958,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
 
     @Override
     public Future<Buffer> clusterInfo() {
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 2;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.CLUSTER,
-                    RedisProtocolSupport.SubCommand.INFO, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, cb);
+        final int len = 2;
+        final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.CLUSTER);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.CLUSTER.encodeTo(buffer);
+        RedisProtocolSupport.SubCommand.INFO.encodeTo(buffer);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Buffer> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -735,13 +973,15 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     @Override
     public Future<Long> clusterKeyslot(final Buffer key) {
         requireNonNull(key);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 3;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.CLUSTER,
-                    RedisProtocolSupport.SubCommand.KEYSLOT, allocator);
-        addRequestArgument(key, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, cb);
+        final int len = 3;
+        final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.CLUSTER) +
+                    calculateRequestArgumentSize(key);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.CLUSTER.encodeTo(buffer);
+        RedisProtocolSupport.SubCommand.KEYSLOT.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -750,14 +990,16 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     @Override
     public Future<String> clusterMeet(final Buffer ip, final long port) {
         requireNonNull(ip);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 4;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.CLUSTER,
-                    RedisProtocolSupport.SubCommand.MEET, allocator);
-        addRequestArgument(ip, cb, allocator);
-        addRequestArgument(port, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, cb);
+        final int len = 4;
+        final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.CLUSTER) +
+                    calculateRequestArgumentSize(ip) + calculateRequestArgumentSize(port);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.CLUSTER.encodeTo(buffer);
+        RedisProtocolSupport.SubCommand.MEET.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, ip);
+        RedisRequests.writeRequestArgument(buffer, port);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -765,12 +1007,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
 
     @Override
     public Future<Buffer> clusterNodes() {
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 2;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.CLUSTER,
-                    RedisProtocolSupport.SubCommand.NODES, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, cb);
+        final int len = 2;
+        final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.CLUSTER);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.CLUSTER.encodeTo(buffer);
+        RedisProtocolSupport.SubCommand.NODES.encodeTo(buffer);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Buffer> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -779,13 +1022,15 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     @Override
     public Future<String> clusterReplicate(final Buffer nodeId) {
         requireNonNull(nodeId);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 3;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.CLUSTER,
-                    RedisProtocolSupport.SubCommand.REPLICATE, allocator);
-        addRequestArgument(nodeId, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, cb);
+        final int len = 3;
+        final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.CLUSTER) +
+                    calculateRequestArgumentSize(nodeId);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.CLUSTER.encodeTo(buffer);
+        RedisProtocolSupport.SubCommand.REPLICATE.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, nodeId);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -793,12 +1038,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
 
     @Override
     public Future<String> clusterReset() {
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 2;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.CLUSTER,
-                    RedisProtocolSupport.SubCommand.RESET, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, cb);
+        final int len = 2;
+        final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.CLUSTER);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.CLUSTER.encodeTo(buffer);
+        RedisProtocolSupport.SubCommand.RESET.encodeTo(buffer);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -806,18 +1052,17 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
 
     @Override
     public Future<String> clusterReset(@Nullable final RedisProtocolSupport.ClusterResetResetType resetType) {
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 2;
+        final int len = 2 + (resetType == null ? 0 : 1);
+        final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.CLUSTER) +
+                    (resetType == null ? 0 : resetType.encodedByteCount());
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.CLUSTER.encodeTo(buffer);
+        RedisProtocolSupport.SubCommand.RESET.encodeTo(buffer);
         if (resetType != null) {
-            len++;
+            resetType.encodeTo(buffer);
         }
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.CLUSTER,
-                    RedisProtocolSupport.SubCommand.RESET, allocator);
-        if (resetType != null) {
-            addRequestArgument(resetType, cb, allocator);
-        }
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, cb);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -825,12 +1070,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
 
     @Override
     public Future<String> clusterSaveconfig() {
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 2;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.CLUSTER,
-                    RedisProtocolSupport.SubCommand.SAVECONFIG, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, cb);
+        final int len = 2;
+        final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.CLUSTER);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.CLUSTER.encodeTo(buffer);
+        RedisProtocolSupport.SubCommand.SAVECONFIG.encodeTo(buffer);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -838,13 +1084,15 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
 
     @Override
     public Future<String> clusterSetConfigEpoch(final long configEpoch) {
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 3;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.CLUSTER,
-                    RedisProtocolSupport.SubCommand.SET_CONFIG_EPOCH, allocator);
-        addRequestArgument(configEpoch, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, cb);
+        final int len = 3;
+        final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.CLUSTER) +
+                    calculateRequestArgumentSize(configEpoch);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.CLUSTER.encodeTo(buffer);
+        RedisProtocolSupport.SubCommand.SET_CONFIG_EPOCH.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, configEpoch);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -854,14 +1102,16 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     public Future<String> clusterSetslot(final long slot,
                                          final RedisProtocolSupport.ClusterSetslotSubcommand subcommand) {
         requireNonNull(subcommand);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 4;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.CLUSTER,
-                    RedisProtocolSupport.SubCommand.SETSLOT, allocator);
-        addRequestArgument(slot, cb, allocator);
-        addRequestArgument(subcommand, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, cb);
+        final int len = 4;
+        final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.CLUSTER) +
+                    calculateRequestArgumentSize(slot) + subcommand.encodedByteCount();
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.CLUSTER.encodeTo(buffer);
+        RedisProtocolSupport.SubCommand.SETSLOT.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, slot);
+        subcommand.encodeTo(buffer);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -872,20 +1122,20 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
                                          final RedisProtocolSupport.ClusterSetslotSubcommand subcommand,
                                          @Nullable final Buffer nodeId) {
         requireNonNull(subcommand);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 4;
+        final int len = 4 + (nodeId == null ? 0 : 1);
+        final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.CLUSTER) +
+                    calculateRequestArgumentSize(slot) + subcommand.encodedByteCount() +
+                    (nodeId == null ? 0 : calculateRequestArgumentSize(nodeId));
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.CLUSTER.encodeTo(buffer);
+        RedisProtocolSupport.SubCommand.SETSLOT.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, slot);
+        subcommand.encodeTo(buffer);
         if (nodeId != null) {
-            len++;
+            RedisRequests.writeRequestArgument(buffer, nodeId);
         }
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.CLUSTER,
-                    RedisProtocolSupport.SubCommand.SETSLOT, allocator);
-        addRequestArgument(slot, cb, allocator);
-        addRequestArgument(subcommand, cb, allocator);
-        if (nodeId != null) {
-            addRequestArgument(nodeId, cb, allocator);
-        }
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, cb);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -894,13 +1144,15 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     @Override
     public Future<Buffer> clusterSlaves(final Buffer nodeId) {
         requireNonNull(nodeId);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 3;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.CLUSTER,
-                    RedisProtocolSupport.SubCommand.SLAVES, allocator);
-        addRequestArgument(nodeId, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, cb);
+        final int len = 3;
+        final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.CLUSTER) +
+                    calculateRequestArgumentSize(nodeId);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.CLUSTER.encodeTo(buffer);
+        RedisProtocolSupport.SubCommand.SLAVES.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, nodeId);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Buffer> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -908,12 +1160,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
 
     @Override
     public <T> Future<List<T>> clusterSlots() {
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 2;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.CLUSTER,
-                    RedisProtocolSupport.SubCommand.SLOTS, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, cb);
+        final int len = 2;
+        final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.CLUSTER);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.CLUSTER.encodeTo(buffer);
+        RedisProtocolSupport.SubCommand.SLOTS.encodeTo(buffer);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -921,11 +1174,12 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
 
     @Override
     public <T> Future<List<T>> command() {
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 1;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.COMMAND, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.COMMAND, cb);
+        final int len = 1;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.COMMAND);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.COMMAND.encodeTo(buffer);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.COMMAND, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -933,12 +1187,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
 
     @Override
     public Future<Long> commandCount() {
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 2;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.COMMAND,
-                    RedisProtocolSupport.SubCommand.COUNT, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.COMMAND, cb);
+        final int len = 2;
+        final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.COMMAND);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.COMMAND.encodeTo(buffer);
+        RedisProtocolSupport.SubCommand.COUNT.encodeTo(buffer);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.COMMAND, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -946,12 +1201,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
 
     @Override
     public <T> Future<List<T>> commandGetkeys() {
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 2;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.COMMAND,
-                    RedisProtocolSupport.SubCommand.GETKEYS, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.COMMAND, cb);
+        final int len = 2;
+        final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.COMMAND);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.COMMAND.encodeTo(buffer);
+        RedisProtocolSupport.SubCommand.GETKEYS.encodeTo(buffer);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.COMMAND, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -960,13 +1216,15 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     @Override
     public <T> Future<List<T>> commandInfo(final Buffer commandName) {
         requireNonNull(commandName);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 3;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.COMMAND,
-                    RedisProtocolSupport.SubCommand.INFO, allocator);
-        addRequestArgument(commandName, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.COMMAND, cb);
+        final int len = 3;
+        final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.COMMAND) +
+                    calculateRequestArgumentSize(commandName);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.COMMAND.encodeTo(buffer);
+        RedisProtocolSupport.SubCommand.INFO.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, commandName);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.COMMAND, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -976,14 +1234,16 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     public <T> Future<List<T>> commandInfo(final Buffer commandName1, final Buffer commandName2) {
         requireNonNull(commandName1);
         requireNonNull(commandName2);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 4;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.COMMAND,
-                    RedisProtocolSupport.SubCommand.INFO, allocator);
-        addRequestArgument(commandName1, cb, allocator);
-        addRequestArgument(commandName2, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.COMMAND, cb);
+        final int len = 4;
+        final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.COMMAND) +
+                    calculateRequestArgumentSize(commandName1) + calculateRequestArgumentSize(commandName2);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.COMMAND.encodeTo(buffer);
+        RedisProtocolSupport.SubCommand.INFO.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, commandName1);
+        RedisRequests.writeRequestArgument(buffer, commandName2);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.COMMAND, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -995,15 +1255,18 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         requireNonNull(commandName1);
         requireNonNull(commandName2);
         requireNonNull(commandName3);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 5;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.COMMAND,
-                    RedisProtocolSupport.SubCommand.INFO, allocator);
-        addRequestArgument(commandName1, cb, allocator);
-        addRequestArgument(commandName2, cb, allocator);
-        addRequestArgument(commandName3, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.COMMAND, cb);
+        final int len = 5;
+        final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.COMMAND) +
+                    calculateRequestArgumentSize(commandName1) + calculateRequestArgumentSize(commandName2) +
+                    calculateRequestArgumentSize(commandName3);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.COMMAND.encodeTo(buffer);
+        RedisProtocolSupport.SubCommand.INFO.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, commandName1);
+        RedisRequests.writeRequestArgument(buffer, commandName2);
+        RedisRequests.writeRequestArgument(buffer, commandName3);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.COMMAND, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -1012,14 +1275,37 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     @Override
     public <T> Future<List<T>> commandInfo(final Collection<Buffer> commandNames) {
         requireNonNull(commandNames);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 2;
-        len += commandNames.size();
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.COMMAND,
-                    RedisProtocolSupport.SubCommand.INFO, allocator);
-        addRequestBufferArguments(commandNames, null, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.COMMAND, cb);
+        final int len = 2 + commandNames.size();
+        int commandNamesCapacity = 0;
+        if (commandNames instanceof List && commandNames instanceof RandomAccess) {
+            final List<Buffer> list = (List<Buffer>) commandNames;
+            for (int i = 0; i < list.size(); ++i) {
+                final Buffer arg = list.get(i);
+                commandNamesCapacity += calculateRequestArgumentSize(arg);
+            }
+        } else {
+            for (Buffer arg : commandNames) {
+                commandNamesCapacity += calculateRequestArgumentSize(arg);
+            }
+        }
+        final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.COMMAND) +
+                    commandNamesCapacity;
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.COMMAND.encodeTo(buffer);
+        RedisProtocolSupport.SubCommand.INFO.encodeTo(buffer);
+        if (commandNames instanceof List && commandNames instanceof RandomAccess) {
+            final List<Buffer> list = (List<Buffer>) commandNames;
+            for (int i = 0; i < list.size(); ++i) {
+                final Buffer arg = list.get(i);
+                RedisRequests.writeRequestArgument(buffer, arg);
+            }
+        } else {
+            for (Buffer arg : commandNames) {
+                RedisRequests.writeRequestArgument(buffer, arg);
+            }
+        }
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.COMMAND, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -1028,13 +1314,15 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     @Override
     public <T> Future<List<T>> configGet(final Buffer parameter) {
         requireNonNull(parameter);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 3;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.CONFIG,
-                    RedisProtocolSupport.SubCommand.GET, allocator);
-        addRequestArgument(parameter, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.CONFIG, cb);
+        final int len = 3;
+        final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.CONFIG) +
+                    calculateRequestArgumentSize(parameter);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.CONFIG.encodeTo(buffer);
+        RedisProtocolSupport.SubCommand.GET.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, parameter);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.CONFIG, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -1042,12 +1330,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
 
     @Override
     public Future<String> configRewrite() {
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 2;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.CONFIG,
-                    RedisProtocolSupport.SubCommand.REWRITE, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.CONFIG, cb);
+        final int len = 2;
+        final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.CONFIG);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.CONFIG.encodeTo(buffer);
+        RedisProtocolSupport.SubCommand.REWRITE.encodeTo(buffer);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.CONFIG, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -1057,14 +1346,16 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     public Future<String> configSet(final Buffer parameter, final Buffer value) {
         requireNonNull(parameter);
         requireNonNull(value);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 4;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.CONFIG,
-                    RedisProtocolSupport.SubCommand.SET, allocator);
-        addRequestArgument(parameter, cb, allocator);
-        addRequestArgument(value, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.CONFIG, cb);
+        final int len = 4;
+        final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.CONFIG) +
+                    calculateRequestArgumentSize(parameter) + calculateRequestArgumentSize(value);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.CONFIG.encodeTo(buffer);
+        RedisProtocolSupport.SubCommand.SET.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, parameter);
+        RedisRequests.writeRequestArgument(buffer, value);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.CONFIG, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -1072,12 +1363,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
 
     @Override
     public Future<String> configResetstat() {
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 2;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.CONFIG,
-                    RedisProtocolSupport.SubCommand.RESETSTAT, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.CONFIG, cb);
+        final int len = 2;
+        final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.CONFIG);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.CONFIG.encodeTo(buffer);
+        RedisProtocolSupport.SubCommand.RESETSTAT.encodeTo(buffer);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.CONFIG, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -1085,11 +1377,12 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
 
     @Override
     public Future<Long> dbsize() {
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 1;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.DBSIZE, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.DBSIZE, cb);
+        final int len = 1;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.DBSIZE);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.DBSIZE.encodeTo(buffer);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.DBSIZE, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -1098,13 +1391,15 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     @Override
     public Future<String> debugObject(@RedisProtocolSupport.Key final Buffer key) {
         requireNonNull(key);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 3;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.DEBUG,
-                    RedisProtocolSupport.SubCommand.OBJECT, allocator);
-        addRequestArgument(key, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.DEBUG, cb);
+        final int len = 3;
+        final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.DEBUG) +
+                    calculateRequestArgumentSize(key);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.DEBUG.encodeTo(buffer);
+        RedisProtocolSupport.SubCommand.OBJECT.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.DEBUG, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -1112,12 +1407,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
 
     @Override
     public Future<String> debugSegfault() {
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 2;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.DEBUG,
-                    RedisProtocolSupport.SubCommand.SEGFAULT, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.DEBUG, cb);
+        final int len = 2;
+        final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.DEBUG);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.DEBUG.encodeTo(buffer);
+        RedisProtocolSupport.SubCommand.SEGFAULT.encodeTo(buffer);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.DEBUG, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -1126,12 +1422,14 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     @Override
     public Future<Long> decr(@RedisProtocolSupport.Key final Buffer key) {
         requireNonNull(key);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 2;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.DECR, allocator);
-        addRequestArgument(key, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.DECR, cb);
+        final int len = 2;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.DECR) +
+                    calculateRequestArgumentSize(key);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.DECR.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.DECR, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -1140,13 +1438,15 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     @Override
     public Future<Long> decrby(@RedisProtocolSupport.Key final Buffer key, final long decrement) {
         requireNonNull(key);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 3;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.DECRBY, allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestArgument(decrement, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.DECRBY, cb);
+        final int len = 3;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.DECRBY) +
+                    calculateRequestArgumentSize(key) + calculateRequestArgumentSize(decrement);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.DECRBY.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        RedisRequests.writeRequestArgument(buffer, decrement);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.DECRBY, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -1155,12 +1455,14 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     @Override
     public Future<Long> del(@RedisProtocolSupport.Key final Buffer key) {
         requireNonNull(key);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 2;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.DEL, allocator);
-        addRequestArgument(key, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.DEL, cb);
+        final int len = 2;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.DEL) +
+                    calculateRequestArgumentSize(key);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.DEL.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.DEL, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -1170,13 +1472,15 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     public Future<Long> del(@RedisProtocolSupport.Key final Buffer key1, @RedisProtocolSupport.Key final Buffer key2) {
         requireNonNull(key1);
         requireNonNull(key2);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 3;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.DEL, allocator);
-        addRequestArgument(key1, cb, allocator);
-        addRequestArgument(key2, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.DEL, cb);
+        final int len = 3;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.DEL) +
+                    calculateRequestArgumentSize(key1) + calculateRequestArgumentSize(key2);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.DEL.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key1);
+        RedisRequests.writeRequestArgument(buffer, key2);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.DEL, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -1188,14 +1492,17 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         requireNonNull(key1);
         requireNonNull(key2);
         requireNonNull(key3);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 4;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.DEL, allocator);
-        addRequestArgument(key1, cb, allocator);
-        addRequestArgument(key2, cb, allocator);
-        addRequestArgument(key3, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.DEL, cb);
+        final int len = 4;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.DEL) +
+                    calculateRequestArgumentSize(key1) + calculateRequestArgumentSize(key2) +
+                    calculateRequestArgumentSize(key3);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.DEL.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key1);
+        RedisRequests.writeRequestArgument(buffer, key2);
+        RedisRequests.writeRequestArgument(buffer, key3);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.DEL, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -1204,13 +1511,35 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     @Override
     public Future<Long> del(@RedisProtocolSupport.Key final Collection<Buffer> keys) {
         requireNonNull(keys);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 1;
-        len += keys.size();
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.DEL, allocator);
-        addRequestBufferArguments(keys, null, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.DEL, cb);
+        final int len = 1 + keys.size();
+        int keysCapacity = 0;
+        if (keys instanceof List && keys instanceof RandomAccess) {
+            final List<Buffer> list = (List<Buffer>) keys;
+            for (int i = 0; i < list.size(); ++i) {
+                final Buffer arg = list.get(i);
+                keysCapacity += calculateRequestArgumentSize(arg);
+            }
+        } else {
+            for (Buffer arg : keys) {
+                keysCapacity += calculateRequestArgumentSize(arg);
+            }
+        }
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.DEL) + keysCapacity;
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.DEL.encodeTo(buffer);
+        if (keys instanceof List && keys instanceof RandomAccess) {
+            final List<Buffer> list = (List<Buffer>) keys;
+            for (int i = 0; i < list.size(); ++i) {
+                final Buffer arg = list.get(i);
+                RedisRequests.writeRequestArgument(buffer, arg);
+            }
+        } else {
+            for (Buffer arg : keys) {
+                RedisRequests.writeRequestArgument(buffer, arg);
+            }
+        }
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.DEL, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -1218,11 +1547,12 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
 
     @Override
     public Single<String> discard() {
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 1;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.DISCARD, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.DISCARD, cb);
+        final int len = 1;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.DISCARD);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.DISCARD.encodeTo(buffer);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.DISCARD, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         final Single<String> result = new DiscardSingle<>(this, queued, singles, stateUpdater, reservedCnx,
                     releaseAfterDone);
@@ -1232,12 +1562,14 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     @Override
     public Future<Buffer> dump(@RedisProtocolSupport.Key final Buffer key) {
         requireNonNull(key);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 2;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.DUMP, allocator);
-        addRequestArgument(key, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.DUMP, cb);
+        final int len = 2;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.DUMP) +
+                    calculateRequestArgumentSize(key);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.DUMP.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.DUMP, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Buffer> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -1246,12 +1578,14 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     @Override
     public Future<Buffer> echo(final Buffer message) {
         requireNonNull(message);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 2;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ECHO, allocator);
-        addRequestArgument(message, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.ECHO, cb);
+        final int len = 2;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.ECHO) +
+                    calculateRequestArgumentSize(message);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.ECHO.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, message);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.ECHO, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Buffer> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -1263,17 +1597,62 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         requireNonNull(script);
         requireNonNull(keys);
         requireNonNull(args);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 3;
-        len += keys.size();
-        len += args.size();
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.EVAL, allocator);
-        addRequestArgument(script, cb, allocator);
-        addRequestArgument(numkeys, cb, allocator);
-        addRequestBufferArguments(keys, null, cb, allocator);
-        addRequestBufferArguments(args, null, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.EVAL, cb);
+        final int len = 3 + keys.size() + args.size();
+        int keysCapacity = 0;
+        if (keys instanceof List && keys instanceof RandomAccess) {
+            final List<Buffer> list = (List<Buffer>) keys;
+            for (int i = 0; i < list.size(); ++i) {
+                final Buffer arg = list.get(i);
+                keysCapacity += calculateRequestArgumentSize(arg);
+            }
+        } else {
+            for (Buffer arg : keys) {
+                keysCapacity += calculateRequestArgumentSize(arg);
+            }
+        }
+        int argsCapacity = 0;
+        if (args instanceof List && args instanceof RandomAccess) {
+            final List<Buffer> list = (List<Buffer>) args;
+            for (int i = 0; i < list.size(); ++i) {
+                final Buffer arg = list.get(i);
+                argsCapacity += calculateRequestArgumentSize(arg);
+            }
+        } else {
+            for (Buffer arg : args) {
+                argsCapacity += calculateRequestArgumentSize(arg);
+            }
+        }
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.EVAL) +
+                    calculateRequestArgumentSize(script) + calculateRequestArgumentSize(numkeys) + keysCapacity +
+                    argsCapacity;
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.EVAL.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, script);
+        RedisRequests.writeRequestArgument(buffer, numkeys);
+        if (keys instanceof List && keys instanceof RandomAccess) {
+            final List<Buffer> list = (List<Buffer>) keys;
+            for (int i = 0; i < list.size(); ++i) {
+                final Buffer arg = list.get(i);
+                RedisRequests.writeRequestArgument(buffer, arg);
+            }
+        } else {
+            for (Buffer arg : keys) {
+                RedisRequests.writeRequestArgument(buffer, arg);
+            }
+        }
+        if (args instanceof List && args instanceof RandomAccess) {
+            final List<Buffer> list = (List<Buffer>) args;
+            for (int i = 0; i < list.size(); ++i) {
+                final Buffer arg = list.get(i);
+                RedisRequests.writeRequestArgument(buffer, arg);
+            }
+        } else {
+            for (Buffer arg : args) {
+                RedisRequests.writeRequestArgument(buffer, arg);
+            }
+        }
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.EVAL, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Buffer> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -1286,17 +1665,62 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         requireNonNull(script);
         requireNonNull(keys);
         requireNonNull(args);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 3;
-        len += keys.size();
-        len += args.size();
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.EVAL, allocator);
-        addRequestArgument(script, cb, allocator);
-        addRequestArgument(numkeys, cb, allocator);
-        addRequestBufferArguments(keys, null, cb, allocator);
-        addRequestBufferArguments(args, null, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.EVAL, cb);
+        final int len = 3 + keys.size() + args.size();
+        int keysCapacity = 0;
+        if (keys instanceof List && keys instanceof RandomAccess) {
+            final List<Buffer> list = (List<Buffer>) keys;
+            for (int i = 0; i < list.size(); ++i) {
+                final Buffer arg = list.get(i);
+                keysCapacity += calculateRequestArgumentSize(arg);
+            }
+        } else {
+            for (Buffer arg : keys) {
+                keysCapacity += calculateRequestArgumentSize(arg);
+            }
+        }
+        int argsCapacity = 0;
+        if (args instanceof List && args instanceof RandomAccess) {
+            final List<Buffer> list = (List<Buffer>) args;
+            for (int i = 0; i < list.size(); ++i) {
+                final Buffer arg = list.get(i);
+                argsCapacity += calculateRequestArgumentSize(arg);
+            }
+        } else {
+            for (Buffer arg : args) {
+                argsCapacity += calculateRequestArgumentSize(arg);
+            }
+        }
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.EVAL) +
+                    calculateRequestArgumentSize(script) + calculateRequestArgumentSize(numkeys) + keysCapacity +
+                    argsCapacity;
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.EVAL.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, script);
+        RedisRequests.writeRequestArgument(buffer, numkeys);
+        if (keys instanceof List && keys instanceof RandomAccess) {
+            final List<Buffer> list = (List<Buffer>) keys;
+            for (int i = 0; i < list.size(); ++i) {
+                final Buffer arg = list.get(i);
+                RedisRequests.writeRequestArgument(buffer, arg);
+            }
+        } else {
+            for (Buffer arg : keys) {
+                RedisRequests.writeRequestArgument(buffer, arg);
+            }
+        }
+        if (args instanceof List && args instanceof RandomAccess) {
+            final List<Buffer> list = (List<Buffer>) args;
+            for (int i = 0; i < list.size(); ++i) {
+                final Buffer arg = list.get(i);
+                RedisRequests.writeRequestArgument(buffer, arg);
+            }
+        } else {
+            for (Buffer arg : args) {
+                RedisRequests.writeRequestArgument(buffer, arg);
+            }
+        }
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.EVAL, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -1309,17 +1733,62 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         requireNonNull(script);
         requireNonNull(keys);
         requireNonNull(args);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 3;
-        len += keys.size();
-        len += args.size();
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.EVAL, allocator);
-        addRequestArgument(script, cb, allocator);
-        addRequestArgument(numkeys, cb, allocator);
-        addRequestBufferArguments(keys, null, cb, allocator);
-        addRequestBufferArguments(args, null, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.EVAL, cb);
+        final int len = 3 + keys.size() + args.size();
+        int keysCapacity = 0;
+        if (keys instanceof List && keys instanceof RandomAccess) {
+            final List<Buffer> list = (List<Buffer>) keys;
+            for (int i = 0; i < list.size(); ++i) {
+                final Buffer arg = list.get(i);
+                keysCapacity += calculateRequestArgumentSize(arg);
+            }
+        } else {
+            for (Buffer arg : keys) {
+                keysCapacity += calculateRequestArgumentSize(arg);
+            }
+        }
+        int argsCapacity = 0;
+        if (args instanceof List && args instanceof RandomAccess) {
+            final List<Buffer> list = (List<Buffer>) args;
+            for (int i = 0; i < list.size(); ++i) {
+                final Buffer arg = list.get(i);
+                argsCapacity += calculateRequestArgumentSize(arg);
+            }
+        } else {
+            for (Buffer arg : args) {
+                argsCapacity += calculateRequestArgumentSize(arg);
+            }
+        }
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.EVAL) +
+                    calculateRequestArgumentSize(script) + calculateRequestArgumentSize(numkeys) + keysCapacity +
+                    argsCapacity;
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.EVAL.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, script);
+        RedisRequests.writeRequestArgument(buffer, numkeys);
+        if (keys instanceof List && keys instanceof RandomAccess) {
+            final List<Buffer> list = (List<Buffer>) keys;
+            for (int i = 0; i < list.size(); ++i) {
+                final Buffer arg = list.get(i);
+                RedisRequests.writeRequestArgument(buffer, arg);
+            }
+        } else {
+            for (Buffer arg : keys) {
+                RedisRequests.writeRequestArgument(buffer, arg);
+            }
+        }
+        if (args instanceof List && args instanceof RandomAccess) {
+            final List<Buffer> list = (List<Buffer>) args;
+            for (int i = 0; i < list.size(); ++i) {
+                final Buffer arg = list.get(i);
+                RedisRequests.writeRequestArgument(buffer, arg);
+            }
+        } else {
+            for (Buffer arg : args) {
+                RedisRequests.writeRequestArgument(buffer, arg);
+            }
+        }
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.EVAL, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -1332,17 +1801,62 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         requireNonNull(sha1);
         requireNonNull(keys);
         requireNonNull(args);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 3;
-        len += keys.size();
-        len += args.size();
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.EVALSHA, allocator);
-        addRequestArgument(sha1, cb, allocator);
-        addRequestArgument(numkeys, cb, allocator);
-        addRequestBufferArguments(keys, null, cb, allocator);
-        addRequestBufferArguments(args, null, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.EVALSHA, cb);
+        final int len = 3 + keys.size() + args.size();
+        int keysCapacity = 0;
+        if (keys instanceof List && keys instanceof RandomAccess) {
+            final List<Buffer> list = (List<Buffer>) keys;
+            for (int i = 0; i < list.size(); ++i) {
+                final Buffer arg = list.get(i);
+                keysCapacity += calculateRequestArgumentSize(arg);
+            }
+        } else {
+            for (Buffer arg : keys) {
+                keysCapacity += calculateRequestArgumentSize(arg);
+            }
+        }
+        int argsCapacity = 0;
+        if (args instanceof List && args instanceof RandomAccess) {
+            final List<Buffer> list = (List<Buffer>) args;
+            for (int i = 0; i < list.size(); ++i) {
+                final Buffer arg = list.get(i);
+                argsCapacity += calculateRequestArgumentSize(arg);
+            }
+        } else {
+            for (Buffer arg : args) {
+                argsCapacity += calculateRequestArgumentSize(arg);
+            }
+        }
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.EVALSHA) +
+                    calculateRequestArgumentSize(sha1) + calculateRequestArgumentSize(numkeys) + keysCapacity +
+                    argsCapacity;
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.EVALSHA.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, sha1);
+        RedisRequests.writeRequestArgument(buffer, numkeys);
+        if (keys instanceof List && keys instanceof RandomAccess) {
+            final List<Buffer> list = (List<Buffer>) keys;
+            for (int i = 0; i < list.size(); ++i) {
+                final Buffer arg = list.get(i);
+                RedisRequests.writeRequestArgument(buffer, arg);
+            }
+        } else {
+            for (Buffer arg : keys) {
+                RedisRequests.writeRequestArgument(buffer, arg);
+            }
+        }
+        if (args instanceof List && args instanceof RandomAccess) {
+            final List<Buffer> list = (List<Buffer>) args;
+            for (int i = 0; i < list.size(); ++i) {
+                final Buffer arg = list.get(i);
+                RedisRequests.writeRequestArgument(buffer, arg);
+            }
+        } else {
+            for (Buffer arg : args) {
+                RedisRequests.writeRequestArgument(buffer, arg);
+            }
+        }
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.EVALSHA, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Buffer> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -1355,17 +1869,62 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         requireNonNull(sha1);
         requireNonNull(keys);
         requireNonNull(args);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 3;
-        len += keys.size();
-        len += args.size();
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.EVALSHA, allocator);
-        addRequestArgument(sha1, cb, allocator);
-        addRequestArgument(numkeys, cb, allocator);
-        addRequestBufferArguments(keys, null, cb, allocator);
-        addRequestBufferArguments(args, null, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.EVALSHA, cb);
+        final int len = 3 + keys.size() + args.size();
+        int keysCapacity = 0;
+        if (keys instanceof List && keys instanceof RandomAccess) {
+            final List<Buffer> list = (List<Buffer>) keys;
+            for (int i = 0; i < list.size(); ++i) {
+                final Buffer arg = list.get(i);
+                keysCapacity += calculateRequestArgumentSize(arg);
+            }
+        } else {
+            for (Buffer arg : keys) {
+                keysCapacity += calculateRequestArgumentSize(arg);
+            }
+        }
+        int argsCapacity = 0;
+        if (args instanceof List && args instanceof RandomAccess) {
+            final List<Buffer> list = (List<Buffer>) args;
+            for (int i = 0; i < list.size(); ++i) {
+                final Buffer arg = list.get(i);
+                argsCapacity += calculateRequestArgumentSize(arg);
+            }
+        } else {
+            for (Buffer arg : args) {
+                argsCapacity += calculateRequestArgumentSize(arg);
+            }
+        }
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.EVALSHA) +
+                    calculateRequestArgumentSize(sha1) + calculateRequestArgumentSize(numkeys) + keysCapacity +
+                    argsCapacity;
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.EVALSHA.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, sha1);
+        RedisRequests.writeRequestArgument(buffer, numkeys);
+        if (keys instanceof List && keys instanceof RandomAccess) {
+            final List<Buffer> list = (List<Buffer>) keys;
+            for (int i = 0; i < list.size(); ++i) {
+                final Buffer arg = list.get(i);
+                RedisRequests.writeRequestArgument(buffer, arg);
+            }
+        } else {
+            for (Buffer arg : keys) {
+                RedisRequests.writeRequestArgument(buffer, arg);
+            }
+        }
+        if (args instanceof List && args instanceof RandomAccess) {
+            final List<Buffer> list = (List<Buffer>) args;
+            for (int i = 0; i < list.size(); ++i) {
+                final Buffer arg = list.get(i);
+                RedisRequests.writeRequestArgument(buffer, arg);
+            }
+        } else {
+            for (Buffer arg : args) {
+                RedisRequests.writeRequestArgument(buffer, arg);
+            }
+        }
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.EVALSHA, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -1378,17 +1937,62 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         requireNonNull(sha1);
         requireNonNull(keys);
         requireNonNull(args);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 3;
-        len += keys.size();
-        len += args.size();
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.EVALSHA, allocator);
-        addRequestArgument(sha1, cb, allocator);
-        addRequestArgument(numkeys, cb, allocator);
-        addRequestBufferArguments(keys, null, cb, allocator);
-        addRequestBufferArguments(args, null, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.EVALSHA, cb);
+        final int len = 3 + keys.size() + args.size();
+        int keysCapacity = 0;
+        if (keys instanceof List && keys instanceof RandomAccess) {
+            final List<Buffer> list = (List<Buffer>) keys;
+            for (int i = 0; i < list.size(); ++i) {
+                final Buffer arg = list.get(i);
+                keysCapacity += calculateRequestArgumentSize(arg);
+            }
+        } else {
+            for (Buffer arg : keys) {
+                keysCapacity += calculateRequestArgumentSize(arg);
+            }
+        }
+        int argsCapacity = 0;
+        if (args instanceof List && args instanceof RandomAccess) {
+            final List<Buffer> list = (List<Buffer>) args;
+            for (int i = 0; i < list.size(); ++i) {
+                final Buffer arg = list.get(i);
+                argsCapacity += calculateRequestArgumentSize(arg);
+            }
+        } else {
+            for (Buffer arg : args) {
+                argsCapacity += calculateRequestArgumentSize(arg);
+            }
+        }
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.EVALSHA) +
+                    calculateRequestArgumentSize(sha1) + calculateRequestArgumentSize(numkeys) + keysCapacity +
+                    argsCapacity;
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.EVALSHA.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, sha1);
+        RedisRequests.writeRequestArgument(buffer, numkeys);
+        if (keys instanceof List && keys instanceof RandomAccess) {
+            final List<Buffer> list = (List<Buffer>) keys;
+            for (int i = 0; i < list.size(); ++i) {
+                final Buffer arg = list.get(i);
+                RedisRequests.writeRequestArgument(buffer, arg);
+            }
+        } else {
+            for (Buffer arg : keys) {
+                RedisRequests.writeRequestArgument(buffer, arg);
+            }
+        }
+        if (args instanceof List && args instanceof RandomAccess) {
+            final List<Buffer> list = (List<Buffer>) args;
+            for (int i = 0; i < list.size(); ++i) {
+                final Buffer arg = list.get(i);
+                RedisRequests.writeRequestArgument(buffer, arg);
+            }
+        } else {
+            for (Buffer arg : args) {
+                RedisRequests.writeRequestArgument(buffer, arg);
+            }
+        }
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.EVALSHA, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -1396,11 +2000,12 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
 
     @Override
     public Completable exec() {
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 1;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.EXEC, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.EXEC, cb);
+        final int len = 1;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.EXEC);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.EXEC.encodeTo(buffer);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.EXEC, buffer);
         final Single<List<Object>> queued = (Single) reservedCnx.request(request, List.class);
         final Completable result = new ExecCompletable<>(this, queued, singles, stateUpdater, reservedCnx,
                     releaseAfterDone);
@@ -1410,12 +2015,14 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     @Override
     public Future<Long> exists(@RedisProtocolSupport.Key final Buffer key) {
         requireNonNull(key);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 2;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.EXISTS, allocator);
-        addRequestArgument(key, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.EXISTS, cb);
+        final int len = 2;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.EXISTS) +
+                    calculateRequestArgumentSize(key);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.EXISTS.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.EXISTS, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -1426,13 +2033,15 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
                                @RedisProtocolSupport.Key final Buffer key2) {
         requireNonNull(key1);
         requireNonNull(key2);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 3;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.EXISTS, allocator);
-        addRequestArgument(key1, cb, allocator);
-        addRequestArgument(key2, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.EXISTS, cb);
+        final int len = 3;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.EXISTS) +
+                    calculateRequestArgumentSize(key1) + calculateRequestArgumentSize(key2);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.EXISTS.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key1);
+        RedisRequests.writeRequestArgument(buffer, key2);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.EXISTS, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -1444,14 +2053,17 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         requireNonNull(key1);
         requireNonNull(key2);
         requireNonNull(key3);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 4;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.EXISTS, allocator);
-        addRequestArgument(key1, cb, allocator);
-        addRequestArgument(key2, cb, allocator);
-        addRequestArgument(key3, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.EXISTS, cb);
+        final int len = 4;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.EXISTS) +
+                    calculateRequestArgumentSize(key1) + calculateRequestArgumentSize(key2) +
+                    calculateRequestArgumentSize(key3);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.EXISTS.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key1);
+        RedisRequests.writeRequestArgument(buffer, key2);
+        RedisRequests.writeRequestArgument(buffer, key3);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.EXISTS, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -1460,13 +2072,35 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     @Override
     public Future<Long> exists(@RedisProtocolSupport.Key final Collection<Buffer> keys) {
         requireNonNull(keys);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 1;
-        len += keys.size();
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.EXISTS, allocator);
-        addRequestBufferArguments(keys, null, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.EXISTS, cb);
+        final int len = 1 + keys.size();
+        int keysCapacity = 0;
+        if (keys instanceof List && keys instanceof RandomAccess) {
+            final List<Buffer> list = (List<Buffer>) keys;
+            for (int i = 0; i < list.size(); ++i) {
+                final Buffer arg = list.get(i);
+                keysCapacity += calculateRequestArgumentSize(arg);
+            }
+        } else {
+            for (Buffer arg : keys) {
+                keysCapacity += calculateRequestArgumentSize(arg);
+            }
+        }
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.EXISTS) + keysCapacity;
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.EXISTS.encodeTo(buffer);
+        if (keys instanceof List && keys instanceof RandomAccess) {
+            final List<Buffer> list = (List<Buffer>) keys;
+            for (int i = 0; i < list.size(); ++i) {
+                final Buffer arg = list.get(i);
+                RedisRequests.writeRequestArgument(buffer, arg);
+            }
+        } else {
+            for (Buffer arg : keys) {
+                RedisRequests.writeRequestArgument(buffer, arg);
+            }
+        }
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.EXISTS, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -1475,13 +2109,15 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     @Override
     public Future<Long> expire(@RedisProtocolSupport.Key final Buffer key, final long seconds) {
         requireNonNull(key);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 3;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.EXPIRE, allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestArgument(seconds, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.EXPIRE, cb);
+        final int len = 3;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.EXPIRE) +
+                    calculateRequestArgumentSize(key) + calculateRequestArgumentSize(seconds);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.EXPIRE.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        RedisRequests.writeRequestArgument(buffer, seconds);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.EXPIRE, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -1490,13 +2126,15 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     @Override
     public Future<Long> expireat(@RedisProtocolSupport.Key final Buffer key, final long timestamp) {
         requireNonNull(key);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 3;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.EXPIREAT, allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestArgument(timestamp, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.EXPIREAT, cb);
+        final int len = 3;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.EXPIREAT) +
+                    calculateRequestArgumentSize(key) + calculateRequestArgumentSize(timestamp);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.EXPIREAT.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        RedisRequests.writeRequestArgument(buffer, timestamp);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.EXPIREAT, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -1504,11 +2142,12 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
 
     @Override
     public Future<String> flushall() {
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 1;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.FLUSHALL, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.FLUSHALL, cb);
+        final int len = 1;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.FLUSHALL);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.FLUSHALL.encodeTo(buffer);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.FLUSHALL, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -1516,17 +2155,16 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
 
     @Override
     public Future<String> flushall(@Nullable final RedisProtocolSupport.FlushallAsync async) {
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 1;
+        final int len = 1 + (async == null ? 0 : 1);
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.FLUSHALL) +
+                    (async == null ? 0 : async.encodedByteCount());
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.FLUSHALL.encodeTo(buffer);
         if (async != null) {
-            len++;
+            async.encodeTo(buffer);
         }
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.FLUSHALL, allocator);
-        if (async != null) {
-            addRequestArgument(async, cb, allocator);
-        }
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.FLUSHALL, cb);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.FLUSHALL, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -1534,11 +2172,12 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
 
     @Override
     public Future<String> flushdb() {
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 1;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.FLUSHDB, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.FLUSHDB, cb);
+        final int len = 1;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.FLUSHDB);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.FLUSHDB.encodeTo(buffer);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.FLUSHDB, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -1546,17 +2185,16 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
 
     @Override
     public Future<String> flushdb(@Nullable final RedisProtocolSupport.FlushdbAsync async) {
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 1;
+        final int len = 1 + (async == null ? 0 : 1);
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.FLUSHDB) +
+                    (async == null ? 0 : async.encodedByteCount());
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.FLUSHDB.encodeTo(buffer);
         if (async != null) {
-            len++;
+            async.encodeTo(buffer);
         }
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.FLUSHDB, allocator);
-        if (async != null) {
-            addRequestArgument(async, cb, allocator);
-        }
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.FLUSHDB, cb);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.FLUSHDB, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -1567,15 +2205,18 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
                                final double latitude, final Buffer member) {
         requireNonNull(key);
         requireNonNull(member);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 5;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.GEOADD, allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestArgument(longitude, cb, allocator);
-        addRequestArgument(latitude, cb, allocator);
-        addRequestArgument(member, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.GEOADD, cb);
+        final int len = 5;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.GEOADD) +
+                    calculateRequestArgumentSize(key) + calculateRequestArgumentSize(longitude) +
+                    calculateRequestArgumentSize(latitude) + calculateRequestArgumentSize(member);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.GEOADD.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        RedisRequests.writeRequestArgument(buffer, longitude);
+        RedisRequests.writeRequestArgument(buffer, latitude);
+        RedisRequests.writeRequestArgument(buffer, member);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.GEOADD, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -1588,18 +2229,23 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         requireNonNull(key);
         requireNonNull(member1);
         requireNonNull(member2);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 8;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.GEOADD, allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestArgument(longitude1, cb, allocator);
-        addRequestArgument(latitude1, cb, allocator);
-        addRequestArgument(member1, cb, allocator);
-        addRequestArgument(longitude2, cb, allocator);
-        addRequestArgument(latitude2, cb, allocator);
-        addRequestArgument(member2, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.GEOADD, cb);
+        final int len = 8;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.GEOADD) +
+                    calculateRequestArgumentSize(key) + calculateRequestArgumentSize(longitude1) +
+                    calculateRequestArgumentSize(latitude1) + calculateRequestArgumentSize(member1) +
+                    calculateRequestArgumentSize(longitude2) + calculateRequestArgumentSize(latitude2) +
+                    calculateRequestArgumentSize(member2);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.GEOADD.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        RedisRequests.writeRequestArgument(buffer, longitude1);
+        RedisRequests.writeRequestArgument(buffer, latitude1);
+        RedisRequests.writeRequestArgument(buffer, member1);
+        RedisRequests.writeRequestArgument(buffer, longitude2);
+        RedisRequests.writeRequestArgument(buffer, latitude2);
+        RedisRequests.writeRequestArgument(buffer, member2);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.GEOADD, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -1614,21 +2260,27 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         requireNonNull(member1);
         requireNonNull(member2);
         requireNonNull(member3);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 11;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.GEOADD, allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestArgument(longitude1, cb, allocator);
-        addRequestArgument(latitude1, cb, allocator);
-        addRequestArgument(member1, cb, allocator);
-        addRequestArgument(longitude2, cb, allocator);
-        addRequestArgument(latitude2, cb, allocator);
-        addRequestArgument(member2, cb, allocator);
-        addRequestArgument(longitude3, cb, allocator);
-        addRequestArgument(latitude3, cb, allocator);
-        addRequestArgument(member3, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.GEOADD, cb);
+        final int len = 11;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.GEOADD) +
+                    calculateRequestArgumentSize(key) + calculateRequestArgumentSize(longitude1) +
+                    calculateRequestArgumentSize(latitude1) + calculateRequestArgumentSize(member1) +
+                    calculateRequestArgumentSize(longitude2) + calculateRequestArgumentSize(latitude2) +
+                    calculateRequestArgumentSize(member2) + calculateRequestArgumentSize(longitude3) +
+                    calculateRequestArgumentSize(latitude3) + calculateRequestArgumentSize(member3);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.GEOADD.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        RedisRequests.writeRequestArgument(buffer, longitude1);
+        RedisRequests.writeRequestArgument(buffer, latitude1);
+        RedisRequests.writeRequestArgument(buffer, member1);
+        RedisRequests.writeRequestArgument(buffer, longitude2);
+        RedisRequests.writeRequestArgument(buffer, latitude2);
+        RedisRequests.writeRequestArgument(buffer, member2);
+        RedisRequests.writeRequestArgument(buffer, longitude3);
+        RedisRequests.writeRequestArgument(buffer, latitude3);
+        RedisRequests.writeRequestArgument(buffer, member3);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.GEOADD, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -1639,14 +2291,37 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
                                final Collection<RedisProtocolSupport.BufferLongitudeLatitudeMember> longitudeLatitudeMembers) {
         requireNonNull(key);
         requireNonNull(longitudeLatitudeMembers);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 2;
-        len += RedisProtocolSupport.BufferLongitudeLatitudeMember.SIZE * longitudeLatitudeMembers.size();
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.GEOADD, allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestTupleArguments(longitudeLatitudeMembers, null, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.GEOADD, cb);
+        final int len = 2 + RedisProtocolSupport.BufferLongitudeLatitudeMember.SIZE * longitudeLatitudeMembers.size();
+        int longitudeLatitudeMembersCapacity = 0;
+        if (longitudeLatitudeMembers instanceof List && longitudeLatitudeMembers instanceof RandomAccess) {
+            final List<RedisProtocolSupport.BufferLongitudeLatitudeMember> list = (List<RedisProtocolSupport.BufferLongitudeLatitudeMember>) longitudeLatitudeMembers;
+            for (int i = 0; i < list.size(); ++i) {
+                final RedisProtocolSupport.BufferLongitudeLatitudeMember arg = list.get(i);
+                longitudeLatitudeMembersCapacity += arg.encodedByteCount();
+            }
+        } else {
+            for (RedisProtocolSupport.BufferLongitudeLatitudeMember arg : longitudeLatitudeMembers) {
+                longitudeLatitudeMembersCapacity += arg.encodedByteCount();
+            }
+        }
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.GEOADD) +
+                    calculateRequestArgumentSize(key) + longitudeLatitudeMembersCapacity;
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.GEOADD.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        if (longitudeLatitudeMembers instanceof List && longitudeLatitudeMembers instanceof RandomAccess) {
+            final List<RedisProtocolSupport.BufferLongitudeLatitudeMember> list = (List<RedisProtocolSupport.BufferLongitudeLatitudeMember>) longitudeLatitudeMembers;
+            for (int i = 0; i < list.size(); ++i) {
+                final RedisProtocolSupport.BufferLongitudeLatitudeMember arg = list.get(i);
+                arg.encodeTo(buffer);
+            }
+        } else {
+            for (RedisProtocolSupport.BufferLongitudeLatitudeMember arg : longitudeLatitudeMembers) {
+                arg.encodeTo(buffer);
+            }
+        }
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.GEOADD, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -1658,14 +2333,17 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         requireNonNull(key);
         requireNonNull(member1);
         requireNonNull(member2);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 4;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.GEODIST, allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestArgument(member1, cb, allocator);
-        addRequestArgument(member2, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.GEODIST, cb);
+        final int len = 4;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.GEODIST) +
+                    calculateRequestArgumentSize(key) + calculateRequestArgumentSize(member1) +
+                    calculateRequestArgumentSize(member2);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.GEODIST.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        RedisRequests.writeRequestArgument(buffer, member1);
+        RedisRequests.writeRequestArgument(buffer, member2);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.GEODIST, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Double> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -1677,20 +2355,20 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         requireNonNull(key);
         requireNonNull(member1);
         requireNonNull(member2);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 4;
+        final int len = 4 + (unit == null ? 0 : 1);
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.GEODIST) +
+                    calculateRequestArgumentSize(key) + calculateRequestArgumentSize(member1) +
+                    calculateRequestArgumentSize(member2) + (unit == null ? 0 : calculateRequestArgumentSize(unit));
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.GEODIST.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        RedisRequests.writeRequestArgument(buffer, member1);
+        RedisRequests.writeRequestArgument(buffer, member2);
         if (unit != null) {
-            len++;
+            RedisRequests.writeRequestArgument(buffer, unit);
         }
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.GEODIST, allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestArgument(member1, cb, allocator);
-        addRequestArgument(member2, cb, allocator);
-        if (unit != null) {
-            addRequestArgument(unit, cb, allocator);
-        }
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.GEODIST, cb);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.GEODIST, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Double> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -1700,13 +2378,15 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     public <T> Future<List<T>> geohash(@RedisProtocolSupport.Key final Buffer key, final Buffer member) {
         requireNonNull(key);
         requireNonNull(member);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 3;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.GEOHASH, allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestArgument(member, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.GEOHASH, cb);
+        final int len = 3;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.GEOHASH) +
+                    calculateRequestArgumentSize(key) + calculateRequestArgumentSize(member);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.GEOHASH.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        RedisRequests.writeRequestArgument(buffer, member);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.GEOHASH, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -1718,14 +2398,17 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         requireNonNull(key);
         requireNonNull(member1);
         requireNonNull(member2);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 4;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.GEOHASH, allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestArgument(member1, cb, allocator);
-        addRequestArgument(member2, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.GEOHASH, cb);
+        final int len = 4;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.GEOHASH) +
+                    calculateRequestArgumentSize(key) + calculateRequestArgumentSize(member1) +
+                    calculateRequestArgumentSize(member2);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.GEOHASH.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        RedisRequests.writeRequestArgument(buffer, member1);
+        RedisRequests.writeRequestArgument(buffer, member2);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.GEOHASH, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -1738,15 +2421,18 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         requireNonNull(member1);
         requireNonNull(member2);
         requireNonNull(member3);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 5;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.GEOHASH, allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestArgument(member1, cb, allocator);
-        addRequestArgument(member2, cb, allocator);
-        addRequestArgument(member3, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.GEOHASH, cb);
+        final int len = 5;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.GEOHASH) +
+                    calculateRequestArgumentSize(key) + calculateRequestArgumentSize(member1) +
+                    calculateRequestArgumentSize(member2) + calculateRequestArgumentSize(member3);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.GEOHASH.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        RedisRequests.writeRequestArgument(buffer, member1);
+        RedisRequests.writeRequestArgument(buffer, member2);
+        RedisRequests.writeRequestArgument(buffer, member3);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.GEOHASH, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -1756,14 +2442,37 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     public <T> Future<List<T>> geohash(@RedisProtocolSupport.Key final Buffer key, final Collection<Buffer> members) {
         requireNonNull(key);
         requireNonNull(members);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 2;
-        len += members.size();
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.GEOHASH, allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestBufferArguments(members, null, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.GEOHASH, cb);
+        final int len = 2 + members.size();
+        int membersCapacity = 0;
+        if (members instanceof List && members instanceof RandomAccess) {
+            final List<Buffer> list = (List<Buffer>) members;
+            for (int i = 0; i < list.size(); ++i) {
+                final Buffer arg = list.get(i);
+                membersCapacity += calculateRequestArgumentSize(arg);
+            }
+        } else {
+            for (Buffer arg : members) {
+                membersCapacity += calculateRequestArgumentSize(arg);
+            }
+        }
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.GEOHASH) +
+                    calculateRequestArgumentSize(key) + membersCapacity;
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.GEOHASH.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        if (members instanceof List && members instanceof RandomAccess) {
+            final List<Buffer> list = (List<Buffer>) members;
+            for (int i = 0; i < list.size(); ++i) {
+                final Buffer arg = list.get(i);
+                RedisRequests.writeRequestArgument(buffer, arg);
+            }
+        } else {
+            for (Buffer arg : members) {
+                RedisRequests.writeRequestArgument(buffer, arg);
+            }
+        }
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.GEOHASH, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -1773,13 +2482,15 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     public <T> Future<List<T>> geopos(@RedisProtocolSupport.Key final Buffer key, final Buffer member) {
         requireNonNull(key);
         requireNonNull(member);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 3;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.GEOPOS, allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestArgument(member, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.GEOPOS, cb);
+        final int len = 3;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.GEOPOS) +
+                    calculateRequestArgumentSize(key) + calculateRequestArgumentSize(member);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.GEOPOS.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        RedisRequests.writeRequestArgument(buffer, member);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.GEOPOS, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -1791,14 +2502,17 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         requireNonNull(key);
         requireNonNull(member1);
         requireNonNull(member2);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 4;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.GEOPOS, allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestArgument(member1, cb, allocator);
-        addRequestArgument(member2, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.GEOPOS, cb);
+        final int len = 4;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.GEOPOS) +
+                    calculateRequestArgumentSize(key) + calculateRequestArgumentSize(member1) +
+                    calculateRequestArgumentSize(member2);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.GEOPOS.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        RedisRequests.writeRequestArgument(buffer, member1);
+        RedisRequests.writeRequestArgument(buffer, member2);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.GEOPOS, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -1811,15 +2525,18 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         requireNonNull(member1);
         requireNonNull(member2);
         requireNonNull(member3);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 5;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.GEOPOS, allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestArgument(member1, cb, allocator);
-        addRequestArgument(member2, cb, allocator);
-        addRequestArgument(member3, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.GEOPOS, cb);
+        final int len = 5;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.GEOPOS) +
+                    calculateRequestArgumentSize(key) + calculateRequestArgumentSize(member1) +
+                    calculateRequestArgumentSize(member2) + calculateRequestArgumentSize(member3);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.GEOPOS.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        RedisRequests.writeRequestArgument(buffer, member1);
+        RedisRequests.writeRequestArgument(buffer, member2);
+        RedisRequests.writeRequestArgument(buffer, member3);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.GEOPOS, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -1829,14 +2546,37 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     public <T> Future<List<T>> geopos(@RedisProtocolSupport.Key final Buffer key, final Collection<Buffer> members) {
         requireNonNull(key);
         requireNonNull(members);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 2;
-        len += members.size();
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.GEOPOS, allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestBufferArguments(members, null, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.GEOPOS, cb);
+        final int len = 2 + members.size();
+        int membersCapacity = 0;
+        if (members instanceof List && members instanceof RandomAccess) {
+            final List<Buffer> list = (List<Buffer>) members;
+            for (int i = 0; i < list.size(); ++i) {
+                final Buffer arg = list.get(i);
+                membersCapacity += calculateRequestArgumentSize(arg);
+            }
+        } else {
+            for (Buffer arg : members) {
+                membersCapacity += calculateRequestArgumentSize(arg);
+            }
+        }
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.GEOPOS) +
+                    calculateRequestArgumentSize(key) + membersCapacity;
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.GEOPOS.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        if (members instanceof List && members instanceof RandomAccess) {
+            final List<Buffer> list = (List<Buffer>) members;
+            for (int i = 0; i < list.size(); ++i) {
+                final Buffer arg = list.get(i);
+                RedisRequests.writeRequestArgument(buffer, arg);
+            }
+        } else {
+            for (Buffer arg : members) {
+                RedisRequests.writeRequestArgument(buffer, arg);
+            }
+        }
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.GEOPOS, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -1848,16 +2588,20 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
                                          final RedisProtocolSupport.GeoradiusUnit unit) {
         requireNonNull(key);
         requireNonNull(unit);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 6;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.GEORADIUS, allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestArgument(longitude, cb, allocator);
-        addRequestArgument(latitude, cb, allocator);
-        addRequestArgument(radius, cb, allocator);
-        addRequestArgument(unit, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.GEORADIUS, cb);
+        final int len = 6;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.GEORADIUS) +
+                    calculateRequestArgumentSize(key) + calculateRequestArgumentSize(longitude) +
+                    calculateRequestArgumentSize(latitude) + calculateRequestArgumentSize(radius) +
+                    unit.encodedByteCount();
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.GEORADIUS.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        RedisRequests.writeRequestArgument(buffer, longitude);
+        RedisRequests.writeRequestArgument(buffer, latitude);
+        RedisRequests.writeRequestArgument(buffer, radius);
+        unit.encodeTo(buffer);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.GEORADIUS, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -1876,61 +2620,55 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
                                          @Nullable @RedisProtocolSupport.Key final Buffer storedistKey) {
         requireNonNull(key);
         requireNonNull(unit);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 6;
+        final int len = 6 + (withcoord == null ? 0 : 1) + (withdist == null ? 0 : 1) + (withhash == null ? 0 : 1) +
+                    (count == null ? 0 : 2) + (order == null ? 0 : 1) + (storeKey == null ? 0 : 2) +
+                    (storedistKey == null ? 0 : 2);
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.GEORADIUS) +
+                    calculateRequestArgumentSize(key) + calculateRequestArgumentSize(longitude) +
+                    calculateRequestArgumentSize(latitude) + calculateRequestArgumentSize(radius) +
+                    unit.encodedByteCount() + (withcoord == null ? 0 : withcoord.encodedByteCount()) +
+                    (withdist == null ? 0 : withdist.encodedByteCount()) +
+                    (withhash == null ? 0 : withhash.encodedByteCount()) +
+                    (count == null ? 0 : RedisProtocolSupport.SubCommand.COUNT.encodedByteCount()) +
+                    (count == null ? 0 : calculateRequestArgumentSize(count)) +
+                    (order == null ? 0 : order.encodedByteCount()) +
+                    (storeKey == null ? 0 : RedisProtocolSupport.SubCommand.STORE.encodedByteCount()) +
+                    (storeKey == null ? 0 : calculateRequestArgumentSize(storeKey)) +
+                    (storedistKey == null ? 0 : RedisProtocolSupport.SubCommand.STOREDIST.encodedByteCount()) +
+                    (storedistKey == null ? 0 : calculateRequestArgumentSize(storedistKey));
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.GEORADIUS.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        RedisRequests.writeRequestArgument(buffer, longitude);
+        RedisRequests.writeRequestArgument(buffer, latitude);
+        RedisRequests.writeRequestArgument(buffer, radius);
+        unit.encodeTo(buffer);
         if (withcoord != null) {
-            len++;
+            withcoord.encodeTo(buffer);
         }
         if (withdist != null) {
-            len++;
+            withdist.encodeTo(buffer);
         }
         if (withhash != null) {
-            len++;
+            withhash.encodeTo(buffer);
         }
         if (count != null) {
-            len += 2;
+            RedisProtocolSupport.SubCommand.COUNT.encodeTo(buffer);
+            RedisRequests.writeRequestArgument(buffer, count);
         }
         if (order != null) {
-            len++;
+            order.encodeTo(buffer);
         }
         if (storeKey != null) {
-            len += 2;
+            RedisProtocolSupport.SubCommand.STORE.encodeTo(buffer);
+            RedisRequests.writeRequestArgument(buffer, storeKey);
         }
         if (storedistKey != null) {
-            len += 2;
+            RedisProtocolSupport.SubCommand.STOREDIST.encodeTo(buffer);
+            RedisRequests.writeRequestArgument(buffer, storedistKey);
         }
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.GEORADIUS, allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestArgument(longitude, cb, allocator);
-        addRequestArgument(latitude, cb, allocator);
-        addRequestArgument(radius, cb, allocator);
-        addRequestArgument(unit, cb, allocator);
-        if (withcoord != null) {
-            addRequestArgument(withcoord, cb, allocator);
-        }
-        if (withdist != null) {
-            addRequestArgument(withdist, cb, allocator);
-        }
-        if (withhash != null) {
-            addRequestArgument(withhash, cb, allocator);
-        }
-        if (count != null) {
-            addRequestArgument(RedisProtocolSupport.SubCommand.COUNT, cb, allocator);
-            addRequestArgument(count, cb, allocator);
-        }
-        if (order != null) {
-            addRequestArgument(order, cb, allocator);
-        }
-        if (storeKey != null) {
-            addRequestArgument(RedisProtocolSupport.SubCommand.STORE, cb, allocator);
-            addRequestArgument(storeKey, cb, allocator);
-        }
-        if (storedistKey != null) {
-            addRequestArgument(RedisProtocolSupport.SubCommand.STOREDIST, cb, allocator);
-            addRequestArgument(storedistKey, cb, allocator);
-        }
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.GEORADIUS, cb);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.GEORADIUS, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -1943,16 +2681,18 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         requireNonNull(key);
         requireNonNull(member);
         requireNonNull(unit);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 5;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.GEORADIUSBYMEMBER,
-                    allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestArgument(member, cb, allocator);
-        addRequestArgument(radius, cb, allocator);
-        addRequestArgument(unit, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.GEORADIUSBYMEMBER, cb);
+        final int len = 5;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.GEORADIUSBYMEMBER) +
+                    calculateRequestArgumentSize(key) + calculateRequestArgumentSize(member) +
+                    calculateRequestArgumentSize(radius) + unit.encodedByteCount();
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.GEORADIUSBYMEMBER.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        RedisRequests.writeRequestArgument(buffer, member);
+        RedisRequests.writeRequestArgument(buffer, radius);
+        unit.encodeTo(buffer);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.GEORADIUSBYMEMBER, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -1972,61 +2712,54 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         requireNonNull(key);
         requireNonNull(member);
         requireNonNull(unit);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 5;
+        final int len = 5 + (withcoord == null ? 0 : 1) + (withdist == null ? 0 : 1) + (withhash == null ? 0 : 1) +
+                    (count == null ? 0 : 2) + (order == null ? 0 : 1) + (storeKey == null ? 0 : 2) +
+                    (storedistKey == null ? 0 : 2);
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.GEORADIUSBYMEMBER) +
+                    calculateRequestArgumentSize(key) + calculateRequestArgumentSize(member) +
+                    calculateRequestArgumentSize(radius) + unit.encodedByteCount() +
+                    (withcoord == null ? 0 : withcoord.encodedByteCount()) +
+                    (withdist == null ? 0 : withdist.encodedByteCount()) +
+                    (withhash == null ? 0 : withhash.encodedByteCount()) +
+                    (count == null ? 0 : RedisProtocolSupport.SubCommand.COUNT.encodedByteCount()) +
+                    (count == null ? 0 : calculateRequestArgumentSize(count)) +
+                    (order == null ? 0 : order.encodedByteCount()) +
+                    (storeKey == null ? 0 : RedisProtocolSupport.SubCommand.STORE.encodedByteCount()) +
+                    (storeKey == null ? 0 : calculateRequestArgumentSize(storeKey)) +
+                    (storedistKey == null ? 0 : RedisProtocolSupport.SubCommand.STOREDIST.encodedByteCount()) +
+                    (storedistKey == null ? 0 : calculateRequestArgumentSize(storedistKey));
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.GEORADIUSBYMEMBER.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        RedisRequests.writeRequestArgument(buffer, member);
+        RedisRequests.writeRequestArgument(buffer, radius);
+        unit.encodeTo(buffer);
         if (withcoord != null) {
-            len++;
+            withcoord.encodeTo(buffer);
         }
         if (withdist != null) {
-            len++;
+            withdist.encodeTo(buffer);
         }
         if (withhash != null) {
-            len++;
+            withhash.encodeTo(buffer);
         }
         if (count != null) {
-            len += 2;
+            RedisProtocolSupport.SubCommand.COUNT.encodeTo(buffer);
+            RedisRequests.writeRequestArgument(buffer, count);
         }
         if (order != null) {
-            len++;
+            order.encodeTo(buffer);
         }
         if (storeKey != null) {
-            len += 2;
+            RedisProtocolSupport.SubCommand.STORE.encodeTo(buffer);
+            RedisRequests.writeRequestArgument(buffer, storeKey);
         }
         if (storedistKey != null) {
-            len += 2;
+            RedisProtocolSupport.SubCommand.STOREDIST.encodeTo(buffer);
+            RedisRequests.writeRequestArgument(buffer, storedistKey);
         }
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.GEORADIUSBYMEMBER,
-                    allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestArgument(member, cb, allocator);
-        addRequestArgument(radius, cb, allocator);
-        addRequestArgument(unit, cb, allocator);
-        if (withcoord != null) {
-            addRequestArgument(withcoord, cb, allocator);
-        }
-        if (withdist != null) {
-            addRequestArgument(withdist, cb, allocator);
-        }
-        if (withhash != null) {
-            addRequestArgument(withhash, cb, allocator);
-        }
-        if (count != null) {
-            addRequestArgument(RedisProtocolSupport.SubCommand.COUNT, cb, allocator);
-            addRequestArgument(count, cb, allocator);
-        }
-        if (order != null) {
-            addRequestArgument(order, cb, allocator);
-        }
-        if (storeKey != null) {
-            addRequestArgument(RedisProtocolSupport.SubCommand.STORE, cb, allocator);
-            addRequestArgument(storeKey, cb, allocator);
-        }
-        if (storedistKey != null) {
-            addRequestArgument(RedisProtocolSupport.SubCommand.STOREDIST, cb, allocator);
-            addRequestArgument(storedistKey, cb, allocator);
-        }
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.GEORADIUSBYMEMBER, cb);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.GEORADIUSBYMEMBER, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -2035,12 +2768,14 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     @Override
     public Future<Buffer> get(@RedisProtocolSupport.Key final Buffer key) {
         requireNonNull(key);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 2;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.GET, allocator);
-        addRequestArgument(key, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.GET, cb);
+        final int len = 2;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.GET) +
+                    calculateRequestArgumentSize(key);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.GET.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.GET, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Buffer> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -2049,13 +2784,15 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     @Override
     public Future<Long> getbit(@RedisProtocolSupport.Key final Buffer key, final long offset) {
         requireNonNull(key);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 3;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.GETBIT, allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestArgument(offset, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.GETBIT, cb);
+        final int len = 3;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.GETBIT) +
+                    calculateRequestArgumentSize(key) + calculateRequestArgumentSize(offset);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.GETBIT.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        RedisRequests.writeRequestArgument(buffer, offset);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.GETBIT, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -2064,14 +2801,17 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     @Override
     public Future<Buffer> getrange(@RedisProtocolSupport.Key final Buffer key, final long start, final long end) {
         requireNonNull(key);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 4;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.GETRANGE, allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestArgument(start, cb, allocator);
-        addRequestArgument(end, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.GETRANGE, cb);
+        final int len = 4;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.GETRANGE) +
+                    calculateRequestArgumentSize(key) + calculateRequestArgumentSize(start) +
+                    calculateRequestArgumentSize(end);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.GETRANGE.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        RedisRequests.writeRequestArgument(buffer, start);
+        RedisRequests.writeRequestArgument(buffer, end);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.GETRANGE, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Buffer> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -2081,13 +2821,15 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     public Future<Buffer> getset(@RedisProtocolSupport.Key final Buffer key, final Buffer value) {
         requireNonNull(key);
         requireNonNull(value);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 3;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.GETSET, allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestArgument(value, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.GETSET, cb);
+        final int len = 3;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.GETSET) +
+                    calculateRequestArgumentSize(key) + calculateRequestArgumentSize(value);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.GETSET.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        RedisRequests.writeRequestArgument(buffer, value);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.GETSET, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Buffer> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -2097,13 +2839,15 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     public Future<Long> hdel(@RedisProtocolSupport.Key final Buffer key, final Buffer field) {
         requireNonNull(key);
         requireNonNull(field);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 3;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.HDEL, allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestArgument(field, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.HDEL, cb);
+        final int len = 3;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.HDEL) +
+                    calculateRequestArgumentSize(key) + calculateRequestArgumentSize(field);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.HDEL.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        RedisRequests.writeRequestArgument(buffer, field);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.HDEL, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -2114,14 +2858,17 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         requireNonNull(key);
         requireNonNull(field1);
         requireNonNull(field2);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 4;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.HDEL, allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestArgument(field1, cb, allocator);
-        addRequestArgument(field2, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.HDEL, cb);
+        final int len = 4;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.HDEL) +
+                    calculateRequestArgumentSize(key) + calculateRequestArgumentSize(field1) +
+                    calculateRequestArgumentSize(field2);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.HDEL.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        RedisRequests.writeRequestArgument(buffer, field1);
+        RedisRequests.writeRequestArgument(buffer, field2);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.HDEL, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -2134,15 +2881,18 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         requireNonNull(field1);
         requireNonNull(field2);
         requireNonNull(field3);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 5;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.HDEL, allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestArgument(field1, cb, allocator);
-        addRequestArgument(field2, cb, allocator);
-        addRequestArgument(field3, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.HDEL, cb);
+        final int len = 5;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.HDEL) +
+                    calculateRequestArgumentSize(key) + calculateRequestArgumentSize(field1) +
+                    calculateRequestArgumentSize(field2) + calculateRequestArgumentSize(field3);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.HDEL.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        RedisRequests.writeRequestArgument(buffer, field1);
+        RedisRequests.writeRequestArgument(buffer, field2);
+        RedisRequests.writeRequestArgument(buffer, field3);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.HDEL, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -2152,14 +2902,37 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     public Future<Long> hdel(@RedisProtocolSupport.Key final Buffer key, final Collection<Buffer> fields) {
         requireNonNull(key);
         requireNonNull(fields);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 2;
-        len += fields.size();
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.HDEL, allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestBufferArguments(fields, null, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.HDEL, cb);
+        final int len = 2 + fields.size();
+        int fieldsCapacity = 0;
+        if (fields instanceof List && fields instanceof RandomAccess) {
+            final List<Buffer> list = (List<Buffer>) fields;
+            for (int i = 0; i < list.size(); ++i) {
+                final Buffer arg = list.get(i);
+                fieldsCapacity += calculateRequestArgumentSize(arg);
+            }
+        } else {
+            for (Buffer arg : fields) {
+                fieldsCapacity += calculateRequestArgumentSize(arg);
+            }
+        }
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.HDEL) +
+                    calculateRequestArgumentSize(key) + fieldsCapacity;
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.HDEL.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        if (fields instanceof List && fields instanceof RandomAccess) {
+            final List<Buffer> list = (List<Buffer>) fields;
+            for (int i = 0; i < list.size(); ++i) {
+                final Buffer arg = list.get(i);
+                RedisRequests.writeRequestArgument(buffer, arg);
+            }
+        } else {
+            for (Buffer arg : fields) {
+                RedisRequests.writeRequestArgument(buffer, arg);
+            }
+        }
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.HDEL, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -2169,13 +2942,15 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     public Future<Long> hexists(@RedisProtocolSupport.Key final Buffer key, final Buffer field) {
         requireNonNull(key);
         requireNonNull(field);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 3;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.HEXISTS, allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestArgument(field, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.HEXISTS, cb);
+        final int len = 3;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.HEXISTS) +
+                    calculateRequestArgumentSize(key) + calculateRequestArgumentSize(field);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.HEXISTS.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        RedisRequests.writeRequestArgument(buffer, field);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.HEXISTS, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -2185,13 +2960,15 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     public Future<Buffer> hget(@RedisProtocolSupport.Key final Buffer key, final Buffer field) {
         requireNonNull(key);
         requireNonNull(field);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 3;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.HGET, allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestArgument(field, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.HGET, cb);
+        final int len = 3;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.HGET) +
+                    calculateRequestArgumentSize(key) + calculateRequestArgumentSize(field);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.HGET.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        RedisRequests.writeRequestArgument(buffer, field);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.HGET, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Buffer> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -2200,12 +2977,14 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     @Override
     public <T> Future<List<T>> hgetall(@RedisProtocolSupport.Key final Buffer key) {
         requireNonNull(key);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 2;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.HGETALL, allocator);
-        addRequestArgument(key, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.HGETALL, cb);
+        final int len = 2;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.HGETALL) +
+                    calculateRequestArgumentSize(key);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.HGETALL.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.HGETALL, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -2215,14 +2994,17 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     public Future<Long> hincrby(@RedisProtocolSupport.Key final Buffer key, final Buffer field, final long increment) {
         requireNonNull(key);
         requireNonNull(field);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 4;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.HINCRBY, allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestArgument(field, cb, allocator);
-        addRequestArgument(increment, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.HINCRBY, cb);
+        final int len = 4;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.HINCRBY) +
+                    calculateRequestArgumentSize(key) + calculateRequestArgumentSize(field) +
+                    calculateRequestArgumentSize(increment);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.HINCRBY.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        RedisRequests.writeRequestArgument(buffer, field);
+        RedisRequests.writeRequestArgument(buffer, increment);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.HINCRBY, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -2233,14 +3015,17 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
                                        final double increment) {
         requireNonNull(key);
         requireNonNull(field);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 4;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.HINCRBYFLOAT, allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestArgument(field, cb, allocator);
-        addRequestArgument(increment, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.HINCRBYFLOAT, cb);
+        final int len = 4;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.HINCRBYFLOAT) +
+                    calculateRequestArgumentSize(key) + calculateRequestArgumentSize(field) +
+                    calculateRequestArgumentSize(increment);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.HINCRBYFLOAT.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        RedisRequests.writeRequestArgument(buffer, field);
+        RedisRequests.writeRequestArgument(buffer, increment);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.HINCRBYFLOAT, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Double> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -2249,12 +3034,14 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     @Override
     public <T> Future<List<T>> hkeys(@RedisProtocolSupport.Key final Buffer key) {
         requireNonNull(key);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 2;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.HKEYS, allocator);
-        addRequestArgument(key, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.HKEYS, cb);
+        final int len = 2;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.HKEYS) +
+                    calculateRequestArgumentSize(key);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.HKEYS.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.HKEYS, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -2263,12 +3050,14 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     @Override
     public Future<Long> hlen(@RedisProtocolSupport.Key final Buffer key) {
         requireNonNull(key);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 2;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.HLEN, allocator);
-        addRequestArgument(key, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.HLEN, cb);
+        final int len = 2;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.HLEN) +
+                    calculateRequestArgumentSize(key);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.HLEN.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.HLEN, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -2278,13 +3067,15 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     public Future<List<Buffer>> hmget(@RedisProtocolSupport.Key final Buffer key, final Buffer field) {
         requireNonNull(key);
         requireNonNull(field);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 3;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.HMGET, allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestArgument(field, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.HMGET, cb);
+        final int len = 3;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.HMGET) +
+                    calculateRequestArgumentSize(key) + calculateRequestArgumentSize(field);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.HMGET.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        RedisRequests.writeRequestArgument(buffer, field);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.HMGET, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<Buffer>> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -2296,14 +3087,17 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         requireNonNull(key);
         requireNonNull(field1);
         requireNonNull(field2);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 4;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.HMGET, allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestArgument(field1, cb, allocator);
-        addRequestArgument(field2, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.HMGET, cb);
+        final int len = 4;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.HMGET) +
+                    calculateRequestArgumentSize(key) + calculateRequestArgumentSize(field1) +
+                    calculateRequestArgumentSize(field2);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.HMGET.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        RedisRequests.writeRequestArgument(buffer, field1);
+        RedisRequests.writeRequestArgument(buffer, field2);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.HMGET, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<Buffer>> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -2316,15 +3110,18 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         requireNonNull(field1);
         requireNonNull(field2);
         requireNonNull(field3);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 5;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.HMGET, allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestArgument(field1, cb, allocator);
-        addRequestArgument(field2, cb, allocator);
-        addRequestArgument(field3, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.HMGET, cb);
+        final int len = 5;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.HMGET) +
+                    calculateRequestArgumentSize(key) + calculateRequestArgumentSize(field1) +
+                    calculateRequestArgumentSize(field2) + calculateRequestArgumentSize(field3);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.HMGET.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        RedisRequests.writeRequestArgument(buffer, field1);
+        RedisRequests.writeRequestArgument(buffer, field2);
+        RedisRequests.writeRequestArgument(buffer, field3);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.HMGET, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<Buffer>> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -2334,14 +3131,37 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     public Future<List<Buffer>> hmget(@RedisProtocolSupport.Key final Buffer key, final Collection<Buffer> fields) {
         requireNonNull(key);
         requireNonNull(fields);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 2;
-        len += fields.size();
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.HMGET, allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestBufferArguments(fields, null, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.HMGET, cb);
+        final int len = 2 + fields.size();
+        int fieldsCapacity = 0;
+        if (fields instanceof List && fields instanceof RandomAccess) {
+            final List<Buffer> list = (List<Buffer>) fields;
+            for (int i = 0; i < list.size(); ++i) {
+                final Buffer arg = list.get(i);
+                fieldsCapacity += calculateRequestArgumentSize(arg);
+            }
+        } else {
+            for (Buffer arg : fields) {
+                fieldsCapacity += calculateRequestArgumentSize(arg);
+            }
+        }
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.HMGET) +
+                    calculateRequestArgumentSize(key) + fieldsCapacity;
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.HMGET.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        if (fields instanceof List && fields instanceof RandomAccess) {
+            final List<Buffer> list = (List<Buffer>) fields;
+            for (int i = 0; i < list.size(); ++i) {
+                final Buffer arg = list.get(i);
+                RedisRequests.writeRequestArgument(buffer, arg);
+            }
+        } else {
+            for (Buffer arg : fields) {
+                RedisRequests.writeRequestArgument(buffer, arg);
+            }
+        }
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.HMGET, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<Buffer>> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -2352,14 +3172,17 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         requireNonNull(key);
         requireNonNull(field);
         requireNonNull(value);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 4;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.HMSET, allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestArgument(field, cb, allocator);
-        addRequestArgument(value, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.HMSET, cb);
+        final int len = 4;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.HMSET) +
+                    calculateRequestArgumentSize(key) + calculateRequestArgumentSize(field) +
+                    calculateRequestArgumentSize(value);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.HMSET.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        RedisRequests.writeRequestArgument(buffer, field);
+        RedisRequests.writeRequestArgument(buffer, value);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.HMSET, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -2373,16 +3196,20 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         requireNonNull(value1);
         requireNonNull(field2);
         requireNonNull(value2);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 6;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.HMSET, allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestArgument(field1, cb, allocator);
-        addRequestArgument(value1, cb, allocator);
-        addRequestArgument(field2, cb, allocator);
-        addRequestArgument(value2, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.HMSET, cb);
+        final int len = 6;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.HMSET) +
+                    calculateRequestArgumentSize(key) + calculateRequestArgumentSize(field1) +
+                    calculateRequestArgumentSize(value1) + calculateRequestArgumentSize(field2) +
+                    calculateRequestArgumentSize(value2);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.HMSET.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        RedisRequests.writeRequestArgument(buffer, field1);
+        RedisRequests.writeRequestArgument(buffer, value1);
+        RedisRequests.writeRequestArgument(buffer, field2);
+        RedisRequests.writeRequestArgument(buffer, value2);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.HMSET, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -2398,18 +3225,23 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         requireNonNull(value2);
         requireNonNull(field3);
         requireNonNull(value3);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 8;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.HMSET, allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestArgument(field1, cb, allocator);
-        addRequestArgument(value1, cb, allocator);
-        addRequestArgument(field2, cb, allocator);
-        addRequestArgument(value2, cb, allocator);
-        addRequestArgument(field3, cb, allocator);
-        addRequestArgument(value3, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.HMSET, cb);
+        final int len = 8;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.HMSET) +
+                    calculateRequestArgumentSize(key) + calculateRequestArgumentSize(field1) +
+                    calculateRequestArgumentSize(value1) + calculateRequestArgumentSize(field2) +
+                    calculateRequestArgumentSize(value2) + calculateRequestArgumentSize(field3) +
+                    calculateRequestArgumentSize(value3);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.HMSET.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        RedisRequests.writeRequestArgument(buffer, field1);
+        RedisRequests.writeRequestArgument(buffer, value1);
+        RedisRequests.writeRequestArgument(buffer, field2);
+        RedisRequests.writeRequestArgument(buffer, value2);
+        RedisRequests.writeRequestArgument(buffer, field3);
+        RedisRequests.writeRequestArgument(buffer, value3);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.HMSET, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -2420,14 +3252,37 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
                                 final Collection<RedisProtocolSupport.BufferFieldValue> fieldValues) {
         requireNonNull(key);
         requireNonNull(fieldValues);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 2;
-        len += RedisProtocolSupport.BufferFieldValue.SIZE * fieldValues.size();
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.HMSET, allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestTupleArguments(fieldValues, null, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.HMSET, cb);
+        final int len = 2 + RedisProtocolSupport.BufferFieldValue.SIZE * fieldValues.size();
+        int fieldValuesCapacity = 0;
+        if (fieldValues instanceof List && fieldValues instanceof RandomAccess) {
+            final List<RedisProtocolSupport.BufferFieldValue> list = (List<RedisProtocolSupport.BufferFieldValue>) fieldValues;
+            for (int i = 0; i < list.size(); ++i) {
+                final RedisProtocolSupport.BufferFieldValue arg = list.get(i);
+                fieldValuesCapacity += arg.encodedByteCount();
+            }
+        } else {
+            for (RedisProtocolSupport.BufferFieldValue arg : fieldValues) {
+                fieldValuesCapacity += arg.encodedByteCount();
+            }
+        }
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.HMSET) +
+                    calculateRequestArgumentSize(key) + fieldValuesCapacity;
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.HMSET.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        if (fieldValues instanceof List && fieldValues instanceof RandomAccess) {
+            final List<RedisProtocolSupport.BufferFieldValue> list = (List<RedisProtocolSupport.BufferFieldValue>) fieldValues;
+            for (int i = 0; i < list.size(); ++i) {
+                final RedisProtocolSupport.BufferFieldValue arg = list.get(i);
+                arg.encodeTo(buffer);
+            }
+        } else {
+            for (RedisProtocolSupport.BufferFieldValue arg : fieldValues) {
+                arg.encodeTo(buffer);
+            }
+        }
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.HMSET, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -2436,13 +3291,15 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     @Override
     public <T> Future<List<T>> hscan(@RedisProtocolSupport.Key final Buffer key, final long cursor) {
         requireNonNull(key);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 3;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.HSCAN, allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestArgument(cursor, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.HSCAN, cb);
+        final int len = 3;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.HSCAN) +
+                    calculateRequestArgumentSize(key) + calculateRequestArgumentSize(cursor);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.HSCAN.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        RedisRequests.writeRequestArgument(buffer, cursor);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.HSCAN, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -2452,27 +3309,27 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     public <T> Future<List<T>> hscan(@RedisProtocolSupport.Key final Buffer key, final long cursor,
                                      @Nullable final Buffer matchPattern, @Nullable final Long count) {
         requireNonNull(key);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 3;
+        final int len = 3 + (matchPattern == null ? 0 : 2) + (count == null ? 0 : 2);
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.HSCAN) +
+                    calculateRequestArgumentSize(key) + calculateRequestArgumentSize(cursor) +
+                    (matchPattern == null ? 0 : RedisProtocolSupport.SubCommand.MATCH.encodedByteCount()) +
+                    (matchPattern == null ? 0 : calculateRequestArgumentSize(matchPattern)) +
+                    (count == null ? 0 : RedisProtocolSupport.SubCommand.COUNT.encodedByteCount()) +
+                    (count == null ? 0 : calculateRequestArgumentSize(count));
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.HSCAN.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        RedisRequests.writeRequestArgument(buffer, cursor);
         if (matchPattern != null) {
-            len += 2;
+            RedisProtocolSupport.SubCommand.MATCH.encodeTo(buffer);
+            RedisRequests.writeRequestArgument(buffer, matchPattern);
         }
         if (count != null) {
-            len += 2;
+            RedisProtocolSupport.SubCommand.COUNT.encodeTo(buffer);
+            RedisRequests.writeRequestArgument(buffer, count);
         }
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.HSCAN, allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestArgument(cursor, cb, allocator);
-        if (matchPattern != null) {
-            addRequestArgument(RedisProtocolSupport.SubCommand.MATCH, cb, allocator);
-            addRequestArgument(matchPattern, cb, allocator);
-        }
-        if (count != null) {
-            addRequestArgument(RedisProtocolSupport.SubCommand.COUNT, cb, allocator);
-            addRequestArgument(count, cb, allocator);
-        }
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.HSCAN, cb);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.HSCAN, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -2483,14 +3340,17 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         requireNonNull(key);
         requireNonNull(field);
         requireNonNull(value);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 4;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.HSET, allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestArgument(field, cb, allocator);
-        addRequestArgument(value, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.HSET, cb);
+        final int len = 4;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.HSET) +
+                    calculateRequestArgumentSize(key) + calculateRequestArgumentSize(field) +
+                    calculateRequestArgumentSize(value);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.HSET.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        RedisRequests.writeRequestArgument(buffer, field);
+        RedisRequests.writeRequestArgument(buffer, value);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.HSET, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -2501,14 +3361,17 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         requireNonNull(key);
         requireNonNull(field);
         requireNonNull(value);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 4;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.HSETNX, allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestArgument(field, cb, allocator);
-        addRequestArgument(value, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.HSETNX, cb);
+        final int len = 4;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.HSETNX) +
+                    calculateRequestArgumentSize(key) + calculateRequestArgumentSize(field) +
+                    calculateRequestArgumentSize(value);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.HSETNX.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        RedisRequests.writeRequestArgument(buffer, field);
+        RedisRequests.writeRequestArgument(buffer, value);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.HSETNX, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -2518,13 +3381,15 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     public Future<Long> hstrlen(@RedisProtocolSupport.Key final Buffer key, final Buffer field) {
         requireNonNull(key);
         requireNonNull(field);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 3;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.HSTRLEN, allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestArgument(field, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.HSTRLEN, cb);
+        final int len = 3;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.HSTRLEN) +
+                    calculateRequestArgumentSize(key) + calculateRequestArgumentSize(field);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.HSTRLEN.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        RedisRequests.writeRequestArgument(buffer, field);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.HSTRLEN, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -2533,12 +3398,14 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     @Override
     public <T> Future<List<T>> hvals(@RedisProtocolSupport.Key final Buffer key) {
         requireNonNull(key);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 2;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.HVALS, allocator);
-        addRequestArgument(key, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.HVALS, cb);
+        final int len = 2;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.HVALS) +
+                    calculateRequestArgumentSize(key);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.HVALS.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.HVALS, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -2547,12 +3414,14 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     @Override
     public Future<Long> incr(@RedisProtocolSupport.Key final Buffer key) {
         requireNonNull(key);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 2;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.INCR, allocator);
-        addRequestArgument(key, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.INCR, cb);
+        final int len = 2;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.INCR) +
+                    calculateRequestArgumentSize(key);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.INCR.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.INCR, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -2561,13 +3430,15 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     @Override
     public Future<Long> incrby(@RedisProtocolSupport.Key final Buffer key, final long increment) {
         requireNonNull(key);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 3;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.INCRBY, allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestArgument(increment, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.INCRBY, cb);
+        final int len = 3;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.INCRBY) +
+                    calculateRequestArgumentSize(key) + calculateRequestArgumentSize(increment);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.INCRBY.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        RedisRequests.writeRequestArgument(buffer, increment);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.INCRBY, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -2576,13 +3447,15 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     @Override
     public Future<Double> incrbyfloat(@RedisProtocolSupport.Key final Buffer key, final double increment) {
         requireNonNull(key);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 3;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.INCRBYFLOAT, allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestArgument(increment, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.INCRBYFLOAT, cb);
+        final int len = 3;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.INCRBYFLOAT) +
+                    calculateRequestArgumentSize(key) + calculateRequestArgumentSize(increment);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.INCRBYFLOAT.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        RedisRequests.writeRequestArgument(buffer, increment);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.INCRBYFLOAT, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Double> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -2590,11 +3463,12 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
 
     @Override
     public Future<Buffer> info() {
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 1;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.INFO, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.INFO, cb);
+        final int len = 1;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.INFO);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.INFO.encodeTo(buffer);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.INFO, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Buffer> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -2602,17 +3476,16 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
 
     @Override
     public Future<Buffer> info(@Nullable final Buffer section) {
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 1;
+        final int len = 1 + (section == null ? 0 : 1);
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.INFO) +
+                    (section == null ? 0 : calculateRequestArgumentSize(section));
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.INFO.encodeTo(buffer);
         if (section != null) {
-            len++;
+            RedisRequests.writeRequestArgument(buffer, section);
         }
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.INFO, allocator);
-        if (section != null) {
-            addRequestArgument(section, cb, allocator);
-        }
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.INFO, cb);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.INFO, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Buffer> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -2621,12 +3494,14 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     @Override
     public <T> Future<List<T>> keys(final Buffer pattern) {
         requireNonNull(pattern);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 2;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.KEYS, allocator);
-        addRequestArgument(pattern, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.KEYS, cb);
+        final int len = 2;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.KEYS) +
+                    calculateRequestArgumentSize(pattern);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.KEYS.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, pattern);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.KEYS, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -2634,11 +3509,12 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
 
     @Override
     public Future<Long> lastsave() {
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 1;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.LASTSAVE, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.LASTSAVE, cb);
+        final int len = 1;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.LASTSAVE);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.LASTSAVE.encodeTo(buffer);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.LASTSAVE, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -2647,13 +3523,15 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     @Override
     public Future<Buffer> lindex(@RedisProtocolSupport.Key final Buffer key, final long index) {
         requireNonNull(key);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 3;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.LINDEX, allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestArgument(index, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.LINDEX, cb);
+        final int len = 3;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.LINDEX) +
+                    calculateRequestArgumentSize(key) + calculateRequestArgumentSize(index);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.LINDEX.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        RedisRequests.writeRequestArgument(buffer, index);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.LINDEX, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Buffer> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -2666,15 +3544,18 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         requireNonNull(where);
         requireNonNull(pivot);
         requireNonNull(value);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 5;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.LINSERT, allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestArgument(where, cb, allocator);
-        addRequestArgument(pivot, cb, allocator);
-        addRequestArgument(value, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.LINSERT, cb);
+        final int len = 5;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.LINSERT) +
+                    calculateRequestArgumentSize(key) + where.encodedByteCount() + calculateRequestArgumentSize(pivot) +
+                    calculateRequestArgumentSize(value);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.LINSERT.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        where.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, pivot);
+        RedisRequests.writeRequestArgument(buffer, value);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.LINSERT, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -2683,12 +3564,14 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     @Override
     public Future<Long> llen(@RedisProtocolSupport.Key final Buffer key) {
         requireNonNull(key);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 2;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.LLEN, allocator);
-        addRequestArgument(key, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.LLEN, cb);
+        final int len = 2;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.LLEN) +
+                    calculateRequestArgumentSize(key);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.LLEN.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.LLEN, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -2697,12 +3580,14 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     @Override
     public Future<Buffer> lpop(@RedisProtocolSupport.Key final Buffer key) {
         requireNonNull(key);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 2;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.LPOP, allocator);
-        addRequestArgument(key, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.LPOP, cb);
+        final int len = 2;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.LPOP) +
+                    calculateRequestArgumentSize(key);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.LPOP.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.LPOP, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Buffer> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -2712,13 +3597,15 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     public Future<Long> lpush(@RedisProtocolSupport.Key final Buffer key, final Buffer value) {
         requireNonNull(key);
         requireNonNull(value);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 3;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.LPUSH, allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestArgument(value, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.LPUSH, cb);
+        final int len = 3;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.LPUSH) +
+                    calculateRequestArgumentSize(key) + calculateRequestArgumentSize(value);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.LPUSH.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        RedisRequests.writeRequestArgument(buffer, value);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.LPUSH, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -2729,14 +3616,17 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         requireNonNull(key);
         requireNonNull(value1);
         requireNonNull(value2);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 4;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.LPUSH, allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestArgument(value1, cb, allocator);
-        addRequestArgument(value2, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.LPUSH, cb);
+        final int len = 4;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.LPUSH) +
+                    calculateRequestArgumentSize(key) + calculateRequestArgumentSize(value1) +
+                    calculateRequestArgumentSize(value2);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.LPUSH.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        RedisRequests.writeRequestArgument(buffer, value1);
+        RedisRequests.writeRequestArgument(buffer, value2);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.LPUSH, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -2749,15 +3639,18 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         requireNonNull(value1);
         requireNonNull(value2);
         requireNonNull(value3);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 5;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.LPUSH, allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestArgument(value1, cb, allocator);
-        addRequestArgument(value2, cb, allocator);
-        addRequestArgument(value3, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.LPUSH, cb);
+        final int len = 5;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.LPUSH) +
+                    calculateRequestArgumentSize(key) + calculateRequestArgumentSize(value1) +
+                    calculateRequestArgumentSize(value2) + calculateRequestArgumentSize(value3);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.LPUSH.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        RedisRequests.writeRequestArgument(buffer, value1);
+        RedisRequests.writeRequestArgument(buffer, value2);
+        RedisRequests.writeRequestArgument(buffer, value3);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.LPUSH, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -2767,14 +3660,37 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     public Future<Long> lpush(@RedisProtocolSupport.Key final Buffer key, final Collection<Buffer> values) {
         requireNonNull(key);
         requireNonNull(values);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 2;
-        len += values.size();
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.LPUSH, allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestBufferArguments(values, null, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.LPUSH, cb);
+        final int len = 2 + values.size();
+        int valuesCapacity = 0;
+        if (values instanceof List && values instanceof RandomAccess) {
+            final List<Buffer> list = (List<Buffer>) values;
+            for (int i = 0; i < list.size(); ++i) {
+                final Buffer arg = list.get(i);
+                valuesCapacity += calculateRequestArgumentSize(arg);
+            }
+        } else {
+            for (Buffer arg : values) {
+                valuesCapacity += calculateRequestArgumentSize(arg);
+            }
+        }
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.LPUSH) +
+                    calculateRequestArgumentSize(key) + valuesCapacity;
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.LPUSH.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        if (values instanceof List && values instanceof RandomAccess) {
+            final List<Buffer> list = (List<Buffer>) values;
+            for (int i = 0; i < list.size(); ++i) {
+                final Buffer arg = list.get(i);
+                RedisRequests.writeRequestArgument(buffer, arg);
+            }
+        } else {
+            for (Buffer arg : values) {
+                RedisRequests.writeRequestArgument(buffer, arg);
+            }
+        }
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.LPUSH, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -2784,13 +3700,15 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     public Future<Long> lpushx(@RedisProtocolSupport.Key final Buffer key, final Buffer value) {
         requireNonNull(key);
         requireNonNull(value);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 3;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.LPUSHX, allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestArgument(value, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.LPUSHX, cb);
+        final int len = 3;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.LPUSHX) +
+                    calculateRequestArgumentSize(key) + calculateRequestArgumentSize(value);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.LPUSHX.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        RedisRequests.writeRequestArgument(buffer, value);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.LPUSHX, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -2799,14 +3717,17 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     @Override
     public <T> Future<List<T>> lrange(@RedisProtocolSupport.Key final Buffer key, final long start, final long stop) {
         requireNonNull(key);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 4;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.LRANGE, allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestArgument(start, cb, allocator);
-        addRequestArgument(stop, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.LRANGE, cb);
+        final int len = 4;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.LRANGE) +
+                    calculateRequestArgumentSize(key) + calculateRequestArgumentSize(start) +
+                    calculateRequestArgumentSize(stop);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.LRANGE.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        RedisRequests.writeRequestArgument(buffer, start);
+        RedisRequests.writeRequestArgument(buffer, stop);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.LRANGE, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -2816,14 +3737,17 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     public Future<Long> lrem(@RedisProtocolSupport.Key final Buffer key, final long count, final Buffer value) {
         requireNonNull(key);
         requireNonNull(value);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 4;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.LREM, allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestArgument(count, cb, allocator);
-        addRequestArgument(value, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.LREM, cb);
+        final int len = 4;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.LREM) +
+                    calculateRequestArgumentSize(key) + calculateRequestArgumentSize(count) +
+                    calculateRequestArgumentSize(value);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.LREM.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        RedisRequests.writeRequestArgument(buffer, count);
+        RedisRequests.writeRequestArgument(buffer, value);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.LREM, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -2833,14 +3757,17 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     public Future<String> lset(@RedisProtocolSupport.Key final Buffer key, final long index, final Buffer value) {
         requireNonNull(key);
         requireNonNull(value);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 4;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.LSET, allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestArgument(index, cb, allocator);
-        addRequestArgument(value, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.LSET, cb);
+        final int len = 4;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.LSET) +
+                    calculateRequestArgumentSize(key) + calculateRequestArgumentSize(index) +
+                    calculateRequestArgumentSize(value);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.LSET.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        RedisRequests.writeRequestArgument(buffer, index);
+        RedisRequests.writeRequestArgument(buffer, value);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.LSET, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -2849,14 +3776,17 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     @Override
     public Future<String> ltrim(@RedisProtocolSupport.Key final Buffer key, final long start, final long stop) {
         requireNonNull(key);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 4;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.LTRIM, allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestArgument(start, cb, allocator);
-        addRequestArgument(stop, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.LTRIM, cb);
+        final int len = 4;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.LTRIM) +
+                    calculateRequestArgumentSize(key) + calculateRequestArgumentSize(start) +
+                    calculateRequestArgumentSize(stop);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.LTRIM.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        RedisRequests.writeRequestArgument(buffer, start);
+        RedisRequests.writeRequestArgument(buffer, stop);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.LTRIM, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -2864,12 +3794,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
 
     @Override
     public Future<Buffer> memoryDoctor() {
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 2;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.MEMORY,
-                    RedisProtocolSupport.SubCommand.DOCTOR, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.MEMORY, cb);
+        final int len = 2;
+        final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.MEMORY);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.MEMORY.encodeTo(buffer);
+        RedisProtocolSupport.SubCommand.DOCTOR.encodeTo(buffer);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.MEMORY, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Buffer> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -2877,12 +3808,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
 
     @Override
     public <T> Future<List<T>> memoryHelp() {
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 2;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.MEMORY,
-                    RedisProtocolSupport.SubCommand.HELP, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.MEMORY, cb);
+        final int len = 2;
+        final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.MEMORY);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.MEMORY.encodeTo(buffer);
+        RedisProtocolSupport.SubCommand.HELP.encodeTo(buffer);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.MEMORY, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -2890,12 +3822,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
 
     @Override
     public Future<Buffer> memoryMallocStats() {
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 2;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.MEMORY,
-                    RedisProtocolSupport.SubCommand.MALLOC_STATS, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.MEMORY, cb);
+        final int len = 2;
+        final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.MEMORY);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.MEMORY.encodeTo(buffer);
+        RedisProtocolSupport.SubCommand.MALLOC_STATS.encodeTo(buffer);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.MEMORY, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Buffer> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -2903,12 +3836,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
 
     @Override
     public Future<String> memoryPurge() {
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 2;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.MEMORY,
-                    RedisProtocolSupport.SubCommand.PURGE, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.MEMORY, cb);
+        final int len = 2;
+        final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.MEMORY);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.MEMORY.encodeTo(buffer);
+        RedisProtocolSupport.SubCommand.PURGE.encodeTo(buffer);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.MEMORY, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -2916,12 +3850,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
 
     @Override
     public <T> Future<List<T>> memoryStats() {
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 2;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.MEMORY,
-                    RedisProtocolSupport.SubCommand.STATS, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.MEMORY, cb);
+        final int len = 2;
+        final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.MEMORY);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.MEMORY.encodeTo(buffer);
+        RedisProtocolSupport.SubCommand.STATS.encodeTo(buffer);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.MEMORY, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -2930,13 +3865,15 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     @Override
     public Future<Long> memoryUsage(@RedisProtocolSupport.Key final Buffer key) {
         requireNonNull(key);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 3;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.MEMORY,
-                    RedisProtocolSupport.SubCommand.USAGE, allocator);
-        addRequestArgument(key, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.MEMORY, cb);
+        final int len = 3;
+        final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.MEMORY) +
+                    calculateRequestArgumentSize(key);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.MEMORY.encodeTo(buffer);
+        RedisProtocolSupport.SubCommand.USAGE.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.MEMORY, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -2945,20 +3882,21 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     @Override
     public Future<Long> memoryUsage(@RedisProtocolSupport.Key final Buffer key, @Nullable final Long samplesCount) {
         requireNonNull(key);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 3;
+        final int len = 3 + (samplesCount == null ? 0 : 2);
+        final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.MEMORY) +
+                    calculateRequestArgumentSize(key) +
+                    (samplesCount == null ? 0 : RedisProtocolSupport.SubCommand.SAMPLES.encodedByteCount()) +
+                    (samplesCount == null ? 0 : calculateRequestArgumentSize(samplesCount));
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.MEMORY.encodeTo(buffer);
+        RedisProtocolSupport.SubCommand.USAGE.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
         if (samplesCount != null) {
-            len += 2;
+            RedisProtocolSupport.SubCommand.SAMPLES.encodeTo(buffer);
+            RedisRequests.writeRequestArgument(buffer, samplesCount);
         }
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.MEMORY,
-                    RedisProtocolSupport.SubCommand.USAGE, allocator);
-        addRequestArgument(key, cb, allocator);
-        if (samplesCount != null) {
-            addRequestArgument(RedisProtocolSupport.SubCommand.SAMPLES, cb, allocator);
-            addRequestArgument(samplesCount, cb, allocator);
-        }
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.MEMORY, cb);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.MEMORY, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -2967,12 +3905,14 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     @Override
     public Future<List<Buffer>> mget(@RedisProtocolSupport.Key final Buffer key) {
         requireNonNull(key);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 2;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.MGET, allocator);
-        addRequestArgument(key, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.MGET, cb);
+        final int len = 2;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.MGET) +
+                    calculateRequestArgumentSize(key);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.MGET.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.MGET, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<Buffer>> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -2983,13 +3923,15 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
                                      @RedisProtocolSupport.Key final Buffer key2) {
         requireNonNull(key1);
         requireNonNull(key2);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 3;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.MGET, allocator);
-        addRequestArgument(key1, cb, allocator);
-        addRequestArgument(key2, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.MGET, cb);
+        final int len = 3;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.MGET) +
+                    calculateRequestArgumentSize(key1) + calculateRequestArgumentSize(key2);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.MGET.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key1);
+        RedisRequests.writeRequestArgument(buffer, key2);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.MGET, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<Buffer>> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -3002,14 +3944,17 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         requireNonNull(key1);
         requireNonNull(key2);
         requireNonNull(key3);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 4;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.MGET, allocator);
-        addRequestArgument(key1, cb, allocator);
-        addRequestArgument(key2, cb, allocator);
-        addRequestArgument(key3, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.MGET, cb);
+        final int len = 4;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.MGET) +
+                    calculateRequestArgumentSize(key1) + calculateRequestArgumentSize(key2) +
+                    calculateRequestArgumentSize(key3);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.MGET.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key1);
+        RedisRequests.writeRequestArgument(buffer, key2);
+        RedisRequests.writeRequestArgument(buffer, key3);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.MGET, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<Buffer>> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -3018,13 +3963,35 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     @Override
     public Future<List<Buffer>> mget(@RedisProtocolSupport.Key final Collection<Buffer> keys) {
         requireNonNull(keys);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 1;
-        len += keys.size();
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.MGET, allocator);
-        addRequestBufferArguments(keys, null, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.MGET, cb);
+        final int len = 1 + keys.size();
+        int keysCapacity = 0;
+        if (keys instanceof List && keys instanceof RandomAccess) {
+            final List<Buffer> list = (List<Buffer>) keys;
+            for (int i = 0; i < list.size(); ++i) {
+                final Buffer arg = list.get(i);
+                keysCapacity += calculateRequestArgumentSize(arg);
+            }
+        } else {
+            for (Buffer arg : keys) {
+                keysCapacity += calculateRequestArgumentSize(arg);
+            }
+        }
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.MGET) + keysCapacity;
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.MGET.encodeTo(buffer);
+        if (keys instanceof List && keys instanceof RandomAccess) {
+            final List<Buffer> list = (List<Buffer>) keys;
+            for (int i = 0; i < list.size(); ++i) {
+                final Buffer arg = list.get(i);
+                RedisRequests.writeRequestArgument(buffer, arg);
+            }
+        } else {
+            for (Buffer arg : keys) {
+                RedisRequests.writeRequestArgument(buffer, arg);
+            }
+        }
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.MGET, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<Buffer>> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -3033,13 +4000,15 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     @Override
     public Future<Long> move(@RedisProtocolSupport.Key final Buffer key, final long db) {
         requireNonNull(key);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 3;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.MOVE, allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestArgument(db, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.MOVE, cb);
+        final int len = 3;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.MOVE) +
+                    calculateRequestArgumentSize(key) + calculateRequestArgumentSize(db);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.MOVE.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        RedisRequests.writeRequestArgument(buffer, db);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.MOVE, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -3049,13 +4018,15 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     public Future<String> mset(@RedisProtocolSupport.Key final Buffer key, final Buffer value) {
         requireNonNull(key);
         requireNonNull(value);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 3;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.MSET, allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestArgument(value, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.MSET, cb);
+        final int len = 3;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.MSET) +
+                    calculateRequestArgumentSize(key) + calculateRequestArgumentSize(value);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.MSET.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        RedisRequests.writeRequestArgument(buffer, value);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.MSET, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -3068,15 +4039,18 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         requireNonNull(value1);
         requireNonNull(key2);
         requireNonNull(value2);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 5;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.MSET, allocator);
-        addRequestArgument(key1, cb, allocator);
-        addRequestArgument(value1, cb, allocator);
-        addRequestArgument(key2, cb, allocator);
-        addRequestArgument(value2, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.MSET, cb);
+        final int len = 5;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.MSET) +
+                    calculateRequestArgumentSize(key1) + calculateRequestArgumentSize(value1) +
+                    calculateRequestArgumentSize(key2) + calculateRequestArgumentSize(value2);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.MSET.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key1);
+        RedisRequests.writeRequestArgument(buffer, value1);
+        RedisRequests.writeRequestArgument(buffer, key2);
+        RedisRequests.writeRequestArgument(buffer, value2);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.MSET, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -3092,17 +4066,21 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         requireNonNull(value2);
         requireNonNull(key3);
         requireNonNull(value3);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 7;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.MSET, allocator);
-        addRequestArgument(key1, cb, allocator);
-        addRequestArgument(value1, cb, allocator);
-        addRequestArgument(key2, cb, allocator);
-        addRequestArgument(value2, cb, allocator);
-        addRequestArgument(key3, cb, allocator);
-        addRequestArgument(value3, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.MSET, cb);
+        final int len = 7;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.MSET) +
+                    calculateRequestArgumentSize(key1) + calculateRequestArgumentSize(value1) +
+                    calculateRequestArgumentSize(key2) + calculateRequestArgumentSize(value2) +
+                    calculateRequestArgumentSize(key3) + calculateRequestArgumentSize(value3);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.MSET.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key1);
+        RedisRequests.writeRequestArgument(buffer, value1);
+        RedisRequests.writeRequestArgument(buffer, key2);
+        RedisRequests.writeRequestArgument(buffer, value2);
+        RedisRequests.writeRequestArgument(buffer, key3);
+        RedisRequests.writeRequestArgument(buffer, value3);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.MSET, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -3111,13 +4089,36 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     @Override
     public Future<String> mset(final Collection<RedisProtocolSupport.BufferKeyValue> keyValues) {
         requireNonNull(keyValues);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 1;
-        len += RedisProtocolSupport.BufferKeyValue.SIZE * keyValues.size();
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.MSET, allocator);
-        addRequestTupleArguments(keyValues, null, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.MSET, cb);
+        final int len = 1 + RedisProtocolSupport.BufferKeyValue.SIZE * keyValues.size();
+        int keyValuesCapacity = 0;
+        if (keyValues instanceof List && keyValues instanceof RandomAccess) {
+            final List<RedisProtocolSupport.BufferKeyValue> list = (List<RedisProtocolSupport.BufferKeyValue>) keyValues;
+            for (int i = 0; i < list.size(); ++i) {
+                final RedisProtocolSupport.BufferKeyValue arg = list.get(i);
+                keyValuesCapacity += arg.encodedByteCount();
+            }
+        } else {
+            for (RedisProtocolSupport.BufferKeyValue arg : keyValues) {
+                keyValuesCapacity += arg.encodedByteCount();
+            }
+        }
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.MSET) +
+                    keyValuesCapacity;
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.MSET.encodeTo(buffer);
+        if (keyValues instanceof List && keyValues instanceof RandomAccess) {
+            final List<RedisProtocolSupport.BufferKeyValue> list = (List<RedisProtocolSupport.BufferKeyValue>) keyValues;
+            for (int i = 0; i < list.size(); ++i) {
+                final RedisProtocolSupport.BufferKeyValue arg = list.get(i);
+                arg.encodeTo(buffer);
+            }
+        } else {
+            for (RedisProtocolSupport.BufferKeyValue arg : keyValues) {
+                arg.encodeTo(buffer);
+            }
+        }
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.MSET, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -3127,13 +4128,15 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     public Future<Long> msetnx(@RedisProtocolSupport.Key final Buffer key, final Buffer value) {
         requireNonNull(key);
         requireNonNull(value);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 3;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.MSETNX, allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestArgument(value, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.MSETNX, cb);
+        final int len = 3;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.MSETNX) +
+                    calculateRequestArgumentSize(key) + calculateRequestArgumentSize(value);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.MSETNX.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        RedisRequests.writeRequestArgument(buffer, value);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.MSETNX, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -3146,15 +4149,18 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         requireNonNull(value1);
         requireNonNull(key2);
         requireNonNull(value2);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 5;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.MSETNX, allocator);
-        addRequestArgument(key1, cb, allocator);
-        addRequestArgument(value1, cb, allocator);
-        addRequestArgument(key2, cb, allocator);
-        addRequestArgument(value2, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.MSETNX, cb);
+        final int len = 5;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.MSETNX) +
+                    calculateRequestArgumentSize(key1) + calculateRequestArgumentSize(value1) +
+                    calculateRequestArgumentSize(key2) + calculateRequestArgumentSize(value2);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.MSETNX.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key1);
+        RedisRequests.writeRequestArgument(buffer, value1);
+        RedisRequests.writeRequestArgument(buffer, key2);
+        RedisRequests.writeRequestArgument(buffer, value2);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.MSETNX, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -3170,17 +4176,21 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         requireNonNull(value2);
         requireNonNull(key3);
         requireNonNull(value3);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 7;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.MSETNX, allocator);
-        addRequestArgument(key1, cb, allocator);
-        addRequestArgument(value1, cb, allocator);
-        addRequestArgument(key2, cb, allocator);
-        addRequestArgument(value2, cb, allocator);
-        addRequestArgument(key3, cb, allocator);
-        addRequestArgument(value3, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.MSETNX, cb);
+        final int len = 7;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.MSETNX) +
+                    calculateRequestArgumentSize(key1) + calculateRequestArgumentSize(value1) +
+                    calculateRequestArgumentSize(key2) + calculateRequestArgumentSize(value2) +
+                    calculateRequestArgumentSize(key3) + calculateRequestArgumentSize(value3);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.MSETNX.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key1);
+        RedisRequests.writeRequestArgument(buffer, value1);
+        RedisRequests.writeRequestArgument(buffer, key2);
+        RedisRequests.writeRequestArgument(buffer, value2);
+        RedisRequests.writeRequestArgument(buffer, key3);
+        RedisRequests.writeRequestArgument(buffer, value3);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.MSETNX, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -3189,13 +4199,36 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     @Override
     public Future<Long> msetnx(final Collection<RedisProtocolSupport.BufferKeyValue> keyValues) {
         requireNonNull(keyValues);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 1;
-        len += RedisProtocolSupport.BufferKeyValue.SIZE * keyValues.size();
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.MSETNX, allocator);
-        addRequestTupleArguments(keyValues, null, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.MSETNX, cb);
+        final int len = 1 + RedisProtocolSupport.BufferKeyValue.SIZE * keyValues.size();
+        int keyValuesCapacity = 0;
+        if (keyValues instanceof List && keyValues instanceof RandomAccess) {
+            final List<RedisProtocolSupport.BufferKeyValue> list = (List<RedisProtocolSupport.BufferKeyValue>) keyValues;
+            for (int i = 0; i < list.size(); ++i) {
+                final RedisProtocolSupport.BufferKeyValue arg = list.get(i);
+                keyValuesCapacity += arg.encodedByteCount();
+            }
+        } else {
+            for (RedisProtocolSupport.BufferKeyValue arg : keyValues) {
+                keyValuesCapacity += arg.encodedByteCount();
+            }
+        }
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.MSETNX) +
+                    keyValuesCapacity;
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.MSETNX.encodeTo(buffer);
+        if (keyValues instanceof List && keyValues instanceof RandomAccess) {
+            final List<RedisProtocolSupport.BufferKeyValue> list = (List<RedisProtocolSupport.BufferKeyValue>) keyValues;
+            for (int i = 0; i < list.size(); ++i) {
+                final RedisProtocolSupport.BufferKeyValue arg = list.get(i);
+                arg.encodeTo(buffer);
+            }
+        } else {
+            for (RedisProtocolSupport.BufferKeyValue arg : keyValues) {
+                arg.encodeTo(buffer);
+            }
+        }
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.MSETNX, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -3204,13 +4237,15 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     @Override
     public Future<Buffer> objectEncoding(@RedisProtocolSupport.Key final Buffer key) {
         requireNonNull(key);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 3;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.OBJECT,
-                    RedisProtocolSupport.SubCommand.ENCODING, allocator);
-        addRequestArgument(key, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.OBJECT, cb);
+        final int len = 3;
+        final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.OBJECT) +
+                    calculateRequestArgumentSize(key);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.OBJECT.encodeTo(buffer);
+        RedisProtocolSupport.SubCommand.ENCODING.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.OBJECT, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Buffer> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -3219,13 +4254,15 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     @Override
     public Future<Long> objectFreq(@RedisProtocolSupport.Key final Buffer key) {
         requireNonNull(key);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 3;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.OBJECT,
-                    RedisProtocolSupport.SubCommand.FREQ, allocator);
-        addRequestArgument(key, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.OBJECT, cb);
+        final int len = 3;
+        final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.OBJECT) +
+                    calculateRequestArgumentSize(key);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.OBJECT.encodeTo(buffer);
+        RedisProtocolSupport.SubCommand.FREQ.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.OBJECT, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -3233,12 +4270,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
 
     @Override
     public Future<List<String>> objectHelp() {
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 2;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.OBJECT,
-                    RedisProtocolSupport.SubCommand.HELP, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.OBJECT, cb);
+        final int len = 2;
+        final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.OBJECT);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.OBJECT.encodeTo(buffer);
+        RedisProtocolSupport.SubCommand.HELP.encodeTo(buffer);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.OBJECT, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<String>> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -3247,13 +4285,15 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     @Override
     public Future<Long> objectIdletime(@RedisProtocolSupport.Key final Buffer key) {
         requireNonNull(key);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 3;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.OBJECT,
-                    RedisProtocolSupport.SubCommand.IDLETIME, allocator);
-        addRequestArgument(key, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.OBJECT, cb);
+        final int len = 3;
+        final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.OBJECT) +
+                    calculateRequestArgumentSize(key);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.OBJECT.encodeTo(buffer);
+        RedisProtocolSupport.SubCommand.IDLETIME.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.OBJECT, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -3262,13 +4302,15 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     @Override
     public Future<Long> objectRefcount(@RedisProtocolSupport.Key final Buffer key) {
         requireNonNull(key);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 3;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.OBJECT,
-                    RedisProtocolSupport.SubCommand.REFCOUNT, allocator);
-        addRequestArgument(key, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.OBJECT, cb);
+        final int len = 3;
+        final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.OBJECT) +
+                    calculateRequestArgumentSize(key);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.OBJECT.encodeTo(buffer);
+        RedisProtocolSupport.SubCommand.REFCOUNT.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.OBJECT, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -3277,12 +4319,14 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     @Override
     public Future<Long> persist(@RedisProtocolSupport.Key final Buffer key) {
         requireNonNull(key);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 2;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.PERSIST, allocator);
-        addRequestArgument(key, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.PERSIST, cb);
+        final int len = 2;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.PERSIST) +
+                    calculateRequestArgumentSize(key);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.PERSIST.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.PERSIST, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -3291,13 +4335,15 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     @Override
     public Future<Long> pexpire(@RedisProtocolSupport.Key final Buffer key, final long milliseconds) {
         requireNonNull(key);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 3;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.PEXPIRE, allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestArgument(milliseconds, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.PEXPIRE, cb);
+        final int len = 3;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.PEXPIRE) +
+                    calculateRequestArgumentSize(key) + calculateRequestArgumentSize(milliseconds);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.PEXPIRE.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        RedisRequests.writeRequestArgument(buffer, milliseconds);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.PEXPIRE, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -3306,13 +4352,15 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     @Override
     public Future<Long> pexpireat(@RedisProtocolSupport.Key final Buffer key, final long millisecondsTimestamp) {
         requireNonNull(key);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 3;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.PEXPIREAT, allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestArgument(millisecondsTimestamp, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.PEXPIREAT, cb);
+        final int len = 3;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.PEXPIREAT) +
+                    calculateRequestArgumentSize(key) + calculateRequestArgumentSize(millisecondsTimestamp);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.PEXPIREAT.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        RedisRequests.writeRequestArgument(buffer, millisecondsTimestamp);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.PEXPIREAT, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -3322,13 +4370,15 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     public Future<Long> pfadd(@RedisProtocolSupport.Key final Buffer key, final Buffer element) {
         requireNonNull(key);
         requireNonNull(element);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 3;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.PFADD, allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestArgument(element, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.PFADD, cb);
+        final int len = 3;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.PFADD) +
+                    calculateRequestArgumentSize(key) + calculateRequestArgumentSize(element);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.PFADD.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        RedisRequests.writeRequestArgument(buffer, element);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.PFADD, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -3340,14 +4390,17 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         requireNonNull(key);
         requireNonNull(element1);
         requireNonNull(element2);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 4;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.PFADD, allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestArgument(element1, cb, allocator);
-        addRequestArgument(element2, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.PFADD, cb);
+        final int len = 4;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.PFADD) +
+                    calculateRequestArgumentSize(key) + calculateRequestArgumentSize(element1) +
+                    calculateRequestArgumentSize(element2);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.PFADD.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        RedisRequests.writeRequestArgument(buffer, element1);
+        RedisRequests.writeRequestArgument(buffer, element2);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.PFADD, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -3360,15 +4413,18 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         requireNonNull(element1);
         requireNonNull(element2);
         requireNonNull(element3);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 5;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.PFADD, allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestArgument(element1, cb, allocator);
-        addRequestArgument(element2, cb, allocator);
-        addRequestArgument(element3, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.PFADD, cb);
+        final int len = 5;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.PFADD) +
+                    calculateRequestArgumentSize(key) + calculateRequestArgumentSize(element1) +
+                    calculateRequestArgumentSize(element2) + calculateRequestArgumentSize(element3);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.PFADD.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        RedisRequests.writeRequestArgument(buffer, element1);
+        RedisRequests.writeRequestArgument(buffer, element2);
+        RedisRequests.writeRequestArgument(buffer, element3);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.PFADD, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -3378,14 +4434,37 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     public Future<Long> pfadd(@RedisProtocolSupport.Key final Buffer key, final Collection<Buffer> elements) {
         requireNonNull(key);
         requireNonNull(elements);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 2;
-        len += elements.size();
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.PFADD, allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestBufferArguments(elements, null, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.PFADD, cb);
+        final int len = 2 + elements.size();
+        int elementsCapacity = 0;
+        if (elements instanceof List && elements instanceof RandomAccess) {
+            final List<Buffer> list = (List<Buffer>) elements;
+            for (int i = 0; i < list.size(); ++i) {
+                final Buffer arg = list.get(i);
+                elementsCapacity += calculateRequestArgumentSize(arg);
+            }
+        } else {
+            for (Buffer arg : elements) {
+                elementsCapacity += calculateRequestArgumentSize(arg);
+            }
+        }
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.PFADD) +
+                    calculateRequestArgumentSize(key) + elementsCapacity;
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.PFADD.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        if (elements instanceof List && elements instanceof RandomAccess) {
+            final List<Buffer> list = (List<Buffer>) elements;
+            for (int i = 0; i < list.size(); ++i) {
+                final Buffer arg = list.get(i);
+                RedisRequests.writeRequestArgument(buffer, arg);
+            }
+        } else {
+            for (Buffer arg : elements) {
+                RedisRequests.writeRequestArgument(buffer, arg);
+            }
+        }
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.PFADD, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -3394,12 +4473,14 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     @Override
     public Future<Long> pfcount(@RedisProtocolSupport.Key final Buffer key) {
         requireNonNull(key);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 2;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.PFCOUNT, allocator);
-        addRequestArgument(key, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.PFCOUNT, cb);
+        final int len = 2;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.PFCOUNT) +
+                    calculateRequestArgumentSize(key);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.PFCOUNT.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.PFCOUNT, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -3410,13 +4491,15 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
                                 @RedisProtocolSupport.Key final Buffer key2) {
         requireNonNull(key1);
         requireNonNull(key2);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 3;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.PFCOUNT, allocator);
-        addRequestArgument(key1, cb, allocator);
-        addRequestArgument(key2, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.PFCOUNT, cb);
+        final int len = 3;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.PFCOUNT) +
+                    calculateRequestArgumentSize(key1) + calculateRequestArgumentSize(key2);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.PFCOUNT.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key1);
+        RedisRequests.writeRequestArgument(buffer, key2);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.PFCOUNT, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -3429,14 +4512,17 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         requireNonNull(key1);
         requireNonNull(key2);
         requireNonNull(key3);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 4;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.PFCOUNT, allocator);
-        addRequestArgument(key1, cb, allocator);
-        addRequestArgument(key2, cb, allocator);
-        addRequestArgument(key3, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.PFCOUNT, cb);
+        final int len = 4;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.PFCOUNT) +
+                    calculateRequestArgumentSize(key1) + calculateRequestArgumentSize(key2) +
+                    calculateRequestArgumentSize(key3);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.PFCOUNT.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key1);
+        RedisRequests.writeRequestArgument(buffer, key2);
+        RedisRequests.writeRequestArgument(buffer, key3);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.PFCOUNT, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -3445,13 +4531,36 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     @Override
     public Future<Long> pfcount(@RedisProtocolSupport.Key final Collection<Buffer> keys) {
         requireNonNull(keys);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 1;
-        len += keys.size();
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.PFCOUNT, allocator);
-        addRequestBufferArguments(keys, null, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.PFCOUNT, cb);
+        final int len = 1 + keys.size();
+        int keysCapacity = 0;
+        if (keys instanceof List && keys instanceof RandomAccess) {
+            final List<Buffer> list = (List<Buffer>) keys;
+            for (int i = 0; i < list.size(); ++i) {
+                final Buffer arg = list.get(i);
+                keysCapacity += calculateRequestArgumentSize(arg);
+            }
+        } else {
+            for (Buffer arg : keys) {
+                keysCapacity += calculateRequestArgumentSize(arg);
+            }
+        }
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.PFCOUNT) +
+                    keysCapacity;
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.PFCOUNT.encodeTo(buffer);
+        if (keys instanceof List && keys instanceof RandomAccess) {
+            final List<Buffer> list = (List<Buffer>) keys;
+            for (int i = 0; i < list.size(); ++i) {
+                final Buffer arg = list.get(i);
+                RedisRequests.writeRequestArgument(buffer, arg);
+            }
+        } else {
+            for (Buffer arg : keys) {
+                RedisRequests.writeRequestArgument(buffer, arg);
+            }
+        }
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.PFCOUNT, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -3462,13 +4571,15 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
                                   @RedisProtocolSupport.Key final Buffer sourcekey) {
         requireNonNull(destkey);
         requireNonNull(sourcekey);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 3;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.PFMERGE, allocator);
-        addRequestArgument(destkey, cb, allocator);
-        addRequestArgument(sourcekey, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.PFMERGE, cb);
+        final int len = 3;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.PFMERGE) +
+                    calculateRequestArgumentSize(destkey) + calculateRequestArgumentSize(sourcekey);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.PFMERGE.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, destkey);
+        RedisRequests.writeRequestArgument(buffer, sourcekey);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.PFMERGE, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -3481,14 +4592,17 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         requireNonNull(destkey);
         requireNonNull(sourcekey1);
         requireNonNull(sourcekey2);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 4;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.PFMERGE, allocator);
-        addRequestArgument(destkey, cb, allocator);
-        addRequestArgument(sourcekey1, cb, allocator);
-        addRequestArgument(sourcekey2, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.PFMERGE, cb);
+        final int len = 4;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.PFMERGE) +
+                    calculateRequestArgumentSize(destkey) + calculateRequestArgumentSize(sourcekey1) +
+                    calculateRequestArgumentSize(sourcekey2);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.PFMERGE.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, destkey);
+        RedisRequests.writeRequestArgument(buffer, sourcekey1);
+        RedisRequests.writeRequestArgument(buffer, sourcekey2);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.PFMERGE, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -3503,15 +4617,18 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         requireNonNull(sourcekey1);
         requireNonNull(sourcekey2);
         requireNonNull(sourcekey3);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 5;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.PFMERGE, allocator);
-        addRequestArgument(destkey, cb, allocator);
-        addRequestArgument(sourcekey1, cb, allocator);
-        addRequestArgument(sourcekey2, cb, allocator);
-        addRequestArgument(sourcekey3, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.PFMERGE, cb);
+        final int len = 5;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.PFMERGE) +
+                    calculateRequestArgumentSize(destkey) + calculateRequestArgumentSize(sourcekey1) +
+                    calculateRequestArgumentSize(sourcekey2) + calculateRequestArgumentSize(sourcekey3);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.PFMERGE.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, destkey);
+        RedisRequests.writeRequestArgument(buffer, sourcekey1);
+        RedisRequests.writeRequestArgument(buffer, sourcekey2);
+        RedisRequests.writeRequestArgument(buffer, sourcekey3);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.PFMERGE, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -3522,14 +4639,37 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
                                   @RedisProtocolSupport.Key final Collection<Buffer> sourcekeys) {
         requireNonNull(destkey);
         requireNonNull(sourcekeys);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 2;
-        len += sourcekeys.size();
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.PFMERGE, allocator);
-        addRequestArgument(destkey, cb, allocator);
-        addRequestBufferArguments(sourcekeys, null, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.PFMERGE, cb);
+        final int len = 2 + sourcekeys.size();
+        int sourcekeysCapacity = 0;
+        if (sourcekeys instanceof List && sourcekeys instanceof RandomAccess) {
+            final List<Buffer> list = (List<Buffer>) sourcekeys;
+            for (int i = 0; i < list.size(); ++i) {
+                final Buffer arg = list.get(i);
+                sourcekeysCapacity += calculateRequestArgumentSize(arg);
+            }
+        } else {
+            for (Buffer arg : sourcekeys) {
+                sourcekeysCapacity += calculateRequestArgumentSize(arg);
+            }
+        }
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.PFMERGE) +
+                    calculateRequestArgumentSize(destkey) + sourcekeysCapacity;
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.PFMERGE.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, destkey);
+        if (sourcekeys instanceof List && sourcekeys instanceof RandomAccess) {
+            final List<Buffer> list = (List<Buffer>) sourcekeys;
+            for (int i = 0; i < list.size(); ++i) {
+                final Buffer arg = list.get(i);
+                RedisRequests.writeRequestArgument(buffer, arg);
+            }
+        } else {
+            for (Buffer arg : sourcekeys) {
+                RedisRequests.writeRequestArgument(buffer, arg);
+            }
+        }
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.PFMERGE, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -3537,11 +4677,12 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
 
     @Override
     public Future<String> ping() {
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 1;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.PING, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.PING, cb);
+        final int len = 1;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.PING);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.PING.encodeTo(buffer);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.PING, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -3550,12 +4691,14 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     @Override
     public Future<Buffer> ping(final Buffer message) {
         requireNonNull(message);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 2;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.PING, allocator);
-        addRequestArgument(message, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.PING, cb);
+        final int len = 2;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.PING) +
+                    calculateRequestArgumentSize(message);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.PING.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, message);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.PING, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Buffer> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -3566,14 +4709,17 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
                                  final Buffer value) {
         requireNonNull(key);
         requireNonNull(value);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 4;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.PSETEX, allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestArgument(milliseconds, cb, allocator);
-        addRequestArgument(value, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.PSETEX, cb);
+        final int len = 4;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.PSETEX) +
+                    calculateRequestArgumentSize(key) + calculateRequestArgumentSize(milliseconds) +
+                    calculateRequestArgumentSize(value);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.PSETEX.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        RedisRequests.writeRequestArgument(buffer, milliseconds);
+        RedisRequests.writeRequestArgument(buffer, value);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.PSETEX, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -3582,12 +4728,14 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     @Override
     public Future<Long> pttl(@RedisProtocolSupport.Key final Buffer key) {
         requireNonNull(key);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 2;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.PTTL, allocator);
-        addRequestArgument(key, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.PTTL, cb);
+        final int len = 2;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.PTTL) +
+                    calculateRequestArgumentSize(key);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.PTTL.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.PTTL, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -3597,13 +4745,15 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     public Future<Long> publish(final Buffer channel, final Buffer message) {
         requireNonNull(channel);
         requireNonNull(message);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 3;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.PUBLISH, allocator);
-        addRequestArgument(channel, cb, allocator);
-        addRequestArgument(message, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.PUBLISH, cb);
+        final int len = 3;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.PUBLISH) +
+                    calculateRequestArgumentSize(channel) + calculateRequestArgumentSize(message);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.PUBLISH.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, channel);
+        RedisRequests.writeRequestArgument(buffer, message);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.PUBLISH, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -3611,12 +4761,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
 
     @Override
     public Future<List<String>> pubsubChannels() {
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 2;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.PUBSUB,
-                    RedisProtocolSupport.SubCommand.CHANNELS, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.PUBSUB, cb);
+        final int len = 2;
+        final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.PUBSUB);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.PUBSUB.encodeTo(buffer);
+        RedisProtocolSupport.SubCommand.CHANNELS.encodeTo(buffer);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.PUBSUB, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<String>> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -3624,18 +4775,17 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
 
     @Override
     public Future<List<String>> pubsubChannels(@Nullable final Buffer pattern) {
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 2;
+        final int len = 2 + (pattern == null ? 0 : 1);
+        final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.PUBSUB) +
+                    (pattern == null ? 0 : calculateRequestArgumentSize(pattern));
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.PUBSUB.encodeTo(buffer);
+        RedisProtocolSupport.SubCommand.CHANNELS.encodeTo(buffer);
         if (pattern != null) {
-            len++;
+            RedisRequests.writeRequestArgument(buffer, pattern);
         }
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.PUBSUB,
-                    RedisProtocolSupport.SubCommand.CHANNELS, allocator);
-        if (pattern != null) {
-            addRequestArgument(pattern, cb, allocator);
-        }
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.PUBSUB, cb);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.PUBSUB, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<String>> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -3643,24 +4793,21 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
 
     @Override
     public Future<List<String>> pubsubChannels(@Nullable final Buffer pattern1, @Nullable final Buffer pattern2) {
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 2;
+        final int len = 2 + (pattern1 == null ? 0 : 1) + (pattern2 == null ? 0 : 1);
+        final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.PUBSUB) +
+                    (pattern1 == null ? 0 : calculateRequestArgumentSize(pattern1)) +
+                    (pattern2 == null ? 0 : calculateRequestArgumentSize(pattern2));
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.PUBSUB.encodeTo(buffer);
+        RedisProtocolSupport.SubCommand.CHANNELS.encodeTo(buffer);
         if (pattern1 != null) {
-            len++;
+            RedisRequests.writeRequestArgument(buffer, pattern1);
         }
         if (pattern2 != null) {
-            len++;
+            RedisRequests.writeRequestArgument(buffer, pattern2);
         }
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.PUBSUB,
-                    RedisProtocolSupport.SubCommand.CHANNELS, allocator);
-        if (pattern1 != null) {
-            addRequestArgument(pattern1, cb, allocator);
-        }
-        if (pattern2 != null) {
-            addRequestArgument(pattern2, cb, allocator);
-        }
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.PUBSUB, cb);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.PUBSUB, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<String>> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -3669,30 +4816,25 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     @Override
     public Future<List<String>> pubsubChannels(@Nullable final Buffer pattern1, @Nullable final Buffer pattern2,
                                                @Nullable final Buffer pattern3) {
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 2;
+        final int len = 2 + (pattern1 == null ? 0 : 1) + (pattern2 == null ? 0 : 1) + (pattern3 == null ? 0 : 1);
+        final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.PUBSUB) +
+                    (pattern1 == null ? 0 : calculateRequestArgumentSize(pattern1)) +
+                    (pattern2 == null ? 0 : calculateRequestArgumentSize(pattern2)) +
+                    (pattern3 == null ? 0 : calculateRequestArgumentSize(pattern3));
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.PUBSUB.encodeTo(buffer);
+        RedisProtocolSupport.SubCommand.CHANNELS.encodeTo(buffer);
         if (pattern1 != null) {
-            len++;
+            RedisRequests.writeRequestArgument(buffer, pattern1);
         }
         if (pattern2 != null) {
-            len++;
+            RedisRequests.writeRequestArgument(buffer, pattern2);
         }
         if (pattern3 != null) {
-            len++;
+            RedisRequests.writeRequestArgument(buffer, pattern3);
         }
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.PUBSUB,
-                    RedisProtocolSupport.SubCommand.CHANNELS, allocator);
-        if (pattern1 != null) {
-            addRequestArgument(pattern1, cb, allocator);
-        }
-        if (pattern2 != null) {
-            addRequestArgument(pattern2, cb, allocator);
-        }
-        if (pattern3 != null) {
-            addRequestArgument(pattern3, cb, allocator);
-        }
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.PUBSUB, cb);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.PUBSUB, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<String>> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -3701,14 +4843,37 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     @Override
     public Future<List<String>> pubsubChannels(final Collection<Buffer> patterns) {
         requireNonNull(patterns);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 2;
-        len += patterns.size();
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.PUBSUB,
-                    RedisProtocolSupport.SubCommand.CHANNELS, allocator);
-        addRequestBufferArguments(patterns, null, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.PUBSUB, cb);
+        final int len = 2 + patterns.size();
+        int patternsCapacity = 0;
+        if (patterns instanceof List && patterns instanceof RandomAccess) {
+            final List<Buffer> list = (List<Buffer>) patterns;
+            for (int i = 0; i < list.size(); ++i) {
+                final Buffer arg = list.get(i);
+                patternsCapacity += calculateRequestArgumentSize(arg);
+            }
+        } else {
+            for (Buffer arg : patterns) {
+                patternsCapacity += calculateRequestArgumentSize(arg);
+            }
+        }
+        final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.PUBSUB) +
+                    patternsCapacity;
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.PUBSUB.encodeTo(buffer);
+        RedisProtocolSupport.SubCommand.CHANNELS.encodeTo(buffer);
+        if (patterns instanceof List && patterns instanceof RandomAccess) {
+            final List<Buffer> list = (List<Buffer>) patterns;
+            for (int i = 0; i < list.size(); ++i) {
+                final Buffer arg = list.get(i);
+                RedisRequests.writeRequestArgument(buffer, arg);
+            }
+        } else {
+            for (Buffer arg : patterns) {
+                RedisRequests.writeRequestArgument(buffer, arg);
+            }
+        }
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.PUBSUB, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<String>> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -3716,12 +4881,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
 
     @Override
     public <T> Future<List<T>> pubsubNumsub() {
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 2;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.PUBSUB,
-                    RedisProtocolSupport.SubCommand.NUMSUB, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.PUBSUB, cb);
+        final int len = 2;
+        final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.PUBSUB);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.PUBSUB.encodeTo(buffer);
+        RedisProtocolSupport.SubCommand.NUMSUB.encodeTo(buffer);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.PUBSUB, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -3729,18 +4895,17 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
 
     @Override
     public <T> Future<List<T>> pubsubNumsub(@Nullable final Buffer channel) {
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 2;
+        final int len = 2 + (channel == null ? 0 : 1);
+        final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.PUBSUB) +
+                    (channel == null ? 0 : calculateRequestArgumentSize(channel));
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.PUBSUB.encodeTo(buffer);
+        RedisProtocolSupport.SubCommand.NUMSUB.encodeTo(buffer);
         if (channel != null) {
-            len++;
+            RedisRequests.writeRequestArgument(buffer, channel);
         }
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.PUBSUB,
-                    RedisProtocolSupport.SubCommand.NUMSUB, allocator);
-        if (channel != null) {
-            addRequestArgument(channel, cb, allocator);
-        }
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.PUBSUB, cb);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.PUBSUB, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -3748,24 +4913,21 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
 
     @Override
     public <T> Future<List<T>> pubsubNumsub(@Nullable final Buffer channel1, @Nullable final Buffer channel2) {
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 2;
+        final int len = 2 + (channel1 == null ? 0 : 1) + (channel2 == null ? 0 : 1);
+        final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.PUBSUB) +
+                    (channel1 == null ? 0 : calculateRequestArgumentSize(channel1)) +
+                    (channel2 == null ? 0 : calculateRequestArgumentSize(channel2));
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.PUBSUB.encodeTo(buffer);
+        RedisProtocolSupport.SubCommand.NUMSUB.encodeTo(buffer);
         if (channel1 != null) {
-            len++;
+            RedisRequests.writeRequestArgument(buffer, channel1);
         }
         if (channel2 != null) {
-            len++;
+            RedisRequests.writeRequestArgument(buffer, channel2);
         }
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.PUBSUB,
-                    RedisProtocolSupport.SubCommand.NUMSUB, allocator);
-        if (channel1 != null) {
-            addRequestArgument(channel1, cb, allocator);
-        }
-        if (channel2 != null) {
-            addRequestArgument(channel2, cb, allocator);
-        }
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.PUBSUB, cb);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.PUBSUB, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -3774,30 +4936,25 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     @Override
     public <T> Future<List<T>> pubsubNumsub(@Nullable final Buffer channel1, @Nullable final Buffer channel2,
                                             @Nullable final Buffer channel3) {
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 2;
+        final int len = 2 + (channel1 == null ? 0 : 1) + (channel2 == null ? 0 : 1) + (channel3 == null ? 0 : 1);
+        final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.PUBSUB) +
+                    (channel1 == null ? 0 : calculateRequestArgumentSize(channel1)) +
+                    (channel2 == null ? 0 : calculateRequestArgumentSize(channel2)) +
+                    (channel3 == null ? 0 : calculateRequestArgumentSize(channel3));
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.PUBSUB.encodeTo(buffer);
+        RedisProtocolSupport.SubCommand.NUMSUB.encodeTo(buffer);
         if (channel1 != null) {
-            len++;
+            RedisRequests.writeRequestArgument(buffer, channel1);
         }
         if (channel2 != null) {
-            len++;
+            RedisRequests.writeRequestArgument(buffer, channel2);
         }
         if (channel3 != null) {
-            len++;
+            RedisRequests.writeRequestArgument(buffer, channel3);
         }
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.PUBSUB,
-                    RedisProtocolSupport.SubCommand.NUMSUB, allocator);
-        if (channel1 != null) {
-            addRequestArgument(channel1, cb, allocator);
-        }
-        if (channel2 != null) {
-            addRequestArgument(channel2, cb, allocator);
-        }
-        if (channel3 != null) {
-            addRequestArgument(channel3, cb, allocator);
-        }
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.PUBSUB, cb);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.PUBSUB, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -3806,14 +4963,37 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     @Override
     public <T> Future<List<T>> pubsubNumsub(final Collection<Buffer> channels) {
         requireNonNull(channels);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 2;
-        len += channels.size();
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.PUBSUB,
-                    RedisProtocolSupport.SubCommand.NUMSUB, allocator);
-        addRequestBufferArguments(channels, null, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.PUBSUB, cb);
+        final int len = 2 + channels.size();
+        int channelsCapacity = 0;
+        if (channels instanceof List && channels instanceof RandomAccess) {
+            final List<Buffer> list = (List<Buffer>) channels;
+            for (int i = 0; i < list.size(); ++i) {
+                final Buffer arg = list.get(i);
+                channelsCapacity += calculateRequestArgumentSize(arg);
+            }
+        } else {
+            for (Buffer arg : channels) {
+                channelsCapacity += calculateRequestArgumentSize(arg);
+            }
+        }
+        final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.PUBSUB) +
+                    channelsCapacity;
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.PUBSUB.encodeTo(buffer);
+        RedisProtocolSupport.SubCommand.NUMSUB.encodeTo(buffer);
+        if (channels instanceof List && channels instanceof RandomAccess) {
+            final List<Buffer> list = (List<Buffer>) channels;
+            for (int i = 0; i < list.size(); ++i) {
+                final Buffer arg = list.get(i);
+                RedisRequests.writeRequestArgument(buffer, arg);
+            }
+        } else {
+            for (Buffer arg : channels) {
+                RedisRequests.writeRequestArgument(buffer, arg);
+            }
+        }
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.PUBSUB, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -3821,12 +5001,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
 
     @Override
     public Future<Long> pubsubNumpat() {
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 2;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.PUBSUB,
-                    RedisProtocolSupport.SubCommand.NUMPAT, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.PUBSUB, cb);
+        final int len = 2;
+        final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.PUBSUB);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.PUBSUB.encodeTo(buffer);
+        RedisProtocolSupport.SubCommand.NUMPAT.encodeTo(buffer);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.PUBSUB, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -3834,11 +5015,12 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
 
     @Override
     public Future<Buffer> randomkey() {
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 1;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.RANDOMKEY, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.RANDOMKEY, cb);
+        final int len = 1;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.RANDOMKEY);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.RANDOMKEY.encodeTo(buffer);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.RANDOMKEY, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Buffer> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -3846,11 +5028,12 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
 
     @Override
     public Future<String> readonly() {
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 1;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.READONLY, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.READONLY, cb);
+        final int len = 1;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.READONLY);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.READONLY.encodeTo(buffer);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.READONLY, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -3858,11 +5041,12 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
 
     @Override
     public Future<String> readwrite() {
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 1;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.READWRITE, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.READWRITE, cb);
+        final int len = 1;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.READWRITE);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.READWRITE.encodeTo(buffer);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.READWRITE, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -3873,13 +5057,15 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
                                  @RedisProtocolSupport.Key final Buffer newkey) {
         requireNonNull(key);
         requireNonNull(newkey);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 3;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.RENAME, allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestArgument(newkey, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.RENAME, cb);
+        final int len = 3;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.RENAME) +
+                    calculateRequestArgumentSize(key) + calculateRequestArgumentSize(newkey);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.RENAME.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        RedisRequests.writeRequestArgument(buffer, newkey);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.RENAME, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -3890,13 +5076,15 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
                                  @RedisProtocolSupport.Key final Buffer newkey) {
         requireNonNull(key);
         requireNonNull(newkey);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 3;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.RENAMENX, allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestArgument(newkey, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.RENAMENX, cb);
+        final int len = 3;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.RENAMENX) +
+                    calculateRequestArgumentSize(key) + calculateRequestArgumentSize(newkey);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.RENAMENX.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        RedisRequests.writeRequestArgument(buffer, newkey);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.RENAMENX, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -3907,14 +5095,17 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
                                   final Buffer serializedValue) {
         requireNonNull(key);
         requireNonNull(serializedValue);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 4;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.RESTORE, allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestArgument(ttl, cb, allocator);
-        addRequestArgument(serializedValue, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.RESTORE, cb);
+        final int len = 4;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.RESTORE) +
+                    calculateRequestArgumentSize(key) + calculateRequestArgumentSize(ttl) +
+                    calculateRequestArgumentSize(serializedValue);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.RESTORE.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        RedisRequests.writeRequestArgument(buffer, ttl);
+        RedisRequests.writeRequestArgument(buffer, serializedValue);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.RESTORE, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -3926,20 +5117,20 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
                                   @Nullable final RedisProtocolSupport.RestoreReplace replace) {
         requireNonNull(key);
         requireNonNull(serializedValue);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 4;
+        final int len = 4 + (replace == null ? 0 : 1);
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.RESTORE) +
+                    calculateRequestArgumentSize(key) + calculateRequestArgumentSize(ttl) +
+                    calculateRequestArgumentSize(serializedValue) + (replace == null ? 0 : replace.encodedByteCount());
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.RESTORE.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        RedisRequests.writeRequestArgument(buffer, ttl);
+        RedisRequests.writeRequestArgument(buffer, serializedValue);
         if (replace != null) {
-            len++;
+            replace.encodeTo(buffer);
         }
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.RESTORE, allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestArgument(ttl, cb, allocator);
-        addRequestArgument(serializedValue, cb, allocator);
-        if (replace != null) {
-            addRequestArgument(replace, cb, allocator);
-        }
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.RESTORE, cb);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.RESTORE, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -3947,11 +5138,12 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
 
     @Override
     public <T> Future<List<T>> role() {
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 1;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ROLE, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.ROLE, cb);
+        final int len = 1;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.ROLE);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.ROLE.encodeTo(buffer);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.ROLE, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -3960,12 +5152,14 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     @Override
     public Future<Buffer> rpop(@RedisProtocolSupport.Key final Buffer key) {
         requireNonNull(key);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 2;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.RPOP, allocator);
-        addRequestArgument(key, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.RPOP, cb);
+        final int len = 2;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.RPOP) +
+                    calculateRequestArgumentSize(key);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.RPOP.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.RPOP, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Buffer> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -3976,13 +5170,15 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
                                     @RedisProtocolSupport.Key final Buffer destination) {
         requireNonNull(source);
         requireNonNull(destination);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 3;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.RPOPLPUSH, allocator);
-        addRequestArgument(source, cb, allocator);
-        addRequestArgument(destination, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.RPOPLPUSH, cb);
+        final int len = 3;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.RPOPLPUSH) +
+                    calculateRequestArgumentSize(source) + calculateRequestArgumentSize(destination);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.RPOPLPUSH.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, source);
+        RedisRequests.writeRequestArgument(buffer, destination);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.RPOPLPUSH, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Buffer> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -3992,13 +5188,15 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     public Future<Long> rpush(@RedisProtocolSupport.Key final Buffer key, final Buffer value) {
         requireNonNull(key);
         requireNonNull(value);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 3;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.RPUSH, allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestArgument(value, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.RPUSH, cb);
+        final int len = 3;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.RPUSH) +
+                    calculateRequestArgumentSize(key) + calculateRequestArgumentSize(value);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.RPUSH.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        RedisRequests.writeRequestArgument(buffer, value);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.RPUSH, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -4009,14 +5207,17 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         requireNonNull(key);
         requireNonNull(value1);
         requireNonNull(value2);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 4;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.RPUSH, allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestArgument(value1, cb, allocator);
-        addRequestArgument(value2, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.RPUSH, cb);
+        final int len = 4;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.RPUSH) +
+                    calculateRequestArgumentSize(key) + calculateRequestArgumentSize(value1) +
+                    calculateRequestArgumentSize(value2);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.RPUSH.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        RedisRequests.writeRequestArgument(buffer, value1);
+        RedisRequests.writeRequestArgument(buffer, value2);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.RPUSH, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -4029,15 +5230,18 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         requireNonNull(value1);
         requireNonNull(value2);
         requireNonNull(value3);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 5;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.RPUSH, allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestArgument(value1, cb, allocator);
-        addRequestArgument(value2, cb, allocator);
-        addRequestArgument(value3, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.RPUSH, cb);
+        final int len = 5;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.RPUSH) +
+                    calculateRequestArgumentSize(key) + calculateRequestArgumentSize(value1) +
+                    calculateRequestArgumentSize(value2) + calculateRequestArgumentSize(value3);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.RPUSH.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        RedisRequests.writeRequestArgument(buffer, value1);
+        RedisRequests.writeRequestArgument(buffer, value2);
+        RedisRequests.writeRequestArgument(buffer, value3);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.RPUSH, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -4047,14 +5251,37 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     public Future<Long> rpush(@RedisProtocolSupport.Key final Buffer key, final Collection<Buffer> values) {
         requireNonNull(key);
         requireNonNull(values);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 2;
-        len += values.size();
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.RPUSH, allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestBufferArguments(values, null, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.RPUSH, cb);
+        final int len = 2 + values.size();
+        int valuesCapacity = 0;
+        if (values instanceof List && values instanceof RandomAccess) {
+            final List<Buffer> list = (List<Buffer>) values;
+            for (int i = 0; i < list.size(); ++i) {
+                final Buffer arg = list.get(i);
+                valuesCapacity += calculateRequestArgumentSize(arg);
+            }
+        } else {
+            for (Buffer arg : values) {
+                valuesCapacity += calculateRequestArgumentSize(arg);
+            }
+        }
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.RPUSH) +
+                    calculateRequestArgumentSize(key) + valuesCapacity;
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.RPUSH.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        if (values instanceof List && values instanceof RandomAccess) {
+            final List<Buffer> list = (List<Buffer>) values;
+            for (int i = 0; i < list.size(); ++i) {
+                final Buffer arg = list.get(i);
+                RedisRequests.writeRequestArgument(buffer, arg);
+            }
+        } else {
+            for (Buffer arg : values) {
+                RedisRequests.writeRequestArgument(buffer, arg);
+            }
+        }
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.RPUSH, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -4064,13 +5291,15 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     public Future<Long> rpushx(@RedisProtocolSupport.Key final Buffer key, final Buffer value) {
         requireNonNull(key);
         requireNonNull(value);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 3;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.RPUSHX, allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestArgument(value, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.RPUSHX, cb);
+        final int len = 3;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.RPUSHX) +
+                    calculateRequestArgumentSize(key) + calculateRequestArgumentSize(value);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.RPUSHX.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        RedisRequests.writeRequestArgument(buffer, value);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.RPUSHX, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -4080,13 +5309,15 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     public Future<Long> sadd(@RedisProtocolSupport.Key final Buffer key, final Buffer member) {
         requireNonNull(key);
         requireNonNull(member);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 3;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SADD, allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestArgument(member, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SADD, cb);
+        final int len = 3;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SADD) +
+                    calculateRequestArgumentSize(key) + calculateRequestArgumentSize(member);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.SADD.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        RedisRequests.writeRequestArgument(buffer, member);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SADD, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -4097,14 +5328,17 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         requireNonNull(key);
         requireNonNull(member1);
         requireNonNull(member2);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 4;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SADD, allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestArgument(member1, cb, allocator);
-        addRequestArgument(member2, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SADD, cb);
+        final int len = 4;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SADD) +
+                    calculateRequestArgumentSize(key) + calculateRequestArgumentSize(member1) +
+                    calculateRequestArgumentSize(member2);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.SADD.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        RedisRequests.writeRequestArgument(buffer, member1);
+        RedisRequests.writeRequestArgument(buffer, member2);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SADD, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -4117,15 +5351,18 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         requireNonNull(member1);
         requireNonNull(member2);
         requireNonNull(member3);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 5;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SADD, allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestArgument(member1, cb, allocator);
-        addRequestArgument(member2, cb, allocator);
-        addRequestArgument(member3, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SADD, cb);
+        final int len = 5;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SADD) +
+                    calculateRequestArgumentSize(key) + calculateRequestArgumentSize(member1) +
+                    calculateRequestArgumentSize(member2) + calculateRequestArgumentSize(member3);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.SADD.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        RedisRequests.writeRequestArgument(buffer, member1);
+        RedisRequests.writeRequestArgument(buffer, member2);
+        RedisRequests.writeRequestArgument(buffer, member3);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SADD, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -4135,14 +5372,37 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     public Future<Long> sadd(@RedisProtocolSupport.Key final Buffer key, final Collection<Buffer> members) {
         requireNonNull(key);
         requireNonNull(members);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 2;
-        len += members.size();
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SADD, allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestBufferArguments(members, null, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SADD, cb);
+        final int len = 2 + members.size();
+        int membersCapacity = 0;
+        if (members instanceof List && members instanceof RandomAccess) {
+            final List<Buffer> list = (List<Buffer>) members;
+            for (int i = 0; i < list.size(); ++i) {
+                final Buffer arg = list.get(i);
+                membersCapacity += calculateRequestArgumentSize(arg);
+            }
+        } else {
+            for (Buffer arg : members) {
+                membersCapacity += calculateRequestArgumentSize(arg);
+            }
+        }
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SADD) +
+                    calculateRequestArgumentSize(key) + membersCapacity;
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.SADD.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        if (members instanceof List && members instanceof RandomAccess) {
+            final List<Buffer> list = (List<Buffer>) members;
+            for (int i = 0; i < list.size(); ++i) {
+                final Buffer arg = list.get(i);
+                RedisRequests.writeRequestArgument(buffer, arg);
+            }
+        } else {
+            for (Buffer arg : members) {
+                RedisRequests.writeRequestArgument(buffer, arg);
+            }
+        }
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SADD, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -4150,11 +5410,12 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
 
     @Override
     public Future<String> save() {
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 1;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SAVE, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SAVE, cb);
+        final int len = 1;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SAVE);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.SAVE.encodeTo(buffer);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SAVE, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -4162,12 +5423,14 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
 
     @Override
     public <T> Future<List<T>> scan(final long cursor) {
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 2;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SCAN, allocator);
-        addRequestArgument(cursor, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SCAN, cb);
+        final int len = 2;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SCAN) +
+                    calculateRequestArgumentSize(cursor);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.SCAN.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, cursor);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SCAN, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -4176,26 +5439,26 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     @Override
     public <T> Future<List<T>> scan(final long cursor, @Nullable final Buffer matchPattern,
                                     @Nullable final Long count) {
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 2;
+        final int len = 2 + (matchPattern == null ? 0 : 2) + (count == null ? 0 : 2);
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SCAN) +
+                    calculateRequestArgumentSize(cursor) +
+                    (matchPattern == null ? 0 : RedisProtocolSupport.SubCommand.MATCH.encodedByteCount()) +
+                    (matchPattern == null ? 0 : calculateRequestArgumentSize(matchPattern)) +
+                    (count == null ? 0 : RedisProtocolSupport.SubCommand.COUNT.encodedByteCount()) +
+                    (count == null ? 0 : calculateRequestArgumentSize(count));
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.SCAN.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, cursor);
         if (matchPattern != null) {
-            len += 2;
+            RedisProtocolSupport.SubCommand.MATCH.encodeTo(buffer);
+            RedisRequests.writeRequestArgument(buffer, matchPattern);
         }
         if (count != null) {
-            len += 2;
+            RedisProtocolSupport.SubCommand.COUNT.encodeTo(buffer);
+            RedisRequests.writeRequestArgument(buffer, count);
         }
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SCAN, allocator);
-        addRequestArgument(cursor, cb, allocator);
-        if (matchPattern != null) {
-            addRequestArgument(RedisProtocolSupport.SubCommand.MATCH, cb, allocator);
-            addRequestArgument(matchPattern, cb, allocator);
-        }
-        if (count != null) {
-            addRequestArgument(RedisProtocolSupport.SubCommand.COUNT, cb, allocator);
-            addRequestArgument(count, cb, allocator);
-        }
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SCAN, cb);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SCAN, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -4204,12 +5467,14 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     @Override
     public Future<Long> scard(@RedisProtocolSupport.Key final Buffer key) {
         requireNonNull(key);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 2;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SCARD, allocator);
-        addRequestArgument(key, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SCARD, cb);
+        final int len = 2;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SCARD) +
+                    calculateRequestArgumentSize(key);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.SCARD.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SCARD, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -4218,13 +5483,15 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     @Override
     public Future<String> scriptDebug(final RedisProtocolSupport.ScriptDebugMode mode) {
         requireNonNull(mode);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 3;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SCRIPT,
-                    RedisProtocolSupport.SubCommand.DEBUG, allocator);
-        addRequestArgument(mode, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SCRIPT, cb);
+        final int len = 3;
+        final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SCRIPT) +
+                    mode.encodedByteCount();
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.SCRIPT.encodeTo(buffer);
+        RedisProtocolSupport.SubCommand.DEBUG.encodeTo(buffer);
+        mode.encodeTo(buffer);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SCRIPT, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -4233,13 +5500,15 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     @Override
     public <T> Future<List<T>> scriptExists(final Buffer sha1) {
         requireNonNull(sha1);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 3;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SCRIPT,
-                    RedisProtocolSupport.SubCommand.EXISTS, allocator);
-        addRequestArgument(sha1, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SCRIPT, cb);
+        final int len = 3;
+        final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SCRIPT) +
+                    calculateRequestArgumentSize(sha1);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.SCRIPT.encodeTo(buffer);
+        RedisProtocolSupport.SubCommand.EXISTS.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, sha1);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SCRIPT, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -4249,14 +5518,16 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     public <T> Future<List<T>> scriptExists(final Buffer sha11, final Buffer sha12) {
         requireNonNull(sha11);
         requireNonNull(sha12);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 4;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SCRIPT,
-                    RedisProtocolSupport.SubCommand.EXISTS, allocator);
-        addRequestArgument(sha11, cb, allocator);
-        addRequestArgument(sha12, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SCRIPT, cb);
+        final int len = 4;
+        final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SCRIPT) +
+                    calculateRequestArgumentSize(sha11) + calculateRequestArgumentSize(sha12);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.SCRIPT.encodeTo(buffer);
+        RedisProtocolSupport.SubCommand.EXISTS.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, sha11);
+        RedisRequests.writeRequestArgument(buffer, sha12);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SCRIPT, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -4267,15 +5538,18 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         requireNonNull(sha11);
         requireNonNull(sha12);
         requireNonNull(sha13);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 5;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SCRIPT,
-                    RedisProtocolSupport.SubCommand.EXISTS, allocator);
-        addRequestArgument(sha11, cb, allocator);
-        addRequestArgument(sha12, cb, allocator);
-        addRequestArgument(sha13, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SCRIPT, cb);
+        final int len = 5;
+        final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SCRIPT) +
+                    calculateRequestArgumentSize(sha11) + calculateRequestArgumentSize(sha12) +
+                    calculateRequestArgumentSize(sha13);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.SCRIPT.encodeTo(buffer);
+        RedisProtocolSupport.SubCommand.EXISTS.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, sha11);
+        RedisRequests.writeRequestArgument(buffer, sha12);
+        RedisRequests.writeRequestArgument(buffer, sha13);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SCRIPT, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -4284,14 +5558,37 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     @Override
     public <T> Future<List<T>> scriptExists(final Collection<Buffer> sha1s) {
         requireNonNull(sha1s);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 2;
-        len += sha1s.size();
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SCRIPT,
-                    RedisProtocolSupport.SubCommand.EXISTS, allocator);
-        addRequestBufferArguments(sha1s, null, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SCRIPT, cb);
+        final int len = 2 + sha1s.size();
+        int sha1sCapacity = 0;
+        if (sha1s instanceof List && sha1s instanceof RandomAccess) {
+            final List<Buffer> list = (List<Buffer>) sha1s;
+            for (int i = 0; i < list.size(); ++i) {
+                final Buffer arg = list.get(i);
+                sha1sCapacity += calculateRequestArgumentSize(arg);
+            }
+        } else {
+            for (Buffer arg : sha1s) {
+                sha1sCapacity += calculateRequestArgumentSize(arg);
+            }
+        }
+        final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SCRIPT) +
+                    sha1sCapacity;
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.SCRIPT.encodeTo(buffer);
+        RedisProtocolSupport.SubCommand.EXISTS.encodeTo(buffer);
+        if (sha1s instanceof List && sha1s instanceof RandomAccess) {
+            final List<Buffer> list = (List<Buffer>) sha1s;
+            for (int i = 0; i < list.size(); ++i) {
+                final Buffer arg = list.get(i);
+                RedisRequests.writeRequestArgument(buffer, arg);
+            }
+        } else {
+            for (Buffer arg : sha1s) {
+                RedisRequests.writeRequestArgument(buffer, arg);
+            }
+        }
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SCRIPT, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -4299,12 +5596,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
 
     @Override
     public Future<String> scriptFlush() {
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 2;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SCRIPT,
-                    RedisProtocolSupport.SubCommand.FLUSH, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SCRIPT, cb);
+        final int len = 2;
+        final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SCRIPT);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.SCRIPT.encodeTo(buffer);
+        RedisProtocolSupport.SubCommand.FLUSH.encodeTo(buffer);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SCRIPT, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -4312,12 +5610,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
 
     @Override
     public Future<String> scriptKill() {
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 2;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SCRIPT,
-                    RedisProtocolSupport.SubCommand.KILL, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SCRIPT, cb);
+        final int len = 2;
+        final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SCRIPT);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.SCRIPT.encodeTo(buffer);
+        RedisProtocolSupport.SubCommand.KILL.encodeTo(buffer);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SCRIPT, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -4326,13 +5625,15 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     @Override
     public Future<Buffer> scriptLoad(final Buffer script) {
         requireNonNull(script);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 3;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SCRIPT,
-                    RedisProtocolSupport.SubCommand.LOAD, allocator);
-        addRequestArgument(script, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SCRIPT, cb);
+        final int len = 3;
+        final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SCRIPT) +
+                    calculateRequestArgumentSize(script);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.SCRIPT.encodeTo(buffer);
+        RedisProtocolSupport.SubCommand.LOAD.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, script);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SCRIPT, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Buffer> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -4341,12 +5642,14 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     @Override
     public <T> Future<List<T>> sdiff(@RedisProtocolSupport.Key final Buffer firstkey) {
         requireNonNull(firstkey);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 2;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SDIFF, allocator);
-        addRequestArgument(firstkey, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SDIFF, cb);
+        final int len = 2;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SDIFF) +
+                    calculateRequestArgumentSize(firstkey);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.SDIFF.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, firstkey);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SDIFF, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -4356,18 +5659,18 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     public <T> Future<List<T>> sdiff(@RedisProtocolSupport.Key final Buffer firstkey,
                                      @Nullable @RedisProtocolSupport.Key final Buffer otherkey) {
         requireNonNull(firstkey);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 2;
+        final int len = 2 + (otherkey == null ? 0 : 1);
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SDIFF) +
+                    calculateRequestArgumentSize(firstkey) +
+                    (otherkey == null ? 0 : calculateRequestArgumentSize(otherkey));
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.SDIFF.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, firstkey);
         if (otherkey != null) {
-            len++;
+            RedisRequests.writeRequestArgument(buffer, otherkey);
         }
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SDIFF, allocator);
-        addRequestArgument(firstkey, cb, allocator);
-        if (otherkey != null) {
-            addRequestArgument(otherkey, cb, allocator);
-        }
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SDIFF, cb);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SDIFF, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -4378,24 +5681,22 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
                                      @Nullable @RedisProtocolSupport.Key final Buffer otherkey1,
                                      @Nullable @RedisProtocolSupport.Key final Buffer otherkey2) {
         requireNonNull(firstkey);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 2;
+        final int len = 2 + (otherkey1 == null ? 0 : 1) + (otherkey2 == null ? 0 : 1);
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SDIFF) +
+                    calculateRequestArgumentSize(firstkey) +
+                    (otherkey1 == null ? 0 : calculateRequestArgumentSize(otherkey1)) +
+                    (otherkey2 == null ? 0 : calculateRequestArgumentSize(otherkey2));
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.SDIFF.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, firstkey);
         if (otherkey1 != null) {
-            len++;
+            RedisRequests.writeRequestArgument(buffer, otherkey1);
         }
         if (otherkey2 != null) {
-            len++;
+            RedisRequests.writeRequestArgument(buffer, otherkey2);
         }
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SDIFF, allocator);
-        addRequestArgument(firstkey, cb, allocator);
-        if (otherkey1 != null) {
-            addRequestArgument(otherkey1, cb, allocator);
-        }
-        if (otherkey2 != null) {
-            addRequestArgument(otherkey2, cb, allocator);
-        }
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SDIFF, cb);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SDIFF, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -4407,30 +5708,26 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
                                      @Nullable @RedisProtocolSupport.Key final Buffer otherkey2,
                                      @Nullable @RedisProtocolSupport.Key final Buffer otherkey3) {
         requireNonNull(firstkey);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 2;
+        final int len = 2 + (otherkey1 == null ? 0 : 1) + (otherkey2 == null ? 0 : 1) + (otherkey3 == null ? 0 : 1);
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SDIFF) +
+                    calculateRequestArgumentSize(firstkey) +
+                    (otherkey1 == null ? 0 : calculateRequestArgumentSize(otherkey1)) +
+                    (otherkey2 == null ? 0 : calculateRequestArgumentSize(otherkey2)) +
+                    (otherkey3 == null ? 0 : calculateRequestArgumentSize(otherkey3));
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.SDIFF.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, firstkey);
         if (otherkey1 != null) {
-            len++;
+            RedisRequests.writeRequestArgument(buffer, otherkey1);
         }
         if (otherkey2 != null) {
-            len++;
+            RedisRequests.writeRequestArgument(buffer, otherkey2);
         }
         if (otherkey3 != null) {
-            len++;
+            RedisRequests.writeRequestArgument(buffer, otherkey3);
         }
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SDIFF, allocator);
-        addRequestArgument(firstkey, cb, allocator);
-        if (otherkey1 != null) {
-            addRequestArgument(otherkey1, cb, allocator);
-        }
-        if (otherkey2 != null) {
-            addRequestArgument(otherkey2, cb, allocator);
-        }
-        if (otherkey3 != null) {
-            addRequestArgument(otherkey3, cb, allocator);
-        }
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SDIFF, cb);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SDIFF, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -4441,14 +5738,37 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
                                      @RedisProtocolSupport.Key final Collection<Buffer> otherkeys) {
         requireNonNull(firstkey);
         requireNonNull(otherkeys);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 2;
-        len += otherkeys.size();
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SDIFF, allocator);
-        addRequestArgument(firstkey, cb, allocator);
-        addRequestBufferArguments(otherkeys, null, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SDIFF, cb);
+        final int len = 2 + otherkeys.size();
+        int otherkeysCapacity = 0;
+        if (otherkeys instanceof List && otherkeys instanceof RandomAccess) {
+            final List<Buffer> list = (List<Buffer>) otherkeys;
+            for (int i = 0; i < list.size(); ++i) {
+                final Buffer arg = list.get(i);
+                otherkeysCapacity += calculateRequestArgumentSize(arg);
+            }
+        } else {
+            for (Buffer arg : otherkeys) {
+                otherkeysCapacity += calculateRequestArgumentSize(arg);
+            }
+        }
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SDIFF) +
+                    calculateRequestArgumentSize(firstkey) + otherkeysCapacity;
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.SDIFF.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, firstkey);
+        if (otherkeys instanceof List && otherkeys instanceof RandomAccess) {
+            final List<Buffer> list = (List<Buffer>) otherkeys;
+            for (int i = 0; i < list.size(); ++i) {
+                final Buffer arg = list.get(i);
+                RedisRequests.writeRequestArgument(buffer, arg);
+            }
+        } else {
+            for (Buffer arg : otherkeys) {
+                RedisRequests.writeRequestArgument(buffer, arg);
+            }
+        }
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SDIFF, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -4459,13 +5779,15 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
                                    @RedisProtocolSupport.Key final Buffer firstkey) {
         requireNonNull(destination);
         requireNonNull(firstkey);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 3;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SDIFFSTORE, allocator);
-        addRequestArgument(destination, cb, allocator);
-        addRequestArgument(firstkey, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SDIFFSTORE, cb);
+        final int len = 3;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SDIFFSTORE) +
+                    calculateRequestArgumentSize(destination) + calculateRequestArgumentSize(firstkey);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.SDIFFSTORE.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, destination);
+        RedisRequests.writeRequestArgument(buffer, firstkey);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SDIFFSTORE, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -4477,19 +5799,19 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
                                    @Nullable @RedisProtocolSupport.Key final Buffer otherkey) {
         requireNonNull(destination);
         requireNonNull(firstkey);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 3;
+        final int len = 3 + (otherkey == null ? 0 : 1);
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SDIFFSTORE) +
+                    calculateRequestArgumentSize(destination) + calculateRequestArgumentSize(firstkey) +
+                    (otherkey == null ? 0 : calculateRequestArgumentSize(otherkey));
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.SDIFFSTORE.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, destination);
+        RedisRequests.writeRequestArgument(buffer, firstkey);
         if (otherkey != null) {
-            len++;
+            RedisRequests.writeRequestArgument(buffer, otherkey);
         }
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SDIFFSTORE, allocator);
-        addRequestArgument(destination, cb, allocator);
-        addRequestArgument(firstkey, cb, allocator);
-        if (otherkey != null) {
-            addRequestArgument(otherkey, cb, allocator);
-        }
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SDIFFSTORE, cb);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SDIFFSTORE, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -4502,25 +5824,23 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
                                    @Nullable @RedisProtocolSupport.Key final Buffer otherkey2) {
         requireNonNull(destination);
         requireNonNull(firstkey);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 3;
+        final int len = 3 + (otherkey1 == null ? 0 : 1) + (otherkey2 == null ? 0 : 1);
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SDIFFSTORE) +
+                    calculateRequestArgumentSize(destination) + calculateRequestArgumentSize(firstkey) +
+                    (otherkey1 == null ? 0 : calculateRequestArgumentSize(otherkey1)) +
+                    (otherkey2 == null ? 0 : calculateRequestArgumentSize(otherkey2));
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.SDIFFSTORE.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, destination);
+        RedisRequests.writeRequestArgument(buffer, firstkey);
         if (otherkey1 != null) {
-            len++;
+            RedisRequests.writeRequestArgument(buffer, otherkey1);
         }
         if (otherkey2 != null) {
-            len++;
+            RedisRequests.writeRequestArgument(buffer, otherkey2);
         }
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SDIFFSTORE, allocator);
-        addRequestArgument(destination, cb, allocator);
-        addRequestArgument(firstkey, cb, allocator);
-        if (otherkey1 != null) {
-            addRequestArgument(otherkey1, cb, allocator);
-        }
-        if (otherkey2 != null) {
-            addRequestArgument(otherkey2, cb, allocator);
-        }
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SDIFFSTORE, cb);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SDIFFSTORE, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -4534,31 +5854,27 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
                                    @Nullable @RedisProtocolSupport.Key final Buffer otherkey3) {
         requireNonNull(destination);
         requireNonNull(firstkey);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 3;
+        final int len = 3 + (otherkey1 == null ? 0 : 1) + (otherkey2 == null ? 0 : 1) + (otherkey3 == null ? 0 : 1);
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SDIFFSTORE) +
+                    calculateRequestArgumentSize(destination) + calculateRequestArgumentSize(firstkey) +
+                    (otherkey1 == null ? 0 : calculateRequestArgumentSize(otherkey1)) +
+                    (otherkey2 == null ? 0 : calculateRequestArgumentSize(otherkey2)) +
+                    (otherkey3 == null ? 0 : calculateRequestArgumentSize(otherkey3));
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.SDIFFSTORE.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, destination);
+        RedisRequests.writeRequestArgument(buffer, firstkey);
         if (otherkey1 != null) {
-            len++;
+            RedisRequests.writeRequestArgument(buffer, otherkey1);
         }
         if (otherkey2 != null) {
-            len++;
+            RedisRequests.writeRequestArgument(buffer, otherkey2);
         }
         if (otherkey3 != null) {
-            len++;
+            RedisRequests.writeRequestArgument(buffer, otherkey3);
         }
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SDIFFSTORE, allocator);
-        addRequestArgument(destination, cb, allocator);
-        addRequestArgument(firstkey, cb, allocator);
-        if (otherkey1 != null) {
-            addRequestArgument(otherkey1, cb, allocator);
-        }
-        if (otherkey2 != null) {
-            addRequestArgument(otherkey2, cb, allocator);
-        }
-        if (otherkey3 != null) {
-            addRequestArgument(otherkey3, cb, allocator);
-        }
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SDIFFSTORE, cb);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SDIFFSTORE, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -4571,15 +5887,39 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         requireNonNull(destination);
         requireNonNull(firstkey);
         requireNonNull(otherkeys);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 3;
-        len += otherkeys.size();
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SDIFFSTORE, allocator);
-        addRequestArgument(destination, cb, allocator);
-        addRequestArgument(firstkey, cb, allocator);
-        addRequestBufferArguments(otherkeys, null, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SDIFFSTORE, cb);
+        final int len = 3 + otherkeys.size();
+        int otherkeysCapacity = 0;
+        if (otherkeys instanceof List && otherkeys instanceof RandomAccess) {
+            final List<Buffer> list = (List<Buffer>) otherkeys;
+            for (int i = 0; i < list.size(); ++i) {
+                final Buffer arg = list.get(i);
+                otherkeysCapacity += calculateRequestArgumentSize(arg);
+            }
+        } else {
+            for (Buffer arg : otherkeys) {
+                otherkeysCapacity += calculateRequestArgumentSize(arg);
+            }
+        }
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SDIFFSTORE) +
+                    calculateRequestArgumentSize(destination) + calculateRequestArgumentSize(firstkey) +
+                    otherkeysCapacity;
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.SDIFFSTORE.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, destination);
+        RedisRequests.writeRequestArgument(buffer, firstkey);
+        if (otherkeys instanceof List && otherkeys instanceof RandomAccess) {
+            final List<Buffer> list = (List<Buffer>) otherkeys;
+            for (int i = 0; i < list.size(); ++i) {
+                final Buffer arg = list.get(i);
+                RedisRequests.writeRequestArgument(buffer, arg);
+            }
+        } else {
+            for (Buffer arg : otherkeys) {
+                RedisRequests.writeRequestArgument(buffer, arg);
+            }
+        }
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SDIFFSTORE, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -4587,12 +5927,14 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
 
     @Override
     public Future<String> select(final long index) {
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 2;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SELECT, allocator);
-        addRequestArgument(index, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SELECT, cb);
+        final int len = 2;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SELECT) +
+                    calculateRequestArgumentSize(index);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.SELECT.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, index);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SELECT, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -4602,13 +5944,15 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     public Future<String> set(@RedisProtocolSupport.Key final Buffer key, final Buffer value) {
         requireNonNull(key);
         requireNonNull(value);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 3;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SET, allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestArgument(value, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SET, cb);
+        final int len = 3;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SET) +
+                    calculateRequestArgumentSize(key) + calculateRequestArgumentSize(value);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.SET.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        RedisRequests.writeRequestArgument(buffer, value);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SET, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -4620,25 +5964,24 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
                               @Nullable final RedisProtocolSupport.SetCondition condition) {
         requireNonNull(key);
         requireNonNull(value);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 3;
+        final int len = 3 + (expireDuration == null ? 0 : RedisProtocolSupport.ExpireDuration.SIZE) +
+                    (condition == null ? 0 : 1);
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SET) +
+                    calculateRequestArgumentSize(key) + calculateRequestArgumentSize(value) +
+                    (expireDuration == null ? 0 : expireDuration.encodedByteCount()) +
+                    (condition == null ? 0 : condition.encodedByteCount());
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.SET.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        RedisRequests.writeRequestArgument(buffer, value);
         if (expireDuration != null) {
-            len += RedisProtocolSupport.ExpireDuration.SIZE;
+            expireDuration.encodeTo(buffer);
         }
         if (condition != null) {
-            len++;
+            condition.encodeTo(buffer);
         }
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SET, allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestArgument(value, cb, allocator);
-        if (expireDuration != null) {
-            expireDuration.writeTo(cb, allocator);
-        }
-        if (condition != null) {
-            addRequestArgument(condition, cb, allocator);
-        }
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SET, cb);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SET, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -4648,14 +5991,17 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     public Future<Long> setbit(@RedisProtocolSupport.Key final Buffer key, final long offset, final Buffer value) {
         requireNonNull(key);
         requireNonNull(value);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 4;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SETBIT, allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestArgument(offset, cb, allocator);
-        addRequestArgument(value, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SETBIT, cb);
+        final int len = 4;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SETBIT) +
+                    calculateRequestArgumentSize(key) + calculateRequestArgumentSize(offset) +
+                    calculateRequestArgumentSize(value);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.SETBIT.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        RedisRequests.writeRequestArgument(buffer, offset);
+        RedisRequests.writeRequestArgument(buffer, value);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SETBIT, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -4665,14 +6011,17 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     public Future<String> setex(@RedisProtocolSupport.Key final Buffer key, final long seconds, final Buffer value) {
         requireNonNull(key);
         requireNonNull(value);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 4;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SETEX, allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestArgument(seconds, cb, allocator);
-        addRequestArgument(value, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SETEX, cb);
+        final int len = 4;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SETEX) +
+                    calculateRequestArgumentSize(key) + calculateRequestArgumentSize(seconds) +
+                    calculateRequestArgumentSize(value);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.SETEX.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        RedisRequests.writeRequestArgument(buffer, seconds);
+        RedisRequests.writeRequestArgument(buffer, value);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SETEX, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -4682,13 +6031,15 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     public Future<Long> setnx(@RedisProtocolSupport.Key final Buffer key, final Buffer value) {
         requireNonNull(key);
         requireNonNull(value);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 3;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SETNX, allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestArgument(value, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SETNX, cb);
+        final int len = 3;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SETNX) +
+                    calculateRequestArgumentSize(key) + calculateRequestArgumentSize(value);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.SETNX.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        RedisRequests.writeRequestArgument(buffer, value);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SETNX, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -4698,14 +6049,17 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     public Future<Long> setrange(@RedisProtocolSupport.Key final Buffer key, final long offset, final Buffer value) {
         requireNonNull(key);
         requireNonNull(value);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 4;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SETRANGE, allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestArgument(offset, cb, allocator);
-        addRequestArgument(value, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SETRANGE, cb);
+        final int len = 4;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SETRANGE) +
+                    calculateRequestArgumentSize(key) + calculateRequestArgumentSize(offset) +
+                    calculateRequestArgumentSize(value);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.SETRANGE.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        RedisRequests.writeRequestArgument(buffer, offset);
+        RedisRequests.writeRequestArgument(buffer, value);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SETRANGE, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -4713,11 +6067,12 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
 
     @Override
     public Future<String> shutdown() {
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 1;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SHUTDOWN, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SHUTDOWN, cb);
+        final int len = 1;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SHUTDOWN);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.SHUTDOWN.encodeTo(buffer);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SHUTDOWN, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -4725,17 +6080,16 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
 
     @Override
     public Future<String> shutdown(@Nullable final RedisProtocolSupport.ShutdownSaveMode saveMode) {
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 1;
+        final int len = 1 + (saveMode == null ? 0 : 1);
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SHUTDOWN) +
+                    (saveMode == null ? 0 : saveMode.encodedByteCount());
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.SHUTDOWN.encodeTo(buffer);
         if (saveMode != null) {
-            len++;
+            saveMode.encodeTo(buffer);
         }
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SHUTDOWN, allocator);
-        if (saveMode != null) {
-            addRequestArgument(saveMode, cb, allocator);
-        }
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SHUTDOWN, cb);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SHUTDOWN, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -4744,12 +6098,14 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     @Override
     public <T> Future<List<T>> sinter(@RedisProtocolSupport.Key final Buffer key) {
         requireNonNull(key);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 2;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SINTER, allocator);
-        addRequestArgument(key, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SINTER, cb);
+        final int len = 2;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SINTER) +
+                    calculateRequestArgumentSize(key);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.SINTER.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SINTER, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -4760,13 +6116,15 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
                                       @RedisProtocolSupport.Key final Buffer key2) {
         requireNonNull(key1);
         requireNonNull(key2);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 3;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SINTER, allocator);
-        addRequestArgument(key1, cb, allocator);
-        addRequestArgument(key2, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SINTER, cb);
+        final int len = 3;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SINTER) +
+                    calculateRequestArgumentSize(key1) + calculateRequestArgumentSize(key2);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.SINTER.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key1);
+        RedisRequests.writeRequestArgument(buffer, key2);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SINTER, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -4779,14 +6137,17 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         requireNonNull(key1);
         requireNonNull(key2);
         requireNonNull(key3);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 4;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SINTER, allocator);
-        addRequestArgument(key1, cb, allocator);
-        addRequestArgument(key2, cb, allocator);
-        addRequestArgument(key3, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SINTER, cb);
+        final int len = 4;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SINTER) +
+                    calculateRequestArgumentSize(key1) + calculateRequestArgumentSize(key2) +
+                    calculateRequestArgumentSize(key3);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.SINTER.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key1);
+        RedisRequests.writeRequestArgument(buffer, key2);
+        RedisRequests.writeRequestArgument(buffer, key3);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SINTER, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -4795,13 +6156,35 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     @Override
     public <T> Future<List<T>> sinter(@RedisProtocolSupport.Key final Collection<Buffer> keys) {
         requireNonNull(keys);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 1;
-        len += keys.size();
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SINTER, allocator);
-        addRequestBufferArguments(keys, null, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SINTER, cb);
+        final int len = 1 + keys.size();
+        int keysCapacity = 0;
+        if (keys instanceof List && keys instanceof RandomAccess) {
+            final List<Buffer> list = (List<Buffer>) keys;
+            for (int i = 0; i < list.size(); ++i) {
+                final Buffer arg = list.get(i);
+                keysCapacity += calculateRequestArgumentSize(arg);
+            }
+        } else {
+            for (Buffer arg : keys) {
+                keysCapacity += calculateRequestArgumentSize(arg);
+            }
+        }
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SINTER) + keysCapacity;
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.SINTER.encodeTo(buffer);
+        if (keys instanceof List && keys instanceof RandomAccess) {
+            final List<Buffer> list = (List<Buffer>) keys;
+            for (int i = 0; i < list.size(); ++i) {
+                final Buffer arg = list.get(i);
+                RedisRequests.writeRequestArgument(buffer, arg);
+            }
+        } else {
+            for (Buffer arg : keys) {
+                RedisRequests.writeRequestArgument(buffer, arg);
+            }
+        }
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SINTER, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -4812,13 +6195,15 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
                                     @RedisProtocolSupport.Key final Buffer key) {
         requireNonNull(destination);
         requireNonNull(key);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 3;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SINTERSTORE, allocator);
-        addRequestArgument(destination, cb, allocator);
-        addRequestArgument(key, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SINTERSTORE, cb);
+        final int len = 3;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SINTERSTORE) +
+                    calculateRequestArgumentSize(destination) + calculateRequestArgumentSize(key);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.SINTERSTORE.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, destination);
+        RedisRequests.writeRequestArgument(buffer, key);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SINTERSTORE, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -4831,14 +6216,17 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         requireNonNull(destination);
         requireNonNull(key1);
         requireNonNull(key2);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 4;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SINTERSTORE, allocator);
-        addRequestArgument(destination, cb, allocator);
-        addRequestArgument(key1, cb, allocator);
-        addRequestArgument(key2, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SINTERSTORE, cb);
+        final int len = 4;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SINTERSTORE) +
+                    calculateRequestArgumentSize(destination) + calculateRequestArgumentSize(key1) +
+                    calculateRequestArgumentSize(key2);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.SINTERSTORE.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, destination);
+        RedisRequests.writeRequestArgument(buffer, key1);
+        RedisRequests.writeRequestArgument(buffer, key2);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SINTERSTORE, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -4853,15 +6241,18 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         requireNonNull(key1);
         requireNonNull(key2);
         requireNonNull(key3);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 5;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SINTERSTORE, allocator);
-        addRequestArgument(destination, cb, allocator);
-        addRequestArgument(key1, cb, allocator);
-        addRequestArgument(key2, cb, allocator);
-        addRequestArgument(key3, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SINTERSTORE, cb);
+        final int len = 5;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SINTERSTORE) +
+                    calculateRequestArgumentSize(destination) + calculateRequestArgumentSize(key1) +
+                    calculateRequestArgumentSize(key2) + calculateRequestArgumentSize(key3);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.SINTERSTORE.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, destination);
+        RedisRequests.writeRequestArgument(buffer, key1);
+        RedisRequests.writeRequestArgument(buffer, key2);
+        RedisRequests.writeRequestArgument(buffer, key3);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SINTERSTORE, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -4872,14 +6263,37 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
                                     @RedisProtocolSupport.Key final Collection<Buffer> keys) {
         requireNonNull(destination);
         requireNonNull(keys);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 2;
-        len += keys.size();
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SINTERSTORE, allocator);
-        addRequestArgument(destination, cb, allocator);
-        addRequestBufferArguments(keys, null, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SINTERSTORE, cb);
+        final int len = 2 + keys.size();
+        int keysCapacity = 0;
+        if (keys instanceof List && keys instanceof RandomAccess) {
+            final List<Buffer> list = (List<Buffer>) keys;
+            for (int i = 0; i < list.size(); ++i) {
+                final Buffer arg = list.get(i);
+                keysCapacity += calculateRequestArgumentSize(arg);
+            }
+        } else {
+            for (Buffer arg : keys) {
+                keysCapacity += calculateRequestArgumentSize(arg);
+            }
+        }
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SINTERSTORE) +
+                    calculateRequestArgumentSize(destination) + keysCapacity;
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.SINTERSTORE.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, destination);
+        if (keys instanceof List && keys instanceof RandomAccess) {
+            final List<Buffer> list = (List<Buffer>) keys;
+            for (int i = 0; i < list.size(); ++i) {
+                final Buffer arg = list.get(i);
+                RedisRequests.writeRequestArgument(buffer, arg);
+            }
+        } else {
+            for (Buffer arg : keys) {
+                RedisRequests.writeRequestArgument(buffer, arg);
+            }
+        }
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SINTERSTORE, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -4889,13 +6303,15 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     public Future<Long> sismember(@RedisProtocolSupport.Key final Buffer key, final Buffer member) {
         requireNonNull(key);
         requireNonNull(member);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 3;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SISMEMBER, allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestArgument(member, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SISMEMBER, cb);
+        final int len = 3;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SISMEMBER) +
+                    calculateRequestArgumentSize(key) + calculateRequestArgumentSize(member);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.SISMEMBER.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        RedisRequests.writeRequestArgument(buffer, member);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SISMEMBER, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -4905,13 +6321,15 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     public Future<String> slaveof(final Buffer host, final Buffer port) {
         requireNonNull(host);
         requireNonNull(port);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 3;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SLAVEOF, allocator);
-        addRequestArgument(host, cb, allocator);
-        addRequestArgument(port, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SLAVEOF, cb);
+        final int len = 3;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SLAVEOF) +
+                    calculateRequestArgumentSize(host) + calculateRequestArgumentSize(port);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.SLAVEOF.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, host);
+        RedisRequests.writeRequestArgument(buffer, port);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SLAVEOF, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -4920,12 +6338,14 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     @Override
     public <T> Future<List<T>> slowlog(final Buffer subcommand) {
         requireNonNull(subcommand);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 2;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SLOWLOG, allocator);
-        addRequestArgument(subcommand, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SLOWLOG, cb);
+        final int len = 2;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SLOWLOG) +
+                    calculateRequestArgumentSize(subcommand);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.SLOWLOG.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, subcommand);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SLOWLOG, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -4934,18 +6354,18 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     @Override
     public <T> Future<List<T>> slowlog(final Buffer subcommand, @Nullable final Buffer argument) {
         requireNonNull(subcommand);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 2;
+        final int len = 2 + (argument == null ? 0 : 1);
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SLOWLOG) +
+                    calculateRequestArgumentSize(subcommand) +
+                    (argument == null ? 0 : calculateRequestArgumentSize(argument));
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.SLOWLOG.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, subcommand);
         if (argument != null) {
-            len++;
+            RedisRequests.writeRequestArgument(buffer, argument);
         }
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SLOWLOG, allocator);
-        addRequestArgument(subcommand, cb, allocator);
-        if (argument != null) {
-            addRequestArgument(argument, cb, allocator);
-        }
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SLOWLOG, cb);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SLOWLOG, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -4954,12 +6374,14 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     @Override
     public <T> Future<List<T>> smembers(@RedisProtocolSupport.Key final Buffer key) {
         requireNonNull(key);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 2;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SMEMBERS, allocator);
-        addRequestArgument(key, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SMEMBERS, cb);
+        final int len = 2;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SMEMBERS) +
+                    calculateRequestArgumentSize(key);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.SMEMBERS.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SMEMBERS, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -4971,14 +6393,17 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         requireNonNull(source);
         requireNonNull(destination);
         requireNonNull(member);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 4;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SMOVE, allocator);
-        addRequestArgument(source, cb, allocator);
-        addRequestArgument(destination, cb, allocator);
-        addRequestArgument(member, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SMOVE, cb);
+        final int len = 4;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SMOVE) +
+                    calculateRequestArgumentSize(source) + calculateRequestArgumentSize(destination) +
+                    calculateRequestArgumentSize(member);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.SMOVE.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, source);
+        RedisRequests.writeRequestArgument(buffer, destination);
+        RedisRequests.writeRequestArgument(buffer, member);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SMOVE, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -4987,12 +6412,14 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     @Override
     public <T> Future<List<T>> sort(@RedisProtocolSupport.Key final Buffer key) {
         requireNonNull(key);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 2;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SORT, allocator);
-        addRequestArgument(key, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SORT, cb);
+        final int len = 2;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SORT) +
+                    calculateRequestArgumentSize(key);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.SORT.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SORT, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -5006,39 +6433,58 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
                                     @Nullable final RedisProtocolSupport.SortSorting sorting) {
         requireNonNull(key);
         requireNonNull(getPatterns);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 2;
+        final int len = 3 + (byPattern == null ? 0 : 2) +
+                    (offsetCount == null ? 0 : RedisProtocolSupport.OffsetCount.SIZE) + getPatterns.size() +
+                    (order == null ? 0 : 1) + (sorting == null ? 0 : 1);
+        int getPatternsCapacity = 0;
+        if (getPatterns instanceof List && getPatterns instanceof RandomAccess) {
+            final List<Buffer> list = (List<Buffer>) getPatterns;
+            for (int i = 0; i < list.size(); ++i) {
+                final Buffer arg = list.get(i);
+                getPatternsCapacity += calculateRequestArgumentSize(arg);
+            }
+        } else {
+            for (Buffer arg : getPatterns) {
+                getPatternsCapacity += calculateRequestArgumentSize(arg);
+            }
+        }
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SORT) +
+                    calculateRequestArgumentSize(key) +
+                    (byPattern == null ? 0 : RedisProtocolSupport.SubCommand.BY.encodedByteCount()) +
+                    (byPattern == null ? 0 : calculateRequestArgumentSize(byPattern)) +
+                    (offsetCount == null ? 0 : offsetCount.encodedByteCount()) +
+                    RedisProtocolSupport.SubCommand.GET.encodedByteCount() + getPatternsCapacity +
+                    (order == null ? 0 : order.encodedByteCount()) + (sorting == null ? 0 : sorting.encodedByteCount());
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.SORT.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
         if (byPattern != null) {
-            len += 2;
+            RedisProtocolSupport.SubCommand.BY.encodeTo(buffer);
+            RedisRequests.writeRequestArgument(buffer, byPattern);
         }
         if (offsetCount != null) {
-            len += RedisProtocolSupport.OffsetCount.SIZE;
+            offsetCount.encodeTo(buffer);
         }
-        len += 2 * getPatterns.size();
+        RedisProtocolSupport.SubCommand.GET.encodeTo(buffer);
+        if (getPatterns instanceof List && getPatterns instanceof RandomAccess) {
+            final List<Buffer> list = (List<Buffer>) getPatterns;
+            for (int i = 0; i < list.size(); ++i) {
+                final Buffer arg = list.get(i);
+                RedisRequests.writeRequestArgument(buffer, arg);
+            }
+        } else {
+            for (Buffer arg : getPatterns) {
+                RedisRequests.writeRequestArgument(buffer, arg);
+            }
+        }
         if (order != null) {
-            len++;
+            order.encodeTo(buffer);
         }
         if (sorting != null) {
-            len++;
+            sorting.encodeTo(buffer);
         }
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SORT, allocator);
-        addRequestArgument(key, cb, allocator);
-        if (byPattern != null) {
-            addRequestArgument(RedisProtocolSupport.SubCommand.BY, cb, allocator);
-            addRequestArgument(byPattern, cb, allocator);
-        }
-        if (offsetCount != null) {
-            offsetCount.writeTo(cb, allocator);
-        }
-        addRequestBufferArguments(getPatterns, RedisProtocolSupport.SubCommand.GET, cb, allocator);
-        if (order != null) {
-            addRequestArgument(order, cb, allocator);
-        }
-        if (sorting != null) {
-            addRequestArgument(sorting, cb, allocator);
-        }
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SORT, cb);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SORT, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -5049,14 +6495,17 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
                              @RedisProtocolSupport.Key final Buffer storeDestination) {
         requireNonNull(key);
         requireNonNull(storeDestination);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 4;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SORT, allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestArgument(RedisProtocolSupport.SubCommand.STORE, cb, allocator);
-        addRequestArgument(storeDestination, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SORT, cb);
+        final int len = 4;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SORT) +
+                    calculateRequestArgumentSize(key) + RedisProtocolSupport.SubCommand.STORE.encodedByteCount() +
+                    calculateRequestArgumentSize(storeDestination);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.SORT.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        RedisProtocolSupport.SubCommand.STORE.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, storeDestination);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SORT, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -5071,41 +6520,61 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         requireNonNull(key);
         requireNonNull(storeDestination);
         requireNonNull(getPatterns);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 4;
+        final int len = 5 + (byPattern == null ? 0 : 2) +
+                    (offsetCount == null ? 0 : RedisProtocolSupport.OffsetCount.SIZE) + getPatterns.size() +
+                    (order == null ? 0 : 1) + (sorting == null ? 0 : 1);
+        int getPatternsCapacity = 0;
+        if (getPatterns instanceof List && getPatterns instanceof RandomAccess) {
+            final List<Buffer> list = (List<Buffer>) getPatterns;
+            for (int i = 0; i < list.size(); ++i) {
+                final Buffer arg = list.get(i);
+                getPatternsCapacity += calculateRequestArgumentSize(arg);
+            }
+        } else {
+            for (Buffer arg : getPatterns) {
+                getPatternsCapacity += calculateRequestArgumentSize(arg);
+            }
+        }
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SORT) +
+                    calculateRequestArgumentSize(key) + RedisProtocolSupport.SubCommand.STORE.encodedByteCount() +
+                    calculateRequestArgumentSize(storeDestination) +
+                    (byPattern == null ? 0 : RedisProtocolSupport.SubCommand.BY.encodedByteCount()) +
+                    (byPattern == null ? 0 : calculateRequestArgumentSize(byPattern)) +
+                    (offsetCount == null ? 0 : offsetCount.encodedByteCount()) +
+                    RedisProtocolSupport.SubCommand.GET.encodedByteCount() + getPatternsCapacity +
+                    (order == null ? 0 : order.encodedByteCount()) + (sorting == null ? 0 : sorting.encodedByteCount());
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.SORT.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        RedisProtocolSupport.SubCommand.STORE.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, storeDestination);
         if (byPattern != null) {
-            len += 2;
+            RedisProtocolSupport.SubCommand.BY.encodeTo(buffer);
+            RedisRequests.writeRequestArgument(buffer, byPattern);
         }
         if (offsetCount != null) {
-            len += RedisProtocolSupport.OffsetCount.SIZE;
+            offsetCount.encodeTo(buffer);
         }
-        len += 2 * getPatterns.size();
+        RedisProtocolSupport.SubCommand.GET.encodeTo(buffer);
+        if (getPatterns instanceof List && getPatterns instanceof RandomAccess) {
+            final List<Buffer> list = (List<Buffer>) getPatterns;
+            for (int i = 0; i < list.size(); ++i) {
+                final Buffer arg = list.get(i);
+                RedisRequests.writeRequestArgument(buffer, arg);
+            }
+        } else {
+            for (Buffer arg : getPatterns) {
+                RedisRequests.writeRequestArgument(buffer, arg);
+            }
+        }
         if (order != null) {
-            len++;
+            order.encodeTo(buffer);
         }
         if (sorting != null) {
-            len++;
+            sorting.encodeTo(buffer);
         }
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SORT, allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestArgument(RedisProtocolSupport.SubCommand.STORE, cb, allocator);
-        addRequestArgument(storeDestination, cb, allocator);
-        if (byPattern != null) {
-            addRequestArgument(RedisProtocolSupport.SubCommand.BY, cb, allocator);
-            addRequestArgument(byPattern, cb, allocator);
-        }
-        if (offsetCount != null) {
-            offsetCount.writeTo(cb, allocator);
-        }
-        addRequestBufferArguments(getPatterns, RedisProtocolSupport.SubCommand.GET, cb, allocator);
-        if (order != null) {
-            addRequestArgument(order, cb, allocator);
-        }
-        if (sorting != null) {
-            addRequestArgument(sorting, cb, allocator);
-        }
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SORT, cb);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SORT, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -5114,12 +6583,14 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     @Override
     public Future<Buffer> spop(@RedisProtocolSupport.Key final Buffer key) {
         requireNonNull(key);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 2;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SPOP, allocator);
-        addRequestArgument(key, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SPOP, cb);
+        final int len = 2;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SPOP) +
+                    calculateRequestArgumentSize(key);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.SPOP.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SPOP, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Buffer> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -5128,18 +6599,17 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     @Override
     public Future<Buffer> spop(@RedisProtocolSupport.Key final Buffer key, @Nullable final Long count) {
         requireNonNull(key);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 2;
+        final int len = 2 + (count == null ? 0 : 1);
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SPOP) +
+                    calculateRequestArgumentSize(key) + (count == null ? 0 : calculateRequestArgumentSize(count));
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.SPOP.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
         if (count != null) {
-            len++;
+            RedisRequests.writeRequestArgument(buffer, count);
         }
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SPOP, allocator);
-        addRequestArgument(key, cb, allocator);
-        if (count != null) {
-            addRequestArgument(count, cb, allocator);
-        }
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SPOP, cb);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SPOP, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Buffer> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -5148,12 +6618,14 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     @Override
     public Future<Buffer> srandmember(@RedisProtocolSupport.Key final Buffer key) {
         requireNonNull(key);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 2;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SRANDMEMBER, allocator);
-        addRequestArgument(key, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SRANDMEMBER, cb);
+        final int len = 2;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SRANDMEMBER) +
+                    calculateRequestArgumentSize(key);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.SRANDMEMBER.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SRANDMEMBER, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Buffer> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -5162,13 +6634,15 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     @Override
     public Future<List<Buffer>> srandmember(@RedisProtocolSupport.Key final Buffer key, final long count) {
         requireNonNull(key);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 3;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SRANDMEMBER, allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestArgument(count, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SRANDMEMBER, cb);
+        final int len = 3;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SRANDMEMBER) +
+                    calculateRequestArgumentSize(key) + calculateRequestArgumentSize(count);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.SRANDMEMBER.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        RedisRequests.writeRequestArgument(buffer, count);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SRANDMEMBER, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<Buffer>> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -5178,13 +6652,15 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     public Future<Long> srem(@RedisProtocolSupport.Key final Buffer key, final Buffer member) {
         requireNonNull(key);
         requireNonNull(member);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 3;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SREM, allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestArgument(member, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SREM, cb);
+        final int len = 3;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SREM) +
+                    calculateRequestArgumentSize(key) + calculateRequestArgumentSize(member);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.SREM.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        RedisRequests.writeRequestArgument(buffer, member);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SREM, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -5195,14 +6671,17 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         requireNonNull(key);
         requireNonNull(member1);
         requireNonNull(member2);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 4;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SREM, allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestArgument(member1, cb, allocator);
-        addRequestArgument(member2, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SREM, cb);
+        final int len = 4;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SREM) +
+                    calculateRequestArgumentSize(key) + calculateRequestArgumentSize(member1) +
+                    calculateRequestArgumentSize(member2);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.SREM.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        RedisRequests.writeRequestArgument(buffer, member1);
+        RedisRequests.writeRequestArgument(buffer, member2);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SREM, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -5215,15 +6694,18 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         requireNonNull(member1);
         requireNonNull(member2);
         requireNonNull(member3);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 5;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SREM, allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestArgument(member1, cb, allocator);
-        addRequestArgument(member2, cb, allocator);
-        addRequestArgument(member3, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SREM, cb);
+        final int len = 5;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SREM) +
+                    calculateRequestArgumentSize(key) + calculateRequestArgumentSize(member1) +
+                    calculateRequestArgumentSize(member2) + calculateRequestArgumentSize(member3);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.SREM.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        RedisRequests.writeRequestArgument(buffer, member1);
+        RedisRequests.writeRequestArgument(buffer, member2);
+        RedisRequests.writeRequestArgument(buffer, member3);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SREM, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -5233,14 +6715,37 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     public Future<Long> srem(@RedisProtocolSupport.Key final Buffer key, final Collection<Buffer> members) {
         requireNonNull(key);
         requireNonNull(members);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 2;
-        len += members.size();
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SREM, allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestBufferArguments(members, null, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SREM, cb);
+        final int len = 2 + members.size();
+        int membersCapacity = 0;
+        if (members instanceof List && members instanceof RandomAccess) {
+            final List<Buffer> list = (List<Buffer>) members;
+            for (int i = 0; i < list.size(); ++i) {
+                final Buffer arg = list.get(i);
+                membersCapacity += calculateRequestArgumentSize(arg);
+            }
+        } else {
+            for (Buffer arg : members) {
+                membersCapacity += calculateRequestArgumentSize(arg);
+            }
+        }
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SREM) +
+                    calculateRequestArgumentSize(key) + membersCapacity;
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.SREM.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        if (members instanceof List && members instanceof RandomAccess) {
+            final List<Buffer> list = (List<Buffer>) members;
+            for (int i = 0; i < list.size(); ++i) {
+                final Buffer arg = list.get(i);
+                RedisRequests.writeRequestArgument(buffer, arg);
+            }
+        } else {
+            for (Buffer arg : members) {
+                RedisRequests.writeRequestArgument(buffer, arg);
+            }
+        }
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SREM, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -5249,13 +6754,15 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     @Override
     public <T> Future<List<T>> sscan(@RedisProtocolSupport.Key final Buffer key, final long cursor) {
         requireNonNull(key);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 3;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SSCAN, allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestArgument(cursor, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SSCAN, cb);
+        final int len = 3;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SSCAN) +
+                    calculateRequestArgumentSize(key) + calculateRequestArgumentSize(cursor);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.SSCAN.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        RedisRequests.writeRequestArgument(buffer, cursor);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SSCAN, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -5265,27 +6772,27 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     public <T> Future<List<T>> sscan(@RedisProtocolSupport.Key final Buffer key, final long cursor,
                                      @Nullable final Buffer matchPattern, @Nullable final Long count) {
         requireNonNull(key);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 3;
+        final int len = 3 + (matchPattern == null ? 0 : 2) + (count == null ? 0 : 2);
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SSCAN) +
+                    calculateRequestArgumentSize(key) + calculateRequestArgumentSize(cursor) +
+                    (matchPattern == null ? 0 : RedisProtocolSupport.SubCommand.MATCH.encodedByteCount()) +
+                    (matchPattern == null ? 0 : calculateRequestArgumentSize(matchPattern)) +
+                    (count == null ? 0 : RedisProtocolSupport.SubCommand.COUNT.encodedByteCount()) +
+                    (count == null ? 0 : calculateRequestArgumentSize(count));
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.SSCAN.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        RedisRequests.writeRequestArgument(buffer, cursor);
         if (matchPattern != null) {
-            len += 2;
+            RedisProtocolSupport.SubCommand.MATCH.encodeTo(buffer);
+            RedisRequests.writeRequestArgument(buffer, matchPattern);
         }
         if (count != null) {
-            len += 2;
+            RedisProtocolSupport.SubCommand.COUNT.encodeTo(buffer);
+            RedisRequests.writeRequestArgument(buffer, count);
         }
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SSCAN, allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestArgument(cursor, cb, allocator);
-        if (matchPattern != null) {
-            addRequestArgument(RedisProtocolSupport.SubCommand.MATCH, cb, allocator);
-            addRequestArgument(matchPattern, cb, allocator);
-        }
-        if (count != null) {
-            addRequestArgument(RedisProtocolSupport.SubCommand.COUNT, cb, allocator);
-            addRequestArgument(count, cb, allocator);
-        }
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SSCAN, cb);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SSCAN, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -5294,12 +6801,14 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     @Override
     public Future<Long> strlen(@RedisProtocolSupport.Key final Buffer key) {
         requireNonNull(key);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 2;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.STRLEN, allocator);
-        addRequestArgument(key, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.STRLEN, cb);
+        final int len = 2;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.STRLEN) +
+                    calculateRequestArgumentSize(key);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.STRLEN.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.STRLEN, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -5308,12 +6817,14 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     @Override
     public <T> Future<List<T>> sunion(@RedisProtocolSupport.Key final Buffer key) {
         requireNonNull(key);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 2;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SUNION, allocator);
-        addRequestArgument(key, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SUNION, cb);
+        final int len = 2;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SUNION) +
+                    calculateRequestArgumentSize(key);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.SUNION.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SUNION, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -5324,13 +6835,15 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
                                       @RedisProtocolSupport.Key final Buffer key2) {
         requireNonNull(key1);
         requireNonNull(key2);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 3;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SUNION, allocator);
-        addRequestArgument(key1, cb, allocator);
-        addRequestArgument(key2, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SUNION, cb);
+        final int len = 3;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SUNION) +
+                    calculateRequestArgumentSize(key1) + calculateRequestArgumentSize(key2);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.SUNION.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key1);
+        RedisRequests.writeRequestArgument(buffer, key2);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SUNION, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -5343,14 +6856,17 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         requireNonNull(key1);
         requireNonNull(key2);
         requireNonNull(key3);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 4;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SUNION, allocator);
-        addRequestArgument(key1, cb, allocator);
-        addRequestArgument(key2, cb, allocator);
-        addRequestArgument(key3, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SUNION, cb);
+        final int len = 4;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SUNION) +
+                    calculateRequestArgumentSize(key1) + calculateRequestArgumentSize(key2) +
+                    calculateRequestArgumentSize(key3);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.SUNION.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key1);
+        RedisRequests.writeRequestArgument(buffer, key2);
+        RedisRequests.writeRequestArgument(buffer, key3);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SUNION, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -5359,13 +6875,35 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     @Override
     public <T> Future<List<T>> sunion(@RedisProtocolSupport.Key final Collection<Buffer> keys) {
         requireNonNull(keys);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 1;
-        len += keys.size();
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SUNION, allocator);
-        addRequestBufferArguments(keys, null, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SUNION, cb);
+        final int len = 1 + keys.size();
+        int keysCapacity = 0;
+        if (keys instanceof List && keys instanceof RandomAccess) {
+            final List<Buffer> list = (List<Buffer>) keys;
+            for (int i = 0; i < list.size(); ++i) {
+                final Buffer arg = list.get(i);
+                keysCapacity += calculateRequestArgumentSize(arg);
+            }
+        } else {
+            for (Buffer arg : keys) {
+                keysCapacity += calculateRequestArgumentSize(arg);
+            }
+        }
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SUNION) + keysCapacity;
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.SUNION.encodeTo(buffer);
+        if (keys instanceof List && keys instanceof RandomAccess) {
+            final List<Buffer> list = (List<Buffer>) keys;
+            for (int i = 0; i < list.size(); ++i) {
+                final Buffer arg = list.get(i);
+                RedisRequests.writeRequestArgument(buffer, arg);
+            }
+        } else {
+            for (Buffer arg : keys) {
+                RedisRequests.writeRequestArgument(buffer, arg);
+            }
+        }
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SUNION, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -5376,13 +6914,15 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
                                     @RedisProtocolSupport.Key final Buffer key) {
         requireNonNull(destination);
         requireNonNull(key);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 3;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SUNIONSTORE, allocator);
-        addRequestArgument(destination, cb, allocator);
-        addRequestArgument(key, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SUNIONSTORE, cb);
+        final int len = 3;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SUNIONSTORE) +
+                    calculateRequestArgumentSize(destination) + calculateRequestArgumentSize(key);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.SUNIONSTORE.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, destination);
+        RedisRequests.writeRequestArgument(buffer, key);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SUNIONSTORE, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -5395,14 +6935,17 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         requireNonNull(destination);
         requireNonNull(key1);
         requireNonNull(key2);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 4;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SUNIONSTORE, allocator);
-        addRequestArgument(destination, cb, allocator);
-        addRequestArgument(key1, cb, allocator);
-        addRequestArgument(key2, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SUNIONSTORE, cb);
+        final int len = 4;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SUNIONSTORE) +
+                    calculateRequestArgumentSize(destination) + calculateRequestArgumentSize(key1) +
+                    calculateRequestArgumentSize(key2);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.SUNIONSTORE.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, destination);
+        RedisRequests.writeRequestArgument(buffer, key1);
+        RedisRequests.writeRequestArgument(buffer, key2);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SUNIONSTORE, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -5417,15 +6960,18 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         requireNonNull(key1);
         requireNonNull(key2);
         requireNonNull(key3);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 5;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SUNIONSTORE, allocator);
-        addRequestArgument(destination, cb, allocator);
-        addRequestArgument(key1, cb, allocator);
-        addRequestArgument(key2, cb, allocator);
-        addRequestArgument(key3, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SUNIONSTORE, cb);
+        final int len = 5;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SUNIONSTORE) +
+                    calculateRequestArgumentSize(destination) + calculateRequestArgumentSize(key1) +
+                    calculateRequestArgumentSize(key2) + calculateRequestArgumentSize(key3);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.SUNIONSTORE.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, destination);
+        RedisRequests.writeRequestArgument(buffer, key1);
+        RedisRequests.writeRequestArgument(buffer, key2);
+        RedisRequests.writeRequestArgument(buffer, key3);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SUNIONSTORE, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -5436,14 +6982,37 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
                                     @RedisProtocolSupport.Key final Collection<Buffer> keys) {
         requireNonNull(destination);
         requireNonNull(keys);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 2;
-        len += keys.size();
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SUNIONSTORE, allocator);
-        addRequestArgument(destination, cb, allocator);
-        addRequestBufferArguments(keys, null, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SUNIONSTORE, cb);
+        final int len = 2 + keys.size();
+        int keysCapacity = 0;
+        if (keys instanceof List && keys instanceof RandomAccess) {
+            final List<Buffer> list = (List<Buffer>) keys;
+            for (int i = 0; i < list.size(); ++i) {
+                final Buffer arg = list.get(i);
+                keysCapacity += calculateRequestArgumentSize(arg);
+            }
+        } else {
+            for (Buffer arg : keys) {
+                keysCapacity += calculateRequestArgumentSize(arg);
+            }
+        }
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SUNIONSTORE) +
+                    calculateRequestArgumentSize(destination) + keysCapacity;
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.SUNIONSTORE.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, destination);
+        if (keys instanceof List && keys instanceof RandomAccess) {
+            final List<Buffer> list = (List<Buffer>) keys;
+            for (int i = 0; i < list.size(); ++i) {
+                final Buffer arg = list.get(i);
+                RedisRequests.writeRequestArgument(buffer, arg);
+            }
+        } else {
+            for (Buffer arg : keys) {
+                RedisRequests.writeRequestArgument(buffer, arg);
+            }
+        }
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SUNIONSTORE, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -5451,13 +7020,15 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
 
     @Override
     public Future<String> swapdb(final long index, final long index1) {
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 3;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SWAPDB, allocator);
-        addRequestArgument(index, cb, allocator);
-        addRequestArgument(index1, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SWAPDB, cb);
+        final int len = 3;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SWAPDB) +
+                    calculateRequestArgumentSize(index) + calculateRequestArgumentSize(index1);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.SWAPDB.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, index);
+        RedisRequests.writeRequestArgument(buffer, index1);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SWAPDB, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -5465,11 +7036,12 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
 
     @Override
     public <T> Future<List<T>> time() {
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 1;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.TIME, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.TIME, cb);
+        final int len = 1;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.TIME);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.TIME.encodeTo(buffer);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.TIME, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -5478,12 +7050,14 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     @Override
     public Future<Long> touch(@RedisProtocolSupport.Key final Buffer key) {
         requireNonNull(key);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 2;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.TOUCH, allocator);
-        addRequestArgument(key, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.TOUCH, cb);
+        final int len = 2;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.TOUCH) +
+                    calculateRequestArgumentSize(key);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.TOUCH.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.TOUCH, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -5494,13 +7068,15 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
                               @RedisProtocolSupport.Key final Buffer key2) {
         requireNonNull(key1);
         requireNonNull(key2);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 3;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.TOUCH, allocator);
-        addRequestArgument(key1, cb, allocator);
-        addRequestArgument(key2, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.TOUCH, cb);
+        final int len = 3;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.TOUCH) +
+                    calculateRequestArgumentSize(key1) + calculateRequestArgumentSize(key2);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.TOUCH.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key1);
+        RedisRequests.writeRequestArgument(buffer, key2);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.TOUCH, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -5512,14 +7088,17 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         requireNonNull(key1);
         requireNonNull(key2);
         requireNonNull(key3);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 4;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.TOUCH, allocator);
-        addRequestArgument(key1, cb, allocator);
-        addRequestArgument(key2, cb, allocator);
-        addRequestArgument(key3, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.TOUCH, cb);
+        final int len = 4;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.TOUCH) +
+                    calculateRequestArgumentSize(key1) + calculateRequestArgumentSize(key2) +
+                    calculateRequestArgumentSize(key3);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.TOUCH.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key1);
+        RedisRequests.writeRequestArgument(buffer, key2);
+        RedisRequests.writeRequestArgument(buffer, key3);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.TOUCH, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -5528,13 +7107,35 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     @Override
     public Future<Long> touch(@RedisProtocolSupport.Key final Collection<Buffer> keys) {
         requireNonNull(keys);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 1;
-        len += keys.size();
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.TOUCH, allocator);
-        addRequestBufferArguments(keys, null, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.TOUCH, cb);
+        final int len = 1 + keys.size();
+        int keysCapacity = 0;
+        if (keys instanceof List && keys instanceof RandomAccess) {
+            final List<Buffer> list = (List<Buffer>) keys;
+            for (int i = 0; i < list.size(); ++i) {
+                final Buffer arg = list.get(i);
+                keysCapacity += calculateRequestArgumentSize(arg);
+            }
+        } else {
+            for (Buffer arg : keys) {
+                keysCapacity += calculateRequestArgumentSize(arg);
+            }
+        }
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.TOUCH) + keysCapacity;
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.TOUCH.encodeTo(buffer);
+        if (keys instanceof List && keys instanceof RandomAccess) {
+            final List<Buffer> list = (List<Buffer>) keys;
+            for (int i = 0; i < list.size(); ++i) {
+                final Buffer arg = list.get(i);
+                RedisRequests.writeRequestArgument(buffer, arg);
+            }
+        } else {
+            for (Buffer arg : keys) {
+                RedisRequests.writeRequestArgument(buffer, arg);
+            }
+        }
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.TOUCH, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -5543,12 +7144,14 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     @Override
     public Future<Long> ttl(@RedisProtocolSupport.Key final Buffer key) {
         requireNonNull(key);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 2;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.TTL, allocator);
-        addRequestArgument(key, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.TTL, cb);
+        final int len = 2;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.TTL) +
+                    calculateRequestArgumentSize(key);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.TTL.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.TTL, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -5557,12 +7160,14 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     @Override
     public Future<String> type(@RedisProtocolSupport.Key final Buffer key) {
         requireNonNull(key);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 2;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.TYPE, allocator);
-        addRequestArgument(key, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.TYPE, cb);
+        final int len = 2;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.TYPE) +
+                    calculateRequestArgumentSize(key);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.TYPE.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.TYPE, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -5571,12 +7176,14 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     @Override
     public Future<Long> unlink(@RedisProtocolSupport.Key final Buffer key) {
         requireNonNull(key);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 2;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.UNLINK, allocator);
-        addRequestArgument(key, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.UNLINK, cb);
+        final int len = 2;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.UNLINK) +
+                    calculateRequestArgumentSize(key);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.UNLINK.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.UNLINK, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -5587,13 +7194,15 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
                                @RedisProtocolSupport.Key final Buffer key2) {
         requireNonNull(key1);
         requireNonNull(key2);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 3;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.UNLINK, allocator);
-        addRequestArgument(key1, cb, allocator);
-        addRequestArgument(key2, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.UNLINK, cb);
+        final int len = 3;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.UNLINK) +
+                    calculateRequestArgumentSize(key1) + calculateRequestArgumentSize(key2);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.UNLINK.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key1);
+        RedisRequests.writeRequestArgument(buffer, key2);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.UNLINK, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -5605,14 +7214,17 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         requireNonNull(key1);
         requireNonNull(key2);
         requireNonNull(key3);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 4;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.UNLINK, allocator);
-        addRequestArgument(key1, cb, allocator);
-        addRequestArgument(key2, cb, allocator);
-        addRequestArgument(key3, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.UNLINK, cb);
+        final int len = 4;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.UNLINK) +
+                    calculateRequestArgumentSize(key1) + calculateRequestArgumentSize(key2) +
+                    calculateRequestArgumentSize(key3);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.UNLINK.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key1);
+        RedisRequests.writeRequestArgument(buffer, key2);
+        RedisRequests.writeRequestArgument(buffer, key3);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.UNLINK, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -5621,13 +7233,35 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     @Override
     public Future<Long> unlink(@RedisProtocolSupport.Key final Collection<Buffer> keys) {
         requireNonNull(keys);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 1;
-        len += keys.size();
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.UNLINK, allocator);
-        addRequestBufferArguments(keys, null, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.UNLINK, cb);
+        final int len = 1 + keys.size();
+        int keysCapacity = 0;
+        if (keys instanceof List && keys instanceof RandomAccess) {
+            final List<Buffer> list = (List<Buffer>) keys;
+            for (int i = 0; i < list.size(); ++i) {
+                final Buffer arg = list.get(i);
+                keysCapacity += calculateRequestArgumentSize(arg);
+            }
+        } else {
+            for (Buffer arg : keys) {
+                keysCapacity += calculateRequestArgumentSize(arg);
+            }
+        }
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.UNLINK) + keysCapacity;
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.UNLINK.encodeTo(buffer);
+        if (keys instanceof List && keys instanceof RandomAccess) {
+            final List<Buffer> list = (List<Buffer>) keys;
+            for (int i = 0; i < list.size(); ++i) {
+                final Buffer arg = list.get(i);
+                RedisRequests.writeRequestArgument(buffer, arg);
+            }
+        } else {
+            for (Buffer arg : keys) {
+                RedisRequests.writeRequestArgument(buffer, arg);
+            }
+        }
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.UNLINK, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -5635,11 +7269,12 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
 
     @Override
     public Future<String> unwatch() {
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 1;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.UNWATCH, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.UNWATCH, cb);
+        final int len = 1;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.UNWATCH);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.UNWATCH.encodeTo(buffer);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.UNWATCH, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -5647,13 +7282,15 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
 
     @Override
     public Future<Long> wait(final long numslaves, final long timeout) {
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 3;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.WAIT, allocator);
-        addRequestArgument(numslaves, cb, allocator);
-        addRequestArgument(timeout, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.WAIT, cb);
+        final int len = 3;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.WAIT) +
+                    calculateRequestArgumentSize(numslaves) + calculateRequestArgumentSize(timeout);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.WAIT.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, numslaves);
+        RedisRequests.writeRequestArgument(buffer, timeout);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.WAIT, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -5662,12 +7299,14 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     @Override
     public Future<String> watch(@RedisProtocolSupport.Key final Buffer key) {
         requireNonNull(key);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 2;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.WATCH, allocator);
-        addRequestArgument(key, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.WATCH, cb);
+        final int len = 2;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.WATCH) +
+                    calculateRequestArgumentSize(key);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.WATCH.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.WATCH, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -5678,13 +7317,15 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
                                 @RedisProtocolSupport.Key final Buffer key2) {
         requireNonNull(key1);
         requireNonNull(key2);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 3;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.WATCH, allocator);
-        addRequestArgument(key1, cb, allocator);
-        addRequestArgument(key2, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.WATCH, cb);
+        final int len = 3;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.WATCH) +
+                    calculateRequestArgumentSize(key1) + calculateRequestArgumentSize(key2);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.WATCH.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key1);
+        RedisRequests.writeRequestArgument(buffer, key2);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.WATCH, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -5697,14 +7338,17 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         requireNonNull(key1);
         requireNonNull(key2);
         requireNonNull(key3);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 4;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.WATCH, allocator);
-        addRequestArgument(key1, cb, allocator);
-        addRequestArgument(key2, cb, allocator);
-        addRequestArgument(key3, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.WATCH, cb);
+        final int len = 4;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.WATCH) +
+                    calculateRequestArgumentSize(key1) + calculateRequestArgumentSize(key2) +
+                    calculateRequestArgumentSize(key3);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.WATCH.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key1);
+        RedisRequests.writeRequestArgument(buffer, key2);
+        RedisRequests.writeRequestArgument(buffer, key3);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.WATCH, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -5713,13 +7357,35 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     @Override
     public Future<String> watch(@RedisProtocolSupport.Key final Collection<Buffer> keys) {
         requireNonNull(keys);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 1;
-        len += keys.size();
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.WATCH, allocator);
-        addRequestBufferArguments(keys, null, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.WATCH, cb);
+        final int len = 1 + keys.size();
+        int keysCapacity = 0;
+        if (keys instanceof List && keys instanceof RandomAccess) {
+            final List<Buffer> list = (List<Buffer>) keys;
+            for (int i = 0; i < list.size(); ++i) {
+                final Buffer arg = list.get(i);
+                keysCapacity += calculateRequestArgumentSize(arg);
+            }
+        } else {
+            for (Buffer arg : keys) {
+                keysCapacity += calculateRequestArgumentSize(arg);
+            }
+        }
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.WATCH) + keysCapacity;
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.WATCH.encodeTo(buffer);
+        if (keys instanceof List && keys instanceof RandomAccess) {
+            final List<Buffer> list = (List<Buffer>) keys;
+            for (int i = 0; i < list.size(); ++i) {
+                final Buffer arg = list.get(i);
+                RedisRequests.writeRequestArgument(buffer, arg);
+            }
+        } else {
+            for (Buffer arg : keys) {
+                RedisRequests.writeRequestArgument(buffer, arg);
+            }
+        }
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.WATCH, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -5732,15 +7398,18 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         requireNonNull(id);
         requireNonNull(field);
         requireNonNull(value);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 5;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.XADD, allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestArgument(id, cb, allocator);
-        addRequestArgument(field, cb, allocator);
-        addRequestArgument(value, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.XADD, cb);
+        final int len = 5;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.XADD) +
+                    calculateRequestArgumentSize(key) + calculateRequestArgumentSize(id) +
+                    calculateRequestArgumentSize(field) + calculateRequestArgumentSize(value);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.XADD.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        RedisRequests.writeRequestArgument(buffer, id);
+        RedisRequests.writeRequestArgument(buffer, field);
+        RedisRequests.writeRequestArgument(buffer, value);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.XADD, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Buffer> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -5755,17 +7424,21 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         requireNonNull(value1);
         requireNonNull(field2);
         requireNonNull(value2);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 7;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.XADD, allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestArgument(id, cb, allocator);
-        addRequestArgument(field1, cb, allocator);
-        addRequestArgument(value1, cb, allocator);
-        addRequestArgument(field2, cb, allocator);
-        addRequestArgument(value2, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.XADD, cb);
+        final int len = 7;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.XADD) +
+                    calculateRequestArgumentSize(key) + calculateRequestArgumentSize(id) +
+                    calculateRequestArgumentSize(field1) + calculateRequestArgumentSize(value1) +
+                    calculateRequestArgumentSize(field2) + calculateRequestArgumentSize(value2);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.XADD.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        RedisRequests.writeRequestArgument(buffer, id);
+        RedisRequests.writeRequestArgument(buffer, field1);
+        RedisRequests.writeRequestArgument(buffer, value1);
+        RedisRequests.writeRequestArgument(buffer, field2);
+        RedisRequests.writeRequestArgument(buffer, value2);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.XADD, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Buffer> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -5783,19 +7456,24 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         requireNonNull(value2);
         requireNonNull(field3);
         requireNonNull(value3);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 9;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.XADD, allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestArgument(id, cb, allocator);
-        addRequestArgument(field1, cb, allocator);
-        addRequestArgument(value1, cb, allocator);
-        addRequestArgument(field2, cb, allocator);
-        addRequestArgument(value2, cb, allocator);
-        addRequestArgument(field3, cb, allocator);
-        addRequestArgument(value3, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.XADD, cb);
+        final int len = 9;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.XADD) +
+                    calculateRequestArgumentSize(key) + calculateRequestArgumentSize(id) +
+                    calculateRequestArgumentSize(field1) + calculateRequestArgumentSize(value1) +
+                    calculateRequestArgumentSize(field2) + calculateRequestArgumentSize(value2) +
+                    calculateRequestArgumentSize(field3) + calculateRequestArgumentSize(value3);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.XADD.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        RedisRequests.writeRequestArgument(buffer, id);
+        RedisRequests.writeRequestArgument(buffer, field1);
+        RedisRequests.writeRequestArgument(buffer, value1);
+        RedisRequests.writeRequestArgument(buffer, field2);
+        RedisRequests.writeRequestArgument(buffer, value2);
+        RedisRequests.writeRequestArgument(buffer, field3);
+        RedisRequests.writeRequestArgument(buffer, value3);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.XADD, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Buffer> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -5807,15 +7485,38 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         requireNonNull(key);
         requireNonNull(id);
         requireNonNull(fieldValues);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 3;
-        len += RedisProtocolSupport.BufferFieldValue.SIZE * fieldValues.size();
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.XADD, allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestArgument(id, cb, allocator);
-        addRequestTupleArguments(fieldValues, null, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.XADD, cb);
+        final int len = 3 + RedisProtocolSupport.BufferFieldValue.SIZE * fieldValues.size();
+        int fieldValuesCapacity = 0;
+        if (fieldValues instanceof List && fieldValues instanceof RandomAccess) {
+            final List<RedisProtocolSupport.BufferFieldValue> list = (List<RedisProtocolSupport.BufferFieldValue>) fieldValues;
+            for (int i = 0; i < list.size(); ++i) {
+                final RedisProtocolSupport.BufferFieldValue arg = list.get(i);
+                fieldValuesCapacity += arg.encodedByteCount();
+            }
+        } else {
+            for (RedisProtocolSupport.BufferFieldValue arg : fieldValues) {
+                fieldValuesCapacity += arg.encodedByteCount();
+            }
+        }
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.XADD) +
+                    calculateRequestArgumentSize(key) + calculateRequestArgumentSize(id) + fieldValuesCapacity;
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.XADD.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        RedisRequests.writeRequestArgument(buffer, id);
+        if (fieldValues instanceof List && fieldValues instanceof RandomAccess) {
+            final List<RedisProtocolSupport.BufferFieldValue> list = (List<RedisProtocolSupport.BufferFieldValue>) fieldValues;
+            for (int i = 0; i < list.size(); ++i) {
+                final RedisProtocolSupport.BufferFieldValue arg = list.get(i);
+                arg.encodeTo(buffer);
+            }
+        } else {
+            for (RedisProtocolSupport.BufferFieldValue arg : fieldValues) {
+                arg.encodeTo(buffer);
+            }
+        }
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.XADD, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Buffer> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -5824,12 +7525,14 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     @Override
     public Future<Long> xlen(@RedisProtocolSupport.Key final Buffer key) {
         requireNonNull(key);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 2;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.XLEN, allocator);
-        addRequestArgument(key, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.XLEN, cb);
+        final int len = 2;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.XLEN) +
+                    calculateRequestArgumentSize(key);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.XLEN.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.XLEN, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -5839,13 +7542,15 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     public <T> Future<List<T>> xpending(@RedisProtocolSupport.Key final Buffer key, final Buffer group) {
         requireNonNull(key);
         requireNonNull(group);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 3;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.XPENDING, allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestArgument(group, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.XPENDING, cb);
+        final int len = 3;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.XPENDING) +
+                    calculateRequestArgumentSize(key) + calculateRequestArgumentSize(group);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.XPENDING.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        RedisRequests.writeRequestArgument(buffer, group);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.XPENDING, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -5857,37 +7562,32 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
                                         @Nullable final Long count, @Nullable final Buffer consumer) {
         requireNonNull(key);
         requireNonNull(group);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 3;
+        final int len = 3 + (start == null ? 0 : 1) + (end == null ? 0 : 1) + (count == null ? 0 : 1) +
+                    (consumer == null ? 0 : 1);
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.XPENDING) +
+                    calculateRequestArgumentSize(key) + calculateRequestArgumentSize(group) +
+                    (start == null ? 0 : calculateRequestArgumentSize(start)) +
+                    (end == null ? 0 : calculateRequestArgumentSize(end)) +
+                    (count == null ? 0 : calculateRequestArgumentSize(count)) +
+                    (consumer == null ? 0 : calculateRequestArgumentSize(consumer));
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.XPENDING.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        RedisRequests.writeRequestArgument(buffer, group);
         if (start != null) {
-            len++;
+            RedisRequests.writeRequestArgument(buffer, start);
         }
         if (end != null) {
-            len++;
+            RedisRequests.writeRequestArgument(buffer, end);
         }
         if (count != null) {
-            len++;
+            RedisRequests.writeRequestArgument(buffer, count);
         }
         if (consumer != null) {
-            len++;
+            RedisRequests.writeRequestArgument(buffer, consumer);
         }
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.XPENDING, allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestArgument(group, cb, allocator);
-        if (start != null) {
-            addRequestArgument(start, cb, allocator);
-        }
-        if (end != null) {
-            addRequestArgument(end, cb, allocator);
-        }
-        if (count != null) {
-            addRequestArgument(count, cb, allocator);
-        }
-        if (consumer != null) {
-            addRequestArgument(consumer, cb, allocator);
-        }
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.XPENDING, cb);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.XPENDING, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -5899,14 +7599,17 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         requireNonNull(key);
         requireNonNull(start);
         requireNonNull(end);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 4;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.XRANGE, allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestArgument(start, cb, allocator);
-        addRequestArgument(end, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.XRANGE, cb);
+        final int len = 4;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.XRANGE) +
+                    calculateRequestArgumentSize(key) + calculateRequestArgumentSize(start) +
+                    calculateRequestArgumentSize(end);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.XRANGE.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        RedisRequests.writeRequestArgument(buffer, start);
+        RedisRequests.writeRequestArgument(buffer, end);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.XRANGE, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -5918,21 +7621,23 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         requireNonNull(key);
         requireNonNull(start);
         requireNonNull(end);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 4;
+        final int len = 4 + (count == null ? 0 : 2);
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.XRANGE) +
+                    calculateRequestArgumentSize(key) + calculateRequestArgumentSize(start) +
+                    calculateRequestArgumentSize(end) +
+                    (count == null ? 0 : RedisProtocolSupport.SubCommand.COUNT.encodedByteCount()) +
+                    (count == null ? 0 : calculateRequestArgumentSize(count));
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.XRANGE.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        RedisRequests.writeRequestArgument(buffer, start);
+        RedisRequests.writeRequestArgument(buffer, end);
         if (count != null) {
-            len += 2;
+            RedisProtocolSupport.SubCommand.COUNT.encodeTo(buffer);
+            RedisRequests.writeRequestArgument(buffer, count);
         }
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.XRANGE, allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestArgument(start, cb, allocator);
-        addRequestArgument(end, cb, allocator);
-        if (count != null) {
-            addRequestArgument(RedisProtocolSupport.SubCommand.COUNT, cb, allocator);
-            addRequestArgument(count, cb, allocator);
-        }
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.XRANGE, cb);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.XRANGE, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -5943,16 +7648,60 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
                                      final Collection<Buffer> ids) {
         requireNonNull(keys);
         requireNonNull(ids);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 2;
-        len += keys.size();
-        len += ids.size();
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.XREAD, allocator);
-        addRequestArgument(RedisProtocolSupport.XreadStreams.values()[0], cb, allocator);
-        addRequestBufferArguments(keys, null, cb, allocator);
-        addRequestBufferArguments(ids, null, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.XREAD, cb);
+        final int len = 2 + keys.size() + ids.size();
+        int keysCapacity = 0;
+        if (keys instanceof List && keys instanceof RandomAccess) {
+            final List<Buffer> list = (List<Buffer>) keys;
+            for (int i = 0; i < list.size(); ++i) {
+                final Buffer arg = list.get(i);
+                keysCapacity += calculateRequestArgumentSize(arg);
+            }
+        } else {
+            for (Buffer arg : keys) {
+                keysCapacity += calculateRequestArgumentSize(arg);
+            }
+        }
+        int idsCapacity = 0;
+        if (ids instanceof List && ids instanceof RandomAccess) {
+            final List<Buffer> list = (List<Buffer>) ids;
+            for (int i = 0; i < list.size(); ++i) {
+                final Buffer arg = list.get(i);
+                idsCapacity += calculateRequestArgumentSize(arg);
+            }
+        } else {
+            for (Buffer arg : ids) {
+                idsCapacity += calculateRequestArgumentSize(arg);
+            }
+        }
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.XREAD) +
+                    RedisProtocolSupport.XreadStreams.values()[0].encodedByteCount() + keysCapacity + idsCapacity;
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.XREAD.encodeTo(buffer);
+        RedisProtocolSupport.XreadStreams.values()[0].encodeTo(buffer);
+        if (keys instanceof List && keys instanceof RandomAccess) {
+            final List<Buffer> list = (List<Buffer>) keys;
+            for (int i = 0; i < list.size(); ++i) {
+                final Buffer arg = list.get(i);
+                RedisRequests.writeRequestArgument(buffer, arg);
+            }
+        } else {
+            for (Buffer arg : keys) {
+                RedisRequests.writeRequestArgument(buffer, arg);
+            }
+        }
+        if (ids instanceof List && ids instanceof RandomAccess) {
+            final List<Buffer> list = (List<Buffer>) ids;
+            for (int i = 0; i < list.size(); ++i) {
+                final Buffer arg = list.get(i);
+                RedisRequests.writeRequestArgument(buffer, arg);
+            }
+        } else {
+            for (Buffer arg : ids) {
+                RedisRequests.writeRequestArgument(buffer, arg);
+            }
+        }
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.XREAD, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -5964,30 +7713,72 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
                                      final Collection<Buffer> ids) {
         requireNonNull(keys);
         requireNonNull(ids);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 2;
+        final int len = 2 + (count == null ? 0 : 2) + (blockMilliseconds == null ? 0 : 2) + keys.size() + ids.size();
+        int keysCapacity = 0;
+        if (keys instanceof List && keys instanceof RandomAccess) {
+            final List<Buffer> list = (List<Buffer>) keys;
+            for (int i = 0; i < list.size(); ++i) {
+                final Buffer arg = list.get(i);
+                keysCapacity += calculateRequestArgumentSize(arg);
+            }
+        } else {
+            for (Buffer arg : keys) {
+                keysCapacity += calculateRequestArgumentSize(arg);
+            }
+        }
+        int idsCapacity = 0;
+        if (ids instanceof List && ids instanceof RandomAccess) {
+            final List<Buffer> list = (List<Buffer>) ids;
+            for (int i = 0; i < list.size(); ++i) {
+                final Buffer arg = list.get(i);
+                idsCapacity += calculateRequestArgumentSize(arg);
+            }
+        } else {
+            for (Buffer arg : ids) {
+                idsCapacity += calculateRequestArgumentSize(arg);
+            }
+        }
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.XREAD) +
+                    (count == null ? 0 : RedisProtocolSupport.SubCommand.COUNT.encodedByteCount()) +
+                    (count == null ? 0 : calculateRequestArgumentSize(count)) +
+                    (blockMilliseconds == null ? 0 : RedisProtocolSupport.SubCommand.BLOCK.encodedByteCount()) +
+                    (blockMilliseconds == null ? 0 : calculateRequestArgumentSize(blockMilliseconds)) +
+                    RedisProtocolSupport.XreadStreams.values()[0].encodedByteCount() + keysCapacity + idsCapacity;
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.XREAD.encodeTo(buffer);
         if (count != null) {
-            len += 2;
+            RedisProtocolSupport.SubCommand.COUNT.encodeTo(buffer);
+            RedisRequests.writeRequestArgument(buffer, count);
         }
         if (blockMilliseconds != null) {
-            len += 2;
+            RedisProtocolSupport.SubCommand.BLOCK.encodeTo(buffer);
+            RedisRequests.writeRequestArgument(buffer, blockMilliseconds);
         }
-        len += keys.size();
-        len += ids.size();
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.XREAD, allocator);
-        if (count != null) {
-            addRequestArgument(RedisProtocolSupport.SubCommand.COUNT, cb, allocator);
-            addRequestArgument(count, cb, allocator);
+        RedisProtocolSupport.XreadStreams.values()[0].encodeTo(buffer);
+        if (keys instanceof List && keys instanceof RandomAccess) {
+            final List<Buffer> list = (List<Buffer>) keys;
+            for (int i = 0; i < list.size(); ++i) {
+                final Buffer arg = list.get(i);
+                RedisRequests.writeRequestArgument(buffer, arg);
+            }
+        } else {
+            for (Buffer arg : keys) {
+                RedisRequests.writeRequestArgument(buffer, arg);
+            }
         }
-        if (blockMilliseconds != null) {
-            addRequestArgument(RedisProtocolSupport.SubCommand.BLOCK, cb, allocator);
-            addRequestArgument(blockMilliseconds, cb, allocator);
+        if (ids instanceof List && ids instanceof RandomAccess) {
+            final List<Buffer> list = (List<Buffer>) ids;
+            for (int i = 0; i < list.size(); ++i) {
+                final Buffer arg = list.get(i);
+                RedisRequests.writeRequestArgument(buffer, arg);
+            }
+        } else {
+            for (Buffer arg : ids) {
+                RedisRequests.writeRequestArgument(buffer, arg);
+            }
         }
-        addRequestArgument(RedisProtocolSupport.XreadStreams.values()[0], cb, allocator);
-        addRequestBufferArguments(keys, null, cb, allocator);
-        addRequestBufferArguments(ids, null, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.XREAD, cb);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.XREAD, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -6000,17 +7791,62 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         requireNonNull(groupConsumer);
         requireNonNull(keys);
         requireNonNull(ids);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 2 + RedisProtocolSupport.BufferGroupConsumer.SIZE;
-        len += keys.size();
-        len += ids.size();
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.XREADGROUP, allocator);
-        groupConsumer.writeTo(cb, allocator);
-        addRequestArgument(RedisProtocolSupport.XreadgroupStreams.values()[0], cb, allocator);
-        addRequestBufferArguments(keys, null, cb, allocator);
-        addRequestBufferArguments(ids, null, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.XREADGROUP, cb);
+        final int len = 2 + RedisProtocolSupport.BufferGroupConsumer.SIZE + keys.size() + ids.size();
+        int keysCapacity = 0;
+        if (keys instanceof List && keys instanceof RandomAccess) {
+            final List<Buffer> list = (List<Buffer>) keys;
+            for (int i = 0; i < list.size(); ++i) {
+                final Buffer arg = list.get(i);
+                keysCapacity += calculateRequestArgumentSize(arg);
+            }
+        } else {
+            for (Buffer arg : keys) {
+                keysCapacity += calculateRequestArgumentSize(arg);
+            }
+        }
+        int idsCapacity = 0;
+        if (ids instanceof List && ids instanceof RandomAccess) {
+            final List<Buffer> list = (List<Buffer>) ids;
+            for (int i = 0; i < list.size(); ++i) {
+                final Buffer arg = list.get(i);
+                idsCapacity += calculateRequestArgumentSize(arg);
+            }
+        } else {
+            for (Buffer arg : ids) {
+                idsCapacity += calculateRequestArgumentSize(arg);
+            }
+        }
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.XREADGROUP) +
+                    groupConsumer.encodedByteCount() +
+                    RedisProtocolSupport.XreadgroupStreams.values()[0].encodedByteCount() + keysCapacity + idsCapacity;
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.XREADGROUP.encodeTo(buffer);
+        groupConsumer.encodeTo(buffer);
+        RedisProtocolSupport.XreadgroupStreams.values()[0].encodeTo(buffer);
+        if (keys instanceof List && keys instanceof RandomAccess) {
+            final List<Buffer> list = (List<Buffer>) keys;
+            for (int i = 0; i < list.size(); ++i) {
+                final Buffer arg = list.get(i);
+                RedisRequests.writeRequestArgument(buffer, arg);
+            }
+        } else {
+            for (Buffer arg : keys) {
+                RedisRequests.writeRequestArgument(buffer, arg);
+            }
+        }
+        if (ids instanceof List && ids instanceof RandomAccess) {
+            final List<Buffer> list = (List<Buffer>) ids;
+            for (int i = 0; i < list.size(); ++i) {
+                final Buffer arg = list.get(i);
+                RedisRequests.writeRequestArgument(buffer, arg);
+            }
+        } else {
+            for (Buffer arg : ids) {
+                RedisRequests.writeRequestArgument(buffer, arg);
+            }
+        }
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.XREADGROUP, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -6024,31 +7860,75 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         requireNonNull(groupConsumer);
         requireNonNull(keys);
         requireNonNull(ids);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 2 + RedisProtocolSupport.BufferGroupConsumer.SIZE;
+        final int len = 2 + RedisProtocolSupport.BufferGroupConsumer.SIZE + (count == null ? 0 : 2) +
+                    (blockMilliseconds == null ? 0 : 2) + keys.size() + ids.size();
+        int keysCapacity = 0;
+        if (keys instanceof List && keys instanceof RandomAccess) {
+            final List<Buffer> list = (List<Buffer>) keys;
+            for (int i = 0; i < list.size(); ++i) {
+                final Buffer arg = list.get(i);
+                keysCapacity += calculateRequestArgumentSize(arg);
+            }
+        } else {
+            for (Buffer arg : keys) {
+                keysCapacity += calculateRequestArgumentSize(arg);
+            }
+        }
+        int idsCapacity = 0;
+        if (ids instanceof List && ids instanceof RandomAccess) {
+            final List<Buffer> list = (List<Buffer>) ids;
+            for (int i = 0; i < list.size(); ++i) {
+                final Buffer arg = list.get(i);
+                idsCapacity += calculateRequestArgumentSize(arg);
+            }
+        } else {
+            for (Buffer arg : ids) {
+                idsCapacity += calculateRequestArgumentSize(arg);
+            }
+        }
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.XREADGROUP) +
+                    groupConsumer.encodedByteCount() +
+                    (count == null ? 0 : RedisProtocolSupport.SubCommand.COUNT.encodedByteCount()) +
+                    (count == null ? 0 : calculateRequestArgumentSize(count)) +
+                    (blockMilliseconds == null ? 0 : RedisProtocolSupport.SubCommand.BLOCK.encodedByteCount()) +
+                    (blockMilliseconds == null ? 0 : calculateRequestArgumentSize(blockMilliseconds)) +
+                    RedisProtocolSupport.XreadgroupStreams.values()[0].encodedByteCount() + keysCapacity + idsCapacity;
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.XREADGROUP.encodeTo(buffer);
+        groupConsumer.encodeTo(buffer);
         if (count != null) {
-            len += 2;
+            RedisProtocolSupport.SubCommand.COUNT.encodeTo(buffer);
+            RedisRequests.writeRequestArgument(buffer, count);
         }
         if (blockMilliseconds != null) {
-            len += 2;
+            RedisProtocolSupport.SubCommand.BLOCK.encodeTo(buffer);
+            RedisRequests.writeRequestArgument(buffer, blockMilliseconds);
         }
-        len += keys.size();
-        len += ids.size();
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.XREADGROUP, allocator);
-        groupConsumer.writeTo(cb, allocator);
-        if (count != null) {
-            addRequestArgument(RedisProtocolSupport.SubCommand.COUNT, cb, allocator);
-            addRequestArgument(count, cb, allocator);
+        RedisProtocolSupport.XreadgroupStreams.values()[0].encodeTo(buffer);
+        if (keys instanceof List && keys instanceof RandomAccess) {
+            final List<Buffer> list = (List<Buffer>) keys;
+            for (int i = 0; i < list.size(); ++i) {
+                final Buffer arg = list.get(i);
+                RedisRequests.writeRequestArgument(buffer, arg);
+            }
+        } else {
+            for (Buffer arg : keys) {
+                RedisRequests.writeRequestArgument(buffer, arg);
+            }
         }
-        if (blockMilliseconds != null) {
-            addRequestArgument(RedisProtocolSupport.SubCommand.BLOCK, cb, allocator);
-            addRequestArgument(blockMilliseconds, cb, allocator);
+        if (ids instanceof List && ids instanceof RandomAccess) {
+            final List<Buffer> list = (List<Buffer>) ids;
+            for (int i = 0; i < list.size(); ++i) {
+                final Buffer arg = list.get(i);
+                RedisRequests.writeRequestArgument(buffer, arg);
+            }
+        } else {
+            for (Buffer arg : ids) {
+                RedisRequests.writeRequestArgument(buffer, arg);
+            }
         }
-        addRequestArgument(RedisProtocolSupport.XreadgroupStreams.values()[0], cb, allocator);
-        addRequestBufferArguments(keys, null, cb, allocator);
-        addRequestBufferArguments(ids, null, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.XREADGROUP, cb);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.XREADGROUP, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -6060,14 +7940,17 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         requireNonNull(key);
         requireNonNull(end);
         requireNonNull(start);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 4;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.XREVRANGE, allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestArgument(end, cb, allocator);
-        addRequestArgument(start, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.XREVRANGE, cb);
+        final int len = 4;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.XREVRANGE) +
+                    calculateRequestArgumentSize(key) + calculateRequestArgumentSize(end) +
+                    calculateRequestArgumentSize(start);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.XREVRANGE.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        RedisRequests.writeRequestArgument(buffer, end);
+        RedisRequests.writeRequestArgument(buffer, start);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.XREVRANGE, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -6079,21 +7962,23 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         requireNonNull(key);
         requireNonNull(end);
         requireNonNull(start);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 4;
+        final int len = 4 + (count == null ? 0 : 2);
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.XREVRANGE) +
+                    calculateRequestArgumentSize(key) + calculateRequestArgumentSize(end) +
+                    calculateRequestArgumentSize(start) +
+                    (count == null ? 0 : RedisProtocolSupport.SubCommand.COUNT.encodedByteCount()) +
+                    (count == null ? 0 : calculateRequestArgumentSize(count));
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.XREVRANGE.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        RedisRequests.writeRequestArgument(buffer, end);
+        RedisRequests.writeRequestArgument(buffer, start);
         if (count != null) {
-            len += 2;
+            RedisProtocolSupport.SubCommand.COUNT.encodeTo(buffer);
+            RedisRequests.writeRequestArgument(buffer, count);
         }
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.XREVRANGE, allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestArgument(end, cb, allocator);
-        addRequestArgument(start, cb, allocator);
-        if (count != null) {
-            addRequestArgument(RedisProtocolSupport.SubCommand.COUNT, cb, allocator);
-            addRequestArgument(count, cb, allocator);
-        }
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.XREVRANGE, cb);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.XREVRANGE, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -6104,14 +7989,37 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
                              final Collection<RedisProtocolSupport.BufferScoreMember> scoreMembers) {
         requireNonNull(key);
         requireNonNull(scoreMembers);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 2;
-        len += RedisProtocolSupport.BufferScoreMember.SIZE * scoreMembers.size();
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ZADD, allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestTupleArguments(scoreMembers, null, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZADD, cb);
+        final int len = 2 + RedisProtocolSupport.BufferScoreMember.SIZE * scoreMembers.size();
+        int scoreMembersCapacity = 0;
+        if (scoreMembers instanceof List && scoreMembers instanceof RandomAccess) {
+            final List<RedisProtocolSupport.BufferScoreMember> list = (List<RedisProtocolSupport.BufferScoreMember>) scoreMembers;
+            for (int i = 0; i < list.size(); ++i) {
+                final RedisProtocolSupport.BufferScoreMember arg = list.get(i);
+                scoreMembersCapacity += arg.encodedByteCount();
+            }
+        } else {
+            for (RedisProtocolSupport.BufferScoreMember arg : scoreMembers) {
+                scoreMembersCapacity += arg.encodedByteCount();
+            }
+        }
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.ZADD) +
+                    calculateRequestArgumentSize(key) + scoreMembersCapacity;
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.ZADD.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        if (scoreMembers instanceof List && scoreMembers instanceof RandomAccess) {
+            final List<RedisProtocolSupport.BufferScoreMember> list = (List<RedisProtocolSupport.BufferScoreMember>) scoreMembers;
+            for (int i = 0; i < list.size(); ++i) {
+                final RedisProtocolSupport.BufferScoreMember arg = list.get(i);
+                arg.encodeTo(buffer);
+            }
+        } else {
+            for (RedisProtocolSupport.BufferScoreMember arg : scoreMembers) {
+                arg.encodeTo(buffer);
+            }
+        }
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZADD, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -6124,26 +8032,24 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
                              final Buffer member) {
         requireNonNull(key);
         requireNonNull(member);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 4;
+        final int len = 4 + (condition == null ? 0 : 1) + (change == null ? 0 : 1);
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.ZADD) +
+                    calculateRequestArgumentSize(key) + (condition == null ? 0 : condition.encodedByteCount()) +
+                    (change == null ? 0 : change.encodedByteCount()) + calculateRequestArgumentSize(score) +
+                    calculateRequestArgumentSize(member);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.ZADD.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
         if (condition != null) {
-            len++;
+            condition.encodeTo(buffer);
         }
         if (change != null) {
-            len++;
+            change.encodeTo(buffer);
         }
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ZADD, allocator);
-        addRequestArgument(key, cb, allocator);
-        if (condition != null) {
-            addRequestArgument(condition, cb, allocator);
-        }
-        if (change != null) {
-            addRequestArgument(change, cb, allocator);
-        }
-        addRequestArgument(score, cb, allocator);
-        addRequestArgument(member, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZADD, cb);
+        RedisRequests.writeRequestArgument(buffer, score);
+        RedisRequests.writeRequestArgument(buffer, member);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZADD, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -6157,28 +8063,27 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         requireNonNull(key);
         requireNonNull(member1);
         requireNonNull(member2);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 6;
+        final int len = 6 + (condition == null ? 0 : 1) + (change == null ? 0 : 1);
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.ZADD) +
+                    calculateRequestArgumentSize(key) + (condition == null ? 0 : condition.encodedByteCount()) +
+                    (change == null ? 0 : change.encodedByteCount()) + calculateRequestArgumentSize(score1) +
+                    calculateRequestArgumentSize(member1) + calculateRequestArgumentSize(score2) +
+                    calculateRequestArgumentSize(member2);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.ZADD.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
         if (condition != null) {
-            len++;
+            condition.encodeTo(buffer);
         }
         if (change != null) {
-            len++;
+            change.encodeTo(buffer);
         }
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ZADD, allocator);
-        addRequestArgument(key, cb, allocator);
-        if (condition != null) {
-            addRequestArgument(condition, cb, allocator);
-        }
-        if (change != null) {
-            addRequestArgument(change, cb, allocator);
-        }
-        addRequestArgument(score1, cb, allocator);
-        addRequestArgument(member1, cb, allocator);
-        addRequestArgument(score2, cb, allocator);
-        addRequestArgument(member2, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZADD, cb);
+        RedisRequests.writeRequestArgument(buffer, score1);
+        RedisRequests.writeRequestArgument(buffer, member1);
+        RedisRequests.writeRequestArgument(buffer, score2);
+        RedisRequests.writeRequestArgument(buffer, member2);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZADD, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -6194,30 +8099,30 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         requireNonNull(member1);
         requireNonNull(member2);
         requireNonNull(member3);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 8;
+        final int len = 8 + (condition == null ? 0 : 1) + (change == null ? 0 : 1);
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.ZADD) +
+                    calculateRequestArgumentSize(key) + (condition == null ? 0 : condition.encodedByteCount()) +
+                    (change == null ? 0 : change.encodedByteCount()) + calculateRequestArgumentSize(score1) +
+                    calculateRequestArgumentSize(member1) + calculateRequestArgumentSize(score2) +
+                    calculateRequestArgumentSize(member2) + calculateRequestArgumentSize(score3) +
+                    calculateRequestArgumentSize(member3);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.ZADD.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
         if (condition != null) {
-            len++;
+            condition.encodeTo(buffer);
         }
         if (change != null) {
-            len++;
+            change.encodeTo(buffer);
         }
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ZADD, allocator);
-        addRequestArgument(key, cb, allocator);
-        if (condition != null) {
-            addRequestArgument(condition, cb, allocator);
-        }
-        if (change != null) {
-            addRequestArgument(change, cb, allocator);
-        }
-        addRequestArgument(score1, cb, allocator);
-        addRequestArgument(member1, cb, allocator);
-        addRequestArgument(score2, cb, allocator);
-        addRequestArgument(member2, cb, allocator);
-        addRequestArgument(score3, cb, allocator);
-        addRequestArgument(member3, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZADD, cb);
+        RedisRequests.writeRequestArgument(buffer, score1);
+        RedisRequests.writeRequestArgument(buffer, member1);
+        RedisRequests.writeRequestArgument(buffer, score2);
+        RedisRequests.writeRequestArgument(buffer, member2);
+        RedisRequests.writeRequestArgument(buffer, score3);
+        RedisRequests.writeRequestArgument(buffer, member3);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZADD, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -6230,26 +8135,45 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
                              final Collection<RedisProtocolSupport.BufferScoreMember> scoreMembers) {
         requireNonNull(key);
         requireNonNull(scoreMembers);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 2;
+        final int len = 2 + (condition == null ? 0 : 1) + (change == null ? 0 : 1) +
+                    RedisProtocolSupport.BufferScoreMember.SIZE * scoreMembers.size();
+        int scoreMembersCapacity = 0;
+        if (scoreMembers instanceof List && scoreMembers instanceof RandomAccess) {
+            final List<RedisProtocolSupport.BufferScoreMember> list = (List<RedisProtocolSupport.BufferScoreMember>) scoreMembers;
+            for (int i = 0; i < list.size(); ++i) {
+                final RedisProtocolSupport.BufferScoreMember arg = list.get(i);
+                scoreMembersCapacity += arg.encodedByteCount();
+            }
+        } else {
+            for (RedisProtocolSupport.BufferScoreMember arg : scoreMembers) {
+                scoreMembersCapacity += arg.encodedByteCount();
+            }
+        }
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.ZADD) +
+                    calculateRequestArgumentSize(key) + (condition == null ? 0 : condition.encodedByteCount()) +
+                    (change == null ? 0 : change.encodedByteCount()) + scoreMembersCapacity;
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.ZADD.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
         if (condition != null) {
-            len++;
+            condition.encodeTo(buffer);
         }
         if (change != null) {
-            len++;
+            change.encodeTo(buffer);
         }
-        len += RedisProtocolSupport.BufferScoreMember.SIZE * scoreMembers.size();
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ZADD, allocator);
-        addRequestArgument(key, cb, allocator);
-        if (condition != null) {
-            addRequestArgument(condition, cb, allocator);
+        if (scoreMembers instanceof List && scoreMembers instanceof RandomAccess) {
+            final List<RedisProtocolSupport.BufferScoreMember> list = (List<RedisProtocolSupport.BufferScoreMember>) scoreMembers;
+            for (int i = 0; i < list.size(); ++i) {
+                final RedisProtocolSupport.BufferScoreMember arg = list.get(i);
+                arg.encodeTo(buffer);
+            }
+        } else {
+            for (RedisProtocolSupport.BufferScoreMember arg : scoreMembers) {
+                arg.encodeTo(buffer);
+            }
         }
-        if (change != null) {
-            addRequestArgument(change, cb, allocator);
-        }
-        addRequestTupleArguments(scoreMembers, null, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZADD, cb);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZADD, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -6260,15 +8184,39 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
                                    final Collection<RedisProtocolSupport.BufferScoreMember> scoreMembers) {
         requireNonNull(key);
         requireNonNull(scoreMembers);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 3;
-        len += RedisProtocolSupport.BufferScoreMember.SIZE * scoreMembers.size();
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ZADD, allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestArgument(RedisProtocolSupport.ZaddIncrement.values()[0], cb, allocator);
-        addRequestTupleArguments(scoreMembers, null, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZADD, cb);
+        final int len = 3 + RedisProtocolSupport.BufferScoreMember.SIZE * scoreMembers.size();
+        int scoreMembersCapacity = 0;
+        if (scoreMembers instanceof List && scoreMembers instanceof RandomAccess) {
+            final List<RedisProtocolSupport.BufferScoreMember> list = (List<RedisProtocolSupport.BufferScoreMember>) scoreMembers;
+            for (int i = 0; i < list.size(); ++i) {
+                final RedisProtocolSupport.BufferScoreMember arg = list.get(i);
+                scoreMembersCapacity += arg.encodedByteCount();
+            }
+        } else {
+            for (RedisProtocolSupport.BufferScoreMember arg : scoreMembers) {
+                scoreMembersCapacity += arg.encodedByteCount();
+            }
+        }
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.ZADD) +
+                    calculateRequestArgumentSize(key) +
+                    RedisProtocolSupport.ZaddIncrement.values()[0].encodedByteCount() + scoreMembersCapacity;
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.ZADD.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        RedisProtocolSupport.ZaddIncrement.values()[0].encodeTo(buffer);
+        if (scoreMembers instanceof List && scoreMembers instanceof RandomAccess) {
+            final List<RedisProtocolSupport.BufferScoreMember> list = (List<RedisProtocolSupport.BufferScoreMember>) scoreMembers;
+            for (int i = 0; i < list.size(); ++i) {
+                final RedisProtocolSupport.BufferScoreMember arg = list.get(i);
+                arg.encodeTo(buffer);
+            }
+        } else {
+            for (RedisProtocolSupport.BufferScoreMember arg : scoreMembers) {
+                arg.encodeTo(buffer);
+            }
+        }
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZADD, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Double> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -6281,27 +8229,27 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
                                    final Buffer member) {
         requireNonNull(key);
         requireNonNull(member);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 5;
+        final int len = 5 + (condition == null ? 0 : 1) + (change == null ? 0 : 1);
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.ZADD) +
+                    calculateRequestArgumentSize(key) +
+                    RedisProtocolSupport.ZaddIncrement.values()[0].encodedByteCount() +
+                    (condition == null ? 0 : condition.encodedByteCount()) +
+                    (change == null ? 0 : change.encodedByteCount()) + calculateRequestArgumentSize(score) +
+                    calculateRequestArgumentSize(member);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.ZADD.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        RedisProtocolSupport.ZaddIncrement.values()[0].encodeTo(buffer);
         if (condition != null) {
-            len++;
+            condition.encodeTo(buffer);
         }
         if (change != null) {
-            len++;
+            change.encodeTo(buffer);
         }
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ZADD, allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestArgument(RedisProtocolSupport.ZaddIncrement.values()[0], cb, allocator);
-        if (condition != null) {
-            addRequestArgument(condition, cb, allocator);
-        }
-        if (change != null) {
-            addRequestArgument(change, cb, allocator);
-        }
-        addRequestArgument(score, cb, allocator);
-        addRequestArgument(member, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZADD, cb);
+        RedisRequests.writeRequestArgument(buffer, score);
+        RedisRequests.writeRequestArgument(buffer, member);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZADD, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Double> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -6315,29 +8263,30 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         requireNonNull(key);
         requireNonNull(member1);
         requireNonNull(member2);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 7;
+        final int len = 7 + (condition == null ? 0 : 1) + (change == null ? 0 : 1);
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.ZADD) +
+                    calculateRequestArgumentSize(key) +
+                    RedisProtocolSupport.ZaddIncrement.values()[0].encodedByteCount() +
+                    (condition == null ? 0 : condition.encodedByteCount()) +
+                    (change == null ? 0 : change.encodedByteCount()) + calculateRequestArgumentSize(score1) +
+                    calculateRequestArgumentSize(member1) + calculateRequestArgumentSize(score2) +
+                    calculateRequestArgumentSize(member2);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.ZADD.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        RedisProtocolSupport.ZaddIncrement.values()[0].encodeTo(buffer);
         if (condition != null) {
-            len++;
+            condition.encodeTo(buffer);
         }
         if (change != null) {
-            len++;
+            change.encodeTo(buffer);
         }
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ZADD, allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestArgument(RedisProtocolSupport.ZaddIncrement.values()[0], cb, allocator);
-        if (condition != null) {
-            addRequestArgument(condition, cb, allocator);
-        }
-        if (change != null) {
-            addRequestArgument(change, cb, allocator);
-        }
-        addRequestArgument(score1, cb, allocator);
-        addRequestArgument(member1, cb, allocator);
-        addRequestArgument(score2, cb, allocator);
-        addRequestArgument(member2, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZADD, cb);
+        RedisRequests.writeRequestArgument(buffer, score1);
+        RedisRequests.writeRequestArgument(buffer, member1);
+        RedisRequests.writeRequestArgument(buffer, score2);
+        RedisRequests.writeRequestArgument(buffer, member2);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZADD, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Double> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -6353,31 +8302,33 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         requireNonNull(member1);
         requireNonNull(member2);
         requireNonNull(member3);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 9;
+        final int len = 9 + (condition == null ? 0 : 1) + (change == null ? 0 : 1);
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.ZADD) +
+                    calculateRequestArgumentSize(key) +
+                    RedisProtocolSupport.ZaddIncrement.values()[0].encodedByteCount() +
+                    (condition == null ? 0 : condition.encodedByteCount()) +
+                    (change == null ? 0 : change.encodedByteCount()) + calculateRequestArgumentSize(score1) +
+                    calculateRequestArgumentSize(member1) + calculateRequestArgumentSize(score2) +
+                    calculateRequestArgumentSize(member2) + calculateRequestArgumentSize(score3) +
+                    calculateRequestArgumentSize(member3);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.ZADD.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        RedisProtocolSupport.ZaddIncrement.values()[0].encodeTo(buffer);
         if (condition != null) {
-            len++;
+            condition.encodeTo(buffer);
         }
         if (change != null) {
-            len++;
+            change.encodeTo(buffer);
         }
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ZADD, allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestArgument(RedisProtocolSupport.ZaddIncrement.values()[0], cb, allocator);
-        if (condition != null) {
-            addRequestArgument(condition, cb, allocator);
-        }
-        if (change != null) {
-            addRequestArgument(change, cb, allocator);
-        }
-        addRequestArgument(score1, cb, allocator);
-        addRequestArgument(member1, cb, allocator);
-        addRequestArgument(score2, cb, allocator);
-        addRequestArgument(member2, cb, allocator);
-        addRequestArgument(score3, cb, allocator);
-        addRequestArgument(member3, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZADD, cb);
+        RedisRequests.writeRequestArgument(buffer, score1);
+        RedisRequests.writeRequestArgument(buffer, member1);
+        RedisRequests.writeRequestArgument(buffer, score2);
+        RedisRequests.writeRequestArgument(buffer, member2);
+        RedisRequests.writeRequestArgument(buffer, score3);
+        RedisRequests.writeRequestArgument(buffer, member3);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZADD, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Double> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -6390,27 +8341,48 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
                                    final Collection<RedisProtocolSupport.BufferScoreMember> scoreMembers) {
         requireNonNull(key);
         requireNonNull(scoreMembers);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 3;
+        final int len = 3 + (condition == null ? 0 : 1) + (change == null ? 0 : 1) +
+                    RedisProtocolSupport.BufferScoreMember.SIZE * scoreMembers.size();
+        int scoreMembersCapacity = 0;
+        if (scoreMembers instanceof List && scoreMembers instanceof RandomAccess) {
+            final List<RedisProtocolSupport.BufferScoreMember> list = (List<RedisProtocolSupport.BufferScoreMember>) scoreMembers;
+            for (int i = 0; i < list.size(); ++i) {
+                final RedisProtocolSupport.BufferScoreMember arg = list.get(i);
+                scoreMembersCapacity += arg.encodedByteCount();
+            }
+        } else {
+            for (RedisProtocolSupport.BufferScoreMember arg : scoreMembers) {
+                scoreMembersCapacity += arg.encodedByteCount();
+            }
+        }
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.ZADD) +
+                    calculateRequestArgumentSize(key) +
+                    RedisProtocolSupport.ZaddIncrement.values()[0].encodedByteCount() +
+                    (condition == null ? 0 : condition.encodedByteCount()) +
+                    (change == null ? 0 : change.encodedByteCount()) + scoreMembersCapacity;
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.ZADD.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        RedisProtocolSupport.ZaddIncrement.values()[0].encodeTo(buffer);
         if (condition != null) {
-            len++;
+            condition.encodeTo(buffer);
         }
         if (change != null) {
-            len++;
+            change.encodeTo(buffer);
         }
-        len += RedisProtocolSupport.BufferScoreMember.SIZE * scoreMembers.size();
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ZADD, allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestArgument(RedisProtocolSupport.ZaddIncrement.values()[0], cb, allocator);
-        if (condition != null) {
-            addRequestArgument(condition, cb, allocator);
+        if (scoreMembers instanceof List && scoreMembers instanceof RandomAccess) {
+            final List<RedisProtocolSupport.BufferScoreMember> list = (List<RedisProtocolSupport.BufferScoreMember>) scoreMembers;
+            for (int i = 0; i < list.size(); ++i) {
+                final RedisProtocolSupport.BufferScoreMember arg = list.get(i);
+                arg.encodeTo(buffer);
+            }
+        } else {
+            for (RedisProtocolSupport.BufferScoreMember arg : scoreMembers) {
+                arg.encodeTo(buffer);
+            }
         }
-        if (change != null) {
-            addRequestArgument(change, cb, allocator);
-        }
-        addRequestTupleArguments(scoreMembers, null, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZADD, cb);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZADD, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Double> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -6419,12 +8391,14 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     @Override
     public Future<Long> zcard(@RedisProtocolSupport.Key final Buffer key) {
         requireNonNull(key);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 2;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ZCARD, allocator);
-        addRequestArgument(key, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZCARD, cb);
+        final int len = 2;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.ZCARD) +
+                    calculateRequestArgumentSize(key);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.ZCARD.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZCARD, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -6433,14 +8407,17 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     @Override
     public Future<Long> zcount(@RedisProtocolSupport.Key final Buffer key, final double min, final double max) {
         requireNonNull(key);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 4;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ZCOUNT, allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestArgument(min, cb, allocator);
-        addRequestArgument(max, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZCOUNT, cb);
+        final int len = 4;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.ZCOUNT) +
+                    calculateRequestArgumentSize(key) + calculateRequestArgumentSize(min) +
+                    calculateRequestArgumentSize(max);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.ZCOUNT.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        RedisRequests.writeRequestArgument(buffer, min);
+        RedisRequests.writeRequestArgument(buffer, max);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZCOUNT, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -6451,14 +8428,17 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
                                   final Buffer member) {
         requireNonNull(key);
         requireNonNull(member);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 4;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ZINCRBY, allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestArgument(increment, cb, allocator);
-        addRequestArgument(member, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZINCRBY, cb);
+        final int len = 4;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.ZINCRBY) +
+                    calculateRequestArgumentSize(key) + calculateRequestArgumentSize(increment) +
+                    calculateRequestArgumentSize(member);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.ZINCRBY.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        RedisRequests.writeRequestArgument(buffer, increment);
+        RedisRequests.writeRequestArgument(buffer, member);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZINCRBY, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Double> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -6469,15 +8449,38 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
                                     @RedisProtocolSupport.Key final Collection<Buffer> keys) {
         requireNonNull(destination);
         requireNonNull(keys);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 3;
-        len += keys.size();
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ZINTERSTORE, allocator);
-        addRequestArgument(destination, cb, allocator);
-        addRequestArgument(numkeys, cb, allocator);
-        addRequestBufferArguments(keys, null, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZINTERSTORE, cb);
+        final int len = 3 + keys.size();
+        int keysCapacity = 0;
+        if (keys instanceof List && keys instanceof RandomAccess) {
+            final List<Buffer> list = (List<Buffer>) keys;
+            for (int i = 0; i < list.size(); ++i) {
+                final Buffer arg = list.get(i);
+                keysCapacity += calculateRequestArgumentSize(arg);
+            }
+        } else {
+            for (Buffer arg : keys) {
+                keysCapacity += calculateRequestArgumentSize(arg);
+            }
+        }
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.ZINTERSTORE) +
+                    calculateRequestArgumentSize(destination) + calculateRequestArgumentSize(numkeys) + keysCapacity;
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.ZINTERSTORE.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, destination);
+        RedisRequests.writeRequestArgument(buffer, numkeys);
+        if (keys instanceof List && keys instanceof RandomAccess) {
+            final List<Buffer> list = (List<Buffer>) keys;
+            for (int i = 0; i < list.size(); ++i) {
+                final Buffer arg = list.get(i);
+                RedisRequests.writeRequestArgument(buffer, arg);
+            }
+        } else {
+            for (Buffer arg : keys) {
+                RedisRequests.writeRequestArgument(buffer, arg);
+            }
+        }
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZINTERSTORE, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -6486,28 +8489,72 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     @Override
     public Future<Long> zinterstore(@RedisProtocolSupport.Key final Buffer destination, final long numkeys,
                                     @RedisProtocolSupport.Key final Collection<Buffer> keys,
-                                    final Collection<Long> weightses,
+                                    final Collection<Long> weights,
                                     @Nullable final RedisProtocolSupport.ZinterstoreAggregate aggregate) {
         requireNonNull(destination);
         requireNonNull(keys);
-        requireNonNull(weightses);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 3;
-        len += keys.size();
-        len += 2 * weightses.size();
-        if (aggregate != null) {
-            len++;
+        requireNonNull(weights);
+        final int len = 4 + keys.size() + weights.size() + (aggregate == null ? 0 : 1);
+        int keysCapacity = 0;
+        if (keys instanceof List && keys instanceof RandomAccess) {
+            final List<Buffer> list = (List<Buffer>) keys;
+            for (int i = 0; i < list.size(); ++i) {
+                final Buffer arg = list.get(i);
+                keysCapacity += calculateRequestArgumentSize(arg);
+            }
+        } else {
+            for (Buffer arg : keys) {
+                keysCapacity += calculateRequestArgumentSize(arg);
+            }
         }
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ZINTERSTORE, allocator);
-        addRequestArgument(destination, cb, allocator);
-        addRequestArgument(numkeys, cb, allocator);
-        addRequestBufferArguments(keys, null, cb, allocator);
-        addRequestLongArguments(weightses, RedisProtocolSupport.SubCommand.WEIGHTS, cb, allocator);
-        if (aggregate != null) {
-            addRequestArgument(aggregate, cb, allocator);
+        int weightsCapacity = 0;
+        if (weights instanceof List && weights instanceof RandomAccess) {
+            final List<Long> list = (List<Long>) weights;
+            for (int i = 0; i < list.size(); ++i) {
+                final Long arg = list.get(i);
+                weightsCapacity += calculateRequestArgumentSize(arg);
+            }
+        } else {
+            for (Long arg : weights) {
+                weightsCapacity += calculateRequestArgumentSize(arg);
+            }
         }
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZINTERSTORE, cb);
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.ZINTERSTORE) +
+                    calculateRequestArgumentSize(destination) + calculateRequestArgumentSize(numkeys) + keysCapacity +
+                    RedisProtocolSupport.SubCommand.WEIGHTS.encodedByteCount() + weightsCapacity +
+                    (aggregate == null ? 0 : aggregate.encodedByteCount());
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.ZINTERSTORE.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, destination);
+        RedisRequests.writeRequestArgument(buffer, numkeys);
+        if (keys instanceof List && keys instanceof RandomAccess) {
+            final List<Buffer> list = (List<Buffer>) keys;
+            for (int i = 0; i < list.size(); ++i) {
+                final Buffer arg = list.get(i);
+                RedisRequests.writeRequestArgument(buffer, arg);
+            }
+        } else {
+            for (Buffer arg : keys) {
+                RedisRequests.writeRequestArgument(buffer, arg);
+            }
+        }
+        RedisProtocolSupport.SubCommand.WEIGHTS.encodeTo(buffer);
+        if (weights instanceof List && weights instanceof RandomAccess) {
+            final List<Long> list = (List<Long>) weights;
+            for (int i = 0; i < list.size(); ++i) {
+                final Long arg = list.get(i);
+                RedisRequests.writeRequestArgument(buffer, arg);
+            }
+        } else {
+            for (Long arg : weights) {
+                RedisRequests.writeRequestArgument(buffer, arg);
+            }
+        }
+        if (aggregate != null) {
+            aggregate.encodeTo(buffer);
+        }
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZINTERSTORE, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -6518,14 +8565,17 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         requireNonNull(key);
         requireNonNull(min);
         requireNonNull(max);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 4;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ZLEXCOUNT, allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestArgument(min, cb, allocator);
-        addRequestArgument(max, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZLEXCOUNT, cb);
+        final int len = 4;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.ZLEXCOUNT) +
+                    calculateRequestArgumentSize(key) + calculateRequestArgumentSize(min) +
+                    calculateRequestArgumentSize(max);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.ZLEXCOUNT.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        RedisRequests.writeRequestArgument(buffer, min);
+        RedisRequests.writeRequestArgument(buffer, max);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZLEXCOUNT, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -6534,12 +8584,14 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     @Override
     public <T> Future<List<T>> zpopmax(@RedisProtocolSupport.Key final Buffer key) {
         requireNonNull(key);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 2;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ZPOPMAX, allocator);
-        addRequestArgument(key, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZPOPMAX, cb);
+        final int len = 2;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.ZPOPMAX) +
+                    calculateRequestArgumentSize(key);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.ZPOPMAX.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZPOPMAX, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -6548,18 +8600,17 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     @Override
     public <T> Future<List<T>> zpopmax(@RedisProtocolSupport.Key final Buffer key, @Nullable final Long count) {
         requireNonNull(key);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 2;
+        final int len = 2 + (count == null ? 0 : 1);
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.ZPOPMAX) +
+                    calculateRequestArgumentSize(key) + (count == null ? 0 : calculateRequestArgumentSize(count));
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.ZPOPMAX.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
         if (count != null) {
-            len++;
+            RedisRequests.writeRequestArgument(buffer, count);
         }
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ZPOPMAX, allocator);
-        addRequestArgument(key, cb, allocator);
-        if (count != null) {
-            addRequestArgument(count, cb, allocator);
-        }
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZPOPMAX, cb);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZPOPMAX, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -6568,12 +8619,14 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     @Override
     public <T> Future<List<T>> zpopmin(@RedisProtocolSupport.Key final Buffer key) {
         requireNonNull(key);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 2;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ZPOPMIN, allocator);
-        addRequestArgument(key, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZPOPMIN, cb);
+        final int len = 2;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.ZPOPMIN) +
+                    calculateRequestArgumentSize(key);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.ZPOPMIN.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZPOPMIN, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -6582,18 +8635,17 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     @Override
     public <T> Future<List<T>> zpopmin(@RedisProtocolSupport.Key final Buffer key, @Nullable final Long count) {
         requireNonNull(key);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 2;
+        final int len = 2 + (count == null ? 0 : 1);
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.ZPOPMIN) +
+                    calculateRequestArgumentSize(key) + (count == null ? 0 : calculateRequestArgumentSize(count));
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.ZPOPMIN.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
         if (count != null) {
-            len++;
+            RedisRequests.writeRequestArgument(buffer, count);
         }
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ZPOPMIN, allocator);
-        addRequestArgument(key, cb, allocator);
-        if (count != null) {
-            addRequestArgument(count, cb, allocator);
-        }
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZPOPMIN, cb);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZPOPMIN, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -6602,14 +8654,17 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     @Override
     public <T> Future<List<T>> zrange(@RedisProtocolSupport.Key final Buffer key, final long start, final long stop) {
         requireNonNull(key);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 4;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ZRANGE, allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestArgument(start, cb, allocator);
-        addRequestArgument(stop, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZRANGE, cb);
+        final int len = 4;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.ZRANGE) +
+                    calculateRequestArgumentSize(key) + calculateRequestArgumentSize(start) +
+                    calculateRequestArgumentSize(stop);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.ZRANGE.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        RedisRequests.writeRequestArgument(buffer, start);
+        RedisRequests.writeRequestArgument(buffer, stop);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZRANGE, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -6619,20 +8674,20 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     public <T> Future<List<T>> zrange(@RedisProtocolSupport.Key final Buffer key, final long start, final long stop,
                                       @Nullable final RedisProtocolSupport.ZrangeWithscores withscores) {
         requireNonNull(key);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 4;
+        final int len = 4 + (withscores == null ? 0 : 1);
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.ZRANGE) +
+                    calculateRequestArgumentSize(key) + calculateRequestArgumentSize(start) +
+                    calculateRequestArgumentSize(stop) + (withscores == null ? 0 : withscores.encodedByteCount());
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.ZRANGE.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        RedisRequests.writeRequestArgument(buffer, start);
+        RedisRequests.writeRequestArgument(buffer, stop);
         if (withscores != null) {
-            len++;
+            withscores.encodeTo(buffer);
         }
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ZRANGE, allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestArgument(start, cb, allocator);
-        addRequestArgument(stop, cb, allocator);
-        if (withscores != null) {
-            addRequestArgument(withscores, cb, allocator);
-        }
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZRANGE, cb);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZRANGE, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -6644,14 +8699,17 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         requireNonNull(key);
         requireNonNull(min);
         requireNonNull(max);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 4;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ZRANGEBYLEX, allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestArgument(min, cb, allocator);
-        addRequestArgument(max, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZRANGEBYLEX, cb);
+        final int len = 4;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.ZRANGEBYLEX) +
+                    calculateRequestArgumentSize(key) + calculateRequestArgumentSize(min) +
+                    calculateRequestArgumentSize(max);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.ZRANGEBYLEX.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        RedisRequests.writeRequestArgument(buffer, min);
+        RedisRequests.writeRequestArgument(buffer, max);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZRANGEBYLEX, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -6664,20 +8722,20 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         requireNonNull(key);
         requireNonNull(min);
         requireNonNull(max);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 4;
+        final int len = 4 + (offsetCount == null ? 0 : RedisProtocolSupport.OffsetCount.SIZE);
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.ZRANGEBYLEX) +
+                    calculateRequestArgumentSize(key) + calculateRequestArgumentSize(min) +
+                    calculateRequestArgumentSize(max) + (offsetCount == null ? 0 : offsetCount.encodedByteCount());
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.ZRANGEBYLEX.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        RedisRequests.writeRequestArgument(buffer, min);
+        RedisRequests.writeRequestArgument(buffer, max);
         if (offsetCount != null) {
-            len += RedisProtocolSupport.OffsetCount.SIZE;
+            offsetCount.encodeTo(buffer);
         }
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ZRANGEBYLEX, allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestArgument(min, cb, allocator);
-        addRequestArgument(max, cb, allocator);
-        if (offsetCount != null) {
-            offsetCount.writeTo(cb, allocator);
-        }
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZRANGEBYLEX, cb);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZRANGEBYLEX, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -6687,15 +8745,17 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     public <T> Future<List<T>> zrangebyscore(@RedisProtocolSupport.Key final Buffer key, final double min,
                                              final double max) {
         requireNonNull(key);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 4;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ZRANGEBYSCORE,
-                    allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestArgument(min, cb, allocator);
-        addRequestArgument(max, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZRANGEBYSCORE, cb);
+        final int len = 4;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.ZRANGEBYSCORE) +
+                    calculateRequestArgumentSize(key) + calculateRequestArgumentSize(min) +
+                    calculateRequestArgumentSize(max);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.ZRANGEBYSCORE.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        RedisRequests.writeRequestArgument(buffer, min);
+        RedisRequests.writeRequestArgument(buffer, max);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZRANGEBYSCORE, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -6707,27 +8767,25 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
                                              @Nullable final RedisProtocolSupport.ZrangebyscoreWithscores withscores,
                                              @Nullable final RedisProtocolSupport.OffsetCount offsetCount) {
         requireNonNull(key);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 4;
+        final int len = 4 + (withscores == null ? 0 : 1) +
+                    (offsetCount == null ? 0 : RedisProtocolSupport.OffsetCount.SIZE);
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.ZRANGEBYSCORE) +
+                    calculateRequestArgumentSize(key) + calculateRequestArgumentSize(min) +
+                    calculateRequestArgumentSize(max) + (withscores == null ? 0 : withscores.encodedByteCount()) +
+                    (offsetCount == null ? 0 : offsetCount.encodedByteCount());
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.ZRANGEBYSCORE.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        RedisRequests.writeRequestArgument(buffer, min);
+        RedisRequests.writeRequestArgument(buffer, max);
         if (withscores != null) {
-            len++;
+            withscores.encodeTo(buffer);
         }
         if (offsetCount != null) {
-            len += RedisProtocolSupport.OffsetCount.SIZE;
+            offsetCount.encodeTo(buffer);
         }
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ZRANGEBYSCORE,
-                    allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestArgument(min, cb, allocator);
-        addRequestArgument(max, cb, allocator);
-        if (withscores != null) {
-            addRequestArgument(withscores, cb, allocator);
-        }
-        if (offsetCount != null) {
-            offsetCount.writeTo(cb, allocator);
-        }
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZRANGEBYSCORE, cb);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZRANGEBYSCORE, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -6737,13 +8795,15 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     public Future<Long> zrank(@RedisProtocolSupport.Key final Buffer key, final Buffer member) {
         requireNonNull(key);
         requireNonNull(member);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 3;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ZRANK, allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestArgument(member, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZRANK, cb);
+        final int len = 3;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.ZRANK) +
+                    calculateRequestArgumentSize(key) + calculateRequestArgumentSize(member);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.ZRANK.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        RedisRequests.writeRequestArgument(buffer, member);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZRANK, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -6753,13 +8813,15 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     public Future<Long> zrem(@RedisProtocolSupport.Key final Buffer key, final Buffer member) {
         requireNonNull(key);
         requireNonNull(member);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 3;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ZREM, allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestArgument(member, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZREM, cb);
+        final int len = 3;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.ZREM) +
+                    calculateRequestArgumentSize(key) + calculateRequestArgumentSize(member);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.ZREM.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        RedisRequests.writeRequestArgument(buffer, member);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZREM, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -6770,14 +8832,17 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         requireNonNull(key);
         requireNonNull(member1);
         requireNonNull(member2);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 4;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ZREM, allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestArgument(member1, cb, allocator);
-        addRequestArgument(member2, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZREM, cb);
+        final int len = 4;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.ZREM) +
+                    calculateRequestArgumentSize(key) + calculateRequestArgumentSize(member1) +
+                    calculateRequestArgumentSize(member2);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.ZREM.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        RedisRequests.writeRequestArgument(buffer, member1);
+        RedisRequests.writeRequestArgument(buffer, member2);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZREM, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -6790,15 +8855,18 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         requireNonNull(member1);
         requireNonNull(member2);
         requireNonNull(member3);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 5;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ZREM, allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestArgument(member1, cb, allocator);
-        addRequestArgument(member2, cb, allocator);
-        addRequestArgument(member3, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZREM, cb);
+        final int len = 5;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.ZREM) +
+                    calculateRequestArgumentSize(key) + calculateRequestArgumentSize(member1) +
+                    calculateRequestArgumentSize(member2) + calculateRequestArgumentSize(member3);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.ZREM.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        RedisRequests.writeRequestArgument(buffer, member1);
+        RedisRequests.writeRequestArgument(buffer, member2);
+        RedisRequests.writeRequestArgument(buffer, member3);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZREM, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -6808,14 +8876,37 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     public Future<Long> zrem(@RedisProtocolSupport.Key final Buffer key, final Collection<Buffer> members) {
         requireNonNull(key);
         requireNonNull(members);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 2;
-        len += members.size();
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ZREM, allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestBufferArguments(members, null, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZREM, cb);
+        final int len = 2 + members.size();
+        int membersCapacity = 0;
+        if (members instanceof List && members instanceof RandomAccess) {
+            final List<Buffer> list = (List<Buffer>) members;
+            for (int i = 0; i < list.size(); ++i) {
+                final Buffer arg = list.get(i);
+                membersCapacity += calculateRequestArgumentSize(arg);
+            }
+        } else {
+            for (Buffer arg : members) {
+                membersCapacity += calculateRequestArgumentSize(arg);
+            }
+        }
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.ZREM) +
+                    calculateRequestArgumentSize(key) + membersCapacity;
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.ZREM.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        if (members instanceof List && members instanceof RandomAccess) {
+            final List<Buffer> list = (List<Buffer>) members;
+            for (int i = 0; i < list.size(); ++i) {
+                final Buffer arg = list.get(i);
+                RedisRequests.writeRequestArgument(buffer, arg);
+            }
+        } else {
+            for (Buffer arg : members) {
+                RedisRequests.writeRequestArgument(buffer, arg);
+            }
+        }
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZREM, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -6826,15 +8917,17 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         requireNonNull(key);
         requireNonNull(min);
         requireNonNull(max);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 4;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ZREMRANGEBYLEX,
-                    allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestArgument(min, cb, allocator);
-        addRequestArgument(max, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZREMRANGEBYLEX, cb);
+        final int len = 4;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.ZREMRANGEBYLEX) +
+                    calculateRequestArgumentSize(key) + calculateRequestArgumentSize(min) +
+                    calculateRequestArgumentSize(max);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.ZREMRANGEBYLEX.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        RedisRequests.writeRequestArgument(buffer, min);
+        RedisRequests.writeRequestArgument(buffer, max);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZREMRANGEBYLEX, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -6843,15 +8936,17 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     @Override
     public Future<Long> zremrangebyrank(@RedisProtocolSupport.Key final Buffer key, final long start, final long stop) {
         requireNonNull(key);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 4;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ZREMRANGEBYRANK,
-                    allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestArgument(start, cb, allocator);
-        addRequestArgument(stop, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZREMRANGEBYRANK, cb);
+        final int len = 4;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.ZREMRANGEBYRANK) +
+                    calculateRequestArgumentSize(key) + calculateRequestArgumentSize(start) +
+                    calculateRequestArgumentSize(stop);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.ZREMRANGEBYRANK.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        RedisRequests.writeRequestArgument(buffer, start);
+        RedisRequests.writeRequestArgument(buffer, stop);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZREMRANGEBYRANK, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -6861,15 +8956,17 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     public Future<Long> zremrangebyscore(@RedisProtocolSupport.Key final Buffer key, final double min,
                                          final double max) {
         requireNonNull(key);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 4;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ZREMRANGEBYSCORE,
-                    allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestArgument(min, cb, allocator);
-        addRequestArgument(max, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZREMRANGEBYSCORE, cb);
+        final int len = 4;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.ZREMRANGEBYSCORE) +
+                    calculateRequestArgumentSize(key) + calculateRequestArgumentSize(min) +
+                    calculateRequestArgumentSize(max);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.ZREMRANGEBYSCORE.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        RedisRequests.writeRequestArgument(buffer, min);
+        RedisRequests.writeRequestArgument(buffer, max);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZREMRANGEBYSCORE, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -6879,14 +8976,17 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     public <T> Future<List<T>> zrevrange(@RedisProtocolSupport.Key final Buffer key, final long start,
                                          final long stop) {
         requireNonNull(key);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 4;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ZREVRANGE, allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestArgument(start, cb, allocator);
-        addRequestArgument(stop, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZREVRANGE, cb);
+        final int len = 4;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.ZREVRANGE) +
+                    calculateRequestArgumentSize(key) + calculateRequestArgumentSize(start) +
+                    calculateRequestArgumentSize(stop);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.ZREVRANGE.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        RedisRequests.writeRequestArgument(buffer, start);
+        RedisRequests.writeRequestArgument(buffer, stop);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZREVRANGE, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -6896,20 +8996,20 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     public <T> Future<List<T>> zrevrange(@RedisProtocolSupport.Key final Buffer key, final long start, final long stop,
                                          @Nullable final RedisProtocolSupport.ZrevrangeWithscores withscores) {
         requireNonNull(key);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 4;
+        final int len = 4 + (withscores == null ? 0 : 1);
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.ZREVRANGE) +
+                    calculateRequestArgumentSize(key) + calculateRequestArgumentSize(start) +
+                    calculateRequestArgumentSize(stop) + (withscores == null ? 0 : withscores.encodedByteCount());
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.ZREVRANGE.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        RedisRequests.writeRequestArgument(buffer, start);
+        RedisRequests.writeRequestArgument(buffer, stop);
         if (withscores != null) {
-            len++;
+            withscores.encodeTo(buffer);
         }
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ZREVRANGE, allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestArgument(start, cb, allocator);
-        addRequestArgument(stop, cb, allocator);
-        if (withscores != null) {
-            addRequestArgument(withscores, cb, allocator);
-        }
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZREVRANGE, cb);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZREVRANGE, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -6921,15 +9021,17 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         requireNonNull(key);
         requireNonNull(max);
         requireNonNull(min);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 4;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ZREVRANGEBYLEX,
-                    allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestArgument(max, cb, allocator);
-        addRequestArgument(min, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZREVRANGEBYLEX, cb);
+        final int len = 4;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.ZREVRANGEBYLEX) +
+                    calculateRequestArgumentSize(key) + calculateRequestArgumentSize(max) +
+                    calculateRequestArgumentSize(min);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.ZREVRANGEBYLEX.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        RedisRequests.writeRequestArgument(buffer, max);
+        RedisRequests.writeRequestArgument(buffer, min);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZREVRANGEBYLEX, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -6942,21 +9044,20 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         requireNonNull(key);
         requireNonNull(max);
         requireNonNull(min);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 4;
+        final int len = 4 + (offsetCount == null ? 0 : RedisProtocolSupport.OffsetCount.SIZE);
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.ZREVRANGEBYLEX) +
+                    calculateRequestArgumentSize(key) + calculateRequestArgumentSize(max) +
+                    calculateRequestArgumentSize(min) + (offsetCount == null ? 0 : offsetCount.encodedByteCount());
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.ZREVRANGEBYLEX.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        RedisRequests.writeRequestArgument(buffer, max);
+        RedisRequests.writeRequestArgument(buffer, min);
         if (offsetCount != null) {
-            len += RedisProtocolSupport.OffsetCount.SIZE;
+            offsetCount.encodeTo(buffer);
         }
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ZREVRANGEBYLEX,
-                    allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestArgument(max, cb, allocator);
-        addRequestArgument(min, cb, allocator);
-        if (offsetCount != null) {
-            offsetCount.writeTo(cb, allocator);
-        }
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZREVRANGEBYLEX, cb);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZREVRANGEBYLEX, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -6966,15 +9067,17 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     public <T> Future<List<T>> zrevrangebyscore(@RedisProtocolSupport.Key final Buffer key, final double max,
                                                 final double min) {
         requireNonNull(key);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 4;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ZREVRANGEBYSCORE,
-                    allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestArgument(max, cb, allocator);
-        addRequestArgument(min, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZREVRANGEBYSCORE, cb);
+        final int len = 4;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.ZREVRANGEBYSCORE) +
+                    calculateRequestArgumentSize(key) + calculateRequestArgumentSize(max) +
+                    calculateRequestArgumentSize(min);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.ZREVRANGEBYSCORE.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        RedisRequests.writeRequestArgument(buffer, max);
+        RedisRequests.writeRequestArgument(buffer, min);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZREVRANGEBYSCORE, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -6986,27 +9089,25 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
                                                 @Nullable final RedisProtocolSupport.ZrevrangebyscoreWithscores withscores,
                                                 @Nullable final RedisProtocolSupport.OffsetCount offsetCount) {
         requireNonNull(key);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 4;
+        final int len = 4 + (withscores == null ? 0 : 1) +
+                    (offsetCount == null ? 0 : RedisProtocolSupport.OffsetCount.SIZE);
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.ZREVRANGEBYSCORE) +
+                    calculateRequestArgumentSize(key) + calculateRequestArgumentSize(max) +
+                    calculateRequestArgumentSize(min) + (withscores == null ? 0 : withscores.encodedByteCount()) +
+                    (offsetCount == null ? 0 : offsetCount.encodedByteCount());
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.ZREVRANGEBYSCORE.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        RedisRequests.writeRequestArgument(buffer, max);
+        RedisRequests.writeRequestArgument(buffer, min);
         if (withscores != null) {
-            len++;
+            withscores.encodeTo(buffer);
         }
         if (offsetCount != null) {
-            len += RedisProtocolSupport.OffsetCount.SIZE;
+            offsetCount.encodeTo(buffer);
         }
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ZREVRANGEBYSCORE,
-                    allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestArgument(max, cb, allocator);
-        addRequestArgument(min, cb, allocator);
-        if (withscores != null) {
-            addRequestArgument(withscores, cb, allocator);
-        }
-        if (offsetCount != null) {
-            offsetCount.writeTo(cb, allocator);
-        }
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZREVRANGEBYSCORE, cb);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZREVRANGEBYSCORE, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -7016,13 +9117,15 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     public Future<Long> zrevrank(@RedisProtocolSupport.Key final Buffer key, final Buffer member) {
         requireNonNull(key);
         requireNonNull(member);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 3;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ZREVRANK, allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestArgument(member, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZREVRANK, cb);
+        final int len = 3;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.ZREVRANK) +
+                    calculateRequestArgumentSize(key) + calculateRequestArgumentSize(member);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.ZREVRANK.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        RedisRequests.writeRequestArgument(buffer, member);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZREVRANK, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -7031,13 +9134,15 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     @Override
     public <T> Future<List<T>> zscan(@RedisProtocolSupport.Key final Buffer key, final long cursor) {
         requireNonNull(key);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 3;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ZSCAN, allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestArgument(cursor, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZSCAN, cb);
+        final int len = 3;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.ZSCAN) +
+                    calculateRequestArgumentSize(key) + calculateRequestArgumentSize(cursor);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.ZSCAN.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        RedisRequests.writeRequestArgument(buffer, cursor);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZSCAN, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -7047,27 +9152,27 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     public <T> Future<List<T>> zscan(@RedisProtocolSupport.Key final Buffer key, final long cursor,
                                      @Nullable final Buffer matchPattern, @Nullable final Long count) {
         requireNonNull(key);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 3;
+        final int len = 3 + (matchPattern == null ? 0 : 2) + (count == null ? 0 : 2);
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.ZSCAN) +
+                    calculateRequestArgumentSize(key) + calculateRequestArgumentSize(cursor) +
+                    (matchPattern == null ? 0 : RedisProtocolSupport.SubCommand.MATCH.encodedByteCount()) +
+                    (matchPattern == null ? 0 : calculateRequestArgumentSize(matchPattern)) +
+                    (count == null ? 0 : RedisProtocolSupport.SubCommand.COUNT.encodedByteCount()) +
+                    (count == null ? 0 : calculateRequestArgumentSize(count));
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.ZSCAN.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        RedisRequests.writeRequestArgument(buffer, cursor);
         if (matchPattern != null) {
-            len += 2;
+            RedisProtocolSupport.SubCommand.MATCH.encodeTo(buffer);
+            RedisRequests.writeRequestArgument(buffer, matchPattern);
         }
         if (count != null) {
-            len += 2;
+            RedisProtocolSupport.SubCommand.COUNT.encodeTo(buffer);
+            RedisRequests.writeRequestArgument(buffer, count);
         }
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ZSCAN, allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestArgument(cursor, cb, allocator);
-        if (matchPattern != null) {
-            addRequestArgument(RedisProtocolSupport.SubCommand.MATCH, cb, allocator);
-            addRequestArgument(matchPattern, cb, allocator);
-        }
-        if (count != null) {
-            addRequestArgument(RedisProtocolSupport.SubCommand.COUNT, cb, allocator);
-            addRequestArgument(count, cb, allocator);
-        }
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZSCAN, cb);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZSCAN, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -7077,13 +9182,15 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     public Future<Double> zscore(@RedisProtocolSupport.Key final Buffer key, final Buffer member) {
         requireNonNull(key);
         requireNonNull(member);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 3;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ZSCORE, allocator);
-        addRequestArgument(key, cb, allocator);
-        addRequestArgument(member, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZSCORE, cb);
+        final int len = 3;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.ZSCORE) +
+                    calculateRequestArgumentSize(key) + calculateRequestArgumentSize(member);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.ZSCORE.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, key);
+        RedisRequests.writeRequestArgument(buffer, member);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZSCORE, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Double> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -7094,15 +9201,38 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
                                     @RedisProtocolSupport.Key final Collection<Buffer> keys) {
         requireNonNull(destination);
         requireNonNull(keys);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 3;
-        len += keys.size();
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ZUNIONSTORE, allocator);
-        addRequestArgument(destination, cb, allocator);
-        addRequestArgument(numkeys, cb, allocator);
-        addRequestBufferArguments(keys, null, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZUNIONSTORE, cb);
+        final int len = 3 + keys.size();
+        int keysCapacity = 0;
+        if (keys instanceof List && keys instanceof RandomAccess) {
+            final List<Buffer> list = (List<Buffer>) keys;
+            for (int i = 0; i < list.size(); ++i) {
+                final Buffer arg = list.get(i);
+                keysCapacity += calculateRequestArgumentSize(arg);
+            }
+        } else {
+            for (Buffer arg : keys) {
+                keysCapacity += calculateRequestArgumentSize(arg);
+            }
+        }
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.ZUNIONSTORE) +
+                    calculateRequestArgumentSize(destination) + calculateRequestArgumentSize(numkeys) + keysCapacity;
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.ZUNIONSTORE.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, destination);
+        RedisRequests.writeRequestArgument(buffer, numkeys);
+        if (keys instanceof List && keys instanceof RandomAccess) {
+            final List<Buffer> list = (List<Buffer>) keys;
+            for (int i = 0; i < list.size(); ++i) {
+                final Buffer arg = list.get(i);
+                RedisRequests.writeRequestArgument(buffer, arg);
+            }
+        } else {
+            for (Buffer arg : keys) {
+                RedisRequests.writeRequestArgument(buffer, arg);
+            }
+        }
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZUNIONSTORE, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
@@ -7111,28 +9241,72 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     @Override
     public Future<Long> zunionstore(@RedisProtocolSupport.Key final Buffer destination, final long numkeys,
                                     @RedisProtocolSupport.Key final Collection<Buffer> keys,
-                                    final Collection<Long> weightses,
+                                    final Collection<Long> weights,
                                     @Nullable final RedisProtocolSupport.ZunionstoreAggregate aggregate) {
         requireNonNull(destination);
         requireNonNull(keys);
-        requireNonNull(weightses);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 3;
-        len += keys.size();
-        len += 2 * weightses.size();
-        if (aggregate != null) {
-            len++;
+        requireNonNull(weights);
+        final int len = 4 + keys.size() + weights.size() + (aggregate == null ? 0 : 1);
+        int keysCapacity = 0;
+        if (keys instanceof List && keys instanceof RandomAccess) {
+            final List<Buffer> list = (List<Buffer>) keys;
+            for (int i = 0; i < list.size(); ++i) {
+                final Buffer arg = list.get(i);
+                keysCapacity += calculateRequestArgumentSize(arg);
+            }
+        } else {
+            for (Buffer arg : keys) {
+                keysCapacity += calculateRequestArgumentSize(arg);
+            }
         }
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ZUNIONSTORE, allocator);
-        addRequestArgument(destination, cb, allocator);
-        addRequestArgument(numkeys, cb, allocator);
-        addRequestBufferArguments(keys, null, cb, allocator);
-        addRequestLongArguments(weightses, RedisProtocolSupport.SubCommand.WEIGHTS, cb, allocator);
-        if (aggregate != null) {
-            addRequestArgument(aggregate, cb, allocator);
+        int weightsCapacity = 0;
+        if (weights instanceof List && weights instanceof RandomAccess) {
+            final List<Long> list = (List<Long>) weights;
+            for (int i = 0; i < list.size(); ++i) {
+                final Long arg = list.get(i);
+                weightsCapacity += calculateRequestArgumentSize(arg);
+            }
+        } else {
+            for (Long arg : weights) {
+                weightsCapacity += calculateRequestArgumentSize(arg);
+            }
         }
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZUNIONSTORE, cb);
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.ZUNIONSTORE) +
+                    calculateRequestArgumentSize(destination) + calculateRequestArgumentSize(numkeys) + keysCapacity +
+                    RedisProtocolSupport.SubCommand.WEIGHTS.encodedByteCount() + weightsCapacity +
+                    (aggregate == null ? 0 : aggregate.encodedByteCount());
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        RedisRequests.writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.ZUNIONSTORE.encodeTo(buffer);
+        RedisRequests.writeRequestArgument(buffer, destination);
+        RedisRequests.writeRequestArgument(buffer, numkeys);
+        if (keys instanceof List && keys instanceof RandomAccess) {
+            final List<Buffer> list = (List<Buffer>) keys;
+            for (int i = 0; i < list.size(); ++i) {
+                final Buffer arg = list.get(i);
+                RedisRequests.writeRequestArgument(buffer, arg);
+            }
+        } else {
+            for (Buffer arg : keys) {
+                RedisRequests.writeRequestArgument(buffer, arg);
+            }
+        }
+        RedisProtocolSupport.SubCommand.WEIGHTS.encodeTo(buffer);
+        if (weights instanceof List && weights instanceof RandomAccess) {
+            final List<Long> list = (List<Long>) weights;
+            for (int i = 0; i < list.size(); ++i) {
+                final Long arg = list.get(i);
+                RedisRequests.writeRequestArgument(buffer, arg);
+            }
+        } else {
+            for (Long arg : weights) {
+                RedisRequests.writeRequestArgument(buffer, arg);
+            }
+        }
+        if (aggregate != null) {
+            aggregate.encodeTo(buffer);
+        }
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZUNIONSTORE, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;

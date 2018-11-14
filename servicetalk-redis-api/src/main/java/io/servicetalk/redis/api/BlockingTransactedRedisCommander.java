@@ -4031,14 +4031,14 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param destination the destination
      * @param numkeys the numkeys
      * @param keys the keys
-     * @param weightses the weightses
+     * @param weights the weights
      * @param aggregate the aggregate
      * @return a {@link Future} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.ZINTERSTORE)
     public abstract Future<Long> zinterstore(@RedisProtocolSupport.Key CharSequence destination, long numkeys,
                                              @RedisProtocolSupport.Key Collection<? extends CharSequence> keys,
-                                             @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.WEIGHTS) Collection<Long> weightses,
+                                             @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.WEIGHTS) Collection<Long> weights,
                                              @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.ZinterstoreAggregate aggregate);
 
     /**
@@ -4417,13 +4417,13 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param destination the destination
      * @param numkeys the numkeys
      * @param keys the keys
-     * @param weightses the weightses
+     * @param weights the weights
      * @param aggregate the aggregate
      * @return a {@link Future} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.ZUNIONSTORE)
     public abstract Future<Long> zunionstore(@RedisProtocolSupport.Key CharSequence destination, long numkeys,
                                              @RedisProtocolSupport.Key Collection<? extends CharSequence> keys,
-                                             @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.WEIGHTS) Collection<Long> weightses,
+                                             @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.WEIGHTS) Collection<Long> weights,
                                              @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.ZunionstoreAggregate aggregate);
 }

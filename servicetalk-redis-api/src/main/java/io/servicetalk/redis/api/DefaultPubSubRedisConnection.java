@@ -15,19 +15,21 @@
  */
 package io.servicetalk.redis.api;
 
-import io.servicetalk.buffer.api.BufferAllocator;
-import io.servicetalk.buffer.api.CompositeBuffer;
+import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 
+import java.nio.charset.StandardCharsets;
 import javax.annotation.Generated;
 
 import static io.servicetalk.redis.api.RedisCoercions.toPubSubPongMessages;
-import static io.servicetalk.redis.api.RedisRequests.addRequestArgument;
+import static io.servicetalk.redis.api.RedisRequests.calculateInitialCommandBufferSize;
+import static io.servicetalk.redis.api.RedisRequests.calculateRequestArgumentSize;
 import static io.servicetalk.redis.api.RedisRequests.newRequest;
-import static io.servicetalk.redis.api.RedisRequests.newRequestCompositeBuffer;
 import static io.servicetalk.redis.api.RedisRequests.reserveConnection;
+import static io.servicetalk.redis.api.RedisRequests.writeRequestArgument;
+import static io.servicetalk.redis.api.RedisRequests.writeRequestArraySize;
 import static java.util.Objects.requireNonNull;
 
 @Generated({})
@@ -61,35 +63,42 @@ final class DefaultPubSubRedisConnection extends PubSubRedisConnection {
 
     @Override
     public Single<PubSubRedisMessage.Pong<String>> ping() {
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 1;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.PING, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.PING, cb);
+        final int len = 1;
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.PING);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.PING.encodeTo(buffer);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.PING, buffer);
         return toPubSubPongMessages(reservedCnx.request(request), String.class).first();
     }
 
     @Override
     public Single<PubSubRedisMessage.Pong<String>> ping(final CharSequence message) {
         requireNonNull(message);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 2;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.PING, allocator);
-        addRequestArgument(message, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.PING, cb);
+        final int len = 2;
+        final byte[] messageBytes = message.toString().getBytes(StandardCharsets.UTF_8);
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.PING) +
+                    calculateRequestArgumentSize(messageBytes);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.PING.encodeTo(buffer);
+        writeRequestArgument(buffer, messageBytes);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.PING, buffer);
         return toPubSubPongMessages(reservedCnx.request(request), String.class).first();
     }
 
     @Override
     public Single<PubSubRedisConnection> psubscribe(final CharSequence pattern) {
         requireNonNull(pattern);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 2;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.PSUBSCRIBE, allocator);
-        addRequestArgument(pattern, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.PSUBSCRIBE, cb);
+        final int len = 2;
+        final byte[] patternBytes = pattern.toString().getBytes(StandardCharsets.UTF_8);
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.PSUBSCRIBE) +
+                    calculateRequestArgumentSize(patternBytes);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.PSUBSCRIBE.encodeTo(buffer);
+        writeRequestArgument(buffer, patternBytes);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.PSUBSCRIBE, buffer);
         return reserveConnection(reservedCnx, request,
                     (rcnx, pub) -> new DefaultPubSubRedisConnection(rcnx, pub.map(msg -> (PubSubRedisMessage) msg)));
     }
@@ -97,12 +106,15 @@ final class DefaultPubSubRedisConnection extends PubSubRedisConnection {
     @Override
     public Single<PubSubRedisConnection> subscribe(final CharSequence channel) {
         requireNonNull(channel);
-        final BufferAllocator allocator = reservedCnx.executionContext().bufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 2;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SUBSCRIBE, allocator);
-        addRequestArgument(channel, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SUBSCRIBE, cb);
+        final int len = 2;
+        final byte[] channelBytes = channel.toString().getBytes(StandardCharsets.UTF_8);
+        final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SUBSCRIBE) +
+                    calculateRequestArgumentSize(channelBytes);
+        Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
+        writeRequestArraySize(buffer, len);
+        RedisProtocolSupport.Command.SUBSCRIBE.encodeTo(buffer);
+        writeRequestArgument(buffer, channelBytes);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SUBSCRIBE, buffer);
         return reserveConnection(reservedCnx, request,
                     (rcnx, pub) -> new DefaultPubSubRedisConnection(rcnx, pub.map(msg -> (PubSubRedisMessage) msg)));
     }

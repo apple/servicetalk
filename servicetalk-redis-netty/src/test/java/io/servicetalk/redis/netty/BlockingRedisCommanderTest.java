@@ -41,6 +41,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.nio.channels.ClosedChannelException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
@@ -243,6 +244,62 @@ public class BlockingRedisCommanderTest extends BaseRedisClientTest {
 
         final List<?> evalMixedList = commandClient.evalList("return {1,2,{3,'four'}}", 0L, emptyList(), emptyList());
         assertThat(evalMixedList, contains(1L, 2L, asList(3L, "four")));
+    }
+
+    @Test
+    public void testHGetAll() throws Exception {
+        String testKey = "key";
+        commandClient.del(testKey);
+        List<RedisProtocolSupport.FieldValue> fields = new ArrayList<>(3);
+        fields.add(new RedisProtocolSupport.FieldValue("f", "v"));
+        fields.add(new RedisProtocolSupport.FieldValue("f1", "v1"));
+        fields.add(new RedisProtocolSupport.FieldValue("f2", "v2"));
+        commandClient.hmset(testKey, fields);
+        final List<String> result = commandClient.hgetall(testKey);
+        assertThat(result, is(asList("f", "v", "f1", "v1", "f2", "v2")));
+        final List<String> values = commandClient.hmget(testKey, "f", "f1", "f2");
+        assertThat(values, is(asList("v", "v1", "v2")));
+    }
+
+    @Test
+    public void testHMGet() throws Exception {
+        String testKey = "key";
+        commandClient.del(testKey);
+        List<RedisProtocolSupport.FieldValue> fields = new ArrayList<>(11);
+        fields.add(new RedisProtocolSupport.FieldValue("f", "v"));
+        fields.add(new RedisProtocolSupport.FieldValue("f1", "v1"));
+        fields.add(new RedisProtocolSupport.FieldValue("f2", "v2"));
+        fields.add(new RedisProtocolSupport.FieldValue("f3", "v3"));
+        fields.add(new RedisProtocolSupport.FieldValue("f4", "v4"));
+        fields.add(new RedisProtocolSupport.FieldValue("f5", "v5"));
+        fields.add(new RedisProtocolSupport.FieldValue("f6", "v6"));
+        fields.add(new RedisProtocolSupport.FieldValue("f7", "v7"));
+        fields.add(new RedisProtocolSupport.FieldValue("f8", "v8"));
+        fields.add(new RedisProtocolSupport.FieldValue("f9", "v9"));
+        fields.add(new RedisProtocolSupport.FieldValue("f10", "v10"));
+        commandClient.hmset(testKey, fields);
+        final List<String> values = commandClient.hmget(testKey, asList("f", "f1", "f2", "f3", "f4", "f5", "f6", "f7", "f8", "f9", "f10"));
+        assertThat(values, is(asList("v", "v1", "v2", "v3", "v4", "v5", "v6", "v7", "v8", "v9", "v10")));
+    }
+
+    @Test
+    public void testSort() throws Exception {
+        String testKey = "key";
+        commandClient.del(testKey);
+        commandClient.rpush(testKey, "1");
+        commandClient.set("1-score", "1");
+        commandClient.set("1-ᕈгø⨯у", "proxy");
+
+        assertThat(commandClient.sort(testKey, "*-score", new RedisProtocolSupport.OffsetCount(0, 1), singletonList("*-ᕈгø⨯у"), RedisProtocolSupport.SortOrder.ASC, RedisProtocolSupport.SortSorting.ALPHA),
+                is(singletonList("proxy")));
+        assertThat(commandClient.sort(testKey, null, new RedisProtocolSupport.OffsetCount(0, 1), singletonList("*-ᕈгø⨯у"), RedisProtocolSupport.SortOrder.ASC, RedisProtocolSupport.SortSorting.ALPHA),
+                is(singletonList("proxy")));
+        assertThat(commandClient.sort(testKey, null, null, singletonList("*-ᕈгø⨯у"), RedisProtocolSupport.SortOrder.ASC, RedisProtocolSupport.SortSorting.ALPHA),
+                is(singletonList("proxy")));
+        assertThat(commandClient.sort(testKey, null, null, singletonList("*-ᕈгø⨯у"), null, RedisProtocolSupport.SortSorting.ALPHA),
+                is(singletonList("proxy")));
+        assertThat(commandClient.sort(testKey, null, null, singletonList("*-ᕈгø⨯у"), null, null),
+                is(singletonList("proxy")));
     }
 
     @Test

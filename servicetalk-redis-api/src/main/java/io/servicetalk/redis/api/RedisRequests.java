@@ -17,7 +17,6 @@ package io.servicetalk.redis.api;
 
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
-import io.servicetalk.buffer.api.CompositeBuffer;
 import io.servicetalk.client.api.partition.PartitionAttributes;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
@@ -29,25 +28,36 @@ import io.servicetalk.redis.api.RedisData.CompleteRequestRedisData;
 import io.servicetalk.redis.api.RedisData.RequestRedisData;
 import io.servicetalk.redis.api.RedisProtocolSupport.Command;
 import io.servicetalk.redis.api.RedisProtocolSupport.SubCommand;
-import io.servicetalk.redis.api.RedisProtocolSupport.TupleArgument;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
 import java.util.List;
 import java.util.RandomAccess;
 import java.util.function.BiFunction;
 import java.util.function.Predicate;
-import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Single.success;
-import static io.servicetalk.redis.internal.RedisUtils.toRespArraySize;
-import static io.servicetalk.redis.internal.RedisUtils.toRespBulkString;
+import static io.servicetalk.redis.api.StringByteSizeUtil.numberOfDigits;
+import static io.servicetalk.redis.api.StringByteSizeUtil.numberOfDigitsPositive;
+import static io.servicetalk.redis.internal.RedisUtils.EOL_LENGTH;
+import static io.servicetalk.redis.internal.RedisUtils.EOL_SHORT;
 import static java.lang.System.arraycopy;
+import static java.nio.charset.StandardCharsets.US_ASCII;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Objects.requireNonNull;
 
 /**
  * Factory methods for creating {@link RedisRequest}s.
  */
 public final class RedisRequests {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(RedisRequests.class);
+
+    private static final int NUMBER_CACHE_MIN = -1;
+    private static final int NUMBER_CACHE_MAX = 32;
+    private static final byte[][] NUMBER_CACHE = initNumberCache();
 
     private RedisRequests() {
         // no instances
@@ -180,90 +190,6 @@ public final class RedisRequests {
         return new DefaultRedisRequest(command, Publisher.just(new RESPBuffer(content)));
     }
 
-    static CompositeBuffer newRequestCompositeBuffer(final int argCount, final Command command,
-                                                     final BufferAllocator allocator) {
-        return newRequestCompositeBuffer(argCount, command, null, allocator);
-    }
-
-    static CompositeBuffer newRequestCompositeBuffer(final int argCount, final Command command,
-                                                     @Nullable final SubCommand subCommand,
-                                                     final BufferAllocator allocator) {
-        final CompositeBuffer cb = allocator.newCompositeBuffer()
-                .addBuffer(toRespArraySize(argCount, allocator))
-                .addBuffer(command.toRESPArgument(allocator));
-        if (subCommand != null) {
-            cb.addBuffer(subCommand.toRESPArgument(allocator));
-        }
-        return cb;
-    }
-
-    static void addRequestArgument(final Number arg, final CompositeBuffer cb, final BufferAllocator allocator) {
-        cb.addBuffer(toRespBulkString(arg, allocator));
-    }
-
-    static void addRequestArgument(final Buffer arg, final CompositeBuffer cb, final BufferAllocator allocator) {
-        cb.addBuffer(toRespBulkString(arg, allocator));
-    }
-
-    static void addRequestArgument(final CharSequence arg, final CompositeBuffer cb, final BufferAllocator allocator) {
-        cb.addBuffer(toRespBulkString(arg, allocator));
-    }
-
-    static void addRequestArgument(final TupleArgument arg, final CompositeBuffer cb, final BufferAllocator allocator) {
-        arg.writeTo(cb, allocator);
-    }
-
-    static void addRequestArgument(final CompleteRequestRedisData arg, final CompositeBuffer cb,
-                                   final BufferAllocator allocator) {
-        cb.addBuffer(arg.toRESPArgument(allocator));
-    }
-
-    static void addRequestBufferArguments(final Collection<? extends Buffer> args,
-                                          @Nullable final SubCommand subCommand, final CompositeBuffer cb,
-                                          final BufferAllocator allocator) {
-        if (args instanceof List && args instanceof RandomAccess) {
-            final List<? extends Buffer> argsList = castCollectionToList(args);
-            // Don't use foreach to avoid creating an iterator
-            //noinspection ForLoopReplaceableByForEach
-            for (int i = 0; i < args.size(); i++) {
-                if (subCommand != null) {
-                    addRequestArgument(subCommand, cb, allocator);
-                }
-                addRequestArgument(argsList.get(i), cb, allocator);
-            }
-        } else {
-            for (final Buffer arg : args) {
-                if (subCommand != null) {
-                    addRequestArgument(subCommand, cb, allocator);
-                }
-                addRequestArgument(arg, cb, allocator);
-            }
-        }
-    }
-
-    static void addRequestCharSequenceArguments(final Collection<? extends CharSequence> args,
-                                                @Nullable final SubCommand subCommand, final CompositeBuffer cb,
-                                                final BufferAllocator allocator) {
-        if (args instanceof List && args instanceof RandomAccess) {
-            final List<? extends CharSequence> argsList = castCollectionToList(args);
-            // Don't use foreach to avoid creating an iterator
-            //noinspection ForLoopReplaceableByForEach
-            for (int i = 0; i < args.size(); i++) {
-                if (subCommand != null) {
-                    addRequestArgument(subCommand, cb, allocator);
-                }
-                addRequestArgument(argsList.get(i), cb, allocator);
-            }
-        } else {
-            for (final CharSequence arg : args) {
-                if (subCommand != null) {
-                    addRequestArgument(subCommand, cb, allocator);
-                }
-                addRequestArgument(arg, cb, allocator);
-            }
-        }
-    }
-
     static void addBufferKeysToAttributeBuilder(final Collection<? extends Buffer> keys,
                                                 final RedisPartitionAttributesBuilder builder) {
         if (keys instanceof List && keys instanceof RandomAccess) {
@@ -296,50 +222,185 @@ public final class RedisRequests {
         }
     }
 
-    static void addRequestTupleArguments(final Collection<? extends TupleArgument> args,
-                                         @Nullable final SubCommand subCommand, final CompositeBuffer cb,
-                                         final BufferAllocator allocator) {
-        if (args instanceof List && args instanceof RandomAccess) {
-            final List<? extends TupleArgument> argsList = castCollectionToList(args);
-            // Don't use foreach to avoid creating an iterator
-            //noinspection ForLoopReplaceableByForEach
-            for (int i = 0; i < args.size(); i++) {
-                if (subCommand != null) {
-                    addRequestArgument(subCommand, cb, allocator);
-                }
-                addRequestArgument(argsList.get(i), cb, allocator);
-            }
-        } else {
-            for (final TupleArgument arg : args) {
-                if (subCommand != null) {
-                    addRequestArgument(subCommand, cb, allocator);
-                }
-                addRequestArgument(arg, cb, allocator);
-            }
-        }
+    /**
+     * Calculates the size of the buffer needed for writing the array size and the {@link Command}.
+     *
+     * @param arraySize Array size to be written.
+     * @param cmd {@link Command} to be written.
+     * @return The required buffer size.
+     */
+    public static int calculateInitialCommandBufferSize(final int arraySize, final Command cmd) {
+        return calculateRequestArgumentArraySize(arraySize) + cmd.encodedByteCount();
     }
 
-    static void addRequestLongArguments(final Collection<? extends Number> args,
-                                        @Nullable final SubCommand subCommand, final CompositeBuffer cb,
-                                        final BufferAllocator allocator) {
-        if (args instanceof List && args instanceof RandomAccess) {
-            final List<? extends Number> argsList = castCollectionToList(args);
-            // Don't use foreach to avoid creating an iterator
-            //noinspection ForLoopReplaceableByForEach
-            for (int i = 0; i < args.size(); i++) {
-                if (subCommand != null) {
-                    addRequestArgument(subCommand, cb, allocator);
-                }
-                addRequestArgument(argsList.get(i), cb, allocator);
-            }
-        } else {
-            for (final Number arg : args) {
-                if (subCommand != null) {
-                    addRequestArgument(subCommand, cb, allocator);
-                }
-                addRequestArgument(arg, cb, allocator);
-            }
+    /**
+     * Estimates the size of the buffer needed to write a {@link CharSequence}, including necessary
+     * <a href="https://redis.io/topics/protocol">RESP protocol</a> components.
+     * <p>
+     * Note: This estimate assumes the {@link CharSequence} contains purely single-byte characters, so is effectively
+     * the same as {@link CharSequence#length()}. Multi-byte characters will result in estimating low, which may
+     * result in the buffer being resized when writes are done.
+     *
+     * @param arg the {@link CharSequence} to estimate the buffer size for.
+     * @return The required buffer size.
+     */
+    public static int estimateRequestArgumentSize(final CharSequence arg) {
+        return calculateRequestArgumentSize(arg.length());
+    }
+
+    /**
+     * Writes a {@link CharSequence} to {@code buffer}, including necessary
+     * <a href="https://redis.io/topics/protocol">RESP protocol</a> components.
+     *
+     * @param buffer the {@link Buffer} to write to.
+     * @param arg the {@link Buffer} to write.
+     */
+    public static void writeRequestArgument(final Buffer buffer, final CharSequence arg) {
+        writeRequestArgument(buffer, arg.toString().getBytes(UTF_8));
+    }
+
+    /**
+     * Estimates the size of the buffer needed to write a {@link Buffer}, including necessary
+     * <a href="https://redis.io/topics/protocol">RESP protocol</a> components.
+     *
+     * @param arg the {@link Buffer} to calculate the buffer size for.
+     * @return The required buffer size.
+     */
+    public static int calculateRequestArgumentSize(final Buffer arg) {
+        return calculateRequestArgumentSize(arg.readableBytes());
+    }
+
+    /**
+     * Writes a {@link Buffer} to {@code buffer}, including necessary <a href="https://redis.io/topics/protocol">RESP
+     * protocol</a> components.
+     *
+     * @param buffer the {@link Buffer} to write to.
+     * @param arg the {@link CharSequence} to write.
+     */
+    public static void writeRequestArgument(final Buffer buffer, final Buffer arg) {
+        writeLength(buffer, arg.readableBytes());
+        buffer.writeBytes(arg)
+                .writeShort(EOL_SHORT);
+    }
+
+    /**
+     * Estimates the size of the buffer needed to write a {@code byte[]}, including necessary
+     * <a href="https://redis.io/topics/protocol">RESP protocol</a> components.
+     *
+     * @param arg the {@code byte[]} to calculate the buffer size for.
+     * @return The required buffer size.
+     */
+    public static int calculateRequestArgumentSize(final byte[] arg) {
+        return calculateRequestArgumentSize(arg.length);
+    }
+
+    /**
+     * Writes a {@code byte[]} to {@code buffer}, including necessary <a href="https://redis.io/topics/protocol">RESP
+     * protocol</a> components.
+     *
+     * @param buffer the {@code byte[]} to write to.
+     * @param arg the {@link CharSequence} to write.
+     */
+    public static void writeRequestArgument(final Buffer buffer, final byte[] arg) {
+        writeLength(buffer, arg.length);
+        buffer.writeBytes(arg).writeShort(EOL_SHORT);
+    }
+
+    /**
+     * Estimates the size of the buffer needed to write a {@code double}, including necessary
+     * <a href="https://redis.io/topics/protocol">RESP protocol</a> components.
+     *
+     * @param arg the {@code double} to calculate the buffer size for.
+     * @return The required buffer size.
+     */
+    public static int calculateRequestArgumentSize(final double arg) {
+        return calculateRequestArgumentSize(Double.toString(arg).length());
+    }
+
+    /**
+     * Writes a {@code double} to {@code buffer}, including necessary <a href="https://redis.io/topics/protocol">RESP
+     * protocol</a> components.
+     *
+     * @param buffer the {@link Buffer} to write to.
+     * @param arg the {@code double} to write.
+     */
+    public static void writeRequestArgument(final Buffer buffer, final double arg) {
+        writeRequestArgument(buffer, Double.toString(arg));
+    }
+
+    /**
+     * Estimates the size of the buffer needed to write a {@code long}, including necessary
+     * <a href="https://redis.io/topics/protocol">RESP protocol</a> components.
+     *
+     * @param arg the {@code long} to calculate the buffer size for.
+     * @return The required buffer size.
+     */
+    public static int calculateRequestArgumentSize(final long arg) {
+        return calculateRequestArgumentSize(numberOfDigits(arg));
+    }
+
+    /**
+     * Writes a {@code long} to {@code buffer}, including necessary <a href="https://redis.io/topics/protocol">RESP
+     * protocol</a> components.
+     *
+     * @param buffer the {@link Buffer} to write to.
+     * @param arg the {@code long} to write.
+     */
+    public static void writeRequestArgument(final Buffer buffer, final long arg) {
+        writeLength(buffer, numberOfDigits(arg));
+        writeNumber(buffer, arg);
+        buffer.writeShort(EOL_SHORT);
+    }
+
+    /**
+     * Writes a <a href="https://redis.io/topics/protocol">RESP protocol</a> array size to {@code buffer}.
+     *
+     * @param buffer the {@link Buffer} to write to.
+     * @param arraySize the array size to write.
+     */
+    public static void writeRequestArraySize(final Buffer buffer, final long arraySize) {
+        buffer.writeByte('*');
+        writeNumber(buffer, arraySize);
+        buffer.writeShort(EOL_SHORT);
+    }
+
+    static int calculateRequestArgumentArraySize(final long arraySize) {
+        return 1 + numberOfDigitsPositive(arraySize) + EOL_LENGTH;
+    }
+
+    static int calculateRequestArgumentLengthSize(final int length) {
+        return 1 + numberOfDigitsPositive(length) + EOL_LENGTH;
+    }
+
+    static void writeLength(final Buffer buffer, final int length) {
+        buffer.writeByte('$');
+        writeNumber(buffer, length);
+        buffer.writeShort(EOL_SHORT);
+    }
+
+    private static int calculateRequestArgumentSize(final int byteLength) {
+        return calculateRequestArgumentLengthSize(byteLength) + byteLength + EOL_LENGTH;
+    }
+
+    // Visible for testing
+    static void writeNumber(final Buffer buffer, final long number) {
+        if (NUMBER_CACHE_MIN <= number && number < NUMBER_CACHE_MAX) {
+            buffer.writeBytes(NUMBER_CACHE[((int) number - NUMBER_CACHE_MIN)]);
+            return;
         }
+        writeNumberNoCache(buffer, number);
+    }
+
+    private static byte[][] initNumberCache() {
+        byte[][] cache = new byte[NUMBER_CACHE_MAX - NUMBER_CACHE_MIN][];
+        for (int i = 0; i < NUMBER_CACHE_MAX - NUMBER_CACHE_MIN; ++i) {
+            cache[i] = Integer.toString(i + NUMBER_CACHE_MIN).getBytes(US_ASCII);
+        }
+        return cache;
+    }
+
+    private static void writeNumberNoCache(final Buffer buffer, final long number) {
+        buffer.writeBytes(Long.toString(number).getBytes(US_ASCII));
     }
 
     private static <T, N extends T> List<N> castCollectionToList(final Collection<N> args) {
@@ -413,7 +474,17 @@ public final class RedisRequests {
         }
 
         @Override
-        public Buffer toRESPArgument(final BufferAllocator allocator) {
+        public int encodedByteCount() {
+            return value.readableBytes();
+        }
+
+        @Override
+        public void encodeTo(final Buffer buffer) {
+            buffer.writeBytes(value);
+        }
+
+        @Override
+        public Buffer asBuffer(final BufferAllocator allocator) {
             return value;
         }
     }

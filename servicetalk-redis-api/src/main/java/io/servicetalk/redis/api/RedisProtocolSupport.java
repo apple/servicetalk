@@ -16,8 +16,7 @@
 package io.servicetalk.redis.api;
 
 import io.servicetalk.buffer.api.Buffer;
-import io.servicetalk.buffer.api.BufferAllocator;
-import io.servicetalk.buffer.api.CompositeBuffer;
+import io.servicetalk.redis.api.RedisData.RequestRedisData;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
@@ -29,8 +28,9 @@ import java.util.Objects;
 import javax.annotation.Generated;
 import javax.annotation.Nonnegative;
 
-import static io.servicetalk.redis.api.RedisRequests.addRequestArgument;
-import static io.servicetalk.redis.internal.RedisUtils.toRespBulkString;
+import static io.servicetalk.redis.api.RedisRequests.calculateRequestArgumentSize;
+import static io.servicetalk.redis.api.RedisRequests.estimateRequestArgumentSize;
+import static io.servicetalk.redis.api.RedisRequests.writeRequestArgument;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.util.Objects.requireNonNull;
 
@@ -106,16 +106,14 @@ public final class RedisProtocolSupport {
     /**
      * A parent interface for all tuple arguments.
      */
-    public interface TupleArgument {
+    public interface TupleArgument extends RequestRedisData {
 
         /**
-         * Write this tuple's content to a {@link CompositeBuffer}.
+         * Get the number of arguments this instance writes with {@link #encodeTo}.
          *
-         * @param compositeBuffer the {@link CompositeBuffer} to write to
-         * @param bufferAllocator the {@link BufferAllocator} to use when writing
-         * @return the count of arguments written to the buffer
+         * @return the count of arguments that will be written to the buffer
          */
-        int writeTo(CompositeBuffer compositeBuffer, BufferAllocator bufferAllocator);
+        int argumentCount();
 
         /**
          * Modify the {@code builder} according to this objects internals.
@@ -168,9 +166,24 @@ public final class RedisProtocolSupport {
             size = i;
         }
 
+        /**
+         * Write this instance to a {@link Buffer}.
+         *
+         * @param buffer the {@link Buffer} to write to
+         */
         @Override
-        public Buffer toRESPArgument(BufferAllocator allocator) {
-            return toRespBulkString(b, allocator);
+        public void encodeTo(final Buffer buffer) {
+            writeRequestArgument(buffer, b);
+        }
+
+        /**
+         * Get the number of bytes that this instance writes with {@link #encodeTo}.
+         *
+         * @return the number of bytes that will be written to the buffer
+         */
+        @Override
+        public int encodedByteCount() {
+            return calculateRequestArgumentSize(b);
         }
 
         /**
@@ -396,9 +409,24 @@ public final class RedisProtocolSupport {
             this.supportsKeys = supportsKeys;
         }
 
+        /**
+         * Write this instance to a {@link Buffer}.
+         *
+         * @param buffer the {@link Buffer} to write to
+         */
         @Override
-        public Buffer toRESPArgument(BufferAllocator allocator) {
-            return toRespBulkString(b, allocator);
+        public void encodeTo(final Buffer buffer) {
+            writeRequestArgument(buffer, b);
+        }
+
+        /**
+         * Get the number of bytes that this instance writes with {@link #encodeTo}.
+         *
+         * @return the number of bytes that will be written to the buffer
+         */
+        @Override
+        public int encodedByteCount() {
+            return calculateRequestArgumentSize(b);
         }
 
         /**
@@ -434,9 +462,24 @@ public final class RedisProtocolSupport {
             b = s.getBytes(US_ASCII);
         }
 
+        /**
+         * Write this instance to a {@link Buffer}.
+         *
+         * @param buffer the {@link Buffer} to write to
+         */
         @Override
-        public Buffer toRESPArgument(BufferAllocator allocator) {
-            return toRespBulkString(b, allocator);
+        public void encodeTo(final Buffer buffer) {
+            writeRequestArgument(buffer, b);
+        }
+
+        /**
+         * Get the number of bytes that this instance writes with {@link #encodeTo}.
+         *
+         * @return the number of bytes that will be written to the buffer
+         */
+        @Override
+        public int encodedByteCount() {
+            return calculateRequestArgumentSize(b);
         }
     }
 
@@ -480,10 +523,19 @@ public final class RedisProtocolSupport {
         }
 
         @Override
-        public int writeTo(final CompositeBuffer buf, final BufferAllocator allocator) {
-            addRequestArgument(expire, buf, allocator);
-            addRequestArgument(duration, buf, allocator);
+        public void encodeTo(final Buffer buf) {
+            expire.encodeTo(buf);
+            writeRequestArgument(buf, duration);
+        }
+
+        @Override
+        public int argumentCount() {
             return SIZE;
+        }
+
+        @Override
+        public int encodedByteCount() {
+            return expire.encodedByteCount() + calculateRequestArgumentSize(duration);
         }
 
         @Override
@@ -516,9 +568,24 @@ public final class RedisProtocolSupport {
             b = s.getBytes(US_ASCII);
         }
 
+        /**
+         * Write this instance to a {@link Buffer}.
+         *
+         * @param buffer the {@link Buffer} to write to
+         */
         @Override
-        public Buffer toRESPArgument(BufferAllocator allocator) {
-            return toRespBulkString(b, allocator);
+        public void encodeTo(final Buffer buffer) {
+            writeRequestArgument(buffer, b);
+        }
+
+        /**
+         * Get the number of bytes that this instance writes with {@link #encodeTo}.
+         *
+         * @return the number of bytes that will be written to the buffer
+         */
+        @Override
+        public int encodedByteCount() {
+            return calculateRequestArgumentSize(b);
         }
     }
 
@@ -535,9 +602,24 @@ public final class RedisProtocolSupport {
             b = s.getBytes(US_ASCII);
         }
 
+        /**
+         * Write this instance to a {@link Buffer}.
+         *
+         * @param buffer the {@link Buffer} to write to
+         */
         @Override
-        public Buffer toRESPArgument(BufferAllocator allocator) {
-            return toRespBulkString(b, allocator);
+        public void encodeTo(final Buffer buffer) {
+            writeRequestArgument(buffer, b);
+        }
+
+        /**
+         * Get the number of bytes that this instance writes with {@link #encodeTo}.
+         *
+         * @return the number of bytes that will be written to the buffer
+         */
+        @Override
+        public int encodedByteCount() {
+            return calculateRequestArgumentSize(b);
         }
     }
 
@@ -554,9 +636,24 @@ public final class RedisProtocolSupport {
             b = s.getBytes(US_ASCII);
         }
 
+        /**
+         * Write this instance to a {@link Buffer}.
+         *
+         * @param buffer the {@link Buffer} to write to
+         */
         @Override
-        public Buffer toRESPArgument(BufferAllocator allocator) {
-            return toRespBulkString(b, allocator);
+        public void encodeTo(final Buffer buffer) {
+            writeRequestArgument(buffer, b);
+        }
+
+        /**
+         * Get the number of bytes that this instance writes with {@link #encodeTo}.
+         *
+         * @return the number of bytes that will be written to the buffer
+         */
+        @Override
+        public int encodedByteCount() {
+            return calculateRequestArgumentSize(b);
         }
     }
 
@@ -573,9 +670,24 @@ public final class RedisProtocolSupport {
             b = s.getBytes(US_ASCII);
         }
 
+        /**
+         * Write this instance to a {@link Buffer}.
+         *
+         * @param buffer the {@link Buffer} to write to
+         */
         @Override
-        public Buffer toRESPArgument(BufferAllocator allocator) {
-            return toRespBulkString(b, allocator);
+        public void encodeTo(final Buffer buffer) {
+            writeRequestArgument(buffer, b);
+        }
+
+        /**
+         * Get the number of bytes that this instance writes with {@link #encodeTo}.
+         *
+         * @return the number of bytes that will be written to the buffer
+         */
+        @Override
+        public int encodedByteCount() {
+            return calculateRequestArgumentSize(b);
         }
     }
 
@@ -592,9 +704,24 @@ public final class RedisProtocolSupport {
             b = s.getBytes(US_ASCII);
         }
 
+        /**
+         * Write this instance to a {@link Buffer}.
+         *
+         * @param buffer the {@link Buffer} to write to
+         */
         @Override
-        public Buffer toRESPArgument(BufferAllocator allocator) {
-            return toRespBulkString(b, allocator);
+        public void encodeTo(final Buffer buffer) {
+            writeRequestArgument(buffer, b);
+        }
+
+        /**
+         * Get the number of bytes that this instance writes with {@link #encodeTo}.
+         *
+         * @return the number of bytes that will be written to the buffer
+         */
+        @Override
+        public int encodedByteCount() {
+            return calculateRequestArgumentSize(b);
         }
     }
 
@@ -611,9 +738,24 @@ public final class RedisProtocolSupport {
             b = s.getBytes(US_ASCII);
         }
 
+        /**
+         * Write this instance to a {@link Buffer}.
+         *
+         * @param buffer the {@link Buffer} to write to
+         */
         @Override
-        public Buffer toRESPArgument(BufferAllocator allocator) {
-            return toRespBulkString(b, allocator);
+        public void encodeTo(final Buffer buffer) {
+            writeRequestArgument(buffer, b);
+        }
+
+        /**
+         * Get the number of bytes that this instance writes with {@link #encodeTo}.
+         *
+         * @return the number of bytes that will be written to the buffer
+         */
+        @Override
+        public int encodedByteCount() {
+            return calculateRequestArgumentSize(b);
         }
     }
 
@@ -630,9 +772,24 @@ public final class RedisProtocolSupport {
             b = s.getBytes(US_ASCII);
         }
 
+        /**
+         * Write this instance to a {@link Buffer}.
+         *
+         * @param buffer the {@link Buffer} to write to
+         */
         @Override
-        public Buffer toRESPArgument(BufferAllocator allocator) {
-            return toRespBulkString(b, allocator);
+        public void encodeTo(final Buffer buffer) {
+            writeRequestArgument(buffer, b);
+        }
+
+        /**
+         * Get the number of bytes that this instance writes with {@link #encodeTo}.
+         *
+         * @return the number of bytes that will be written to the buffer
+         */
+        @Override
+        public int encodedByteCount() {
+            return calculateRequestArgumentSize(b);
         }
     }
 
@@ -649,9 +806,24 @@ public final class RedisProtocolSupport {
             b = s.getBytes(US_ASCII);
         }
 
+        /**
+         * Write this instance to a {@link Buffer}.
+         *
+         * @param buffer the {@link Buffer} to write to
+         */
         @Override
-        public Buffer toRESPArgument(BufferAllocator allocator) {
-            return toRespBulkString(b, allocator);
+        public void encodeTo(final Buffer buffer) {
+            writeRequestArgument(buffer, b);
+        }
+
+        /**
+         * Get the number of bytes that this instance writes with {@link #encodeTo}.
+         *
+         * @return the number of bytes that will be written to the buffer
+         */
+        @Override
+        public int encodedByteCount() {
+            return calculateRequestArgumentSize(b);
         }
     }
 
@@ -668,9 +840,24 @@ public final class RedisProtocolSupport {
             b = s.getBytes(US_ASCII);
         }
 
+        /**
+         * Write this instance to a {@link Buffer}.
+         *
+         * @param buffer the {@link Buffer} to write to
+         */
         @Override
-        public Buffer toRESPArgument(BufferAllocator allocator) {
-            return toRespBulkString(b, allocator);
+        public void encodeTo(final Buffer buffer) {
+            writeRequestArgument(buffer, b);
+        }
+
+        /**
+         * Get the number of bytes that this instance writes with {@link #encodeTo}.
+         *
+         * @return the number of bytes that will be written to the buffer
+         */
+        @Override
+        public int encodedByteCount() {
+            return calculateRequestArgumentSize(b);
         }
     }
 
@@ -687,9 +874,24 @@ public final class RedisProtocolSupport {
             b = s.getBytes(US_ASCII);
         }
 
+        /**
+         * Write this instance to a {@link Buffer}.
+         *
+         * @param buffer the {@link Buffer} to write to
+         */
         @Override
-        public Buffer toRESPArgument(BufferAllocator allocator) {
-            return toRespBulkString(b, allocator);
+        public void encodeTo(final Buffer buffer) {
+            writeRequestArgument(buffer, b);
+        }
+
+        /**
+         * Get the number of bytes that this instance writes with {@link #encodeTo}.
+         *
+         * @return the number of bytes that will be written to the buffer
+         */
+        @Override
+        public int encodedByteCount() {
+            return calculateRequestArgumentSize(b);
         }
     }
 
@@ -706,9 +908,24 @@ public final class RedisProtocolSupport {
             b = s.getBytes(US_ASCII);
         }
 
+        /**
+         * Write this instance to a {@link Buffer}.
+         *
+         * @param buffer the {@link Buffer} to write to
+         */
         @Override
-        public Buffer toRESPArgument(BufferAllocator allocator) {
-            return toRespBulkString(b, allocator);
+        public void encodeTo(final Buffer buffer) {
+            writeRequestArgument(buffer, b);
+        }
+
+        /**
+         * Get the number of bytes that this instance writes with {@link #encodeTo}.
+         *
+         * @return the number of bytes that will be written to the buffer
+         */
+        @Override
+        public int encodedByteCount() {
+            return calculateRequestArgumentSize(b);
         }
     }
 
@@ -725,9 +942,24 @@ public final class RedisProtocolSupport {
             b = s.getBytes(US_ASCII);
         }
 
+        /**
+         * Write this instance to a {@link Buffer}.
+         *
+         * @param buffer the {@link Buffer} to write to
+         */
         @Override
-        public Buffer toRESPArgument(BufferAllocator allocator) {
-            return toRespBulkString(b, allocator);
+        public void encodeTo(final Buffer buffer) {
+            writeRequestArgument(buffer, b);
+        }
+
+        /**
+         * Get the number of bytes that this instance writes with {@link #encodeTo}.
+         *
+         * @return the number of bytes that will be written to the buffer
+         */
+        @Override
+        public int encodedByteCount() {
+            return calculateRequestArgumentSize(b);
         }
     }
 
@@ -744,9 +976,24 @@ public final class RedisProtocolSupport {
             b = s.getBytes(US_ASCII);
         }
 
+        /**
+         * Write this instance to a {@link Buffer}.
+         *
+         * @param buffer the {@link Buffer} to write to
+         */
         @Override
-        public Buffer toRESPArgument(BufferAllocator allocator) {
-            return toRespBulkString(b, allocator);
+        public void encodeTo(final Buffer buffer) {
+            writeRequestArgument(buffer, b);
+        }
+
+        /**
+         * Get the number of bytes that this instance writes with {@link #encodeTo}.
+         *
+         * @return the number of bytes that will be written to the buffer
+         */
+        @Override
+        public int encodedByteCount() {
+            return calculateRequestArgumentSize(b);
         }
     }
 
@@ -763,9 +1010,24 @@ public final class RedisProtocolSupport {
             b = s.getBytes(US_ASCII);
         }
 
+        /**
+         * Write this instance to a {@link Buffer}.
+         *
+         * @param buffer the {@link Buffer} to write to
+         */
         @Override
-        public Buffer toRESPArgument(BufferAllocator allocator) {
-            return toRespBulkString(b, allocator);
+        public void encodeTo(final Buffer buffer) {
+            writeRequestArgument(buffer, b);
+        }
+
+        /**
+         * Get the number of bytes that this instance writes with {@link #encodeTo}.
+         *
+         * @return the number of bytes that will be written to the buffer
+         */
+        @Override
+        public int encodedByteCount() {
+            return calculateRequestArgumentSize(b);
         }
     }
 
@@ -782,9 +1044,24 @@ public final class RedisProtocolSupport {
             b = s.getBytes(US_ASCII);
         }
 
+        /**
+         * Write this instance to a {@link Buffer}.
+         *
+         * @param buffer the {@link Buffer} to write to
+         */
         @Override
-        public Buffer toRESPArgument(BufferAllocator allocator) {
-            return toRespBulkString(b, allocator);
+        public void encodeTo(final Buffer buffer) {
+            writeRequestArgument(buffer, b);
+        }
+
+        /**
+         * Get the number of bytes that this instance writes with {@link #encodeTo}.
+         *
+         * @return the number of bytes that will be written to the buffer
+         */
+        @Override
+        public int encodedByteCount() {
+            return calculateRequestArgumentSize(b);
         }
     }
 
@@ -801,9 +1078,24 @@ public final class RedisProtocolSupport {
             b = s.getBytes(US_ASCII);
         }
 
+        /**
+         * Write this instance to a {@link Buffer}.
+         *
+         * @param buffer the {@link Buffer} to write to
+         */
         @Override
-        public Buffer toRESPArgument(BufferAllocator allocator) {
-            return toRespBulkString(b, allocator);
+        public void encodeTo(final Buffer buffer) {
+            writeRequestArgument(buffer, b);
+        }
+
+        /**
+         * Get the number of bytes that this instance writes with {@link #encodeTo}.
+         *
+         * @return the number of bytes that will be written to the buffer
+         */
+        @Override
+        public int encodedByteCount() {
+            return calculateRequestArgumentSize(b);
         }
     }
 
@@ -820,9 +1112,24 @@ public final class RedisProtocolSupport {
             b = s.getBytes(US_ASCII);
         }
 
+        /**
+         * Write this instance to a {@link Buffer}.
+         *
+         * @param buffer the {@link Buffer} to write to
+         */
         @Override
-        public Buffer toRESPArgument(BufferAllocator allocator) {
-            return toRespBulkString(b, allocator);
+        public void encodeTo(final Buffer buffer) {
+            writeRequestArgument(buffer, b);
+        }
+
+        /**
+         * Get the number of bytes that this instance writes with {@link #encodeTo}.
+         *
+         * @return the number of bytes that will be written to the buffer
+         */
+        @Override
+        public int encodedByteCount() {
+            return calculateRequestArgumentSize(b);
         }
     }
 
@@ -839,9 +1146,24 @@ public final class RedisProtocolSupport {
             b = s.getBytes(US_ASCII);
         }
 
+        /**
+         * Write this instance to a {@link Buffer}.
+         *
+         * @param buffer the {@link Buffer} to write to
+         */
         @Override
-        public Buffer toRESPArgument(BufferAllocator allocator) {
-            return toRespBulkString(b, allocator);
+        public void encodeTo(final Buffer buffer) {
+            writeRequestArgument(buffer, b);
+        }
+
+        /**
+         * Get the number of bytes that this instance writes with {@link #encodeTo}.
+         *
+         * @return the number of bytes that will be written to the buffer
+         */
+        @Override
+        public int encodedByteCount() {
+            return calculateRequestArgumentSize(b);
         }
     }
 
@@ -858,9 +1180,24 @@ public final class RedisProtocolSupport {
             b = s.getBytes(US_ASCII);
         }
 
+        /**
+         * Write this instance to a {@link Buffer}.
+         *
+         * @param buffer the {@link Buffer} to write to
+         */
         @Override
-        public Buffer toRESPArgument(BufferAllocator allocator) {
-            return toRespBulkString(b, allocator);
+        public void encodeTo(final Buffer buffer) {
+            writeRequestArgument(buffer, b);
+        }
+
+        /**
+         * Get the number of bytes that this instance writes with {@link #encodeTo}.
+         *
+         * @return the number of bytes that will be written to the buffer
+         */
+        @Override
+        public int encodedByteCount() {
+            return calculateRequestArgumentSize(b);
         }
     }
 
@@ -877,9 +1214,24 @@ public final class RedisProtocolSupport {
             b = s.getBytes(US_ASCII);
         }
 
+        /**
+         * Write this instance to a {@link Buffer}.
+         *
+         * @param buffer the {@link Buffer} to write to
+         */
         @Override
-        public Buffer toRESPArgument(BufferAllocator allocator) {
-            return toRespBulkString(b, allocator);
+        public void encodeTo(final Buffer buffer) {
+            writeRequestArgument(buffer, b);
+        }
+
+        /**
+         * Get the number of bytes that this instance writes with {@link #encodeTo}.
+         *
+         * @return the number of bytes that will be written to the buffer
+         */
+        @Override
+        public int encodedByteCount() {
+            return calculateRequestArgumentSize(b);
         }
     }
 
@@ -896,9 +1248,24 @@ public final class RedisProtocolSupport {
             b = s.getBytes(US_ASCII);
         }
 
+        /**
+         * Write this instance to a {@link Buffer}.
+         *
+         * @param buffer the {@link Buffer} to write to
+         */
         @Override
-        public Buffer toRESPArgument(BufferAllocator allocator) {
-            return toRespBulkString(b, allocator);
+        public void encodeTo(final Buffer buffer) {
+            writeRequestArgument(buffer, b);
+        }
+
+        /**
+         * Get the number of bytes that this instance writes with {@link #encodeTo}.
+         *
+         * @return the number of bytes that will be written to the buffer
+         */
+        @Override
+        public int encodedByteCount() {
+            return calculateRequestArgumentSize(b);
         }
     }
 
@@ -915,9 +1282,24 @@ public final class RedisProtocolSupport {
             b = s.getBytes(US_ASCII);
         }
 
+        /**
+         * Write this instance to a {@link Buffer}.
+         *
+         * @param buffer the {@link Buffer} to write to
+         */
         @Override
-        public Buffer toRESPArgument(BufferAllocator allocator) {
-            return toRespBulkString(b, allocator);
+        public void encodeTo(final Buffer buffer) {
+            writeRequestArgument(buffer, b);
+        }
+
+        /**
+         * Get the number of bytes that this instance writes with {@link #encodeTo}.
+         *
+         * @return the number of bytes that will be written to the buffer
+         */
+        @Override
+        public int encodedByteCount() {
+            return calculateRequestArgumentSize(b);
         }
     }
 
@@ -934,9 +1316,24 @@ public final class RedisProtocolSupport {
             b = s.getBytes(US_ASCII);
         }
 
+        /**
+         * Write this instance to a {@link Buffer}.
+         *
+         * @param buffer the {@link Buffer} to write to
+         */
         @Override
-        public Buffer toRESPArgument(BufferAllocator allocator) {
-            return toRespBulkString(b, allocator);
+        public void encodeTo(final Buffer buffer) {
+            writeRequestArgument(buffer, b);
+        }
+
+        /**
+         * Get the number of bytes that this instance writes with {@link #encodeTo}.
+         *
+         * @return the number of bytes that will be written to the buffer
+         */
+        @Override
+        public int encodedByteCount() {
+            return calculateRequestArgumentSize(b);
         }
     }
 
@@ -953,9 +1350,24 @@ public final class RedisProtocolSupport {
             b = s.getBytes(US_ASCII);
         }
 
+        /**
+         * Write this instance to a {@link Buffer}.
+         *
+         * @param buffer the {@link Buffer} to write to
+         */
         @Override
-        public Buffer toRESPArgument(BufferAllocator allocator) {
-            return toRespBulkString(b, allocator);
+        public void encodeTo(final Buffer buffer) {
+            writeRequestArgument(buffer, b);
+        }
+
+        /**
+         * Get the number of bytes that this instance writes with {@link #encodeTo}.
+         *
+         * @return the number of bytes that will be written to the buffer
+         */
+        @Override
+        public int encodedByteCount() {
+            return calculateRequestArgumentSize(b);
         }
     }
 
@@ -972,9 +1384,24 @@ public final class RedisProtocolSupport {
             b = s.getBytes(US_ASCII);
         }
 
+        /**
+         * Write this instance to a {@link Buffer}.
+         *
+         * @param buffer the {@link Buffer} to write to
+         */
         @Override
-        public Buffer toRESPArgument(BufferAllocator allocator) {
-            return toRespBulkString(b, allocator);
+        public void encodeTo(final Buffer buffer) {
+            writeRequestArgument(buffer, b);
+        }
+
+        /**
+         * Get the number of bytes that this instance writes with {@link #encodeTo}.
+         *
+         * @return the number of bytes that will be written to the buffer
+         */
+        @Override
+        public int encodedByteCount() {
+            return calculateRequestArgumentSize(b);
         }
     }
 
@@ -991,9 +1418,24 @@ public final class RedisProtocolSupport {
             b = s.getBytes(US_ASCII);
         }
 
+        /**
+         * Write this instance to a {@link Buffer}.
+         *
+         * @param buffer the {@link Buffer} to write to
+         */
         @Override
-        public Buffer toRESPArgument(BufferAllocator allocator) {
-            return toRespBulkString(b, allocator);
+        public void encodeTo(final Buffer buffer) {
+            writeRequestArgument(buffer, b);
+        }
+
+        /**
+         * Get the number of bytes that this instance writes with {@link #encodeTo}.
+         *
+         * @return the number of bytes that will be written to the buffer
+         */
+        @Override
+        public int encodedByteCount() {
+            return calculateRequestArgumentSize(b);
         }
     }
 
@@ -1010,9 +1452,24 @@ public final class RedisProtocolSupport {
             b = s.getBytes(US_ASCII);
         }
 
+        /**
+         * Write this instance to a {@link Buffer}.
+         *
+         * @param buffer the {@link Buffer} to write to
+         */
         @Override
-        public Buffer toRESPArgument(BufferAllocator allocator) {
-            return toRespBulkString(b, allocator);
+        public void encodeTo(final Buffer buffer) {
+            writeRequestArgument(buffer, b);
+        }
+
+        /**
+         * Get the number of bytes that this instance writes with {@link #encodeTo}.
+         *
+         * @return the number of bytes that will be written to the buffer
+         */
+        @Override
+        public int encodedByteCount() {
+            return calculateRequestArgumentSize(b);
         }
     }
 
@@ -1029,9 +1486,24 @@ public final class RedisProtocolSupport {
             b = s.getBytes(US_ASCII);
         }
 
+        /**
+         * Write this instance to a {@link Buffer}.
+         *
+         * @param buffer the {@link Buffer} to write to
+         */
         @Override
-        public Buffer toRESPArgument(BufferAllocator allocator) {
-            return toRespBulkString(b, allocator);
+        public void encodeTo(final Buffer buffer) {
+            writeRequestArgument(buffer, b);
+        }
+
+        /**
+         * Get the number of bytes that this instance writes with {@link #encodeTo}.
+         *
+         * @return the number of bytes that will be written to the buffer
+         */
+        @Override
+        public int encodedByteCount() {
+            return calculateRequestArgumentSize(b);
         }
     }
 
@@ -1048,9 +1520,24 @@ public final class RedisProtocolSupport {
             b = s.getBytes(US_ASCII);
         }
 
+        /**
+         * Write this instance to a {@link Buffer}.
+         *
+         * @param buffer the {@link Buffer} to write to
+         */
         @Override
-        public Buffer toRESPArgument(BufferAllocator allocator) {
-            return toRespBulkString(b, allocator);
+        public void encodeTo(final Buffer buffer) {
+            writeRequestArgument(buffer, b);
+        }
+
+        /**
+         * Get the number of bytes that this instance writes with {@link #encodeTo}.
+         *
+         * @return the number of bytes that will be written to the buffer
+         */
+        @Override
+        public int encodedByteCount() {
+            return calculateRequestArgumentSize(b);
         }
     }
 
@@ -1067,9 +1554,24 @@ public final class RedisProtocolSupport {
             b = s.getBytes(US_ASCII);
         }
 
+        /**
+         * Write this instance to a {@link Buffer}.
+         *
+         * @param buffer the {@link Buffer} to write to
+         */
         @Override
-        public Buffer toRESPArgument(BufferAllocator allocator) {
-            return toRespBulkString(b, allocator);
+        public void encodeTo(final Buffer buffer) {
+            writeRequestArgument(buffer, b);
+        }
+
+        /**
+         * Get the number of bytes that this instance writes with {@link #encodeTo}.
+         *
+         * @return the number of bytes that will be written to the buffer
+         */
+        @Override
+        public int encodedByteCount() {
+            return calculateRequestArgumentSize(b);
         }
     }
 
@@ -1086,9 +1588,24 @@ public final class RedisProtocolSupport {
             b = s.getBytes(US_ASCII);
         }
 
+        /**
+         * Write this instance to a {@link Buffer}.
+         *
+         * @param buffer the {@link Buffer} to write to
+         */
         @Override
-        public Buffer toRESPArgument(BufferAllocator allocator) {
-            return toRespBulkString(b, allocator);
+        public void encodeTo(final Buffer buffer) {
+            writeRequestArgument(buffer, b);
+        }
+
+        /**
+         * Get the number of bytes that this instance writes with {@link #encodeTo}.
+         *
+         * @return the number of bytes that will be written to the buffer
+         */
+        @Override
+        public int encodedByteCount() {
+            return calculateRequestArgumentSize(b);
         }
     }
 
@@ -1105,9 +1622,24 @@ public final class RedisProtocolSupport {
             b = s.getBytes(US_ASCII);
         }
 
+        /**
+         * Write this instance to a {@link Buffer}.
+         *
+         * @param buffer the {@link Buffer} to write to
+         */
         @Override
-        public Buffer toRESPArgument(BufferAllocator allocator) {
-            return toRespBulkString(b, allocator);
+        public void encodeTo(final Buffer buffer) {
+            writeRequestArgument(buffer, b);
+        }
+
+        /**
+         * Get the number of bytes that this instance writes with {@link #encodeTo}.
+         *
+         * @return the number of bytes that will be written to the buffer
+         */
+        @Override
+        public int encodedByteCount() {
+            return calculateRequestArgumentSize(b);
         }
     }
 
@@ -1124,9 +1656,24 @@ public final class RedisProtocolSupport {
             b = s.getBytes(US_ASCII);
         }
 
+        /**
+         * Write this instance to a {@link Buffer}.
+         *
+         * @param buffer the {@link Buffer} to write to
+         */
         @Override
-        public Buffer toRESPArgument(BufferAllocator allocator) {
-            return toRespBulkString(b, allocator);
+        public void encodeTo(final Buffer buffer) {
+            writeRequestArgument(buffer, b);
+        }
+
+        /**
+         * Get the number of bytes that this instance writes with {@link #encodeTo}.
+         *
+         * @return the number of bytes that will be written to the buffer
+         */
+        @Override
+        public int encodedByteCount() {
+            return calculateRequestArgumentSize(b);
         }
     }
 
@@ -1143,9 +1690,24 @@ public final class RedisProtocolSupport {
             b = s.getBytes(US_ASCII);
         }
 
+        /**
+         * Write this instance to a {@link Buffer}.
+         *
+         * @param buffer the {@link Buffer} to write to
+         */
         @Override
-        public Buffer toRESPArgument(BufferAllocator allocator) {
-            return toRespBulkString(b, allocator);
+        public void encodeTo(final Buffer buffer) {
+            writeRequestArgument(buffer, b);
+        }
+
+        /**
+         * Get the number of bytes that this instance writes with {@link #encodeTo}.
+         *
+         * @return the number of bytes that will be written to the buffer
+         */
+        @Override
+        public int encodedByteCount() {
+            return calculateRequestArgumentSize(b);
         }
     }
 
@@ -1162,9 +1724,24 @@ public final class RedisProtocolSupport {
             b = s.getBytes(US_ASCII);
         }
 
+        /**
+         * Write this instance to a {@link Buffer}.
+         *
+         * @param buffer the {@link Buffer} to write to
+         */
         @Override
-        public Buffer toRESPArgument(BufferAllocator allocator) {
-            return toRespBulkString(b, allocator);
+        public void encodeTo(final Buffer buffer) {
+            writeRequestArgument(buffer, b);
+        }
+
+        /**
+         * Get the number of bytes that this instance writes with {@link #encodeTo}.
+         *
+         * @return the number of bytes that will be written to the buffer
+         */
+        @Override
+        public int encodedByteCount() {
+            return calculateRequestArgumentSize(b);
         }
     }
 
@@ -1181,9 +1758,24 @@ public final class RedisProtocolSupport {
             b = s.getBytes(US_ASCII);
         }
 
+        /**
+         * Write this instance to a {@link Buffer}.
+         *
+         * @param buffer the {@link Buffer} to write to
+         */
         @Override
-        public Buffer toRESPArgument(BufferAllocator allocator) {
-            return toRespBulkString(b, allocator);
+        public void encodeTo(final Buffer buffer) {
+            writeRequestArgument(buffer, b);
+        }
+
+        /**
+         * Get the number of bytes that this instance writes with {@link #encodeTo}.
+         *
+         * @return the number of bytes that will be written to the buffer
+         */
+        @Override
+        public int encodedByteCount() {
+            return calculateRequestArgumentSize(b);
         }
     }
 
@@ -1200,9 +1792,24 @@ public final class RedisProtocolSupport {
             b = s.getBytes(US_ASCII);
         }
 
+        /**
+         * Write this instance to a {@link Buffer}.
+         *
+         * @param buffer the {@link Buffer} to write to
+         */
         @Override
-        public Buffer toRESPArgument(BufferAllocator allocator) {
-            return toRespBulkString(b, allocator);
+        public void encodeTo(final Buffer buffer) {
+            writeRequestArgument(buffer, b);
+        }
+
+        /**
+         * Get the number of bytes that this instance writes with {@link #encodeTo}.
+         *
+         * @return the number of bytes that will be written to the buffer
+         */
+        @Override
+        public int encodedByteCount() {
+            return calculateRequestArgumentSize(b);
         }
     }
 
@@ -1246,10 +1853,19 @@ public final class RedisProtocolSupport {
         }
 
         @Override
-        public int writeTo(final CompositeBuffer buf, final BufferAllocator allocator) {
-            addRequestArgument(field, buf, allocator);
-            addRequestArgument(value, buf, allocator);
+        public void encodeTo(final Buffer buf) {
+            writeRequestArgument(buf, field);
+            writeRequestArgument(buf, value);
+        }
+
+        @Override
+        public int argumentCount() {
             return SIZE;
+        }
+
+        @Override
+        public int encodedByteCount() {
+            return calculateRequestArgumentSize(field) + calculateRequestArgumentSize(value);
         }
 
         @Override
@@ -1297,11 +1913,21 @@ public final class RedisProtocolSupport {
         }
 
         @Override
-        public int writeTo(final CompositeBuffer buf, final BufferAllocator allocator) {
-            addRequestArgument(SubCommand.GROUP, buf, allocator);
-            addRequestArgument(group, buf, allocator);
-            addRequestArgument(consumer, buf, allocator);
+        public void encodeTo(final Buffer buf) {
+            SubCommand.GROUP.encodeTo(buf);
+            writeRequestArgument(buf, group);
+            writeRequestArgument(buf, consumer);
+        }
+
+        @Override
+        public int argumentCount() {
             return SIZE;
+        }
+
+        @Override
+        public int encodedByteCount() {
+            return SubCommand.GROUP.encodedByteCount() + calculateRequestArgumentSize(group) +
+                        calculateRequestArgumentSize(consumer);
         }
 
         @Override
@@ -1350,10 +1976,19 @@ public final class RedisProtocolSupport {
         }
 
         @Override
-        public int writeTo(final CompositeBuffer buf, final BufferAllocator allocator) {
-            addRequestArgument(key, buf, allocator);
-            addRequestArgument(value, buf, allocator);
+        public void encodeTo(final Buffer buf) {
+            writeRequestArgument(buf, key);
+            writeRequestArgument(buf, value);
+        }
+
+        @Override
+        public int argumentCount() {
             return SIZE;
+        }
+
+        @Override
+        public int encodedByteCount() {
+            return calculateRequestArgumentSize(key) + calculateRequestArgumentSize(value);
         }
 
         @Override
@@ -1407,11 +2042,21 @@ public final class RedisProtocolSupport {
         }
 
         @Override
-        public int writeTo(final CompositeBuffer buf, final BufferAllocator allocator) {
-            addRequestArgument(longitude, buf, allocator);
-            addRequestArgument(latitude, buf, allocator);
-            addRequestArgument(member, buf, allocator);
+        public void encodeTo(final Buffer buf) {
+            writeRequestArgument(buf, longitude);
+            writeRequestArgument(buf, latitude);
+            writeRequestArgument(buf, member);
+        }
+
+        @Override
+        public int argumentCount() {
             return SIZE;
+        }
+
+        @Override
+        public int encodedByteCount() {
+            return calculateRequestArgumentSize(longitude) + calculateRequestArgumentSize(latitude) +
+                        calculateRequestArgumentSize(member);
         }
 
         @Override
@@ -1459,10 +2104,19 @@ public final class RedisProtocolSupport {
         }
 
         @Override
-        public int writeTo(final CompositeBuffer buf, final BufferAllocator allocator) {
-            addRequestArgument(score, buf, allocator);
-            addRequestArgument(member, buf, allocator);
+        public void encodeTo(final Buffer buf) {
+            writeRequestArgument(buf, score);
+            writeRequestArgument(buf, member);
+        }
+
+        @Override
+        public int argumentCount() {
             return SIZE;
+        }
+
+        @Override
+        public int encodedByteCount() {
+            return calculateRequestArgumentSize(score) + calculateRequestArgumentSize(member);
         }
 
         @Override
@@ -1510,10 +2164,19 @@ public final class RedisProtocolSupport {
         }
 
         @Override
-        public int writeTo(final CompositeBuffer buf, final BufferAllocator allocator) {
-            addRequestArgument(field, buf, allocator);
-            addRequestArgument(value, buf, allocator);
+        public void encodeTo(final Buffer buf) {
+            writeRequestArgument(buf, field);
+            writeRequestArgument(buf, value);
+        }
+
+        @Override
+        public int argumentCount() {
             return SIZE;
+        }
+
+        @Override
+        public int encodedByteCount() {
+            return estimateRequestArgumentSize(field) + estimateRequestArgumentSize(value);
         }
 
         @Override
@@ -1561,11 +2224,21 @@ public final class RedisProtocolSupport {
         }
 
         @Override
-        public int writeTo(final CompositeBuffer buf, final BufferAllocator allocator) {
-            addRequestArgument(SubCommand.GROUP, buf, allocator);
-            addRequestArgument(group, buf, allocator);
-            addRequestArgument(consumer, buf, allocator);
+        public void encodeTo(final Buffer buf) {
+            SubCommand.GROUP.encodeTo(buf);
+            writeRequestArgument(buf, group);
+            writeRequestArgument(buf, consumer);
+        }
+
+        @Override
+        public int argumentCount() {
             return SIZE;
+        }
+
+        @Override
+        public int encodedByteCount() {
+            return SubCommand.GROUP.encodedByteCount() + estimateRequestArgumentSize(group) +
+                        estimateRequestArgumentSize(consumer);
         }
 
         @Override
@@ -1614,10 +2287,19 @@ public final class RedisProtocolSupport {
         }
 
         @Override
-        public int writeTo(final CompositeBuffer buf, final BufferAllocator allocator) {
-            addRequestArgument(key, buf, allocator);
-            addRequestArgument(value, buf, allocator);
+        public void encodeTo(final Buffer buf) {
+            writeRequestArgument(buf, key);
+            writeRequestArgument(buf, value);
+        }
+
+        @Override
+        public int argumentCount() {
             return SIZE;
+        }
+
+        @Override
+        public int encodedByteCount() {
+            return estimateRequestArgumentSize(key) + estimateRequestArgumentSize(value);
         }
 
         @Override
@@ -1671,11 +2353,21 @@ public final class RedisProtocolSupport {
         }
 
         @Override
-        public int writeTo(final CompositeBuffer buf, final BufferAllocator allocator) {
-            addRequestArgument(longitude, buf, allocator);
-            addRequestArgument(latitude, buf, allocator);
-            addRequestArgument(member, buf, allocator);
+        public void encodeTo(final Buffer buf) {
+            writeRequestArgument(buf, longitude);
+            writeRequestArgument(buf, latitude);
+            writeRequestArgument(buf, member);
+        }
+
+        @Override
+        public int argumentCount() {
             return SIZE;
+        }
+
+        @Override
+        public int encodedByteCount() {
+            return calculateRequestArgumentSize(longitude) + calculateRequestArgumentSize(latitude) +
+                        estimateRequestArgumentSize(member);
         }
 
         @Override
@@ -1723,11 +2415,21 @@ public final class RedisProtocolSupport {
         }
 
         @Override
-        public int writeTo(final CompositeBuffer buf, final BufferAllocator allocator) {
-            addRequestArgument(SubCommand.LIMIT, buf, allocator);
-            addRequestArgument(offset, buf, allocator);
-            addRequestArgument(count, buf, allocator);
+        public void encodeTo(final Buffer buf) {
+            SubCommand.LIMIT.encodeTo(buf);
+            writeRequestArgument(buf, offset);
+            writeRequestArgument(buf, count);
+        }
+
+        @Override
+        public int argumentCount() {
             return SIZE;
+        }
+
+        @Override
+        public int encodedByteCount() {
+            return SubCommand.LIMIT.encodedByteCount() + calculateRequestArgumentSize(offset) +
+                        calculateRequestArgumentSize(count);
         }
 
         @Override
@@ -1775,10 +2477,19 @@ public final class RedisProtocolSupport {
         }
 
         @Override
-        public int writeTo(final CompositeBuffer buf, final BufferAllocator allocator) {
-            addRequestArgument(score, buf, allocator);
-            addRequestArgument(member, buf, allocator);
+        public void encodeTo(final Buffer buf) {
+            writeRequestArgument(buf, score);
+            writeRequestArgument(buf, member);
+        }
+
+        @Override
+        public int argumentCount() {
             return SIZE;
+        }
+
+        @Override
+        public int encodedByteCount() {
+            return calculateRequestArgumentSize(score) + estimateRequestArgumentSize(member);
         }
 
         @Override
@@ -1835,11 +2546,21 @@ public final class RedisProtocolSupport {
             }
 
             @Override
-            public int writeTo(final CompositeBuffer buf, final BufferAllocator allocator) {
-                addRequestArgument(SubCommand.GET, buf, allocator);
-                addRequestArgument(type, buf, allocator);
-                addRequestArgument(offset, buf, allocator);
+            public void encodeTo(final Buffer buf) {
+                SubCommand.GET.encodeTo(buf);
+                type.encodeTo(buf);
+                writeRequestArgument(buf, offset);
+            }
+
+            @Override
+            public int argumentCount() {
                 return SIZE;
+            }
+
+            @Override
+            public int encodedByteCount() {
+                return SubCommand.GET.encodedByteCount() + type.encodedByteCount() +
+                            calculateRequestArgumentSize(offset);
             }
 
             @Override
@@ -1896,12 +2617,22 @@ public final class RedisProtocolSupport {
             }
 
             @Override
-            public int writeTo(final CompositeBuffer buf, final BufferAllocator allocator) {
-                addRequestArgument(SubCommand.INCRBY, buf, allocator);
-                addRequestArgument(type, buf, allocator);
-                addRequestArgument(offset, buf, allocator);
-                addRequestArgument(increment, buf, allocator);
+            public void encodeTo(final Buffer buf) {
+                SubCommand.INCRBY.encodeTo(buf);
+                type.encodeTo(buf);
+                writeRequestArgument(buf, offset);
+                writeRequestArgument(buf, increment);
+            }
+
+            @Override
+            public int argumentCount() {
                 return SIZE;
+            }
+
+            @Override
+            public int encodedByteCount() {
+                return SubCommand.INCRBY.encodedByteCount() + type.encodedByteCount() +
+                            calculateRequestArgumentSize(offset) + calculateRequestArgumentSize(increment);
             }
 
             @Override
@@ -1958,12 +2689,22 @@ public final class RedisProtocolSupport {
             }
 
             @Override
-            public int writeTo(final CompositeBuffer buf, final BufferAllocator allocator) {
-                addRequestArgument(SubCommand.SET, buf, allocator);
-                addRequestArgument(type, buf, allocator);
-                addRequestArgument(offset, buf, allocator);
-                addRequestArgument(value, buf, allocator);
+            public void encodeTo(final Buffer buf) {
+                SubCommand.SET.encodeTo(buf);
+                type.encodeTo(buf);
+                writeRequestArgument(buf, offset);
+                writeRequestArgument(buf, value);
+            }
+
+            @Override
+            public int argumentCount() {
                 return SIZE;
+            }
+
+            @Override
+            public int encodedByteCount() {
+                return SubCommand.SET.encodedByteCount() + type.encodedByteCount() +
+                            calculateRequestArgumentSize(offset) + calculateRequestArgumentSize(value);
             }
 
             @Override
@@ -2007,10 +2748,19 @@ public final class RedisProtocolSupport {
             }
 
             @Override
-            public int writeTo(final CompositeBuffer buf, final BufferAllocator allocator) {
-                addRequestArgument(SubCommand.OVERFLOW, buf, allocator);
-                addRequestArgument(strategy, buf, allocator);
+            public void encodeTo(final Buffer buf) {
+                SubCommand.OVERFLOW.encodeTo(buf);
+                strategy.encodeTo(buf);
+            }
+
+            @Override
+            public int argumentCount() {
                 return SIZE;
+            }
+
+            @Override
+            public int encodedByteCount() {
+                return SubCommand.OVERFLOW.encodedByteCount() + strategy.encodedByteCount();
             }
 
             @Override

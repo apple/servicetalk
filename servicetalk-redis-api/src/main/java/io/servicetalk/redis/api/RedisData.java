@@ -20,10 +20,15 @@ import io.servicetalk.buffer.api.BufferAllocator;
 
 import java.util.List;
 
+import static io.servicetalk.redis.api.RedisRequests.calculateRequestArgumentArraySize;
+import static io.servicetalk.redis.api.RedisRequests.calculateRequestArgumentLengthSize;
+import static io.servicetalk.redis.api.RedisRequests.calculateRequestArgumentSize;
+import static io.servicetalk.redis.api.RedisRequests.estimateRequestArgumentSize;
+import static io.servicetalk.redis.api.RedisRequests.writeLength;
+import static io.servicetalk.redis.api.RedisRequests.writeRequestArgument;
+import static io.servicetalk.redis.api.RedisRequests.writeRequestArraySize;
 import static io.servicetalk.redis.internal.RedisUtils.EOL_LENGTH;
 import static io.servicetalk.redis.internal.RedisUtils.EOL_SHORT;
-import static io.servicetalk.redis.internal.RedisUtils.toRespArraySize;
-import static io.servicetalk.redis.internal.RedisUtils.toRespBulkString;
 import static java.util.Arrays.asList;
 
 /**
@@ -92,14 +97,26 @@ public interface RedisData {
      * Data that can be sent as part of a Redis request.
      */
     interface RequestRedisData {
+
         /**
-         * Convert this {@link RequestRedisData} into a single RESP (REdis Serialization Protocol) {@link Buffer}.
+         * Get the number of bytes that this instance writes with {@link #encodeTo}
          *
-         * @param allocator the {@link BufferAllocator} to use
-         * @return a RESP {@link Buffer} representation of this {@link RequestRedisData}
-         * @see <a href="https://redis.io/topics/protocol">Redis Protocol specification</a>
+         * @return the number of bytes that will be written to the buffer
          */
-        Buffer toRESPArgument(BufferAllocator allocator);
+        int encodedByteCount();
+
+        /**
+         * Write this data to a {@link Buffer}.
+         *
+         * @param buffer the {@link Buffer} to write to
+         */
+        void encodeTo(Buffer buffer);
+
+        default Buffer asBuffer(BufferAllocator allocator) {
+            final Buffer buffer = allocator.newBuffer(encodedByteCount());
+            encodeTo(buffer);
+            return buffer;
+        }
     }
 
     /**
@@ -129,8 +146,13 @@ public interface RedisData {
         }
 
         @Override
-        public Buffer toRESPArgument(final BufferAllocator allocator) {
-            return toRespBulkString(getValue(), allocator);
+        public int encodedByteCount() {
+            return estimateRequestArgumentSize(getValue());
+        }
+
+        @Override
+        public void encodeTo(Buffer buf) {
+            writeRequestArgument(buf, getValue());
         }
     }
 
@@ -163,8 +185,13 @@ public interface RedisData {
         }
 
         @Override
-        public Buffer toRESPArgument(final BufferAllocator allocator) {
-            return toRespBulkString(getValue(), allocator);
+        public int encodedByteCount() {
+            return calculateRequestArgumentSize(getValue());
+        }
+
+        @Override
+        public void encodeTo(final Buffer buf) {
+            writeRequestArgument(buf, getValue());
         }
     }
 
@@ -183,12 +210,13 @@ public interface RedisData {
         }
 
         @Override
-        public Buffer toRESPArgument(final BufferAllocator allocator) {
-            final byte[] sizeBytes = RedisCoercions.toAsciiBytes(getValue());
-            return allocator.newBuffer(1 + sizeBytes.length + EOL_LENGTH)
-                    .writeByte('$')
-                    .writeBytes(sizeBytes)
-                    .writeShort(EOL_SHORT);
+        public int encodedByteCount() {
+            return calculateRequestArgumentLengthSize(getValue());
+        }
+
+        @Override
+        public void encodeTo(final Buffer buffer) {
+            writeLength(buffer, getValue());
         }
     }
 
@@ -207,8 +235,13 @@ public interface RedisData {
         }
 
         @Override
-        public Buffer toRESPArgument(final BufferAllocator allocator) {
-            return getValue();
+        public int encodedByteCount() {
+            return getValue().readableBytes();
+        }
+
+        @Override
+        public void encodeTo(final Buffer buffer) {
+            buffer.writeBytes(getValue());
         }
     }
 
@@ -227,9 +260,13 @@ public interface RedisData {
         }
 
         @Override
-        public Buffer toRESPArgument(final BufferAllocator allocator) {
-            return allocator.newBuffer(getValue().readableBytes() + EOL_LENGTH)
-                    .writeBytes(getValue())
+        public int encodedByteCount() {
+            return super.encodedByteCount() + EOL_LENGTH;
+        }
+
+        @Override
+        public void encodeTo(final Buffer buffer) {
+            buffer.writeBytes(getValue())
                     .writeShort(EOL_SHORT);
         }
     }
@@ -249,8 +286,13 @@ public interface RedisData {
         }
 
         @Override
-        public Buffer toRESPArgument(final BufferAllocator allocator) {
-            return toRespBulkString(getValue(), allocator);
+        public void encodeTo(Buffer buf) {
+            writeRequestArgument(buf, getValue());
+        }
+
+        @Override
+        public int encodedByteCount() {
+            return calculateRequestArgumentSize(getValue());
         }
     }
 
@@ -269,8 +311,13 @@ public interface RedisData {
         }
 
         @Override
-        public Buffer toRESPArgument(final BufferAllocator allocator) {
-            return toRespArraySize(getValue(), allocator);
+        public int encodedByteCount() {
+            return calculateRequestArgumentArraySize(getValue());
+        }
+
+        @Override
+        public void encodeTo(final Buffer buffer) {
+            writeRequestArraySize(buffer, getValue());
         }
     }
 

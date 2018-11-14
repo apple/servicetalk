@@ -2082,10 +2082,10 @@ final class BlockingPartitionedRedisCommanderToPartitionedRedisCommander extends
     @Override
     public Single<Long> zinterstore(@RedisProtocolSupport.Key final CharSequence destination, final long numkeys,
                                     @RedisProtocolSupport.Key final Collection<? extends CharSequence> keys,
-                                    final Collection<Long> weightses,
+                                    final Collection<Long> weights,
                                     @Nullable final RedisProtocolSupport.ZinterstoreAggregate aggregate) {
         return blockingToSingle(
-                    () -> partitionedRedisClient.zinterstore(destination, numkeys, keys, weightses, aggregate));
+                    () -> partitionedRedisClient.zinterstore(destination, numkeys, keys, weights, aggregate));
     }
 
     @Override
@@ -2270,10 +2270,10 @@ final class BlockingPartitionedRedisCommanderToPartitionedRedisCommander extends
     @Override
     public Single<Long> zunionstore(@RedisProtocolSupport.Key final CharSequence destination, final long numkeys,
                                     @RedisProtocolSupport.Key final Collection<? extends CharSequence> keys,
-                                    final Collection<Long> weightses,
+                                    final Collection<Long> weights,
                                     @Nullable final RedisProtocolSupport.ZunionstoreAggregate aggregate) {
         return blockingToSingle(
-                    () -> partitionedRedisClient.zunionstore(destination, numkeys, keys, weightses, aggregate));
+                    () -> partitionedRedisClient.zunionstore(destination, numkeys, keys, weights, aggregate));
     }
 
     BlockingRedisCommander asBlockingCommanderInternal() {

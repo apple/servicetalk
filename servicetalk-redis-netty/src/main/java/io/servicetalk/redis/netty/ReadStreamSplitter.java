@@ -15,7 +15,7 @@
  */
 package io.servicetalk.redis.netty;
 
-import io.servicetalk.buffer.api.CompositeBuffer;
+import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.GroupedPublisher;
@@ -53,9 +53,11 @@ import static io.servicetalk.concurrent.internal.SubscriberUtils.checkDuplicateS
 import static io.servicetalk.redis.api.RedisProtocolSupport.Command.PING;
 import static io.servicetalk.redis.api.RedisProtocolSupport.Command.PUNSUBSCRIBE;
 import static io.servicetalk.redis.api.RedisProtocolSupport.Command.UNSUBSCRIBE;
+import static io.servicetalk.redis.api.RedisRequests.calculateInitialCommandBufferSize;
+import static io.servicetalk.redis.api.RedisRequests.estimateRequestArgumentSize;
 import static io.servicetalk.redis.api.RedisRequests.newRequest;
-import static io.servicetalk.redis.internal.RedisUtils.addRequestArgument;
-import static io.servicetalk.redis.internal.RedisUtils.newRequestCompositeBuffer;
+import static io.servicetalk.redis.api.RedisRequests.writeRequestArgument;
+import static io.servicetalk.redis.api.RedisRequests.writeRequestArraySize;
 import static io.servicetalk.redis.netty.SubscribedChannelReadStream.PubSubChannelMessage.KeyType.Channel;
 import static io.servicetalk.redis.netty.SubscribedChannelReadStream.PubSubChannelMessage.KeyType.Pattern;
 import static io.servicetalk.redis.netty.SubscribedChannelReadStream.PubSubChannelMessage.KeyType.SimpleString;
@@ -280,10 +282,11 @@ final class ReadStreamSplitter {
                 @Override
                 public void cancel() {
                     final Command command = isPatternSubscribe ? PUNSUBSCRIBE : UNSUBSCRIBE;
-                    final CompositeBuffer buf = newRequestCompositeBuffer(2, command.toRESPArgument(
-                            connection.executionContext().bufferAllocator()),
-                            connection.executionContext().bufferAllocator());
-                    addRequestArgument(channel, buf, connection.executionContext().bufferAllocator());
+                    final int capacity = calculateInitialCommandBufferSize(2, command) + estimateRequestArgumentSize(channel);
+                    final Buffer buf = connection.executionContext().bufferAllocator().newBuffer(capacity);
+                    writeRequestArraySize(buf, 2);
+                    command.encodeTo(buf);
+                    writeRequestArgument(buf, channel);
                     final RedisRequest request = newRequest(command, buf);
                     unsubscribeWriter.apply(request).subscribe(new Completable.Subscriber() {
                         @Override
