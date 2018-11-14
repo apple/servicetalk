@@ -37,10 +37,10 @@ final class BlockingIterableMock<T> {
         iterator = mock(BlockingIterator.class);
         when(iterable.iterator()).then(__ -> {
             final Iterator<T> srcIterator = source.iterator();
-            when(iterator.hasNext()).then($__ -> srcIterator.hasNext());
-            when(iterator.hasNext(anyLong(), any(TimeUnit.class))).then($__ -> srcIterator.hasNext());
-            when(iterator.next()).then($__ -> srcIterator.next());
-            when(iterator.next(anyLong(), any(TimeUnit.class))).then($__ -> srcIterator.next());
+            when(iterator.hasNext()).then(___ -> srcIterator.hasNext());
+            when(iterator.hasNext(anyLong(), any(TimeUnit.class))).then(___ -> srcIterator.hasNext());
+            when(iterator.next()).then(___ -> srcIterator.next());
+            when(iterator.next(anyLong(), any(TimeUnit.class))).then(___ -> srcIterator.next());
             return iterator;
         });
     }
