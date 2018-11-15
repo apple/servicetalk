@@ -24,6 +24,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -47,12 +49,13 @@ public class FormUrlEncodedHttpDeserializerTest {
 
         final HttpHeaders headers = DefaultHttpHeadersFactory.INSTANCE.newHeaders();
         headers.set(CONTENT_TYPE, "application/x-www-form-urlencoded; charset=UTF-8");
-        final String formParameters = "escape%26this%3D=and%26this%25&param2=bar";
+        final String formParameters = "escape%26this%3D=and%26this%25&param2=bar&param2=foo";
 
-        final Map<String, String> deserialized = deserializer.deserialize(headers, toBuffer(formParameters));
+        final Map<String, List<String>> deserialized = deserializer.deserialize(headers, toBuffer(formParameters));
 
-        assertEquals("and&this%", deserialized.get("escape&this="));
-        assertEquals("bar", deserialized.get("param2"));
+        assertEquals(Collections.singletonList("and&this%"), deserialized.get("escape&this="));
+        assertEquals("bar", deserialized.get("param2").get(0));
+        assertEquals("foo", deserialized.get("param2").get(1));
     }
 
     @Test
@@ -62,7 +65,7 @@ public class FormUrlEncodedHttpDeserializerTest {
         final HttpHeaders headers = DefaultHttpHeadersFactory.INSTANCE.newHeaders();
         headers.set(CONTENT_TYPE, "application/x-www-form-urlencoded; charset=UTF-8");
 
-        final Map<String, String> deserialized = deserializer.deserialize(headers, EMPTY_BUFFER);
+        final Map<String, List<String>> deserialized = deserializer.deserialize(headers, EMPTY_BUFFER);
 
         assertEquals(0, deserialized.size());
     }
@@ -114,7 +117,7 @@ public class FormUrlEncodedHttpDeserializerTest {
             }
         };
 
-        final BlockingIterable<Map<String, String>> deserialized = deserializer
+        final BlockingIterable<Map<String, List<String>>> deserialized = deserializer
                 .deserialize(headers, formParametersIterable);
         deserialized.iterator().close();
 

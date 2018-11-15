@@ -21,58 +21,55 @@ import io.servicetalk.concurrent.BlockingIterator;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.serialization.api.SerializationException;
 
-import java.io.UnsupportedEncodingException;
-import java.net.URLDecoder;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
 import static io.servicetalk.http.api.HttpHeaderValues.APPLICATION_X_WWW_FORM_URLENCODED;
 
 /**
- * An {@link HttpDeserializer} that deserializes a key-value {@link Map} from an urlencoded form.
+ * An {@link HttpDeserializer} that deserializes a key-values {@link Map} from an urlencoded form.
  */
-final class FormUrlEncodedHttpDeserializer implements HttpDeserializer<Map<String, String>> {
+final class FormUrlEncodedHttpDeserializer implements HttpDeserializer<Map<String, List<String>>> {
+    private static final Charset DEFAULT_CHARSET = StandardCharsets.UTF_8;
 
-    static final FormUrlEncodedHttpDeserializer UTF_8 = new FormUrlEncodedHttpDeserializer(StandardCharsets.UTF_8,
+
+    static final FormUrlEncodedHttpDeserializer UTF_8 = new FormUrlEncodedHttpDeserializer(
             headers -> headers.contains(CONTENT_TYPE, APPLICATION_X_WWW_FORM_URLENCODED + "; charset=UTF-8"));
 
-    private final Charset charset;
     private final Predicate<HttpHeaders> checkContentType;
 
-    FormUrlEncodedHttpDeserializer(final Charset charset, final Predicate<HttpHeaders> checkContentType) {
-        this.charset = charset;
+    FormUrlEncodedHttpDeserializer(final Predicate<HttpHeaders> checkContentType) {
         this.checkContentType = checkContentType;
     }
 
     @Override
-    public Map<String, String> deserialize(final HttpHeaders headers, final Buffer payload) {
+    public Map<String, List<String>> deserialize(final HttpHeaders headers, final Buffer payload) {
         checkContentType(headers);
         return deserialize(payload);
     }
 
     @Override
-    public BlockingIterable<Map<String, String>> deserialize(final HttpHeaders headers,
-                                                             final BlockingIterable<Buffer> payload) {
+    public BlockingIterable<Map<String, List<String>>> deserialize(final HttpHeaders headers,
+                                                                   final BlockingIterable<Buffer> payload) {
         checkContentType(headers);
         return () -> {
             final BlockingIterator<Buffer> iterator = payload.iterator();
-            return new BlockingIterator<Map<String, String>>() {
+            return new BlockingIterator<Map<String, List<String>>>() {
                 @Override
                 public boolean hasNext(final long timeout, final TimeUnit unit) throws TimeoutException {
                     return iterator.hasNext(timeout, unit);
                 }
 
                 @Override
-                public Map<String, String> next(final long timeout, final TimeUnit unit) throws TimeoutException {
+                public Map<String, List<String>> next(final long timeout, final TimeUnit unit) throws TimeoutException {
                     return deserialize(iterator.next(timeout, unit));
                 }
 
@@ -87,7 +84,7 @@ final class FormUrlEncodedHttpDeserializer implements HttpDeserializer<Map<Strin
                 }
 
                 @Override
-                public Map<String, String> next() {
+                public Map<String, List<String>> next() {
                     return deserialize(iterator.next());
                 }
             };
@@ -95,7 +92,8 @@ final class FormUrlEncodedHttpDeserializer implements HttpDeserializer<Map<Strin
     }
 
     @Override
-    public Publisher<Map<String, String>> deserialize(final HttpHeaders headers, final Publisher<Buffer> payload) {
+    public Publisher<Map<String, List<String>>> deserialize(final HttpHeaders headers,
+                                                            final Publisher<Buffer> payload) {
         checkContentType(headers);
         return payload.map(this::deserialize);
     }
@@ -107,27 +105,10 @@ final class FormUrlEncodedHttpDeserializer implements HttpDeserializer<Map<Strin
         }
     }
 
-    private Map<String, String> deserialize(@Nullable final Buffer buffer) {
+    private Map<String, List<String>> deserialize(@Nullable final Buffer buffer) {
         if (buffer == null || buffer.capacity() == 0) {
             return Collections.emptyMap();
         }
-        return Arrays.stream(buffer.toString(charset).split("&"))
-                .map(entry -> {
-                    final String[] keyValue = entry.split("=");
-                    if (keyValue.length != 2) {
-                        throw new SerializationException(
-                                "Invalid key-value entry, expected a single \"=\" symbol. Found: " + entry);
-                    }
-                    return keyValue;
-                })
-                .collect(Collectors.toMap(keyValue -> urlDecode(keyValue[0]), keyValue -> urlDecode(keyValue[1])));
-    }
-
-    private String urlDecode(final String value) {
-        try {
-            return URLDecoder.decode(value, charset.name());
-        } catch (UnsupportedEncodingException e) {
-            throw new RuntimeException(e);
-        }
+        return QueryStringDecoder.decodeParams(buffer.toString(DEFAULT_CHARSET));
     }
 }

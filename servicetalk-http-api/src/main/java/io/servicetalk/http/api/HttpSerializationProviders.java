@@ -22,6 +22,7 @@ import io.servicetalk.serialization.api.Serializer;
 
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
@@ -79,39 +80,26 @@ public final class HttpSerializationProviders {
     }
 
     /**
-     * Creates an {@link HttpDeserializer} that can deserialize key-value {@link Map}s
-     * with the specified {@link Charset} from urlencoded forms.
+     * Creates an {@link HttpDeserializer} that can deserialize key-values {@link Map}s
+     * with {@link StandardCharsets#UTF_8} from urlencoded forms.
      *
-     * @return {@link HttpDeserializer} that could deserialize a key-value {@link Map}.
+     * @return {@link HttpDeserializer} that could deserialize a key-values {@link Map}.
      */
-    public static HttpDeserializer<Map<String, String>> formUrlEncodedDeserializer() {
+    public static HttpDeserializer<Map<String, List<String>>> formUrlEncodedDeserializer() {
         return FormUrlEncodedHttpDeserializer.UTF_8;
     }
 
     /**
      * Creates an {@link HttpDeserializer} that can deserialize key-value {@link Map}s
-     * with the specified {@link Charset} from urlencoded forms.
+     * with {@link StandardCharsets#UTF_8} from urlencoded forms.
      *
-     * @param charset {@link Charset} for the {@link String} that will be deserialized.
-     * @return {@link HttpDeserializer} that could deserialize a key-value {@link Map}.
-     */
-    public static HttpDeserializer<Map<String, String>> formUrlEncodedDeserializer(Charset charset) {
-        final String contentType = APPLICATION_X_WWW_FORM_URLENCODED + "; charset=" + charset.name();
-        return formUrlEncodedDeserializer(charset, headers -> headers.contains(CONTENT_TYPE, contentType));
-    }
-
-    /**
-     * Creates an {@link HttpDeserializer} that can deserialize key-value {@link Map}s
-     * with the specified {@link Charset} from urlencoded forms.
-     *
-     * @param charset {@link Charset} for the {@link String} that will be deserialized.
      * @param checkContentType A {@link Predicate} that validates the passed {@link HttpHeaders} as expected for the
      * deserialized payload. If the validation fails, then deserialization will fail with {@link SerializationException}
      * @return {@link HttpDeserializer} that could deserialize a key-value {@link Map}.
      */
-    public static HttpDeserializer<Map<String, String>> formUrlEncodedDeserializer(
-            Charset charset, Predicate<HttpHeaders> checkContentType) {
-        return new FormUrlEncodedHttpDeserializer(charset, checkContentType);
+    public static HttpDeserializer<Map<String, List<String>>> formUrlEncodedDeserializer(
+            Predicate<HttpHeaders> checkContentType) {
+        return new FormUrlEncodedHttpDeserializer(checkContentType);
     }
 
     /**
