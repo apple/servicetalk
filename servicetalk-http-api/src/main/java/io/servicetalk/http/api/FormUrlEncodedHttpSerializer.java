@@ -36,7 +36,7 @@ import static io.servicetalk.http.api.HttpHeaderValues.APPLICATION_X_WWW_FORM_UR
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
- * An {@link HttpSerializer} that serializes a key-value {@link Map} to an urlencoded form.
+ * An {@link HttpSerializer} that serializes a key-values {@link Map} to an urlencoded form.
  */
 final class FormUrlEncodedHttpSerializer implements HttpSerializer<Map<String, List<String>>> {
 
@@ -46,7 +46,7 @@ final class FormUrlEncodedHttpSerializer implements HttpSerializer<Map<String, L
     private final Charset charset;
     private final Consumer<HttpHeaders> addContentType;
 
-    public FormUrlEncodedHttpSerializer(final Charset charset, final Consumer<HttpHeaders> addContentType) {
+    FormUrlEncodedHttpSerializer(final Charset charset, final Consumer<HttpHeaders> addContentType) {
         this.charset = charset;
         this.addContentType = addContentType;
     }

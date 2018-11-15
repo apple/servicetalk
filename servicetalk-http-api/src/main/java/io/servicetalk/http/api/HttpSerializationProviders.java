@@ -44,21 +44,23 @@ public final class HttpSerializationProviders {
     }
 
     /**
-     * Creates an {@link HttpSerializer} that can serialize a key-value {@link Map}s with {@link StandardCharsets#UTF_8}
-     * {@code Charset} to urlencoded forms.
+     * Creates an {@link HttpSerializer} that can serialize a key-values {@link Map}s
+     * with {@link StandardCharsets#UTF_8} {@code Charset} to urlencoded forms.
      *
      * @return {@link HttpSerializer} that could serialize key-value {@link Map}.
+     * @see <a href="https://url.spec.whatwg.org/#application/x-www-form-urlencoded">x-www-form-urlencoded specification</a>
      */
     public static HttpSerializer<Map<String, List<String>>> formUrlEncodedSerializer() {
         return FormUrlEncodedHttpSerializer.UTF8;
     }
 
     /**
-     * Creates an {@link HttpSerializer} that can serialize key-value {@link Map}s with the specified {@link Charset}
+     * Creates an {@link HttpSerializer} that can serialize key-values {@link Map}s with the specified {@link Charset}
      * to to urlencoded forms.
      *
      * @param charset {@link Charset} for the key-value {@link Map} that will be serialized.
      * @return {@link HttpSerializer} that could serialize from key-value {@link Map}.
+     * @see <a href="https://url.spec.whatwg.org/#application/x-www-form-urlencoded">x-www-form-urlencoded specification</a>
      */
     public static HttpSerializer<Map<String, List<String>>> formUrlEncodedSerializer(Charset charset) {
         final String contentType = APPLICATION_X_WWW_FORM_URLENCODED + "; charset=" + charset.name();
@@ -66,13 +68,14 @@ public final class HttpSerializationProviders {
     }
 
     /**
-     * Creates an {@link HttpSerializer} that can serialize a key-value {@link Map}s with the specified {@link Charset}
+     * Creates an {@link HttpSerializer} that can serialize a key-values {@link Map}s with the specified {@link Charset}
      * to urlencoded forms.
      *
      * @param charset {@link Charset} for the key-value {@link Map} that will be serialized.
      * @param addContentType A {@link Consumer} that adds relevant headers to the passed {@link HttpHeaders} matching
      * the serialized payload. Typically, this involves adding a {@link HttpHeaderNames#CONTENT_TYPE} header.
      * @return {@link HttpSerializer} that could serialize from key-value {@link Map}.
+     * @see <a href="https://url.spec.whatwg.org/#application/x-www-form-urlencoded">x-www-form-urlencoded specification</a>
      */
     public static HttpSerializer<Map<String, List<String>>> formUrlEncodedSerializer(
             Charset charset, Consumer<HttpHeaders> addContentType) {
@@ -84,18 +87,20 @@ public final class HttpSerializationProviders {
      * with {@link StandardCharsets#UTF_8} from urlencoded forms.
      *
      * @return {@link HttpDeserializer} that could deserialize a key-values {@link Map}.
+     * @see <a href="https://url.spec.whatwg.org/#application/x-www-form-urlencoded">x-www-form-urlencoded specification</a>
      */
     public static HttpDeserializer<Map<String, List<String>>> formUrlEncodedDeserializer() {
         return FormUrlEncodedHttpDeserializer.UTF_8;
     }
 
     /**
-     * Creates an {@link HttpDeserializer} that can deserialize key-value {@link Map}s
+     * Creates an {@link HttpDeserializer} that can deserialize key-values {@link Map}s
      * with {@link StandardCharsets#UTF_8} from urlencoded forms.
      *
      * @param checkContentType A {@link Predicate} that validates the passed {@link HttpHeaders} as expected for the
      * deserialized payload. If the validation fails, then deserialization will fail with {@link SerializationException}
      * @return {@link HttpDeserializer} that could deserialize a key-value {@link Map}.
+     * @see <a href="https://url.spec.whatwg.org/#application/x-www-form-urlencoded">x-www-form-urlencoded specification</a>
      */
     public static HttpDeserializer<Map<String, List<String>>> formUrlEncodedDeserializer(
             Predicate<HttpHeaders> checkContentType) {
