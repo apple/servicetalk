@@ -1994,16 +1994,20 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
     @Override
     public final void subscribe(Subscriber<? super T> subscriber) {
         requireNonNull(subscriber);
+        final SignalOffloader signalOffloader;
+        final Subscriber<? super T> offloadedSubscriber;
         try {
             // This is a user-driven subscribe i.e. there is no SignalOffloader override, so create a new SignalOffloader to
             // use.
-            final SignalOffloader signalOffloader = newOffloaderFor(executor);
+            signalOffloader = newOffloaderFor(executor);
             // Since this is a user-driven subscribe (end of the execution chain), offload subscription methods
-            subscribe(signalOffloader.offloadSubscription(subscriber), signalOffloader);
+            offloadedSubscriber = signalOffloader.offloadSubscription(subscriber);
         } catch (Throwable t) {
             subscriber.onSubscribe(EMPTY_SUBSCRIPTION);
             subscriber.onError(t);
+            return;
         }
+        subscribe(offloadedSubscriber, signalOffloader);
     }
 
     /**
@@ -2219,7 +2223,7 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
      * @param signalOffloader {@link SignalOffloader} to use for this {@link Subscriber}.
      */
     final void subscribe(Subscriber<? super T> subscriber, SignalOffloader signalOffloader) {
-        getPublisherPlugin().handleSubscribe(requireNonNull(subscriber), signalOffloader, this::handleSubscribe);
+        getPublisherPlugin().handleSubscribe(requireNonNull(subscriber), signalOffloader, this::safeHandleSubscribe);
     }
 
     /**
@@ -2237,6 +2241,15 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
     void handleSubscribe(Subscriber<? super T> subscriber, SignalOffloader signalOffloader) {
         Subscriber<? super T> offloaded = signalOffloader.offloadSubscriber(subscriber);
         signalOffloader.offloadSubscribe(offloaded, this::handleSubscribe);
+    }
+
+    private void safeHandleSubscribe(Subscriber<? super T> subscriber, SignalOffloader signalOffloader) {
+        try {
+            handleSubscribe(subscriber, signalOffloader);
+        } catch (Throwable t) {
+            subscriber.onSubscribe(EMPTY_SUBSCRIPTION);
+            subscriber.onError(t);
+        }
     }
 
     /**
