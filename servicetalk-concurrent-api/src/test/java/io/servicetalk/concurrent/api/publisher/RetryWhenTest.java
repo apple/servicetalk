@@ -77,9 +77,7 @@ public class RetryWhenTest {
                                 // If we complete the returned Completable synchronously, then the offloader will not
                                 // terminate before we add another entity in the next subscribe. So, we return an
                                 // asynchronously completed Completable.
-                                executor.submit(() -> {
-
-                                }) : error(t));
+                                executor.submit(() -> { }) : error(t));
         expectedException.expect(instanceOf(ExecutionException.class));
         expectedException.expectCause(is(DELIBERATE_EXCEPTION));
         source.toFuture().get();

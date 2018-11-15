@@ -65,8 +65,7 @@ public class RepeatWhenTest {
         Collection<Integer> result = just(1).publishOn(executor).repeatWhen(count -> count == 1 ?
                 // If we complete the returned Completable synchronously, then the offloader will not terminate before
                 // we add another entity in the next subscribe. So, we return an asynchronously completed Completable.
-                executor.submit(() -> {
-                }) : error(DELIBERATE_EXCEPTION)).toFuture().get();
+                executor.submit(() -> { }) : error(DELIBERATE_EXCEPTION)).toFuture().get();
         assertThat("Unexpected items received.", result, hasSize(2));
     }
 
