@@ -30,12 +30,14 @@ import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
 import static java.util.Objects.requireNonNull;
 
 /**
- * {@link Publisher} to do {@link Publisher#repeatWhen(IntFunction)} and {@link Publisher#retryWhen(BiIntFunction)} operations.
+ * {@link Publisher} to do {@link Publisher#repeatWhen(IntFunction)} and {@link Publisher#retryWhen(BiIntFunction)}
+ * operations.
  *
  * @param <T> Type of items emitted from this {@link Publisher}.
  */
-final class RedoWhenPublisher<T> extends AbstractRedoPublisherOperator<T> {
+final class RedoWhenPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
 
+    private final Publisher<T> original;
     private final BiFunction<Integer, TerminalNotification, Completable> shouldRedo;
     private final boolean forRetry;
 
@@ -43,34 +45,34 @@ final class RedoWhenPublisher<T> extends AbstractRedoPublisherOperator<T> {
      * New instance.
      *
      * @param original {@link Publisher} on which this operator is applied.
-     * @param shouldRedo {@link BiFunction} to create a {@link Completable} that determines whether to redo the operation.
-     * @param forRetry If redo has to be done for error i.e. it is used for retry. If {@code true} completion for original source will complete the subscriber.
-     *                    Otherwise, error will send the error to the subscriber.
+     * @param shouldRedo {@link BiFunction} to create a {@link Completable} that determines whether to redo the
+     * operation.
+     * @param forRetry If redo has to be done for error i.e. it is used for retry. If {@code true} completion for
+     * original source will complete the subscriber. Otherwise, error will send the error to the subscriber.
      * @param executor {@link Executor} for this {@link Publisher}.
      */
     RedoWhenPublisher(Publisher<T> original, BiFunction<Integer, TerminalNotification, Completable> shouldRedo,
                       boolean forRetry, Executor executor) {
-        super(original, executor);
+        super(executor);
+        this.original = original;
         this.shouldRedo = shouldRedo;
         this.forRetry = forRetry;
     }
 
     @Override
-    protected Subscriber<? super T> redo(Subscriber<? super T> subscriber, SignalOffloader signalOffloader) {
-        return new RedoSubscriber<>(new SequentialSubscription(), 0, subscriber, this, signalOffloader);
+    void handleSubscribe(Subscriber<? super T> subscriber, SignalOffloader signalOffloader) {
+        original.subscribe(new RedoSubscriber<>(new SequentialSubscription(), 0, subscriber, this), signalOffloader);
     }
 
     private static final class RedoSubscriber<T> extends RedoPublisher.AbstractRedoSubscriber<T> {
 
         private final SequentialCancellable cancellable;
         private final RedoWhenPublisher<T> redoPublisher;
-        private final SignalOffloader signalOffloader;
 
         RedoSubscriber(SequentialSubscription subscription, int redoCount, Subscriber<? super T> subscriber,
-                       RedoWhenPublisher<T> redoPublisher, SignalOffloader signalOffloader) {
+                       RedoWhenPublisher<T> redoPublisher) {
             super(subscription, redoCount, subscriber);
             this.redoPublisher = redoPublisher;
-            this.signalOffloader = signalOffloader;
             cancellable = new SequentialCancellable();
         }
 
@@ -137,8 +139,8 @@ final class RedoWhenPublisher<T> extends AbstractRedoPublisherOperator<T> {
 
                 @Override
                 public void onComplete() {
-                    redoPublisher.subscribeToOriginal(new RedoSubscriber<>(subscription, redoCount + 1, subscriber, redoPublisher,
-                            signalOffloader), signalOffloader);
+                    redoPublisher.original.subscribe(new RedoSubscriber<>(subscription, redoCount + 1,
+                            subscriber, redoPublisher));
                 }
 
                 @Override

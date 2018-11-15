@@ -16,16 +16,24 @@
 package io.servicetalk.concurrent.api.publisher;
 
 import io.servicetalk.concurrent.api.Completable;
+import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.MockedSubscriberRule;
 import io.servicetalk.concurrent.api.TestCompletable;
 import io.servicetalk.concurrent.api.TestPublisher;
 
+import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.util.Collection;
 import java.util.function.IntFunction;
 
+import static io.servicetalk.concurrent.api.Completable.error;
 import static io.servicetalk.concurrent.api.DeliberateException.DELIBERATE_EXCEPTION;
+import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
+import static io.servicetalk.concurrent.api.Publisher.just;
+import static org.hamcrest.Matchers.hasSize;
+import static org.junit.Assert.assertThat;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -39,6 +47,27 @@ public class RepeatWhenTest {
     private TestPublisher<Integer> source;
     private IntFunction<Completable> shouldRepeat;
     private TestCompletable repeatSignal;
+    private Executor executor;
+
+    @After
+    public void tearDown() throws Exception {
+        if (executor != null) {
+            executor.closeAsync().toFuture().get();
+        }
+    }
+
+    @Test
+    public void publishOnWithRepeat() throws Exception {
+        // This is an indication of whether we are using the same offloader across different subscribes. If this works,
+        // then it does not really matter if we reuse offloaders or not. eg: if tomorrow we do not hold up a thread for
+        // the lifetime of the Subscriber, we can reuse the offloader.
+        executor = newCachedThreadExecutor();
+        Collection<Integer> result = just(1).publishOn(executor).repeatWhen(count -> count == 1 ?
+                // If we complete the returned Completable synchronously, then the offloader will not terminate before
+                // we add another entity in the next subscribe. So, we return an asynchronously completed Completable.
+                executor.submit(() -> { }) : error(DELIBERATE_EXCEPTION)).toFuture().get();
+        assertThat("Unexpected items received.", result, hasSize(2));
+    }
 
     @Test
     public void testError() {

@@ -18,18 +18,28 @@ package io.servicetalk.concurrent.api.publisher;
 import io.servicetalk.concurrent.api.BiIntFunction;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.DeliberateException;
+import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.MockedSubscriberRule;
+import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.TestCompletable;
 import io.servicetalk.concurrent.api.TestPublisher;
 
+import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
+import java.util.concurrent.ExecutionException;
+
+import static io.servicetalk.concurrent.api.Completable.error;
 import static io.servicetalk.concurrent.api.DeliberateException.DELIBERATE_EXCEPTION;
+import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertSame;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -39,10 +49,39 @@ import static org.mockito.Mockito.when;
 public class RetryWhenTest {
 
     @Rule
+    public final ExpectedException expectedException = ExpectedException.none();
+    @Rule
     public MockedSubscriberRule<Integer> subscriberRule = new MockedSubscriberRule<>();
     private TestPublisher<Integer> source;
     private BiIntFunction<Throwable, Completable> shouldRetry;
     private TestCompletable retrySignal;
+    private Executor executor;
+
+    @After
+    public void tearDown() throws Exception {
+        if (executor != null) {
+            executor.closeAsync().toFuture().get();
+        }
+    }
+
+    @Test
+    public void publishOnWithRetry() throws Exception {
+        // This is an indication of whether we are using the same offloader across different subscribes. If this works,
+        // then it does not really matter if we reuse offloaders or not. eg: if tomorrow we do not hold up a thread for
+        // the lifetime of the Subscriber, we can reuse the offloader.
+        executor = newCachedThreadExecutor();
+        Publisher<Object> source = Publisher.error(DELIBERATE_EXCEPTION)
+                .publishOn(executor)
+                .retryWhen((count, t) ->
+                        count == 1 ?
+                                // If we complete the returned Completable synchronously, then the offloader will not
+                                // terminate before we add another entity in the next subscribe. So, we return an
+                                // asynchronously completed Completable.
+                                executor.submit(() -> { }) : error(t));
+        expectedException.expect(instanceOf(ExecutionException.class));
+        expectedException.expectCause(is(DELIBERATE_EXCEPTION));
+        source.toFuture().get();
+    }
 
     @Test
     public void testComplete() {

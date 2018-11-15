@@ -26,19 +26,20 @@ import javax.annotation.Nullable;
  *
  * @param <T> Type of result of this {@link Single}.
  */
-final class RetrySingle<T> extends AbstractRedoSingleOperator<T> {
+final class RetrySingle<T> extends AbstractNoHandleSubscribeSingle<T> {
 
+    private final Single<T> original;
     private final BiIntPredicate<Throwable> shouldRetry;
 
     RetrySingle(Single<T> original, BiIntPredicate<Throwable> shouldRetry, Executor executor) {
-        super(original, executor);
+        super(executor);
+        this.original = original;
         this.shouldRetry = shouldRetry;
     }
 
     @Override
-    Subscriber<? super T> redo(final Subscriber<? super T> subscriber, final SignalOffloader signalOffloader) {
-        return new RetrySubscriber<>(new SequentialCancellable(), this, subscriber, 0,
-                signalOffloader);
+    void handleSubscribe(final Subscriber<? super T> subscriber, final SignalOffloader signalOffloader) {
+        original.subscribe(new RetrySubscriber<>(new SequentialCancellable(), this, subscriber, 0), signalOffloader);
     }
 
     abstract static class AbstractRetrySubscriber<T> implements Subscriber<T> {
@@ -71,13 +72,11 @@ final class RetrySingle<T> extends AbstractRedoSingleOperator<T> {
     private static final class RetrySubscriber<T> extends AbstractRetrySubscriber<T> {
 
         private final RetrySingle<T> retrySingle;
-        private final SignalOffloader signalOffloader;
 
         RetrySubscriber(SequentialCancellable sequentialCancellable, RetrySingle<T> retrySingle,
-                        Subscriber<? super T> target, int retryCount, final SignalOffloader signalOffloader) {
+                        Subscriber<? super T> target, int retryCount) {
             super(sequentialCancellable, target, retryCount);
             this.retrySingle = retrySingle;
-            this.signalOffloader = signalOffloader;
         }
 
         @Override
@@ -96,8 +95,8 @@ final class RetrySingle<T> extends AbstractRedoSingleOperator<T> {
                 return;
             }
             if (shouldRetry) {
-                retrySingle.subscribeToOriginal(new RetrySubscriber<>(sequentialCancellable, retrySingle, target,
-                        retryCount + 1, signalOffloader), signalOffloader);
+                retrySingle.original.subscribe(new RetrySubscriber<>(sequentialCancellable, retrySingle, target,
+                        retryCount + 1));
             } else {
                 target.onError(t);
             }
