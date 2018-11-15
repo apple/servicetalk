@@ -30,42 +30,78 @@ public class AsyncContextDisableTest {
 
     @Test
     public void testDisableAsyncContext() throws ExecutionException, InterruptedException {
-        Executor executor = Executors.newCachedThreadExecutor();
-        Executor executor2 = null;
-        try {
-            // Test that AsyncContext is enabled first.
-            String expectedValue = "foo";
-            AsyncContext.put(K1, expectedValue);
-            assertEquals(expectedValue, executor.submit(() -> AsyncContext.get(K1)).toFuture().get());
-            AtomicReference<String> actualValue = new AtomicReference<>();
-            int[] intArray = new int[] {1, 2};
-            Publisher.from(intArray).doOnComplete(() -> actualValue.set(AsyncContext.get(K1)))
-                    .toFuture().get();
-            assertEquals(expectedValue, actualValue.get());
-            actualValue.set(null);
-            Single.success(1).doOnSuccess(i -> actualValue.set(AsyncContext.get(K1)))
-                    .toFuture().get();
-            assertEquals(expectedValue, actualValue.get());
-            actualValue.set(null);
-            Completable.completed().doOnComplete(() -> actualValue.set(AsyncContext.get(K1)))
-                    .toFuture().get();
-            actualValue.set(null);
+        synchronized (K1) { // prevent parallel execution because these tests rely upon static state
+            Executor executor = Executors.newCachedThreadExecutor();
+            Executor executor2 = null;
+            try {
+                // Test that AsyncContext is enabled first.
+                String expectedValue = "foo";
+                AsyncContext.put(K1, expectedValue);
+                assertEquals(expectedValue, executor.submit(() -> AsyncContext.get(K1)).toFuture().get());
+                AtomicReference<String> actualValue = new AtomicReference<>();
+                int[] intArray = new int[]{1, 2};
+                Publisher.from(intArray).publishOn(executor).doBeforeComplete(() -> actualValue.set(AsyncContext.get(K1)))
+                        .toFuture().get();
+                assertEquals(expectedValue, actualValue.get());
+                actualValue.set(null);
+                Single.success(1).publishOn(executor).doBeforeSuccess(i -> actualValue.set(AsyncContext.get(K1)))
+                        .toFuture().get();
+                assertEquals(expectedValue, actualValue.get());
+                actualValue.set(null);
+                Completable.completed().publishOn(executor).doBeforeComplete(() -> actualValue.set(AsyncContext.get(K1)))
+                        .toFuture().get();
+                assertEquals(expectedValue, actualValue.get());
+                actualValue.set(null);
 
+                AsyncContext.disable();
+                try {
+                    // Create a new Executor after we have disabled AsyncContext so we can be sure that AsyncContext won't
+                    // be captured.
+                    executor2 = Executors.newCachedThreadExecutor();
+                    AsyncContext.put(K1, expectedValue);
+                    assertNull(executor2.submit(() -> AsyncContext.get(K1)).toFuture().get());
+                } finally {
+                    AsyncContext.enable();
+                }
+            } finally {
+                if (executor2 != null) {
+                    executor2.closeAsync().toFuture().get();
+                }
+                executor.closeAsync().toFuture().get();
+            }
+        }
+    }
+
+    @Test
+    public void testAutoEnableDoesNotOverrideDisable() throws ExecutionException, InterruptedException {
+        synchronized (K1) { // prevent parallel execution because these tests rely upon static state
             AsyncContext.disable();
             try {
-                // Create a new Executor after we have disabled AsyncContext so we can be sure that AsyncContext won't
-                // be captured.
-                executor2 = Executors.newCachedThreadExecutor();
-                AsyncContext.put(K1, expectedValue);
-                assertNull(executor2.submit(() -> AsyncContext.get(K1)).toFuture().get());
+                Executor executor = Executors.newCachedThreadExecutor();
+                try {
+                    AsyncContext.put(K1, "foo");
+                    assertNull(executor.submit(() -> AsyncContext.get(K1)).toFuture().get());
+
+                    AtomicReference<String> actualValue = new AtomicReference<>();
+                    int[] intArray = new int[]{1, 2};
+                    Publisher.from(intArray).publishOn(executor).doBeforeComplete(() -> actualValue.set(AsyncContext.get(K1)))
+                            .toFuture().get();
+                    assertNull(actualValue.get());
+                    actualValue.set(null);
+                    Single.success(1).publishOn(executor).doBeforeSuccess(i -> actualValue.set(AsyncContext.get(K1)))
+                            .toFuture().get();
+                    assertNull(actualValue.get());
+                    actualValue.set(null);
+                    Completable.completed().publishOn(executor).doBeforeComplete(() -> actualValue.set(AsyncContext.get(K1)))
+                            .toFuture().get();
+                    assertNull(actualValue.get());
+                    actualValue.set(null);
+                } finally {
+                    executor.closeAsync().toFuture().get();
+                }
             } finally {
                 AsyncContext.enable();
             }
-        } finally {
-            if (executor2 != null) {
-                executor2.closeAsync().toFuture().get();
-            }
-            executor.closeAsync().toFuture().get();
         }
     }
 }

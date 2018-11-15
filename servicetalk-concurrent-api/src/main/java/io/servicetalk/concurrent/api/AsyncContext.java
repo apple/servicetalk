@@ -380,16 +380,8 @@ public final class AsyncContext {
     }
 
     static void autoEnable() {
-        for (;;) {
-            final int enabledState = ENABLED_STATE.get();
-            if (enabledState == STATE_AUTO_ENABLED) {
-                break;
-            } else if (ENABLED_STATE.compareAndSet(enabledState, STATE_AUTO_ENABLED)) {
-                if (enabledState != STATE_ENABLED) {
-                    enable0();
-                }
-                break;
-            }
+        if (ENABLED_STATE.compareAndSet(STATE_INIT, STATE_AUTO_ENABLED)) {
+            enable0();
         }
     }
 
