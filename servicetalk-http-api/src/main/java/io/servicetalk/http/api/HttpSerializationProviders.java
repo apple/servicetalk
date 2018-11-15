@@ -49,7 +49,7 @@ public final class HttpSerializationProviders {
      *
      * @return {@link HttpSerializer} that could serialize key-value {@link Map}.
      */
-    public static HttpSerializer<Map<String, String>> formUrlEncodedSerializer() {
+    public static HttpSerializer<Map<String, List<String>>> formUrlEncodedSerializer() {
         return FormUrlEncodedHttpSerializer.UTF8;
     }
 
@@ -60,7 +60,7 @@ public final class HttpSerializationProviders {
      * @param charset {@link Charset} for the key-value {@link Map} that will be serialized.
      * @return {@link HttpSerializer} that could serialize from key-value {@link Map}.
      */
-    public static HttpSerializer<Map<String, String>> formUrlEncodedSerializer(Charset charset) {
+    public static HttpSerializer<Map<String, List<String>>> formUrlEncodedSerializer(Charset charset) {
         final String contentType = APPLICATION_X_WWW_FORM_URLENCODED + "; charset=" + charset.name();
         return formUrlEncodedSerializer(charset, headers -> headers.set(CONTENT_TYPE, contentType));
     }
@@ -74,7 +74,7 @@ public final class HttpSerializationProviders {
      * the serialized payload. Typically, this involves adding a {@link HttpHeaderNames#CONTENT_TYPE} header.
      * @return {@link HttpSerializer} that could serialize from key-value {@link Map}.
      */
-    public static HttpSerializer<Map<String, String>> formUrlEncodedSerializer(
+    public static HttpSerializer<Map<String, List<String>>> formUrlEncodedSerializer(
             Charset charset, Consumer<HttpHeaders> addContentType) {
         return new FormUrlEncodedHttpSerializer(charset, addContentType);
     }

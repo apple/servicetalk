@@ -24,11 +24,11 @@ import io.servicetalk.concurrent.api.Publisher;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.nio.charset.Charset;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
@@ -38,7 +38,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 /**
  * An {@link HttpSerializer} that serializes a key-value {@link Map} to an urlencoded form.
  */
-final class FormUrlEncodedHttpSerializer implements HttpSerializer<Map<String, String>> {
+final class FormUrlEncodedHttpSerializer implements HttpSerializer<Map<String, List<String>>> {
 
     static final FormUrlEncodedHttpSerializer UTF8 = new FormUrlEncodedHttpSerializer(UTF_8,
             headers -> headers.set(CONTENT_TYPE, APPLICATION_X_WWW_FORM_URLENCODED + "; charset=UTF-8"));
@@ -53,19 +53,19 @@ final class FormUrlEncodedHttpSerializer implements HttpSerializer<Map<String, S
 
     @Override
     public Buffer serialize(final HttpHeaders headers,
-                            final Map<String, String> value,
+                            final Map<String, List<String>> parameters,
                             final BufferAllocator allocator) {
         addContentType.accept(headers);
-        return toBuffer(value, allocator);
+        return toBuffer(parameters, allocator);
     }
 
     @Override
     public BlockingIterable<Buffer> serialize(final HttpHeaders headers,
-                                              final BlockingIterable<Map<String, String>> value,
+                                              final BlockingIterable<Map<String, List<String>>> parameters,
                                               final BufferAllocator allocator) {
         addContentType.accept(headers);
         return () -> {
-            final BlockingIterator<Map<String, String>> iterator = value.iterator();
+            final BlockingIterator<Map<String, List<String>>> iterator = parameters.iterator();
             return new BlockingIterator<Buffer>() {
                 @Override
                 public boolean hasNext(final long timeout, final TimeUnit unit) throws TimeoutException {
@@ -97,21 +97,29 @@ final class FormUrlEncodedHttpSerializer implements HttpSerializer<Map<String, S
 
     @Override
     public Publisher<Buffer> serialize(final HttpHeaders headers,
-                                       final Publisher<Map<String, String>> value,
+                                       final Publisher<Map<String, List<String>>> parameters,
                                        final BufferAllocator allocator) {
         addContentType.accept(headers);
-        return value.map(values -> toBuffer(values, allocator));
+        return parameters.map(values -> toBuffer(values, allocator));
     }
 
     @Nullable
-    private Buffer toBuffer(@Nullable final Map<String, String> value, final BufferAllocator allocator) {
-        return value == null ? null : allocator.fromSequence(serialize(value), charset);
+    private Buffer toBuffer(@Nullable final Map<String, List<String>> parameters, final BufferAllocator allocator) {
+        return parameters == null ? null : allocator.fromSequence(serialize(parameters), charset);
     }
 
-    private String serialize(final Map<String, String> value) {
-        return value.entrySet().stream()
-            .map(entry -> urlEncode(entry.getKey()) + "=" + urlEncode(entry.getValue()))
-            .collect(Collectors.joining("&"));
+    private String serialize(final Map<String, List<String>> parameters) {
+        final StringBuilder stringBuilder = new StringBuilder();
+        parameters.forEach((key, values) -> values.forEach(value -> {
+                    if (stringBuilder.length() != 0) {
+                        stringBuilder.append("&");
+                    }
+                    stringBuilder.append(urlEncode(key));
+                    stringBuilder.append("=");
+                    stringBuilder.append(urlEncode(value));
+                }
+        ));
+        return stringBuilder.toString();
     }
 
     private String urlEncode(final String value) {

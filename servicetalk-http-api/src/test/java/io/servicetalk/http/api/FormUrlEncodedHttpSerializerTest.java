@@ -21,8 +21,10 @@ import io.servicetalk.concurrent.BlockingIterator;
 
 import org.junit.Test;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -39,13 +41,13 @@ public class FormUrlEncodedHttpSerializerTest {
         final FormUrlEncodedHttpSerializer serializer = FormUrlEncodedHttpSerializer.UTF8;
 
         final HttpHeaders headers = DefaultHttpHeadersFactory.INSTANCE.newHeaders();
-        final Map<String, String> formParameters = new HashMap<>();
-        formParameters.put("escape&this=", "and&this%");
-        formParameters.put("param2", "bar");
+        final Map<String, List<String>> formParameters = new HashMap<>();
+        formParameters.put("escape&this=", Collections.singletonList("and&this%"));
+        formParameters.put("param2", Arrays.asList("foo", "bar"));
 
         final Buffer serialized = serializer.serialize(headers, formParameters, DEFAULT_ALLOCATOR);
 
-        assertEquals("escape%26this%3D=and%26this%25&param2=bar", serialized.toString(UTF_8));
+        assertEquals("escape%26this%3D=and%26this%25&param2=foo&param2=bar", serialized.toString(UTF_8));
         assertEquals("application/x-www-form-urlencoded; charset=UTF-8", headers.get(CONTENT_TYPE));
     }
 
@@ -54,7 +56,7 @@ public class FormUrlEncodedHttpSerializerTest {
         final FormUrlEncodedHttpSerializer serializer = FormUrlEncodedHttpSerializer.UTF8;
 
         final HttpHeaders headers = DefaultHttpHeadersFactory.INSTANCE.newHeaders();
-        final Map<String, String> formParameters = Collections.emptyMap();
+        final Map<String, List<String>> formParameters = Collections.emptyMap();
 
         final Buffer serialized = serializer.serialize(headers, formParameters, DEFAULT_ALLOCATOR);
 
@@ -68,19 +70,19 @@ public class FormUrlEncodedHttpSerializerTest {
         final HttpHeaders headers = DefaultHttpHeadersFactory.INSTANCE.newHeaders();
         final AtomicBoolean isClosed = new AtomicBoolean(false);
 
-        final BlockingIterable<Map<String, String>> formParametersIterable = () -> new BlockingIterator<Map<String, String>>() {
+        final BlockingIterable<Map<String, List<String>>> formParametersIterable = () -> new BlockingIterator<Map<String, List<String>>>() {
             @Override
             public boolean hasNext(final long timeout, final TimeUnit unit) {
                 return false;
             }
 
             @Override
-            public Map<String, String> next(final long timeout, final TimeUnit unit) {
+            public Map<String, List<String>> next(final long timeout, final TimeUnit unit) {
                 return Collections.emptyMap();
             }
 
             @Override
-            public Map<String, String> next() {
+            public Map<String, List<String>> next() {
                 return Collections.emptyMap();
             }
 
