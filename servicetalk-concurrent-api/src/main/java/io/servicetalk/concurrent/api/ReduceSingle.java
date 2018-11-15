@@ -64,9 +64,14 @@ final class ReduceSingle<R, T> extends AbstractNoHandleSubscribeSingle<R> {
             singleSubscriber.onError(t);
             return;
         }
+        // We are now subscribing to the original Publisher chain for the first time, re-using the SignalOffloader.
+        // Using the special subscribe() method means it will not offload the Subscription (done in the public
+        // subscribe() method). So, we use the SignalOffloader to offload subscription if required.
+        org.reactivestreams.Subscriber<? super T> offloadedSubscription =
+                signalOffloader.offloadSubscription(new ReduceSubscriber<>(r, reducer, singleSubscriber));
         // Since we are not creating any new sources by reducing, we should use the same offloader to subscribe to the
         // original Publisher.
-        source.subscribe(new ReduceSubscriber<>(r, reducer, singleSubscriber), signalOffloader);
+        source.subscribe(offloadedSubscription, signalOffloader);
     }
 
     private static final class ReduceSubscriber<R, T> implements org.reactivestreams.Subscriber<T> {
