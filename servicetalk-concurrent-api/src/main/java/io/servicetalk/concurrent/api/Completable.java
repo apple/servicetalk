@@ -1231,7 +1231,7 @@ public abstract class Completable implements io.servicetalk.concurrent.Completab
      * @param signalOffloader {@link SignalOffloader} to use for this {@link Subscriber}.
      */
     final void subscribe(Subscriber subscriber, SignalOffloader signalOffloader) {
-        getCompletablePlugin().handleSubscribe(requireNonNull(subscriber), signalOffloader, this::handleSubscribe0);
+        getCompletablePlugin().handleSubscribe(requireNonNull(subscriber), signalOffloader, this::safeHandleSubscribe);
     }
 
     /**
@@ -1251,7 +1251,7 @@ public abstract class Completable implements io.servicetalk.concurrent.Completab
         signalOffloader.offloadSubscribe(safeSubscriber, this::handleSubscribe);
     }
 
-    private void handleSubscribe0(Subscriber subscriber, SignalOffloader signalOffloader) {
+    private void safeHandleSubscribe(Subscriber subscriber, SignalOffloader signalOffloader) {
         try {
             handleSubscribe(subscriber, signalOffloader);
         } catch (Throwable t) {

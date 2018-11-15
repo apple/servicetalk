@@ -2223,7 +2223,7 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
      * @param signalOffloader {@link SignalOffloader} to use for this {@link Subscriber}.
      */
     final void subscribe(Subscriber<? super T> subscriber, SignalOffloader signalOffloader) {
-        getPublisherPlugin().handleSubscribe(requireNonNull(subscriber), signalOffloader, this::handleSubscribe0);
+        getPublisherPlugin().handleSubscribe(requireNonNull(subscriber), signalOffloader, this::safeHandleSubscribe);
     }
 
     /**
@@ -2243,7 +2243,7 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
         signalOffloader.offloadSubscribe(offloaded, this::handleSubscribe);
     }
 
-    private void handleSubscribe0(Subscriber<? super T> subscriber, SignalOffloader signalOffloader) {
+    private void safeHandleSubscribe(Subscriber<? super T> subscriber, SignalOffloader signalOffloader) {
         try {
             handleSubscribe(subscriber, signalOffloader);
         } catch (Throwable t) {
