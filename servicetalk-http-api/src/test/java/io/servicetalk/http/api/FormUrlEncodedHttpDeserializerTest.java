@@ -49,13 +49,18 @@ public class FormUrlEncodedHttpDeserializerTest {
 
         final HttpHeaders headers = DefaultHttpHeadersFactory.INSTANCE.newHeaders();
         headers.set(CONTENT_TYPE, "application/x-www-form-urlencoded; charset=UTF-8");
-        final String formParameters = "escape%26this%3D=and%26this%25&param2=bar&param2=foo";
+        final String formParameters = "escape%26this%3D=and%26this%25&param2=bar&param2=foo&emptyParam=";
 
         final Map<String, List<String>> deserialized = deserializer.deserialize(headers, toBuffer(formParameters));
 
         assertEquals(Collections.singletonList("and&this%"), deserialized.get("escape&this="));
+
+        assertEquals(2, deserialized.get("param2").size());
         assertEquals("bar", deserialized.get("param2").get(0));
         assertEquals("foo", deserialized.get("param2").get(1));
+
+        assertEquals(1, deserialized.get("emptyParam").size());
+        assertEquals("", deserialized.get("emptyParam").get(0));
     }
 
     @Test

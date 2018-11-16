@@ -42,12 +42,13 @@ public class FormUrlEncodedHttpSerializerTest {
 
         final HttpHeaders headers = DefaultHttpHeadersFactory.INSTANCE.newHeaders();
         final Map<String, List<String>> formParameters = new HashMap<>();
+        formParameters.put("emptyParam", Collections.singletonList(""));
         formParameters.put("escape&this=", Collections.singletonList("and&this%"));
         formParameters.put("param2", Arrays.asList("foo", "bar"));
 
         final Buffer serialized = serializer.serialize(headers, formParameters, DEFAULT_ALLOCATOR);
 
-        assertEquals("escape%26this%3D=and%26this%25&param2=foo&param2=bar", serialized.toString(UTF_8));
+        assertEquals("emptyParam=&escape%26this%3D=and%26this%25&param2=foo&param2=bar", serialized.toString(UTF_8));
         assertEquals("application/x-www-form-urlencoded; charset=UTF-8", headers.get(CONTENT_TYPE));
     }
 
