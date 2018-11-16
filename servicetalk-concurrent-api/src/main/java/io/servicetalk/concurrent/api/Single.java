@@ -22,6 +22,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -44,6 +46,7 @@ import static io.servicetalk.concurrent.api.SingleDoOnUtils.doOnSuccessSupplier;
 import static io.servicetalk.concurrent.api.SingleToCompletionStage.createAndSubscribe;
 import static io.servicetalk.concurrent.internal.ConcurrentPlugins.getSinglePlugin;
 import static java.util.Objects.requireNonNull;
+import static java.util.function.Function.identity;
 
 /**
  * An asynchronous computation that either completes with success giving the result or completes with an error.
@@ -1113,6 +1116,168 @@ public abstract class Single<T> implements io.servicetalk.concurrent.Single<T> {
      */
     public static <T> Single<T> fromFuture(Future<T> future) {
         return new FutureToSingle<>(future);
+    }
+
+    /**
+     * Asynchronously collects results of individual {@link Single}s returned by the passed {@link Iterable} into a
+     * single {@link Collection}. <p>
+     * This will actively subscribe to a limited number of {@link Single}s concurrently, in order to alter the defaults,
+     * {@link #collect(Iterable, int)}. <p>
+     * If any of the {@link Single}s terminate with an error, returned {@link Single} will immediately terminate with
+     * that error. In such a case, any in progress {@link Single}s will be cancelled. If it is expected for all
+     * {@link Single}s to terminate before terminating the returned {@link Single}, {@link #collectDelayError(Iterable)}
+     * should be used.
+     *
+     * @param singles {@link Iterable} of {@link Single}s, results of which are to be collected.
+     * @param <T> Type of the result of the individual {@link Single}s
+     * @return A {@link Single} producing a {@link Collection} of all values
+     */
+    public static <T> Single<Collection<T>> collect(Iterable<Single<T>> singles) {
+        return Publisher.from(singles).flatMapSingle(identity()).reduce(ArrayList::new, (ts, t) -> {
+            ts.add(t);
+            return ts;
+        });
+    }
+
+    /**
+     * Asynchronously collects results of the passed {@link Single}s into a single {@link Collection}. <p>
+     * This will actively subscribe to a limited number of {@link Single}s concurrently, in order to alter the defaults,
+     * {@link #collect(int, Single[])}. <p>
+     * If any of the {@link Single}s terminate with an error, returned {@link Single} will immediately terminate with
+     * that error. In such a case, any in progress {@link Single}s will be cancelled. If it is expected for all
+     * {@link Single}s to terminate before terminating the returned {@link Single}, {@link #collectDelayError(Single[])}
+     * should be used.
+     *
+     * @param singles {@link Single}s, results of which are to be collected.
+     * @param <T> Type of the result of the individual {@link Single}s
+     * @return A {@link Single} producing a {@link Collection} of all values
+     */
+    @SafeVarargs
+    public static <T> Single<Collection<T>> collect(Single<T>... singles) {
+        return Publisher.from(singles).flatMapSingle(identity()).reduce(ArrayList::new, (ts, t) -> {
+            ts.add(t);
+            return ts;
+        });
+    }
+
+    /**
+     * Asynchronously collects results of individual {@link Single}s returned by the passed {@link Iterable} into a
+     * single {@link Collection}. <p>
+     * If any of the {@link Single}s terminate with an error, returned {@link Single} will immediately terminate with
+     * that error. In such a case, any in progress {@link Single}s will be cancelled. If it is expected for all
+     * {@link Single}s to terminate before terminating the returned {@link Single},
+     * {@link #collectDelayError(Iterable, int)} should be used.
+     *
+     * @param singles {@link Iterable} of {@link Single}s, results of which are to be collected.
+     * @param maxConcurrency Maximum number of {@link Single}s that will be active at any point in time.
+     * @param <T> Type of the result of the individual {@link Single}s
+     * @return A {@link Single} producing a {@link Collection} of all values
+     */
+    public static <T> Single<Collection<T>> collect(Iterable<Single<T>> singles, int maxConcurrency) {
+        return Publisher.from(singles).flatMapSingle(identity(), maxConcurrency).reduce(ArrayList::new, (ts, t) -> {
+            ts.add(t);
+            return ts;
+        });
+    }
+
+    /**
+     * Asynchronously collects results of the passed {@link Single}s into a single {@link Collection}. <p>
+     * If any of the {@link Single}s terminate with an error, returned {@link Single} will immediately terminate with
+     * that error. In such a case, any in progress {@link Single}s will be cancelled. If it is expected for all
+     * {@link Single}s to terminate before terminating the returned {@link Single},
+     * {@link #collectDelayError(int, Single[])} should be used.
+     *
+     * @param maxConcurrency Maximum number of {@link Single}s that will be active at any point in time.
+     * @param singles {@link Single}s, results of which are to be collected.
+     * @param <T> Type of the result of the individual {@link Single}s
+     * @return A {@link Single} producing a {@link Collection} of all values
+     */
+    @SafeVarargs
+    public static <T> Single<Collection<T>> collect(int maxConcurrency, Single<T>... singles) {
+        return Publisher.from(singles).flatMapSingle(identity(), maxConcurrency).reduce(ArrayList::new, (ts, t) -> {
+            ts.add(t);
+            return ts;
+        });
+    }
+
+    /**
+     * Asynchronously collects results of individual {@link Single}s returned by the passed {@link Iterable} into a
+     * single {@link Collection}. <p>
+     * This will actively subscribe to a limited number of {@link Single}s concurrently, in order to alter the defaults,
+     * {@link #collectDelayError(Iterable, int)}. <p>
+     * If any of the {@link Single}s terminate with an error, returned {@link Single} will wait for termination till all
+     * the other {@link Single}s have been subscribed and terminated. If it is expected for the returned {@link Single}
+     * to terminate on the first failing {@link Single}, {@link #collect(Iterable)} should be used.
+     *
+     * @param singles {@link Iterable} of {@link Single}s, results of which are to be collected.
+     * @param <T> Type of the result of the individual {@link Single}s
+     * @return A {@link Single} producing a {@link Collection} of all values
+     */
+    public static <T> Single<Collection<T>> collectDelayError(Iterable<Single<T>> singles) {
+        return Publisher.from(singles).flatMapSingleDelayError(identity()).reduce(ArrayList::new, (ts, t) -> {
+            ts.add(t);
+            return ts;
+        });
+    }
+
+    /**
+     * Asynchronously collects results of the passed {@link Single}s into a single {@link Collection}. <p>
+     * This will actively subscribe to a limited number of {@link Single}s concurrently, in order to alter the defaults,
+     * {@link #collect(int, Single[])}. <p>
+     * If any of the {@link Single}s terminate with an error, returned {@link Single} will wait for termination till all
+     * the other {@link Single}s have been subscribed and terminated. If it is expected for the returned {@link Single}
+     * to terminate on the first failing {@link Single}, {@link #collect(Single[])} should be used.
+     *
+     * @param singles {@link Single}s, results of which are to be collected.
+     * @param <T> Type of the result of the individual {@link Single}s
+     * @return A {@link Single} producing a {@link Collection} of all values
+     */
+    @SafeVarargs
+    public static <T> Single<Collection<T>> collectDelayError(Single<T>... singles) {
+        return Publisher.from(singles).flatMapSingleDelayError(identity()).reduce(ArrayList::new, (ts, t) -> {
+            ts.add(t);
+            return ts;
+        });
+    }
+
+    /**
+     * Asynchronously collects results of individual {@link Single}s returned by the passed {@link Iterable} into a
+     * single {@link Collection}. <p>
+     * If any of the {@link Single}s terminate with an error, returned {@link Single} will wait for termination till all
+     * the other {@link Single}s have been subscribed and terminated. If it is expected for the returned {@link Single}
+     * to terminate on the first failing {@link Single}, {@link #collect(Iterable, int)} should be used.
+     *
+     * @param singles {@link Iterable} of {@link Single}s, results of which are to be collected.
+     * @param maxConcurrency Maximum number of {@link Single}s that will be active at any point in time.
+     * @param <T> Type of the result of the individual {@link Single}s
+     * @return A {@link Single} producing a {@link Collection} of all values
+     */
+    public static <T> Single<Collection<T>> collectDelayError(Iterable<Single<T>> singles, int maxConcurrency) {
+        return Publisher.from(singles).flatMapSingleDelayError(identity(), maxConcurrency)
+                .reduce(ArrayList::new, (ts, t) -> {
+                    ts.add(t);
+                    return ts;
+                });
+    }
+
+    /**
+     * Asynchronously collects results of the passed {@link Single}s into a single {@link Collection}. <p>
+     * If any of the {@link Single}s terminate with an error, returned {@link Single} will wait for termination till all
+     * the other {@link Single}s have been subscribed and terminated. If it is expected for the returned {@link Single}
+     * to terminate on the first failing {@link Single}, {@link #collect(Iterable, int)} should be used.
+     *
+     * @param maxConcurrency Maximum number of {@link Single}s that will be active at any point in time.
+     * @param singles {@link Single}s, results of which are to be collected.
+     * @param <T> Type of the result of the individual {@link Single}s
+     * @return A {@link Single} producing a {@link Collection} of all values
+     */
+    @SafeVarargs
+    public static <T> Single<Collection<T>> collectDelayError(int maxConcurrency, Single<T>... singles) {
+        return Publisher.from(singles).flatMapSingleDelayError(identity(), maxConcurrency)
+                .reduce(ArrayList::new, (ts, t) -> {
+                    ts.add(t);
+                    return ts;
+                });
     }
 
     /**

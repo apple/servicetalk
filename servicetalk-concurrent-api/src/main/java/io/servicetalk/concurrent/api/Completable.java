@@ -22,6 +22,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
+import java.util.Collection;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -42,6 +43,7 @@ import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.Executors.newOffloaderFor;
 import static io.servicetalk.concurrent.internal.ConcurrentPlugins.getCompletablePlugin;
 import static java.util.Objects.requireNonNull;
+import static java.util.function.Function.identity;
 
 /**
  * An asynchronous computation that does not emit any data. It just completes or emits an error.
@@ -1210,6 +1212,151 @@ public abstract class Completable implements io.servicetalk.concurrent.Completab
      */
     public static Completable fromStage(CompletionStage<?> stage) {
         return Single.fromStage(stage).toCompletable();
+    }
+
+    /**
+     * Asynchronously collects results of individual {@link Completable}s returned by the passed {@link Iterable} into a
+     * single {@link Completable}.
+     * <p>
+     * This will actively subscribe to a default number of {@link Completable}s concurrently, in order to alter the
+     * defaults, {@link #collect(Iterable, int)}.
+     * <p>
+     * If any of the {@link Completable}s terminate with an error, returned {@link Completable} will immediately
+     * terminate with that error. In such a case, any in-progress {@link Completable}s will be cancelled. If it is
+     * expected for all {@link Completable}s to terminate before terminating the returned {@link Completable},
+     * {@link #collectDelayError(Iterable)} should be used.
+     *
+     * @param completables {@link Iterable} of {@link Completable}s, results of which are to be collected.
+     * @return A new {@link Completable} that terminates successfully if all the provided {@link Completable}s have
+     * terminated successfully or any one of them has terminated with a failure.
+     */
+    public static Completable collect(Iterable<Completable> completables) {
+        return Publisher.from(completables).flatMapCompletable(identity());
+    }
+
+    /**
+     * Asynchronously collects results of the passed {@link Completable}s into a single {@link Completable}.
+     * <p>
+     * This will actively subscribe to a default number of {@link Completable}s concurrently, in order to alter the
+     * defaults, {@link #collect(int, Completable...)}.
+     * <p>
+     * If any of the {@link Completable}s terminate with an error, returned {@link Completable} will immediately
+     * terminate with that error. In such a case, any in-progress {@link Completable}s will be cancelled.
+     * If it is expected for all {@link Completable}s to terminate before terminating the returned {@link Completable},
+     * {@link #collectDelayError(Completable...)} should be used.
+     *
+     * @param completables {@link Completable}s, results of which are to be collected.
+     * @return A new {@link Completable} that terminates successfully if all the provided {@link Completable}s have
+     * terminated successfully or any one of them has terminated with a failure.
+     */
+    public static Completable collect(Completable... completables) {
+        return Publisher.from(completables).flatMapCompletable(identity());
+    }
+
+    /**
+     * Asynchronously collects results of individual {@link Completable}s returned by the passed {@link Iterable} into a
+     * single {@link Completable}.
+     * <p>
+     * If any of the {@link Completable}s terminate with an error, returned {@link Completable} will immediately
+     * terminate with that error. In such a case, any in-progress {@link Completable}s will be cancelled. If it is
+     * expected for all {@link Completable}s to terminate before terminating the returned {@link Completable},
+     * {@link #collectDelayError(Iterable)} should be used.
+     *
+     * @param completables {@link Iterable} of {@link Completable}s, results of which are to be collected.
+     * @param maxConcurrency Maximum number of {@link Completable}s that will be active at any point in time.
+     * @return A new {@link Completable} that terminates successfully if all the provided {@link Completable}s have
+     * terminated successfully or any one of them has terminated with a failure.
+     */
+    public static Completable collect(Iterable<Completable> completables, int maxConcurrency) {
+        return Publisher.from(completables).flatMapCompletable(identity(), maxConcurrency);
+    }
+
+    /**
+     * Asynchronously collects results of the passed {@link Completable}s into a single {@link Completable}.
+     * <p>
+     * If any of the {@link Completable}s terminate with an error, returned {@link Completable} will immediately
+     * terminate with that error. In such a case, any in-progress {@link Completable}s will be cancelled.
+     * If it is expected for all {@link Completable}s to terminate before terminating the returned {@link Completable},
+     * {@link #collectDelayError(Completable...)} should be used.
+     *
+     * @param maxConcurrency Maximum number of {@link Completable}s that will be active at any point in time.
+     * @param completables {@link Completable}s, results of which are to be collected.
+     * @return A new {@link Completable} that terminates successfully if all the provided {@link Completable}s have
+     * terminated successfully or any one of them has terminated with a failure.
+     */
+    public static Completable collect(int maxConcurrency, Completable... completables) {
+        return Publisher.from(completables).flatMapCompletable(identity(), maxConcurrency);
+    }
+
+    /**
+     * Asynchronously collects results of individual {@link Completable}s returned by the passed {@link Iterable} into a
+     * single {@link Collection}.
+     * <p>
+     * This will actively subscribe to a default number of {@link Completable}s concurrently, in order to alter the
+     * defaults, {@link #collectDelayError(Iterable, int)}.
+     * <p>
+     * If any of the {@link Completable}s terminate with an error, returned {@link Completable} will wait for
+     * termination till all the other {@link Completable}s have been subscribed and terminated. If it is expected for
+     * the returned {@link Completable} to terminate on the first failing {@link Completable},
+     * {@link #collect(Iterable)} should be used.
+     *
+     * @param completables {@link Iterable} of {@link Completable}s, results of which are to be collected.
+     * @return A new {@link Completable} that terminates successfully if all the provided {@link Completable}s have
+     * terminated successfully or any one of them has terminated with a failure.
+     */
+    public static Completable collectDelayError(Iterable<Completable> completables) {
+        return Publisher.from(completables).flatMapCompletableDelayError(identity());
+    }
+
+    /**
+     * Asynchronously collects results of the passed {@link Single}s into a single {@link Collection}.
+     * <p>
+     * This will actively subscribe to a limited number of {@link Single}s concurrently, in order to alter the defaults,
+     * {@link #collect(int, Completable...)}.
+     * <p>
+     * If any of the {@link Single}s terminate with an error, returned {@link Single} will wait for termination till all
+     * the other {@link Single}s have been subscribed and terminated. If it is expected for the returned {@link Single}
+     * to terminate on the first failing {@link Single}, {@link #collect(Completable...)} should be used.
+     *
+     * @param completables {@link Completable}s, results of which are to be collected.
+     * @return A new {@link Completable} that terminates successfully if all the provided {@link Completable}s have
+     * terminated successfully or any one of them has terminated with a failure.
+     */
+    public static Completable collectDelayError(Completable... completables) {
+        return Publisher.from(completables).flatMapCompletableDelayError(identity());
+    }
+
+    /**
+     * Asynchronously collects results of individual {@link Single}s returned by the passed {@link Iterable} into a
+     * single {@link Collection}.
+     * <p>
+     * If any of the {@link Single}s terminate with an error, returned {@link Single} will wait for termination till all
+     * the other {@link Single}s have been subscribed and terminated. If it is expected for the returned {@link Single}
+     * to terminate on the first failing {@link Single}, {@link #collect(Iterable, int)} should be used.
+     *
+     * @param completables {@link Iterable} of {@link Completable}s, results of which are to be collected.
+     * @param maxConcurrency Maximum number of {@link Completable}s that will be active at any point in time.
+     * @return A new {@link Completable} that terminates successfully if all the provided {@link Completable}s have
+     * terminated successfully or any one of them has terminated with a failure.
+     */
+    public static Completable collectDelayError(Iterable<Completable> completables, int maxConcurrency) {
+        return Publisher.from(completables).flatMapCompletableDelayError(identity(), maxConcurrency);
+    }
+
+    /**
+     * Asynchronously collects results of the passed {@link Single}s into a single {@link Collection}.
+     * <p>
+     * If any of the {@link Single}s terminate with an error, returned {@link Single} will wait for termination till all
+     * the other {@link Single}s have been subscribed and terminated. If it is expected for the returned {@link Single}
+     * to terminate on the first failing {@link Single}, {@link #collect(Iterable, int)} should be used.
+     *
+     * @param maxConcurrency Maximum number of {@link Completable}s that will be active at any point in time.
+     * @param completables {@link Completable}s, results of which are to be collected.
+     * @return A new {@link Completable} that terminates successfully if all the provided {@link Completable}s have
+     * terminated successfully or any one of them has terminated with a failure.
+     */
+    public static Completable collectDelayError(int maxConcurrency, Completable... completables) {
+        return Publisher.from(completables).flatMapCompletableDelayError(identity(), maxConcurrency);
     }
 
     //
