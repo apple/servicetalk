@@ -15,16 +15,18 @@
  */
 package io.servicetalk.concurrent.api;
 
+import io.servicetalk.concurrent.internal.DeliberateException;
+
 import org.junit.Test;
 
-import static io.servicetalk.concurrent.api.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.concurrent.api.VerificationTestUtils.verifyOriginalAndSuppressedCauses;
+import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 
 @SuppressWarnings("ThrowableNotThrown")
 public class CompositeExceptionTest {
 
     @Test
-    public void testCauseAndSuppressed() throws Exception {
+    public void testCauseAndSuppressed() {
         CompositeException e = new CompositeException(DELIBERATE_EXCEPTION);
         DeliberateException suppressed1 = new DeliberateException();
         e.add(suppressed1);

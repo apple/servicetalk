@@ -15,15 +15,15 @@
  */
 package io.servicetalk.concurrent.api.publisher;
 
-import io.servicetalk.concurrent.api.DeliberateException;
 import io.servicetalk.concurrent.api.MockedSubscriberRule;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.PublisherRule;
+import io.servicetalk.concurrent.internal.DeliberateException;
 
 import org.junit.Rule;
 import org.junit.Test;
 
-import static io.servicetalk.concurrent.api.DeliberateException.DELIBERATE_EXCEPTION;
+import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
@@ -47,7 +47,7 @@ public abstract class AbstractDoCompleteTest {
     @Test
     public void testCallbackThrowsError() {
         DeliberateException srcEx = new DeliberateException();
-        Publisher<String> src = doComplete(Publisher.<String>error(srcEx), () -> {
+        Publisher<String> src = doComplete(Publisher.error(srcEx), () -> {
             throw DELIBERATE_EXCEPTION;
         });
         rule.subscribe(src).requestAndVerifyFailure(srcEx);

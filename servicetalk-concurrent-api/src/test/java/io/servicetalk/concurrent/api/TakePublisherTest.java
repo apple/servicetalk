@@ -18,7 +18,7 @@ package io.servicetalk.concurrent.api;
 import org.junit.Rule;
 import org.junit.Test;
 
-import static io.servicetalk.concurrent.api.DeliberateException.DELIBERATE_EXCEPTION;
+import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 
 public class TakePublisherTest {
 
@@ -28,7 +28,7 @@ public class TakePublisherTest {
     public final PublisherRule<String> publisher = new PublisherRule<>();
 
     @Test
-    public void testEnoughRequests() throws Exception {
+    public void testEnoughRequests() {
         Publisher<String> p = publisher.getPublisher().take(2);
         subscriber.subscribe(p);
         subscriber.request(3);
@@ -38,7 +38,7 @@ public class TakePublisherTest {
     }
 
     @Test
-    public void testTakeError() throws Exception {
+    public void testTakeError() {
         Publisher<String> p = publisher.getPublisher().take(2);
         subscriber.subscribe(p);
         subscriber.request(2);
@@ -47,7 +47,7 @@ public class TakePublisherTest {
     }
 
     @Test
-    public void testTakeComplete() throws Exception {
+    public void testTakeComplete() {
         Publisher<String> p = publisher.getPublisher().take(2);
         subscriber.subscribe(p);
         subscriber.request(2);
@@ -56,7 +56,7 @@ public class TakePublisherTest {
     }
 
     @Test
-    public void testSubCancelled() throws Exception {
+    public void testSubCancelled() {
         Publisher<String> p = publisher.getPublisher().take(3);
         subscriber.subscribe(p);
         subscriber.request(3);

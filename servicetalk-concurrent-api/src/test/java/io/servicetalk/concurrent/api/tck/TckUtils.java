@@ -15,8 +15,8 @@
  */
 package io.servicetalk.concurrent.api.tck;
 
-import io.servicetalk.concurrent.api.DeliberateException;
 import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.concurrent.internal.DeliberateException;
 
 final class TckUtils {
 

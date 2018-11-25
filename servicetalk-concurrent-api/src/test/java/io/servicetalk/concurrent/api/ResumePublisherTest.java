@@ -15,11 +15,13 @@
  */
 package io.servicetalk.concurrent.api;
 
+import io.servicetalk.concurrent.internal.DeliberateException;
+
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
-import static io.servicetalk.concurrent.api.DeliberateException.DELIBERATE_EXCEPTION;
+import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertSame;
 
@@ -32,7 +34,7 @@ public final class ResumePublisherTest {
     private TestPublisher<Integer> second;
 
     @Before
-    public void setUp() throws Exception {
+    public void setUp() {
         first = new TestPublisher<>();
         first.sendOnSubscribe();
         second = new TestPublisher<>();
@@ -40,7 +42,7 @@ public final class ResumePublisherTest {
     }
 
     @Test
-    public void testFirstComplete() throws Exception {
+    public void testFirstComplete() {
         subscriber.subscribe(first.onErrorResume(throwable -> second));
         subscriber.request(1);
         first.sendItems(1).onComplete();
@@ -48,7 +50,7 @@ public final class ResumePublisherTest {
     }
 
     @Test
-    public void testFirstErrorSecondComplete() throws Exception {
+    public void testFirstErrorSecondComplete() {
         subscriber.subscribe(first.onErrorResume(throwable -> second));
         subscriber.request(1);
         first.onError(DELIBERATE_EXCEPTION);
@@ -58,7 +60,7 @@ public final class ResumePublisherTest {
     }
 
     @Test
-    public void testFirstErrorSecondError() throws Exception {
+    public void testFirstErrorSecondError() {
         subscriber.subscribe(first.onErrorResume(throwable -> second));
         subscriber.request(1);
         first.onError(new DeliberateException());
@@ -68,7 +70,7 @@ public final class ResumePublisherTest {
     }
 
     @Test
-    public void testCancelFirstActive() throws Exception {
+    public void testCancelFirstActive() {
         subscriber.subscribe(first.onErrorResume(throwable -> second));
         subscriber.request(1);
         subscriber.cancel();
@@ -77,7 +79,7 @@ public final class ResumePublisherTest {
     }
 
     @Test
-    public void testCancelSecondActive() throws Exception {
+    public void testCancelSecondActive() {
         subscriber.subscribe(first.onErrorResume(throwable -> second));
         subscriber.request(1);
         first.onError(DELIBERATE_EXCEPTION);
@@ -87,7 +89,7 @@ public final class ResumePublisherTest {
     }
 
     @Test
-    public void testDemandAcrossPublishers() throws Exception {
+    public void testDemandAcrossPublishers() {
         subscriber.subscribe(first.onErrorResume(throwable -> second));
         subscriber.request(2);
         first.sendItems(1).onError(DELIBERATE_EXCEPTION);
@@ -97,7 +99,7 @@ public final class ResumePublisherTest {
     }
 
     @Test
-    public void testDuplicateOnError() throws Exception {
+    public void testDuplicateOnError() {
         first = new TestPublisher<>(true);
         first.sendOnSubscribe();
         subscriber.subscribe(first.onErrorResume(throwable -> second));

@@ -15,8 +15,8 @@
  */
 package io.servicetalk.concurrent.api.tck;
 
-import io.servicetalk.concurrent.api.DeliberateException;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.concurrent.internal.DeliberateException;
 
 import org.reactivestreams.Publisher;
 import org.testng.annotations.Test;

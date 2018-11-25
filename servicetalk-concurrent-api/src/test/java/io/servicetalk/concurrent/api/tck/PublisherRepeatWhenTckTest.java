@@ -20,7 +20,7 @@ import io.servicetalk.concurrent.api.Publisher;
 import org.testng.annotations.Test;
 
 import static io.servicetalk.concurrent.api.Completable.error;
-import static io.servicetalk.concurrent.api.DeliberateException.DELIBERATE_EXCEPTION;
+import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 
 @Test
 public class PublisherRepeatWhenTckTest extends AbstractPublisherOperatorTckTest<Integer> {

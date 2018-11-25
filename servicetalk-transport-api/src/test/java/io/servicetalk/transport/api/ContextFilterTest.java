@@ -15,9 +15,9 @@
  */
 package io.servicetalk.transport.api;
 
-import io.servicetalk.concurrent.api.DeliberateException;
 import io.servicetalk.concurrent.api.MockedSingleListenerRule;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.concurrent.internal.DeliberateException;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -26,7 +26,7 @@ import org.mockito.Spy;
 import org.mockito.junit.MockitoJUnit;
 import org.mockito.junit.MockitoRule;
 
-import static io.servicetalk.concurrent.api.DeliberateException.DELIBERATE_EXCEPTION;
+import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
 import static org.mockito.ArgumentMatchers.any;

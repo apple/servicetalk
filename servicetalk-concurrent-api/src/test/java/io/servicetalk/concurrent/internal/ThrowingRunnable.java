@@ -15,8 +15,6 @@
  */
 package io.servicetalk.concurrent.internal;
 
-import io.servicetalk.concurrent.api.DeliberateException;
-
 final class ThrowingRunnable implements Runnable {
 
     static final Runnable THROWING_RUNNABLE = new ThrowingRunnable();

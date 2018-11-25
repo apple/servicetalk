@@ -15,11 +15,13 @@
  */
 package io.servicetalk.concurrent.api;
 
+import io.servicetalk.concurrent.internal.DeliberateException;
+
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
-import static io.servicetalk.concurrent.api.DeliberateException.DELIBERATE_EXCEPTION;
+import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertSame;
 
@@ -32,20 +34,20 @@ public final class ResumeCompletableTest {
     private TestCompletable second;
 
     @Before
-    public void setUp() throws Exception {
+    public void setUp() {
         first = new TestCompletable();
         second = new TestCompletable();
         listener.listen(first.onErrorResume(throwable -> second));
     }
 
     @Test
-    public void testFirstComplete() throws Exception {
+    public void testFirstComplete() {
         first.onComplete();
         listener.verifyCompletion();
     }
 
     @Test
-    public void testFirstErrorSecondComplete() throws Exception {
+    public void testFirstErrorSecondComplete() {
         first.onError(DELIBERATE_EXCEPTION);
         listener.verifyNoEmissions();
         second.onComplete();
@@ -53,7 +55,7 @@ public final class ResumeCompletableTest {
     }
 
     @Test
-    public void testFirstErrorSecondError() throws Exception {
+    public void testFirstErrorSecondError() {
         first.onError(new DeliberateException());
         listener.verifyNoEmissions();
         second.onError(DELIBERATE_EXCEPTION);
@@ -61,14 +63,14 @@ public final class ResumeCompletableTest {
     }
 
     @Test
-    public void testCancelFirstActive() throws Exception {
+    public void testCancelFirstActive() {
         listener.cancel();
         first.verifyCancelled();
         listener.verifyNoEmissions();
     }
 
     @Test
-    public void testCancelSecondActive() throws Exception {
+    public void testCancelSecondActive() {
         first.onError(DELIBERATE_EXCEPTION);
         listener.verifyNoEmissions();
         listener.cancel();

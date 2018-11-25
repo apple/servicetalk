@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.concurrent.api;
+package io.servicetalk.concurrent.internal;
 
 public class DeliberateException extends RuntimeException {
     private static final long serialVersionUID = 3895872583544069787L;

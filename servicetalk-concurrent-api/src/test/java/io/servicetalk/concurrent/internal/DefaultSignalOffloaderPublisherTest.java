@@ -15,7 +15,6 @@
  */
 package io.servicetalk.concurrent.internal;
 
-import io.servicetalk.concurrent.api.DeliberateException;
 import io.servicetalk.concurrent.api.Executor;
 
 import org.junit.Rule;
@@ -34,8 +33,8 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.concurrent.api.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.concurrent.api.Executors.newFixedSizeExecutor;
+import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.concurrent.internal.NoopRunnable.NOOP_RUNNABLE;
 import static io.servicetalk.concurrent.internal.ThrowingRunnable.THROWING_RUNNABLE;
 import static java.lang.Thread.currentThread;

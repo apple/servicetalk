@@ -16,11 +16,11 @@
 package io.servicetalk.concurrent.api.completable;
 
 import io.servicetalk.concurrent.api.Completable;
-import io.servicetalk.concurrent.api.DeliberateException;
+import io.servicetalk.concurrent.internal.DeliberateException;
 
 import org.junit.Test;
 
-import static io.servicetalk.concurrent.api.DeliberateException.DELIBERATE_EXCEPTION;
+import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 
 public class DoAfterFinallyTest extends AbstractDoFinallyTest {
     @Override

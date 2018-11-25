@@ -21,7 +21,7 @@ import org.junit.Test;
 
 import java.util.function.Consumer;
 
-import static io.servicetalk.concurrent.api.DeliberateException.DELIBERATE_EXCEPTION;
+import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 
 public class DoBeforeNextTest extends AbstractDoNextTest {
     @Override

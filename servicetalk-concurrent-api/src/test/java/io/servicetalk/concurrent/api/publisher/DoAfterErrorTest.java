@@ -15,8 +15,8 @@
  */
 package io.servicetalk.concurrent.api.publisher;
 
-import io.servicetalk.concurrent.api.DeliberateException;
 import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.concurrent.internal.DeliberateException;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -24,7 +24,7 @@ import org.junit.rules.ExpectedException;
 
 import java.util.function.Consumer;
 
-import static io.servicetalk.concurrent.api.DeliberateException.DELIBERATE_EXCEPTION;
+import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 
 public class DoAfterErrorTest extends AbstractDoErrorTest {
 
