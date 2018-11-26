@@ -72,32 +72,6 @@ public final class ConcurrentUtils {
     }
 
     /**
-     * Clears the passed single-consumer {@link Queue} and ensures that it is empty before returning.
-     * This accounts for any additions to the {@link Queue} while drain is in progress.
-     * Multiple threads can call this method concurrently but only one thread will actively clear the {@link Queue}.
-     *
-     * @param queue {@link Queue} to drain.
-     * @param drainActiveUpdater An {@link AtomicIntegerFieldUpdater} for an {@code int} that is used to guard against concurrent drains.
-     * @param flagOwner Holding instance for {@code drainActiveUpdater}.
-     * @param <T> Type of items stored in the {@link Queue}.
-     * @param <R> Type of the object holding the {@link int} referred by {@link AtomicIntegerFieldUpdater}.
-     */
-    public static <T, R> void clearSingleConsumerQueue(final Queue<T> queue, final AtomicIntegerFieldUpdater<R> drainActiveUpdater, final R flagOwner) {
-        do {
-            if (!drainActiveUpdater.compareAndSet(flagOwner, CONCURRENT_IDLE, CONCURRENT_EMITTING)) {
-                break;
-            }
-            try {
-                queue.clear();
-            } finally {
-                drainActiveUpdater.set(flagOwner, CONCURRENT_IDLE);
-            }
-            // We need to loop around again and check if we can acquire the "drain lock" in case there was elements added
-            // after we finished draining the queue but before we released the "drain lock".
-        } while (!queue.isEmpty());
-    }
-
-    /**
      * Drains the passed single-consumer {@link Queue} and ensures that it is empty before returning.
      * This accounts for any additions to the {@link Queue} while drain is in progress.
      * Multiple threads can call this method concurrently but only one thread will actively drain the {@link Queue}.

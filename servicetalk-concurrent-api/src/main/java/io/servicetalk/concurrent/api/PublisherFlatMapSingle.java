@@ -32,7 +32,6 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.concurrent.internal.ConcurrentUtils.clearSingleConsumerQueue;
 import static io.servicetalk.concurrent.internal.ConcurrentUtils.drainSingleConsumerQueue;
 import static io.servicetalk.concurrent.internal.PlatformDependent.newUnboundedMpscQueue;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.NULL_TOKEN;
@@ -141,7 +140,7 @@ final class PublisherFlatMapSingle<T, R> extends AbstractAsynchronousPublisherOp
         @Override
         public void request(long n) {
             final Subscription s = subscription;
-            assert s != null : "Subscription can not be null in request(n).";
+            assert s != null;
             if (!isRequestNValid(n)) {
                 s.request(n);
                 return;
@@ -175,28 +174,19 @@ final class PublisherFlatMapSingle<T, R> extends AbstractAsynchronousPublisherOp
 
         @Override
         public void onNext(T t) {
-            if (terminalNotification != null || cancellable.isCancelled()) {
-                /*
-                 * When a Single emits error and delayError is false, we cancel upstream and send error downstream.
-                 * Since cancel is racy, we may get more items even when terminalNotification is non-null. Ignore next
-                 * in such cases.
-                 */
-                return;
-            }
-            // If Function.apply(...) throws we just propagate it to the caller which is responsible to terminate
-            // its subscriber and cancel the subscription.
             final Single<? extends R> next = requireNonNull(source.mapper.apply(t));
 
             // Requested count will be decremented after this single completes.
-            // If we are cancelled we don't care if the active count isn't decremented because we no longer
-            // care about the work completing.
+            // If we are cancelled the activeUpdater count is best effort depending upon which sources finish. This best
+            // effort behavior mimics the semantics of cancel though so we don't take any special action to try to
+            // adjust the count or prematurely terminate.
             activeUpdater.incrementAndGet(this);
             next.subscribe(new FlatMapSingleSubscriber());
         }
 
         @Override
         public void onError(Throwable t) {
-            if (cancellable.isCancelled() || !onError0(t, false, false)) {
+            if (!onError0(t, false, false)) {
                 LOGGER.debug("Already terminated/cancelled, ignoring error notification.", t);
             }
         }
@@ -206,8 +196,7 @@ final class PublisherFlatMapSingle<T, R> extends AbstractAsynchronousPublisherOp
             // active must be checked after setting the terminal event, because they are accessed in the reverse way in
             // FlatMapSingleSubscriber and if it were reversed here the FlatMapSingleSubscriber would be racy and may
             // not detect the terminal event.
-            if (!cancellable.isCancelled() && trySetTerminal(complete(), false,
-                    terminalNotificationUpdater, this) && active == 0) {
+            if (trySetTerminal(complete(), false, terminalNotificationUpdater, this) && active == 0) {
                 // Since onComplete and onNext can not be concurrent and onNext must not be invoked post onComplete,
                 // if we see active == 0 here, active must not change after this.
                 enqueueAndDrain(complete());
@@ -218,10 +207,11 @@ final class PublisherFlatMapSingle<T, R> extends AbstractAsynchronousPublisherOp
                                  boolean cancelSubscriberIfNecessary) {
             final TerminalNotification notification = TerminalNotification.error(throwable);
             if (trySetTerminal(notification, overrideComplete, terminalNotificationUpdater, this)) {
-                enqueueAndDrain(notification);
-                // We can not call cancel before enqueueAndDrain as enqueueAndDrain will drain the queue.
-                // If we mark as cancelled, queue will not be drained as in drainPending we bail if we are cancelled.
-                doCancel(cancelSubscriberIfNecessary);
+                try {
+                    doCancel(cancelSubscriberIfNecessary);
+                } finally {
+                    enqueueAndDrain(notification);
+                }
                 return true;
             }
             return false;
@@ -229,7 +219,7 @@ final class PublisherFlatMapSingle<T, R> extends AbstractAsynchronousPublisherOp
 
         private void enqueueAndDrain(Object item) {
             Subscription s = subscription;
-            assert s != null : "Subscription can not be null.";
+            assert s != null;
 
             if (!pending.offer(item)) {
                 IllegalStateException exception =
@@ -238,7 +228,7 @@ final class PublisherFlatMapSingle<T, R> extends AbstractAsynchronousPublisherOp
                     LOGGER.error("Queue should be unbounded, but an offer failed!", exception);
                     throw exception;
                 } else {
-                    onError0(exception, true, false);
+                    onError0(exception, true, true);
                 }
             }
             drainPending(s);
@@ -267,23 +257,14 @@ final class PublisherFlatMapSingle<T, R> extends AbstractAsynchronousPublisherOp
         private void doCancel(boolean cancelSubscription) {
             cancellable.cancel();
             if (cancelSubscription) {
-                // Downstream cancelled, cancel everything.
                 Subscription subscription = this.subscription;
                 assert subscription != null;
                 subscription.cancel();
             }
-            // Note it is OK if we call Subscription#request after we have cancelled [1] so no need to worry about
-            // if we allow an "early cancel" due to re entry and then later call request after unwinding the stack.
-            // [1] https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.1/README.md#3.6
-            discardPending();
-        }
-
-        private void discardPending() {
-            clearSingleConsumerQueue(pending, emittingUpdater, this);
         }
 
         private void sendToTarget(Object item) {
-            if (targetTerminated || cancellable.isCancelled() || item == SINGLE_ERROR) {
+            if (targetTerminated || item == SINGLE_ERROR) {
                 // No notifications past terminal/cancelled
                 return;
             }
@@ -304,10 +285,12 @@ final class PublisherFlatMapSingle<T, R> extends AbstractAsynchronousPublisherOp
                 } else {
                     terminalNotification.terminate(target);
                 }
+            } else if (item == NULL_TOKEN) {
+                target.onNext(null);
             } else {
                 @SuppressWarnings("unchecked")
-                final R r = (R) (item == NULL_TOKEN ? null : item);
-                target.onNext(r);
+                final R rItem = (R) item;
+                target.onNext(rItem);
             }
         }
 
@@ -318,8 +301,9 @@ final class PublisherFlatMapSingle<T, R> extends AbstractAsynchronousPublisherOp
             @Override
             public void onSubscribe(Cancellable singleCancellable) {
                 // It is possible we have been cancelled at this point, and cancellable/FlatMapSingleSubscriber will
-                // take care of propagating the cancel to next. We also don't care if the active count becomes
-                // inaccurate because we will not terminate the Subscriber after this point anyways.
+                // take care of propagating the cancel to next. The activeUpdater count is now best effort depending
+                // upon which sources finish. This best effort behavior mimics the semantics of cancel though so we
+                // don't take any special action to try to adjust the count or prematurely terminate.
                 this.singleCancellable = singleCancellable;
                 cancellable.add(singleCancellable);
             }
@@ -357,11 +341,9 @@ final class PublisherFlatMapSingle<T, R> extends AbstractAsynchronousPublisherOp
                             // Since we have already added error to delayedError, we use complete() TerminalNotification
                             // as a dummy signal to start draining and termination.
                             enqueueAndDrain(complete());
-                            // We can not call cancel before drainPending as drainPending will drain the queue.
-                            // If we mark as cancelled, queue will not be drained as in drainPending we bail if we are cancelled.
-                            doCancel(false);
                         }
                     } else {
+                        // Queueing/draining may result in requestN more data.
                         enqueueAndDrain(SINGLE_ERROR);
                     }
                 }
