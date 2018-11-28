@@ -61,7 +61,7 @@ public class FormUrlEncodedHttpSerializerTest {
 
         final Buffer serialized = serializer.serialize(headers, formParameters, DEFAULT_ALLOCATOR);
 
-        assertEquals(0 , serialized.capacity());
+        assertEquals(0 , serialized.readableBytes());
         assertEquals("application/x-www-form-urlencoded; charset=UTF-8", headers.get(CONTENT_TYPE));
     }
 

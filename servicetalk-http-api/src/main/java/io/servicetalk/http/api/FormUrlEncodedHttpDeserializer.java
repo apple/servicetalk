@@ -23,7 +23,6 @@ import io.servicetalk.serialization.api.SerializationException;
 
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -33,17 +32,17 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
 import static io.servicetalk.http.api.HttpHeaderValues.APPLICATION_X_WWW_FORM_URLENCODED;
+import static io.servicetalk.http.api.QueryStringDecoder.decodeParams;
+import static java.util.Collections.emptyMap;
 
 /**
  * An {@link HttpDeserializer} that deserializes a key-values {@link Map} from an urlencoded form.
  */
 final class FormUrlEncodedHttpDeserializer implements HttpDeserializer<Map<String, List<String>>> {
-    private static final Charset DEFAULT_CHARSET = StandardCharsets.UTF_8;
-
-
     static final FormUrlEncodedHttpDeserializer UTF_8 = new FormUrlEncodedHttpDeserializer(
             headers -> headers.contains(CONTENT_TYPE, APPLICATION_X_WWW_FORM_URLENCODED + "; charset=UTF-8"));
 
+    private static final Charset DEFAULT_CHARSET = StandardCharsets.UTF_8;
     private final Predicate<HttpHeaders> checkContentType;
 
     FormUrlEncodedHttpDeserializer(final Predicate<HttpHeaders> checkContentType) {
@@ -107,8 +106,8 @@ final class FormUrlEncodedHttpDeserializer implements HttpDeserializer<Map<Strin
 
     private Map<String, List<String>> deserialize(@Nullable final Buffer buffer) {
         if (buffer == null || buffer.capacity() == 0) {
-            return Collections.emptyMap();
+            return emptyMap();
         }
-        return QueryStringDecoder.decodeParams(buffer.toString(DEFAULT_CHARSET));
+        return decodeParams(buffer.toString(DEFAULT_CHARSET));
     }
 }

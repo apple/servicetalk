@@ -51,12 +51,13 @@ final class FormUrlEncodedHttpSerializer implements HttpSerializer<Map<String, L
         this.addContentType = addContentType;
     }
 
+    @SuppressWarnings("ConstantConditions")
     @Override
     public Buffer serialize(final HttpHeaders headers,
                             final Map<String, List<String>> parameters,
                             final BufferAllocator allocator) {
         addContentType.accept(headers);
-        return toBuffer(parameters, allocator);
+        return serialize(parameters, allocator);
     }
 
     @Override
@@ -74,7 +75,7 @@ final class FormUrlEncodedHttpSerializer implements HttpSerializer<Map<String, L
 
                 @Override
                 public Buffer next(final long timeout, final TimeUnit unit) throws TimeoutException {
-                    return toBuffer(iterator.next(timeout, unit), allocator);
+                    return serialize(iterator.next(timeout, unit), allocator);
                 }
 
                 @Override
@@ -89,7 +90,7 @@ final class FormUrlEncodedHttpSerializer implements HttpSerializer<Map<String, L
 
                 @Override
                 public Buffer next() {
-                    return toBuffer(iterator.next(), allocator);
+                    return serialize(iterator.next(), allocator);
                 }
             };
         };
@@ -100,26 +101,25 @@ final class FormUrlEncodedHttpSerializer implements HttpSerializer<Map<String, L
                                        final Publisher<Map<String, List<String>>> parameters,
                                        final BufferAllocator allocator) {
         addContentType.accept(headers);
-        return parameters.map(values -> toBuffer(values, allocator));
+        return parameters.map(values -> serialize(values, allocator));
     }
 
     @Nullable
-    private Buffer toBuffer(@Nullable final Map<String, List<String>> parameters, final BufferAllocator allocator) {
-        return parameters == null ? null : allocator.fromSequence(serialize(parameters), charset);
-    }
-
-    private String serialize(final Map<String, List<String>> parameters) {
-        final StringBuilder stringBuilder = new StringBuilder();
+    private Buffer serialize(@Nullable final Map<String, List<String>> parameters, final BufferAllocator allocator) {
+        if (parameters == null) {
+            return null;
+        }
+        final Buffer buffer = allocator.newBuffer();
         parameters.forEach((key, values) -> values.forEach(value -> {
-                    if (stringBuilder.length() != 0) {
-                        stringBuilder.append("&");
+                    if (buffer.writerIndex() != 0) {
+                        buffer.writeBytes("&".getBytes(charset));
                     }
-                    stringBuilder.append(urlEncode(key));
-                    stringBuilder.append("=");
-                    stringBuilder.append(urlEncode(value));
+                    buffer.writeBytes(urlEncode(key).getBytes(charset));
+                    buffer.writeBytes("=".getBytes(charset));
+                    buffer.writeBytes(urlEncode(value).getBytes(charset));
                 }
         ));
-        return stringBuilder.toString();
+        return buffer;
     }
 
     private String urlEncode(final String value) {
