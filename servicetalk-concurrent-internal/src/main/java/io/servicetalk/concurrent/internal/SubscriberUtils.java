@@ -248,6 +248,41 @@ public final class SubscriberUtils {
     }
 
     /**
+     * Calculate the delta between {@code requestNUpdater - sourceRequestedUpdater} and request this amount from
+     * {@code subscriptionUpdater}.
+     * @param subscriptionUpdater Holds the {@link Subscription} to request data from.
+     * @param requestNUpdater The total number which has been requested (typically from
+     * {@link Subscription#request(long)}).
+     * @param sourceRequestedUpdater The total number which has actually been passed to
+     * {@link Subscription#request(long)}. This outstanding count
+     * @param owner The object which all atomic updater parameters are associated with.
+     * @param <T> The type of object which owns the atomic updater parameters.
+     */
+    public static <T> void calculateSourceRequested(
+            final AtomicReferenceFieldUpdater<T, Subscription> subscriptionUpdater,
+            final AtomicLongFieldUpdater<T> requestNUpdater,
+            final AtomicLongFieldUpdater<T> sourceRequestedUpdater,
+            final T owner) {
+        for (;;) {
+            // We have to read the Subscription before sourceRequested because sourceRequested is set to a negative
+            // value before swapping the subscription. So the subscription will be usable if sourceRequested is valid.
+            final Subscription subscription = subscriptionUpdater.get(owner);
+            final long sourceRequested = sourceRequestedUpdater.get(owner);
+            final long requested = requestNUpdater.get(owner);
+            if (requested == sourceRequested || sourceRequested < 0 || requested < 0) {
+                break;
+            }
+
+            // sourceRequested ...[delta]... requested
+            final long delta = requested - sourceRequested;
+            if (sourceRequestedUpdater.compareAndSet(owner, sourceRequested, sourceRequested + delta)) {
+                subscription.request(delta);
+                break;
+            }
+        }
+    }
+
+    /**
      * There are some scenarios where a completion {@link TerminalNotification} can be overridden with an error if
      * errors are produced asynchronously.
      * <p>

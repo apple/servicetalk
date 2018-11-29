@@ -104,27 +104,13 @@ public final class SequentialSubscriptionTest {
         s.switchTo(s2);
         verify(s2).request(3);
         verifyNoMoreInteractions(s2);
-        verify(s1).cancel();
         verifyNoMoreInteractions(s1);
     }
 
     @Test
-    public void testOldSubscriptionCancelThrows() {
-        doThrow(DELIBERATE_EXCEPTION).when(s1).cancel();
-        try {
-            s.switchTo(s2);
-            fail("Switch did not throw when old subscription cancel threw.");
-        } catch (DeliberateException de) {
-            assertThat("Unexpected exception.", de, sameInstance(DELIBERATE_EXCEPTION));
-        }
-
-        verify(s1).cancel();
+    public void testOldSubscriptionIsNotCancelled() {
+        s.switchTo(s2);
         verifyNoMoreInteractions(s1);
-
-        verify(s2).cancel();
-        Subscription s3 = mock(Subscription.class);
-        s.switchTo(s3);
-        verify(s3).cancel();
     }
 
     @Test
@@ -138,7 +124,7 @@ public final class SequentialSubscriptionTest {
         }
 
         verify(s1).request(1);
-        s.request(1);
+        s.cancel();
         verify(s1).cancel();
         verifyNoMoreInteractions(s1);
 

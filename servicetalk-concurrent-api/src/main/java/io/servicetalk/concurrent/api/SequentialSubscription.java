@@ -16,63 +16,49 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
+import io.servicetalk.concurrent.internal.ConcurrentSubscription;
 import io.servicetalk.concurrent.internal.FlowControlUtil;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
-import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
-import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.internal.EmptySubscription.EMPTY_SUBSCRIPTION;
+import static io.servicetalk.concurrent.internal.SubscriberUtils.calculateSourceRequested;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.isRequestNValid;
-import static java.lang.Long.MIN_VALUE;
 import static java.util.Objects.requireNonNull;
-import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
+import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater;
 
 /**
- * A {@link Subscription} that delegates all {@link Subscription} calls to a <em>current</em> {@link Subscription} instance
- * which can be changed using {@link #switchTo(Subscription)}.
+ * A {@link Subscription} that delegates all {@link Subscription} calls to a <strong>current</strong>
+ * {@link Subscription} instance which can be changed using {@link #switchTo(Subscription)}.
  *
  * <h2>Request-N</h2>
- * Between two {@link Subscription}s, any pending requested items, i.e. items requested via {@link #request(long)} and not received via {@link #itemReceived()},
- * will be requested from the next {@link Subscription}.
+ * Between two {@link Subscription}s, any pending requested items, i.e. items requested via {@link #request(long)} and
+ * not received via {@link #itemReceived()}, will be requested from the next {@link Subscription}.
  *
  * <h2>Cancel</h2>
  *
- * If this {@link Subscription} is cancelled, then any other {@link Subscription} set via {@link #switchTo(Subscription)} will be cancelled.
+ * If this {@link Subscription} is cancelled, then any other {@link Subscription} set via
+ * {@link #switchTo(Subscription)} will be cancelled.
  */
 final class SequentialSubscription implements Subscription, Cancellable {
-
-    private static final long REQUESTED_WHEN_CANCELLED = Long.MIN_VALUE;
-
-    private static final AtomicIntegerFieldUpdater<SequentialSubscription> processingUpdater =
-            newUpdater(SequentialSubscription.class, "processing");
     private static final AtomicLongFieldUpdater<SequentialSubscription> requestedUpdater =
             AtomicLongFieldUpdater.newUpdater(SequentialSubscription.class, "requested");
-    private static final AtomicLongFieldUpdater<SequentialSubscription> receivedUpdater =
-            AtomicLongFieldUpdater.newUpdater(SequentialSubscription.class, "received");
-    private static final AtomicReferenceFieldUpdater<SequentialSubscription, Subscription> pendingSwitchUpdater =
-            AtomicReferenceFieldUpdater.newUpdater(SequentialSubscription.class, Subscription.class, "pendingSwitch");
+    private static final AtomicLongFieldUpdater<SequentialSubscription> sourceRequestedUpdater =
+            AtomicLongFieldUpdater.newUpdater(SequentialSubscription.class, "sourceRequested");
+    private static final AtomicReferenceFieldUpdater<SequentialSubscription, Subscription> subscriptionUpdater =
+            newUpdater(SequentialSubscription.class, Subscription.class, "subscription");
 
-    /**
-     * Only accessed while holding "processing lock", so does not need to be volatile.
-     */
-    private long sourceRequested;
-
-    @SuppressWarnings("unused")
-    private volatile Subscription current;
-    @SuppressWarnings({"unused", "FieldCanBeLocal"})
-    private volatile int processing;
+    private long sourceEmitted;
     @SuppressWarnings("unused")
     private volatile long requested;
+    @SuppressWarnings({"unused", "FieldCanBeLocal"})
+    private volatile long sourceRequested;
     @SuppressWarnings("unused")
-    private volatile long received;
-    @SuppressWarnings("unused")
-    @Nullable
-    private volatile Subscription pendingSwitch;
+    private volatile Subscription subscription;
 
     /**
      * New instance.
@@ -87,118 +73,73 @@ final class SequentialSubscription implements Subscription, Cancellable {
      * @param delegate {@link Subscription} to use as <em>current</em>.
      */
     SequentialSubscription(Subscription delegate) {
-        this.current = requireNonNull(delegate);
+        this.subscription = requireNonNull(delegate);
     }
 
     @Override
     public void request(long n) {
-        if (!isRequestNValid(n)) {
+        if (isRequestNValid(n)) {
+            requestedUpdater.accumulateAndGet(this, n, FlowControlUtil::addWithOverflowProtectionIfNotNegative);
+            calculateSourceRequested(subscriptionUpdater, requestedUpdater, sourceRequestedUpdater, this);
+        } else {
             // With invalid input we don't attempt to enforce concurrency and rely upon the subscription
             // to enforce the specification rules [1].
             // [1] https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.1/README.md#3.9.
-            current.request(n);
-            return;
+            subscription.request(n);
         }
-        requestedUpdater.accumulateAndGet(this, n, FlowControlUtil::addWithOverflowProtectionIfNotNegative);
-        process();
     }
 
     @Override
     public void cancel() {
-        requested = REQUESTED_WHEN_CANCELLED;
-        process();
+        // Invalidate requested here so that it can be seen by switchTo later.
+        requested = -1;
+
+        subscription.cancel();
     }
 
     /**
-     * Switches <em>current</em> {@link Subscription} to {@code next}.
-     *
-     * @param next {@link Subscription} that should now be <em>current</em>.
+     * Switches <strong>current</strong> {@link Subscription} to {@code next}. It is assumed the {@link Subscriber}
+     * associated with the previous {@link Subscription} will no longer call {@link #itemReceived()}.
+     * <p>
+     * Only can be called in the {@link Subscriber} thread!
+     * @param next {@link Subscription} that should now be <strong>current</strong>.
      */
     void switchTo(Subscription next) {
         requireNonNull(next);
-        Subscription earlierPending = pendingSwitchUpdater.getAndSet(this, next);
-        if (earlierPending != null) {
-            // If there is a subscription which is pending and now we are switching to a new Subscription,
-            // already pending Subscription will never be used. These situations may occur when a switch can be done without requesting data via request(n)
-            // which typically is for terminal signals.
-            earlierPending.cancel();
+        // Make the sourceRequested invalid so no other thread will interact with the next Subscription.
+        sourceRequested = -1;
+
+        // Switch the subscription, it is assumed the previous Subscription is completed, so no need to interact with
+        // the previous subscription.
+        // We wrap in a ConcurrentSubscription because it is possible this method may interact with the Subscription
+        // while the Subscription thread does too (in order to catch up the current Subscription).
+        subscription = ConcurrentSubscription.wrap(next);
+
+        // If requested is non-negative, then subscription will be cancelled if the outer Subscription is
+        // cancelled. However if it is negative that means we have already been cancelled and we should for a cancel on
+        // the new Subscription.
+        if (requested >= 0) {
+            // After the Subscription has been swapped, reset the sourceRequested value because the next Subscription
+            // has not had any data requested.
+            sourceRequested = sourceEmitted;
+
+            calculateSourceRequested(subscriptionUpdater, requestedUpdater, sourceRequestedUpdater, this);
+        } else {
+            subscription.cancel();
         }
-        process();
+
+        // We can unwrap the Subscription because there will no longer be any concurrent invocation on the Subscription.
+        subscription = next;
     }
 
     /**
      * Callback when an item is received by the associated {@link Subscriber}.
+     * <p>
+     * Only can be called in the {@link Subscriber} thread!
      */
     void itemReceived() {
-        receivedUpdater.incrementAndGet(this);
-        process();
-    }
-
-    /**
-     * Returns {@code true} if this {@link Subscription} is cancelled.
-     *
-     * @return {@code true} if this {@link Subscription} is cancelled.
-     */
-    boolean isCancelled() {
-        return requested == REQUESTED_WHEN_CANCELLED;
-    }
-
-    private void process() {
-        for (;;) {
-            if (!processingUpdater.compareAndSet(this, 0, 1)) {
-                break;
-            }
-            long recv = MIN_VALUE;
-            final Subscription subscription;
-            Subscription pending = pendingSwitchUpdater.getAndSet(this, null);
-            if (pending != null) {
-                try {
-                    current.cancel();
-                } catch (Throwable t) {
-                    requested = REQUESTED_WHEN_CANCELLED;
-                    processing = 0; // release lock
-                    // Since we have swapped out pending already, no one else will see this and hence accessing it after
-                    // releasing lock would not lead to concurrent access.
-                    pending.cancel();
-                    // If pending.cancel() above throws then we may hide the original t, but in such a case we are already
-                    // in a fatal state and mostly the additional cause is not useful.
-                    throw t;
-                } finally {
-                    current = pending; // Do the switch
-                    sourceRequested = recv = received;
-                }
-                subscription = pending;
-            } else {
-                subscription = current;
-            }
-            final long r = requested;
-            if (r == REQUESTED_WHEN_CANCELLED) {
-                try {
-                    subscription.cancel();
-                } finally {
-                    processing = 0; // release lock
-                }
-                if (pendingSwitch == null) {
-                    return;
-                }
-            } else {
-                final long sr = sourceRequested;
-                try {
-                    if (r != sr) {
-                        sourceRequested = r;
-                        subscription.request(r - sr);
-                    }
-                } catch (Throwable t) {
-                    // subscription.request() has unexpectedly thrown so give up on further processing.
-                    requested = REQUESTED_WHEN_CANCELLED;
-                    throw t;
-                } finally {
-                    processing = 0; // release lock
-                }
-                if (r == requested && (recv == MIN_VALUE || received == recv) && pendingSwitch == null) {
-                    return;
-                }
-            }
-        }
+        ++sourceEmitted;
+        // There is no limit to how much we request from the current Subscription, so no need to check if we need to
+        // request any more here.
     }
 }

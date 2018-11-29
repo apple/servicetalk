@@ -67,8 +67,8 @@ final class RedoPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
             // Subscription in SequentialSubscription to the new Subscription. This will make sure that we always
             // request from the "current" Subscription.
             // Concurrent access: Since, downstream from here sees only one Subscription, there would be no concurrent
-            // access to it. SequentialSubscription makes sure that request-n, switch and itemReceived are atomic and
-            // are not lost
+            // access to it. SequentialSubscription is responsible for managing the concurrency between request-n,
+            // switch, and itemReceived.
             subscription.switchTo(s);
             if (redoCount == 0) {
                 subscriber.onSubscribe(subscription);
