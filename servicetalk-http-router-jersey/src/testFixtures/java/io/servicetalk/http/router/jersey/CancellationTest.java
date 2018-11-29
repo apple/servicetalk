@@ -201,7 +201,7 @@ public class CancellationTest {
 
         jerseyRouter.handle(ctx, req, HTTP_REQ_RES_FACTORY)
                 .doBeforeError(errorRef::set)
-                .doBeforeCancel(cancelledLatch::countDown)
+                .doAfterCancel(cancelledLatch::countDown)
                 .ignoreResult().subscribe().cancel();
 
         cancelledLatch.await();
