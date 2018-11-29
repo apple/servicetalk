@@ -21,7 +21,7 @@ import io.servicetalk.concurrent.api.Publisher;
 import org.junit.Rule;
 import org.junit.Test;
 
-import static io.servicetalk.concurrent.api.DeliberateException.DELIBERATE_EXCEPTION;
+import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 
 public class ScalarResultPublisherTest {
 
@@ -29,22 +29,22 @@ public class ScalarResultPublisherTest {
     public MockedSubscriberRule subscriberRule = new MockedSubscriberRule();
 
     @Test
-    public void testJust() throws Exception {
+    public void testJust() {
         subscriberRule.subscribe(Publisher.just("Hello")).verifySuccess("Hello");
     }
 
     @Test
-    public void testError() throws Exception {
+    public void testError() {
         subscriberRule.subscribe(Publisher.error(DELIBERATE_EXCEPTION)).verifyFailure(DELIBERATE_EXCEPTION);
     }
 
     @Test
-    public void testEmpty() throws Exception {
+    public void testEmpty() {
         subscriberRule.subscribe(Publisher.empty()).verifySuccess();
     }
 
     @Test
-    public void testNever() throws Exception {
+    public void testNever() {
         subscriberRule.subscribe(Publisher.never()).verifyNoEmissions();
     }
 }

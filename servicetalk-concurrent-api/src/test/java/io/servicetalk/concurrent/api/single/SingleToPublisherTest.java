@@ -21,7 +21,7 @@ import io.servicetalk.concurrent.api.Single;
 import org.junit.Rule;
 import org.junit.Test;
 
-import static io.servicetalk.concurrent.api.DeliberateException.DELIBERATE_EXCEPTION;
+import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 
@@ -31,22 +31,22 @@ public class SingleToPublisherTest {
     public MockedSubscriberRule verifier = new MockedSubscriberRule();
 
     @Test
-    public void testSuccessfulFuture() throws Exception {
+    public void testSuccessfulFuture() {
         verifier.subscribe(Single.success("Hello")).verifySuccess("Hello");
     }
 
     @Test
-    public void testFailedFuture() throws Exception {
+    public void testFailedFuture() {
         verifier.subscribe(Single.error(DELIBERATE_EXCEPTION)).requestAndVerifyFailure(DELIBERATE_EXCEPTION);
     }
 
     @Test
-    public void testCancelBeforeRequest() throws Exception {
+    public void testCancelBeforeRequest() {
         verifier.subscribe(Single.success("Hello")).cancel().verifyNoEmissions();
     }
 
     @Test
-    public void testCancelAfterRequest() throws Exception {
+    public void testCancelAfterRequest() {
         verifier.subscribe(Single.success("Hello")).verifySuccess("Hello").cancel();
     }
 

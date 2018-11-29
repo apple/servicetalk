@@ -18,7 +18,7 @@ package io.servicetalk.concurrent.api;
 import org.junit.Rule;
 import org.junit.Test;
 
-import static io.servicetalk.concurrent.api.DeliberateException.DELIBERATE_EXCEPTION;
+import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 
 public class TakeUntilPublisherTest {
 
@@ -28,7 +28,7 @@ public class TakeUntilPublisherTest {
     public final PublisherRule<String> publisher = new PublisherRule<>();
 
     @Test
-    public void testUntilComplete() throws Exception {
+    public void testUntilComplete() {
         TestCompletable completable = new TestCompletable();
         Publisher<String> p = publisher.getPublisher().takeUntil(completable);
         subscriber.subscribe(p);
@@ -40,7 +40,7 @@ public class TakeUntilPublisherTest {
     }
 
     @Test
-    public void testUntilError() throws Exception {
+    public void testUntilError() {
         TestCompletable completable = new TestCompletable();
         Publisher<String> p = publisher.getPublisher().takeUntil(completable);
         subscriber.subscribe(p);
@@ -52,7 +52,7 @@ public class TakeUntilPublisherTest {
     }
 
     @Test
-    public void testEmitsError() throws Exception {
+    public void testEmitsError() {
         TestCompletable completable = new TestCompletable();
         Publisher<String> p = publisher.getPublisher().takeUntil(completable);
         subscriber.subscribe(p);
@@ -62,7 +62,7 @@ public class TakeUntilPublisherTest {
     }
 
     @Test
-    public void testEmitsComplete() throws Exception {
+    public void testEmitsComplete() {
         TestCompletable completable = new TestCompletable();
         Publisher<String> p = publisher.getPublisher().takeUntil(completable);
         subscriber.subscribe(p);
@@ -72,7 +72,7 @@ public class TakeUntilPublisherTest {
     }
 
     @Test
-    public void testSubCancelled() throws Exception {
+    public void testSubCancelled() {
         TestCompletable completable = new TestCompletable();
         Publisher<String> p = publisher.getPublisher().takeUntil(completable);
         subscriber.subscribe(p);

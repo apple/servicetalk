@@ -18,7 +18,7 @@ package io.servicetalk.concurrent.api;
 import org.junit.Rule;
 import org.junit.Test;
 
-import static io.servicetalk.concurrent.api.DeliberateException.DELIBERATE_EXCEPTION;
+import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 
 public class ConcatPublisherTest {
 
@@ -30,7 +30,7 @@ public class ConcatPublisherTest {
     public final PublisherRule<String> second = new PublisherRule<>();
 
     @Test
-    public void testEnoughRequests() throws Exception {
+    public void testEnoughRequests() {
         Publisher<String> p = first.getPublisher().concatWith(second.getPublisher());
         subscriber.subscribe(p).request(2);
         first.sendItems("Hello1", "Hello2").complete();
@@ -40,7 +40,7 @@ public class ConcatPublisherTest {
     }
 
     @Test
-    public void testFirstEmitsError() throws Exception {
+    public void testFirstEmitsError() {
         Publisher<String> p = first.getPublisher().concatWith(second.getPublisher());
         subscriber.subscribe(p).request(2);
         first.sendItems("Hello1", "Hello2").fail();
@@ -48,7 +48,7 @@ public class ConcatPublisherTest {
     }
 
     @Test
-    public void testSecondEmitsError() throws Exception {
+    public void testSecondEmitsError() {
         Publisher<String> p = first.getPublisher().concatWith(second.getPublisher());
         subscriber.subscribe(p).request(2);
         first.sendItems("Hello1", "Hello2").complete();

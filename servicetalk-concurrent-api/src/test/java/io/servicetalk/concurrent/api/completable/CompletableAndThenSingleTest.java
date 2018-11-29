@@ -23,7 +23,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
-import static io.servicetalk.concurrent.api.DeliberateException.DELIBERATE_EXCEPTION;
+import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 
 public class CompletableAndThenSingleTest {
 
@@ -40,7 +40,7 @@ public class CompletableAndThenSingleTest {
     }
 
     @Test
-    public void testSourceSuccessNextSuccess() throws Exception {
+    public void testSourceSuccessNextSuccess() {
         listener.listen(source.andThen(next));
         source.onComplete();
         listener.verifyNoEmissions();
@@ -49,7 +49,7 @@ public class CompletableAndThenSingleTest {
     }
 
     @Test
-    public void testSourceSuccessNextError() throws Exception {
+    public void testSourceSuccessNextError() {
         listener.listen(source.andThen(next));
         source.onComplete();
         listener.verifyNoEmissions();
@@ -58,7 +58,7 @@ public class CompletableAndThenSingleTest {
     }
 
     @Test
-    public void testSourceError() throws Exception {
+    public void testSourceError() {
         listener.listen(source.andThen(next));
         source.onError(DELIBERATE_EXCEPTION);
         listener.verifyFailure(DELIBERATE_EXCEPTION);
@@ -66,7 +66,7 @@ public class CompletableAndThenSingleTest {
     }
 
     @Test
-    public void testCancelSource() throws Exception {
+    public void testCancelSource() {
         listener.listen(source.andThen(next));
         listener.verifyNoEmissions();
         listener.cancel();
@@ -75,7 +75,7 @@ public class CompletableAndThenSingleTest {
     }
 
     @Test
-    public void testCancelNext() throws Exception {
+    public void testCancelNext() {
         listener.listen(source.andThen(next));
         source.onComplete();
         listener.verifyNoEmissions();

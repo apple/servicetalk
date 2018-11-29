@@ -17,12 +17,12 @@ package io.servicetalk.concurrent.api.single;
 
 import io.servicetalk.concurrent.api.BiIntFunction;
 import io.servicetalk.concurrent.api.Completable;
-import io.servicetalk.concurrent.api.DeliberateException;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.MockedSingleListenerRule;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.TestCompletable;
 import io.servicetalk.concurrent.api.TestSingle;
+import io.servicetalk.concurrent.internal.DeliberateException;
 
 import org.junit.After;
 import org.junit.Before;
@@ -33,8 +33,8 @@ import org.junit.rules.ExpectedException;
 import java.util.concurrent.ExecutionException;
 
 import static io.servicetalk.concurrent.api.Completable.error;
-import static io.servicetalk.concurrent.api.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
+import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;

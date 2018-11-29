@@ -16,8 +16,8 @@
 package io.servicetalk.http.router.jersey;
 
 import io.servicetalk.buffer.api.Buffer;
-import io.servicetalk.concurrent.api.DeliberateException;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.concurrent.internal.DeliberateException;
 import io.servicetalk.http.api.HttpHeaderValues;
 import io.servicetalk.http.api.HttpResponseStatus;
 import io.servicetalk.http.api.StreamingHttpRequest;

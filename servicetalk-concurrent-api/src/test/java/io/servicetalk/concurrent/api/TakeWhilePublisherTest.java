@@ -18,7 +18,7 @@ package io.servicetalk.concurrent.api;
 import org.junit.Rule;
 import org.junit.Test;
 
-import static io.servicetalk.concurrent.api.DeliberateException.DELIBERATE_EXCEPTION;
+import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 
 public class TakeWhilePublisherTest {
 
@@ -28,7 +28,7 @@ public class TakeWhilePublisherTest {
     public final PublisherRule<String> publisher = new PublisherRule<>();
 
     @Test
-    public void testWhile() throws Exception {
+    public void testWhile() {
         Publisher<String> p = publisher.getPublisher().takeWhile(s -> !s.equals("Hello3"));
         subscriber.subscribe(p);
         subscriber.request(4);
@@ -38,7 +38,7 @@ public class TakeWhilePublisherTest {
     }
 
     @Test
-    public void testWhileError() throws Exception {
+    public void testWhileError() {
         Publisher<String> p = publisher.getPublisher().takeWhile(s -> !s.equals("Hello3"));
         subscriber.subscribe(p);
         subscriber.request(1);
@@ -47,7 +47,7 @@ public class TakeWhilePublisherTest {
     }
 
     @Test
-    public void testWhileComplete() throws Exception {
+    public void testWhileComplete() {
         Publisher<String> p = publisher.getPublisher().takeWhile(s -> !s.equals("Hello3"));
         subscriber.subscribe(p);
         subscriber.request(1);
@@ -56,7 +56,7 @@ public class TakeWhilePublisherTest {
     }
 
     @Test
-    public void testSubCancelled() throws Exception {
+    public void testSubCancelled() {
         Publisher<String> p = publisher.getPublisher().takeWhile(s -> !s.equals("Hello3"));
         subscriber.subscribe(p);
         subscriber.request(3);

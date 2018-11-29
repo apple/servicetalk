@@ -17,9 +17,9 @@ package io.servicetalk.redis.api;
 
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.api.Completable;
-import io.servicetalk.concurrent.api.DeliberateException;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.internal.SingleProcessor;
+import io.servicetalk.concurrent.internal.DeliberateException;
 import io.servicetalk.redis.api.CommanderUtils.DiscardSingle;
 import io.servicetalk.redis.api.CommanderUtils.ExecCompletable;
 import io.servicetalk.redis.api.RedisClient.ReservedRedisConnection;
