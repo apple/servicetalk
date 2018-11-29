@@ -196,19 +196,16 @@ public class CancellationTest {
     }
 
     private void testCancelResponseSingle(final StreamingHttpRequest req) throws Exception {
-        final AtomicReference<StreamingHttpResponse> responseRef = new AtomicReference<>();
         final AtomicReference<Throwable> errorRef = new AtomicReference<>();
         final CountDownLatch cancelledLatch = new CountDownLatch(1);
 
         jerseyRouter.handle(ctx, req, HTTP_REQ_RES_FACTORY)
                 .doBeforeError(errorRef::set)
-                .doBeforeCancel(cancelledLatch::countDown)
-                .subscribe(responseRef::set)
-                .cancel();
+                .doAfterCancel(cancelledLatch::countDown)
+                .ignoreResult().subscribe().cancel();
 
         cancelledLatch.await();
 
-        assertThat(responseRef.get(), is(nullValue()));
         assertThat(errorRef.get(), is(nullValue()));
     }
 
