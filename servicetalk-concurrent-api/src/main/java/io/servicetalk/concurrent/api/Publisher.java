@@ -22,6 +22,8 @@ import io.servicetalk.concurrent.internal.SignalOffloader;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -66,6 +68,8 @@ import static java.util.Objects.requireNonNull;
  * @see org.reactivestreams.Publisher
  */
 public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
+    private static final Logger LOGGER = LoggerFactory.getLogger(Publisher.class);
+
     private final Executor executor;
 
     static {
@@ -2223,7 +2227,7 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
      * @param signalOffloader {@link SignalOffloader} to use for this {@link Subscriber}.
      */
     final void subscribe(Subscriber<? super T> subscriber, SignalOffloader signalOffloader) {
-        getPublisherPlugin().handleSubscribe(requireNonNull(subscriber), signalOffloader, this::safeHandleSubscribe);
+        getPublisherPlugin().handleSubscribe(requireNonNull(subscriber), signalOffloader, this::handleSubscribe);
     }
 
     /**
@@ -2240,13 +2244,24 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
      */
     void handleSubscribe(Subscriber<? super T> subscriber, SignalOffloader signalOffloader) {
         Subscriber<? super T> offloaded = signalOffloader.offloadSubscriber(subscriber);
-        signalOffloader.offloadSubscribe(offloaded, this::handleSubscribe);
+        signalOffloader.offloadSubscribe(offloaded, this::safeHandleSubscribe);
     }
 
-    private void safeHandleSubscribe(Subscriber<? super T> subscriber, SignalOffloader signalOffloader) {
+    private void safeHandleSubscribe(Subscriber<? super T> subscriber) {
         try {
-            handleSubscribe(subscriber, signalOffloader);
+            handleSubscribe(subscriber);
         } catch (Throwable t) {
+            LOGGER.warn("Unexpected exception from subscribe(), assuming no interaction with the Subscriber.", t);
+            // At this point we are unsure if any signal was sent to the Subscriber and if it is safe to invoke the
+            // Subscriber without violating specifications. However, not propagating the error to the Subscriber will
+            // result in hard to debug scenarios where no further signals may be sent to the Subscriber and hence it
+            // will be hard to distinguish between a "hung" source and a wrongly implemented source that violates the
+            // specifications and throw from subscribe() (Rule 1.9).
+            //
+            // By doing the following we may violate the rules:
+            // 1) Rule 2.12: onSubscribe() MUST be called at most once.
+            // 2) Rule 1.7: Once a terminal state has been signaled (onError, onComplete) it is REQUIRED that no
+            // further signals occur.
             subscriber.onSubscribe(EMPTY_SUBSCRIPTION);
             subscriber.onError(t);
         }

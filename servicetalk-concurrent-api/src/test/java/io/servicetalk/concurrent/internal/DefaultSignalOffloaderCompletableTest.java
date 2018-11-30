@@ -28,6 +28,7 @@ import org.mockito.ArgumentCaptor;
 import org.slf4j.Logger;
 
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static io.servicetalk.concurrent.api.Executors.newFixedSizeExecutor;
@@ -36,6 +37,7 @@ import static io.servicetalk.concurrent.internal.NoopRunnable.NOOP_RUNNABLE;
 import static io.servicetalk.concurrent.internal.ThrowingRunnable.THROWING_RUNNABLE;
 import static java.lang.Thread.currentThread;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
@@ -143,6 +145,20 @@ public class DefaultSignalOffloaderCompletableTest {
         state.awaitTermination();
         expected.expect(IllegalStateException.class);
         state.offloader.offloadSubscriber(state.subscriber);
+    }
+
+    @Test
+    public void executorRejectsForHandleSubscribe() {
+        DefaultSignalOffloader offloader = new DefaultSignalOffloader(task -> {
+            throw new RejectedExecutionException();
+        });
+        offloader.offloadSubscribe(state.subscriber, __ -> {
+        });
+        verify(state.subscriber).onSubscribe(any(Cancellable.class));
+        ArgumentCaptor<Throwable> errorCaptor = ArgumentCaptor.forClass(Throwable.class);
+        verify(state.subscriber).onError(errorCaptor.capture());
+        assertThat("Unexpected error received by the subscriber.", errorCaptor.getValue(),
+                instanceOf(RejectedExecutionException.class));
     }
 
     private static final class OffloaderRule extends ExternalResource {

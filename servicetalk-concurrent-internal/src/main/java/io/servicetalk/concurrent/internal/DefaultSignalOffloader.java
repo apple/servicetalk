@@ -25,12 +25,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Queue;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Consumer;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
+import static io.servicetalk.concurrent.internal.EmptySubscription.EMPTY_SUBSCRIPTION;
 import static io.servicetalk.concurrent.internal.PlatformDependent.newUnboundedSpscQueue;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.isRequestNValid;
 import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
@@ -118,18 +121,39 @@ final class DefaultSignalOffloader implements SignalOffloader, Runnable {
 
     @Override
     public <T> void offloadSubscribe(Subscriber<T> subscriber, Consumer<Subscriber<T>> handleSubscribe) {
-        addOffloadedEntity(new OffloadedSignalEntity<>(handleSubscribe, subscriber));
+        try {
+            addOffloadedEntity(new OffloadedSignalEntity<>(handleSubscribe, subscriber), true);
+        } catch (EnqueueForOffloadingFailed e) {
+            // Since we failed to enqueue for offloading, we are sure that Subscriber has not been signalled and hence
+            // safe to send the error.
+            subscriber.onSubscribe(EMPTY_SUBSCRIPTION);
+            subscriber.onError(e.getCause());
+        }
     }
 
     @Override
     public <T> void offloadSubscribe(Single.Subscriber<T> subscriber,
                                      Consumer<Single.Subscriber<T>> handleSubscribe) {
-        addOffloadedEntity(new OffloadedSignalEntity<>(handleSubscribe, subscriber));
+        try {
+            addOffloadedEntity(new OffloadedSignalEntity<>(handleSubscribe, subscriber), true);
+        } catch (EnqueueForOffloadingFailed e) {
+            // Since we failed to enqueue for offloading, we are sure that Subscriber has not been signalled and hence
+            // safe to send the error.
+            subscriber.onSubscribe(IGNORE_CANCEL);
+            subscriber.onError(e.getCause());
+        }
     }
 
     @Override
     public void offloadSubscribe(Completable.Subscriber subscriber, Consumer<Completable.Subscriber> handleSubscribe) {
-        addOffloadedEntity(new OffloadedSignalEntity<>(handleSubscribe, subscriber));
+        try {
+            addOffloadedEntity(new OffloadedSignalEntity<>(handleSubscribe, subscriber), true);
+        } catch (EnqueueForOffloadingFailed e) {
+            // Since we failed to enqueue for offloading, we are sure that Subscriber has not been signalled and hence
+            // safe to send the error.
+            subscriber.onSubscribe(IGNORE_CANCEL);
+            subscriber.onError(e.getCause());
+        }
     }
 
     @Override
@@ -226,10 +250,15 @@ final class DefaultSignalOffloader implements SignalOffloader, Runnable {
     }
 
     private <T extends OffloadedEntity> T addOffloadedEntity(T offloadedEntity) {
+        return addOffloadedEntity(offloadedEntity, false);
+    }
+
+    private <T extends OffloadedEntity> T addOffloadedEntity(T offloadedEntity, boolean wrapEnqueueFailure) {
         final int lastIndex = lastEntityIndex;
         if (lastIndex == INDEX_OFFLOADER_TERMINATED) {
-            throw new IllegalStateException("Signal offloader: " + getExecutorThreadName()
-                    + " has already terminated.");
+            IllegalStateException iae = new IllegalStateException("Signal offloader: " +
+                    getExecutorThreadName() + " has already terminated.");
+            throw wrapEnqueueFailure ? new EnqueueForOffloadingFailed(iae) : iae;
         }
 
         final int nextIndex = lastIndex + 1;
@@ -245,16 +274,26 @@ final class DefaultSignalOffloader implements SignalOffloader, Runnable {
         // this index.
         if (!lastEntityIndexUpdater.compareAndSet(this, lastIndex, nextIndex)) {
             if (lastEntityIndex == INDEX_OFFLOADER_TERMINATED) {
-                throw new IllegalStateException("Signal offloader: " + getExecutorThreadName()
-                        + " has already terminated.");
+                IllegalStateException iae = new IllegalStateException("Signal offloader: " +
+                        getExecutorThreadName() + " has already terminated.");
+                throw wrapEnqueueFailure ? new EnqueueForOffloadingFailed(iae) : iae;
             }
             // concurrent registration of entities is not allowed by this class as new offload entities are added in
             // the subscribe path which are not called concurrently.
-            throw new IllegalStateException("Entity " + offloadedEntity +
+            IllegalArgumentException iae = new IllegalArgumentException("Entity " + offloadedEntity +
                     " added concurrently for offloading signals.");
+            throw wrapEnqueueFailure ? new EnqueueForOffloadingFailed(iae) : iae;
         }
         if (nextIndex == 0) {
-            executor.accept(this);
+            if (wrapEnqueueFailure) {
+                try {
+                    executor.accept(this);
+                } catch (RejectedExecutionException re) {
+                    throw new EnqueueForOffloadingFailed(re);
+                }
+            } else {
+                executor.accept(this);
+            }
         } else {
             final Thread executorThread = this.executorThread;
             // If we are in the executor thread, it can only be when we are adding entities while sending offloaded
@@ -960,5 +999,17 @@ final class DefaultSignalOffloader implements SignalOffloader, Runnable {
     @SuppressWarnings("unchecked")
     private static <T> T uncheckedCast(@Nullable Object signal) {
         return (T) signal;
+    }
+
+    private static final class EnqueueForOffloadingFailed extends RuntimeException {
+        EnqueueForOffloadingFailed(final Exception cause) {
+            super(cause);
+        }
+
+        @Override
+        public synchronized Throwable fillInStackTrace() {
+            // This exception is never sent to user code.
+            return this;
+        }
     }
 }
