@@ -24,7 +24,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -33,6 +32,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import static io.servicetalk.buffer.api.EmptyBuffer.EMPTY_BUFFER;
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
+import static java.util.Collections.singletonList;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -53,14 +53,16 @@ public class FormUrlEncodedHttpDeserializerTest {
 
         final Map<String, List<String>> deserialized = deserializer.deserialize(headers, toBuffer(formParameters));
 
-        assertEquals(Collections.singletonList("and&this%"), deserialized.get("escape&this="));
+        assertEquals("Unexpected parameter value.",
+                singletonList("and&this%"),
+                deserialized.get("escape&this="));
 
-        assertEquals(2, deserialized.get("param2").size());
-        assertEquals("bar", deserialized.get("param2").get(0));
-        assertEquals("foo", deserialized.get("param2").get(1));
+        assertEquals("Unexpected parameter value count.", 2, deserialized.get("param2").size());
+        assertEquals("Unexpected parameter value.", "bar", deserialized.get("param2").get(0));
+        assertEquals("Unexpected parameter value.", "foo", deserialized.get("param2").get(1));
 
-        assertEquals(1, deserialized.get("emptyParam").size());
-        assertEquals("", deserialized.get("emptyParam").get(0));
+        assertEquals("Unexpected parameter value count.",1, deserialized.get("emptyParam").size());
+        assertEquals("Unexpected parameter value.", "", deserialized.get("emptyParam").get(0));
     }
 
     @Test
@@ -72,7 +74,7 @@ public class FormUrlEncodedHttpDeserializerTest {
 
         final Map<String, List<String>> deserialized = deserializer.deserialize(headers, EMPTY_BUFFER);
 
-        assertEquals(0, deserialized.size());
+        assertEquals("Unexpected parameter count", 0, deserialized.size());
     }
 
     @Test
@@ -126,7 +128,7 @@ public class FormUrlEncodedHttpDeserializerTest {
                 .deserialize(headers, formParametersIterable);
         deserialized.iterator().close();
 
-        assertTrue(isClosed.get());
+        assertTrue("BlockingIterable was not closed.", isClosed.get());
     }
 
     private Buffer toBuffer(final String value) {
