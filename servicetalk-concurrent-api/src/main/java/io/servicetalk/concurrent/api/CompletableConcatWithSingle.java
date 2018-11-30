@@ -24,15 +24,15 @@ import javax.annotation.Nullable;
 import static java.util.Objects.requireNonNull;
 
 /**
- * As returned by {@link Completable#andThen(Single)}.
+ * As returned by {@link Completable#concatWith(Single)}.
  *
  * @param <T> Type of result of this {@link Single}.
  */
-final class CompletableAndThenSingle<T> extends AbstractNoHandleSubscribeSingle<T> {
+final class CompletableConcatWithSingle<T> extends AbstractNoHandleSubscribeSingle<T> {
     private final Completable original;
     private final Single<? extends T> next;
 
-    CompletableAndThenSingle(Completable original, Single<? extends T> next, Executor executor) {
+    CompletableConcatWithSingle(Completable original, Single<? extends T> next, Executor executor) {
         super(executor);
         this.original = requireNonNull(original);
         this.next = requireNonNull(next);
@@ -58,16 +58,16 @@ final class CompletableAndThenSingle<T> extends AbstractNoHandleSubscribeSingle<
         // of the original Completable. So, we do not need to do anything special there.
         // In order to cover for this case ((2) above) we always offload the passed Subscriber here.
         Subscriber<? super T> offloadSubscriber = offloader.offloadSubscriber(subscriber);
-        original.subscribe(new AndThenSubscriber<>(offloadSubscriber, next), offloader);
+        original.subscribe(new ConcatWithSubscriber<>(offloadSubscriber, next), offloader);
     }
 
-    private static final class AndThenSubscriber<T> implements Subscriber<T>, Completable.Subscriber {
+    private static final class ConcatWithSubscriber<T> implements Subscriber<T>, Completable.Subscriber {
         private final Subscriber<? super T> target;
         private final Single<? extends T> next;
         @Nullable
         private volatile SequentialCancellable sequentialCancellable;
 
-        AndThenSubscriber(Subscriber<? super T> target, Single<? extends T> next) {
+        ConcatWithSubscriber(Subscriber<? super T> target, Single<? extends T> next) {
             this.target = target;
             this.next = next;
         }

@@ -259,7 +259,7 @@ final class EndpointEnhancingRequestFilter implements ContainerRequestFilter {
 
         @Override
         protected Single<Response> handleSourceResponse(final Completable source, final ContainerResponse res) {
-            return source.andThen(defer(() -> success(noContent().build())));
+            return source.concatWith(defer(() -> success(noContent().build())));
         }
     }
 

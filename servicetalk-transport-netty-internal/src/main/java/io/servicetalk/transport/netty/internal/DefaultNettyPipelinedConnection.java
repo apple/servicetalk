@@ -155,7 +155,7 @@ public final class DefaultNettyPipelinedConnection<Req, Resp> implements NettyPi
                             "Unexpected reject from an unbounded pending requests queue."));
                 }
             }
-        }.andThen(
+        }.concatWith(
                 connection.read()
                         // Below is related to read stream: terminal predicate and responseQueue
                         // We should only trigger this on the read stream signals. Attaching them to the write+read

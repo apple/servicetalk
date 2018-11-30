@@ -52,19 +52,19 @@ public class TcpServerInitializerContextFilterTest extends AbstractTcpServerTest
 
     enum FilterMode {
         ACCEPT_ALL(true, false, (executor, context) -> success(true)),
-        DELAY_ACCEPT_ALL(true, false, (executor, context) -> executor.timer(100, MILLISECONDS).andThen(success(true))),
+        DELAY_ACCEPT_ALL(true, false, (executor, context) -> executor.timer(100, MILLISECONDS).concatWith(success(true))),
         REJECT_ALL(false, false, (executor, context) -> success(false)),
         DELAY_REJECT_ALL(false, false, (executor, context) ->
-                executor.timer(100, MILLISECONDS).andThen(success(false))),
+                executor.timer(100, MILLISECONDS).concatWith(success(false))),
         THROW_EXCEPTION(false, false, (executor, context) -> {
             throw DELIBERATE_EXCEPTION;
         }),
         DELAY_SINGLE_ERROR(false, false, (executor, context) ->
-                executor.timer(100, MILLISECONDS).andThen(error(DELIBERATE_EXCEPTION))),
+                executor.timer(100, MILLISECONDS).concatWith(error(DELIBERATE_EXCEPTION))),
         SINGLE_ERROR(false, false, (executor, context) -> error(new DeliberateException())),
         INITIALIZER_THROW(false, true, (executor, context) -> success(true)),
         DELAY_INITIALIZER_THROW(false, true, (executor, context) ->
-                executor.timer(100, MILLISECONDS).andThen(success(true))),
+                executor.timer(100, MILLISECONDS).concatWith(success(true))),
         ACCEPT_ALL_CONSTANT(true, false, (executor, context) -> success(true)) {
             @Override
             ContextFilter getContextFilter(final Executor executor) {

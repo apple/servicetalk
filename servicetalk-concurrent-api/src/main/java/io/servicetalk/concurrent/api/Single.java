@@ -397,7 +397,7 @@ public abstract class Single<T> implements io.servicetalk.concurrent.Single<T> {
      */
     public final Single<T> concatWith(Completable next) {
         // We cannot use next.toPublisher() as that returns Publisher<Void> which can not be concatenated with Single<T>
-        return concatWith(next.andThen(empty())).first();
+        return concatWith(next.concatWith(empty())).first();
     }
 
     /**

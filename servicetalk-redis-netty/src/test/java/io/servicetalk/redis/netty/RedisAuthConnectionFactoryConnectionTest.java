@@ -65,10 +65,10 @@ public class RedisAuthConnectionFactoryConnectionTest {
             assert ioExecutor != null;
             awaitIndefinitely(connectionSingle
                     .flatMap(connection ->
-                            connection.closeAsync().onErrorResume(cause -> completed()).andThen(success(connection)))
+                            connection.closeAsync().onErrorResume(cause -> completed()).concatWith(success(connection)))
                     .ignoreResult()
                     .onErrorResume(cause -> completed())
-                    .andThen(ioExecutor.closeAsync()));
+                    .concatWith(ioExecutor.closeAsync()));
         }
     }
 

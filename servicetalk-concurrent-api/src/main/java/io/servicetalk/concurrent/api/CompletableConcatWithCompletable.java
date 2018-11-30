@@ -25,13 +25,13 @@ import javax.annotation.Nullable;
 import static java.util.Objects.requireNonNull;
 
 /**
- * As returned by {@link Completable#andThen(Completable)}.
+ * As returned by {@link Completable#concatWith(Completable)}.
  */
-final class CompletableAndThenCompletable extends AbstractNoHandleSubscribeCompletable {
+final class CompletableConcatWithCompletable extends AbstractNoHandleSubscribeCompletable {
     private final Completable original;
     private final Completable next;
 
-    CompletableAndThenCompletable(Completable original, Completable next, Executor executor) {
+    CompletableConcatWithCompletable(Completable original, Completable next, Executor executor) {
         super(executor);
         this.original = original;
         this.next = requireNonNull(next);
@@ -56,12 +56,12 @@ final class CompletableAndThenCompletable extends AbstractNoHandleSubscribeCompl
         // Cancellable of the original Completable. So, we do not need to do anything special there.
         // In order to cover for this case ((2) above) we always offload the passed Subscriber here.
         Subscriber offloadSubscriber = offloader.offloadSubscriber(subscriber);
-        original.subscribe(new AndThenSubscriber(offloadSubscriber, next), offloader);
+        original.subscribe(new ConcatWithSubscriber(offloadSubscriber, next), offloader);
     }
 
-    private static final class AndThenSubscriber implements Subscriber {
-        private static final AtomicIntegerFieldUpdater<AndThenSubscriber> subscribedToNextUpdater =
-                AtomicIntegerFieldUpdater.newUpdater(AndThenSubscriber.class, "subscribedToNext");
+    private static final class ConcatWithSubscriber implements Subscriber {
+        private static final AtomicIntegerFieldUpdater<ConcatWithSubscriber> subscribedToNextUpdater =
+                AtomicIntegerFieldUpdater.newUpdater(ConcatWithSubscriber.class, "subscribedToNext");
         private final Subscriber target;
         private final Completable next;
         @Nullable
@@ -69,7 +69,7 @@ final class CompletableAndThenCompletable extends AbstractNoHandleSubscribeCompl
         @SuppressWarnings("unused")
         private volatile int subscribedToNext;
 
-        AndThenSubscriber(Subscriber target, Completable next) {
+        ConcatWithSubscriber(Subscriber target, Completable next) {
             this.target = target;
             this.next = next;
         }

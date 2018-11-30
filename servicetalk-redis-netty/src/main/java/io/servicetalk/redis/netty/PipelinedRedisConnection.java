@@ -96,8 +96,8 @@ final class PipelinedRedisConnection extends AbstractRedisConnection {
                 connection.executionContext().bufferAllocator())), true, false)
                 .ignoreElements()
                 .onErrorResume(th -> matches(th, ClosedChannelException.class) ? completed() :
-                        connection.closeAsync().andThen(error(th)))
-                .andThen(connection.closeAsync());
+                        connection.closeAsync().concatWith(error(th)))
+                .concatWith(connection.closeAsync());
     }
 
     @Override

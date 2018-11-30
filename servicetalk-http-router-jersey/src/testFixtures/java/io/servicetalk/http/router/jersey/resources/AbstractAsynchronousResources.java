@@ -80,7 +80,7 @@ public abstract class AbstractAsynchronousResources {
     @GET
     public Single<String> getStringSingle(final @QueryParam("fail") boolean fail) {
         return ctx.executionContext().executor().timer(10, MILLISECONDS)
-                .andThen(fail ? error(DELIBERATE_EXCEPTION) : success("DONE"));
+                .concatWith(fail ? error(DELIBERATE_EXCEPTION) : success("DONE"));
     }
 
     @Consumes(APPLICATION_JSON)
@@ -105,7 +105,7 @@ public abstract class AbstractAsynchronousResources {
     @GET
     public Single<Response> getResponseSingle(final @QueryParam("fail") boolean fail) {
         return ctx.executionContext().executor().timer(10, MILLISECONDS)
-                .andThen(fail ? error(DELIBERATE_EXCEPTION) : success(accepted("DONE").build()));
+                .concatWith(fail ? error(DELIBERATE_EXCEPTION) : success(accepted("DONE").build()));
     }
 
     @Produces(TEXT_PLAIN)
@@ -114,7 +114,7 @@ public abstract class AbstractAsynchronousResources {
     public Single<Response> getResponseSinglePublisherEntity(@QueryParam("i") final int i) {
         final BufferAllocator allocator = ctx.executionContext().bufferAllocator();
         return ctx.executionContext().executor().timer(10, MILLISECONDS)
-                .andThen(defer(() -> {
+                .concatWith(defer(() -> {
                     final String contentString = "GOT: " + i;
                     final Publisher<Buffer> responseContent = just(allocator.fromAscii(contentString));
 
@@ -132,7 +132,7 @@ public abstract class AbstractAsynchronousResources {
     @GET
     public Single<Map<String, Object>> getMapSingle(final @QueryParam("fail") boolean fail) {
         return ctx.executionContext().executor().timer(10, MILLISECONDS)
-                .andThen(fail ? error(DELIBERATE_EXCEPTION) : defer(() -> success(singletonMap("foo", "bar4"))));
+                .concatWith(fail ? error(DELIBERATE_EXCEPTION) : defer(() -> success(singletonMap("foo", "bar4"))));
     }
 
     @Produces(APPLICATION_JSON)
@@ -140,7 +140,7 @@ public abstract class AbstractAsynchronousResources {
     @GET
     public Single<TestPojo> getPojoSingle(final @QueryParam("fail") boolean fail) {
         return ctx.executionContext().executor().timer(10, MILLISECONDS)
-                .andThen(fail ? error(DELIBERATE_EXCEPTION) : defer(() -> {
+                .concatWith(fail ? error(DELIBERATE_EXCEPTION) : defer(() -> {
                     final TestPojo testPojo = new TestPojo();
                     testPojo.setaString("boo");
                     testPojo.setAnInt(456);
@@ -155,7 +155,7 @@ public abstract class AbstractAsynchronousResources {
     public Single<TestPojo> postJsonPojoInPojoOutSingle(@QueryParam("fail") final boolean fail,
                                                         final TestPojo testPojo) {
         return ctx.executionContext().executor().timer(10, MILLISECONDS)
-                .andThen(fail ? error(DELIBERATE_EXCEPTION) : defer(() -> {
+                .concatWith(fail ? error(DELIBERATE_EXCEPTION) : defer(() -> {
                     testPojo.setAnInt(testPojo.getAnInt() + 1);
                     testPojo.setaString(testPojo.getaString() + "x");
                     return success(testPojo);
@@ -169,7 +169,7 @@ public abstract class AbstractAsynchronousResources {
     public Single<Response> postJsonPojoInPojoOutResponseSingle(@QueryParam("fail") final boolean fail,
                                                                 final TestPojo testPojo) {
         return ctx.executionContext().executor().timer(10, MILLISECONDS)
-                .andThen(fail ? error(DELIBERATE_EXCEPTION) : defer(() -> {
+                .concatWith(fail ? error(DELIBERATE_EXCEPTION) : defer(() -> {
                     testPojo.setAnInt(testPojo.getAnInt() + 1);
                     testPojo.setaString(testPojo.getaString() + "x");
                     return success(accepted(testPojo).build());
