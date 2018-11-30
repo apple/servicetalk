@@ -77,7 +77,8 @@ public final class HttpSerializationProviders {
      * @param addContentType A {@link Consumer} that adds relevant headers to the passed {@link HttpHeaders} matching
      * the serialized payload. Typically, this involves adding a {@link HttpHeaderNames#CONTENT_TYPE} header.
      * @return {@link HttpSerializer} that could serialize from key-value {@link Map}.
-     * @see <a href="https://url.spec.whatwg.org/#application/x-www-form-urlencoded">x-www-form-urlencoded specification</a>
+     * @see <a href="https://url.spec.whatwg.org/#application/x-www-form-urlencoded">x-www-form-urlencoded 
+     specification</a>
      */
     public static HttpSerializer<Map<String, List<String>>> formUrlEncodedSerializer(
             Charset charset, Consumer<HttpHeaders> addContentType) {
