@@ -22,7 +22,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
-import java.util.Collection;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -1215,8 +1214,7 @@ public abstract class Completable implements io.servicetalk.concurrent.Completab
     }
 
     /**
-     * Asynchronously collects results of individual {@link Completable}s returned by the passed {@link Iterable} into a
-     * single {@link Completable}.
+     * Returns a {@link Completable} that terminates when all the passed {@link Completable} terminate.
      * <p>
      * This will actively subscribe to a default number of {@link Completable}s concurrently, in order to alter the
      * defaults, {@link #collect(Iterable, int)}.
@@ -1225,6 +1223,14 @@ public abstract class Completable implements io.servicetalk.concurrent.Completab
      * terminate with that error. In such a case, any in-progress {@link Completable}s will be cancelled. If it is
      * expected for all {@link Completable}s to terminate before terminating the returned {@link Completable},
      * {@link #collectDelayError(Iterable)} should be used.
+     * <p>
+     * From a sequential programming point of view this method is roughly equivalent to the following:
+     * <pre>{@code
+     *      for (Future<Void> ft: futures) { // Provided Futures (analogous to the Completables here)
+     *          // This is an approximation, this operator does not provide any ordering guarantees for the results.
+     *          ft.get();
+     *      }
+     * }</pre>
      *
      * @param completables {@link Iterable} of {@link Completable}s, results of which are to be collected.
      * @return A new {@link Completable} that terminates successfully if all the provided {@link Completable}s have
@@ -1235,15 +1241,23 @@ public abstract class Completable implements io.servicetalk.concurrent.Completab
     }
 
     /**
-     * Asynchronously collects results of the passed {@link Completable}s into a single {@link Completable}.
+     * Returns a {@link Completable} that terminates when all the passed {@link Completable} terminate.
      * <p>
      * This will actively subscribe to a default number of {@link Completable}s concurrently, in order to alter the
-     * defaults, {@link #collect(int, Completable...)}.
+     * defaults, {@link #collect(int, Completable...)} should be used.
      * <p>
      * If any of the {@link Completable}s terminate with an error, returned {@link Completable} will immediately
      * terminate with that error. In such a case, any in-progress {@link Completable}s will be cancelled.
      * If it is expected for all {@link Completable}s to terminate before terminating the returned {@link Completable},
      * {@link #collectDelayError(Completable...)} should be used.
+     * <p>
+     * From a sequential programming point of view this method is roughly equivalent to the following:
+     * <pre>{@code
+     *      for (Future<Void> ft: futures) { // Provided Futures (analogous to the Completables here)
+     *          // This is an approximation, this operator does not provide any ordering guarantees for the results.
+     *          ft.get();
+     *      }
+     * }</pre>
      *
      * @param completables {@link Completable}s, results of which are to be collected.
      * @return A new {@link Completable} that terminates successfully if all the provided {@link Completable}s have
@@ -1254,30 +1268,45 @@ public abstract class Completable implements io.servicetalk.concurrent.Completab
     }
 
     /**
-     * Asynchronously collects results of individual {@link Completable}s returned by the passed {@link Iterable} into a
-     * single {@link Completable}.
+     * Returns a {@link Completable} that terminates when all the passed {@link Completable} terminate.
      * <p>
      * If any of the {@link Completable}s terminate with an error, returned {@link Completable} will immediately
      * terminate with that error. In such a case, any in-progress {@link Completable}s will be cancelled. If it is
      * expected for all {@link Completable}s to terminate before terminating the returned {@link Completable},
      * {@link #collectDelayError(Iterable)} should be used.
+     * <p>
+     * From a sequential programming point of view this method is roughly equivalent to the following:
+     * <pre>{@code
+     *      for (Future<Void> ft: futures) { // Provided Futures (analogous to the Completables here)
+     *          // This is an approximation, this operator does not provide any ordering guarantees for the results.
+     *          ft.get();
+     *      }
+     * }</pre>
      *
      * @param completables {@link Iterable} of {@link Completable}s, results of which are to be collected.
      * @param maxConcurrency Maximum number of {@link Completable}s that will be active at any point in time.
      * @return A new {@link Completable} that terminates successfully if all the provided {@link Completable}s have
      * terminated successfully or any one of them has terminated with a failure.
      */
-    public static Completable collect(Iterable<Completable> completables, int maxConcurrency) {
+    public static Completable collect(Iterable<? extends Completable> completables, int maxConcurrency) {
         return Publisher.from(completables).flatMapCompletable(identity(), maxConcurrency);
     }
 
     /**
-     * Asynchronously collects results of the passed {@link Completable}s into a single {@link Completable}.
+     * Returns a {@link Completable} that terminates when all the passed {@link Completable} terminate.
      * <p>
      * If any of the {@link Completable}s terminate with an error, returned {@link Completable} will immediately
      * terminate with that error. In such a case, any in-progress {@link Completable}s will be cancelled.
      * If it is expected for all {@link Completable}s to terminate before terminating the returned {@link Completable},
      * {@link #collectDelayError(Completable...)} should be used.
+     * <p>
+     * From a sequential programming point of view this method is roughly equivalent to the following:
+     * <pre>{@code
+     *      for (Future<Void> ft: futures) { // Provided Futures (analogous to the Completables here)
+     *          // This is an approximation, this operator does not provide any ordering guarantees for the results.
+     *          ft.get();
+     *      }
+     * }</pre>
      *
      * @param maxConcurrency Maximum number of {@link Completable}s that will be active at any point in time.
      * @param completables {@link Completable}s, results of which are to be collected.
@@ -1289,34 +1318,67 @@ public abstract class Completable implements io.servicetalk.concurrent.Completab
     }
 
     /**
-     * Asynchronously collects results of individual {@link Completable}s returned by the passed {@link Iterable} into a
-     * single {@link Collection}.
+     * Returns a {@link Completable} that terminates when all the passed {@link Completable} terminate.
      * <p>
      * This will actively subscribe to a default number of {@link Completable}s concurrently, in order to alter the
-     * defaults, {@link #collectDelayError(Iterable, int)}.
+     * defaults, {@link #collectDelayError(Iterable, int)} should be used.
      * <p>
      * If any of the {@link Completable}s terminate with an error, returned {@link Completable} will wait for
      * termination till all the other {@link Completable}s have been subscribed and terminated. If it is expected for
      * the returned {@link Completable} to terminate on the first failing {@link Completable},
      * {@link #collect(Iterable)} should be used.
+     * <p>
+     * From a sequential programming point of view this method is roughly equivalent to the following:
+     * <pre>{@code
+     *      List<Throwable> errors = ...;  // assume this is thread safe
+     *      for (Future<Void> ft: futures) { // Provided Futures (analogous to the Completables here)
+     *          // This is an approximation, this operator does not provide any ordering guarantees for the results.
+     *             try {
+     *                 ft.get();
+     *             } catch(Throwable t) {
+     *                errors.add(t);
+     *             }
+     *      }
+     *     if (errors.isEmpty()) {
+     *         return;
+     *     }
+     *     createAndThrowACompositeException(errors);
+     * }</pre>
      *
      * @param completables {@link Iterable} of {@link Completable}s, results of which are to be collected.
      * @return A new {@link Completable} that terminates successfully if all the provided {@link Completable}s have
      * terminated successfully or any one of them has terminated with a failure.
      */
-    public static Completable collectDelayError(Iterable<Completable> completables) {
+    public static Completable collectDelayError(Iterable<? extends Completable> completables) {
         return Publisher.from(completables).flatMapCompletableDelayError(identity());
     }
 
     /**
-     * Asynchronously collects results of the passed {@link Single}s into a single {@link Collection}.
+     * Returns a {@link Completable} that terminates when all the passed {@link Completable} terminate.
      * <p>
      * This will actively subscribe to a limited number of {@link Single}s concurrently, in order to alter the defaults,
-     * {@link #collect(int, Completable...)}.
+     * {@link #collect(int, Completable...)} should be used.
      * <p>
      * If any of the {@link Single}s terminate with an error, returned {@link Single} will wait for termination till all
      * the other {@link Single}s have been subscribed and terminated. If it is expected for the returned {@link Single}
      * to terminate on the first failing {@link Single}, {@link #collect(Completable...)} should be used.
+     * <p>
+     * From a sequential programming point of view this method is roughly equivalent to the following:
+     * <pre>{@code
+     *      List<Throwable> errors = ...;  // assume this is thread safe
+     *      for (Future<Void> ft: futures) { // Provided Futures (analogous to the Completables here)
+     *          // This is an approximation, this operator does not provide any ordering guarantees for the results.
+     *             try {
+     *                 ft.get();
+     *             } catch(Throwable t) {
+     *                errors.add(t);
+     *             }
+     *      }
+     *     if (errors.isEmpty()) {
+     *         return;
+     *     }
+     *     createAndThrowACompositeException(errors);
+     * }</pre>
      *
      * @param completables {@link Completable}s, results of which are to be collected.
      * @return A new {@link Completable} that terminates successfully if all the provided {@link Completable}s have
@@ -1327,28 +1389,61 @@ public abstract class Completable implements io.servicetalk.concurrent.Completab
     }
 
     /**
-     * Asynchronously collects results of individual {@link Single}s returned by the passed {@link Iterable} into a
-     * single {@link Collection}.
+     * Returns a {@link Completable} that terminates when all the passed {@link Completable} terminate.
      * <p>
      * If any of the {@link Single}s terminate with an error, returned {@link Single} will wait for termination till all
      * the other {@link Single}s have been subscribed and terminated. If it is expected for the returned {@link Single}
      * to terminate on the first failing {@link Single}, {@link #collect(Iterable, int)} should be used.
+     * <p>
+     * From a sequential programming point of view this method is roughly equivalent to the following:
+     * <pre>{@code
+     *      List<Throwable> errors = ...;  // assume this is thread safe
+     *      for (Future<Void> ft: futures) { // Provided Futures (analogous to the Completables here)
+     *          // This is an approximation, this operator does not provide any ordering guarantees for the results.
+     *             try {
+     *                 ft.get();
+     *             } catch(Throwable t) {
+     *                errors.add(t);
+     *             }
+     *      }
+     *     if (errors.isEmpty()) {
+     *         return;
+     *     }
+     *     createAndThrowACompositeException(errors);
+     * }</pre>
      *
      * @param completables {@link Iterable} of {@link Completable}s, results of which are to be collected.
      * @param maxConcurrency Maximum number of {@link Completable}s that will be active at any point in time.
      * @return A new {@link Completable} that terminates successfully if all the provided {@link Completable}s have
      * terminated successfully or any one of them has terminated with a failure.
      */
-    public static Completable collectDelayError(Iterable<Completable> completables, int maxConcurrency) {
+    public static Completable collectDelayError(Iterable<? extends Completable> completables, int maxConcurrency) {
         return Publisher.from(completables).flatMapCompletableDelayError(identity(), maxConcurrency);
     }
 
     /**
-     * Asynchronously collects results of the passed {@link Single}s into a single {@link Collection}.
+     * Returns a {@link Completable} that terminates when all the passed {@link Completable} terminate.
      * <p>
      * If any of the {@link Single}s terminate with an error, returned {@link Single} will wait for termination till all
      * the other {@link Single}s have been subscribed and terminated. If it is expected for the returned {@link Single}
      * to terminate on the first failing {@link Single}, {@link #collect(Iterable, int)} should be used.
+     * <p>
+     * From a sequential programming point of view this method is roughly equivalent to the following:
+     * <pre>{@code
+     *      List<Throwable> errors = ...;  // assume this is thread safe
+     *      for (Future<Void> ft: futures) { // Provided Futures (analogous to the Completables here)
+     *          // This is an approximation, this operator does not provide any ordering guarantees for the results.
+     *             try {
+     *                 ft.get();
+     *             } catch(Throwable t) {
+     *                errors.add(t);
+     *             }
+     *      }
+     *     if (errors.isEmpty()) {
+     *         return;
+     *     }
+     *     createAndThrowACompositeException(errors);
+     * }</pre>
      *
      * @param maxConcurrency Maximum number of {@link Completable}s that will be active at any point in time.
      * @param completables {@link Completable}s, results of which are to be collected.

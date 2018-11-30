@@ -15,7 +15,11 @@
  */
 package io.servicetalk.concurrent.api.completable;
 
+import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
+
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.Timeout;
 
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -25,7 +29,7 @@ import static io.servicetalk.concurrent.api.Completable.collect;
 import static io.servicetalk.concurrent.api.Completable.collectDelayError;
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Completable.error;
-import static io.servicetalk.concurrent.api.DeliberateException.DELIBERATE_EXCEPTION;
+import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -33,6 +37,9 @@ import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.Assert.fail;
 
 public class CollectTest {
+
+    @Rule
+    public final Timeout timeout = new ServiceTalkTestTimeout();
 
     @Test
     public void collectVarArgSuccess() throws Exception {

@@ -15,37 +15,45 @@
  */
 package io.servicetalk.concurrent.api.single;
 
+import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
+
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.Timeout;
 
 import java.util.Collection;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static io.servicetalk.concurrent.api.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.concurrent.api.Single.collect;
 import static io.servicetalk.concurrent.api.Single.collectDelayError;
 import static io.servicetalk.concurrent.api.Single.error;
 import static io.servicetalk.concurrent.api.Single.success;
+import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.Assert.fail;
 
 public class CollectTest {
 
+    @Rule
+    public final Timeout timeout = new ServiceTalkTestTimeout();
+
     @Test
     public void collectVarArgSuccess() throws Exception {
         Collection<Integer> integers = collect(success(1), success(2)).toFuture().get();
-        assertThat("Unexpected result.", integers.stream().mapToInt(value -> value).sum(), is(3));
+        assertThat("Unexpected result.", integers, containsInAnyOrder(1, 2));
     }
 
     @Test
     public void collectVarArgMaxConcurrencySuccess() throws Exception {
         // Just testing that the method works. As it uses existing operators, we don't require elaborate tests
         Collection<Integer> integers = collect(1, success(1), success(2)).toFuture().get();
-        assertThat("Unexpected result.", integers.stream().mapToInt(value -> value).sum(), is(3));
+        assertThat("Unexpected result.", integers, containsInAnyOrder(1, 2));
     }
 
     @Test
@@ -95,14 +103,14 @@ public class CollectTest {
     @Test
     public void collectIterableSuccess() throws Exception {
         Collection<Integer> integers = collect(asList(success(1), success(2))).toFuture().get();
-        assertThat("Unexpected result.", integers.stream().mapToInt(value -> value).sum(), is(3));
+        assertThat("Unexpected result.", integers, containsInAnyOrder(1, 2));
     }
 
     @Test
     public void collectIterableMaxConcurrencySuccess() throws Exception {
         // Just testing that the method works. As it uses existing operators, we don't require elaborate tests
         Collection<Integer> integers = collect(asList(success(1), success(2)), 1).toFuture().get();
-        assertThat("Unexpected result.", integers.stream().mapToInt(value -> value).sum(), is(3));
+        assertThat("Unexpected result.", integers, containsInAnyOrder(1, 2));
     }
 
     @Test
