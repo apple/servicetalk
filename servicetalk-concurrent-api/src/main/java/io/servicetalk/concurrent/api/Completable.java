@@ -292,8 +292,8 @@ public abstract class Completable implements io.servicetalk.concurrent.Completab
      * @return A {@link Completable} that emits the terminal signal of {@code next} {@link Completable}, after this
      * {@link Completable} has terminated successfully.
      */
-    public final Completable andThen(Completable next) {
-        return new CompletableAndThenCompletable(this, next, executor);
+    public final Completable concatWith(Completable next) {
+        return new CompletableConcatWithCompletable(this, next, executor);
     }
 
     /**
@@ -314,8 +314,8 @@ public abstract class Completable implements io.servicetalk.concurrent.Completab
      * @return A {@link Single} that emits the result of {@code next} {@link Single}, after this {@link Completable}
      * has terminated successfully.
      */
-    public final <T> Single<T> andThen(Single<? extends T> next) {
-        return new CompletableAndThenSingle<>(this, next, executor);
+    public final <T> Single<T> concatWith(Single<? extends T> next) {
+        return new CompletableConcatWithSingle<>(this, next, executor);
     }
 
     /**
@@ -337,7 +337,7 @@ public abstract class Completable implements io.servicetalk.concurrent.Completab
      * @return A {@link Publisher} that emits all items emitted from {@code next} {@link Publisher}, after this
      * {@link Completable} has terminated successfully.
      */
-    public final <T> Publisher<T> andThen(Publisher<? extends T> next) {
+    public final <T> Publisher<T> concatWith(Publisher<? extends T> next) {
         return toSingle().flatMapPublisher(aVoid -> next);
     }
 
@@ -1045,7 +1045,7 @@ public abstract class Completable implements io.servicetalk.concurrent.Completab
      * <p>
      * No {@link org.reactivestreams.Subscriber#onNext(Object)} signals will be delivered to the returned
      * {@link Publisher}. Only terminal signals will be delivered. If you need more control you should consider using
-     * {@link #andThen(Publisher)}.
+     * {@link #concatWith(Publisher)}.
      * @param <T> The value type of the resulting {@link Publisher}.
      * @return A {@link Publisher} that mirrors the terminal signal from this {@link Completable}.
      */
@@ -1057,7 +1057,7 @@ public abstract class Completable implements io.servicetalk.concurrent.Completab
      * Converts this {@code Completable} to a {@link Single}.
      * <p>
      * The return value's {@link Single.Subscriber#onSuccess(Object)} value is undefined. If you need a specific value
-     * you can also use {@link #andThen(Single)} with a {@link Single#success(Object)}.
+     * you can also use {@link #concatWith(Single)} with a {@link Single#success(Object)}.
      * @param <T> The value type of the resulting {@link Single}.
      * @return A {@link Single} that mirrors the terminal signal from this {@link Completable}.
      */

@@ -15,9 +15,8 @@
  */
 package io.servicetalk.concurrent.api.completable;
 
-import io.servicetalk.concurrent.api.MockedSingleListenerRule;
+import io.servicetalk.concurrent.api.MockedCompletableListenerRule;
 import io.servicetalk.concurrent.api.TestCompletable;
-import io.servicetalk.concurrent.api.TestSingle;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -25,32 +24,32 @@ import org.junit.Test;
 
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 
-public class CompletableAndThenSingleTest {
+public class CompletableConcatWithCompletableTest {
 
     @Rule
-    public final MockedSingleListenerRule<Integer> listener = new MockedSingleListenerRule<>();
+    public final MockedCompletableListenerRule listener = new MockedCompletableListenerRule();
 
     private TestCompletable source;
-    private TestSingle<Integer> next;
+    private TestCompletable next;
 
     @Before
     public void setUp() throws Exception {
         source = new TestCompletable();
-        next = new TestSingle<>();
+        next = new TestCompletable();
     }
 
     @Test
     public void testSourceSuccessNextSuccess() {
-        listener.listen(source.andThen(next));
+        listener.listen(source.concatWith(next));
         source.onComplete();
         listener.verifyNoEmissions();
-        next.onSuccess(1);
-        listener.verifySuccess(1);
+        next.onComplete();
+        listener.verifyCompletion();
     }
 
     @Test
     public void testSourceSuccessNextError() {
-        listener.listen(source.andThen(next));
+        listener.listen(source.concatWith(next));
         source.onComplete();
         listener.verifyNoEmissions();
         next.onError(DELIBERATE_EXCEPTION);
@@ -59,7 +58,7 @@ public class CompletableAndThenSingleTest {
 
     @Test
     public void testSourceError() {
-        listener.listen(source.andThen(next));
+        listener.listen(source.concatWith(next));
         source.onError(DELIBERATE_EXCEPTION);
         listener.verifyFailure(DELIBERATE_EXCEPTION);
         next.verifyListenNotCalled();
@@ -67,7 +66,7 @@ public class CompletableAndThenSingleTest {
 
     @Test
     public void testCancelSource() {
-        listener.listen(source.andThen(next));
+        listener.listen(source.concatWith(next));
         listener.verifyNoEmissions();
         listener.cancel();
         source.verifyCancelled();
@@ -76,7 +75,7 @@ public class CompletableAndThenSingleTest {
 
     @Test
     public void testCancelNext() {
-        listener.listen(source.andThen(next));
+        listener.listen(source.concatWith(next));
         source.onComplete();
         listener.verifyNoEmissions();
         listener.cancel();

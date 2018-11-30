@@ -181,7 +181,7 @@ final class CommanderUtils {
                             return Completable.error(discardThrowable);
                         })
                         // If releaseAsync() completes successfully, emit the original error.
-                        .andThen(error(discardThrowable))
+                        .concatWith(error(discardThrowable))
                 ).concatWith(reservedCnx.releaseAsync()); // If discard succeeds, release the connection.
             }
             discardSingle.doAfterCancel(() -> handleCancel(reservedCnx, singles,
@@ -228,8 +228,8 @@ final class CommanderUtils {
                             return error(discardThrowable);
                         })
                         // If releaseAsync() completes successfully, emit the original error.
-                        .andThen(error(discardThrowable))
-                ).andThen(reservedCnx.releaseAsync()); // If exec succeeds, release the connection.
+                        .concatWith(error(discardThrowable))
+                ).concatWith(reservedCnx.releaseAsync()); // If exec succeeds, release the connection.
             }
             execCompletable.doAfterCancel(() -> handleCancel(reservedCnx, singles,
                     "Connection closed due to exec() cancellation."))

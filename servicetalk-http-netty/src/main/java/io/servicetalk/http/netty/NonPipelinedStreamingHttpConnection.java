@@ -31,6 +31,6 @@ final class NonPipelinedStreamingHttpConnection extends AbstractStreamingHttpCon
 
     @Override
     protected Publisher<Object> writeAndRead(final Publisher<Object> requestStream) {
-        return connection.write(requestStream).andThen(connection.read());
+        return connection.write(requestStream).concatWith(connection.read());
     }
 }

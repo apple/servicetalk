@@ -58,15 +58,15 @@ public class NettyHttpServerContextFilterTest extends AbstractNettyHttpServerTes
 
     enum FilterMode {
         ACCEPT_ALL(true, (executor, context) -> success(true)),
-        DELAY_ACCEPT_ALL(true, (executor, context) -> executor.timer(100, MILLISECONDS).andThen(success(true))),
+        DELAY_ACCEPT_ALL(true, (executor, context) -> executor.timer(100, MILLISECONDS).concatWith(success(true))),
         REJECT_ALL(false, (executor, context) -> success(false)),
         DELAY_REJECT_ALL(false, (executor, context) ->
-                executor.timer(100, MILLISECONDS).andThen(success(false))),
+                executor.timer(100, MILLISECONDS).concatWith(success(false))),
         THROW_EXCEPTION(false, (executor, context) -> {
             throw DELIBERATE_EXCEPTION;
         }),
         DELAY_SINGLE_ERROR(false, (executor, context) ->
-                executor.timer(100, MILLISECONDS).andThen(error(DELIBERATE_EXCEPTION))),
+                executor.timer(100, MILLISECONDS).concatWith(error(DELIBERATE_EXCEPTION))),
         SINGLE_ERROR(false, (executor, context) -> error(new DeliberateException())),
         ACCEPT_ALL_CONSTANT(true, (executor, context) -> success(true)) {
             @Override

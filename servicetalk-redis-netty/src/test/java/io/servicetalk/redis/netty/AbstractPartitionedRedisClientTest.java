@@ -168,7 +168,7 @@ public abstract class AbstractPartitionedRedisClientTest {
             return;
         }
 
-        awaitIndefinitely(client.closeAsync().andThen(ioExecutor.closeAsync()));
+        awaitIndefinitely(client.closeAsync().concatWith(ioExecutor.closeAsync()));
     }
 
     public Function<Command, RedisPartitionAttributesBuilder> getPartitionAttributesBuilderFactory() {

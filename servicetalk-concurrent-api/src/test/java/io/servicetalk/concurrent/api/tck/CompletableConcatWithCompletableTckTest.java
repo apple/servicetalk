@@ -16,15 +16,14 @@
 package io.servicetalk.concurrent.api.tck;
 
 import io.servicetalk.concurrent.api.Completable;
-import io.servicetalk.concurrent.api.Single;
 
 import org.testng.annotations.Test;
 
 @Test
-public class CompletableAndThenSingleTckTest extends AbstractCompletableOperatorTckTest {
+public class CompletableConcatWithCompletableTckTest extends AbstractCompletableOperatorTckTest {
 
     @Override
     protected Completable composeCompletable(Completable completable) {
-        return completable.andThen(Single.success(1)).ignoreResult();
+        return completable.concatWith(Completable.completed());
     }
 }

@@ -312,7 +312,7 @@ public final class ExecutionStrategyResources {
 
             return content
                     .doOnNext(__ -> requireFromSameExecutorAs(resourceMethodThread))
-                    .ignoreElements().andThen(bufferSingle.toPublisher())
+                    .ignoreElements().concatWith(bufferSingle.toPublisher())
                     .doOnRequest(__ -> requireFromSameExecutorAs(resourceMethodThread));
         }
 

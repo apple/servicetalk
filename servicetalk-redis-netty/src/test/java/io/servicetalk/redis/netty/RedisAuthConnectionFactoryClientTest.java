@@ -62,7 +62,7 @@ public class RedisAuthConnectionFactoryClientTest {
     public void cleanup() throws Exception {
         if (client != null) {
             assert ioExecutor != null;
-            awaitIndefinitely(client.closeAsync().andThen(ioExecutor.closeAsync()));
+            awaitIndefinitely(client.closeAsync().concatWith(ioExecutor.closeAsync()));
         }
     }
 

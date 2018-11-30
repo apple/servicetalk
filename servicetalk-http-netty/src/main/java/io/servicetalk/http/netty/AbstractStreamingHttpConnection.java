@@ -46,7 +46,7 @@ abstract class AbstractStreamingHttpConnection<CC extends ConnectionContext> ext
         super(reqRespFactory);
         this.connection = requireNonNull(conn);
         this.executionContext = requireNonNull(executionContext);
-        maxConcurrencySetting = just(config.getMaxPipelinedRequests()).concatWith(onClosing.andThen(success(0)));
+        maxConcurrencySetting = just(config.getMaxPipelinedRequests()).concatWith(onClosing.concatWith(success(0)));
     }
 
     @Override

@@ -17,13 +17,20 @@ package io.servicetalk.concurrent.api.tck;
 
 import io.servicetalk.concurrent.api.Completable;
 
+import org.reactivestreams.Publisher;
 import org.testng.annotations.Test;
 
 @Test
-public class CompletableAndThenCompletableTckTest extends AbstractCompletableOperatorTckTest {
+public class CompletableConcatWithPublisherTckTest extends AbstractPublisherTckTest<Integer> {
 
     @Override
-    protected Completable composeCompletable(Completable completable) {
-        return completable.andThen(Completable.completed());
+    public Publisher<Integer> createPublisher(long elements) {
+        int numElements = TckUtils.requestNToInt(elements);
+        return Completable.completed().concatWith(TckUtils.newPublisher(numElements));
+    }
+
+    @Override
+    public long maxElementsFromPublisher() {
+        return TckUtils.maxElementsFromPublisher();
     }
 }
