@@ -61,7 +61,8 @@ public final class HttpSerializationProviders {
      *
      * @param charset {@link Charset} for the key-value {@link Map} that will be serialized.
      * @return {@link HttpSerializer} that could serialize from key-value {@link Map}.
-     * @see <a href="https://url.spec.whatwg.org/#application/x-www-form-urlencoded">x-www-form-urlencoded specification</a>
+     * @see <a href="https://url.spec.whatwg.org/#application/x-www-form-urlencoded">x-www-form-urlencoded 
+     specification</a>
      */
     public static HttpSerializer<Map<String, List<String>>> formUrlEncodedSerializer(Charset charset) {
         final String contentType = APPLICATION_X_WWW_FORM_URLENCODED + "; charset=" + charset.name();
