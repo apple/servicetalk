@@ -104,7 +104,8 @@ public final class HttpSerializationProviders {
      * @param checkContentType A {@link Predicate} that validates the passed {@link HttpHeaders} as expected for the
      * deserialized payload. If the validation fails, then deserialization will fail with {@link SerializationException}
      * @return {@link HttpDeserializer} that could deserialize a key-value {@link Map}.
-     * @see <a href="https://url.spec.whatwg.org/#application/x-www-form-urlencoded">x-www-form-urlencoded specification</a>
+     * @see <a href="https://url.spec.whatwg.org/#application/x-www-form-urlencoded">x-www-form-urlencoded 
+     specification</a>
      */
     public static HttpDeserializer<Map<String, List<String>>> formUrlEncodedDeserializer(
             Predicate<HttpHeaders> checkContentType) {
