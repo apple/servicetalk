@@ -32,6 +32,9 @@ final class SingleToCompletable<T> extends AbstractNoHandleSubscribeCompletable 
 
     @Override
     void handleSubscribe(final Subscriber subscriber, final SignalOffloader signalOffloader) {
+        // We are not modifying the Cancellable between sources, so we do not need to take care of offloading between
+        // the sources (in this operator). If the Cancellable is configured to be offloaded, it will be done when the
+        // resulting Completable is subscribed.
         original.subscribe(new Single.Subscriber<T>() {
             @Override
             public void onSubscribe(Cancellable cancellable) {

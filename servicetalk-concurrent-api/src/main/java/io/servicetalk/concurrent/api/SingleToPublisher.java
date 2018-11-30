@@ -34,11 +34,6 @@ import static io.servicetalk.concurrent.internal.SubscriberUtils.newExceptionFor
 final class SingleToPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
     private final Single<T> original;
 
-    /**
-     * New instance.
-     *
-     * @param original Source {@link Single}.
-     */
     SingleToPublisher(Single<T> original, Executor executor) {
         super(executor);
         this.original = original;
@@ -92,6 +87,10 @@ final class SingleToPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
                     // Since this is converting a Single to a Publisher, we should try to use the same SignalOffloader
                     // for subscribing to the original Single to avoid thread hop. Since, it is the same source, just
                     // viewed as a Publisher, there is no additional risk of deadlock.
+                    //
+                    // parent is a Single but we always drive the Cancellable from this Subscription.
+                    // So, even though we are using the subscribe method that does not offload Cancellable, we do not
+                    // need to explicitly add the offload here.
                     parent.subscribe(this, signalOffloader);
                 } else {
                     subscriber.onError(newExceptionForInvalidRequestN(n));

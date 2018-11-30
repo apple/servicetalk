@@ -16,27 +16,43 @@
 package io.servicetalk.concurrent.api.single;
 
 import io.servicetalk.concurrent.api.Executor;
+import io.servicetalk.concurrent.api.ExecutorRule;
 import io.servicetalk.concurrent.api.MockedSingleListenerRule;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.PublisherRule;
+import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 
+import org.hamcrest.MatcherAssert;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.Timeout;
 import org.junit.rules.Verifier;
 
+import java.util.ArrayList;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 
 import static io.servicetalk.concurrent.api.Executors.from;
 import static io.servicetalk.concurrent.api.Executors.newFixedSizeExecutor;
+import static io.servicetalk.concurrent.api.Publisher.just;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static java.lang.Thread.currentThread;
+import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 
 public class ReduceSingleTest {
+
+    @Rule
+    public final Timeout timeout = new ServiceTalkTestTimeout();
+    @Rule
+    public final ExecutorRule executorRule = new ExecutorRule();
+
     @Rule
     public final MockedSingleListenerRule<String> listenerRule = new MockedSingleListenerRule<>();
 
@@ -118,6 +134,25 @@ public class ReduceSingleTest {
                 .reduce(() -> 0, (cumulative, integer) -> cumulative + integer).toFuture().get();
         assertThat("Unexpected sum.", sum, is(10));
         assertThat("Unexpected tasks submitted.", taskCount.get(), is(1));
+    }
+
+    @Test
+    public void subscribeOnOriginalIsPreserved() throws Exception {
+        final Thread testThread = currentThread();
+        final CountDownLatch analyzed = new CountDownLatch(1);
+        ConcurrentLinkedQueue<AssertionError> errors = new ConcurrentLinkedQueue<>();
+        just("Hello").doBeforeRequest(__ -> {
+            if (currentThread() == testThread) {
+                errors.add(new AssertionError("Invalid thread invoked request-n. Thread: " +
+                        currentThread()));
+            }
+            analyzed.countDown();
+        }).subscribeOn(executorRule.getExecutor()).reduce(ArrayList::new, (objects, s) -> {
+            objects.add(s);
+            return objects;
+        }).toFuture().get();
+        analyzed.await();
+        MatcherAssert.assertThat("Unexpected errors observed: " + errors, errors, hasSize(0));
     }
 
     private void verifyThrows(Consumer<Throwable> assertFunction) {

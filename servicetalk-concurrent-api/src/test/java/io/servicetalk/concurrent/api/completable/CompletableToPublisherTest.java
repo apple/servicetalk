@@ -15,13 +15,28 @@
  */
 package io.servicetalk.concurrent.api.completable;
 
+import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.api.Completable;
+import io.servicetalk.concurrent.api.ExecutorRule;
 import io.servicetalk.concurrent.api.MockedSubscriberRule;
+import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.Timeout;
+
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.CountDownLatch;
+
+import static java.lang.Thread.currentThread;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.hasSize;
 
 public class CompletableToPublisherTest {
+    @Rule
+    public final Timeout timeout = new ServiceTalkTestTimeout();
+    @Rule
+    public final ExecutorRule executorRule = new ExecutorRule();
     @Rule
     public MockedSubscriberRule<String> subscriberRule = new MockedSubscriberRule<>();
 
@@ -29,5 +44,33 @@ public class CompletableToPublisherTest {
     public void noTerminalSucceeds() {
         subscriberRule.subscribe(Completable.completed().toPublisher())
                 .request(1).verifySuccess();
+    }
+
+    @Test
+    public void subscribeOnOriginalIsPreserved() throws Exception {
+        final Thread testThread = currentThread();
+        final CountDownLatch completableSubscribed = new CountDownLatch(1);
+        final CountDownLatch analyzed = new CountDownLatch(1);
+        ConcurrentLinkedQueue<AssertionError> errors = new ConcurrentLinkedQueue<>();
+        Cancellable c = Completable.never()
+                .doAfterSubscribe(__ -> completableSubscribed.countDown())
+                .doBeforeCancel(() -> {
+                    if (currentThread() == testThread) {
+                        errors.add(new AssertionError("Invalid thread invoked cancel. Thread: " +
+                                currentThread()));
+                    }
+                    analyzed.countDown();
+                })
+                .subscribeOn(executorRule.getExecutor())
+                .toPublisher()
+                .forEach(__ -> { });
+        // toPublisher does not subscribe to the Completable, till data is requested. Since subscription is offloaded,
+        // cancel may be called before request-n is sent to the offloaded subscription, which would ignore request-n
+        // and only propagate cancel. In such a case, original Completable will not be subscribed and hence
+        // doBeforeCancel above may never be invoked.
+        completableSubscribed.await();
+        c.cancel();
+        analyzed.await();
+        assertThat("Unexpected errors observed: " + errors, errors, hasSize(0));
     }
 }

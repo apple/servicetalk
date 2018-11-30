@@ -13,11 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.concurrent.api.completable;
+package io.servicetalk.concurrent.api.single;
 
-import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.ExecutorRule;
-import io.servicetalk.concurrent.api.MockedSubscriberRule;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 
 import org.junit.Rule;
@@ -27,36 +25,29 @@ import org.junit.rules.Timeout;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 
+import static io.servicetalk.concurrent.api.Single.never;
 import static java.lang.Thread.currentThread;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 
-public class CompletableToSingleTest {
+public class SingleToCompletableTest {
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
     @Rule
     public final ExecutorRule executorRule = new ExecutorRule();
-    @Rule
-    public MockedSubscriberRule<String> subscriberRule = new MockedSubscriberRule<>();
-
-    @Test
-    public void noTerminalSucceeds() {
-        subscriberRule.subscribe(Completable.completed().toSingle())
-                .request(1).verifySuccess();
-    }
 
     @Test
     public void subscribeOnOriginalIsPreserved() throws InterruptedException {
         final Thread testThread = currentThread();
         final CountDownLatch analyzed = new CountDownLatch(1);
         ConcurrentLinkedQueue<AssertionError> errors = new ConcurrentLinkedQueue<>();
-        Completable.never().doBeforeCancel(() -> {
+        never().doBeforeCancel(() -> {
             if (currentThread() == testThread) {
                 errors.add(new AssertionError("Invalid thread invoked cancel. Thread: " +
                         currentThread()));
             }
             analyzed.countDown();
-        }).subscribeOn(executorRule.getExecutor()).toSingle().subscribe(__ -> { }).cancel();
+        }).subscribeOn(executorRule.getExecutor()).toCompletable().subscribe().cancel();
         analyzed.await();
         assertThat("Unexpected errors observed: " + errors, errors, hasSize(0));
     }

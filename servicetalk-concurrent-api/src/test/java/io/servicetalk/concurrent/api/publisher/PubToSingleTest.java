@@ -16,22 +16,35 @@
 package io.servicetalk.concurrent.api.publisher;
 
 import io.servicetalk.concurrent.api.DeferredEmptySubscription;
+import io.servicetalk.concurrent.api.ExecutorRule;
 import io.servicetalk.concurrent.api.MockedSingleListenerRule;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.PublisherRule;
+import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.concurrent.internal.TerminalNotification;
 
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.Timeout;
 import org.reactivestreams.Subscriber;
 
 import java.util.NoSuchElementException;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.CountDownLatch;
 
+import static io.servicetalk.concurrent.api.Publisher.just;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
+import static java.lang.Thread.currentThread;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.hasSize;
 
 public class PubToSingleTest {
 
+    @Rule
+    public final Timeout timeout = new ServiceTalkTestTimeout();
+    @Rule
+    public final ExecutorRule executorRule = new ExecutorRule();
     @Rule
     public final MockedSingleListenerRule<String> listenerRule = new MockedSingleListenerRule<>();
     @Rule
@@ -96,6 +109,22 @@ public class PubToSingleTest {
                 subscriber.onSubscribe(new DeferredEmptySubscription(subscriber, TerminalNotification.error(DELIBERATE_EXCEPTION)));
             }
         }).verifyFailure(DELIBERATE_EXCEPTION);
+    }
+
+    @Test
+    public void subscribeOnOriginalIsPreserved() throws Exception {
+        final Thread testThread = currentThread();
+        final CountDownLatch analyzed = new CountDownLatch(1);
+        ConcurrentLinkedQueue<AssertionError> errors = new ConcurrentLinkedQueue<>();
+        just("Hello").doBeforeRequest(__ -> {
+            if (currentThread() == testThread) {
+                errors.add(new AssertionError("Invalid thread invoked request-n. Thread: " +
+                        currentThread()));
+            }
+            analyzed.countDown();
+        }).subscribeOn(executorRule.getExecutor()).first().toFuture().get();
+        analyzed.await();
+        assertThat("Unexpected errors observed: " + errors, errors, hasSize(0));
     }
 
     private MockedSingleListenerRule<String> listen(Publisher<String> src) {

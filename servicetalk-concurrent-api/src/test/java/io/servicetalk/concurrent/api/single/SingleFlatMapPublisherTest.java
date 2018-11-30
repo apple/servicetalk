@@ -15,23 +15,36 @@
  */
 package io.servicetalk.concurrent.api.single;
 
+import io.servicetalk.concurrent.api.ExecutorRule;
 import io.servicetalk.concurrent.api.MockedSubscriberRule;
+import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.api.TestSingle;
+import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.Timeout;
+
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.CountDownLatch;
 
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Single.error;
 import static io.servicetalk.concurrent.api.Single.success;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static java.lang.Thread.currentThread;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 
 public final class SingleFlatMapPublisherTest {
-
+    @Rule
+    public final Timeout timeout = new ServiceTalkTestTimeout();
+    @Rule
+    public final ExecutorRule executorRule = new ExecutorRule();
     @Rule
     public final MockedSubscriberRule<String> subscriber = new MockedSubscriberRule<>();
     private TestPublisher<String> publisher = new TestPublisher<>();
@@ -114,5 +127,25 @@ public final class SingleFlatMapPublisherTest {
         subscriber.subscribe(success(1).flatMapPublisher(s -> null)).request(2);
         single.onSuccess("Hello");
         subscriber.verifyFailure(NullPointerException.class);
+    }
+
+    @Test
+    public void subscribeOnOriginalIsPreserved() throws Exception {
+        final Thread testThread = currentThread();
+        final CountDownLatch analyzed = new CountDownLatch(1);
+        ConcurrentLinkedQueue<AssertionError> errors = new ConcurrentLinkedQueue<>();
+        Single.never()
+                .doBeforeCancel(() -> {
+                    if (currentThread() == testThread) {
+                        errors.add(new AssertionError("Invalid thread invoked cancel. Thread: " +
+                                currentThread()));
+                    }
+                    analyzed.countDown();
+                })
+                .subscribeOn(executorRule.getExecutor())
+                .flatMapPublisher(t -> Publisher.never())
+                .forEach(__ -> { }).cancel();
+        analyzed.await();
+        assertThat("Unexpected errors observed: " + errors, errors, hasSize(0));
     }
 }
