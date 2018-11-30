@@ -21,6 +21,7 @@ import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.transport.api.ServerContext;
 
+import org.hamcrest.core.CombinableMatcher;
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
@@ -29,6 +30,7 @@ import org.junit.rules.Timeout;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.channels.ClosedChannelException;
 import java.util.ArrayList;
@@ -94,7 +96,8 @@ public class InsufficientlySizedExecutorHttpTest {
             // If there are no threads, we can not start processing.
             // If there is a single thread, it is used by the connection to listen for close events.
             expectedException.expect(instanceOf(ExecutionException.class));
-            expectedException.expectCause(instanceOf(ClosedChannelException.class));
+            expectedException.expectCause(CombinableMatcher.<Throwable>either(instanceOf(ClosedChannelException.class))
+                    .or(instanceOf(IOException.class)));
         }
         StreamingHttpResponse response = client.request(client.get("/")).toFuture().get();
         assertThat("Unexpected response code.", response.status().code(), is(SERVICE_UNAVAILABLE.code()));
