@@ -48,7 +48,8 @@ public final class HttpSerializationProviders {
      * with {@link StandardCharsets#UTF_8} {@code Charset} to urlencoded forms.
      *
      * @return {@link HttpSerializer} that could serialize key-value {@link Map}.
-     * @see <a href="https://url.spec.whatwg.org/#application/x-www-form-urlencoded">x-www-form-urlencoded specification</a>
+     * @see <a href="https://url.spec.whatwg.org/#application/x-www-form-urlencoded">x-www-form-urlencoded 
+     specification</a>
      */
     public static HttpSerializer<Map<String, List<String>>> formUrlEncodedSerializer() {
         return FormUrlEncodedHttpSerializer.UTF8;
