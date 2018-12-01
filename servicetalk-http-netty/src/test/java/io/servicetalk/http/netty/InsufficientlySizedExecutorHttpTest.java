@@ -21,7 +21,6 @@ import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.transport.api.ServerContext;
 
-import org.hamcrest.core.CombinableMatcher;
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
@@ -48,6 +47,7 @@ import static io.servicetalk.http.api.HttpResponseStatuses.SERVICE_UNAVAILABLE;
 import static io.servicetalk.http.netty.HttpClients.forSingleAddress;
 import static io.servicetalk.http.netty.HttpServers.forPort;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.junit.rules.ExpectedException.none;
@@ -96,8 +96,8 @@ public class InsufficientlySizedExecutorHttpTest {
             // If there are no threads, we can not start processing.
             // If there is a single thread, it is used by the connection to listen for close events.
             expectedException.expect(instanceOf(ExecutionException.class));
-            expectedException.expectCause(CombinableMatcher.<Throwable>either(instanceOf(ClosedChannelException.class))
-                    .or(instanceOf(IOException.class)));
+            expectedException.expectCause(anyOf(instanceOf(ClosedChannelException.class),
+                    instanceOf(IOException.class)));
         }
         StreamingHttpResponse response = client.request(client.get("/")).toFuture().get();
         assertThat("Unexpected response code.", response.status().code(), is(SERVICE_UNAVAILABLE.code()));
@@ -133,13 +133,8 @@ public class InsufficientlySizedExecutorHttpTest {
 
     @Nonnull
     private static Executor getExecutorForCapacity(final int clientCapacity) {
-        switch (clientCapacity) {
-            case 0:
-                return from(task -> {
-                    throw new RejectedExecutionException();
-                });
-            default:
-                return newFixedSizeExecutor(clientCapacity);
-        }
+        return clientCapacity == 0 ? from(task -> {
+                throw new RejectedExecutionException();
+        }) : newFixedSizeExecutor(clientCapacity);
     }
 }

@@ -116,13 +116,12 @@ public class FlushStrategyOverrideTest {
 
         FlushSender serverFlush = serverStrategy.verifyApplied();
         serverStrategy.verifyWriteStarted();
-        serverStrategy.verifyItemWritten(4 /*headers + 3 chunks*/); // we uninstall the strategy post body-end.
+        serverStrategy.verifyItemWritten(5 /* Header + 3 chunks + trailers*/);
         serverStrategy.verifyWriteTerminated();
         serverFlush.flush();
 
         Collection<Object> chunks = clientResp.get();
         assertThat("Unexpected items received.", chunks, hasSize(4 /*3 chunks + last chunk*/));
-        clientStrategy.verifyWriteCancelled(); // Single.flatMapPublisher sends a cancel when switching to Publisher.
         c.cancel(); // revert to flush on each.
 
         // No more custom strategies.
