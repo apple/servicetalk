@@ -61,7 +61,7 @@ public class FormUrlEncodedHttpDeserializerTest {
         assertEquals("Unexpected parameter value.", "bar", deserialized.get("param2").get(0));
         assertEquals("Unexpected parameter value.", "foo", deserialized.get("param2").get(1));
 
-        assertEquals("Unexpected parameter value count.",1, deserialized.get("emptyParam").size());
+        assertEquals("Unexpected parameter value count.", 1, deserialized.get("emptyParam").size());
         assertEquals("Unexpected parameter value.", "", deserialized.get("emptyParam").get(0));
     }
 
