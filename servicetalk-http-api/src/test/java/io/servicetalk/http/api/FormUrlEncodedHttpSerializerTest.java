@@ -52,9 +52,8 @@ public class FormUrlEncodedHttpSerializerTest {
         assertEquals("Unexpected serialized content.",
                 "emptyParam=&escape%26this%3D=and%26this%25&param2=foo&param2=bar",
                 serialized.toString(UTF_8));
-        assertEquals("Unexpected content type.", "" +
-                        "application/x-www-form-urlencoded; charset=UTF-8",
-                headers.get(CONTENT_TYPE));
+        assertTrue("Unexpected content type.",
+                headers.contains(CONTENT_TYPE, "application/x-www-form-urlencoded; charset=UTF-8"));
     }
 
     @Test
@@ -67,9 +66,8 @@ public class FormUrlEncodedHttpSerializerTest {
         final Buffer serialized = serializer.serialize(headers, formParameters, DEFAULT_ALLOCATOR);
 
         assertEquals("Unexpected buffer length.", 0, serialized.readableBytes());
-        assertEquals("Unexpected content type.",
-                "application/x-www-form-urlencoded; charset=UTF-8",
-                headers.get(CONTENT_TYPE));
+        assertTrue("Unexpected content type.",
+                headers.contains(CONTENT_TYPE, "application/x-www-form-urlencoded; charset=UTF-8"));
     }
 
     @Test
@@ -111,8 +109,7 @@ public class FormUrlEncodedHttpSerializerTest {
         serialized.iterator().close();
 
         assertTrue(isClosed.get());
-        assertEquals("Unexpected content type.",
-                "application/x-www-form-urlencoded; charset=UTF-8",
-                headers.get(CONTENT_TYPE));
+        assertTrue("Unexpected content type.",
+                headers.contains(CONTENT_TYPE, "application/x-www-form-urlencoded; charset=UTF-8"));
     }
 }

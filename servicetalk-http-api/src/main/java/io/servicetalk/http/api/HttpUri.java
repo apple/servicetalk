@@ -38,10 +38,6 @@ import static java.nio.charset.StandardCharsets.UTF_8;
  * get wrong. {@link HttpUri} attempts to address these issues.
  */
 final class HttpUri {
-    /**
-     * Default character set (UTF-8)
-     */
-    public static final Charset DEFAULT_CHARSET = UTF_8;
     private static final String SPACE = " ";
 
     static final int DEFAULT_PORT_HTTP = 80;
@@ -304,7 +300,7 @@ final class HttpUri {
     String getPath() {
         if (path == null) {
             final String raw = getRawPath();
-            path = decodeComponent(raw, 0, raw.length(), true);
+            path = decodeComponent(raw, 0, raw.length(), true, UTF_8);
         }
         return path;
     }
@@ -388,7 +384,8 @@ final class HttpUri {
         return uri;
     }
 
-    static String decodeComponent(final String s, final int from, final int toExcluded, final boolean isPath) {
+    static String decodeComponent(final String s, final int from, final int toExcluded, final boolean isPath,
+                                  final Charset charset) {
         final int len = toExcluded - from;
         if (len <= 0) {
             return "";
@@ -405,7 +402,7 @@ final class HttpUri {
             return s.substring(from, toExcluded);
         }
 
-        final CharsetDecoder decoder = DEFAULT_CHARSET.newDecoder()
+        final CharsetDecoder decoder = charset.newDecoder()
                 .onMalformedInput(REPLACE).onUnmappableCharacter(REPLACE);
 
         // Each encoded byte takes 3 characters (e.g. "%20")
