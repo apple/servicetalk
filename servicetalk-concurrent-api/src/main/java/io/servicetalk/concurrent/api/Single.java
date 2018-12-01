@@ -1124,9 +1124,8 @@ public abstract class Single<T> implements io.servicetalk.concurrent.Single<T> {
      * This will actively subscribe to a limited number of {@link Single}s concurrently, in order to alter the defaults,
      * {@link #collect(Iterable, int)} should be used. <p>
      * If any of the {@link Single}s terminate with an error, returned {@link Single} will immediately terminate with
-     * that error. In such a case, any in progress {@link Single}s will be cancelled. If it is expected for all
-     * {@link Single}s to terminate before terminating the returned {@link Single}, {@link #collectDelayError(Iterable)}
-     * should be used.
+     * that error. In such a case, any in progress {@link Single}s will be cancelled. In order to delay error
+     * termination use {@link #collectDelayError(Iterable)}.
      * <p>
      * From a sequential programming point of view this method is roughly equivalent to the following:
      * <pre>{@code
@@ -1156,9 +1155,8 @@ public abstract class Single<T> implements io.servicetalk.concurrent.Single<T> {
      * This will actively subscribe to a limited number of {@link Single}s concurrently, in order to alter the defaults,
      * {@link #collect(int, Single[])} should be used. <p>
      * If any of the {@link Single}s terminate with an error, returned {@link Single} will immediately terminate with
-     * that error. In such a case, any in progress {@link Single}s will be cancelled. If it is expected for all
-     * {@link Single}s to terminate before terminating the returned {@link Single}, {@link #collectDelayError(Single[])}
-     * should be used.
+     * that error. In such a case, any in progress {@link Single}s will be cancelled. In order to delay error
+     * termination use {@link #collectDelayError(Single[])}.
      * <p>
      * From a sequential programming point of view this method is roughly equivalent to the following:
      * <pre>{@code
@@ -1178,19 +1176,19 @@ public abstract class Single<T> implements io.servicetalk.concurrent.Single<T> {
      */
     @SafeVarargs
     public static <T> Single<Collection<T>> collect(Single<T>... singles) {
-        return Publisher.from(singles).flatMapSingle(identity()).reduce(ArrayList::new, (ts, t) -> {
-            ts.add(t);
-            return ts;
-        });
+        return Publisher.from(singles).flatMapSingle(identity()).reduce(() -> new ArrayList<>(singles.length),
+                (ts, t) -> {
+                    ts.add(t);
+                    return ts;
+                });
     }
 
     /**
      * Asynchronously collects results of individual {@link Single}s returned by the passed {@link Iterable} into a
      * single {@link Collection}. <p>
      * If any of the {@link Single}s terminate with an error, returned {@link Single} will immediately terminate with
-     * that error. In such a case, any in progress {@link Single}s will be cancelled. If it is expected for all
-     * {@link Single}s to terminate before terminating the returned {@link Single},
-     * {@link #collectDelayError(Iterable, int)} should be used.
+     * that error. In such a case, any in progress {@link Single}s will be cancelled. In order to delay error
+     * termination use {@link #collectDelayError(Iterable, int)}.
      * <p>
      * From a sequential programming point of view this method is roughly equivalent to the following:
      * <pre>{@code
@@ -1219,9 +1217,8 @@ public abstract class Single<T> implements io.servicetalk.concurrent.Single<T> {
     /**
      * Asynchronously collects results of the passed {@link Single}s into a single {@link Collection}. <p>
      * If any of the {@link Single}s terminate with an error, returned {@link Single} will immediately terminate with
-     * that error. In such a case, any in progress {@link Single}s will be cancelled. If it is expected for all
-     * {@link Single}s to terminate before terminating the returned {@link Single},
-     * {@link #collectDelayError(int, Single[])} should be used.
+     * that error. In such a case, any in progress {@link Single}s will be cancelled. In order to delay error
+     * termination use {@link #collectDelayError(int, Single[])}.
      * <p>
      * From a sequential programming point of view this method is roughly equivalent to the following:
      * <pre>{@code
@@ -1242,10 +1239,11 @@ public abstract class Single<T> implements io.servicetalk.concurrent.Single<T> {
      */
     @SafeVarargs
     public static <T> Single<Collection<T>> collect(int maxConcurrency, Single<T>... singles) {
-        return Publisher.from(singles).flatMapSingle(identity(), maxConcurrency).reduce(ArrayList::new, (ts, t) -> {
-            ts.add(t);
-            return ts;
-        });
+        return Publisher.from(singles).flatMapSingle(identity(), maxConcurrency)
+                .reduce(() -> new ArrayList<>(singles.length), (ts, t) -> {
+                    ts.add(t);
+                    return ts;
+                });
     }
 
     /**
@@ -1322,10 +1320,11 @@ public abstract class Single<T> implements io.servicetalk.concurrent.Single<T> {
      */
     @SafeVarargs
     public static <T> Single<Collection<T>> collectDelayError(Single<T>... singles) {
-        return Publisher.from(singles).flatMapSingleDelayError(identity()).reduce(ArrayList::new, (ts, t) -> {
-            ts.add(t);
-            return ts;
-        });
+        return Publisher.from(singles).flatMapSingleDelayError(identity())
+                .reduce(() -> new ArrayList<>(singles.length), (ts, t) -> {
+                    ts.add(t);
+                    return ts;
+                });
     }
 
     /**
@@ -1403,7 +1402,7 @@ public abstract class Single<T> implements io.servicetalk.concurrent.Single<T> {
     @SafeVarargs
     public static <T> Single<Collection<T>> collectDelayError(int maxConcurrency, Single<T>... singles) {
         return Publisher.from(singles).flatMapSingleDelayError(identity(), maxConcurrency)
-                .reduce(ArrayList::new, (ts, t) -> {
+                .reduce(() -> new ArrayList<>(singles.length), (ts, t) -> {
                     ts.add(t);
                     return ts;
                 });

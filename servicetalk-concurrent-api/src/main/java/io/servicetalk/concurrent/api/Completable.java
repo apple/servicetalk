@@ -1220,9 +1220,8 @@ public abstract class Completable implements io.servicetalk.concurrent.Completab
      * defaults, {@link #collect(Iterable, int)}.
      * <p>
      * If any of the {@link Completable}s terminate with an error, returned {@link Completable} will immediately
-     * terminate with that error. In such a case, any in-progress {@link Completable}s will be cancelled. If it is
-     * expected for all {@link Completable}s to terminate before terminating the returned {@link Completable},
-     * {@link #collectDelayError(Iterable)} should be used.
+     * terminate with that error. In such a case, any in-progress {@link Completable}s will be cancelled. In order to
+     * delay error termination use {@link #collectDelayError(Iterable)}.
      * <p>
      * From a sequential programming point of view this method is roughly equivalent to the following:
      * <pre>{@code
@@ -1248,8 +1247,7 @@ public abstract class Completable implements io.servicetalk.concurrent.Completab
      * <p>
      * If any of the {@link Completable}s terminate with an error, returned {@link Completable} will immediately
      * terminate with that error. In such a case, any in-progress {@link Completable}s will be cancelled.
-     * If it is expected for all {@link Completable}s to terminate before terminating the returned {@link Completable},
-     * {@link #collectDelayError(Completable...)} should be used.
+     *  In order to delay error termination use {@link #collectDelayError(Completable...)}.
      * <p>
      * From a sequential programming point of view this method is roughly equivalent to the following:
      * <pre>{@code
@@ -1271,9 +1269,8 @@ public abstract class Completable implements io.servicetalk.concurrent.Completab
      * Returns a {@link Completable} that terminates when all the passed {@link Completable} terminate.
      * <p>
      * If any of the {@link Completable}s terminate with an error, returned {@link Completable} will immediately
-     * terminate with that error. In such a case, any in-progress {@link Completable}s will be cancelled. If it is
-     * expected for all {@link Completable}s to terminate before terminating the returned {@link Completable},
-     * {@link #collectDelayError(Iterable)} should be used.
+     * terminate with that error. In such a case, any in-progress {@link Completable}s will be cancelled. In order to
+     * delay error termination use {@link #collectDelayError(Iterable, int)}.
      * <p>
      * From a sequential programming point of view this method is roughly equivalent to the following:
      * <pre>{@code
@@ -1297,8 +1294,7 @@ public abstract class Completable implements io.servicetalk.concurrent.Completab
      * <p>
      * If any of the {@link Completable}s terminate with an error, returned {@link Completable} will immediately
      * terminate with that error. In such a case, any in-progress {@link Completable}s will be cancelled.
-     * If it is expected for all {@link Completable}s to terminate before terminating the returned {@link Completable},
-     * {@link #collectDelayError(Completable...)} should be used.
+     *  In order to delay error termination use {@link #collectDelayError(int, Completable...)}.
      * <p>
      * From a sequential programming point of view this method is roughly equivalent to the following:
      * <pre>{@code
