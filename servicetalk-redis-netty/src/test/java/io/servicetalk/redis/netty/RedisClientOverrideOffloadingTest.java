@@ -90,12 +90,7 @@ public class RedisClientOverrideOffloadingTest {
     private static Object[] newParam(String description, Predicate<Thread> isInvalidThread,
                                      @Nullable RedisExecutionStrategy overridingStrategy,
                                      @Nullable RedisExecutionStrategy defaultStrategy) {
-        Object[] param = new Object[4];
-        param[0] = description;
-        param[1] = isInvalidThread;
-        param[2] = overridingStrategy;
-        param[3] = defaultStrategy;
-        return param;
+        return new Object[]{description, isInvalidThread, overridingStrategy, defaultStrategy};
     }
 
     @After

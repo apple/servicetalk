@@ -90,7 +90,7 @@ public abstract class BaseHttpPredicateRouterBuilderTest {
             return reqRespFactory.newResponse(status);
         });
 
-        when(strategy.wrap(any(), any())).then(invocation -> invocation.getArgument(1));
+        when(strategy.offloadService(any(), any())).then(invocation -> invocation.getArgument(1));
         when(serviceA.executionStrategy()).thenReturn(strategy);
         when(serviceB.executionStrategy()).thenReturn(strategy);
         when(serviceC.executionStrategy()).thenReturn(strategy);

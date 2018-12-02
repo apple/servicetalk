@@ -110,7 +110,7 @@ final class DefaultJerseyStreamingHttpRouter extends StreamingHttpService {
                                                      String> baseUriFunction,
                                              final Function<String, Executor> executorFactory,
                                              final HttpExecutionStrategy strategy) {
-        this.strategy = strategy;
+        this.strategy = requireNonNull(strategy);
 
         if (!applicationHandler.getConfiguration().isEnabled(ServiceTalkFeature.class)) {
             throw new IllegalStateException("The " + ServiceTalkFeature.class.getSimpleName()

@@ -60,7 +60,7 @@ public class InputConsumingGlobalFiltersRouterExecTest extends AbstractFilterInt
         Map<String, Executor> executors = new HashMap<>();
         executors.put(DEFAULT_EXECUTOR_ID, immediate());
         executors.put("test", TEST_EXEC.getExecutor());
-        return super.configureBuilder(builder).setExecutorFactory(executors::get);
+        return super.configureBuilder(builder).executorFactory(executors::get);
     }
 
     @Override

@@ -84,8 +84,8 @@ public final class HttpJerseyRouterBuilder {
      * @param strategy {@link HttpExecutionStrategy} to use.
      * @return this
      */
-    public HttpJerseyRouterBuilder executionStrategy(HttpExecutionStrategy strategy) {
-        this.strategy = strategy;
+    public HttpJerseyRouterBuilder executionStrategy(final HttpExecutionStrategy strategy) {
+        this.strategy = requireNonNull(strategy);
         return this;
     }
 
@@ -98,7 +98,7 @@ public final class HttpJerseyRouterBuilder {
      * @return this
      * @see ExecutionStrategy
      */
-    public HttpJerseyRouterBuilder setExecutorFactory(final Function<String, Executor> executorFactory) {
+    public HttpJerseyRouterBuilder executorFactory(final Function<String, Executor> executorFactory) {
         this.executorFactory = requireNonNull(executorFactory);
         return this;
     }

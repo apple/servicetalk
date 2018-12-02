@@ -96,7 +96,7 @@ final class StreamingHttpClientToBlockingHttpClient extends BlockingHttpClient {
 
         @Override
         public HttpResponse request(final HttpExecutionStrategy strategy, final HttpRequest request) throws Exception {
-            return blockingInvocation(connection.request(request.toStreamingRequest())
+            return blockingInvocation(connection.request(strategy, request.toStreamingRequest())
                     .flatMap(StreamingHttpResponse::toResponse));
         }
 

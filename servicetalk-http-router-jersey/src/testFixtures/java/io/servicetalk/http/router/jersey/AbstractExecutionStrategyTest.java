@@ -187,7 +187,7 @@ public abstract class AbstractExecutionStrategyTest extends AbstractJerseyStream
         executors.put(DEFAULT_EXECUTOR_ID, routerExecutor);
         executors.put("test", methodExecutor);
 
-        return super.configureBuilder(builder).setExecutorFactory(executors::get);
+        return super.configureBuilder(builder).executorFactory(executors::get);
     }
 
     @Override

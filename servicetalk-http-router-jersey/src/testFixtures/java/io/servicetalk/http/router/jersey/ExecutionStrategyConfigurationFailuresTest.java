@@ -70,7 +70,7 @@ public class ExecutionStrategyConfigurationFailuresTest {
                 .and(containsString("subResourceRouterExec()")));
 
         new HttpJerseyRouterBuilder()
-                .setExecutorFactory(id -> "test".equals(id) ? TEST_EXEC.getExecutor() : null)
+                .executorFactory(id -> "test".equals(id) ? TEST_EXEC.getExecutor() : null)
                 .build(new TestApplication());
     }
 
@@ -81,7 +81,7 @@ public class ExecutionStrategyConfigurationFailuresTest {
                 .and(containsString("subResourceRouterExecId()")));
 
         new HttpJerseyRouterBuilder()
-                .setExecutorFactory(id -> DEFAULT_EXECUTOR_ID.equals(id) ? ROUTER_EXEC.getExecutor() : null)
+                .executorFactory(id -> DEFAULT_EXECUTOR_ID.equals(id) ? ROUTER_EXEC.getExecutor() : null)
                 .build(new TestApplication());
     }
 
@@ -95,7 +95,7 @@ public class ExecutionStrategyConfigurationFailuresTest {
                 containsString("cf()")));
 
         new HttpJerseyRouterBuilder()
-                .setExecutorFactory(id -> DEFAULT_EXECUTOR_ID.equals(id) ? ROUTER_EXEC.getExecutor() : null)
+                .executorFactory(id -> DEFAULT_EXECUTOR_ID.equals(id) ? ROUTER_EXEC.getExecutor() : null)
                 .build(new Application() {
                     @Override
                     public Set<Class<?>> getClasses() {

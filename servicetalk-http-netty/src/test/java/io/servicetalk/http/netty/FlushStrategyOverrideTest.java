@@ -125,7 +125,6 @@ public class FlushStrategyOverrideTest {
         assertThat("Unexpected items received.", chunks, hasSize(4 /*3 chunks + last chunk*/));
 
         c.cancel(); // revert to flush on each.
-        clientStrategy.verifyWriteCancelled();
 
         // No more custom strategies.
         Collection<Object> secondReqChunks = conn.request(conn.get(""))

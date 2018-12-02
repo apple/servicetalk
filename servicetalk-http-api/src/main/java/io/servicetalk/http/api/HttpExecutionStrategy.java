@@ -20,7 +20,6 @@ import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.transport.api.ExecutionStrategy;
 
-import java.util.concurrent.Callable;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
@@ -61,9 +60,9 @@ public interface HttpExecutionStrategy extends ExecutionStrategy {
                                     BiFunction<Throwable, Executor, Single<StreamingHttpResponse>> errorHandler);
 
     /**
-     * Invokes a service represented by the passed {@link Callable}.
+     * Invokes a service represented by the passed {@link Function}.
      * <p>
-     * This method does not apply the strategy on the object returned from the {@link Callable}, if that object is an
+     * This method does not apply the strategy on the object returned from the {@link Function}, if that object is an
      * asynchronous source then the caller of this method should take care and offload that source using
      * {@link #offloadSend(Executor, Single)} or {@link #offloadSend(Executor, Publisher)}.
      *
@@ -71,8 +70,8 @@ public interface HttpExecutionStrategy extends ExecutionStrategy {
      * @param fallback {@link Executor} to use as a fallback if this {@link HttpExecutionStrategy} does not define an
      * {@link Executor}.
      * @param service {@link Function} representing a service.
-     * @return A {@link Single} that invokes the passed {@link Callable} and returns the result asynchronously.
-     * Invocation of {@link Callable} will be offloaded if configured.
+     * @return A {@link Single} that invokes the passed {@link Function} and returns the result asynchronously.
+     * Invocation of {@link Function} will be offloaded if configured.
      */
     <T> Single<T> invokeService(Executor fallback, Function<Executor, T> service);
 
@@ -84,5 +83,5 @@ public interface HttpExecutionStrategy extends ExecutionStrategy {
      * @param handler {@link StreamingHttpRequestHandler} to wrap.
      * @return Wrapped {@link StreamingHttpService}.
      */
-    StreamingHttpService wrap(Executor fallback, StreamingHttpRequestHandler handler);
+    StreamingHttpService offloadService(Executor fallback, StreamingHttpRequestHandler handler);
 }

@@ -19,11 +19,13 @@ import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.transport.netty.internal.ExecutionContextRule;
 
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.Timeout;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.mockito.Mockito;
@@ -32,6 +34,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.function.Function;
 
@@ -40,6 +43,7 @@ import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
 import static io.servicetalk.concurrent.api.Publisher.just;
 import static io.servicetalk.concurrent.api.Single.error;
+import static io.servicetalk.concurrent.api.Single.never;
 import static io.servicetalk.concurrent.api.Single.success;
 import static io.servicetalk.http.api.DefaultHttpHeadersFactory.INSTANCE;
 import static io.servicetalk.http.api.HttpExecutionStrategies.customStrategyBuilder;
@@ -56,6 +60,8 @@ import static org.hamcrest.Matchers.is;
 @RunWith(Parameterized.class)
 public class DefaultHttpExecutionStrategyTest {
 
+    @Rule
+    public final Timeout timeout = new ServiceTalkTestTimeout();
     @Rule
     public final ExecutionContextRule contextRule = ExecutionContextRule.immediate();
     private final boolean offloadReceiveMeta;
@@ -108,13 +114,8 @@ public class DefaultHttpExecutionStrategyTest {
     private static Object[] newParam(String description, final boolean offloadReceiveMeta,
                                      final boolean offloadReceiveData, final boolean offloadSend,
                                      final boolean strategySpecifiesExecutor) {
-        Object[] param = new Object[5];
-        param[0] = description;
-        param[1] = offloadReceiveMeta;
-        param[2] = offloadReceiveData;
-        param[3] = offloadSend;
-        param[4] = strategySpecifiesExecutor;
-        return param;
+        return new Object[]{description, offloadReceiveMeta, offloadReceiveData, offloadSend,
+                strategySpecifiesExecutor};
     }
 
     @After
@@ -130,7 +131,7 @@ public class DefaultHttpExecutionStrategyTest {
 
         analyzer.instrumentedResponseForClient(strategy.invokeClient(executor, req,
                 publisher -> analyzer.instrumentedFlatRequestForClient(publisher).ignoreElements()
-                        .andThen(success(resp))))
+                        .concatWith(success(resp))))
                 .flatMapPublisher(StreamingHttpResponse::payloadBody)
                 .toFuture().get();
         analyzer.verify();
@@ -145,7 +146,7 @@ public class DefaultHttpExecutionStrategyTest {
         analyzer.instrumentedResponseForServer(strategy.invokeService(executor, req, request -> {
             analyzer.checkServiceInvocation();
             return analyzer.instrumentedRequestPayloadForServer(request.payloadBody())
-                    .ignoreElements().andThen(success(resp));
+                    .ignoreElements().concatWith(success(resp));
         }, (throwable, executor1) -> error(throwable))).toFuture().get();
 
         analyzer.verify();
@@ -166,7 +167,7 @@ public class DefaultHttpExecutionStrategyTest {
     @Test
     public void wrapService() throws Exception {
         ThreadAnalyzer analyzer = new ThreadAnalyzer();
-        StreamingHttpService svc = strategy.wrap(executor, new StreamingHttpService() {
+        StreamingHttpService svc = strategy.offloadService(executor, new StreamingHttpService() {
             @Override
             public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
                                                         final StreamingHttpRequest request,
@@ -184,7 +185,36 @@ public class DefaultHttpExecutionStrategyTest {
         analyzer.instrumentedResponseForServer(svc.handle(ctx, req, ctx.streamingResponseFactory()))
                 .flatMapPublisher(StreamingHttpResponse::payloadBody)
                 .toFuture().get();
-        analyzer.verify();
+        analyzer.verifyNoErrors();
+    }
+
+    @Test
+    public void offloadSendSingle() throws Exception {
+        ThreadAnalyzer analyzer = new ThreadAnalyzer();
+        analyzer.instrumentSend(strategy.offloadSend(executor, never())).subscribe(__ -> { }).cancel();
+        analyzer.awaitCancel.await();
+        analyzer.verifySend();
+    }
+
+    @Test
+    public void offloadSendPublisher() throws Exception {
+        ThreadAnalyzer analyzer = new ThreadAnalyzer();
+        analyzer.instrumentSend(strategy.offloadSend(executor, just(1))).toFuture().get();
+        analyzer.verifySend();
+    }
+
+    @Test
+    public void offloadReceiveSingle() throws Exception {
+        ThreadAnalyzer analyzer = new ThreadAnalyzer();
+        analyzer.instrumentReceive(strategy.offloadReceive(executor, success(1))).toFuture().get();
+        analyzer.verifyReceive();
+    }
+
+    @Test
+    public void offloadReceivePublisher() throws Exception {
+        ThreadAnalyzer analyzer = new ThreadAnalyzer();
+        analyzer.instrumentReceive(strategy.offloadReceive(executor, just(1))).toFuture().get();
+        analyzer.verifyReceive();
     }
 
     private final class ThreadAnalyzer {
@@ -195,6 +225,7 @@ public class DefaultHttpExecutionStrategyTest {
         private final ConcurrentLinkedQueue<AssertionError> errors = new ConcurrentLinkedQueue<>();
         private final Thread testThread = currentThread();
         private final AtomicReferenceArray<Boolean> analyzed = new AtomicReferenceArray<>(3);
+        private final CountDownLatch awaitCancel = new CountDownLatch(1);
 
         StreamingHttpRequest createNewRequest() {
             return newRequest(GET, "/", HTTP_1_1, INSTANCE.newHeaders(),
@@ -228,6 +259,35 @@ public class DefaultHttpExecutionStrategyTest {
             return req.doBeforeRequest(__ -> {
                 analyzed.set(SEND_ANALYZED_INDEX, true);
                 verifyThread(offloadSend, "Unexpected thread requested from request.");
+            });
+        }
+
+        <T> Single<T> instrumentSend(Single<T> original) {
+            return original.doBeforeCancel(() -> {
+                analyzed.set(SEND_ANALYZED_INDEX, true);
+                verifyThread(offloadSend, "Unexpected thread requested from cancel.");
+                awaitCancel.countDown();
+            });
+        }
+
+        <T> Publisher<T> instrumentSend(Publisher<T> original) {
+            return original.doBeforeRequest(__ -> {
+                analyzed.set(SEND_ANALYZED_INDEX, true);
+                verifyThread(offloadSend, "Unexpected thread requested from request.");
+            });
+        }
+
+        <T> Single<T> instrumentReceive(Single<T> original) {
+            return original.doBeforeSuccess(__ -> {
+                analyzed.set(RECEIVE_DATA_ANALYZED_INDEX, true);
+                verifyThread(offloadReceiveData, "Unexpected thread requested from success.");
+            });
+        }
+
+        <T> Publisher<T> instrumentReceive(Publisher<T> original) {
+            return original.doBeforeNext(__ -> {
+                analyzed.set(RECEIVE_DATA_ANALYZED_INDEX, true);
+                verifyThread(offloadReceiveData, "Unexpected thread requested from next.");
             });
         }
 
@@ -266,6 +326,16 @@ public class DefaultHttpExecutionStrategyTest {
             } else if (offloadedPath && testThread == currentThread()) {
                 addError(errMsg);
             }
+        }
+
+        void verifySend() {
+            assertThat("Send path not analyzed.", analyzed.get(SEND_ANALYZED_INDEX), is(true));
+            verifyNoErrors();
+        }
+
+        void verifyReceive() {
+            assertThat("Receive data path not analyzed.", analyzed.get(RECEIVE_DATA_ANALYZED_INDEX), is(true));
+            verifyNoErrors();
         }
 
         void verify() {

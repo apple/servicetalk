@@ -17,6 +17,7 @@ package io.servicetalk.redis.api;
 
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.concurrent.api.Single;
 
 import org.junit.After;
 import org.junit.Test;
@@ -27,11 +28,14 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
 import static io.servicetalk.concurrent.api.Publisher.just;
+import static io.servicetalk.concurrent.api.Single.never;
+import static io.servicetalk.concurrent.api.Single.success;
 import static io.servicetalk.redis.api.NoOffloadsRedisExecutionStrategy.NO_OFFLOADS;
 import static io.servicetalk.redis.api.RedisExecutionStrategies.customStrategyBuilder;
 import static io.servicetalk.redis.api.RedisProtocolSupport.Command.PING;
@@ -106,9 +110,38 @@ public class DefaultRedisExecutionStrategyTest {
         RedisRequest req = analyzer.createNewRequest();
         Publisher<RedisData> resp = analyzer.createNewResponse();
         analyzer.instrumentedResponse(strategy.invokeClient(executor, req, request ->
-            analyzer.instrumentedRequest(request).content().ignoreElements().andThen(resp)
+            analyzer.instrumentedRequest(request).content().ignoreElements().concatWith(resp)
         )).toFuture().get();
         analyzer.verify();
+    }
+
+    @Test
+    public void offloadSendSingle() throws Exception {
+        ThreadAnalyzer analyzer = new ThreadAnalyzer();
+        analyzer.instrumentSend(strategy.offloadSend(executor, never())).subscribe(__ -> { }).cancel();
+        analyzer.awaitCancel.await();
+        analyzer.verifySend();
+    }
+
+    @Test
+    public void offloadSendPublisher() throws Exception {
+        ThreadAnalyzer analyzer = new ThreadAnalyzer();
+        analyzer.instrumentSend(strategy.offloadSend(executor, just(1))).toFuture().get();
+        analyzer.verifySend();
+    }
+
+    @Test
+    public void offloadReceiveSingle() throws Exception {
+        ThreadAnalyzer analyzer = new ThreadAnalyzer();
+        analyzer.instrumentReceive(strategy.offloadReceive(executor, success(1))).toFuture().get();
+        analyzer.verifyReceive();
+    }
+
+    @Test
+    public void offloadReceivePublisher() throws Exception {
+        ThreadAnalyzer analyzer = new ThreadAnalyzer();
+        analyzer.instrumentReceive(strategy.offloadReceive(executor, just(1))).toFuture().get();
+        analyzer.verifyReceive();
     }
 
     private final class ThreadAnalyzer {
@@ -118,6 +151,7 @@ public class DefaultRedisExecutionStrategyTest {
         private final ConcurrentLinkedQueue<AssertionError> errors = new ConcurrentLinkedQueue<>();
         private final Thread testThread = currentThread();
         private final AtomicReferenceArray<Boolean> analyzed = new AtomicReferenceArray<>(2);
+        private final CountDownLatch awaitCancel = new CountDownLatch(1);
 
         RedisRequest createNewRequest() {
             return newRequest(PING, DEFAULT_ALLOCATOR.fromAscii("Hello"));
@@ -141,6 +175,35 @@ public class DefaultRedisExecutionStrategyTest {
             });
         }
 
+        <T> Single<T> instrumentSend(Single<T> original) {
+            return original.doBeforeCancel(() -> {
+                analyzed.set(SEND_ANALYZED_INDEX, true);
+                verifyThread(offloadSend, "Unexpected thread requested from cancel.");
+                awaitCancel.countDown();
+            });
+        }
+
+        <T> Publisher<T> instrumentSend(Publisher<T> original) {
+            return original.doBeforeRequest(__ -> {
+                analyzed.set(SEND_ANALYZED_INDEX, true);
+                verifyThread(offloadSend, "Unexpected thread requested from request.");
+            });
+        }
+
+        <T> Single<T> instrumentReceive(Single<T> original) {
+            return original.doBeforeSuccess(__ -> {
+                analyzed.set(RECEIVE_ANALYZED_INDEX, true);
+                verifyThread(offloadReceive, "Unexpected thread requested from success.");
+            });
+        }
+
+        <T> Publisher<T> instrumentReceive(Publisher<T> original) {
+            return original.doBeforeNext(__ -> {
+                analyzed.set(RECEIVE_ANALYZED_INDEX, true);
+                verifyThread(offloadReceive, "Unexpected thread requested from next.");
+            });
+        }
+
         private void verifyThread(final boolean offloadedPath, final String errMsg) {
             if (strategy == NO_OFFLOADS && testThread != currentThread()) {
                 addError(errMsg);
@@ -149,9 +212,23 @@ public class DefaultRedisExecutionStrategyTest {
             }
         }
 
+        void verifySend() {
+            assertThat("Send path not analyzed.", analyzed.get(SEND_ANALYZED_INDEX), is(true));
+            verifyNoErrors();
+        }
+
+        void verifyReceive() {
+            assertThat("Receive path not analyzed.", analyzed.get(RECEIVE_ANALYZED_INDEX), is(true));
+            verifyNoErrors();
+        }
+
         void verify() {
             assertThat("Send path not analyzed.", analyzed.get(SEND_ANALYZED_INDEX), is(true));
             assertThat("Receive path not analyzed.", analyzed.get(RECEIVE_ANALYZED_INDEX), is(true));
+            verifyNoErrors();
+        }
+
+        private void verifyNoErrors() {
             assertThat("Unexpected errors found: " + errors, errors, hasSize(0));
         }
 

@@ -184,7 +184,6 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
     @Override
     public SingleAddressHttpClientBuilder<U, R> executionStrategy(final HttpExecutionStrategy strategy) {
         this.strategy = strategy;
-        @Nullable
         Executor executor = strategy.executor();
         if (executor != null) {
             executionContextBuilder.executor(executor);

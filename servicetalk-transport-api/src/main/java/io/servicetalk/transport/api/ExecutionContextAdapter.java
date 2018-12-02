@@ -18,6 +18,8 @@ package io.servicetalk.transport.api;
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.Executor;
 
+import static java.util.Objects.requireNonNull;
+
 /**
  * An {@link ExecutionContext} implementation that delegates all calls to a provided {@link ExecutionContext}. Any of
  * the methods can be overridden by implementations to change the behavior.
@@ -32,7 +34,7 @@ public class ExecutionContextAdapter implements ExecutionContext {
      * @param delegate {@link ExecutionContext} to delegate all calls.
      */
     public ExecutionContextAdapter(final ExecutionContext delegate) {
-        this.delegate = delegate;
+        this.delegate = requireNonNull(delegate);
     }
 
     @Override

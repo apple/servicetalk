@@ -121,7 +121,7 @@ public abstract class BlockingStreamingHttpRequester implements BlockingStreamin
      *
      * @return Default {@link HttpExecutionStrategy} for this {@link BlockingStreamingHttpRequester}.
      */
-    HttpExecutionStrategy executionStrategy() {
+    final HttpExecutionStrategy executionStrategy() {
         return defaultStrategy();
     }
 

@@ -120,7 +120,7 @@ public abstract class BlockingHttpRequester implements HttpRequestFactory, AutoC
      *
      * @return Default {@link HttpExecutionStrategy} for this {@link BlockingHttpRequester}.
      */
-    HttpExecutionStrategy executionStrategy() {
+    final HttpExecutionStrategy executionStrategy() {
         return defaultStrategy();
     }
 

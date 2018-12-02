@@ -51,7 +51,6 @@ final class InOrderRouter extends StreamingHttpService {
      * @param fallbackService the service to use to handle requests if no predicates match.
      * @param predicateServicePairs the list of predicate-service pairs to use for handling requests.
      */
-    @SuppressWarnings("unchecked")
     InOrderRouter(final StreamingHttpService fallbackService, final List<PredicateServicePair> predicateServicePairs) {
         this.fallbackService = requireNonNull(fallbackService);
         this.predicateServicePairs = predicateServicePairs.toArray(new PredicateServicePair[0]);
@@ -67,7 +66,7 @@ final class InOrderRouter extends StreamingHttpService {
         for (final PredicateServicePair pair : predicateServicePairs) {
             if (pair.getPredicate().test(ctx, request)) {
                 StreamingHttpService service = pair.getService();
-                return service.executionStrategy().wrap(ctx.executionContext().executor(), service)
+                return service.executionStrategy().offloadService(ctx.executionContext().executor(), service)
                         .handle(ctx, request, factory);
             }
         }

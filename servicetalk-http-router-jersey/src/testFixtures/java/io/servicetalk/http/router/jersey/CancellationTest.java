@@ -114,7 +114,7 @@ public class CancellationTest {
         cancellableResources = new CancellableResources();
 
         jerseyRouter = new HttpJerseyRouterBuilder()
-                .setExecutorFactory(id -> "test".equals(id) ? EXEC.getExecutor() : null)
+                .executorFactory(id -> "test".equals(id) ? EXEC.getExecutor() : null)
                 .build(new Application() {
                     @Override
                     public Set<Object> getSingletons() {

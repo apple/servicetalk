@@ -90,7 +90,7 @@ public final class RedisExecutionStrategies {
          * @return {@code this}.
          */
         public Builder offloadReceive() {
-            return updateOffload(OFFLOAD_RECEIVE);
+            return addOffload(OFFLOAD_RECEIVE);
         }
 
         /**
@@ -99,7 +99,7 @@ public final class RedisExecutionStrategies {
          * @return {@code this}.
          */
         public Builder offloadSend() {
-            return updateOffload(OFFLOAD_SEND);
+            return addOffload(OFFLOAD_SEND);
         }
 
         /**
@@ -132,7 +132,7 @@ public final class RedisExecutionStrategies {
         }
 
         @Nonnull
-        private Builder updateOffload(byte flag) {
+        private Builder addOffload(byte flag) {
             offloads |= flag;
             return this;
         }

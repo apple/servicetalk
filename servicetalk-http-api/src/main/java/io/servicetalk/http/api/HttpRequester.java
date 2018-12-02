@@ -117,7 +117,7 @@ public abstract class HttpRequester implements HttpRequestFactory, ListenableAsy
      *
      * @return Default {@link HttpExecutionStrategy} for this {@link HttpRequester}.
      */
-    HttpExecutionStrategy executionStrategy() {
+    final HttpExecutionStrategy executionStrategy() {
         return defaultStrategy();
     }
 

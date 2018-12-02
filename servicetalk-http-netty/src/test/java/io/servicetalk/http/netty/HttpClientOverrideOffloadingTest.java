@@ -94,12 +94,7 @@ public class HttpClientOverrideOffloadingTest {
     private static Object[] newParam(String description, Predicate<Thread> isInvalidThread,
                                      @Nullable HttpExecutionStrategy overridingStrategy,
                                      @Nullable HttpExecutionStrategy defaultStrategy) {
-        Object[] param = new Object[4];
-        param[0] = description;
-        param[1] = isInvalidThread;
-        param[2] = overridingStrategy;
-        param[3] = defaultStrategy;
-        return param;
+        return new Object[]{description, isInvalidThread, overridingStrategy, defaultStrategy};
     }
 
     @After
@@ -109,12 +104,14 @@ public class HttpClientOverrideOffloadingTest {
 
     @Test
     public void reserveRespectsDisable() throws Exception {
+        ConcurrentLinkedQueue<AssertionError> errors = new ConcurrentLinkedQueue<>();
         client.reserveConnection(overridingStrategy, client.get("/")).doBeforeSuccess(__ -> {
             if (isInvalidThread()) {
-                throw new AssertionError("Invalid thread found providing the connection. Thread: "
-                        + currentThread());
+                errors.add(new AssertionError("Invalid thread found providing the connection. Thread: "
+                        + currentThread()));
             }
         }).toFuture().get().closeAsync().toFuture().get();
+        assertThat("Unexpected errors: " + errors, errors, hasSize(0));
     }
 
     @Test

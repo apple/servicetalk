@@ -15,6 +15,9 @@
  */
 package io.servicetalk.http.api;
 
+import io.servicetalk.concurrent.api.AsyncCloseable;
+import io.servicetalk.concurrent.api.AsyncCloseables;
+import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
@@ -31,9 +34,9 @@ import static java.util.function.Function.identity;
  */
 final class DefaultHttpExecutionStrategy implements HttpExecutionStrategy {
 
-    static final byte OFFLOAD_RECEIVE_META = 2;
-    static final byte OFFLOAD_RECEIVE_DATA = 4;
-    static final byte OFFLOAD_SEND = 8;
+    static final byte OFFLOAD_RECEIVE_META = 1;
+    static final byte OFFLOAD_RECEIVE_DATA = 2;
+    static final byte OFFLOAD_SEND = 4;
     @Nullable
     private final Executor executor;
     private final byte offloads;
@@ -50,8 +53,9 @@ final class DefaultHttpExecutionStrategy implements HttpExecutionStrategy {
     }
 
     @Override
-    public Single<StreamingHttpResponse> invokeClient(final Executor fallback, final StreamingHttpRequest request,
-                                                      final Function<Publisher<Object>, Single<StreamingHttpResponse>> client) {
+    public Single<StreamingHttpResponse> invokeClient(
+            final Executor fallback, final StreamingHttpRequest request,
+            final Function<Publisher<Object>, Single<StreamingHttpResponse>> client) {
         final Executor e = executor(fallback);
         Publisher<Object> flatReq = flatten(request, request.payloadBodyAndTrailers());
         if (offloaded(OFFLOAD_SEND)) {
@@ -76,7 +80,7 @@ final class DefaultHttpExecutionStrategy implements HttpExecutionStrategy {
         if (offloaded(OFFLOAD_RECEIVE_DATA)) {
             request = request.transformPayloadBody(payload -> payload.publishOn(e));
         }
-        Single<StreamingHttpResponse> responseSingle;
+        final Single<StreamingHttpResponse> responseSingle;
         if (offloaded(OFFLOAD_RECEIVE_META)) {
             final StreamingHttpRequest r = request;
             responseSingle = e.submit(() -> service.apply(r))
@@ -94,9 +98,11 @@ final class DefaultHttpExecutionStrategy implements HttpExecutionStrategy {
     }
 
     @Override
-    public StreamingHttpService wrap(final Executor fallback, final StreamingHttpRequestHandler handler) {
-        final Executor e = executor(fallback);
+    public StreamingHttpService offloadService(final Executor fallback, final StreamingHttpRequestHandler handler) {
+        final AsyncCloseable closeable = handler instanceof StreamingHttpService ?
+                (AsyncCloseable) handler : AsyncCloseables.emptyAsyncCloseable();
         return new StreamingHttpService() {
+            private final Executor e = executor(fallback);
 
             @Override
             public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
@@ -106,7 +112,7 @@ final class DefaultHttpExecutionStrategy implements HttpExecutionStrategy {
                 if (offloaded(OFFLOAD_RECEIVE_DATA)) {
                     request = request.transformPayloadBody(p -> p.publishOn(e));
                 }
-                Single<StreamingHttpResponse> resp;
+                final Single<StreamingHttpResponse> resp;
                 if (offloaded(OFFLOAD_RECEIVE_META)) {
                     final StreamingHttpRequest r = request;
                     resp = e.submit(() -> handler.handle(wrappedCtx, r, responseFactory))
@@ -116,6 +122,9 @@ final class DefaultHttpExecutionStrategy implements HttpExecutionStrategy {
                     resp = handler.handle(wrappedCtx, request, responseFactory);
                 }
                 return offloaded(OFFLOAD_SEND) ?
+                        // This is different as compared to invokeService() where we just offload once on the
+                        // flattened (meta + data) stream. In this case, we need to preserve the service contract and
+                        // hence have to offload both meta and data separately.
                         resp.map(r -> r.transformPayloadBody(p -> p.subscribeOn(e))).subscribeOn(e) : resp;
             }
 
@@ -123,12 +132,22 @@ final class DefaultHttpExecutionStrategy implements HttpExecutionStrategy {
             public HttpExecutionStrategy executionStrategy() {
                 return DefaultHttpExecutionStrategy.this;
             }
+
+            @Override
+            public Completable closeAsync() {
+                return closeable.closeAsync();
+            }
+
+            @Override
+            public Completable closeAsyncGracefully() {
+                return closeable.closeAsyncGracefully();
+            }
         };
     }
 
     @Override
     public <T> Single<T> invokeService(final Executor fallback, final Function<Executor, T> service) {
-        Executor e = executor(fallback);
+        final Executor e = executor(fallback);
         if (offloaded(OFFLOAD_RECEIVE_META)) {
             return e.submit(() -> service.apply(e));
         }
@@ -142,7 +161,8 @@ final class DefaultHttpExecutionStrategy implements HttpExecutionStrategy {
 
     @Override
     public <T> Single<T> offloadReceive(final Executor fallback, final Single<T> original) {
-        return offloaded(OFFLOAD_SEND) ? original.publishOn(executor(fallback)) : original;
+        return offloaded(OFFLOAD_RECEIVE_META) || offloaded(OFFLOAD_RECEIVE_DATA) ?
+                original.publishOn(executor(fallback)) : original;
     }
 
     @Override
@@ -152,7 +172,8 @@ final class DefaultHttpExecutionStrategy implements HttpExecutionStrategy {
 
     @Override
     public <T> Publisher<T> offloadReceive(final Executor fallback, final Publisher<T> original) {
-        return offloaded(OFFLOAD_SEND) ? original.publishOn(executor(fallback)) : original;
+        return offloaded(OFFLOAD_RECEIVE_META) || offloaded(OFFLOAD_RECEIVE_DATA) ?
+                original.publishOn(executor(fallback)) : original;
     }
 
     private Executor executor(final Executor fallback) {

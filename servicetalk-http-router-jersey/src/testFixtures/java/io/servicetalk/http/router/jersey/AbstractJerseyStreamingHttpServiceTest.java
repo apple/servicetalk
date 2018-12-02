@@ -18,7 +18,6 @@ package io.servicetalk.http.router.jersey;
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.internal.DefaultThreadFactory;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
-import io.servicetalk.http.api.HttpExecutionStrategies;
 import io.servicetalk.http.api.HttpProtocolVersion;
 import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.HttpResponseStatus;
@@ -57,6 +56,7 @@ import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.concurrent.internal.Await.awaitNonNull;
 import static io.servicetalk.concurrent.internal.ServiceTalkTestTimeout.DEFAULT_TIMEOUT_SECONDS;
 import static io.servicetalk.http.api.CharSequences.newAsciiString;
+import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
 import static io.servicetalk.http.api.HttpHeaderNames.HOST;
@@ -100,7 +100,7 @@ public abstract class AbstractJerseyStreamingHttpServiceTest {
     public final void initServerAndClient() throws Exception {
         ExecutionContext serverExecutionContext = getServerExecutionContext();
         final StreamingHttpService router = configureBuilder(new HttpJerseyRouterBuilder())
-                .executionStrategy(HttpExecutionStrategies.defaultStrategy(serverExecutionContext.executor()))
+                .executionStrategy(defaultStrategy(serverExecutionContext.executor()))
                 .build(getApplication());
         final Configuration config = ((DefaultJerseyStreamingHttpRouter) router).getConfiguration();
         streamingJsonEnabled = getValue(config.getProperties(), config.getRuntimeType(), JSON_FEATURE, "",

@@ -16,6 +16,7 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.client.api.ConnectionRejectedException;
+import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
@@ -47,6 +48,7 @@ import java.util.concurrent.RejectedExecutionException;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.concurrent.api.Executors.from;
 import static io.servicetalk.concurrent.api.Executors.newFixedSizeExecutor;
 import static io.servicetalk.concurrent.api.Single.success;
@@ -92,10 +94,10 @@ public class InsufficientlySizedExecutorHttpTest {
         initClientAndServer(true);
         assert client != null;
         expectedException.expect(instanceOf(ExecutionException.class));
-        expectedException.expectCause(anyOf(instanceOf(RejectedExecutionException.class)
+        expectedException.expectCause(anyOf(instanceOf(RejectedExecutionException.class),
                 // If we do not have enough threads to offload onClose then we will close the connection immediately
                 // upon creation which will cause LoadBalancer selector to reject a new connection.
-                , instanceOf(ConnectionRejectedException.class));
+                instanceOf(ConnectionRejectedException.class)));
         client.request(client.get("/")).toFuture().get();
     }
 
@@ -143,14 +145,15 @@ public class InsufficientlySizedExecutorHttpTest {
     }
 
     @After
-    public void tearDown() throws Exception {
+    public void tearDown() {
+        CompositeCloseable closeable = newCompositeCloseable();
         if (client != null) {
-            client.closeAsync().toFuture().get();
+            closeable.append(client);
         }
         if (server != null) {
-            server.closeAsync().toFuture().get();
+            closeable.append(server);
         }
-        executor.closeAsync().toFuture().get();
+        closeable.append(executor);
     }
 
     private static Object[] newParam(final int capacity) {

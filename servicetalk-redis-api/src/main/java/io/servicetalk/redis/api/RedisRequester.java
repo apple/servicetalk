@@ -215,7 +215,7 @@ public abstract class RedisRequester implements ListenableAsyncCloseable {
         return blockingRedisBufferCommander;
     }
 
-    RedisExecutionStrategy executionStrategy() {
+    final RedisExecutionStrategy executionStrategy() {
         return defaultStrategy();
     }
 }

@@ -63,7 +63,7 @@ public final class RetryingHttpClientFilter extends StreamingHttpClientAdapter {
         if (isRetryable.test(request)) {
             return delegate().request(executionStrategy, request).retryWhen(strategy);
         }
-        return delegate().request(request);
+        return delegate().request(executionStrategy, request);
     }
 
     @Override

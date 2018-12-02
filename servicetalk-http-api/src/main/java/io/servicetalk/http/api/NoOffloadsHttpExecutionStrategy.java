@@ -56,7 +56,7 @@ final class NoOffloadsHttpExecutionStrategy implements HttpExecutionStrategy {
     }
 
     @Override
-    public StreamingHttpService wrap(final Executor fallback, final StreamingHttpRequestHandler handler) {
+    public StreamingHttpService offloadService(final Executor fallback, final StreamingHttpRequestHandler handler) {
         return new StreamingHttpService() {
             @Override
             public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,

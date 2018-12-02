@@ -70,7 +70,7 @@ public abstract class StreamingHttpRequester implements
      */
     public abstract ExecutionContext executionContext();
 
-    HttpExecutionStrategy executionStrategy() {
+    final HttpExecutionStrategy executionStrategy() {
         return defaultStrategy();
     }
 

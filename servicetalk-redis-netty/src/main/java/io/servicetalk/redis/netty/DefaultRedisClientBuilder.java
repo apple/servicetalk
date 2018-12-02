@@ -124,8 +124,7 @@ final class DefaultRedisClientBuilder<U, R> implements RedisClientBuilder<U, R> 
 
     @Override
     public RedisClientBuilder<U, R> executionStrategy(final RedisExecutionStrategy strategy) {
-        this.strategy = strategy;
-        @Nullable
+        this.strategy = requireNonNull(strategy);
         Executor executor = strategy.executor();
         if (executor != null) {
             executionContextBuilder.executor(executor);

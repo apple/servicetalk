@@ -27,8 +27,8 @@ import javax.annotation.Nullable;
  */
 final class DefaultRedisExecutionStrategy implements RedisExecutionStrategy {
 
-    static final byte OFFLOAD_RECEIVE = 2;
-    static final byte OFFLOAD_SEND = 4;
+    static final byte OFFLOAD_RECEIVE = 1;
+    static final byte OFFLOAD_SEND = 2;
     @Nullable
     private final Executor executor;
     private final byte offloads;
@@ -51,7 +51,7 @@ final class DefaultRedisExecutionStrategy implements RedisExecutionStrategy {
 
     @Override
     public <T> Single<T> offloadReceive(final Executor fallback, final Single<T> original) {
-        return offloaded(OFFLOAD_SEND) ? original.publishOn(executor(fallback)) : original;
+        return offloaded(OFFLOAD_RECEIVE) ? original.publishOn(executor(fallback)) : original;
     }
 
     @Override
@@ -61,14 +61,16 @@ final class DefaultRedisExecutionStrategy implements RedisExecutionStrategy {
 
     @Override
     public <T> Publisher<T> offloadReceive(final Executor fallback, final Publisher<T> original) {
-        return offloaded(OFFLOAD_SEND) ? original.publishOn(executor(fallback)) : original;
+        return offloaded(OFFLOAD_RECEIVE) ? original.publishOn(executor(fallback)) : original;
     }
 
     @Override
     public Publisher<RedisData> invokeClient(final Executor fallback, RedisRequest request,
                                              final Function<RedisRequest, Publisher<RedisData>> client) {
         Executor e = this.executor == null ? fallback : this.executor;
-        request = offloaded(OFFLOAD_SEND) ? request.transformContent(c -> c.subscribeOn(e)) : request;
+        if (offloaded(OFFLOAD_SEND)) {
+            request = request.transformContent(c -> c.subscribeOn(e));
+        }
         return offloaded(OFFLOAD_RECEIVE) ? client.apply(request).publishOn(e) : client.apply(request);
     }
 

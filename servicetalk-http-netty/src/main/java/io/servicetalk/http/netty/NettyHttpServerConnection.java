@@ -85,9 +85,9 @@ final class NettyHttpServerConnection extends HttpServiceContext implements Nett
     Completable process() {
         final Single<StreamingHttpRequest> requestSingle =
                 new SpliceFlatStreamToMetaSingle<>(connection.read(),
-                        (HttpRequestMetaData meta, Publisher<Object> pandt) ->
+                        (HttpRequestMetaData meta, Publisher<Object> payload) ->
                                 newRequestWithTrailers(meta.method(), meta.requestTarget(), meta.version(),
-                                        meta.headers(), executionContext().bufferAllocator(), pandt));
+                                        meta.headers(), executionContext().bufferAllocator(), payload));
         return handleRequestAndWriteResponse(requestSingle);
     }
 
@@ -213,7 +213,7 @@ final class NettyHttpServerConnection extends HttpServiceContext implements Nett
                                                            final HttpProtocolVersion version,
                                                            final HttpRequestMethod requestMethod,
                                                            final HttpKeepAlive keepAlive) {
-        StreamingHttpResponse response;
+        final StreamingHttpResponse response;
         if (cause instanceof RejectedExecutionException) {
             LOGGER.error("Task rejected by Executor {} for service={}, connection={}", executor, service, this, cause);
             response = streamingResponseFactory().serviceUnavailable().version(version);
