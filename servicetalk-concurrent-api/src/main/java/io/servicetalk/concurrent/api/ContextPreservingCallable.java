@@ -24,21 +24,24 @@ final class ContextPreservingCallable<V> implements Callable<V> {
     private final AsyncContextMap saved;
     private final Callable<V> delegate;
 
-    @SuppressWarnings("unchecked")
     ContextPreservingCallable(Callable<V> delegate) {
-        this.saved = INSTANCE.getContextMap();
+        this(delegate, INSTANCE.contextMap());
+    }
+
+    ContextPreservingCallable(Callable<V> delegate, AsyncContextMap current) {
+        this.saved = requireNonNull(current);
         this.delegate = delegate instanceof ContextPreservingCallable ?
                 ((ContextPreservingCallable<V>) delegate).delegate : requireNonNull(delegate);
     }
 
     @Override
     public V call() throws Exception {
-        AsyncContextMap prev = INSTANCE.getContextMap();
+        AsyncContextMap prev = INSTANCE.contextMap();
         try {
-            INSTANCE.setContextMap(saved);
+            INSTANCE.contextMap(saved);
             return delegate.call();
         } finally {
-            INSTANCE.setContextMap(prev);
+            INSTANCE.contextMap(prev);
         }
     }
 }

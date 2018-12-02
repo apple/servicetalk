@@ -15,8 +15,10 @@
  */
 package io.servicetalk.concurrent.api;
 
+import io.servicetalk.concurrent.Completable.Subscriber;
 import io.servicetalk.concurrent.internal.SignalOffloader;
 
+import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.api.MergedExecutors.mergeAndOffloadPublish;
 import static io.servicetalk.concurrent.api.MergedExecutors.mergeAndOffloadSubscribe;
 
@@ -28,6 +30,14 @@ final class PublishAndSubscribeOnCompletables {
 
     private PublishAndSubscribeOnCompletables() {
         // No instance.
+    }
+
+    static void deliverOnSubscribeAndOnError(Subscriber subscriber, SignalOffloader signalOffloader,
+                                             AsyncContextMap contextMap, AsyncContextProvider contextProvider,
+                                             Throwable cause) {
+        subscriber = signalOffloader.offloadSubscriber(contextProvider.wrap(subscriber, contextMap));
+        subscriber.onSubscribe(IGNORE_CANCEL);
+        subscriber.onError(cause);
     }
 
     static Completable publishAndSubscribeOn(Completable original, Executor executor) {
@@ -63,7 +73,8 @@ final class PublishAndSubscribeOnCompletables {
         }
 
         @Override
-        void handleSubscribe(final Subscriber subscriber, final SignalOffloader signalOffloader) {
+        void handleSubscribe(final Subscriber subscriber, final SignalOffloader signalOffloader,
+                             final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
             // This operator is to make sure that we use the executor to subscribe to the Completable that is returned
             // by this operator.
             //
@@ -74,7 +85,8 @@ final class PublishAndSubscribeOnCompletables {
             // This operator acts as a boundary that changes the Executor from original to the rest of the execution
             // chain. If there is already an Executor defined for original, it will be used to offload signals until
             // they hit this operator.
-            original.subscribe(signalOffloader.offloadSubscriber(subscriber));
+            original.subscribeWithContext(signalOffloader.offloadSubscriber(
+                    contextProvider.wrap(subscriber, contextMap)), contextMap, contextProvider);
         }
     }
 
@@ -97,7 +109,7 @@ final class PublishAndSubscribeOnCompletables {
         }
     }
 
-    private static class PublishOn extends AbstractNoHandleSubscribeCompletable {
+    private static final class PublishOn extends AbstractNoHandleSubscribeCompletable {
         private final Completable original;
 
         PublishOn(final Executor executor, final Completable original) {
@@ -106,7 +118,8 @@ final class PublishAndSubscribeOnCompletables {
         }
 
         @Override
-        void handleSubscribe(final Subscriber subscriber, final SignalOffloader signalOffloader) {
+        void handleSubscribe(final Subscriber subscriber, final SignalOffloader signalOffloader,
+                             final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
             // This operator is to make sure that we use the executor to subscribe to the Completable that is returned
             // by this operator.
             //
@@ -115,7 +128,8 @@ final class PublishAndSubscribeOnCompletables {
             // This operator acts as a boundary that changes the Executor from original to the rest of the execution
             // chain. If there is already an Executor defined for original, it will be used to offload signals until
             // they hit this operator.
-            original.subscribe(signalOffloader.offloadSubscriber(subscriber));
+            original.subscribeWithContext(signalOffloader.offloadSubscriber(
+                    contextProvider.wrap(subscriber, contextMap)), contextMap, contextProvider);
         }
     }
 
@@ -126,7 +140,7 @@ final class PublishAndSubscribeOnCompletables {
      * Hence, we simply use {@link AbstractSynchronousCompletableOperator} which does not do any extra offloading, it
      * just overrides the {@link Executor} that will be used to do the offloading.
      */
-    private static class PublishOnOverride extends AbstractSynchronousCompletableOperator {
+    private static final class PublishOnOverride extends AbstractSynchronousCompletableOperator {
 
         PublishOnOverride(final Completable original, final Executor executor) {
             super(original, mergeAndOffloadPublish(original.getExecutor(), executor));
@@ -140,7 +154,7 @@ final class PublishAndSubscribeOnCompletables {
         }
     }
 
-    private static class SubscribeOn extends AbstractNoHandleSubscribeCompletable {
+    private static final class SubscribeOn extends AbstractNoHandleSubscribeCompletable {
         private final Completable original;
 
         SubscribeOn(final Executor executor, final Completable original) {
@@ -149,7 +163,8 @@ final class PublishAndSubscribeOnCompletables {
         }
 
         @Override
-        void handleSubscribe(final Subscriber subscriber, final SignalOffloader signalOffloader) {
+        void handleSubscribe(final Subscriber subscriber, final SignalOffloader signalOffloader,
+                             final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
             // This operator is to make sure that we use the executor to subscribe to the Completable that is returned
             // by this operator.
             //
@@ -159,7 +174,7 @@ final class PublishAndSubscribeOnCompletables {
             // This operator acts as a boundary that changes the Executor from original to the rest of the execution
             // chain. If there is already an Executor defined for original, it will be used to offload signals until
             // they hit this operator.
-            original.subscribe(subscriber);
+            original.subscribeWithContext(subscriber, contextMap, contextProvider);
         }
     }
 
@@ -170,7 +185,7 @@ final class PublishAndSubscribeOnCompletables {
      * Hence, we simply use {@link AbstractSynchronousCompletableOperator} which does not do any extra offloading, it
      * just overrides the {@link Executor} that will be used to do the offloading.
      */
-    private static class SubscribeOnOverride extends AbstractSynchronousCompletableOperator {
+    private static final class SubscribeOnOverride extends AbstractSynchronousCompletableOperator {
 
         SubscribeOnOverride(final Completable original, final Executor executor) {
             super(original, mergeAndOffloadSubscribe(original.getExecutor(), executor));

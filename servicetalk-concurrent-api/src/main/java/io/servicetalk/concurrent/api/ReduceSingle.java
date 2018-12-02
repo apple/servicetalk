@@ -24,7 +24,7 @@ import java.util.function.BiFunction;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
+import static io.servicetalk.concurrent.api.PublishAndSubscribeOnSingles.deliverOnSubscribeAndOnError;
 import static io.servicetalk.concurrent.internal.ConcurrentSubscription.wrap;
 import static java.util.Objects.requireNonNull;
 
@@ -55,23 +55,23 @@ final class ReduceSingle<R, T> extends AbstractNoHandleSubscribeSingle<R> {
     }
 
     @Override
-    void handleSubscribe(final Subscriber<? super R> singleSubscriber, final SignalOffloader signalOffloader) {
+    void handleSubscribe(final Subscriber<? super R> singleSubscriber, final SignalOffloader signalOffloader,
+                         final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
         final R r;
         try {
             r = resultFactory.get();
         } catch (Throwable t) {
-            singleSubscriber.onSubscribe(IGNORE_CANCEL);
-            singleSubscriber.onError(t);
+            deliverOnSubscribeAndOnError(singleSubscriber, signalOffloader, contextMap, contextProvider, t);
             return;
         }
         // We are now subscribing to the original Publisher chain for the first time, re-using the SignalOffloader.
         // Using the special subscribe() method means it will not offload the Subscription (done in the public
         // subscribe() method). So, we use the SignalOffloader to offload subscription if required.
-        org.reactivestreams.Subscriber<? super T> offloadedSubscription =
-                signalOffloader.offloadSubscription(new ReduceSubscriber<>(r, reducer, singleSubscriber));
+        org.reactivestreams.Subscriber<? super T> offloadedSubscription = signalOffloader.offloadSubscription(
+                contextProvider.wrapSubscription(new ReduceSubscriber<>(r, reducer, singleSubscriber), contextMap));
         // Since we are not creating any new sources by reducing, we should use the same offloader to subscribe to the
         // original Publisher.
-        source.subscribe(offloadedSubscription, signalOffloader);
+        source.subscribeWithOffloaderAndContext(offloadedSubscription, signalOffloader, contextMap, contextProvider);
     }
 
     private static final class ReduceSubscriber<R, T> implements org.reactivestreams.Subscriber<T> {

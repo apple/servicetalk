@@ -59,6 +59,7 @@ import javax.annotation.Nullable;
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.concurrent.api.AsyncCloseables.toListenableAsyncCloseable;
+import static io.servicetalk.concurrent.api.Single.deferShareContext;
 import static io.servicetalk.http.api.HttpHeaderNames.HOST;
 import static io.servicetalk.http.api.HttpScheme.schemeForValue;
 import static io.servicetalk.http.api.SslConfigProviders.plainByDefault;
@@ -301,39 +302,13 @@ final class DefaultMultiAddressUrlHttpClientBuilder
         @Override
         public Single<? extends ReservedStreamingHttpConnection> reserveConnection(final HttpExecutionStrategy strategy,
                                                                                    final StreamingHttpRequest request) {
-            return new Single<ReservedStreamingHttpConnection>() {
-                @Override
-                protected void handleSubscribe(final Subscriber<? super ReservedStreamingHttpConnection> subscriber) {
-                    StreamingHttpClient streamingHttpClient;
-                    try {
-                        streamingHttpClient = selectClient(request);
-                    } catch (Throwable t) {
-                        subscriber.onSubscribe(IGNORE_CANCEL);
-                        subscriber.onError(t);
-                        return;
-                    }
-                    streamingHttpClient.reserveConnection(strategy, request).subscribe(subscriber);
-                }
-            };
+            return deferShareContext(() -> selectClient(request).reserveConnection(strategy, request));
         }
 
         @Override
         public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
                                                      final StreamingHttpRequest request) {
-            return new Single<StreamingHttpResponse>() {
-                @Override
-                protected void handleSubscribe(final Subscriber<? super StreamingHttpResponse> subscriber) {
-                    StreamingHttpClient streamingHttpClient;
-                    try {
-                        streamingHttpClient = selectClient(request);
-                    } catch (Throwable t) {
-                        subscriber.onSubscribe(IGNORE_CANCEL);
-                        subscriber.onError(t);
-                        return;
-                    }
-                    streamingHttpClient.request(strategy, request).subscribe(subscriber);
-                }
-            };
+            return deferShareContext(() -> selectClient(request).request(strategy, request));
         }
 
         @Override

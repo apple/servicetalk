@@ -22,6 +22,7 @@ import io.servicetalk.concurrent.api.AsyncContextMap.Key;
 import org.apache.logging.log4j.ThreadContext;
 import org.apache.logging.log4j.spi.CleanableThreadContextMap;
 import org.apache.logging.log4j.spi.ReadOnlyThreadContextMap;
+import org.apache.logging.log4j.spi.ThreadContextMap;
 import org.apache.logging.log4j.util.BiConsumer;
 import org.apache.logging.log4j.util.ReadOnlyStringMap;
 import org.apache.logging.log4j.util.StringMap;
@@ -45,8 +46,9 @@ public class ServiceTalkThreadContextMap implements ReadOnlyThreadContextMap, Cl
         getStorage().put(key, value);
     }
 
+    @Nullable
     @Override
-    public final String get(String key) {
+    public String get(String key) {
         return getStorage().get(key);
     }
 
@@ -61,23 +63,37 @@ public class ServiceTalkThreadContextMap implements ReadOnlyThreadContextMap, Cl
     }
 
     @Override
-    public final boolean containsKey(String key) {
+    public boolean containsKey(String key) {
         return getStorage().containsKey(key);
     }
 
     @Override
-    public final Map<String, String> getCopy() {
+    public Map<String, String> getCopy() {
         return getCopy(getStorage());
     }
 
-    private static Map<String, String> getCopy(Map<String, String> storage) {
+    /**
+     * Get a copy of this {@link ThreadContextMap} given the underlying {@link Map} storage.
+     * @param storage the underlying {@link Map} storage.
+     * @return a copy of this {@link ThreadContextMap}.
+     */
+    protected Map<String, String> getCopy(Map<String, String> storage) {
         return new HashMap<>(storage);
     }
 
     @Nullable
     @Override
     public final Map<String, String> getImmutableMapOrNull() {
-        final Map<String, String> storage = getStorage();
+        return getImmutableMapOrNull(getStorage());
+    }
+
+    /**
+     * Provide the implementation for {@link #getImmutableMapOrNull()} given then underlying {@link Map} storage.
+     * @param storage the underlying {@link Map} storage.
+     * @return An immutable {@link Map} or {@code null} if empty.
+     */
+    @Nullable
+    protected Map<String, String> getImmutableMapOrNull(Map<String, String> storage) {
         if (storage.isEmpty()) {
             return null;
         }
@@ -89,7 +105,7 @@ public class ServiceTalkThreadContextMap implements ReadOnlyThreadContextMap, Cl
     }
 
     @Override
-    public final boolean isEmpty() {
+    public boolean isEmpty() {
         return getStorage().isEmpty();
     }
 
@@ -106,10 +122,17 @@ public class ServiceTalkThreadContextMap implements ReadOnlyThreadContextMap, Cl
 
     @Override
     public final StringMap getReadOnlyContextData() {
+        return getReadOnlyContextData(getStorage());
+    }
+
+    /**
+     * Create a new read-only {@link StringMap}.
+     * @param storage The underlying storage for this {@link ThreadContextMap}.
+     * @return a new read-only {@link StringMap}.
+     */
+    protected StringMap getReadOnlyContextData(final Map<String, String> storage) {
         return new StringMap() {
             private static final long serialVersionUID = -1707426073379541244L;
-
-            private final Map<String, String> storage = getStorage();
 
             @Override
             public void clear() {
@@ -150,16 +173,19 @@ public class ServiceTalkThreadContextMap implements ReadOnlyThreadContextMap, Cl
                 return storage.containsKey(key);
             }
 
+            @SuppressWarnings("unchecked")
             @Override
             public <V> void forEach(BiConsumer<String, ? super V> action) {
                 storage.forEach((key, value) -> action.accept(key, (V) value));
             }
 
+            @SuppressWarnings("unchecked")
             @Override
             public <V, S> void forEach(TriConsumer<String, ? super V, S> action, S state) {
                 storage.forEach((key, value) -> action.accept(key, (V) value, state));
             }
 
+            @SuppressWarnings("unchecked")
             @Override
             public <V> V getValue(String key) {
                 return (V) storage.get(key);
@@ -177,13 +203,12 @@ public class ServiceTalkThreadContextMap implements ReadOnlyThreadContextMap, Cl
         };
     }
 
-    /* package-scoped for testing */
     static Map<String, String> getStorage() {
         AsyncContextMap context = AsyncContext.current();
         Map<String, String> ret = context.get(key);
         if (ret == null) {
-            // better be thread safe, since the context may be used in multiple operators which may use different threads
-            // MDC is typically small (e.g. <8) so start with 4 (which ConcurrentHashMap will double to 8).
+            // better be thread safe, since the context may be used in multiple operators which may use different
+            // threads MDC is typically small (e.g. <8) so start with 4 (which ConcurrentHashMap will double to 8).
             ret = new ConcurrentHashMap<>(4);
             AsyncContext.put(key, ret);
         }

@@ -34,7 +34,6 @@ import static java.util.function.Function.identity;
  * Default implementation for {@link HttpExecutionStrategy}.
  */
 final class DefaultHttpExecutionStrategy implements HttpExecutionStrategy {
-
     static final byte OFFLOAD_RECEIVE_META = 1;
     static final byte OFFLOAD_RECEIVE_DATA = 2;
     static final byte OFFLOAD_SEND = 4;

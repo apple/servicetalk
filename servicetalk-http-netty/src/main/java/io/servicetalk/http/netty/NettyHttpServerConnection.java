@@ -217,12 +217,11 @@ final class NettyHttpServerConnection extends HttpServiceContext implements Nett
         if (cause instanceof RejectedExecutionException) {
             LOGGER.error("Task rejected by Executor {} for service={}, connection={}", executor, service, this, cause);
             response = streamingResponseFactory().serviceUnavailable().version(version);
-            response.setHeader(CONTENT_LENGTH, ZERO);
         } else {
             LOGGER.error("Internal server error service={} connection={}", service, this, cause);
             response = streamingResponseFactory().internalServerError().version(version);
-            response.setHeader(CONTENT_LENGTH, ZERO);
         }
+        response.setHeader(CONTENT_LENGTH, ZERO);
         addResponseTransferEncodingIfNecessary(response, requestMethod);
         keepAlive.addConnectionHeaderIfNecessary(response);
         return success(response);

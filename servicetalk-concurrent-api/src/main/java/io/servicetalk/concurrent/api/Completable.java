@@ -39,7 +39,6 @@ import static io.servicetalk.concurrent.api.CompletableDoOnUtils.doOnCompleteSup
 import static io.servicetalk.concurrent.api.CompletableDoOnUtils.doOnErrorSupplier;
 import static io.servicetalk.concurrent.api.CompletableDoOnUtils.doOnSubscribeSupplier;
 import static io.servicetalk.concurrent.api.Executors.immediate;
-import static io.servicetalk.concurrent.internal.ConcurrentPlugins.getCompletablePlugin;
 import static io.servicetalk.concurrent.internal.SignalOffloaders.newOffloaderFor;
 import static java.util.Objects.requireNonNull;
 import static java.util.function.Function.identity;
@@ -1099,21 +1098,10 @@ public abstract class Completable implements io.servicetalk.concurrent.Completab
 
     @Override
     public final void subscribe(Subscriber subscriber) {
-        requireNonNull(subscriber);
-        final SignalOffloader signalOffloader;
-        final Subscriber offloadedSubscriber;
-        try {
-            // This is a user-driven subscribe i.e. there is no SignalOffloader override, so create a new SignalOffloader
-            // to use.
-            signalOffloader = newOffloaderFor(executor);
-            // Since this is a user-driven subscribe (end of the execution chain), offload Cancellable
-            offloadedSubscriber = signalOffloader.offloadCancellable(subscriber);
-        } catch (Throwable t) {
-            subscriber.onSubscribe(IGNORE_CANCEL);
-            subscriber.onError(t);
-            return;
-        }
-        subscribe(offloadedSubscriber, signalOffloader);
+        // Each Subscriber chain should have an isolated AsyncContext due to a new asynchronous scope starting. This is
+        // why we copy the AsyncContext upon external user facing subscribe operations.
+        AsyncContextProvider provider = AsyncContext.provider();
+        subscribeWithContext(subscriber, provider.contextMap().copy(), provider);
     }
 
     /**
@@ -1180,7 +1168,23 @@ public abstract class Completable implements io.servicetalk.concurrent.Completab
      * the termination signal from the newly created {@link Completable} to its {@link Subscriber}.
      */
     public static Completable defer(Supplier<Completable> completableSupplier) {
-        return new CompletableDefer(completableSupplier);
+        return new CompletableDefer(completableSupplier, false);
+    }
+
+    /**
+     * Defer creation of a {@link Completable} till it is subscribed to. The {@link Completable}s returned from
+     * {@code singleSupplier} will share the same {@link AsyncContextMap} as the {@link Completable} return from this
+     * method. A typical use case for this is if the {@link Completable}s returned from {@code singleSupplier} only
+     * modify existing behavior with additional state, but not if the {@link Completable}s may come from an unrelated
+     * independent source.
+     * @param completableSupplier {@link Supplier} to create a new {@link Completable} for every call to
+     * {@link #subscribe(Subscriber)} to the returned {@link Completable}.
+     * @return A new {@link Completable} that creates a new {@link Completable} using {@code completableFactory}
+     * for every call to {@link #subscribe(Subscriber)} and forwards
+     * the termination signal from the newly created {@link Completable} to its {@link Subscriber}.
+     */
+    public static Completable deferShareContext(Supplier<Completable> completableSupplier) {
+        return new CompletableDefer(completableSupplier, true);
     }
 
     /**
@@ -1459,22 +1463,46 @@ public abstract class Completable implements io.servicetalk.concurrent.Completab
     //
 
     /**
-     * A special subscribe mode that uses the passed {@link SignalOffloader} instead of creating a new
-     * {@link SignalOffloader} like {@link #subscribe(Subscriber)}. This will call
-     * {@link #handleSubscribe(Subscriber, SignalOffloader)} to handle this subscribe instead of
-     * {@link #handleSubscribe(Subscriber)}.
-     * <p>
-     * This method is used by operator implementations to inherit a chosen {@link SignalOffloader} per
-     * {@link Subscriber} where possible. This method does not wrap the passed {@link Subscriber} or {@link Cancellable}
-     * to offload processing to {@link SignalOffloader}. That is done by
-     * {@link #handleSubscribe(Subscriber, SignalOffloader)} and hence can be overridden by operators that do not
-     * require this wrapping.
-     *
-     * @param subscriber {@link Subscriber} to this {@link Completable}.
-     * @param signalOffloader {@link SignalOffloader} to use for this {@link Subscriber}.
+     * Replicating a call to {@link #subscribe(Subscriber)} but with a materialized {@link AsyncContextMap}.
+     * @param subscriber the subscriber.
+     * @param contextMap the {@link AsyncContextMap} to use for this {@link Subscriber}.
+     * @param contextProvider the {@link AsyncContextProvider} used to wrap any objects to preserve
+     * {@link AsyncContextMap}.
      */
-    final void subscribe(Subscriber subscriber, SignalOffloader signalOffloader) {
-        getCompletablePlugin().handleSubscribe(requireNonNull(subscriber), signalOffloader, this::handleSubscribe);
+    final void subscribeWithContext(Subscriber subscriber, AsyncContextMap contextMap,
+                                    AsyncContextProvider contextProvider) {
+        requireNonNull(subscriber);
+        final SignalOffloader signalOffloader;
+        final Subscriber offloadedSubscriber;
+        try {
+            // This is a user-driven subscribe i.e. there is no SignalOffloader override, so create a new SignalOffloader
+            // to use.
+            signalOffloader = newOffloaderFor(executor);
+            // Since this is a user-driven subscribe (end of the execution chain), offload Cancellable
+            offloadedSubscriber = signalOffloader.offloadCancellable(
+                    contextProvider.wrapCancellable(subscriber, contextMap));
+        } catch (Throwable t) {
+            subscriber.onSubscribe(IGNORE_CANCEL);
+            subscriber.onError(t);
+            return;
+        }
+        subscribeWithOffloaderAndContext(offloadedSubscriber, signalOffloader, contextMap, contextProvider);
+    }
+
+    /**
+     * Replicating a call to {@link #subscribe(Subscriber)} but with a materialized {@link SignalOffloader} and
+     * {@link AsyncContextMap}.
+     * @param subscriber the subscriber.
+     * @param signalOffloader {@link SignalOffloader} to use for this {@link Subscriber}.
+     * @param contextMap the {@link AsyncContextMap} to use for this {@link Subscriber}.
+     * @param contextProvider the {@link AsyncContextProvider} used to wrap any objects to preserve
+     * {@link AsyncContextMap}.
+     */
+    final void subscribeWithOffloaderAndContext(Subscriber subscriber, SignalOffloader signalOffloader,
+                                                AsyncContextMap contextMap, AsyncContextProvider contextProvider) {
+        // this method doesn't currently do anything other than providing a way to differentiate between internal
+        // subscribe calls and handleSubscribe propagation.
+        handleSubscribe(subscriber, signalOffloader, contextMap, contextProvider);
     }
 
     /**
@@ -1488,10 +1516,14 @@ public abstract class Completable implements io.servicetalk.concurrent.Completab
      *
      * @param subscriber the subscriber.
      * @param signalOffloader {@link SignalOffloader} to use for this {@link Subscriber}.
+     * @param contextMap the {@link AsyncContextMap} to use for this {@link org.reactivestreams.Subscriber}.
+     * @param contextProvider the {@link AsyncContextProvider} used to wrap any objects to preserve
      */
-    void handleSubscribe(Subscriber subscriber, SignalOffloader signalOffloader) {
-        Subscriber safeSubscriber = signalOffloader.offloadSubscriber(subscriber);
-        signalOffloader.offloadSubscribe(safeSubscriber, this::safeHandleSubscribe);
+    void handleSubscribe(Subscriber subscriber, SignalOffloader signalOffloader, AsyncContextMap contextMap,
+                         AsyncContextProvider contextProvider) {
+        Subscriber offloaded = signalOffloader.offloadSubscriber(
+                contextProvider.wrap(subscriber, contextMap));
+        signalOffloader.offloadSubscribe(offloaded, contextProvider.wrap(this::safeHandleSubscribe, contextMap));
     }
 
     private void safeHandleSubscribe(Subscriber subscriber) {

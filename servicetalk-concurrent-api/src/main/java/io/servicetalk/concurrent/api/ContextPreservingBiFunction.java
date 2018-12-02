@@ -24,20 +24,20 @@ final class ContextPreservingBiFunction<T, U, V> implements BiFunction<T, U, V> 
     private final AsyncContextMap saved;
     private final BiFunction<T, U, V> delegate;
 
-    ContextPreservingBiFunction(BiFunction<T, U, V> delegate) {
-        this.saved = INSTANCE.getContextMap();
+    ContextPreservingBiFunction(BiFunction<T, U, V> delegate, AsyncContextMap contextMap) {
+        this.saved = requireNonNull(contextMap);
         this.delegate = delegate instanceof ContextPreservingBiFunction ?
                 ((ContextPreservingBiFunction<T, U, V>) delegate).delegate : requireNonNull(delegate);
     }
 
     @Override
     public V apply(T t, U u) {
-        AsyncContextMap prev = INSTANCE.getContextMap();
+        AsyncContextMap prev = INSTANCE.contextMap();
         try {
-            INSTANCE.setContextMap(saved);
+            INSTANCE.contextMap(saved);
             return delegate.apply(t, u);
         } finally {
-            INSTANCE.setContextMap(prev);
+            INSTANCE.contextMap(prev);
         }
     }
 }

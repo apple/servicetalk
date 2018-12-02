@@ -60,19 +60,28 @@ final class RedoWhenPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
     }
 
     @Override
-    void handleSubscribe(Subscriber<? super T> subscriber, SignalOffloader signalOffloader) {
-        original.subscribe(new RedoSubscriber<>(new SequentialSubscription(), 0, subscriber, this), signalOffloader);
+    void handleSubscribe(Subscriber<? super T> subscriber, SignalOffloader signalOffloader,
+                         AsyncContextMap contextMap, AsyncContextProvider contextProvider) {
+        // For the current subscribe operation we want to use contextMap directly, but in the event a re-subscribe
+        // operation occurs we want to restore the original state of the AsyncContext map, so we save a copy upfront.
+        original.subscribeWithOffloaderAndContext(new RedoSubscriber<>(new SequentialSubscription(), 0, subscriber,
+                contextMap.copy(), contextProvider, this), signalOffloader, contextMap, contextProvider);
     }
 
     private static final class RedoSubscriber<T> extends RedoPublisher.AbstractRedoSubscriber<T> {
 
         private final SequentialCancellable cancellable;
         private final RedoWhenPublisher<T> redoPublisher;
+        private final AsyncContextMap contextMap;
+        private final AsyncContextProvider contextProvider;
 
         RedoSubscriber(SequentialSubscription subscription, int redoCount, Subscriber<? super T> subscriber,
+                       AsyncContextMap contextMap, AsyncContextProvider contextProvider,
                        RedoWhenPublisher<T> redoPublisher) {
             super(subscription, redoCount, subscriber);
             this.redoPublisher = redoPublisher;
+            this.contextMap = contextMap;
+            this.contextProvider = contextProvider;
             cancellable = new SequentialCancellable();
         }
 
@@ -104,18 +113,7 @@ final class RedoWhenPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
 
         @Override
         Subscription decorate(Subscription s) {
-            return new Subscription() {
-                @Override
-                public void request(long n) {
-                    s.request(n);
-                }
-
-                @Override
-                public void cancel() {
-                    cancellable.cancel();
-                    s.cancel();
-                }
-            };
+            return new MergedCancellableWithSubscription(s, cancellable);
         }
 
         private void redoIfRequired(TerminalNotification terminalNotification) {
@@ -139,8 +137,12 @@ final class RedoWhenPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
 
                 @Override
                 public void onComplete() {
-                    redoPublisher.original.subscribe(new RedoSubscriber<>(subscription, redoCount + 1,
-                            subscriber, redoPublisher));
+                    // For the current subscribe operation we want to use contextMap directly, but in the event a
+                    // re-subscribe operation occurs we want to restore the original state of the AsyncContext map, so
+                    // we save a copy upfront.
+                    redoPublisher.original.subscribeWithContext(new RedoSubscriber<>(subscription, redoCount + 1,
+                        subscriber, contextMap.copy(), contextProvider, redoPublisher), contextMap,
+                            contextProvider);
                 }
 
                 @Override

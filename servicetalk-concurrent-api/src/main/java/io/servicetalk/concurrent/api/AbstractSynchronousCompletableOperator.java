@@ -41,7 +41,8 @@ abstract class AbstractSynchronousCompletableOperator extends AbstractNoHandleSu
     }
 
     @Override
-    final void handleSubscribe(Subscriber subscriber, SignalOffloader signalOffloader) {
-        original.subscribe(apply(subscriber), signalOffloader);
+    final void handleSubscribe(Subscriber subscriber, SignalOffloader signalOffloader,
+                               AsyncContextMap contextMap, AsyncContextProvider contextProvider) {
+        original.subscribeWithOffloaderAndContext(apply(subscriber), signalOffloader, contextMap, contextProvider);
     }
 }

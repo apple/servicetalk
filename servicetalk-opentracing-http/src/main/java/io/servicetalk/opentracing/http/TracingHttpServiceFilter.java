@@ -87,45 +87,41 @@ public class TracingHttpServiceFilter implements StreamingHttpRequestHandler {
     public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
                                                 final StreamingHttpRequest request,
                                                 final StreamingHttpResponseFactory responseFactory) {
-        return new Single<StreamingHttpResponse>() {
-            @Override
-            protected void handleSubscribe(final Subscriber<? super StreamingHttpResponse> subscriber) {
-                Scope tempScope = null;
-                // We may interact with the Scope/Span from multiple threads (Subscriber & Subscription), and the
-                // Scope/Span class does not provide thread safe behavior. So we ensure that we only close (and add
-                // trailing meta data) from a single thread at any given time via this atomic variable.
-                AtomicBoolean tempScopeClosed = null;
-                final SpanContext parentSpanContext;
-                final Single<StreamingHttpResponse> responseSingle;
-                try {
-                    SpanBuilder spanBuilder = tracer.buildSpan(getOperationName(componentName, request))
-                            .withTag(SPAN_KIND.getKey(), SPAN_KIND_SERVER)
-                            .withTag(HTTP_METHOD.getKey(), request.method().methodName())
-                            .withTag(HTTP_URL.getKey(), request.path());
-                    parentSpanContext = tracer.extract(formatter, request.headers());
-                    if (parentSpanContext != null) {
-                        spanBuilder = spanBuilder.asChildOf(parentSpanContext);
-                    }
-
-                    tempScope = spanBuilder.startActive(true);
-                    tempScopeClosed = new AtomicBoolean();
-                    responseSingle = requireNonNull(next.handle(ctx, request, responseFactory));
-                } catch (Throwable cause) {
-                    handlePrematureException(tempScope, tempScopeClosed, subscriber, cause);
-                    return;
+        return Single.deferShareContext(() -> {
+            Scope tempScope = null;
+            // We may interact with the Scope/Span from multiple threads (Subscriber & Subscription), and the
+            // Scope/Span class does not provide thread safe behavior. So we ensure that we only close (and add
+            // trailing meta data) from a single thread at any given time via this atomic variable.
+            AtomicBoolean tempScopeClosed = null;
+            final SpanContext parentSpanContext;
+            final Single<StreamingHttpResponse> responseSingle;
+            try {
+                SpanBuilder spanBuilder = tracer.buildSpan(getOperationName(componentName, request))
+                        .withTag(SPAN_KIND.getKey(), SPAN_KIND_SERVER)
+                        .withTag(HTTP_METHOD.getKey(), request.method().methodName())
+                        .withTag(HTTP_URL.getKey(), request.path());
+                parentSpanContext = tracer.extract(formatter, request.headers());
+                if (parentSpanContext != null) {
+                    spanBuilder = spanBuilder.asChildOf(parentSpanContext);
                 }
-                final Scope currentScope = tempScope;
-                final AtomicBoolean scopeClosed = tempScopeClosed;
-                responseSingle.map(resp -> {
-                    if (injectSpanContextIntoResponse(parentSpanContext)) {
-                        tracer.inject(currentScope.span().context(), formatter, resp.headers());
-                    }
-                    return tracingMapper(resp, currentScope, scopeClosed, TracingHttpServiceFilter.this::isError);
-                }).doOnError(cause -> tagErrorAndClose(currentScope, scopeClosed))
-                  .doOnCancel(() -> tagErrorAndClose(currentScope, scopeClosed))
-                  .subscribe(subscriber);
+
+                tempScope = spanBuilder.startActive(true);
+                tempScopeClosed = new AtomicBoolean();
+                responseSingle = requireNonNull(next.handle(ctx, request, responseFactory));
+            } catch (Throwable cause) {
+                handlePrematureException(tempScope, tempScopeClosed);
+                throw cause;
             }
-        };
+            final Scope currentScope = tempScope;
+            final AtomicBoolean scopeClosed = tempScopeClosed;
+            return responseSingle.map(resp -> {
+                if (injectSpanContextIntoResponse(parentSpanContext)) {
+                    tracer.inject(currentScope.span().context(), formatter, resp.headers());
+                }
+                return tracingMapper(resp, currentScope, scopeClosed, TracingHttpServiceFilter.this::isError);
+            }).doOnError(cause -> tagErrorAndClose(currentScope, scopeClosed))
+              .doOnCancel(() -> tagErrorAndClose(currentScope, scopeClosed));
+        });
     }
 
     /**

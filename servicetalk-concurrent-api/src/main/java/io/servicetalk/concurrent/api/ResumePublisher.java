@@ -43,8 +43,10 @@ final class ResumePublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
     }
 
     @Override
-    void handleSubscribe(final Subscriber<? super T> subscriber, final SignalOffloader signalOffloader) {
-        original.subscribe(new ResumeSubscriber<>(subscriber, nextFactory, signalOffloader), signalOffloader);
+    void handleSubscribe(final Subscriber<? super T> subscriber, final SignalOffloader signalOffloader,
+                         final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
+        original.subscribeWithOffloaderAndContext(new ResumeSubscriber<>(subscriber, nextFactory, signalOffloader,
+                        contextMap, contextProvider), signalOffloader, contextMap, contextProvider);
     }
 
     private static final class ResumeSubscriber<T> implements Subscriber<T> {
@@ -52,15 +54,20 @@ final class ResumePublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
         @Nullable
         private volatile Function<? super Throwable, Publisher<? extends T>> nextFactory;
         private final SignalOffloader signalOffloader;
+        private final AsyncContextMap contextMap;
+        private final AsyncContextProvider contextProvider;
         @Nullable
         private volatile SequentialSubscription sequentialSubscription;
 
         ResumeSubscriber(Subscriber<? super T> subscriber,
                          Function<? super Throwable, Publisher<? extends T>> nextFactory,
-                         final SignalOffloader signalOffloader) {
+                         SignalOffloader signalOffloader, AsyncContextMap contextMap,
+                         AsyncContextProvider contextProvider) {
             this.subscriber = subscriber;
             this.nextFactory = nextFactory;
             this.signalOffloader = signalOffloader;
+            this.contextMap = contextMap;
+            this.contextProvider = contextProvider;
         }
 
         @Override
@@ -105,7 +112,8 @@ final class ResumePublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
             // that the threading semantics may differ with respect to the original Subscriber when we emit signals from
             // the new Publisher. This is the reason we use the original offloader now to offload signals which
             // originate from this new Publisher.
-            final Subscriber<? super T> offloadedSubscriber = signalOffloader.offloadSubscriber(this);
+            final Subscriber<? super T> offloadedSubscriber = signalOffloader.offloadSubscriber(
+                    contextProvider.wrap(this, contextMap));
             next.subscribe(offloadedSubscriber);
         }
 

@@ -24,11 +24,15 @@ import io.servicetalk.concurrent.internal.SignalOffloader;
 abstract class AbstractSynchronousCompletable extends AbstractNoHandleSubscribeCompletable {
 
     @Override
-    final void handleSubscribe(Subscriber subscriber, SignalOffloader signalOffloader) {
+    final void handleSubscribe(Subscriber subscriber, SignalOffloader signalOffloader,
+                               AsyncContextMap contextMap, AsyncContextProvider contextProvider) {
         // Wrap the passed Subscriber with the SignalOffloader to make sure they are not invoked in the thread that
         // asynchronously processes signals and hence may not be safe to execute user code.
         // This saves the offload of doSubscribe since we know it is synchronous.
-        doSubscribe(signalOffloader.offloadSubscriber(subscriber));
+        //
+        // We need to wrap the Subscriber to save/restore the AsyncContext on each operation or else the AsyncContext
+        // may leak from another thread.
+        doSubscribe(signalOffloader.offloadSubscriber(contextProvider.wrap(subscriber, contextMap)));
     }
 
     /**

@@ -90,7 +90,7 @@ final class ConcurrencyControlSingleOperator
             if (response == null) {
                 sendNullResponse();
             } else if (stateUpdater.compareAndSet(ConcurrencyControlSingleOperator.this, IDLE, TERMINATED)) {
-                subscriber.onSuccess(response.transformPayloadBody(payload ->
+                subscriber.onSuccess(response.transformRawPayloadBody(payload ->
                         payload.doBeforeFinally(limiter::requestFinished)));
             } else if (state == CANCELLED) {
                 subscriber.onSuccess(response.transformPayloadBody(payload -> {

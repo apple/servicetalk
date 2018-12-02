@@ -38,7 +38,8 @@ final class CompletableConcatWithCompletable extends AbstractNoHandleSubscribeCo
     }
 
     @Override
-    protected void handleSubscribe(Subscriber subscriber, SignalOffloader offloader) {
+    protected void handleSubscribe(Subscriber subscriber, SignalOffloader offloader, AsyncContextMap contextMap,
+                                   AsyncContextProvider contextProvider) {
         // We have the following cases to consider w.r.t offloading signals:
         //
         //  (1) Original Completable was not using an Executor but the next Completable uses an Executor.
@@ -55,8 +56,9 @@ final class CompletableConcatWithCompletable extends AbstractNoHandleSubscribeCo
         // eventloop. Important thing to note is that once the next Completable is subscribed we never touch the
         // Cancellable of the original Completable. So, we do not need to do anything special there.
         // In order to cover for this case ((2) above) we always offload the passed Subscriber here.
-        Subscriber offloadSubscriber = offloader.offloadSubscriber(subscriber);
-        original.subscribe(new ConcatWithSubscriber(offloadSubscriber, next), offloader);
+        Subscriber offloadSubscriber = offloader.offloadSubscriber(contextProvider.wrap(subscriber, contextMap));
+        original.subscribeWithOffloaderAndContext(new ConcatWithSubscriber(offloadSubscriber, next), offloader,
+                contextMap, contextProvider);
     }
 
     private static final class ConcatWithSubscriber implements Subscriber {
@@ -92,6 +94,9 @@ final class CompletableConcatWithCompletable extends AbstractNoHandleSubscribeCo
                 // Using a regular subscribe helps us to inherit the threading model for this next source. However,
                 // since we always offload the original Subscriber (in handleSubscribe above) we are assured that this
                 // Subscriber is not called unexpectedly on an eventloop if this source does not use an Executor.
+                //
+                // This is an asynchronous boundary, and so we should recapture the AsyncContext instead of propagating
+                // it.
                 next.subscribe(this);
             } else {
                 target.onComplete();

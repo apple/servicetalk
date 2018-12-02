@@ -16,7 +16,6 @@
 package io.servicetalk.concurrent.api;
 
 import java.util.Map;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -27,14 +26,8 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.concurrent.api.AsyncContextCompletablePlugin.COMPLETABLE_PLUGIN;
 import static io.servicetalk.concurrent.api.AsyncContextExecutorPlugin.EXECUTOR_PLUGIN;
-import static io.servicetalk.concurrent.api.AsyncContextPublisherPlugin.PUBLISHER_PLUGIN;
-import static io.servicetalk.concurrent.api.AsyncContextSinglePlugin.SINGLE_PLUGIN;
-import static io.servicetalk.concurrent.api.DefaultAsyncContextProvider.INSTANCE;
 import static io.servicetalk.concurrent.api.Executors.EXECUTOR_PLUGINS;
-import static io.servicetalk.concurrent.internal.ConcurrentPlugins.addPlugin;
-import static io.servicetalk.concurrent.internal.ConcurrentPlugins.removePlugin;
 
 /**
  * Presents a static interface to retain state in an asynchronous environment.
@@ -54,51 +47,19 @@ public final class AsyncContext {
      * about concurrent {@link #enable()} and {@link #disable()} calls.
      */
     private static final AtomicInteger ENABLED_STATE = new AtomicInteger(STATE_INIT);
-
     /**
-     * A listener that is notified when ever the {@link AsyncContextProvider} changes.
+     * This is currently not volatile as we rely upon external synchronization for this to be made visible. The current
+     * use case for this is a "once at start up" to {@link #disable()} this mechanism completely. This is currently a
+     * best effort mechanism for performance reasons, and we can re-evaluate later if more strict behavior is required.
      */
-    @FunctionalInterface
-    public interface Listener {
-        /**
-         * A listener which does nothing.
-         */
-        @SuppressWarnings("unused")
-        Listener NOOP = (oldContext, newContext) -> {
-        };
-
-        /**
-         * Called after the {@link AsyncContext} is changed.
-         * <p>
-         * This method must not throw.
-         * @param oldContext the previous valud of the context.
-         * @param newContext the new value of the context.
-         */
-        void contextMapChanged(AsyncContextMap oldContext, AsyncContextMap newContext);
-    }
+    private static AsyncContextProvider provider = DefaultAsyncContextProvider.INSTANCE;
 
     private AsyncContext() {
         // no instances
     }
 
-    /**
-     * Subscribe {@code listener} for notification of {@link AsyncContextProvider} change events.
-     *
-     * @param listener A listener which will be notified of {@link AsyncContextProvider} change events.
-     * @return {@code true} if the listener was subscribed.
-     */
-    public static boolean addListener(Listener listener) {
-        return INSTANCE.addListener(listener);
-    }
-
-    /**
-     * Unsubscribe {@code listener} for notification of {@link AsyncContextProvider} change events.
-     *
-     * @param listener A listener which will no longer be notified of {@link AsyncContextProvider} change events.
-     * @return {@code true} if the listener was unsubscribed.
-     */
-    public static boolean removeListener(Listener listener) {
-        return INSTANCE.removeListener(listener);
+    static AsyncContextProvider provider() {
+        return provider;
     }
 
     /**
@@ -107,7 +68,7 @@ public final class AsyncContext {
      * @return the current {@link AsyncContextMap}
      */
     public static AsyncContextMap current() {
-        return INSTANCE.getContextMap();
+        return provider().contextMap();
     }
 
     /**
@@ -116,7 +77,19 @@ public final class AsyncContext {
      * @param contextMap the {@link AsyncContextMap} to use.
      */
     public static void replace(AsyncContextMap contextMap) {
-        INSTANCE.setContextMap(contextMap);
+        provider().contextMap(contextMap);
+    }
+
+    /**
+     * Replace the current context with a new {@link AsyncContextMap} that is empty and return the {@link #current()}.
+     * @return the {@link #current()} {@link AsyncContextMap} value.
+     */
+    public static AsyncContextMap getAndReset() {
+        AsyncContextProvider provider = provider();
+        AsyncContextMap oldMap = provider.contextMap();
+        AsyncContextMap newMap = provider.newContextMap();
+        provider.contextMap(newMap);
+        return oldMap;
     }
 
     /**
@@ -127,18 +100,8 @@ public final class AsyncContext {
      * @param <T>   The type of object associated with {@code key}.
      * @see AsyncContextMap#put(AsyncContextMap.Key, Object)
      */
-    public static <T> void put(AsyncContextMap.Key<T> key, @Nullable T value) {
-        replace(current().put(key, value));
-    }
-
-    /**
-     * Convenience method to put all the key/value pairs into the current context.
-     *
-     * @param context contains the key/value pairs that will be added.
-     * @see AsyncContextMap#putAll(AsyncContextMap)
-     */
-    public static void putAll(AsyncContextMap context) {
-        replace(current().putAll(context));
+    public static <T> void put(AsyncContextMap.Key<T> key, T value) {
+        current().put(key, value);
     }
 
     /**
@@ -148,7 +111,7 @@ public final class AsyncContext {
      * @see AsyncContextMap#putAll(Map)
      */
     public static void putAll(Map<AsyncContextMap.Key<?>, Object> map) {
-        replace(current().putAll(map));
+        current().putAll(map);
     }
 
     /**
@@ -158,17 +121,7 @@ public final class AsyncContext {
      * @see AsyncContextMap#remove(AsyncContextMap.Key)
      */
     public static void remove(AsyncContextMap.Key<?> key) {
-        replace(current().remove(key));
-    }
-
-    /**
-     * Convenience method to remove all the key/value pairs from the current context.
-     *
-     * @param context The context which contains all the keys to remove.
-     * @see AsyncContextMap#removeAll(AsyncContextMap)
-     */
-    public static void removeAll(AsyncContextMap context) {
-        replace(current().removeAll(context));
+        current().remove(key);
     }
 
     /**
@@ -178,7 +131,7 @@ public final class AsyncContext {
      * @see AsyncContextMap#removeAll(Iterable)
      */
     public static void removeAll(Iterable<AsyncContextMap.Key<?>> entries) {
-        replace(current().removeAll(entries));
+        current().removeAll(entries);
     }
 
     /**
@@ -187,7 +140,7 @@ public final class AsyncContext {
      * @see AsyncContextMap#clear()
      */
     public static void clear() {
-        replace(current().clear());
+        current().clear();
     }
 
     /**
@@ -209,10 +162,10 @@ public final class AsyncContext {
      * @param key the key to lookup.
      * @return {@code true} if the current context contains a key/value entry corresponding to {@code key}.
      * {@code false} otherwise.
-     * @see AsyncContextMap#contains(AsyncContextMap.Key)
+     * @see AsyncContextMap#containsKey(AsyncContextMap.Key)
      */
     public static boolean contains(AsyncContextMap.Key<?> key) {
-        return current().contains(key);
+        return current().containsKey(key);
     }
 
     /**
@@ -245,7 +198,7 @@ public final class AsyncContext {
      * @return The wrapped executor.
      */
     public static java.util.concurrent.Executor wrap(java.util.concurrent.Executor executor) {
-        return INSTANCE.wrap(executor);
+        return provider().wrap(executor);
     }
 
     /**
@@ -255,7 +208,7 @@ public final class AsyncContext {
      * @return The wrapped executor.
      */
     public static Executor wrap(Executor executor) {
-        return INSTANCE.wrap(executor);
+        return provider().wrap(executor);
     }
 
     /**
@@ -265,7 +218,7 @@ public final class AsyncContext {
      * @return The result of the unwrap attempt.
      */
     public static Executor unwrap(Executor executor) {
-        return INSTANCE.unwrap(executor);
+        return provider().unwrap(executor);
     }
 
     /**
@@ -274,7 +227,7 @@ public final class AsyncContext {
      * @return The wrapped executor.
      */
     public static ExecutorService wrap(ExecutorService executor) {
-        return INSTANCE.wrap(executor);
+        return provider().wrap(executor);
     }
 
     /**
@@ -283,7 +236,7 @@ public final class AsyncContext {
      * @return The wrapped executor.
      */
     public static ScheduledExecutorService wrap(ScheduledExecutorService executor) {
-        return INSTANCE.wrap(executor);
+        return provider().wrap(executor);
     }
 
     /**
@@ -292,17 +245,8 @@ public final class AsyncContext {
      * @return The wrapped {@link Runnable}.
      */
     public static Runnable wrap(Runnable runnable) {
-        return INSTANCE.wrap(runnable);
-    }
-
-    /**
-     * Wrap a {@link Callable} to ensure it is able to track {@link AsyncContext} correctly.
-     * @param callable The callable to wrap.
-     * @param <V> The type of data returned by {@code callable}.
-     * @return The wrapped {@link Callable}.
-     */
-    public static <V> Callable<V> wrap(Callable<V> callable) {
-        return INSTANCE.wrap(callable);
+        AsyncContextProvider provider = provider();
+        return provider.wrap(runnable, provider.contextMap());
     }
 
     /**
@@ -312,7 +256,8 @@ public final class AsyncContext {
      * @return The wrapped {@link Consumer}.
      */
     public static <T> Consumer<T> wrap(Consumer<T> consumer) {
-        return INSTANCE.wrap(consumer);
+        AsyncContextProvider provider = provider();
+        return provider.wrap(consumer, provider.contextMap());
     }
 
     /**
@@ -323,7 +268,8 @@ public final class AsyncContext {
      * @return The wrapped {@link Function}.
      */
     public static <T, U> Function<T, U> wrap(Function<T, U> func) {
-        return INSTANCE.wrap(func);
+        AsyncContextProvider provider = provider();
+        return provider.wrap(func, provider.contextMap());
     }
 
     /**
@@ -334,7 +280,8 @@ public final class AsyncContext {
      * @return The wrapped {@link BiConsumer}.
      */
     public static <T, U> BiConsumer<T, U> wrap(BiConsumer<T, U> consumer) {
-        return INSTANCE.wrap(consumer);
+        AsyncContextProvider provider = provider();
+        return provider.wrap(consumer, provider.contextMap());
     }
 
     /**
@@ -346,14 +293,16 @@ public final class AsyncContext {
      * @return The wrapped {@link BiFunction}.
      */
     public static <T, U, V> BiFunction<T, U, V> wrap(BiFunction<T, U, V> func) {
-        return INSTANCE.wrap(func);
+        AsyncContextProvider provider = provider();
+        return provider.wrap(func, provider.contextMap());
     }
 
     /**
      * Disable AsyncContext. It is assumed the application will call this in a well orchestrated fashion. For example
      * the behavior of in flight AsyncContext is undefined, objects that are already initialized with AsyncContext
      * enabled may continue to preserve AsyncContext in an unreliable fashion. and also how this behaves relative to
-     * concurrent invocation is undefined.
+     * concurrent invocation is undefined. External synchronization should be used to ensure this change is visible to
+     * other threads.
      */
     public static void disable() {
         if (ENABLED_STATE.getAndSet(STATE_DISABLED) != STATE_DISABLED) {
@@ -364,7 +313,7 @@ public final class AsyncContext {
     /**
      * This method is currently internal only! If it is exposed publicly, and {@link #STATE_DISABLED} is no longer a
      * terminal state the racy {@link #ENABLED_STATE} should be re-evaluated. We currently don't try to account for an
-     * application calling {@link #enable()} and {@link #disable()} concurrently, and this may result in inconsistent
+     * application calling this method and {@link #disable()} concurrently, and this may result in inconsistent
      * plugin enabled/disable state.
      */
     static void enable() {
@@ -386,9 +335,7 @@ public final class AsyncContext {
     }
 
     private static void enable0() {
-        addPlugin(COMPLETABLE_PLUGIN);
-        addPlugin(SINGLE_PLUGIN);
-        addPlugin(PUBLISHER_PLUGIN);
+        provider = DefaultAsyncContextProvider.INSTANCE;
         EXECUTOR_PLUGINS.add(EXECUTOR_PLUGIN);
 
         if (ENABLED_STATE.get() == STATE_DISABLED) {
@@ -397,9 +344,7 @@ public final class AsyncContext {
     }
 
     private static void disable0() {
-        removePlugin(COMPLETABLE_PLUGIN);
-        removePlugin(SINGLE_PLUGIN);
-        removePlugin(PUBLISHER_PLUGIN);
+        provider = NoopAsyncContextProvider.INSTANCE;
         EXECUTOR_PLUGINS.remove(EXECUTOR_PLUGIN);
     }
 }

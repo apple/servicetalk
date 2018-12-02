@@ -31,11 +31,12 @@ final class SingleToCompletable<T> extends AbstractNoHandleSubscribeCompletable 
     }
 
     @Override
-    void handleSubscribe(final Subscriber subscriber, final SignalOffloader signalOffloader) {
+    void handleSubscribe(final Subscriber subscriber, final SignalOffloader signalOffloader,
+                         final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
         // We are not modifying the Cancellable between sources, so we do not need to take care of offloading between
         // the sources (in this operator). If the Cancellable is configured to be offloaded, it will be done when the
         // resulting Completable is subscribed.
-        original.subscribe(new Single.Subscriber<T>() {
+        original.subscribeWithOffloaderAndContext(new Single.Subscriber<T>() {
             @Override
             public void onSubscribe(Cancellable cancellable) {
                 subscriber.onSubscribe(cancellable);
@@ -54,6 +55,6 @@ final class SingleToCompletable<T> extends AbstractNoHandleSubscribeCompletable 
                 // Since this is converting a Single to a Completable, we should try to use the same SignalOffloader for
                 // subscribing to the original Single to avoid thread hop. Since, it is the same source, just viewed as
                 // a Completable, there is no additional risk of deadlock.
-                signalOffloader);
+                signalOffloader, contextMap, contextProvider);
     }
 }

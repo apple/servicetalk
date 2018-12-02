@@ -16,7 +16,6 @@
 package io.servicetalk.opentracing.zipkin.publisher;
 
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
-import io.servicetalk.opentracing.asynccontext.AsyncContextInMemoryScopeManager;
 import io.servicetalk.opentracing.inmemory.DefaultInMemoryTracer;
 import io.servicetalk.opentracing.inmemory.api.InMemorySpan;
 import io.servicetalk.opentracing.inmemory.api.InMemoryTracer;
@@ -48,6 +47,7 @@ import java.util.Optional;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
 
+import static io.servicetalk.opentracing.asynccontext.AsyncContextInMemoryScopeManager.SCOPE_MANAGER;
 import static io.servicetalk.opentracing.zipkin.publisher.ZipkinPublisher.Encoder.JSON_V1;
 import static java.net.InetAddress.getLocalHost;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -71,8 +71,7 @@ public class ZipkinPublisherTest {
     @Before
     public void setUp() {
         group = new NioEventLoopGroup(2);
-        tracer = new DefaultInMemoryTracer.Builder(new AsyncContextInMemoryScopeManager())
-                .persistLogs(true).build();
+        tracer = new DefaultInMemoryTracer.Builder(SCOPE_MANAGER).persistLogs(true).build();
     }
 
     @After

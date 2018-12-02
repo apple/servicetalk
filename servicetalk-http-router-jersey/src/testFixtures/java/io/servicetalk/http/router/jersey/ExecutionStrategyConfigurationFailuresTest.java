@@ -15,8 +15,8 @@
  */
 package io.servicetalk.http.router.jersey;
 
+import io.servicetalk.concurrent.api.DefaultThreadFactory;
 import io.servicetalk.concurrent.api.ExecutorRule;
-import io.servicetalk.concurrent.internal.DefaultThreadFactory;
 import io.servicetalk.http.router.jersey.ExecutionStrategyTest.TestApplication;
 import io.servicetalk.http.router.jersey.resources.ExecutionStrategyResources.ResourceInvalidExecStrategy;
 import io.servicetalk.http.router.jersey.resources.ExecutionStrategyResources.ResourceUnsupportedAsync;

@@ -24,20 +24,20 @@ final class ContextPreservingFunction<T, U> implements Function<T, U> {
     private final AsyncContextMap saved;
     private final Function<T, U> delegate;
 
-    ContextPreservingFunction(Function<T, U> delegate) {
-        this.saved = INSTANCE.getContextMap();
+    ContextPreservingFunction(Function<T, U> delegate, AsyncContextMap contextMap) {
+        this.saved = requireNonNull(contextMap);
         this.delegate = delegate instanceof ContextPreservingFunction ?
                 ((ContextPreservingFunction<T, U>) delegate).delegate : requireNonNull(delegate);
     }
 
     @Override
     public U apply(T t) {
-        AsyncContextMap prev = INSTANCE.getContextMap();
+        AsyncContextMap prev = INSTANCE.contextMap();
         try {
-            INSTANCE.setContextMap(saved);
+            INSTANCE.contextMap(saved);
             return delegate.apply(t);
         } finally {
-            INSTANCE.setContextMap(prev);
+            INSTANCE.contextMap(prev);
         }
     }
 }

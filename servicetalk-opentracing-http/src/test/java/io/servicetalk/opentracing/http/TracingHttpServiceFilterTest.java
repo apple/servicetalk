@@ -23,7 +23,6 @@ import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.HttpSerializationProvider;
 import io.servicetalk.http.api.StreamingHttpRequestHandler;
 import io.servicetalk.http.netty.HttpServers;
-import io.servicetalk.opentracing.asynccontext.AsyncContextInMemoryScopeManager;
 import io.servicetalk.opentracing.http.TestUtils.CountingInMemorySpanEventListener;
 import io.servicetalk.opentracing.inmemory.DefaultInMemoryTracer;
 import io.servicetalk.opentracing.inmemory.api.InMemorySpan;
@@ -53,6 +52,7 @@ import static io.servicetalk.http.api.HttpResponseStatuses.OK;
 import static io.servicetalk.http.api.HttpSerializationProviders.jsonSerializer;
 import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
 import static io.servicetalk.http.netty.HttpClients.forSingleAddress;
+import static io.servicetalk.opentracing.asynccontext.AsyncContextInMemoryScopeManager.SCOPE_MANAGER;
 import static io.servicetalk.opentracing.http.TestUtils.isHexId;
 import static io.servicetalk.opentracing.http.TestUtils.randomHexId;
 import static io.servicetalk.opentracing.internal.utils.ZipkinHeaderNames.PARENT_SPAN_ID;
@@ -87,8 +87,8 @@ public class TracingHttpServiceFilterTest {
         initMocks(this);
     }
 
-    private static ServerContext buildServer(CountingInMemorySpanEventListener spanListener) throws Exception {
-        DefaultInMemoryTracer tracer = new DefaultInMemoryTracer.Builder(new AsyncContextInMemoryScopeManager())
+    private ServerContext buildServer(CountingInMemorySpanEventListener spanListener) throws Exception {
+        DefaultInMemoryTracer tracer = new DefaultInMemoryTracer.Builder(SCOPE_MANAGER)
                 .addListener(spanListener).build();
         return HttpServers.forPort(0)
                 .appendRequestHandlerFilter(handler -> new TracingHttpServiceFilter(tracer, "testServer", handler))

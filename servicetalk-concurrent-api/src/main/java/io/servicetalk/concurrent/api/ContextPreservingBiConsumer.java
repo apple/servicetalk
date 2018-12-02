@@ -24,20 +24,20 @@ final class ContextPreservingBiConsumer<T, U> implements BiConsumer<T, U> {
     private final AsyncContextMap saved;
     private final BiConsumer<T, U> delegate;
 
-    ContextPreservingBiConsumer(BiConsumer<T, U> delegate) {
-        this.saved = INSTANCE.getContextMap();
+    ContextPreservingBiConsumer(BiConsumer<T, U> delegate, AsyncContextMap contextMap) {
+        this.saved = requireNonNull(contextMap);
         this.delegate = delegate instanceof ContextPreservingBiConsumer ?
                 ((ContextPreservingBiConsumer<T, U>) delegate).delegate : requireNonNull(delegate);
     }
 
     @Override
     public void accept(T t, U u) {
-        AsyncContextMap prev = INSTANCE.getContextMap();
+        AsyncContextMap prev = INSTANCE.contextMap();
         try {
-            INSTANCE.setContextMap(saved);
+            INSTANCE.contextMap(saved);
             delegate.accept(t, u);
         } finally {
-            INSTANCE.setContextMap(prev);
+            INSTANCE.contextMap(prev);
         }
     }
 }

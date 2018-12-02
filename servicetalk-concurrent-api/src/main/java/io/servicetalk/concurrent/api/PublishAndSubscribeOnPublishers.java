@@ -21,6 +21,7 @@ import org.reactivestreams.Subscriber;
 
 import static io.servicetalk.concurrent.api.MergedExecutors.mergeAndOffloadPublish;
 import static io.servicetalk.concurrent.api.MergedExecutors.mergeAndOffloadSubscribe;
+import static io.servicetalk.concurrent.internal.EmptySubscription.EMPTY_SUBSCRIPTION;
 
 /**
  * A set of factory methods that provides implementations for the various publish/subscribeOn methods on
@@ -30,6 +31,14 @@ final class PublishAndSubscribeOnPublishers {
 
     private PublishAndSubscribeOnPublishers() {
         // No instance.
+    }
+
+    static <T> void deliverOnSubscribeAndOnError(Subscriber<? super T> subscriber, SignalOffloader signalOffloader,
+                                                 AsyncContextMap contextMap, AsyncContextProvider contextProvider,
+                                                 Throwable cause) {
+        subscriber = signalOffloader.offloadSubscriber(contextProvider.wrap(subscriber, contextMap));
+        subscriber.onSubscribe(EMPTY_SUBSCRIPTION);
+        subscriber.onError(cause);
     }
 
     static <T> Publisher<T> publishAndSubscribeOn(Publisher<T> original, Executor executor) {
@@ -65,7 +74,8 @@ final class PublishAndSubscribeOnPublishers {
         }
 
         @Override
-        void handleSubscribe(final Subscriber<? super T> subscriber, final SignalOffloader signalOffloader) {
+        void handleSubscribe(final Subscriber<? super T> subscriber, final SignalOffloader signalOffloader,
+                             final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
             // This operator is to make sure that we use the executor to subscribe to the Publisher that is returned
             // by this operator.
             //
@@ -76,7 +86,8 @@ final class PublishAndSubscribeOnPublishers {
             // This operator acts as a boundary that changes the Executor from original to the rest of the execution
             // chain. If there is already an Executor defined for original, it will be used to offload signals until
             // they hit this operator.
-            original.subscribe(signalOffloader.offloadSubscriber(subscriber));
+            original.subscribeWithContext(signalOffloader.offloadSubscriber(
+                    contextProvider.wrap(subscriber, contextMap)), contextMap, contextProvider);
         }
     }
 
@@ -100,7 +111,7 @@ final class PublishAndSubscribeOnPublishers {
         }
     }
 
-    private static class PublishOn<T> extends AbstractNoHandleSubscribePublisher<T> {
+    private static final class PublishOn<T> extends AbstractNoHandleSubscribePublisher<T> {
         private final Publisher<T> original;
 
         PublishOn(final Executor executor, final Publisher<T> original) {
@@ -109,7 +120,8 @@ final class PublishAndSubscribeOnPublishers {
         }
 
         @Override
-        void handleSubscribe(final Subscriber<? super T> subscriber, final SignalOffloader signalOffloader) {
+        void handleSubscribe(final Subscriber<? super T> subscriber, final SignalOffloader signalOffloader,
+                             final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
             // This operator is to make sure that we use the executor to subscribe to the Publisher that is returned
             // by this operator.
             //
@@ -118,7 +130,8 @@ final class PublishAndSubscribeOnPublishers {
             // This operator acts as a boundary that changes the Executor from original to the rest of the execution
             // chain. If there is already an Executor defined for original, it will be used to offload signals until
             // they hit this operator.
-            original.subscribe(signalOffloader.offloadSubscriber(subscriber));
+            original.subscribeWithContext(signalOffloader.offloadSubscriber(
+                    contextProvider.wrap(subscriber, contextMap)), contextMap, contextProvider);
         }
     }
 
@@ -129,7 +142,7 @@ final class PublishAndSubscribeOnPublishers {
      * Hence, we simply use {@link AbstractSynchronousPublisherOperator} which does not do any extra offloading, it just
      * overrides the {@link Executor} that will be used to do the offloading.
      */
-    private static class PublishOnOverride<T> extends AbstractSynchronousPublisherOperator<T, T> {
+    private static final class PublishOnOverride<T> extends AbstractSynchronousPublisherOperator<T, T> {
 
         PublishOnOverride(final Publisher<T> original, final Executor executor) {
             super(original, mergeAndOffloadPublish(original.getExecutor(), executor));
@@ -143,7 +156,7 @@ final class PublishAndSubscribeOnPublishers {
         }
     }
 
-    private static class SubscribeOn<T> extends AbstractNoHandleSubscribePublisher<T> {
+    private static final class SubscribeOn<T> extends AbstractNoHandleSubscribePublisher<T> {
         private final Publisher<T> original;
 
         SubscribeOn(final Executor executor, final Publisher<T> original) {
@@ -152,7 +165,8 @@ final class PublishAndSubscribeOnPublishers {
         }
 
         @Override
-        void handleSubscribe(final Subscriber<? super T> subscriber, final SignalOffloader signalOffloader) {
+        void handleSubscribe(final Subscriber<? super T> subscriber, final SignalOffloader signalOffloader,
+                             final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
             // This operator is to make sure that we use the executor to subscribe to the Publisher that is returned
             // by this operator.
             //
@@ -162,7 +176,7 @@ final class PublishAndSubscribeOnPublishers {
             // This operator acts as a boundary that changes the Executor from original to the rest of the execution
             // chain. If there is already an Executor defined for original, it will be used to offload signals until
             // they hit this operator.
-            original.subscribe(subscriber);
+            original.subscribeWithContext(subscriber, contextMap, contextProvider);
         }
     }
 
@@ -173,7 +187,7 @@ final class PublishAndSubscribeOnPublishers {
      * Hence, we simply use {@link AbstractSynchronousPublisherOperator} which does not do any extra offloading, it just
      * overrides the Executor that will be used to do the offloading.
      */
-    private static class SubscribeOnOverride<T> extends AbstractSynchronousPublisherOperator<T, T> {
+    private static final class SubscribeOnOverride<T> extends AbstractSynchronousPublisherOperator<T, T> {
 
         SubscribeOnOverride(final Publisher<T> original, final Executor executor) {
             super(original, mergeAndOffloadSubscribe(original.getExecutor(), executor));

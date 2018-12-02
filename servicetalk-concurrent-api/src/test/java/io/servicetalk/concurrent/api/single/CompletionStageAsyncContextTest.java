@@ -17,9 +17,9 @@ package io.servicetalk.concurrent.api.single;
 
 import io.servicetalk.concurrent.api.AsyncContext;
 import io.servicetalk.concurrent.api.AsyncContextMap.Key;
+import io.servicetalk.concurrent.api.DefaultThreadFactory;
 import io.servicetalk.concurrent.api.ExecutorRule;
 import io.servicetalk.concurrent.api.TestSingle;
-import io.servicetalk.concurrent.internal.DefaultThreadFactory;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 
 import org.junit.AfterClass;
@@ -163,9 +163,16 @@ public class CompletionStageAsyncContextTest {
         int expectedK1Value = ThreadLocalRandom.current().nextInt();
         AtomicReference<Integer> actualK1Value = new AtomicReference<>();
         CountDownLatch latch = new CountDownLatch(1);
+
+        // source.map(v -> {
+        //     AsyncContext.put(K1, 100);
+        //     return v;
+        // });
+        AsyncContext.put(K1, expectedK1Value);
+
         CompletableFuture<String> future = source.toCompletionStage().toCompletableFuture();
 
-        AsyncContext.put(K1, expectedK1Value);
+        // AsyncContext.put(K1, expectedK1Value);
         future.thenAccept(v -> {
             actualK1Value.compareAndSet(null, AsyncContext.get(K1));
             latch.countDown();

@@ -32,10 +32,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Queue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
@@ -60,7 +58,6 @@ import static java.util.Collections.emptyList;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
@@ -111,104 +108,6 @@ public class DefaultAsyncContextProviderTest {
     }
 
     @Test
-    public void testOneListenerNotified() {
-        testListenersNotified(1);
-    }
-
-    @Test
-    public void testTwoListenersNotified() {
-        testListenersNotified(2);
-    }
-
-    @Test
-    public void testThreeListenersNotified() {
-        testListenersNotified(3);
-    }
-
-    @Test
-    public void testFourListenersNotified() {
-        testListenersNotified(4);
-    }
-
-    @Test
-    public void testFiveListenersNotified() {
-        testListenersNotified(5);
-    }
-
-    private void testListenersNotified(int numListeners) {
-        TestListener[] listeners = new TestListener[numListeners];
-        for (int i = 0; i < listeners.length; ++i) {
-            listeners[i] = new TestListener();
-            assertTrue(AsyncContext.addListener(listeners[i]));
-        }
-
-        // Test everyone is notified of a change, with empty context.
-        AsyncContext.put(K1, "v1");
-
-        for (TestListener listener : listeners) {
-            TestListenerChaneEvent event = listener.events.poll();
-            assertNotNull(event);
-            assertTrue(event.oldContext.isEmpty());
-            assertEquals(1, event.newContext.size());
-            assertEquals("v1", event.newContext.get(K1));
-            assertTrue(listener.events.isEmpty());
-        }
-
-        // Test everyone is notified of a change, with non-empty context.
-        AsyncContext.put(K2, "v2");
-
-        for (TestListener listener : listeners) {
-            TestListenerChaneEvent event = listener.events.poll();
-            assertNotNull(event);
-            assertEquals(1, event.oldContext.size());
-            assertEquals("v1", event.oldContext.get(K1));
-            assertEquals(2, event.newContext.size());
-            assertEquals("v1", event.newContext.get(K1));
-            assertEquals("v2", event.newContext.get(K2));
-            assertTrue(listener.events.isEmpty());
-        }
-
-        // Test everyone is notified of a change, clearing the context.
-        AsyncContext.clear();
-
-        for (TestListener listener : listeners) {
-            TestListenerChaneEvent event = listener.events.poll();
-            assertNotNull(event);
-            assertEquals(2, event.oldContext.size());
-            assertEquals("v1", event.oldContext.get(K1));
-            assertEquals("v2", event.oldContext.get(K2));
-            assertTrue(event.newContext.isEmpty());
-            assertTrue(listener.events.isEmpty());
-        }
-
-        // Test no one is notified if nothing changes.
-        AsyncContext.clear();
-
-        // Remove all listeners.
-        for (final TestListener listener : listeners) {
-            assertTrue(AsyncContext.removeListener(listener));
-        }
-    }
-
-    private static final class TestListener implements AsyncContext.Listener {
-        final Queue<TestListenerChaneEvent> events = new ConcurrentLinkedQueue<>();
-        @Override
-        public void contextMapChanged(final AsyncContextMap oldContext, final AsyncContextMap newContext) {
-            events.add(new TestListenerChaneEvent(oldContext, newContext));
-        }
-    }
-
-    private static final class TestListenerChaneEvent {
-        final AsyncContextMap oldContext;
-        final AsyncContextMap newContext;
-
-        TestListenerChaneEvent(AsyncContextMap oldContext, AsyncContextMap newContext) {
-            this.oldContext = oldContext;
-            this.newContext = newContext;
-        }
-    }
-
-    @Test
     public void testContextInCompletableListener() throws Exception {
         Completable completable = new Completable() {
             @Override
@@ -244,30 +143,34 @@ public class DefaultAsyncContextProviderTest {
         Completable completable = new Completable() {
             @Override
             protected void handleSubscribe(Subscriber completableSubscriber) {
-                f1.complete(AsyncContext.current());
-                AsyncContext.put(K2, "v2"); // this won't affect the operators below
+                AsyncContext.put(K1, "v1.2");
+                AsyncContext.put(K2, "v2.1");
+                f1.complete(AsyncContext.current().copy());
                 completeOnExecutor(completableSubscriber);
             }
         }.merge(new Completable() {
             @Override
             protected void handleSubscribe(Subscriber completableSubscriber) {
-                f2.complete(AsyncContext.current());
-                AsyncContext.put(K2, "v2"); // this won't affect the operators below
+                AsyncContext.put(K2, "v2.2");
+                // We are in another async source, this shouldn't be visible to the outer Subscriber chain.
+                f2.complete(AsyncContext.current().copy());
                 completeOnExecutor(completableSubscriber);
             }
-        }).doBeforeFinally(() -> f3.complete(AsyncContext.current()));
+        }).doBeforeFinally(() -> f3.complete(AsyncContext.current().copy()));
 
-        AsyncContext.put(K1, "v1");
+        AsyncContext.put(K1, "v1.1");
         awaitIndefinitely(completable);
 
-        assertEquals("v1", f1.get().get(K1));
-        assertEquals("v1", f2.get().get(K1));
-        assertEquals("v1", f3.get().get(K1));
-        assertEquals("v1", AsyncContext.get(K1));
+        assertEquals("v1.2", f1.get().get(K1));
+        // The merge operator eagerly subscribes to all async sources, so it will not see the modifications from the
+        // original source.
+        assertEquals("v1.1", f2.get().get(K1));
+        assertEquals("v1.2", f3.get().get(K1));
+        assertEquals("v1.1", AsyncContext.get(K1));
 
-        assertNull(f1.get().get(K2));
-        assertNull(f2.get().get(K2));
-        assertNull(f3.get().get(K2));
+        assertEquals("v2.1", f1.get().get(K2));
+        assertEquals("v2.2", f2.get().get(K2));
+        assertEquals("v2.1", f3.get().get(K2));
         assertNull(AsyncContext.get(K2));
     }
 
@@ -309,41 +212,43 @@ public class DefaultAsyncContextProviderTest {
         Single<String> single = new Single<String>() {
             @Override
             protected void handleSubscribe(Subscriber<? super String> singleSubscriber) {
-                f1.complete(AsyncContext.current());
-                AsyncContext.put(K2, "v2"); // this won't affect the operators below
+                AsyncContext.put(K1, "v1.2");
+                AsyncContext.put(K2, "v2.1");
+                f1.complete(AsyncContext.current().copy());
                 completeOnExecutor(singleSubscriber, "a");
             }
         }.map(v -> {
-            f2.complete(AsyncContext.current());
-            AsyncContext.put(K2, "v2"); // this won't affect the operators below
+            AsyncContext.put(K2, "v2.2");
+            f2.complete(AsyncContext.current().copy());
             return v;
         }).flatMap(v -> {
-            f3.complete(AsyncContext.current());
-            AsyncContext.put(K2, "v2"); // this will apply to the Single(b) created here
+            AsyncContext.put(K2, "v2.3"); // this will apply to the Single(b) created here
+            f3.complete(AsyncContext.current().copy());
             return new Single<String>() {
                 @Override
                 protected void handleSubscribe(Subscriber<? super String> singleSubscriber) {
-                    f4.complete(AsyncContext.current());
+                    // We are in another async source, this shouldn't be visible to the outer Subscriber chain.
+                    f4.complete(AsyncContext.current().copy());
                     completeOnExecutor(singleSubscriber, "b");
                 }
             };
-        }).doBeforeFinally(() -> f5.complete(AsyncContext.current()));
+        }).doBeforeFinally(() -> f5.complete(AsyncContext.current().copy()));
 
-        AsyncContext.put(K1, "v1");
+        AsyncContext.put(K1, "v1.1");
         awaitIndefinitely(single);
 
-        assertEquals("v1", f1.get().get(K1));
-        assertEquals("v1", f2.get().get(K1));
-        assertEquals("v1", f3.get().get(K1));
-        assertEquals("v1", f4.get().get(K1));
-        assertEquals("v1", f5.get().get(K1));
-        assertEquals("v1", AsyncContext.get(K1));
+        assertEquals("v1.2", f1.get().get(K1));
+        assertEquals("v1.2", f2.get().get(K1));
+        assertEquals("v1.2", f3.get().get(K1));
+        assertEquals("v1.2", f4.get().get(K1));
+        assertEquals("v1.2", f5.get().get(K1));
+        assertEquals("v1.1", AsyncContext.get(K1));
 
-        assertNull(f1.get().get(K2));
-        assertNull(f2.get().get(K2));
-        assertNull(f3.get().get(K2));
-        assertEquals("v2", f4.get().get(K2));
-        assertNull(f5.get().get(K2));
+        assertEquals("v2.1", f1.get().get(K2));
+        assertEquals("v2.2", f2.get().get(K2));
+        assertEquals("v2.3", f3.get().get(K2));
+        assertEquals("v2.3", f4.get().get(K2));
+        assertEquals("v2.3", f5.get().get(K2));
         assertNull(AsyncContext.get(K2));
     }
 
@@ -356,29 +261,33 @@ public class DefaultAsyncContextProviderTest {
         Completable completable = new Single<String>() {
             @Override
             protected void handleSubscribe(Subscriber<? super String> singleSubscriber) {
-                f1.complete(AsyncContext.current());
-                AsyncContext.put(K2, "v2"); // this won't affect the operators below
+                AsyncContext.put(K1, "v1.2");
+                AsyncContext.put(K2, "v2.1");
+                f1.complete(AsyncContext.current().copy());
                 completeOnExecutor(singleSubscriber, "a");
             }
         }.ignoreResult().merge(new Completable() {
             @Override
             protected void handleSubscribe(Subscriber completableSubscriber) {
-                f2.complete(AsyncContext.current());
-                AsyncContext.put(K2, "v2"); // this won't affect the operators below
+                // We are in another async source, this shouldn't be visible to the outer Subscriber chain.
+                AsyncContext.put(K2, "v2.2");
+                f2.complete(AsyncContext.current().copy());
                 completeOnExecutor(completableSubscriber);
             }
-        }).doBeforeFinally(() -> f3.complete(AsyncContext.current()));
+        }).doBeforeFinally(() -> f3.complete(AsyncContext.current().copy()));
 
-        AsyncContext.put(K1, "v1");
+        AsyncContext.put(K1, "v1.1");
         awaitIndefinitely(completable);
 
-        assertEquals("v1", f1.get().get(K1));
-        assertEquals("v1", f2.get().get(K1));
-        assertEquals("v1", f3.get().get(K1));
+        assertEquals("v1.2", f1.get().get(K1));
+        // The merge operator eagerly subscribes to all async sources, so it will not see the modifications from the
+        // original source.
+        assertEquals("v1.1", f2.get().get(K1));
+        assertEquals("v1.2", f3.get().get(K1));
 
-        assertNull(f1.get().get(K2));
-        assertNull(f2.get().get(K2));
-        assertNull(f3.get().get(K2));
+        assertEquals("v2.1", f1.get().get(K2));
+        assertEquals("v2.2", f2.get().get(K2));
+        assertEquals("v2.1", f3.get().get(K2));
     }
 
     @Test
@@ -493,7 +402,7 @@ public class DefaultAsyncContextProviderTest {
                     Function<Void, Void> f = INSTANCE.wrap(v -> {
                         collector.complete(AsyncContext.current());
                         return v;
-                    });
+                    }, AsyncContext.current());
                     executor.execute(() -> f.apply(null));
                 })
                 .verifyContext(verifier);
@@ -510,7 +419,7 @@ public class DefaultAsyncContextProviderTest {
                     BiFunction<Void, Void, Void> bf = INSTANCE.wrap((v1, v2) -> {
                         collector.complete(AsyncContext.current());
                         return v1;
-                    });
+                    }, AsyncContext.current());
                     executor.execute(() -> bf.apply(null, null));
                 })
                 .verifyContext(verifier);
@@ -519,7 +428,7 @@ public class DefaultAsyncContextProviderTest {
                 .runAndWait(collector -> {
                     BiConsumer<Void, Void> bc = INSTANCE.wrap((v1, v2) -> {
                         collector.complete(AsyncContext.current());
-                    });
+                    }, AsyncContext.current());
                     executor.execute(() -> bc.accept(null, null));
                 })
                 .verifyContext(verifier);

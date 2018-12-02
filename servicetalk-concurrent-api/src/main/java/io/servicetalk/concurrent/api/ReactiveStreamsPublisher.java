@@ -30,9 +30,10 @@ final class ReactiveStreamsPublisher<T> extends AbstractNoHandleSubscribePublish
     }
 
     @Override
-    void handleSubscribe(Subscriber<? super T> subscriber, SignalOffloader signalOffloader) {
+    void handleSubscribe(Subscriber<? super T> subscriber, SignalOffloader signalOffloader,
+                         AsyncContextMap contextMap, AsyncContextProvider contextProvider) {
         // Wrap the passed Subscriber with the SignalOffloader to make sure they are not invoked in the thread that
         // asynchronously processes signals and hence may not be safe to execute user code.
-        publisher.subscribe(signalOffloader.offloadSubscriber(subscriber));
+        publisher.subscribe(signalOffloader.offloadSubscriber(contextProvider.wrap(subscriber, contextMap)));
     }
 }

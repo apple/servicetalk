@@ -140,22 +140,15 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress> implements Http
     private static <ResolvedAddress> Single<StreamingHttpConnection> buildStreaming(
             final ExecutionContext executionContext, ResolvedAddress resolvedAddress, ReadOnlyHttpClientConfig roConfig,
             final Function<NettyConnection<Object, Object>, StreamingHttpConnection> mapper) {
-        return new Single<StreamingHttpConnection>() {
-            @Override
-            protected void handleSubscribe(
-                    Subscriber<? super StreamingHttpConnection> subscriber) {
+        return Single.deferShareContext(() -> {
+            final CloseHandler closeHandler = forPipelinedRequestResponse(true);
+            final ChannelInitializer initializer = new TcpClientChannelInitializer(roConfig.getTcpClientConfig())
+                    .andThen(new HttpClientChannelInitializer(roConfig, closeHandler));
 
-                final CloseHandler closeHandler = forPipelinedRequestResponse(true);
-                final ChannelInitializer initializer = new TcpClientChannelInitializer(roConfig.getTcpClientConfig())
-                        .andThen(new HttpClientChannelInitializer(roConfig, closeHandler));
-
-                final TcpConnector<Object, Object> connector = new TcpConnector<>(roConfig.getTcpClientConfig(),
-                        initializer, DefaultHttpConnectionBuilder::lastChunkPredicate, null, closeHandler);
-
-                connector.connect(executionContext, resolvedAddress, false)
-                        .map(mapper).subscribe(subscriber);
-            }
-        };
+            final TcpConnector<Object, Object> connector = new TcpConnector<>(roConfig.getTcpClientConfig(),
+                    initializer, DefaultHttpConnectionBuilder::lastChunkPredicate, null, closeHandler);
+            return connector.connect(executionContext, resolvedAddress, false).map(mapper);
+        });
     }
 
     /**

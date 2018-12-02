@@ -43,7 +43,8 @@ abstract class AbstractSynchronousSingleOperator<T, R> extends AbstractNoHandleS
     }
 
     @Override
-    final void handleSubscribe(Subscriber<? super R> subscriber, SignalOffloader signalOffloader) {
-        original.subscribe(apply(subscriber), signalOffloader);
+    final void handleSubscribe(Subscriber<? super R> subscriber, SignalOffloader signalOffloader,
+                               AsyncContextMap contextMap, AsyncContextProvider contextProvider) {
+        original.subscribeWithOffloaderAndContext(apply(subscriber), signalOffloader, contextMap, contextProvider);
     }
 }

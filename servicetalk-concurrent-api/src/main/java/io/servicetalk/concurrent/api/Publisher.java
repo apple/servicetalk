@@ -45,7 +45,6 @@ import java.util.function.LongConsumer;
 import java.util.function.LongSupplier;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
-
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.EmptyPublisher.emptyPublisher;
@@ -57,7 +56,6 @@ import static io.servicetalk.concurrent.api.PublisherDoOnUtils.doOnErrorSupplier
 import static io.servicetalk.concurrent.api.PublisherDoOnUtils.doOnNextSupplier;
 import static io.servicetalk.concurrent.api.PublisherDoOnUtils.doOnRequestSupplier;
 import static io.servicetalk.concurrent.api.PublisherDoOnUtils.doOnSubscribeSupplier;
-import static io.servicetalk.concurrent.internal.ConcurrentPlugins.getPublisherPlugin;
 import static io.servicetalk.concurrent.internal.EmptySubscription.EMPTY_SUBSCRIPTION;
 import static io.servicetalk.concurrent.internal.SignalOffloaders.newOffloaderFor;
 import static java.util.Objects.requireNonNull;
@@ -2165,21 +2163,10 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
 
     @Override
     public final void subscribe(Subscriber<? super T> subscriber) {
-        requireNonNull(subscriber);
-        final SignalOffloader signalOffloader;
-        final Subscriber<? super T> offloadedSubscriber;
-        try {
-            // This is a user-driven subscribe i.e. there is no SignalOffloader override, so create a new SignalOffloader to
-            // use.
-            signalOffloader = newOffloaderFor(executor);
-            // Since this is a user-driven subscribe (end of the execution chain), offload subscription methods
-            offloadedSubscriber = signalOffloader.offloadSubscription(subscriber);
-        } catch (Throwable t) {
-            subscriber.onSubscribe(EMPTY_SUBSCRIPTION);
-            subscriber.onError(t);
-            return;
-        }
-        subscribe(offloadedSubscriber, signalOffloader);
+        // Each Subscriber chain should have an isolated AsyncContext due to a new asynchronous scope starting. This is
+        // why we copy the AsyncContext upon external user facing subscribe operations.
+        AsyncContextProvider provider = AsyncContext.provider();
+        subscribeWithContext(subscriber, provider.contextMap().copy(), provider);
     }
 
     /**
@@ -2353,7 +2340,27 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
      * @see <a href="http://reactivex.io/documentation/operators/defer.html">ReactiveX defer operator.</a>
      */
     public static <T> Publisher<T> defer(Supplier<Publisher<T>> publisherSupplier) {
-        return new PublisherDefer<>(publisherSupplier);
+        return defer(false, publisherSupplier);
+    }
+
+    /**
+     * Defers creation of a {@link Publisher} till it is subscribed.
+     *
+     * @param inheritThreading If {@code true} the {@link Publisher}s returned from {@code singleSupplier} will share
+     * the same threading characteristics as the {@link Publisher} return from this method. A typical use case for this
+     * is if the {@link Publisher}s returned from {@code singleSupplier} only modify existing behavior with additional
+     * state, but not if the {@link Publisher}s may come from an unrelated independent source.
+     * @param publisherSupplier {@link Supplier} to create a new {@link Publisher} for every call to
+     * {@link #subscribe(Subscriber)} to the returned {@link Publisher}.
+     * @param <T> Type of items emitted by the returned {@link Publisher}.
+     * @return A new {@link Publisher} that creates a new {@link Publisher} using {@code publisherFactory} for every
+     * call to {@link #subscribe(Subscriber)} and forwards all items
+     * and terminal events from the newly created {@link Publisher} to its {@link Subscriber}.
+     *
+     * @see <a href="http://reactivex.io/documentation/operators/defer.html">ReactiveX defer operator.</a>
+     */
+    public static <T> Publisher<T> defer(boolean inheritThreading, Supplier<Publisher<T>> publisherSupplier) {
+        return new PublisherDefer<>(publisherSupplier, inheritThreading);
     }
 
     /**
@@ -2380,22 +2387,47 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
     //
 
     /**
-     * A special subscribe mode that uses the passed {@link SignalOffloader} instead of creating a new
-     * {@link SignalOffloader} like {@link #subscribe(Subscriber)}. This will call
-     * {@link #handleSubscribe(Subscriber, SignalOffloader)} to handle this subscribe instead of
-     * {@link #handleSubscribe(Subscriber)}.
-     * <p>
-     * This method is used by operator implementations to inherit a chosen {@link SignalOffloader} per
-     * {@link Subscriber} where possible. This method does not wrap the passed {@link Subscriber} or
-     * {@link Subscription} to offload processing to {@link SignalOffloader}. That is done by
-     * {@link #handleSubscribe(Subscriber, SignalOffloader)} and hence can be overridden by operators that do not
-     * require this wrapping.
-     *
-     * @param subscriber {@link Subscriber} to this {@link Publisher}.
-     * @param signalOffloader {@link SignalOffloader} to use for this {@link Subscriber}.
+     * Replicating a call to {@link #subscribe(Subscriber)} but with a materialized {@link AsyncContextMap}.
+     * @param subscriber the subscriber.
+     * @param contextMap the {@link AsyncContextMap} to use for this {@link Subscriber}.
+     * @param contextProvider the {@link AsyncContextProvider} used to wrap any objects to preserve
+     * {@link AsyncContextMap}.
      */
-    final void subscribe(Subscriber<? super T> subscriber, SignalOffloader signalOffloader) {
-        getPublisherPlugin().handleSubscribe(requireNonNull(subscriber), signalOffloader, this::handleSubscribe);
+    final void subscribeWithContext(Subscriber<? super T> subscriber, AsyncContextMap contextMap,
+                                    AsyncContextProvider contextProvider) {
+        requireNonNull(subscriber);
+        final SignalOffloader signalOffloader;
+        final Subscriber<? super T> offloadedSubscriber;
+        try {
+            // This is a user-driven subscribe i.e. there is no SignalOffloader override, so create a new
+            // SignalOffloader to use.
+            signalOffloader = newOffloaderFor(executor);
+            // Since this is a user-driven subscribe (end of the execution chain), offload subscription methods
+            // We also want to make sure the AsyncContext is saved/restored for all interactions with the Subscription.
+            offloadedSubscriber = signalOffloader.offloadSubscription(
+                    contextProvider.wrapSubscription(subscriber, contextMap));
+        } catch (Throwable t) {
+            subscriber.onSubscribe(EMPTY_SUBSCRIPTION);
+            subscriber.onError(t);
+            return;
+        }
+        subscribeWithOffloaderAndContext(offloadedSubscriber, signalOffloader, contextMap, contextProvider);
+    }
+
+    /**
+     * Replicating a call to {@link #subscribe(Subscriber)} but with a materialized {@link SignalOffloader} and
+     * {@link AsyncContextMap}.
+     * @param subscriber the subscriber.
+     * @param signalOffloader {@link SignalOffloader} to use for this {@link Subscriber}.
+     * @param contextMap the {@link AsyncContextMap} to use for this {@link Subscriber}.
+     * @param contextProvider the {@link AsyncContextProvider} used to wrap any objects to preserve
+     * {@link AsyncContextMap}.
+     */
+    final void subscribeWithOffloaderAndContext(Subscriber<? super T> subscriber, SignalOffloader signalOffloader,
+                                                AsyncContextMap contextMap, AsyncContextProvider contextProvider) {
+        // this method doesn't currently do anything other than providing a way to differentiate between internal
+        // subscribe calls and handleSubscribe propagation.
+        handleSubscribe(subscriber, signalOffloader, contextMap, contextProvider);
     }
 
     /**
@@ -2409,10 +2441,15 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
      *
      * @param subscriber the subscriber.
      * @param signalOffloader {@link SignalOffloader} to use for this {@link Subscriber}.
+     * @param contextMap the {@link AsyncContextMap} to use for this {@link Subscriber}.
+     * @param contextProvider the {@link AsyncContextProvider} used to wrap any objects to preserve
+     * {@link AsyncContextMap}.
      */
-    void handleSubscribe(Subscriber<? super T> subscriber, SignalOffloader signalOffloader) {
-        Subscriber<? super T> offloaded = signalOffloader.offloadSubscriber(subscriber);
-        signalOffloader.offloadSubscribe(offloaded, this::safeHandleSubscribe);
+    void handleSubscribe(Subscriber<? super T> subscriber, SignalOffloader signalOffloader, AsyncContextMap contextMap,
+                         AsyncContextProvider contextProvider) {
+        Subscriber<? super T> offloaded = signalOffloader.offloadSubscriber(
+                contextProvider.wrap(subscriber, contextMap));
+        signalOffloader.offloadSubscribe(offloaded, contextProvider.wrap(this::safeHandleSubscribe, contextMap));
     }
 
     private void safeHandleSubscribe(Subscriber<? super T> subscriber) {

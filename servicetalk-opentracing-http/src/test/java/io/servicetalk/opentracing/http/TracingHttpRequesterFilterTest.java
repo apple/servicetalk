@@ -22,7 +22,6 @@ import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.HttpSerializationProvider;
 import io.servicetalk.http.netty.HttpServers;
-import io.servicetalk.opentracing.asynccontext.AsyncContextInMemoryScopeManager;
 import io.servicetalk.opentracing.http.TestUtils.CountingInMemorySpanEventListener;
 import io.servicetalk.opentracing.inmemory.DefaultInMemoryTracer;
 import io.servicetalk.opentracing.inmemory.api.InMemoryScope;
@@ -54,6 +53,7 @@ import static io.servicetalk.http.api.HttpRequestMethods.GET;
 import static io.servicetalk.http.api.HttpResponseStatuses.OK;
 import static io.servicetalk.http.api.HttpSerializationProviders.jsonSerializer;
 import static io.servicetalk.http.netty.HttpClients.forSingleAddress;
+import static io.servicetalk.opentracing.asynccontext.AsyncContextInMemoryScopeManager.SCOPE_MANAGER;
 import static io.servicetalk.opentracing.http.TestUtils.isHexId;
 import static io.servicetalk.opentracing.internal.utils.ZipkinHeaderNames.PARENT_SPAN_ID;
 import static io.servicetalk.opentracing.internal.utils.ZipkinHeaderNames.SAMPLED;
@@ -93,8 +93,8 @@ public class TracingHttpRequesterFilterTest {
     public void testInjectWithNoParent() throws Exception {
         final String requestUrl = "/";
         CountingInMemorySpanEventListener spanListener = new CountingInMemorySpanEventListener();
-        DefaultInMemoryTracer tracer = new DefaultInMemoryTracer.Builder(
-                new AsyncContextInMemoryScopeManager()).addListener(spanListener).build();
+        DefaultInMemoryTracer tracer = new DefaultInMemoryTracer.Builder(SCOPE_MANAGER)
+                .addListener(spanListener).build();
         try (ServerContext context = buildServer()) {
             try (HttpClient client = forSingleAddress(of((InetSocketAddress) context.listenAddress()))
                     .appendConnectionFilter(new TracingHttpRequesterFilter(tracer, "testClient")).build()) {
@@ -125,8 +125,8 @@ public class TracingHttpRequesterFilterTest {
     public void testInjectWithParent() throws Exception {
         final String requestUrl = "/foo";
         CountingInMemorySpanEventListener spanListener = new CountingInMemorySpanEventListener();
-        DefaultInMemoryTracer tracer = new DefaultInMemoryTracer.Builder(
-                new AsyncContextInMemoryScopeManager()).addListener(spanListener).build();
+        DefaultInMemoryTracer tracer = new DefaultInMemoryTracer.Builder(SCOPE_MANAGER)
+                .addListener(spanListener).build();
         try (ServerContext context = buildServer()) {
             try (HttpClient client = forSingleAddress(of((InetSocketAddress) context.listenAddress()))
                     .appendConnectionFilter(new TracingHttpRequesterFilter(tracer, "testClient")).build()) {

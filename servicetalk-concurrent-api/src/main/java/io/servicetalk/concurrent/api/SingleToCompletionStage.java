@@ -34,10 +34,12 @@ final class SingleToCompletionStage<T> extends ExecutorCompletionStage<T>
         this.cancellable = cancellable;
     }
 
-    static <X> SingleToCompletionStage<X> createAndSubscribe(io.servicetalk.concurrent.Single<X> original,
-                                                             io.servicetalk.concurrent.Executor executor) {
+    static <X> SingleToCompletionStage<X> createAndSubscribe(Single<X> original,
+                                                             io.servicetalk.concurrent.Executor executor,
+                                                             AsyncContextProvider provider,
+                                                             AsyncContextMap contextMap) {
         SingleToCompletionStage<X> stage = new SingleToCompletionStage<>(executor);
-        original.subscribe(stage);
+        original.subscribeWithContext(stage, contextMap, provider);
         return stage;
     }
 

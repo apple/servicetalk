@@ -46,14 +46,13 @@ import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.SslConfig;
 
-import org.reactivestreams.Subscriber;
-
 import java.net.SocketOption;
 import java.time.Duration;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Publisher.error;
+import static io.servicetalk.concurrent.api.Single.deferShareContext;
 import static io.servicetalk.redis.api.PartitionedRedisClientFilterFactory.identity;
 import static java.util.Objects.requireNonNull;
 
@@ -253,37 +252,21 @@ final class DefaultPartitionedRedisClientBuilder<U, R> implements PartitionedRed
         @Override
         public Publisher<RedisData> request(final RedisExecutionStrategy strategy,
                                             final PartitionAttributes partitionSelector, final RedisRequest request) {
-            return new Publisher<RedisData>() {
-                @Override
-                protected void handleSubscribe(final Subscriber<? super RedisData> subscriber) {
-                    group.get(partitionSelector).request(strategy, request).subscribe(subscriber);
-                }
-            };
+            return Publisher.defer(true, () -> group.get(partitionSelector).request(strategy, request));
         }
 
         @Override
         public <Resp> Single<Resp> request(final RedisExecutionStrategy strategy,
                                            final PartitionAttributes partitionSelector,
                                            final RedisRequest request, final Class<Resp> responseType) {
-            return new Single<Resp>() {
-                @Override
-                protected void handleSubscribe(final Subscriber<? super Resp> subscriber) {
-                    group.get(partitionSelector).request(strategy, request, responseType).subscribe(subscriber);
-                }
-            };
+            return deferShareContext(() -> group.get(partitionSelector).request(strategy, request, responseType));
         }
 
         @Override
         public Single<? extends RedisClient.ReservedRedisConnection> reserveConnection(
                 final RedisExecutionStrategy strategy, final PartitionAttributes partitionSelector,
                 final Command command) {
-            return new Single<RedisClient.ReservedRedisConnection>() {
-                @Override
-                protected void handleSubscribe(
-                        final Subscriber<? super RedisClient.ReservedRedisConnection> subscriber) {
-                    group.get(partitionSelector).reserveConnection(strategy, command).subscribe(subscriber);
-                }
-            };
+            return deferShareContext(() -> group.get(partitionSelector).reserveConnection(strategy, command));
         }
 
         @Override

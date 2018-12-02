@@ -15,9 +15,8 @@
  */
 package io.servicetalk.concurrent.api;
 
-import org.reactivestreams.Subscription;
+import org.reactivestreams.Subscriber;
 
-import java.util.concurrent.Callable;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
@@ -28,39 +27,33 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 final class DefaultAsyncContextProvider implements AsyncContextProvider {
-    public static final AsyncContextProvider INSTANCE = new DefaultAsyncContextProvider();
+    static final AsyncContextProvider INSTANCE = new DefaultAsyncContextProvider();
 
-    private static final ThreadLocal<AsyncContextMap> contextLocal =
-            ThreadLocal.withInitial(() -> CopyOnWriteAsyncContextMap.EMPTY_CONTEXT_MAP);
-    private static final AsyncContextListenerSet listeners = new CopyOnWriteAsyncContextListenerSet();
+    private static final AsyncContextMapThreadLocal contextLocal = new AsyncContextMapThreadLocal();
 
     private DefaultAsyncContextProvider() {
         // singleton
     }
 
     @Override
-    public boolean addListener(AsyncContext.Listener listener) {
-        return listeners.add(listener);
-    }
-
-    @Override
-    public boolean removeListener(AsyncContext.Listener listener) {
-        return listeners.remove(listener);
-    }
-
-    @Override
-    public void clearListeners() {
-        listeners.clear();
-    }
-
-    @Override
-    public AsyncContextMap getContextMap() {
+    public AsyncContextMap contextMap() {
         return contextLocal.get();
     }
 
     @Override
-    public void setContextMap(AsyncContextMap newContextMap) {
-        listeners.setContextMapAndNotifyListeners(newContextMap, contextLocal);
+    public void contextMap(AsyncContextMap newContextMap) {
+        contextLocal.set(newContextMap);
+    }
+
+    @Override
+    public AsyncContextMap newContextMap() {
+        return AsyncContextMapThreadLocal.newContextMap();
+    }
+
+    @Override
+    public Completable.Subscriber wrapCancellable(final Completable.Subscriber subscriber,
+                                                  final AsyncContextMap current) {
+        return new ContextPreservingCompletableCancellable(subscriber, current);
     }
 
     @Override
@@ -69,18 +62,23 @@ final class DefaultAsyncContextProvider implements AsyncContextProvider {
     }
 
     @Override
+    public <T> io.servicetalk.concurrent.Single.Subscriber<T> wrapCancellable(final Single.Subscriber<T> subscriber,
+                                                                              final AsyncContextMap current) {
+        return new ContextPreservingSingleCancellable<>(subscriber, current);
+    }
+
+    @Override
     public <T> Single.Subscriber<T> wrap(Single.Subscriber<T> subscriber, AsyncContextMap current) {
         return new ContextPreservingSingleSubscriber<>(subscriber, current);
     }
 
     @Override
-    public Subscription wrap(Subscription subscription, AsyncContextMap current) {
-        return new ContextPreservingSubscription(subscription, current);
+    public <T> Subscriber<T> wrapSubscription(final Subscriber<T> subscriber, final AsyncContextMap current) {
+        return new ContextPreservingPublisherSubscription<>(subscriber, current);
     }
 
     @Override
-    public <T> org.reactivestreams.Subscriber<T> wrap(org.reactivestreams.Subscriber<T> subscriber,
-                                                      AsyncContextMap current) {
+    public <T> Subscriber<T> wrap(Subscriber<T> subscriber, AsyncContextMap current) {
         return new ContextPreservingSubscriber<>(subscriber, current);
     }
 
@@ -120,13 +118,8 @@ final class DefaultAsyncContextProvider implements AsyncContextProvider {
     }
 
     @Override
-    public <T> CompletionStage<T> wrap(final CompletionStage<T> stage) {
-        return ContextPreservingCompletionStage.of(stage);
-    }
-
-    @Override
-    public <T> CompletionStage<T> unwrap(final CompletionStage<T> stage) {
-        return ContextPreservingCompletionStage.unwrap(stage);
+    public <T> CompletionStage<T> wrap(final CompletionStage<T> stage, AsyncContextMap current) {
+        return new ContextPreservingCompletionStage<>(stage, current);
     }
 
     @Override
@@ -140,32 +133,27 @@ final class DefaultAsyncContextProvider implements AsyncContextProvider {
     }
 
     @Override
-    public Runnable wrap(Runnable runnable) {
-        return new ContextPreservingRunnable(runnable);
+    public Runnable wrap(final Runnable runnable, final AsyncContextMap contextMap) {
+        return new ContextPreservingRunnable(runnable, contextMap);
     }
 
     @Override
-    public <V> Callable<V> wrap(Callable<V> callable) {
-        return new ContextPreservingCallable<>(callable);
+    public <T> Consumer<T> wrap(final Consumer<T> consumer, final AsyncContextMap contextMap) {
+        return new ContextPreservingConsumer<>(consumer, contextMap);
     }
 
     @Override
-    public <T> Consumer<T> wrap(Consumer<T> consumer) {
-        return new ContextPreservingConsumer<>(consumer);
+    public <T, U> Function<T, U> wrap(Function<T, U> func, AsyncContextMap contextMap) {
+        return new ContextPreservingFunction<>(func, contextMap);
     }
 
     @Override
-    public <T, U> Function<T, U> wrap(Function<T, U> func) {
-        return new ContextPreservingFunction<>(func);
+    public <T, U> BiConsumer<T, U> wrap(BiConsumer<T, U> consumer, AsyncContextMap contextMap) {
+        return new ContextPreservingBiConsumer<>(consumer, contextMap);
     }
 
     @Override
-    public <T, U> BiConsumer<T, U> wrap(BiConsumer<T, U> consumer) {
-        return new ContextPreservingBiConsumer<>(consumer);
-    }
-
-    @Override
-    public <T, U, V> BiFunction<T, U, V> wrap(BiFunction<T, U, V> func) {
-        return new ContextPreservingBiFunction<>(func);
+    public <T, U, V> BiFunction<T, U, V> wrap(BiFunction<T, U, V> func, AsyncContextMap contextMap) {
+        return new ContextPreservingBiFunction<>(func, contextMap);
     }
 }

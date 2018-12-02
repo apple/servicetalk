@@ -23,19 +23,23 @@ final class ContextPreservingRunnable implements Runnable {
     private final Runnable delegate;
 
     ContextPreservingRunnable(Runnable delegate) {
-        this.saved = INSTANCE.getContextMap();
+        this(delegate, INSTANCE.contextMap());
+    }
+
+    ContextPreservingRunnable(Runnable delegate, AsyncContextMap current) {
+        this.saved = requireNonNull(current);
         this.delegate = delegate instanceof ContextPreservingRunnable ?
                 ((ContextPreservingRunnable) delegate).delegate : requireNonNull(delegate);
     }
 
     @Override
     public void run() {
-        AsyncContextMap prev = INSTANCE.getContextMap();
+        AsyncContextMap prev = INSTANCE.contextMap();
         try {
-            INSTANCE.setContextMap(saved);
+            INSTANCE.contextMap(saved);
             delegate.run();
         } finally {
-            INSTANCE.setContextMap(prev);
+            INSTANCE.contextMap(prev);
         }
     }
 }

@@ -226,12 +226,7 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends ListenableA
 
     @Override
     public <CC extends C> Single<CC> selectConnection(Function<C, CC> selector) {
-        return new Single<CC>() {
-            @Override
-            protected void handleSubscribe(Subscriber<? super CC> subscriber) {
-                selectConnection0(selector).subscribe(subscriber);
-            }
-        };
+        return Single.deferShareContext(() -> selectConnection0(selector));
     }
 
     @Override
