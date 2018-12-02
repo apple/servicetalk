@@ -15,17 +15,21 @@
  */
 package io.servicetalk.opentracing.http;
 
+import io.servicetalk.concurrent.Single;
 import io.servicetalk.http.api.HttpResponseMetaData;
 import io.servicetalk.http.api.StreamingHttpResponse;
 
 import io.opentracing.Scope;
 import org.reactivestreams.Subscription;
 
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
+import javax.annotation.Nullable;
 
 import static io.opentracing.tag.Tags.ERROR;
 import static io.opentracing.tag.Tags.HTTP_STATUS;
+import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.SERVER_ERROR_5XX;
 
 final class TracingUtils {
@@ -33,9 +37,11 @@ final class TracingUtils {
         // no instances
     }
 
-    static void tagErrorAndClose(Scope currentScope) {
-        ERROR.set(currentScope.span(), true);
-        currentScope.close();
+    static void tagErrorAndClose(Scope currentScope, AtomicBoolean scopeClosed) {
+        if (!scopeClosed.getAndSet(true)) {
+            ERROR.set(currentScope.span(), true);
+            currentScope.close();
+        }
     }
 
     static boolean isError(HttpResponseMetaData metaData) {
@@ -43,6 +49,7 @@ final class TracingUtils {
     }
 
     static UnaryOperator<StreamingHttpResponse> tracingMapper(Scope scope,
+                                                              AtomicBoolean scopeClosed,
                                                               Predicate<HttpResponseMetaData> errorChecker) {
         return resp -> resp.transformRawPayloadBody(pub ->
                 pub.doAfterSubscriber(() -> new org.reactivestreams.Subscriber<Object>() {
@@ -56,25 +63,38 @@ final class TracingUtils {
 
                     @Override
                     public void onError(final Throwable t) {
-                        tagErrorAndClose(scope);
+                        tagErrorAndClose(scope, scopeClosed);
                     }
 
                     @Override
                     public void onComplete() {
-                        HTTP_STATUS.set(scope.span(), resp.status().code());
-                        try {
-                            if (errorChecker.test(resp)) {
-                                ERROR.set(scope.span(), true);
+                        if (!scopeClosed.getAndSet(true)) {
+                            HTTP_STATUS.set(scope.span(), resp.status().code());
+                            try {
+                                if (errorChecker.test(resp)) {
+                                    ERROR.set(scope.span(), true);
+                                }
+                            } finally {
+                                scope.close();
                             }
-                        } finally {
-                            scope.close();
                         }
                     }
-                }).doOnCancel(() -> tagErrorAndClose(scope)));
+                }).doOnCancel(() -> tagErrorAndClose(scope, scopeClosed)));
     }
 
     static StreamingHttpResponse tracingMapper(StreamingHttpResponse resp,
-                                               Scope scope, Predicate<HttpResponseMetaData> errorChecker) {
-        return tracingMapper(scope, errorChecker).apply(resp);
+                                               Scope scope, AtomicBoolean scopeClosed,
+                                               Predicate<HttpResponseMetaData> errorChecker) {
+        return tracingMapper(scope, scopeClosed, errorChecker).apply(resp);
+    }
+
+    static void handlePrematureException(@Nullable Scope scope, @Nullable AtomicBoolean scopeClosed,
+                                         Single.Subscriber<?> subscriber, Throwable cause) {
+        if (scope != null) {
+            assert scopeClosed != null;
+            tagErrorAndClose(scope, scopeClosed);
+        }
+        subscriber.onSubscribe(IGNORE_CANCEL);
+        subscriber.onError(cause);
     }
 }

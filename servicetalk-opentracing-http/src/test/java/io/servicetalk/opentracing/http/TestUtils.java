@@ -15,11 +15,17 @@
  */
 package io.servicetalk.opentracing.http;
 
+import io.servicetalk.opentracing.inmemory.api.InMemorySpan;
+import io.servicetalk.opentracing.inmemory.api.InMemorySpanEventListener;
+
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
 
+import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicInteger;
+import javax.annotation.Nullable;
 
 final class TestUtils {
     private TestUtils() { } // no instantiation
@@ -50,5 +56,43 @@ final class TestUtils {
                 description.appendText("should contain exactly 16 hex digits [0-9a-fA-F]{16}");
             }
         };
+    }
+
+    static final class CountingInMemorySpanEventListener implements InMemorySpanEventListener {
+        private final AtomicInteger finishCount;
+        @Nullable
+        private volatile InMemorySpan lastFinishedSpan;
+
+        CountingInMemorySpanEventListener() {
+            finishCount = new AtomicInteger();
+        }
+
+        @Override
+        public void onSpanStarted(final InMemorySpan span) {
+        }
+
+        @Override
+        public void onEventLogged(final InMemorySpan span, final long epochMicros, final String eventName) {
+        }
+
+        @Override
+        public void onEventLogged(final InMemorySpan span, final long epochMicros,
+                                  final Map<String, ?> fields) {
+        }
+
+        @Override
+        public void onSpanFinished(final InMemorySpan span, final long durationMicros) {
+            lastFinishedSpan = span;
+            finishCount.incrementAndGet();
+        }
+
+        @Nullable
+        InMemorySpan lastFinishedSpan() {
+            return lastFinishedSpan;
+        }
+
+        int spanFinishedCount() {
+            return finishCount.get();
+        }
     }
 }

@@ -19,9 +19,9 @@ package io.servicetalk.concurrent.internal;
  * Static repository for plugins that provide extensibility to the concurrent package.
  */
 public final class ConcurrentPlugins {
-    private static final SinglePluginSet SINGLE_PLUGINS = new SinglePluginSet();
-    private static final CompletablePluginSet COMPLETABLE_PLUGINS = new CompletablePluginSet();
-    private static final PublisherPluginSet PUBLISHER_PLUGINS = new PublisherPluginSet();
+    private static final CopyOnWriteSinglePluginSet SINGLE_PLUGINS = new CopyOnWriteSinglePluginSet();
+    private static final CopyOnWriteCompletablePluginSet COMPLETABLE_PLUGINS = new CopyOnWriteCompletablePluginSet();
+    private static final CopyOnWritePublisherPluginSet PUBLISHER_PLUGINS = new CopyOnWritePublisherPluginSet();
 
     private ConcurrentPlugins() {
         // no instances

@@ -31,14 +31,19 @@ apply plugin: "servicetalk-library"
 dependencies {
   implementation "io.servicetalk:servicetalk-bom-internal:$project.version"
 
-  api "io.servicetalk:servicetalk-opentracing-core:$project.version"
+  api "io.opentracing:opentracing-api"
   api "io.servicetalk:servicetalk-http-api:$project.version"
 
   implementation "com.google.code.findbugs:jsr305"
   implementation "io.servicetalk:servicetalk-annotations:$project.version"
+  implementation "io.servicetalk:servicetalk-opentracing-inmemory:$project.version"
+  implementation "io.servicetalk:servicetalk-opentracing-inmemory-api:$project.version"
+  implementation "io.servicetalk:servicetalk-opentracing-internal-utils:$project.version"
   implementation "org.slf4j:slf4j-api"
 
-  testImplementation "io.servicetalk:servicetalk-opentracing-core-internal:$project.version"
+  testImplementation "io.servicetalk:servicetalk-opentracing-inmemory:$project.version"
+  testImplementation "io.servicetalk:servicetalk-opentracing-asynccontext:$project.version"
+  testImplementation "io.servicetalk:servicetalk-opentracing-internal-utils:$project.version"
   testImplementation "io.servicetalk:servicetalk-buffer-netty:$project.version"
   testImplementation "io.servicetalk:servicetalk-concurrent-api-testFixtures:$project.version"
   testImplementation "io.servicetalk:servicetalk-concurrent-internal-testFixtures:$project.version"
