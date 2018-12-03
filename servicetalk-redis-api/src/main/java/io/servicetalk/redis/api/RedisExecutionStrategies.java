@@ -49,7 +49,7 @@ public final class RedisExecutionStrategies {
      * @return Default {@link RedisExecutionStrategy}.
      */
     public static RedisExecutionStrategy defaultStrategy(Executor executor) {
-        return customStrategyBuilder().executor(executor).build();
+        return customStrategyBuilder().offloadAll().executor(executor).build();
     }
 
     /**

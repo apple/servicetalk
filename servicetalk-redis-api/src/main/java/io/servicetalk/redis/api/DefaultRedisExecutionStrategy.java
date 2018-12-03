@@ -78,7 +78,8 @@ final class DefaultRedisExecutionStrategy implements RedisExecutionStrategy {
         return executor == null ? fallback : executor;
     }
 
-    private boolean offloaded(byte flag) {
+    // visible for tests
+    boolean offloaded(byte flag) {
         return (offloads & flag) == flag;
     }
 }

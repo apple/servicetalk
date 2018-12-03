@@ -181,7 +181,8 @@ final class DefaultHttpExecutionStrategy implements HttpExecutionStrategy {
         return executor == null ? fallback : executor;
     }
 
-    private boolean offloaded(byte flag) {
+    // Visible for testing
+    boolean offloaded(byte flag) {
         return (offloads & flag) == flag;
     }
 

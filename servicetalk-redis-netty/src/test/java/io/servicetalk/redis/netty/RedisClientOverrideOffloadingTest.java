@@ -81,7 +81,7 @@ public class RedisClientOverrideOffloadingTest {
     public static Collection<Object[]> params() {
         List<Object[]> params = new ArrayList<>();
         params.add(newParam("Override no offload", th -> !isInClientEventLoop(th), noOffloadsStrategy(), null));
-        params.add(newParam("Default no offload", RedisTestEnvironment::isInClientEventLoop,
+        params.add(newParam("Override offload, default no offload", RedisTestEnvironment::isInClientEventLoop,
                 null, noOffloadsStrategy()));
         params.add(newParam("Both offloads", RedisTestEnvironment::isInClientEventLoop, null, null));
         return params;
