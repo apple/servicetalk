@@ -85,7 +85,6 @@ public class HttpOffloadingTest {
     public static final ExecutionContextRule SERVER_CTX = cached(new IoThreadFactory(IO_EXECUTOR_NAME_PREFIX));
 
     private StreamingHttpConnection httpConnection;
-    private Thread testThread;
     private Queue<Throwable> errors;
     private CountDownLatch terminated;
     private ConnectionContext connectionContext;
@@ -103,7 +102,6 @@ public class HttpOffloadingTest {
 
         final InetSocketAddress socketAddress = (InetSocketAddress) serverContext.listenAddress();
 
-        testThread = currentThread();
         errors = new ConcurrentLinkedQueue<>();
         terminated = new CountDownLatch(1);
         client = forSingleAddress(HostAndPort.of(LOOPBACK_ADDRESS.getHostName(), socketAddress.getPort()))
@@ -125,7 +123,7 @@ public class HttpOffloadingTest {
                 just(httpConnection.connectionContext().executionContext().bufferAllocator()
                         .fromAscii("Hello"))
                         .doBeforeRequest(n -> {
-                            if (inEventLoopOrTestThread().test(currentThread())) {
+                            if (inEventLoop().test(currentThread())) {
                                 errors.add(new AssertionError("Server response: request-n was not offloaded. Thread: "
                                         + currentThread().getName()));
                             }
@@ -135,7 +133,7 @@ public class HttpOffloadingTest {
         resp.subscribe(new Single.Subscriber<StreamingHttpResponse>() {
             @Override
             public void onSubscribe(final Cancellable cancellable) {
-                if (inEventLoopOrTestThread().test(currentThread())) {
+                if (inEventLoop().test(currentThread())) {
                     errors.add(new AssertionError("Client response single: onSubscribe not offloaded. Thread: "
                             + currentThread().getName()));
                 }
@@ -143,7 +141,7 @@ public class HttpOffloadingTest {
 
             @Override
             public void onSuccess(@Nullable final StreamingHttpResponse result) {
-                if (inEventLoopOrTestThread().test(currentThread())) {
+                if (inEventLoop().test(currentThread())) {
                     errors.add(new AssertionError("Client response single: onSuccess not offloaded. Thread: "
                             + currentThread().getName()));
                 }
@@ -156,13 +154,13 @@ public class HttpOffloadingTest {
                     return;
                 }
 
-                subscribeTo(inEventLoopOrTestThread(), errors,
+                subscribeTo(inEventLoop(), errors,
                         result.payloadBody().doAfterFinally(terminated::countDown), "Client response payload: ");
             }
 
             @Override
             public void onError(final Throwable t) {
-                if (inEventLoopOrTestThread().test(currentThread())) {
+                if (inEventLoop().test(currentThread())) {
                     errors.add(new AssertionError("Client response single: onError was not offloaded. Thread: "
                             + currentThread().getName()));
                 }
@@ -181,7 +179,7 @@ public class HttpOffloadingTest {
                 .subscribe(new Single.Subscriber<StreamingHttpClient.ReservedStreamingHttpConnection>() {
                     @Override
                     public void onSubscribe(final Cancellable cancellable) {
-                        if (inEventLoopOrTestThread().test(currentThread())) {
+                        if (inEventLoop().test(currentThread())) {
                             errors.add(new AssertionError("onSubscribe not offloaded. Thread: "
                                     + currentThread().getName()));
                         }
@@ -193,7 +191,7 @@ public class HttpOffloadingTest {
                             errors.add(new AssertionError("Reserved connection is null."));
                             return;
                         }
-                        if (inEventLoopOrTestThread().test(currentThread())) {
+                        if (inEventLoop().test(currentThread())) {
                             errors.add(new AssertionError("onSuccess not offloaded. Thread: "
                                     + currentThread().getName()));
                         }
@@ -201,7 +199,7 @@ public class HttpOffloadingTest {
 
                     @Override
                     public void onError(final Throwable t) {
-                        if (inEventLoopOrTestThread().test(currentThread())) {
+                        if (inEventLoop().test(currentThread())) {
                             errors.add(new AssertionError("onError was not offloaded. Thread: "
                                     + currentThread().getName()));
                         }
@@ -299,10 +297,6 @@ public class HttpOffloadingTest {
         return thread -> thread.getName().startsWith(IO_EXECUTOR_NAME_PREFIX);
     }
 
-    private Predicate<Thread> inEventLoopOrTestThread() {
-        return inEventLoop().or(thread -> thread == testThread);
-    }
-
     private static <T> void subscribeTo(Predicate<Thread> notExpectedThread, Collection<Throwable> errors,
                                         Publisher<T> source, String msgPrefix) {
         source.subscribe(new Subscriber<T>() {
@@ -355,11 +349,11 @@ public class HttpOffloadingTest {
         public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
                                                     final StreamingHttpRequest request,
                                                     final StreamingHttpResponseFactory factory) {
-            if (inEventLoopOrTestThread().test(currentThread())) {
+            if (inEventLoop().test(currentThread())) {
                 errors.add(new AssertionError("Request: " + request + " received on the eventloop."));
             }
             CountDownLatch latch = new CountDownLatch(1);
-            subscribeTo(inEventLoopOrTestThread(), errors,
+            subscribeTo(inEventLoop(), errors,
                     request.payloadBody().doAfterFinally(latch::countDown), "Server request: ");
             try {
                 latch.await();
@@ -369,7 +363,7 @@ public class HttpOffloadingTest {
             Publisher responsePayload =
                     just(ctx.executionContext().bufferAllocator().fromAscii("Hello"))
                             .doBeforeRequest(n -> {
-                                if (inEventLoopOrTestThread().test(currentThread())) {
+                                if (inEventLoop().test(currentThread())) {
                                     errors.add(
                                             new AssertionError("Server response: request-n was not offloaded. Thread: "
                                             + currentThread().getName()));

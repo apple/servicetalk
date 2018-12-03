@@ -65,7 +65,6 @@ public class RedisClientOffloadingTest {
     @Nullable
     private static RedisTestEnvironment env;
 
-    private Thread testThread;
     private Queue<Throwable> errors;
     private CountDownLatch terminated;
     private ConnectionContext connectionContext;
@@ -86,7 +85,6 @@ public class RedisClientOffloadingTest {
 
     @Before
     public void setUp() throws Exception {
-        testThread = currentThread();
         errors = new ConcurrentLinkedQueue<>();
         terminated = new CountDownLatch(1);
         connectionContext = awaitIndefinitelyNonNull(getEnv().client.reserveConnection(PING)).connectionContext();
@@ -97,13 +95,13 @@ public class RedisClientOffloadingTest {
         final RequestRedisData ping = new CompleteBulkString(
                 connectionContext.executionContext().bufferAllocator().fromUtf8("Hello"));
         final Publisher<RequestRedisData> reqContent = just(ping).doBeforeRequest(n -> {
-            if (inClientEventLoopOrTestThread().test(currentThread())) {
+            if (isInClientEventLoop(currentThread())) {
                 errors.add(new AssertionError("Request content: request-n not offloaded"));
             }
         });
         final RedisRequest request = newRequest(PING, reqContent);
         final Publisher<RedisData> response = getEnv().client.request(request);
-        subscribeTo(inClientEventLoopOrTestThread(), errors, response.doAfterFinally(terminated::countDown),
+        subscribeTo(RedisTestEnvironment::isInClientEventLoop, errors, response.doAfterFinally(terminated::countDown),
                 "Response content: ");
         terminated.await();
         assertThat("Unexpected errors.", errors, is(empty()));
@@ -115,7 +113,7 @@ public class RedisClientOffloadingTest {
                 .subscribe(new Single.Subscriber<ReservedRedisConnection>() {
                     @Override
                     public void onSubscribe(final Cancellable cancellable) {
-                        if (inClientEventLoopOrTestThread().test(currentThread())) {
+                        if (isInClientEventLoop(currentThread())) {
                             errors.add(new AssertionError("onSubscribe not offloaded. Thread: "
                                     + currentThread().getName()));
                         }
@@ -127,7 +125,7 @@ public class RedisClientOffloadingTest {
                             errors.add(new AssertionError("Reserved connection is null."));
                             return;
                         }
-                        if (inClientEventLoopOrTestThread().test(currentThread())) {
+                        if (isInClientEventLoop(currentThread())) {
                             errors.add(new AssertionError("onSuccess not offloaded. Thread: "
                                     + currentThread().getName()));
                         }
@@ -135,7 +133,7 @@ public class RedisClientOffloadingTest {
 
                     @Override
                     public void onError(final Throwable t) {
-                        if (inClientEventLoopOrTestThread().test(currentThread())) {
+                        if (isInClientEventLoop(currentThread())) {
                             errors.add(new AssertionError("onError was not offloaded. Thread: "
                                     + currentThread().getName()));
                         }
@@ -181,10 +179,6 @@ public class RedisClientOffloadingTest {
                 connectionContext.onClose().doAfterFinally(terminated::countDown));
         terminated.await();
         assertThat("Unexpected errors.", errors, is(empty()));
-    }
-
-    private Predicate<Thread> inClientEventLoopOrTestThread() {
-        return thread -> isInClientEventLoop(thread) || thread == testThread;
     }
 
     private void subscribeTo(Predicate<Thread> notExpectedThread, Collection<Throwable> errors, Completable source) {
