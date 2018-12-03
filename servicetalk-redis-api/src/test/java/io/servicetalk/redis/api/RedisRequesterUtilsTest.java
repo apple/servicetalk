@@ -21,9 +21,10 @@ import io.servicetalk.concurrent.api.MockedSingleListenerRule;
 import io.servicetalk.concurrent.api.PublisherRule;
 import io.servicetalk.redis.api.RedisData.ArraySize;
 import io.servicetalk.redis.api.RedisData.BulkStringChunk;
-import io.servicetalk.redis.api.RedisData.BulkStringSize;
+import io.servicetalk.redis.api.RedisData.BulkStringChunkImpl;
 import io.servicetalk.redis.api.RedisData.CompleteBulkString;
-import io.servicetalk.redis.api.RedisData.LastBulkStringChunk;
+import io.servicetalk.redis.api.RedisData.FirstBulkStringChunkImpl;
+import io.servicetalk.redis.api.RedisData.LastBulkStringChunkImpl;
 import io.servicetalk.redis.api.RedisData.SimpleString;
 import io.servicetalk.redis.api.RedisRequesterUtils.ToBufferSingle;
 import io.servicetalk.redis.api.RedisRequesterUtils.ToListSingle;
@@ -86,11 +87,11 @@ public class RedisRequesterUtilsTest {
         bufferSubscriber.listen(aggregator);
 
         Buffer buffer = allocator.newBuffer(1).writeByte(1).asReadOnly();
-        BulkStringChunk bufferChunk = new BulkStringChunk(buffer);
+        BulkStringChunk bufferChunk = new BulkStringChunkImpl(buffer);
         publisher.sendItems(bufferChunk);
 
         buffer = allocator.newBuffer(1).writeByte(2).asReadOnly();
-        bufferChunk = new BulkStringChunk(buffer);
+        bufferChunk = new BulkStringChunkImpl(buffer);
         publisher.sendItems(bufferChunk);
 
         publisher.complete();
@@ -214,14 +215,23 @@ public class RedisRequesterUtilsTest {
 
         final int lastIdx = chunks.size() - 1;
 
-        publisher.sendItems(new BulkStringSize(lengthOfAllChunks));
         for (int i = 0; i < chunks.size(); i++) {
             final CharSequence chunk = chunks.get(i);
             Buffer buffer = allocator.fromAscii(chunk);
             if (!resizableBuffer) {
                 buffer = buffer.asReadOnly();
             }
-            publisher.sendItems(i != lastIdx ? new BulkStringChunk(buffer) : new LastBulkStringChunk(buffer));
+            final RedisData redisData;
+            if (chunks.size() == 1) {
+                redisData = new CompleteBulkString(buffer);
+            } else if (i == 0) {
+                redisData = new FirstBulkStringChunkImpl(buffer, lengthOfAllChunks);
+            } else if (i == lastIdx) {
+                redisData = new LastBulkStringChunkImpl(buffer);
+            } else {
+                redisData = new BulkStringChunkImpl(buffer);
+            }
+            publisher.sendItems(redisData);
         }
     }
 }

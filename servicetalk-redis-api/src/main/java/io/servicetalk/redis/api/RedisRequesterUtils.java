@@ -311,9 +311,11 @@ final class RedisRequesterUtils {
                             }
                             depths.offerFirst(new AggregateState((int) length));
                         }
-                    } else if (redisData instanceof RedisData.BulkStringSize) {
-                        bulkStringSize = redisData.getIntValue();
-                    } else if (RedisData.BulkStringChunk.class.equals(redisData.getClass())) {
+                    } else if (redisData instanceof RedisData.BulkStringChunk &&
+                            !(redisData instanceof RedisData.LastBulkStringChunk)) {
+                        if (redisData instanceof RedisData.FirstBulkStringChunk) {
+                            bulkStringSize = ((RedisData.FirstBulkStringChunk) redisData).bulkStringLength();
+                        }
                         if (aggregator == null) {
                             aggregator = redisData.getBufferValue();
                             if (!aggregator.tryEnsureWritable(bulkStringSize - aggregator.readableBytes(), false)) {
@@ -402,7 +404,7 @@ final class RedisRequesterUtils {
     }
 
     private static boolean ignoreRedisData(final RedisData redisData) {
-        return redisData instanceof RedisData.Null || redisData instanceof RedisData.BulkStringSize;
+        return redisData instanceof RedisData.Null;
     }
 
     private static final class AggregateState {

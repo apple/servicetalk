@@ -17,10 +17,9 @@ package io.servicetalk.redis.api;
 
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.redis.api.RedisData.ArraySize;
-import io.servicetalk.redis.api.RedisData.BulkStringChunk;
-import io.servicetalk.redis.api.RedisData.BulkStringSize;
 import io.servicetalk.redis.api.RedisData.CompleteBulkString;
-import io.servicetalk.redis.api.RedisData.LastBulkStringChunk;
+import io.servicetalk.redis.api.RedisData.FirstBulkStringChunkImpl;
+import io.servicetalk.redis.api.RedisData.LastBulkStringChunkImpl;
 import io.servicetalk.redis.api.RedisData.RequestRedisData;
 import io.servicetalk.redis.api.RedisData.SimpleString;
 import io.servicetalk.redis.api.RedisProtocolSupport.BitfieldOperations;
@@ -79,6 +78,7 @@ import io.servicetalk.redis.api.RedisProtocolSupport.ZunionstoreAggregate;
 
 import org.junit.Test;
 
+import static io.servicetalk.buffer.api.EmptyBuffer.EMPTY_BUFFER;
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.Matchers.equalTo;
@@ -100,18 +100,18 @@ public class RequestRedisDataTest {
     }
 
     @Test
-    public void testBulkStringSize() {
-        assertWritten(new BulkStringSize(12345), "$12345\r\n");
+    public void testFirstBulkStringChunk() {
+        assertWritten(new FirstBulkStringChunkImpl(BUFFER_ABCDE.duplicate(), 42), "$42\r\nabcde");
     }
 
     @Test
-    public void testBulkStringChunk() {
-        assertWritten(new BulkStringChunk(BUFFER_ABCDE.duplicate()), "abcde");
+    public void testEmptyFirstBulkStringChunk() {
+        assertWritten(new FirstBulkStringChunkImpl(EMPTY_BUFFER, 42), "$42\r\n");
     }
 
     @Test
     public void testLastBulkStringChunk() {
-        assertWritten(new LastBulkStringChunk(BUFFER_ABCDE.duplicate()), "abcde\r\n");
+        assertWritten(new LastBulkStringChunkImpl(BUFFER_ABCDE.duplicate()), "abcde\r\n");
     }
 
     @Test

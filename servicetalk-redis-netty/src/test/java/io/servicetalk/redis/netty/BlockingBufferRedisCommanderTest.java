@@ -43,6 +43,7 @@ import org.junit.Test;
 
 import java.nio.channels.ClosedChannelException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
@@ -258,7 +259,7 @@ public class BlockingBufferRedisCommanderTest extends BaseRedisClientTest {
         fields.add(new RedisProtocolSupport.BufferFieldValue(buf("f2"), buf("v2")));
         commandClient.hmset(buf(testKey), fields);
         final List<Buffer> result = commandClient.hgetall(buf(testKey));
-        assertThat(result, is(asList(buf("f"), buf("v"), buf("f1"), buf("v1"), buf("f2"), buf("v2"))));
+        assertThat(new HashSet<>(toBufferFieldValues(result)), is(new HashSet<>(fields)));
         final List<Buffer> values = commandClient.hmget(buf(testKey), buf("f"), buf("f1"), buf("f2"));
         assertThat(values, is(asList(buf("v"), buf("v1"), buf("v2"))));
     }
@@ -281,7 +282,7 @@ public class BlockingBufferRedisCommanderTest extends BaseRedisClientTest {
         fields.add(new RedisProtocolSupport.BufferFieldValue(buf("f10"), buf("v10")));
         commandClient.hmset(buf(testKey), fields);
         final List<Buffer> values = commandClient.hmget(buf(testKey), asList(buf("f"), buf("f1"), buf("f2"), buf("f3"), buf("f4"), buf("f5"), buf("f6"), buf("f7"), buf("f8"), buf("f9"), buf("f10")));
-        assertThat(values, is(asList(buf("v"), buf("v1"), buf("v2"), buf("v3"), buf("v4"), buf("v5"), buf("v6"), buf("v7"), buf("v8"), buf("v9"), buf("v10"))));
+        assertThat(values, is(fields.stream().map(fv -> fv.value).collect(toList())));
     }
 
     @Test

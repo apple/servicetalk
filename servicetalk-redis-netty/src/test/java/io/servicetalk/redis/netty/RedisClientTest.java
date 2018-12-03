@@ -25,10 +25,11 @@ import io.servicetalk.redis.api.RedisClient.ReservedRedisConnection;
 import io.servicetalk.redis.api.RedisCommander;
 import io.servicetalk.redis.api.RedisData;
 import io.servicetalk.redis.api.RedisData.ArraySize;
-import io.servicetalk.redis.api.RedisData.BulkStringChunk;
-import io.servicetalk.redis.api.RedisData.BulkStringSize;
+import io.servicetalk.redis.api.RedisData.BulkStringChunkImpl;
 import io.servicetalk.redis.api.RedisData.CompleteBulkString;
-import io.servicetalk.redis.api.RedisData.LastBulkStringChunk;
+import io.servicetalk.redis.api.RedisData.FirstBulkStringChunk;
+import io.servicetalk.redis.api.RedisData.FirstBulkStringChunkImpl;
+import io.servicetalk.redis.api.RedisData.LastBulkStringChunkImpl;
 import io.servicetalk.redis.api.RedisData.RequestRedisData;
 import io.servicetalk.redis.api.RedisExecutionStrategy;
 import io.servicetalk.redis.api.RedisProtocolSupport.Command;
@@ -44,6 +45,7 @@ import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static io.servicetalk.buffer.api.EmptyBuffer.EMPTY_BUFFER;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitelyNonNull;
 import static io.servicetalk.redis.api.RedisProtocolSupport.Command.CLIENT;
@@ -59,10 +61,9 @@ import static io.servicetalk.redis.api.RedisProtocolSupport.SubCommand.ENCODING;
 import static io.servicetalk.redis.api.RedisProtocolSupport.SubCommand.INFO;
 import static io.servicetalk.redis.api.RedisProtocolSupport.SubCommand.LIST;
 import static io.servicetalk.redis.api.RedisRequests.newRequest;
-import static io.servicetalk.redis.netty.RedisDataMatcher.redisBulkStringSize;
 import static io.servicetalk.redis.netty.RedisDataMatcher.redisCompleteBulkString;
+import static io.servicetalk.redis.netty.RedisDataMatcher.redisCompleteBulkStringSize;
 import static io.servicetalk.redis.netty.RedisDataMatcher.redisError;
-import static io.servicetalk.redis.netty.RedisDataMatcher.redisLastBulkStringChunk;
 import static io.servicetalk.redis.netty.RedisDataMatcher.redisNull;
 import static io.servicetalk.redis.netty.RedisDataMatcher.redisSimpleString;
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -113,7 +114,7 @@ public class RedisClientTest extends BaseRedisClientTest {
     public void requestResponse() throws Exception {
         assertThat(awaitIndefinitely(getEnv().client.request(newRequest(PING))), contains(redisSimpleString("PONG")));
         assertThat(awaitIndefinitely(getEnv().client.request(newRequest(PING, new CompleteBulkString(buf("my-pong"))))),
-                contains(redisBulkStringSize(7), redisLastBulkStringChunk(buf("my-pong"))));
+                contains(redisCompleteBulkString(buf("my-pong"))));
         assertThat(awaitIndefinitely(getEnv().client.request(newRequest(PING, new CompleteBulkString(buf(""))))),
                 contains(redisCompleteBulkString(buf(""))));
         assertThat(awaitIndefinitely(getEnv().client.request(newRequest(GET,
@@ -131,7 +132,7 @@ public class RedisClientTest extends BaseRedisClientTest {
 
         assertThat(awaitIndefinitely(getEnv().client.request(newRequest(new RedisData.Array<>(PING,
                         new CompleteBulkString(buf("my-pong")))))),
-                contains(redisBulkStringSize(7), redisLastBulkStringChunk(buf("my-pong"))));
+                contains(redisCompleteBulkString(buf("my-pong"))));
     }
 
     @Test
@@ -144,8 +145,7 @@ public class RedisClientTest extends BaseRedisClientTest {
                         new CompleteBulkString(buf("\u263A-foo")))))), contains(redisSimpleString("OK")));
 
         assertThat(awaitIndefinitely(getEnv().client.request(newRequest(GET,
-                new CompleteBulkString(buf("\u263A-rc"))))), contains(redisBulkStringSize(7),
-                redisLastBulkStringChunk(buf("\u263A-foo"))));
+                new CompleteBulkString(buf("\u263A-rc"))))), contains(redisCompleteBulkString(buf("\u263A-foo"))));
     }
 
     @Test
@@ -154,23 +154,22 @@ public class RedisClientTest extends BaseRedisClientTest {
         args[0] = new ArraySize(2L);
         args[1] = PING;
         final StringBuilder expected = new StringBuilder(1000);
-        args[2] = new BulkStringSize(1000);
+        args[2] = new FirstBulkStringChunkImpl(EMPTY_BUFFER, 1000);
         for (int i = 0; i < 99; i++) {
             expected.append("0123456789");
-            args[3 + i] = new BulkStringChunk(buf("0123456789"));
+            args[3 + i] = new BulkStringChunkImpl(buf("0123456789"));
         }
         expected.append("THISISEND!");
-        args[102] = new LastBulkStringChunk(buf("THISISEND!"));
+        args[102] = new LastBulkStringChunkImpl(buf("THISISEND!"));
 
         final RedisRequest request = newRequest(PING, Publisher.from(args));
 
-        final String responseData = awaitIndefinitely(getEnv().client.request(request).reduce(StringBuilder::new,
+        final String responseData = awaitIndefinitelyNonNull(getEnv().client.request(request).reduce(StringBuilder::new,
           (r, d) -> {
-            if (d instanceof BulkStringSize) {
-                assertThat(d.getIntValue(), is(1000));
-            } else {
-                r.append(d.getBufferValue().toString(UTF_8));
-            }
+              if (d instanceof FirstBulkStringChunk) {
+                  assertThat(((FirstBulkStringChunk) d).bulkStringLength(), is(1000));
+              }
+              r.append(d.getBufferValue().toString(UTF_8));
             return r;
         })).toString();
 
@@ -179,13 +178,14 @@ public class RedisClientTest extends BaseRedisClientTest {
 
     @Test
     public void commandWithSubCommand() throws Exception {
-        assertThat(awaitIndefinitely(getEnv().client.request(newRequest(CLIENT, LIST)).first()),
-                is(redisBulkStringSize(greaterThan(0))));
-        assertThat(awaitIndefinitely(getEnv().client.request(newRequest(COMMAND, INFO,
+        final RedisData actual = awaitIndefinitely(getEnv().client.request(newRequest(CLIENT, LIST)).first());
+        assertThat(actual,
+                is(redisCompleteBulkStringSize(greaterThan(0))));
+        assertThat(awaitIndefinitelyNonNull(getEnv().client.request(newRequest(COMMAND, INFO,
                 new CompleteBulkString(buf("GET"))), List.class)).size(), is(1));
-        assertThat(awaitIndefinitely(getEnv().client.request(newRequest(COMMAND, INFO,
+        assertThat(awaitIndefinitelyNonNull(getEnv().client.request(newRequest(COMMAND, INFO,
                 new CompleteBulkString(buf("GET")), new CompleteBulkString(buf("SET"))), List.class)).size(), is(2));
-        assertThat(awaitIndefinitely(getEnv().client.request(newRequest(OBJECT, ENCODING,
+        assertThat(awaitIndefinitelyNonNull(getEnv().client.request(newRequest(OBJECT, ENCODING,
                 new CompleteBulkString(buf("missing-key")))).first()), is(redisNull()));
     }
 

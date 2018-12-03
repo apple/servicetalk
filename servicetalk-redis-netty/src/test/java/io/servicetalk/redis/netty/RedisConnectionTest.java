@@ -52,15 +52,16 @@ import static io.servicetalk.redis.api.RedisProtocolSupport.Command.DISCARD;
 import static io.servicetalk.redis.api.RedisProtocolSupport.Command.ECHO;
 import static io.servicetalk.redis.api.RedisProtocolSupport.Command.EVAL;
 import static io.servicetalk.redis.api.RedisProtocolSupport.Command.EXEC;
+import static io.servicetalk.redis.api.RedisProtocolSupport.Command.HGETALL;
+import static io.servicetalk.redis.api.RedisProtocolSupport.Command.HMSET;
 import static io.servicetalk.redis.api.RedisProtocolSupport.Command.LPOP;
 import static io.servicetalk.redis.api.RedisProtocolSupport.Command.MULTI;
 import static io.servicetalk.redis.api.RedisProtocolSupport.Command.PING;
 import static io.servicetalk.redis.api.RedisProtocolSupport.Command.SET;
 import static io.servicetalk.redis.api.RedisRequests.newRequest;
 import static io.servicetalk.redis.netty.RedisDataMatcher.redisArraySize;
-import static io.servicetalk.redis.netty.RedisDataMatcher.redisBulkStringSize;
+import static io.servicetalk.redis.netty.RedisDataMatcher.redisCompleteBulkString;
 import static io.servicetalk.redis.netty.RedisDataMatcher.redisError;
-import static io.servicetalk.redis.netty.RedisDataMatcher.redisLastBulkStringChunk;
 import static io.servicetalk.redis.netty.RedisDataMatcher.redisNull;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.Matchers.contains;
@@ -107,12 +108,18 @@ public class RedisConnectionTest extends BaseRedisClientTest {
                         .flatMapPublisher(cnx -> cnx.request(pingRequest)
                                 // concatWith triggers an internal cancel when switching publishers
                                 .concatWith(cnx.request(newRequest(PING, new CompleteBulkString(buf("my-pong"))))))),
-                contains(is(PONG), redisBulkStringSize(7), redisLastBulkStringChunk(buf("my-pong"))));
+                contains(is(PONG), redisCompleteBulkString(buf("my-pong"))));
     }
 
     @Test
     public void userCancel() throws Exception {
-        final RedisRequest pingRequest = newRequest(PING, new CompleteBulkString(buf("my-pong")));
+        getEnv().client.request(newRequest(HMSET,
+                new CompleteBulkString(buf("hmkey")),
+                new CompleteBulkString(buf("name")),
+                new CompleteBulkString(buf("value"))
+        )).toFuture().get();
+
+        final RedisRequest getRequest = newRequest(HGETALL, new CompleteBulkString(buf("hmkey")));
 
         final CountDownLatch cnxClosedLatch = new CountDownLatch(1);
         final AtomicReference<Throwable> cnxCloseError = new AtomicReference<>();
@@ -135,7 +142,7 @@ public class RedisConnectionTest extends BaseRedisClientTest {
                             cnxClosedLatch.countDown();
                         }
                     });
-                    return cnx.request(pingRequest);
+                    return cnx.request(getRequest);
                 }).subscribe(
                 new org.reactivestreams.Subscriber<RedisData>() {
                     private Subscription s;
@@ -197,7 +204,7 @@ public class RedisConnectionTest extends BaseRedisClientTest {
                         .concatWith(cnx.request(newRequest(EXEC)))));
 
         assertThat(results, contains(is(OK), is(QUEUED), is(redisNull()), redisArraySize(1L),
-                is(redisBulkStringSize(3)), is(redisLastBulkStringChunk(buf("foo")))));
+                is(redisCompleteBulkString(buf("foo")))));
     }
 
     @Test

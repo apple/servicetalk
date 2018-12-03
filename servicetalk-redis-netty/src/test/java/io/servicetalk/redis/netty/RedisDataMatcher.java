@@ -59,14 +59,6 @@ final class RedisDataMatcher extends BaseMatcher<RedisData> {
         return new RedisDataMatcher(RedisData.Integer.class, RedisData::getLongValue, valueMatcher);
     }
 
-    static RedisDataMatcher redisBulkStringSize(final int size) {
-        return redisBulkStringSize(is(size));
-    }
-
-    static RedisDataMatcher redisBulkStringSize(final Matcher<Integer> sizeMatcher) {
-        return new RedisDataMatcher(RedisData.BulkStringSize.class, RedisData::getIntValue, sizeMatcher);
-    }
-
     static RedisDataMatcher redisBulkStringChunk(final Buffer buf) {
         return redisBulkStringChunk(is(buf));
     }
@@ -83,12 +75,24 @@ final class RedisDataMatcher extends BaseMatcher<RedisData> {
         return new RedisDataMatcher(RedisData.LastBulkStringChunk.class, RedisData::getBufferValue, bufMatcher);
     }
 
+    static RedisDataMatcher redisFirstBulkStringChunk(final Buffer buf) {
+        return redisFirstBulkStringChunk(is(buf));
+    }
+
+    static RedisDataMatcher redisFirstBulkStringChunk(final Matcher<Buffer> bufMatcher) {
+        return new RedisDataMatcher(RedisData.FirstBulkStringChunk.class, RedisData::getBufferValue, bufMatcher);
+    }
+
     static RedisDataMatcher redisCompleteBulkString(final Buffer buf) {
         return redisCompleteBulkString(is(buf));
     }
 
     static RedisDataMatcher redisCompleteBulkString(final Matcher<Buffer> bufMatcher) {
         return new RedisDataMatcher(RedisData.CompleteBulkString.class, RedisData::getBufferValue, bufMatcher);
+    }
+
+    static RedisDataMatcher redisCompleteBulkStringSize(final Matcher<Integer> sizeMatcher) {
+        return new RedisDataMatcher(RedisData.CompleteBulkString.class, rd -> rd.getBufferValue().readableBytes(), sizeMatcher);
     }
 
     static RedisDataMatcher redisArraySize(final long size) {

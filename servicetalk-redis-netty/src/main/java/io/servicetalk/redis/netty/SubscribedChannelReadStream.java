@@ -25,6 +25,7 @@ import io.servicetalk.redis.api.PubSubRedisMessage.PatternPubSubRedisMessage;
 import io.servicetalk.redis.api.RedisData;
 import io.servicetalk.redis.api.RedisData.CompleteBulkString;
 import io.servicetalk.redis.api.RedisData.CompleteRedisData;
+import io.servicetalk.redis.api.RedisData.FirstBulkStringChunk;
 import io.servicetalk.redis.api.RedisData.SimpleString;
 
 import org.reactivestreams.Subscriber;
@@ -287,9 +288,10 @@ final class SubscribedChannelReadStream extends Publisher<SubscribedChannelReadS
                 throw new IllegalStateException("Unexpected data type: " + data.getClass().getName() + ". Current State: " + aggregationState);
             }
 
-            if (data instanceof RedisData.BulkStringSize) {
-                final int bufferSize = data.getIntValue();
+            if (data instanceof FirstBulkStringChunk && !(data instanceof CompleteRedisData)) {
+                final int bufferSize = ((FirstBulkStringChunk) data).bulkStringLength();
                 currentDataBuffer = allocator.newBuffer(bufferSize);
+                currentDataBuffer.writeBytes(data.getBufferValue());
                 // Request 1 because there's at least one extra BulkStringChunk needed to complete this BulkString
                 subscription.request(1);
                 return;

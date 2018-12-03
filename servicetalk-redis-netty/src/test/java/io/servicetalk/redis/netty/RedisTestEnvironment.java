@@ -88,7 +88,7 @@ final class RedisTestEnvironment implements AutoCloseable {
 
         final Matcher versionMatcher =
                 Pattern.compile("(?s).*redis_version:([\\d]+)\\.([\\d]+)\\.([\\d]+).*").matcher(serverInfo);
-        assertThat(versionMatcher.matches(), is(true));
+        assertThat("Server info: " + serverInfo, versionMatcher.matches(), is(true));
         serverVersion = rangeClosed(1, 3).map(i -> Integer.parseInt(versionMatcher.group(i))).toArray();
     }
 

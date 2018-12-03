@@ -15,8 +15,14 @@
  */
 package io.servicetalk.redis.netty;
 
-import io.servicetalk.buffer.netty.BufferUtil;
+import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.redis.api.RedisData;
+import io.servicetalk.redis.api.RedisData.ArraySize;
+import io.servicetalk.redis.api.RedisData.BulkStringChunkImpl;
+import io.servicetalk.redis.api.RedisData.CompleteBulkString;
+import io.servicetalk.redis.api.RedisData.FirstBulkStringChunkImpl;
+import io.servicetalk.redis.api.RedisData.LastBulkStringChunkImpl;
+import io.servicetalk.redis.api.RedisData.SimpleString;
 import io.servicetalk.transport.netty.internal.ByteToMessageDecoder;
 
 import io.netty.buffer.ByteBuf;
@@ -24,354 +30,308 @@ import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.ByteProcessor;
 import io.netty.util.CharsetUtil;
-import io.netty.util.internal.PlatformDependent;
 
-import javax.annotation.Nullable;
-
+import static io.servicetalk.buffer.netty.BufferUtil.newBufferFrom;
+import static io.servicetalk.redis.api.RedisData.NULL;
 import static io.servicetalk.redis.internal.RedisUtils.EOL_LENGTH;
 import static io.servicetalk.redis.internal.RedisUtils.EOL_SHORT;
+import static io.servicetalk.redis.netty.RedisDecoder.State.Start;
 
 final class RedisDecoder extends ByteToMessageDecoder {
-    private static final int NULL_VALUE = -1;
-    private static final int REDIS_MESSAGE_MAX_LENGTH = 512 * 1024 * 1024; // 512MB
-    private static final int POSITIVE_LONG_MAX_LENGTH = 19; // length of Long.MAX_VALUE
+    private static final int MAX_ERRORS = 10;
+    private static final int MAX_BUFFER_SIZE = 640 * 1024 * 1024;
 
-    private static final RedisData.CompleteBulkString EMPTY_INSTANCE = new RedisData.CompleteBulkString(BufferUtil.newBufferFrom(Unpooled.EMPTY_BUFFER));
+    private static final CompleteBulkString EMPTY_BULK_STRING = new CompleteBulkString(
+            newBufferFrom(Unpooled.EMPTY_BUFFER));
+    private static final SimpleString EMPTY_SIMPLE_STRING = new SimpleString("");
 
-    private final ToPositiveLongProcessor toPositiveLongProcessor = new ToPositiveLongProcessor();
-
-    private final int maxInlineMessageLength;
-
-    // current decoding states
-    private State state = State.DECODE_TYPE;
-    private RedisMessageType type = RedisMessageType.ERROR;
-    private int remainingBulkLength;
-
-    private enum State {
-        DECODE_TYPE,
-        DECODE_INLINE, // SIMPLE_STRING, ERROR, INTEGER
-        DECODE_LENGTH, // BULK_STRING, ARRAY_HEADER
-        DECODE_BULK_STRING_EOL,
-        DECODE_BULK_STRING_CONTENT,
+    enum State {
+        Start,
+        String,
+        Error,
+        Bulk,
+        BulkContinue,
+        Array,
+        Number,
+        Reset,
     }
 
-    /**
-     * Creates a new instance with default {@code maxInlineMessageLength}.
-     */
-    RedisDecoder() {
-        // 1024 * 64 is max inline length of current Redis server implementation.
-        this(1024 * 64);
-    }
+    private final LongParser longParser = new LongParser();
+    private final IntParser intParser = new IntParser();
+    private final BufferAllocator allocator;
+    private State state = Start;
+    private int expectBulkBytes;
+    private int consecutiveErrorCount;
 
-    /**
-     * Creates a new instance.
-     * @param maxInlineMessageLength the maximum length of inline message as defined by <a href="https://redis.io/topics/protocol"> Redis Inline Command</a>.
-     */
-    RedisDecoder(int maxInlineMessageLength) {
-        if (maxInlineMessageLength <= 0 || maxInlineMessageLength > REDIS_MESSAGE_MAX_LENGTH) {
-            throw new IllegalArgumentException("maxInlineMessageLength: " + maxInlineMessageLength +
-                    " (expected: <= " + REDIS_MESSAGE_MAX_LENGTH + ")");
-        }
-        this.maxInlineMessageLength = maxInlineMessageLength;
+    RedisDecoder(final BufferAllocator allocator) {
+        this.allocator = allocator;
     }
 
     @Override
-    protected void decode(final ChannelHandlerContext ctx, final ByteBuf in) {
-        try {
-            for (;;) {
-                switch (state) {
-                    case DECODE_TYPE:
-                        if (!decodeType(in)) {
-                            return;
+    protected void decode(final ChannelHandlerContext ctx, final ByteBuf in) throws Exception {
+        checkLength(in);
+        while (in.isReadable()) {
+            switch (state) {
+                case Start: {
+                    final byte b = in.readByte();
+                    final State next = nextState(b);
+                    if (next == State.Reset) {
+                        if (++consecutiveErrorCount > MAX_ERRORS) {
+                            consecutiveErrorCount = 0;
+                            throw new IllegalStateException("Can't find the start of the next block");
                         }
-                        break;
-                    case DECODE_INLINE:
-                        if (!decodeInline(in, ctx)) {
-                            return;
-                        }
-                        break;
-                    case DECODE_LENGTH:
-                        if (!decodeLength(in, ctx)) {
-                            return;
-                        }
-                        break;
-                    case DECODE_BULK_STRING_EOL:
-                        if (!decodeBulkStringEndOfLine(in, ctx)) {
-                            return;
-                        }
-                        break;
-                    case DECODE_BULK_STRING_CONTENT:
-                        if (!decodeBulkStringContent(in, ctx)) {
-                            return;
-                        }
-                        break;
-                    default:
-                        throw new IllegalStateException("Unknown state: " + state);
+                    } else {
+                        consecutiveErrorCount = 0;
+                        state = next;
+                    }
+                    break;
                 }
+                case String: {
+                    final int length = endOfLine(in);
+                    switch (length) {
+                        case -1:
+                            return;
+                        case 0:
+                            readEndOfLine(in);
+                            ctx.fireChannelRead(EMPTY_SIMPLE_STRING);
+                            break;
+                        default:
+                            ctx.fireChannelRead(new SimpleString(readString(in, length)));
+                            break;
+                    }
+                    state = Start;
+                    break;
+                }
+                case Number: {
+                    final int length = endOfLine(in);
+                    if (length == -1) {
+                        return;
+                    }
+                    final long n = length > 9 ? // Integer.MAX_VALUE length-1
+                            readLong(in, length) :
+                            (long) readInt(in, length);
+                    ctx.fireChannelRead(RedisData.Integer.newInstance(n));
+                    state = Start;
+                    break;
+                }
+                case Bulk: {
+                    if (expectBulkBytes == 0) {
+                        final int length = endOfLine(in);
+                        if (length == -1) {
+                            return;
+                        }
+                        final int size = readInt(in, length);
+                        if (size == 0) {
+                            readEndOfLine(in);
+                            ctx.fireChannelRead(EMPTY_BULK_STRING);
+                            state = Start;
+                            break;
+                        }
+                        if (size == -1) {
+                            ctx.fireChannelRead(NULL);
+                            state = Start;
+                            break;
+                        }
+                        expectBulkBytes = size;
+                    }
+                    if (in.isReadable(expectBulkBytes + EOL_LENGTH)) {
+                        // The entire bulk string is available to read.
+                        final byte[] bytes = readBytes(in, expectBulkBytes);
+                        assert in.readableBytes() == 0;
+                        ctx.fireChannelRead(new CompleteBulkString(allocator.wrap(bytes)));
+                        expectBulkBytes -= bytes.length;
+                        assert expectBulkBytes == 0;
+                        state = Start;
+                    } else {
+                        // Less than the entire bulk string is available to read, but we can send the first chunk,
+                        // with the bulk string length, even if we don't have any of the content available to read.
+                        final int len = Math.min(expectBulkBytes, in.readableBytes());
+                        final byte[] bytes = readRawBytes(in, len);
+                        ctx.fireChannelRead(new FirstBulkStringChunkImpl(
+                                allocator.wrap(bytes), expectBulkBytes));
+                        expectBulkBytes -= bytes.length;
+                        state = State.BulkContinue;
+                    }
+                    break;
+                }
+                case BulkContinue: {
+                    if (in.isReadable(expectBulkBytes + EOL_LENGTH)) {
+                        // The rest of the bulk string, including the EOL, is readable.
+                        final byte[] bytes = readRawBytes(in, expectBulkBytes);
+                        expectBulkBytes -= bytes.length;
+                        assert expectBulkBytes == 0;
+                        readEndOfLine(in);
+                        assert in.readableBytes() == 0;
+                        ctx.fireChannelRead(new LastBulkStringChunkImpl(allocator.wrap(bytes)));
+                        state = Start;
+                        return;
+                    } else {
+                        // There's some readable data, but not enough to finish.
+                        final int len = Math.min(expectBulkBytes, in.readableBytes());
+                        if (len > 0) {
+                            final byte[] bytes = readRawBytes(in, len);
+                            expectBulkBytes -= bytes.length;
+                            ctx.fireChannelRead(new BulkStringChunkImpl(allocator.wrap(bytes)));
+                        } else {
+                            return;
+                        }
+                    }
+                    break;
+                }
+                case Error: {
+                    final int length = endOfLine(in);
+                    if (length == -1) {
+                        return;
+                    }
+                    final String message = readString(in, length);
+                    ctx.fireChannelRead(new RedisData.Error(message));
+                    state = Start;
+                    break;
+                }
+                case Array: {
+                    final int length = endOfLine(in);
+                    if (length == -1) {
+                        return;
+                    }
+                    final int n = readInt(in, length);
+                    ctx.fireChannelRead(n == -1 ? NULL : new ArraySize(n));
+                    state = Start;
+                    break;
+                }
+                default:
+                    throw new IllegalStateException("Unexpected state: " + state);
             }
-        } catch (Exception e) {
-            resetDecoder();
-            throw e;
         }
     }
 
-    private void resetDecoder() {
-        state = State.DECODE_TYPE;
-        remainingBulkLength = 0;
-    }
-
-    private boolean decodeType(ByteBuf in) {
-        if (!in.isReadable()) {
-            return false;
-        }
-        type = RedisMessageType.valueOf(in.readByte());
-        state = type.isInline() ? State.DECODE_INLINE : State.DECODE_LENGTH;
-        return true;
-    }
-
-    private boolean decodeInline(ByteBuf in, ChannelHandlerContext ctx) {
-        ByteBuf lineBytes = readLine(in);
-        if (lineBytes == null) {
-            if (in.readableBytes() > maxInlineMessageLength) {
-                throw new RedisCodecException("length: " + in.readableBytes() +
-                        " (expected: <= " + maxInlineMessageLength + ")");
-            }
-            return false;
-        }
-        resetDecoder();
-        ctx.fireChannelRead(newInlineRedisData(type, lineBytes));
-        return true;
-    }
-
-    private boolean decodeLength(ByteBuf in, ChannelHandlerContext ctx) {
-        ByteBuf lineByteBuf = readLine(in);
-        if (lineByteBuf == null) {
-            return false;
-        }
-        final long length = parseRedisNumber(lineByteBuf);
-        if (length < NULL_VALUE) {
-            throw new RedisCodecException("length: " + length + " (expected: >= " + NULL_VALUE + ")");
-        }
-        switch (type) {
-            case ARRAY_HEADER:
-                resetDecoder();
-                if (length == NULL_VALUE) {
-                    ctx.fireChannelRead(RedisData.NULL);
-                } else {
-                    ctx.fireChannelRead(new RedisData.ArraySize(length));
-                }
-                return true;
-            case BULK_STRING:
-                if (length > REDIS_MESSAGE_MAX_LENGTH) {
-                    throw new RedisCodecException("length: " + length + " (expected: <= " +
-                            REDIS_MESSAGE_MAX_LENGTH + ")");
-                }
-                remainingBulkLength = (int) length; // range(int) is already checked.
-                return decodeBulkString(in, ctx);
-            default:
-                throw new RedisCodecException("bad type: " + type);
-        }
-    }
-
-    private boolean decodeBulkString(ByteBuf in, ChannelHandlerContext ctx) {
-        switch (remainingBulkLength) {
-            case NULL_VALUE: // $-1\r\n
-                resetDecoder();
-                ctx.fireChannelRead(RedisData.NULL);
-                return true;
-            case 0:
-                state = State.DECODE_BULK_STRING_EOL;
-                return decodeBulkStringEndOfLine(in, ctx);
-            default: // expectedBulkLength is always positive.
-                state = State.DECODE_BULK_STRING_CONTENT;
-                ctx.fireChannelRead(new RedisData.BulkStringSize(remainingBulkLength));
-                return decodeBulkStringContent(in, ctx);
-        }
-    }
-
-    // $0\r\n <here> \r\n
-    private boolean decodeBulkStringEndOfLine(ByteBuf in, ChannelHandlerContext ctx) {
-        if (in.readableBytes() < EOL_LENGTH) {
-            return false;
-        }
-        readEndOfLine(in);
-        resetDecoder();
-        ctx.fireChannelRead(EMPTY_INSTANCE);
-        return true;
-    }
-
-    // ${expectedBulkLength}\r\n <here> {data...}\r\n
-    private boolean decodeBulkStringContent(ByteBuf in, ChannelHandlerContext ctx) {
+    private static void checkLength(final ByteBuf in) {
         final int readableBytes = in.readableBytes();
-        if (readableBytes == 0 || remainingBulkLength == 0 && readableBytes < EOL_LENGTH) {
-            return false;
+        if (readableBytes > MAX_BUFFER_SIZE) {
+            throw new IllegalStateException(
+                    String.format("The input byteBuf is over the limit: size=%d, max=%d",
+                            readableBytes, MAX_BUFFER_SIZE));
         }
-
-        // if this is last frame.
-        if (readableBytes >= remainingBulkLength + EOL_LENGTH) {
-            ByteBuf content = in.readSlice(remainingBulkLength);
-            readEndOfLine(in);
-            resetDecoder();
-            // Only call retain after readEndOfLine(...) as the method may throw an exception.
-            ctx.fireChannelRead(new RedisData.LastBulkStringChunk(BufferUtil.newBufferFrom(content.retain())));
-            return true;
-        }
-
-        // chunked write.
-        int toRead = Math.min(remainingBulkLength, readableBytes);
-        remainingBulkLength -= toRead;
-        ctx.fireChannelRead(new RedisData.BulkStringChunk(BufferUtil.newBufferFrom(in.readSlice(toRead).retain())));
-        return true;
     }
 
-    private static void readEndOfLine(final ByteBuf in) {
-        final short delim = in.readShort();
-        if (EOL_SHORT == delim) {
-            return;
-        }
-        final byte[] bytes = shortToBytes(delim);
-        throw new RedisCodecException("delimiter: [" + bytes[0] + "," + bytes[1] + "] (expected: \\r\\n)");
-    }
-
-    private RedisData newInlineRedisData(RedisMessageType messageType, ByteBuf content) {
-        switch (messageType) {
-            case SIMPLE_STRING: {
-                return new RedisData.SimpleString(content.toString(CharsetUtil.UTF_8));
-            }
-            case ERROR: {
-                return new RedisData.Error(content.toString(CharsetUtil.UTF_8));
-            }
-            case INTEGER: {
-                return RedisData.Integer.newInstance(parseRedisNumber(content));
-            }
+    private static State nextState(final byte b) {
+        switch (b) {
+            case '+':
+                return State.String;
+            case '$':
+                return State.Bulk;
+            case '*':
+                return State.Array;
+            case '-':
+                return State.Error;
+            case ':':
+                return State.Number;
             default:
-                throw new RedisCodecException("bad type: " + messageType);
+                return State.Reset;
         }
     }
 
-    @Nullable
-    private static ByteBuf readLine(ByteBuf in) {
-        if (!in.isReadable(EOL_LENGTH)) {
-            return null;
-        }
-        final int lfIndex = in.forEachByte(ByteProcessor.FIND_LF);
-        if (lfIndex < 0) {
-            return null;
-        }
-        ByteBuf data = in.readSlice(lfIndex - in.readerIndex() - 1); // `-1` is for CR
-        readEndOfLine(in); // validate CR LF
+    private long readLong(final ByteBuf in, final int length) {
+        final long number = longParser.parse(in, length);
+        in.skipBytes(length);
+        readEndOfLine(in);
+        return number;
+    }
+
+    private int readInt(final ByteBuf in, final int length) {
+        final int number = intParser.parse(in, length);
+        in.skipBytes(length);
+        readEndOfLine(in);
+        return number;
+    }
+
+    private static String readString(final ByteBuf in, final int length) {
+        final String string = in.toString(in.readerIndex(), length, CharsetUtil.UTF_8);
+        in.skipBytes(length);
+        readEndOfLine(in);
+        return string;
+    }
+
+    private static byte[] readBytes(final ByteBuf in, final int length) {
+        final byte[] data = new byte[length];
+        in.readBytes(data, 0, length);
+        readEndOfLine(in);
         return data;
     }
 
-    private long parseRedisNumber(ByteBuf byteBuf) {
-        final int readableBytes = byteBuf.readableBytes();
-        final boolean negative = readableBytes > 0 && byteBuf.getByte(byteBuf.readerIndex()) == '-';
-        final int extraOneByteForNegative = negative ? 1 : 0;
-        if (readableBytes <= extraOneByteForNegative) {
-            throw new RedisCodecException("no number to parse: " + byteBuf.toString(CharsetUtil.US_ASCII));
-        }
-        if (readableBytes > POSITIVE_LONG_MAX_LENGTH + extraOneByteForNegative) {
-            throw new RedisCodecException("too many characters to be a valid RESP Integer: " +
-                    byteBuf.toString(CharsetUtil.US_ASCII));
-        }
-        if (negative) {
-            return -parsePositiveNumber(byteBuf.skipBytes(extraOneByteForNegative));
-        }
-        return parsePositiveNumber(byteBuf);
+    private static byte[] readRawBytes(final ByteBuf in, final int length) {
+        final byte[] data = new byte[length];
+        in.readBytes(data, 0, length);
+        return data;
     }
 
-    private long parsePositiveNumber(ByteBuf byteBuf) {
-        toPositiveLongProcessor.reset();
-        byteBuf.forEachByte(toPositiveLongProcessor);
-        return toPositiveLongProcessor.content();
+    private static void readEndOfLine(final ByteBuf in) {
+        final short endOfLine = in.readShort();
+        if (EOL_SHORT == endOfLine) {
+            return;
+        }
+        throw new IllegalStateException("expected: \\r\\n received: " + Integer.toHexString(endOfLine));
     }
 
-    private static final class ToPositiveLongProcessor implements ByteProcessor {
+    private static int endOfLine(final ByteBuf in) {
+        final int fromIndex = in.readerIndex() + 1;
+        final int toIndex = in.writerIndex();
+        // don't even make the call if less than 2 bytes
+        if (toIndex > fromIndex) {
+            // search for last byte first
+            final int i = in.indexOf(fromIndex, toIndex, (byte) '\n');
+            if (i > 0) {
+                assert in.getByte(i - 1) == '\r';
+                return i - fromIndex;
+            }
+        }
+        return -1;
+    }
+
+    private static final class LongParser implements ByteProcessor {
         private long result;
 
         @Override
-        public boolean process(byte value) {
-            if (value < '0' || value > '9') {
-                throw new RedisCodecException("bad byte in number: " + value);
-            }
-            result = result * 10 + (value - '0');
+        public boolean process(final byte b) {
+            assert b >= '0' && b <= '9' : "expected '0'..'9'";
+            final int digit = b - '0';
+            result = 10 * result + digit;
             return true;
         }
 
-        public long content() {
-            return result;
-        }
-
-        public void reset() {
-            result = 0;
-        }
-    }
-
-    /**
-     * Returns a {@code byte[]} of {@code short} value. This is opposite of {@code makeShort()}.
-     */
-    private static byte[] shortToBytes(short value) {
-        byte[] bytes = new byte[2];
-        if (PlatformDependent.BIG_ENDIAN_NATIVE_ORDER) {
-            bytes[1] = (byte) ((value >> 8) & 0xff);
-            bytes[0] = (byte) (value & 0xff);
-        } else {
-            bytes[0] = (byte) ((value >> 8) & 0xff);
-            bytes[1] = (byte) (value & 0xff);
-        }
-        return bytes;
-    }
-
-    private enum RedisMessageType {
-
-        SIMPLE_STRING((byte) '+', true),
-        ERROR((byte) '-', true),
-        INTEGER((byte) ':', true),
-        BULK_STRING((byte) '$', false),
-        ARRAY_HEADER((byte) '*', false),
-        ARRAY((byte) '*', false); // for aggregated
-
-        private final byte value;
-        private final boolean inline;
-
-        RedisMessageType(byte value, boolean inline) {
-            this.value = value;
-            this.inline = inline;
-        }
-
-        /**
-         * Returns prefix {@code byte} for this type.
-         */
-        byte value() {
-            return value;
-        }
-
-        /**
-         * Returns {@code true} if this type is inline type, or returns {@code false}. If this is {@code true},
-         * this type doesn't have length field.
-         */
-        boolean isInline() {
-            return inline;
-        }
-
-        /**
-         * Return {@link RedisMessageType} for this type prefix {@code byte}.
-         */
-        static RedisMessageType valueOf(byte value) {
-            switch (value) {
-                case '+':
-                    return SIMPLE_STRING;
-                case '-':
-                    return ERROR;
-                case ':':
-                    return INTEGER;
-                case '$':
-                    return BULK_STRING;
-                case '*':
-                    return ARRAY_HEADER;
-                default:
-                    throw new RedisCodecException("Unknown RedisMessageType: " + value);
+        long parse(final ByteBuf in, final int length) {
+            final int current = in.readerIndex();
+            final int first = in.getByte(current);
+            if (length == 1) {
+                return first - '0';
             }
+            final boolean negative = first == '-';
+            result = negative ? 0 : first - '0';
+            in.forEachByte(current + 1, length - 1, this);
+            return negative ? -result : result;
+        }
+    }
+
+    private static final class IntParser implements ByteProcessor {
+        private int result;
+
+        @Override
+        public boolean process(final byte b) {
+            assert b >= '0' && b <= '9' : "expected '0'..'9'";
+            final int digit = b - '0';
+            result = 10 * result + digit;
+            return true;
+        }
+
+        int parse(final ByteBuf in, final int length) {
+            final int current = in.readerIndex();
+            final int first = in.getByte(current);
+            if (length == 1) {
+                return first - '0';
+            }
+            final boolean negative = first == '-';
+            result = negative ? 0 : first - '0';
+            in.forEachByte(current + 1, length - 1, this);
+            return negative ? -result : result;
         }
     }
 }

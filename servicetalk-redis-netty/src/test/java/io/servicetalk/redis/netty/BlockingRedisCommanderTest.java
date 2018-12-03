@@ -42,6 +42,7 @@ import org.junit.Test;
 
 import java.nio.channels.ClosedChannelException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
@@ -256,7 +257,7 @@ public class BlockingRedisCommanderTest extends BaseRedisClientTest {
         fields.add(new RedisProtocolSupport.FieldValue("f2", "v2"));
         commandClient.hmset(testKey, fields);
         final List<String> result = commandClient.hgetall(testKey);
-        assertThat(result, is(asList("f", "v", "f1", "v1", "f2", "v2")));
+        assertThat(new HashSet<>(toFieldValues(result)), is(new HashSet<>(fields)));
         final List<String> values = commandClient.hmget(testKey, "f", "f1", "f2");
         assertThat(values, is(asList("v", "v1", "v2")));
     }
@@ -279,7 +280,7 @@ public class BlockingRedisCommanderTest extends BaseRedisClientTest {
         fields.add(new RedisProtocolSupport.FieldValue("f10", "v10"));
         commandClient.hmset(testKey, fields);
         final List<String> values = commandClient.hmget(testKey, asList("f", "f1", "f2", "f3", "f4", "f5", "f6", "f7", "f8", "f9", "f10"));
-        assertThat(values, is(asList("v", "v1", "v2", "v3", "v4", "v5", "v6", "v7", "v8", "v9", "v10")));
+        assertThat(values, is(fields.stream().map(fv -> fv.value).collect(toList())));
     }
 
     @Test
