@@ -380,7 +380,7 @@ final class DefaultDnsServiceDiscoverer
                 }
 
                 private void doQuery() {
-                    LOGGER.debug("DNS discoverer {}, querying DNS for {}.", DefaultDnsServiceDiscoverer.this, inetHost);
+                    LOGGER.trace("DNS discoverer {}, querying DNS for {}.", DefaultDnsServiceDiscoverer.this, inetHost);
 
                     cancellableForQuery = IGNORE_CANCEL;
                     Future<List<InetAddress>> addressFuture = resolver.resolveAll(inetHost);
@@ -400,7 +400,7 @@ final class DefaultDnsServiceDiscoverer
                 }
 
                 private void scheduleQuery(long nanos) {
-                    LOGGER.debug("DNS discoverer {}, scheduling DNS query for {} after {} nanos.",
+                    LOGGER.trace("DNS discoverer {}, scheduling DNS query for {} after {} nanos.",
                             DefaultDnsServiceDiscoverer.this, inetHost, nanos);
                     // This value is coming from DNS TTL for which the unit is seconds and the minimum value we accept
                     // in the constructor is 1 second.
@@ -434,7 +434,7 @@ final class DefaultDnsServiceDiscoverer
                                 handleError(error);
                             }
                         } else {
-                            LOGGER.debug("DNS discoverer {}, resolution done but no changes observed for {}. Resolution result: (size {}) {}",
+                            LOGGER.trace("DNS discoverer {}, resolution done but no changes observed for {}. Resolution result: (size {}) {}",
                                     DefaultDnsServiceDiscoverer.this, inetHost, addresses.size(), addresses);
                             scheduleQuery(ttlNanos);
                         }
