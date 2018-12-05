@@ -26,9 +26,15 @@ import org.mockito.Spy;
 import org.mockito.junit.MockitoJUnit;
 import org.mockito.junit.MockitoRule;
 
+import java.util.concurrent.ConcurrentLinkedQueue;
+import javax.annotation.Nonnull;
+
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static io.servicetalk.transport.api.ContextFilter.ACCEPT_ALL;
 import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -49,15 +55,26 @@ public class ContextFilterTest {
     private ContextFilter second;
 
     @Test
+    public void factoryAppend() throws Exception {
+        ContextFilterFactory f = ContextFilterFactory.identity();
+        ConcurrentLinkedQueue<Integer> order = new ConcurrentLinkedQueue<>();
+        f.append(original -> new OrderVerifyingContextFilterAdapter(original, order, 1))
+                .append(original -> new OrderVerifyingContextFilterAdapter(original, order, 2))
+                .append(original -> new OrderVerifyingContextFilterAdapter(original, order, 3))
+                .apply(ACCEPT_ALL).apply(context).toFuture().get();
+        assertThat("Unexpected filter order.", order, contains(1, 2, 3));
+    }
+
+    @Test
     public void chainingTrueThenTrueShouldReturnTrue() {
         setFilterResult(first, Single.success(true));
         setFilterResult(second, Single.success(true));
 
-        listener.listen(first.andThen(second).filter(context));
+        applyFilters();
         listener.verifySuccess(TRUE);
 
-        verify(first).filter(context);
-        verify(second).filter(context);
+        verify(first).apply(context);
+        verify(second).apply(context);
     }
 
     @Test
@@ -65,11 +82,11 @@ public class ContextFilterTest {
         setFilterResult(first, Single.success(true));
         setFilterResult(second, Single.success(false));
 
-        listener.listen(first.andThen(second).filter(context));
+        applyFilters();
         listener.verifySuccess(FALSE);
 
-        verify(first).filter(context);
-        verify(second).filter(context);
+        verify(first).apply(context);
+        verify(second).apply(context);
     }
 
     @Test
@@ -77,47 +94,74 @@ public class ContextFilterTest {
         setFilterResult(first, Single.success(true));
         setFilterResult(second, Single.error(DELIBERATE_EXCEPTION));
 
-        listener.listen(first.andThen(second).filter(context));
+        applyFilters();
         listener.verifyFailure(DeliberateException.class);
 
-        verify(first).filter(context);
-        verify(second).filter(context);
+        verify(first).apply(context);
+        verify(second).apply(context);
     }
 
     @Test
-    public void chainingAfterFalseShouldNotCallNextFilter() {
+    public void chainingAfterFalseShouldCallNextFilter() {
         setFilterResult(first, Single.success(false));
+        setFilterResult(second, Single.success(true));
 
-        listener.listen(first.andThen(second).filter(context));
-        listener.verifySuccess(FALSE);
+        applyFilters();
+        listener.verifySuccess(TRUE);
 
-        verify(first).filter(context);
-        verify(second, never()).filter(any(ConnectionContext.class));
+        verify(first).apply(context);
+        verify(second).apply(context);
     }
 
     @Test
-    public void chainingAfterNullShouldNotCallNextFilter() {
+    public void chainingAfterNullShouldCallNextFilter() {
         setFilterResult(first, Single.success(null));
+        setFilterResult(second, Single.success(true));
 
-        listener.listen(first.andThen(second).filter(context));
-        listener.verifySuccess(null);
+        applyFilters();
+        listener.verifySuccess(TRUE);
 
-        verify(first).filter(context);
-        verify(second, never()).filter(any(ConnectionContext.class));
+        verify(first).apply(context);
+        verify(second).apply(context);
     }
 
     @Test
     public void chainingAfterErrorShouldNotCallNextFilter() {
         setFilterResult(first, Single.error(DELIBERATE_EXCEPTION));
 
-        listener.listen(first.andThen(second).filter(context));
+        applyFilters();
         listener.verifyFailure(DeliberateException.class);
 
-        verify(first).filter(context);
-        verify(second, never()).filter(any(ConnectionContext.class));
+        verify(first).apply(context);
+        verify(second, never()).apply(any(ConnectionContext.class));
     }
 
     private void setFilterResult(final ContextFilter filter, final Single<Boolean> resultSingle) {
-        when(filter.filter(context)).thenReturn(resultSingle);
+        when(filter.apply(context)).thenReturn(resultSingle);
+    }
+
+    @Nonnull
+    protected void applyFilters() {
+        ContextFilterFactory f = (original -> new ContextFilterAdapter(original, (ctx, prevResult) -> second.apply(ctx)));
+        f = f.append(original -> new ContextFilterAdapter(original, (ctx, prevResult) -> first.apply(ctx)));
+        listener.listen(f.apply(ACCEPT_ALL).apply(context));
+    }
+
+    private static class OrderVerifyingContextFilterAdapter extends ContextFilterAdapter {
+        private final ConcurrentLinkedQueue<Integer> order;
+        private final int index;
+
+        OrderVerifyingContextFilterAdapter(final ContextFilter original, final ConcurrentLinkedQueue<Integer> order,
+                                           final int index) {
+            super(original);
+            this.order = order;
+            this.index = index;
+        }
+
+        @Override
+        public Single<Boolean> apply(final ConnectionContext context) {
+            order.add(index);
+            return super.apply(context);
+        }
     }
 }

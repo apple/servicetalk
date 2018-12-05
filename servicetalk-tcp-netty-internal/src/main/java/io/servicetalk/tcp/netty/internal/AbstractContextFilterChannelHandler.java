@@ -61,7 +61,12 @@ abstract class AbstractContextFilterChannelHandler extends ChannelDuplexHandler 
         if (executor == immediate()) {
             runContextFilter(ctx);
         } else {
-            executor.execute(() -> runContextFilter(ctx));
+            try {
+                executor.execute(() -> runContextFilter(ctx));
+            } catch (Throwable t) {
+                LOGGER.warn("Can not enqueue context filter {} execution for context {}.", contextFilter, context, t);
+                ctx.close();
+            }
         }
     }
 
@@ -69,7 +74,7 @@ abstract class AbstractContextFilterChannelHandler extends ChannelDuplexHandler 
 
     private void runContextFilter(final ChannelHandlerContext ctx) {
         try {
-            contextFilter.filter(context).subscribe(new Single.Subscriber<Boolean>() {
+            contextFilter.apply(context).subscribe(new Single.Subscriber<Boolean>() {
                 @Override
                 public void onSubscribe(final Cancellable cancellable) {
                     sequentialCancellable.setNextCancellable(cancellable);
@@ -103,8 +108,8 @@ abstract class AbstractContextFilterChannelHandler extends ChannelDuplexHandler 
                 }
             });
         } catch (Throwable t) {
-            ctx.close();
             LOGGER.warn("Exception from context filter {} for context {}.", contextFilter, context, t);
+            ctx.close();
         }
     }
 

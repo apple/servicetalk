@@ -19,8 +19,7 @@ import io.servicetalk.concurrent.api.AsyncCloseable;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
 
-import java.util.Objects;
-import java.util.function.Function;
+import static io.servicetalk.concurrent.api.Completable.completed;
 
 /**
  * Allow to filter connections a.k.a {@link ConnectionContext}s.
@@ -40,95 +39,10 @@ public interface ContextFilter extends AsyncCloseable {
      * @param context the {@link ConnectionContext} for which the filter operation is done
      * @return the {@link Single} which is notified once complete
      */
-    Single<Boolean> filter(ConnectionContext context);
+    Single<Boolean> apply(ConnectionContext context);
 
     @Override
     default Completable closeAsync() {
-        return Completable.completed();
-    }
-
-    /**
-     * Allow to chain multiple {@link ContextFilter} and so compose them for more complex processing logic and small
-     * reusable parts. As soon as the {@link ContextFilter} completes the {@link Single} with
-     * {@link Boolean#FALSE} the processing will be stopped and the connection rejected.
-     *
-     * @param after the {@link ContextFilter} which should be executed after this instance
-     * @return a new {@link ContextFilter} which will first execute this {@link ContextFilter} and then
-     *          {@code after}
-     */
-    default ContextFilter andThen(ContextFilter after) {
-        return new ContextFilter() {
-            @Override
-            public Single<Boolean> filter(final ConnectionContext context) {
-                return ContextFilter.this.filter(context).flatMap(
-                        result -> (result == null || !result) ? Single.success(result) : after.filter(context));
-            }
-
-            @Override
-            public Completable closeAsync() {
-                return ContextFilter.this.closeAsync().merge(after.closeAsync());
-            }
-
-            @Override
-            public Completable closeAsyncGracefully() {
-                return ContextFilter.this.closeAsyncGracefully().merge(after.closeAsyncGracefully());
-            }
-        };
-    }
-
-    /**
-     * Creates a new {@link ContextFilter} from a {@link Function}.
-     *
-     * @param func the {@link Function} from which a {@link ContextFilter} should be created
-     * @return a new {@link ContextFilter} which contains the logic of the given {@link Function}
-     */
-    static ContextFilter create(Function<ConnectionContext, Single<Boolean>> func) {
-        return safe(func::apply);
-    }
-
-    /**
-     * Just create a {@link ContextFilter} from the given {@link Function}.
-     *
-     * @param fn the {@link Function} from which a {@link ContextFilter} should be created
-     * @return a new {@link ContextFilter} which contains the logic of the given {@link Function}
-     */
-    static ContextFilter simpleConnectionFilter(Function<ConnectionContext, Boolean> fn) {
-        Objects.requireNonNull(fn);
-        return ctx -> {
-            try {
-                return Single.success(fn.apply(ctx));
-            } catch (Throwable cause) {
-                return Single.error(cause);
-            }
-        };
-    }
-
-    /**
-     * Wraps another {@link ContextFilter}.
-     * @param filter   the {@link ContextFilter} to wrap
-     * @return a new {@link ContextFilter} which wraps the given one
-     */
-    static ContextFilter safe(ContextFilter filter) {
-        Objects.requireNonNull(filter);
-        return new ContextFilter() {
-            @Override
-            public Single<Boolean> filter(ConnectionContext context) {
-                try {
-                    return filter.filter(context);
-                } catch (Throwable cause) {
-                    return Single.error(cause);
-                }
-            }
-
-            @Override
-            public Completable closeAsync() {
-                return filter.closeAsync();
-            }
-
-            @Override
-            public Completable closeAsyncGracefully() {
-                return filter.closeAsyncGracefully();
-            }
-        };
+        return completed();
     }
 }

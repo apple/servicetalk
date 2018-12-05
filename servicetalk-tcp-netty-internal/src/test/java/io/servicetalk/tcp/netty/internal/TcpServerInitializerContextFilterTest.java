@@ -106,7 +106,7 @@ public class TcpServerInitializerContextFilterTest extends AbstractTcpServerTest
                 // Asserting that the SSL Session has been set by the time the filter is called must be done from the
                 // test thread, in order to fail the test with a useful message.
                 sslSession = ctx.sslSession();
-                return filterMode.getContextFilter(SERVER_CTX.executor()).filter(ctx);
+                return filterMode.getContextFilter(SERVER_CTX.executor()).apply(ctx);
             });
         } else {
             setContextFilter(filterMode.getContextFilter(SERVER_CTX.executor()));
