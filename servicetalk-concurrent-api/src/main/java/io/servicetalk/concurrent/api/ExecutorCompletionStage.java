@@ -76,15 +76,15 @@ import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater
  * @param <T> The type of data if/when this {@link CompletionStage} is completed successfully.
  */
 abstract class ExecutorCompletionStage<T> implements CompletionStage<T>, Future<T> {
-    private static final AtomicReferenceFieldUpdater<ExecutorCompletionStage, ListenerNode> listenersUpdater =
-            newUpdater(ExecutorCompletionStage.class, ListenerNode.class, "listeners");
+    private static final AtomicReferenceFieldUpdater<ExecutorCompletionStage, Listener> listenersUpdater =
+            newUpdater(ExecutorCompletionStage.class, Listener.class, "listeners");
     private static final AtomicReferenceFieldUpdater<ExecutorCompletionStage, Object> resultUpdater =
             newUpdater(ExecutorCompletionStage.class, Object.class, "result");
     private static final Object NULL = new Object();
     private final io.servicetalk.concurrent.Executor executor;
     @SuppressWarnings("unused")
     @Nullable
-    private volatile ListenerNode listeners;
+    private volatile Listener<T> listeners;
     @SuppressWarnings("unused")
     @Nullable
     private volatile Object result;
@@ -606,7 +606,7 @@ abstract class ExecutorCompletionStage<T> implements CompletionStage<T>, Future<
     final int getListenerCount() {
         int count = 0;
         // Best effort iteration on non volatile next pointer, for visibility to happen
-        for (ListenerNode node = listeners; node != null; node = node.next) {
+        for (Listener<T> node = listeners; node != null; node = node.next) {
             ++count;
         }
         return count;
@@ -700,20 +700,16 @@ abstract class ExecutorCompletionStage<T> implements CompletionStage<T>, Future<
     private Throwable drainListenerQueueError(Throwable resultCause) {
         Throwable overallCause = null;
         for (;;) {
-            ListenerNode listeners = this.listeners;
+            Listener<T> listeners = this.listeners;
             if (listeners == null) {
                 break;
             } else if (listenersUpdater.compareAndSet(this, listeners, listeners.next)) {
                 listeners.next = null; // prevent GC nepotism
-                if (listeners instanceof OnErrorListener) {
-                    try {
-                        ((OnErrorListener) listeners).onError(resultCause);
-                    } catch (Throwable cause) {
-                        if (overallCause == null) {
-                            overallCause = cause;
-                        } else {
-                            overallCause.addSuppressed(cause);
-                        }
+                try {
+                    listeners.onError(resultCause);
+                } catch (Throwable cause) {
+                    if (overallCause == null) {
+                        overallCause = cause;
                     }
                 }
             }
@@ -721,25 +717,20 @@ abstract class ExecutorCompletionStage<T> implements CompletionStage<T>, Future<
         return overallCause;
     }
 
-    @SuppressWarnings("unchecked")
     @Nullable
     private Throwable drainListenerQueueSuccess(@Nullable T result) {
         Throwable overallCause = null;
         for (;;) {
-            ListenerNode listeners = this.listeners;
+            Listener<T> listeners = this.listeners;
             if (listeners == null) {
                 break;
             } else if (listenersUpdater.compareAndSet(this, listeners, listeners.next)) {
                 listeners.next = null; // prevent GC nepotism
-                if (listeners instanceof OnSuccessListener) {
-                    try {
-                        ((OnSuccessListener<T>) listeners).onSuccess(result);
-                    } catch (Throwable cause) {
-                        if (overallCause == null) {
-                            overallCause = cause;
-                        } else {
-                            overallCause.addSuppressed(cause);
-                        }
+                try {
+                    listeners.onSuccess(result);
+                } catch (Throwable cause) {
+                    if (overallCause == null) {
+                        overallCause = cause;
                     }
                 }
             }
@@ -747,7 +738,7 @@ abstract class ExecutorCompletionStage<T> implements CompletionStage<T>, Future<
         return overallCause;
     }
 
-    private void pushNewListener(ListenerNode newListener) {
+    private void pushNewListener(Listener<T> newListener) {
         for (;;) {
             newListener.next = listeners;
             if (listenersUpdater.compareAndSet(this, newListener.next, newListener)) {
@@ -762,28 +753,24 @@ abstract class ExecutorCompletionStage<T> implements CompletionStage<T>, Future<
         }
     }
 
-    private interface OnSuccessListener<T> {
-        void onSuccess(@Nullable T value);
-    }
-
-    private interface OnErrorListener {
-        void onError(Throwable cause);
-    }
-
-    private static class ListenerNode {
+    private abstract static class Listener<T> {
         // protected by volatile write/read barrier, so no need to be volatile*.
         // *other than getListenerCount which is best effort, just for informational purposes, and explicitly not
         // intended for concurrency control.
         @Nullable
-        ListenerNode next;
+        Listener<T> next;
+
+        abstract void onError(Throwable cause);
+
+        abstract void onSuccess(@Nullable T value);
     }
 
-    private static final class GetListener<T> extends ListenerNode implements OnSuccessListener<T>, OnErrorListener {
+    private static final class GetListener<T> extends Listener<T> {
         @Nullable
         private Object result;
 
         @Override
-        public void onSuccess(@Nullable final T value) {
+        void onSuccess(@Nullable final T value) {
             result = wrap(value);
             synchronized (this) {
                 notifyAll();
@@ -791,7 +778,7 @@ abstract class ExecutorCompletionStage<T> implements CompletionStage<T>, Future<
         }
 
         @Override
-        public void onError(final Throwable cause) {
+        void onError(final Throwable cause) {
             result = new ErrorResult(cause);
             synchronized (this) {
                 notifyAll();
@@ -850,7 +837,7 @@ abstract class ExecutorCompletionStage<T> implements CompletionStage<T>, Future<
         }
     }
 
-    private static final class JdkExecutorRunAfterBothOnListener extends BothFutureOnListener<Object, Object, Void> {
+    private static final class JdkExecutorRunAfterBothOnListener<T> extends BothFutureOnListener<T, Object, Void> {
         private final Executor executor;
         private final Runnable runnable;
 
@@ -861,18 +848,18 @@ abstract class ExecutorCompletionStage<T> implements CompletionStage<T>, Future<
             this.runnable = runnable;
         }
 
-        static JdkExecutorRunAfterBothOnListener newInstance(final Executor executor,
-                                                             final ExecutorCompletionStage<Void> stage,
-                                                             final CompletionStage<?> other,
-                                                             final Runnable runnable) {
-            JdkExecutorRunAfterBothOnListener listener =
-                    new JdkExecutorRunAfterBothOnListener(executor, stage, runnable);
+        static <T> JdkExecutorRunAfterBothOnListener<T> newInstance(final Executor executor,
+                                                                    final ExecutorCompletionStage<Void> stage,
+                                                                    final CompletionStage<?> other,
+                                                                    final Runnable runnable) {
+            JdkExecutorRunAfterBothOnListener<T> listener =
+                    new JdkExecutorRunAfterBothOnListener<>(executor, stage, runnable);
             other.whenComplete(listener);
             return listener;
         }
 
         @Override
-        void completeFuture(final ExecutorCompletionStage<Void> stage, @Nullable final Object tValue,
+        void completeFuture(final ExecutorCompletionStage<Void> stage, @Nullable final T tValue,
                             @Nullable final Object uValue) {
             executor.execute(() -> RunOnSuccessListener.onSuccess(stage, runnable));
         }
@@ -883,7 +870,7 @@ abstract class ExecutorCompletionStage<T> implements CompletionStage<T>, Future<
         }
     }
 
-    private static final class RunAfterBothOnListener extends BothFutureOnListener<Object, Object, Void> {
+    private static final class RunAfterBothOnListener<T> extends BothFutureOnListener<T, Object, Void> {
         private final io.servicetalk.concurrent.Executor executor;
         private final Runnable runnable;
 
@@ -895,17 +882,17 @@ abstract class ExecutorCompletionStage<T> implements CompletionStage<T>, Future<
             this.runnable = runnable;
         }
 
-        static RunAfterBothOnListener newInstance(final io.servicetalk.concurrent.Executor executor,
-                                                  final ExecutorCompletionStage<Void> stage,
-                                                  final CompletionStage<?> other,
-                                                  final Runnable runnable) {
-            RunAfterBothOnListener listener = new RunAfterBothOnListener(executor, stage, runnable);
+        static <T> RunAfterBothOnListener<T> newInstance(final io.servicetalk.concurrent.Executor executor,
+                                                         final ExecutorCompletionStage<Void> stage,
+                                                         final CompletionStage<?> other,
+                                                         final Runnable runnable) {
+            RunAfterBothOnListener<T> listener = new RunAfterBothOnListener<>(executor, stage, runnable);
             other.whenComplete(listener);
             return listener;
         }
 
         @Override
-        void completeFuture(final ExecutorCompletionStage<Void> stage, @Nullable final Object tValue,
+        void completeFuture(final ExecutorCompletionStage<Void> stage, @Nullable final T tValue,
                             @Nullable final Object uValue) {
             if (executor == immediate()) {
                 RunOnSuccessListener.onSuccess(stage, runnable);
@@ -1094,8 +1081,7 @@ abstract class ExecutorCompletionStage<T> implements CompletionStage<T>, Future<
         }
     }
 
-    private static final class JdkExecutorHandleListener<T, U> extends ListenerNode
-            implements OnSuccessListener<T>, OnErrorListener {
+    private static final class JdkExecutorHandleListener<T, U> extends Listener<T> {
         private final Executor executor;
         private final ExecutorCompletionStage<U> stage;
         private final BiFunction<? super T, ? super Throwable, ? extends U> fn;
@@ -1108,12 +1094,12 @@ abstract class ExecutorCompletionStage<T> implements CompletionStage<T>, Future<
         }
 
         @Override
-        public void onSuccess(@Nullable final T value) {
+        void onSuccess(@Nullable final T value) {
             executor.execute(() -> HandleListener.handleSuccess(stage, value, fn));
         }
 
         @Override
-        public void onError(final Throwable cause) {
+        void onError(final Throwable cause) {
             executor.execute(() -> HandleListener.handleError(stage, cause, fn));
         }
 
@@ -1127,8 +1113,7 @@ abstract class ExecutorCompletionStage<T> implements CompletionStage<T>, Future<
         }
     }
 
-    private static final class HandleListener<T, U> extends ListenerNode
-            implements OnSuccessListener<T>, OnErrorListener {
+    private static final class HandleListener<T, U> extends Listener<T> {
         private final ExecutorCompletionStage<U> stage;
         private final BiFunction<? super T, ? super Throwable, ? extends U> fn;
 
@@ -1139,12 +1124,12 @@ abstract class ExecutorCompletionStage<T> implements CompletionStage<T>, Future<
         }
 
         @Override
-        public void onSuccess(@Nullable final T value) {
+        void onSuccess(@Nullable final T value) {
             handleSuccess(stage, value, fn);
         }
 
         @Override
-        public void onError(final Throwable cause) {
+        void onError(final Throwable cause) {
             handleError(stage, cause, fn);
         }
 
@@ -1191,8 +1176,7 @@ abstract class ExecutorCompletionStage<T> implements CompletionStage<T>, Future<
         }
     }
 
-    private static final class JdkExecutorWhenCompleteListener<T> extends ListenerNode
-            implements OnSuccessListener<T>, OnErrorListener {
+    private static final class JdkExecutorWhenCompleteListener<T> extends Listener<T> {
         private final Executor executor;
         private final ExecutorCompletionStage<T> stage;
         private final BiConsumer<? super T, ? super Throwable> fn;
@@ -1205,12 +1189,12 @@ abstract class ExecutorCompletionStage<T> implements CompletionStage<T>, Future<
         }
 
         @Override
-        public void onSuccess(@Nullable final T value) {
+        void onSuccess(@Nullable final T value) {
             executor.execute(() -> WhenCompleteListener.handleSuccess(stage, value, fn));
         }
 
         @Override
-        public void onError(final Throwable cause) {
+        void onError(final Throwable cause) {
             executor.execute(() -> WhenCompleteListener.handleError(stage, cause, fn));
         }
 
@@ -1225,8 +1209,7 @@ abstract class ExecutorCompletionStage<T> implements CompletionStage<T>, Future<
         }
     }
 
-    private static final class WhenCompleteListener<T> extends ListenerNode
-            implements OnSuccessListener<T>, OnErrorListener {
+    private static final class WhenCompleteListener<T> extends Listener<T> {
         private final ExecutorCompletionStage<T> stage;
         private final BiConsumer<? super T, ? super Throwable> fn;
 
@@ -1237,12 +1220,12 @@ abstract class ExecutorCompletionStage<T> implements CompletionStage<T>, Future<
         }
 
         @Override
-        public void onSuccess(@Nullable final T value) {
+        void onSuccess(@Nullable final T value) {
             handleSuccess(stage, value, fn);
         }
 
         @Override
-        public void onError(final Throwable cause) {
+        void onError(final Throwable cause) {
             handleError(stage, cause, fn);
         }
 
@@ -1287,7 +1270,7 @@ abstract class ExecutorCompletionStage<T> implements CompletionStage<T>, Future<
         }
     }
 
-    private static final class ErrorOnErrorListener<T> extends ListenerNode implements OnErrorListener {
+    private static final class ErrorOnErrorListener<T> extends Listener<T> {
         private final ExecutorCompletionStage<T> stage;
         private final Function<Throwable, ? extends T> fn;
 
@@ -1297,8 +1280,13 @@ abstract class ExecutorCompletionStage<T> implements CompletionStage<T>, Future<
         }
 
         @Override
-        public void onError(final Throwable cause) {
+        void onError(final Throwable cause) {
             handleError(stage, cause, fn);
+        }
+
+        @Override
+        void onSuccess(@Nullable final T value) {
+            stage.completeNoExec(value);
         }
 
         static <T> void handleError(ExecutorCompletionStage<T> stage, Throwable cause,
@@ -1332,8 +1320,7 @@ abstract class ExecutorCompletionStage<T> implements CompletionStage<T>, Future<
         }
     }
 
-    private static final class JdkExecutorComposeOnSuccessListener<T, U> extends ListenerNode
-            implements OnSuccessListener<T> {
+    private static final class JdkExecutorComposeOnSuccessListener<T, U> extends Listener<T> {
         private final Executor executor;
         private final ExecutorCompletionStage<U> stage;
         private final Function<? super T, ? extends CompletionStage<U>> fn;
@@ -1346,7 +1333,12 @@ abstract class ExecutorCompletionStage<T> implements CompletionStage<T>, Future<
         }
 
         @Override
-        public void onSuccess(@Nullable final T value) {
+        void onError(final Throwable cause) {
+            stage.completeExceptionally(cause);
+        }
+
+        @Override
+        void onSuccess(@Nullable final T value) {
             handleSuccess(executor, value, stage, fn);
         }
 
@@ -1365,7 +1357,7 @@ abstract class ExecutorCompletionStage<T> implements CompletionStage<T>, Future<
         }
     }
 
-    private static final class ComposeOnSuccessListener<T, U> extends ListenerNode implements OnSuccessListener<T> {
+    private static final class ComposeOnSuccessListener<T, U> extends Listener<T> {
         private final ExecutorCompletionStage<U> stage;
         private final Function<? super T, ? extends CompletionStage<U>> fn;
 
@@ -1376,7 +1368,12 @@ abstract class ExecutorCompletionStage<T> implements CompletionStage<T>, Future<
         }
 
         @Override
-        public void onSuccess(@Nullable final T value) {
+        void onError(final Throwable cause) {
+            stage.completeExceptionallyNoExec(cause);
+        }
+
+        @Override
+        void onSuccess(@Nullable final T value) {
             handleSuccess(stage, value, fn);
         }
 
@@ -1414,7 +1411,7 @@ abstract class ExecutorCompletionStage<T> implements CompletionStage<T>, Future<
         }
     }
 
-    private static final class JdkExecutorRunEitherListener extends EitherFutureOnListener<Object, Void> {
+    private static final class JdkExecutorRunEitherListener<T> extends EitherFutureOnListener<T, Object, Void> {
         private final Executor executor;
         private final Runnable action;
 
@@ -1426,27 +1423,32 @@ abstract class ExecutorCompletionStage<T> implements CompletionStage<T>, Future<
             this.action = action;
         }
 
-        static <T> JdkExecutorRunEitherListener newInstance(final Executor executor,
-                                                            final ExecutorCompletionStage<Void> stage,
-                                                            final CompletionStage<? extends T> other,
-                                                            final Runnable fn) {
-            JdkExecutorRunEitherListener listener = new JdkExecutorRunEitherListener(executor, stage, fn);
+        static <T> JdkExecutorRunEitherListener<T> newInstance(final Executor executor,
+                                                               final ExecutorCompletionStage<Void> stage,
+                                                               final CompletionStage<?> other,
+                                                               final Runnable fn) {
+            JdkExecutorRunEitherListener<T> listener = new JdkExecutorRunEitherListener<>(executor, stage, fn);
             other.whenComplete(listener);
             return listener;
         }
 
         @Override
-        void completeFuture(final ExecutorCompletionStage<Void> stage, @Nullable final Object tValue) {
+        void completeFutureT(final ExecutorCompletionStage<Void> stage, @Nullable final T tValue) {
+            completeFutureU(stage, tValue);
+        }
+
+        @Override
+        void completeFutureU(ExecutorCompletionStage<Void> stage, @Nullable final Object tValue) {
             executor.execute(() -> RunEitherListener.completeFuture(stage, action));
         }
 
         @Override
         void completeFuture(final ExecutorCompletionStage<Void> stage, final Throwable cause) {
-            executor.execute(() -> stage.completeExceptionallyNoExec(cause));
+            stage.completeExceptionally(cause);
         }
     }
 
-    private static final class RunEitherListener extends EitherFutureOnListener<Object, Void> {
+    private static final class RunEitherListener<T> extends EitherFutureOnListener<T, Object, Void> {
         private final io.servicetalk.concurrent.Executor executor;
         private final Runnable action;
 
@@ -1457,17 +1459,22 @@ abstract class ExecutorCompletionStage<T> implements CompletionStage<T>, Future<
             this.action = action;
         }
 
-        static <T> RunEitherListener newInstance(io.servicetalk.concurrent.Executor executor,
-                                                 final ExecutorCompletionStage<Void> stage,
-                                                 final CompletionStage<? extends T> other,
-                                                 final Runnable fn) {
-            RunEitherListener listener = new RunEitherListener(executor, stage, fn);
+        static <T> RunEitherListener<T> newInstance(io.servicetalk.concurrent.Executor executor,
+                                                    final ExecutorCompletionStage<Void> stage,
+                                                    final CompletionStage<?> other,
+                                                    final Runnable fn) {
+            RunEitherListener<T> listener = new RunEitherListener<>(executor, stage, fn);
             other.whenComplete(listener);
             return listener;
         }
 
         @Override
-        void completeFuture(final ExecutorCompletionStage<Void> stage, @Nullable final Object tValue) {
+        void completeFutureT(final ExecutorCompletionStage<Void> stage, @Nullable final T tValue) {
+            completeFutureU(stage, tValue);
+        }
+
+        @Override
+        void completeFutureU(ExecutorCompletionStage<Void> stage, @Nullable final Object tValue) {
             if (executor == immediate()) {
                 completeFuture(stage, action);
             } else {
@@ -1495,7 +1502,7 @@ abstract class ExecutorCompletionStage<T> implements CompletionStage<T>, Future<
         }
     }
 
-    private static final class JdkExecutorAcceptEitherListener<T> extends EitherFutureOnListener<T, Void> {
+    private static final class JdkExecutorAcceptEitherListener<T> extends EitherFutureOnListener<T, T, Void> {
         private final Executor executor;
         private final Consumer<? super T> action;
 
@@ -1516,17 +1523,22 @@ abstract class ExecutorCompletionStage<T> implements CompletionStage<T>, Future<
         }
 
         @Override
-        void completeFuture(final ExecutorCompletionStage<Void> stage, @Nullable final T tValue) {
+        void completeFutureT(final ExecutorCompletionStage<Void> stage, @Nullable final T tValue) {
             executor.execute(() -> AcceptEitherListener.completeFuture(stage, tValue, action));
         }
 
         @Override
+        void completeFutureU(ExecutorCompletionStage<Void> stage, @Nullable final T tValue) {
+            completeFutureT(stage, tValue);
+        }
+
+        @Override
         void completeFuture(final ExecutorCompletionStage<Void> stage, final Throwable cause) {
-            executor.execute(() -> stage.completeExceptionallyNoExec(cause));
+            stage.completeExceptionally(cause);
         }
     }
 
-    private static final class AcceptEitherListener<T> extends EitherFutureOnListener<T, Void> {
+    private static final class AcceptEitherListener<T> extends EitherFutureOnListener<T, T, Void> {
         private final io.servicetalk.concurrent.Executor executor;
         private final Consumer<? super T> action;
 
@@ -1547,12 +1559,17 @@ abstract class ExecutorCompletionStage<T> implements CompletionStage<T>, Future<
         }
 
         @Override
-        void completeFuture(final ExecutorCompletionStage<Void> stage, @Nullable final T tValue) {
+        void completeFutureT(final ExecutorCompletionStage<Void> stage, @Nullable final T tValue) {
             if (executor == immediate()) {
                 completeFuture(stage, tValue, action);
             } else {
                 executor.execute(() -> completeFuture(stage, tValue, action));
             }
+        }
+
+        @Override
+        void completeFutureU(ExecutorCompletionStage<Void> stage, @Nullable final T tValue) {
+            completeFutureT(stage, tValue);
         }
 
         @Override
@@ -1576,7 +1593,7 @@ abstract class ExecutorCompletionStage<T> implements CompletionStage<T>, Future<
         }
     }
 
-    private static final class JdkExecutorApplyEitherListener<T, U> extends EitherFutureOnListener<T, U> {
+    private static final class JdkExecutorApplyEitherListener<T, U> extends EitherFutureOnListener<T, T, U> {
         private final Executor executor;
         private final Function<? super T, U> fn;
 
@@ -1597,8 +1614,13 @@ abstract class ExecutorCompletionStage<T> implements CompletionStage<T>, Future<
         }
 
         @Override
-        void completeFuture(final ExecutorCompletionStage<U> stage, @Nullable final T tValue) {
+        void completeFutureT(final ExecutorCompletionStage<U> stage, @Nullable final T tValue) {
             executor.execute(() -> ApplyEitherListener.completeFuture(stage, tValue, fn));
+        }
+
+        @Override
+        void completeFutureU(ExecutorCompletionStage<U> stage, @Nullable final T tValue) {
+            completeFutureT(stage, tValue);
         }
 
         @Override
@@ -1607,7 +1629,7 @@ abstract class ExecutorCompletionStage<T> implements CompletionStage<T>, Future<
         }
     }
 
-    private static final class ApplyEitherListener<T, U> extends EitherFutureOnListener<T, U> {
+    private static final class ApplyEitherListener<T, U> extends EitherFutureOnListener<T, T, U> {
         private final io.servicetalk.concurrent.Executor executor;
         private final Function<? super T, U> fn;
 
@@ -1628,12 +1650,17 @@ abstract class ExecutorCompletionStage<T> implements CompletionStage<T>, Future<
         }
 
         @Override
-        void completeFuture(ExecutorCompletionStage<U> stage, @Nullable final T tValue) {
+        void completeFutureT(ExecutorCompletionStage<U> stage, @Nullable final T tValue) {
             if (executor == immediate()) {
                 completeFuture(stage, tValue, fn);
             } else {
                 executor.execute(() -> completeFuture(stage, tValue, fn));
             }
+        }
+
+        @Override
+        void completeFutureU(ExecutorCompletionStage<U> stage, @Nullable final T tValue) {
+            completeFutureT(stage, tValue);
         }
 
         @Override
@@ -1658,51 +1685,53 @@ abstract class ExecutorCompletionStage<T> implements CompletionStage<T>, Future<
         }
     }
 
-    private abstract static class EitherFutureOnListener<T, U> extends ListenerNode
-            implements OnSuccessListener<T>, OnErrorListener, BiConsumer<T, Throwable> {
+    private abstract static class EitherFutureOnListener<T, U, V> extends Listener<T>
+            implements BiConsumer<U, Throwable> {
         private static final AtomicIntegerFieldUpdater<EitherFutureOnListener> doneUpdater =
                 AtomicIntegerFieldUpdater.newUpdater(EitherFutureOnListener.class, "done");
         @SuppressWarnings("unused")
         @Nullable
         private volatile int done;
-        private final ExecutorCompletionStage<U> stage;
+        private final ExecutorCompletionStage<V> stage;
 
-        EitherFutureOnListener(final ExecutorCompletionStage<U> stage) {
+        EitherFutureOnListener(final ExecutorCompletionStage<V> stage) {
             this.stage = stage;
         }
 
         @Override
-        public final void onSuccess(@Nullable final T value) {
+        final void onSuccess(@Nullable final T value) {
             if (doneUpdater.compareAndSet(this, 0, 1)) {
-                completeFuture(stage, value);
+                completeFutureT(stage, value);
             }
         }
 
         @Override
-        public final void onError(final Throwable cause) {
+        final void onError(final Throwable cause) {
             if (doneUpdater.compareAndSet(this, 0, 1)) {
                 completeFuture(stage, cause);
             }
         }
 
         @Override
-        public final void accept(final T value, final Throwable throwable) {
+        public final void accept(final U value, final Throwable throwable) {
             if (doneUpdater.compareAndSet(this, 0, 1)) {
                 if (throwable != null) {
                     completeFuture(stage, throwable);
                 } else {
-                    completeFuture(stage, value);
+                    completeFutureU(stage, value);
                 }
             }
         }
 
-        abstract void completeFuture(ExecutorCompletionStage<U> stage, @Nullable T tValue);
+        abstract void completeFutureT(ExecutorCompletionStage<V> stage, @Nullable T tValue);
 
-        abstract void completeFuture(ExecutorCompletionStage<U> stage, Throwable cause);
+        abstract void completeFutureU(ExecutorCompletionStage<V> stage, @Nullable U uValue);
+
+        abstract void completeFuture(ExecutorCompletionStage<V> stage, Throwable cause);
     }
 
-    private abstract static class BothFutureOnListener<T, U, V> extends ListenerNode
-            implements OnSuccessListener<T>, OnErrorListener, BiConsumer<U, Throwable> {
+    private abstract static class BothFutureOnListener<T, U, V> extends Listener<T>
+            implements BiConsumer<U, Throwable> {
         private static final AtomicReferenceFieldUpdater<BothFutureOnListener, Object> firstResultUpdater =
                 newUpdater(BothFutureOnListener.class, Object.class, "firstResult");
         @Nullable
@@ -1714,7 +1743,7 @@ abstract class ExecutorCompletionStage<T> implements CompletionStage<T>, Future<
         }
 
         @Override
-        public final void onSuccess(@Nullable final T value) {
+        final void onSuccess(@Nullable final T value) {
             for (;;) {
                 Object firstValue = this.firstResult;
                 if (firstValue == null) {
@@ -1732,7 +1761,7 @@ abstract class ExecutorCompletionStage<T> implements CompletionStage<T>, Future<
         }
 
         @Override
-        public final void onError(final Throwable cause) {
+        final void onError(final Throwable cause) {
             if (firstResultUpdater.compareAndSet(this, null, ErrorResult.DUMMY)) {
                 completeFuture(stage, cause);
             }
@@ -1761,7 +1790,7 @@ abstract class ExecutorCompletionStage<T> implements CompletionStage<T>, Future<
         abstract void completeFuture(ExecutorCompletionStage<V> stage, Throwable cause);
     }
 
-    private static final class JdkExecutorRunOnSuccessListener<T> extends ListenerNode implements OnSuccessListener<T> {
+    private static final class JdkExecutorRunOnSuccessListener<T> extends Listener<T> {
         private final Executor executor;
         private final ExecutorCompletionStage<Void> stage;
         private final Runnable runnable;
@@ -1774,7 +1803,12 @@ abstract class ExecutorCompletionStage<T> implements CompletionStage<T>, Future<
         }
 
         @Override
-        public void onSuccess(@Nullable final T value) {
+        void onError(final Throwable cause) {
+            stage.completeExceptionally(cause);
+        }
+
+        @Override
+        void onSuccess(@Nullable final T value) {
             executor.execute(() -> RunOnSuccessListener.onSuccess(stage, runnable));
         }
 
@@ -1790,7 +1824,7 @@ abstract class ExecutorCompletionStage<T> implements CompletionStage<T>, Future<
         }
     }
 
-    private static final class RunOnSuccessListener<T> extends ListenerNode implements OnSuccessListener<T> {
+    private static final class RunOnSuccessListener<T> extends Listener<T> {
         private final ExecutorCompletionStage<Void> stage;
         private final Runnable runnable;
 
@@ -1800,7 +1834,12 @@ abstract class ExecutorCompletionStage<T> implements CompletionStage<T>, Future<
         }
 
         @Override
-        public void onSuccess(@Nullable final T value) {
+        void onError(final Throwable cause) {
+            stage.completeExceptionallyNoExec(cause);
+        }
+
+        @Override
+        void onSuccess(@Nullable final T value) {
             onSuccess(stage, runnable);
         }
 
@@ -1834,8 +1873,7 @@ abstract class ExecutorCompletionStage<T> implements CompletionStage<T>, Future<
         }
     }
 
-    private static final class JdkExecutorAcceptOnSuccessListener<T> extends ListenerNode
-            implements OnSuccessListener<T> {
+    private static final class JdkExecutorAcceptOnSuccessListener<T> extends Listener<T> {
         private final Executor executor;
         private final ExecutorCompletionStage<Void> stage;
         private final Consumer<? super T> consumer;
@@ -1848,7 +1886,12 @@ abstract class ExecutorCompletionStage<T> implements CompletionStage<T>, Future<
         }
 
         @Override
-        public void onSuccess(@Nullable final T value) {
+        void onError(final Throwable cause) {
+            stage.completeExceptionally(cause);
+        }
+
+        @Override
+        void onSuccess(@Nullable final T value) {
             executor.execute(() -> AcceptOnSuccessListener.onSuccess(stage, value, consumer));
         }
 
@@ -1864,7 +1907,7 @@ abstract class ExecutorCompletionStage<T> implements CompletionStage<T>, Future<
         }
     }
 
-    private static final class AcceptOnSuccessListener<T> extends ListenerNode implements OnSuccessListener<T> {
+    private static final class AcceptOnSuccessListener<T> extends Listener<T> {
         private final ExecutorCompletionStage<Void> stage;
         private final Consumer<? super T> consumer;
 
@@ -1875,7 +1918,12 @@ abstract class ExecutorCompletionStage<T> implements CompletionStage<T>, Future<
         }
 
         @Override
-        public void onSuccess(@Nullable final T value) {
+        void onError(final Throwable cause) {
+            stage.completeExceptionallyNoExec(cause);
+        }
+
+        @Override
+        void onSuccess(@Nullable final T value) {
             onSuccess(stage, value, consumer);
         }
 
@@ -1910,8 +1958,7 @@ abstract class ExecutorCompletionStage<T> implements CompletionStage<T>, Future<
         }
     }
 
-    private static final class JdkExecutorApplyOnSuccessListener<T, U> extends ListenerNode
-            implements OnSuccessListener<T> {
+    private static final class JdkExecutorApplyOnSuccessListener<T, U> extends Listener<T> {
         private final Executor executor;
         private final ExecutorCompletionStage<U> stage;
         private final Function<? super T, ? extends U> fn;
@@ -1924,7 +1971,12 @@ abstract class ExecutorCompletionStage<T> implements CompletionStage<T>, Future<
         }
 
         @Override
-        public void onSuccess(@Nullable final T value) {
+        void onError(final Throwable cause) {
+            stage.completeExceptionally(cause);
+        }
+
+        @Override
+        void onSuccess(@Nullable final T value) {
             executor.execute(() -> ApplyOnSuccessListener.onSuccess(stage, value, fn));
         }
 
@@ -1939,7 +1991,7 @@ abstract class ExecutorCompletionStage<T> implements CompletionStage<T>, Future<
         }
     }
 
-    private static final class ApplyOnSuccessListener<T, U> extends ListenerNode implements OnSuccessListener<T> {
+    private static final class ApplyOnSuccessListener<T, U> extends Listener<T> {
         private final ExecutorCompletionStage<U> stage;
         private final Function<? super T, ? extends U> fn;
 
@@ -1950,7 +2002,12 @@ abstract class ExecutorCompletionStage<T> implements CompletionStage<T>, Future<
         }
 
         @Override
-        public void onSuccess(@Nullable final T value) {
+        void onError(final Throwable cause) {
+            stage.completeExceptionallyNoExec(cause);
+        }
+
+        @Override
+        void onSuccess(@Nullable final T value) {
             onSuccess(stage, value, fn);
         }
 
