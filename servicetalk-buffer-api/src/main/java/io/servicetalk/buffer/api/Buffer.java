@@ -13,6 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+/*
+ * Copyright 2012 The Netty Project
+ *
+ * The Netty Project licenses this file to you under the Apache License,
+ * version 2.0 (the "License"); you may not use this file except in compliance
+ * with the License. You may obtain a copy of the License at:
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ */
 package io.servicetalk.buffer.api;
 
 import java.io.IOException;
@@ -42,13 +57,13 @@ public interface Buffer {
      *
      * @param newCapacity the new capacity.
      * @return itself.
+     * @throws IllegalArgumentException if the {@code newCapacity} is greater than {@link #maxCapacity()}
      */
     Buffer capacity(int newCapacity);
 
     /**
-     * Returns the maximum allowed capacity of this buffer.  If a user attempts to increase the
-     * capacity of this buffer beyond the maximum capacity using {@link #capacity(int)}, those methods will raise an
-     * {@link IllegalArgumentException}.
+     * Returns the maximum allowed capacity of this buffer. This value provides an upper
+     * bound on {@link #capacity()}.
      *
      * @return the max capacity of this buffer.
      */
@@ -117,10 +132,10 @@ public interface Buffer {
     int maxWritableBytes();
 
     /**
-     * Makes sure the number of {@linkplain #writableBytes() the writable bytes}
-     * is equal to or greater than the specified value. If there is enough
-     * writable bytes in this buffer, this method returns with no side effect.
-     * Otherwise, it raises an {@link IllegalArgumentException}.
+     * Expands the buffer {@link #capacity()} to make sure the number of
+     * {@linkplain #writableBytes() the writable bytes} is equal to or greater than the
+     * specified value.  If there is enough writable bytes in this buffer, this method
+     * returns with no side effect.
      *
      * @param minWritableBytes
      *        the expected minimum number of writable bytes
@@ -131,9 +146,9 @@ public interface Buffer {
     Buffer ensureWritable(int minWritableBytes);
 
     /**
-     * Tries to make sure the number of {@linkplain #writableBytes() the writable bytes}
-     * is equal to or greater than the specified value. Unlike {@link #ensureWritable(int)},
-     * this method does not raise an exception but returns a code.
+     * Expands the buffer {@link #capacity()} to make sure the number of
+     * {@linkplain #writableBytes() the writable bytes} is equal to or greater than the
+     * specified value. Unlike {@link #ensureWritable(int)}, this method returns a code.
      *
      * @param minWritableBytes
      *        the expected minimum number of writable bytes
@@ -1269,11 +1284,11 @@ public interface Buffer {
     /**
      * Sets the specified boolean at the current {@code writerIndex}
      * and increases the {@code writerIndex} by {@code 1} in this buffer.
+     * If {@code this.writableBytes} is less than {@code 1}, the buffer
+     * {@link #capacity()} will be increased.
      *
      * @param value the value to write.
      * @return self.
-     * @throws IndexOutOfBoundsException
-     *         if {@code this.writableBytes} is less than {@code 1}
      */
     Buffer writeBoolean(boolean value);
 
@@ -1281,11 +1296,11 @@ public interface Buffer {
      * Sets the specified byte at the current {@code writerIndex}
      * and increases the {@code writerIndex} by {@code 1} in this buffer.
      * The 24 high-order bits of the specified value are ignored.
+     * If {@code this.writableBytes} is less than {@code 1}, the buffer
+     * {@link #capacity()} will be increased.
      *
      * @param value the value to write.
      * @return self.
-     * @throws IndexOutOfBoundsException
-     *         if {@code this.writableBytes} is less than {@code 1}
      */
     Buffer writeByte(int value);
 
@@ -1293,11 +1308,11 @@ public interface Buffer {
      * Sets the specified 16-bit short integer at the current
      * {@code writerIndex} and increases the {@code writerIndex} by {@code 2}
      * in this buffer.  The 16 high-order bits of the specified value are ignored.
+     * If {@code this.writableBytes} is less than {@code 2}, the buffer
+     * {@link #capacity()} will be increased.
      *
      * @param value the value to write.
      * @return self.
-     * @throws IndexOutOfBoundsException
-     *         if {@code this.writableBytes} is less than {@code 2}
      */
     Buffer writeShort(int value);
 
@@ -1306,11 +1321,11 @@ public interface Buffer {
      * Order at the current {@code writerIndex} and increases the
      * {@code writerIndex} by {@code 2} in this buffer.
      * The 16 high-order bits of the specified value are ignored.
+     * If {@code this.writableBytes} is less than {@code 2}, the buffer
+     * {@link #capacity()} will be increased.
      *
      * @param value the value to write.
      * @return self.
-     * @throws IndexOutOfBoundsException
-     *         if {@code this.writableBytes} is less than {@code 2}
      */
     Buffer writeShortLE(int value);
 
@@ -1318,11 +1333,11 @@ public interface Buffer {
      * Sets the specified 24-bit medium integer at the current
      * {@code writerIndex} and increases the {@code writerIndex} by {@code 3}
      * in this buffer.
+     * If {@code this.writableBytes} is less than {@code 3}, the buffer
+     * {@link #capacity()} will be increased.
      *
      * @param value the value to write.
      * @return self.
-     * @throws IndexOutOfBoundsException
-     *         if {@code this.writableBytes} is less than {@code 3}
      */
     Buffer writeMedium(int value);
 
@@ -1331,22 +1346,22 @@ public interface Buffer {
      * {@code writerIndex} in the Little Endian Byte Order and
      * increases the {@code writerIndex} by {@code 3} in this
      * buffer.
+     * If {@code this.writableBytes} is less than {@code 3}, the buffer
+     * {@link #capacity()} will be increased.
      *
      * @param value the value to write.
      * @return self.
-     * @throws IndexOutOfBoundsException
-     *         if {@code this.writableBytes} is less than {@code 3}
      */
     Buffer writeMediumLE(int value);
 
     /**
      * Sets the specified 32-bit integer at the current {@code writerIndex}
      * and increases the {@code writerIndex} by {@code 4} in this buffer.
+     * If {@code this.writableBytes} is less than {@code 4}, the buffer
+     * {@link #capacity()} will be increased.
      *
      * @param value the value to write.
      * @return self.
-     * @throws IndexOutOfBoundsException
-     *         if {@code this.writableBytes} is less than {@code 4}
      */
     Buffer writeInt(int value);
 
@@ -1354,11 +1369,11 @@ public interface Buffer {
      * Sets the specified 32-bit integer at the current {@code writerIndex}
      * in the Little Endian Byte Order and increases the {@code writerIndex}
      * by {@code 4} in this buffer.
+     * If {@code this.writableBytes} is less than {@code 4}, the buffer
+     * {@link #capacity()} will be increased.
      *
      * @param value the value to write.
      * @return self.
-     * @throws IndexOutOfBoundsException
-     *         if {@code this.writableBytes} is less than {@code 4}
      */
     Buffer writeIntLE(int value);
 
@@ -1366,11 +1381,11 @@ public interface Buffer {
      * Sets the specified 64-bit long integer at the current
      * {@code writerIndex} and increases the {@code writerIndex} by {@code 8}
      * in this buffer.
+     * If {@code this.writableBytes} is less than {@code 8}, the buffer
+     * {@link #capacity()} will be increased.
      *
      * @param value the value to write.
      * @return self.
-     * @throws IndexOutOfBoundsException
-     *         if {@code this.writableBytes} is less than {@code 8}
      */
     Buffer writeLong(long value);
 
@@ -1379,11 +1394,11 @@ public interface Buffer {
      * {@code writerIndex} in the Little Endian Byte Order and
      * increases the {@code writerIndex} by {@code 8}
      * in this buffer.
+     * If {@code this.writableBytes} is less than {@code 8}, the buffer
+     * {@link #capacity()} will be increased.
      *
      * @param value the value to write.
      * @return self.
-     * @throws IndexOutOfBoundsException
-     *         if {@code this.writableBytes} is less than {@code 8}
      */
     Buffer writeLongLE(long value);
 
@@ -1391,11 +1406,11 @@ public interface Buffer {
      * Sets the specified 2-byte UTF-16 character at the current
      * {@code writerIndex} and increases the {@code writerIndex} by {@code 2}
      * in this buffer.  The 16 high-order bits of the specified value are ignored.
+     * If {@code this.writableBytes} is less than {@code 2}, the buffer
+     * {@link #capacity()} will be increased.
      *
      * @param value the value to write.
      * @return self.
-     * @throws IndexOutOfBoundsException
-     *         if {@code this.writableBytes} is less than {@code 2}
      */
     Buffer writeChar(int value);
 
@@ -1403,11 +1418,11 @@ public interface Buffer {
      * Sets the specified 32-bit floating point number at the current
      * {@code writerIndex} and increases the {@code writerIndex} by {@code 4}
      * in this buffer.
+     * If {@code this.writableBytes} is less than {@code 4}, the buffer
+     * {@link #capacity()} will be increased.
      *
      * @param value the value to write.
      * @return self.
-     * @throws IndexOutOfBoundsException
-     *         if {@code this.writableBytes} is less than {@code 4}
      */
     Buffer writeFloat(float value);
 
@@ -1415,11 +1430,11 @@ public interface Buffer {
      * Sets the specified 64-bit floating point number at the current
      * {@code writerIndex} and increases the {@code writerIndex} by {@code 8}
      * in this buffer.
+     * If {@code this.writableBytes} is less than {@code 8}, the buffer
+     * {@link #capacity()} will be increased.
      *
      * @param value the value to write.
      * @return self.
-     * @throws IndexOutOfBoundsException
-     *         if {@code this.writableBytes} is less than {@code 8}
      */
     Buffer writeDouble(double value);
 
@@ -1432,12 +1447,11 @@ public interface Buffer {
      * increases the {@code readerIndex} of the source buffer by the number of
      * the transferred bytes while {@link #writeBytes(Buffer, int, int)}
      * does not.
+     * If {@code this.writableBytes} is less than {@code src.readableBytes},
+     * the buffer {@link #capacity()} will be increased.
      *
      * @param src the buffer to write.
      * @return self.
-     * @throws IndexOutOfBoundsException
-     *         if {@code src.readableBytes} is greater than
-     *            {@code this.writableBytes}
      */
     Buffer writeBytes(Buffer src);
 
@@ -1449,13 +1463,12 @@ public interface Buffer {
      * except that this method increases the {@code readerIndex} of the source
      * buffer by the number of the transferred bytes (= {@code length}) while
      * {@link #writeBytes(Buffer, int, int)} does not.
+     * If {@code this.writableBytes} is less than {@code length},
+     * the buffer {@link #capacity()} will be increased.
      *
      * @param src the buffer to write.
      * @param length the number of bytes to transfer
      * @return self.
-     * @throws IndexOutOfBoundsException
-     *         if {@code length} is greater than {@code this.writableBytes} or
-     *         if {@code length} is greater then {@code src.readableBytes}
      */
     Buffer writeBytes(Buffer src, int length);
 
@@ -1463,16 +1476,17 @@ public interface Buffer {
      * Transfers the specified source buffer's data to this buffer starting at
      * the current {@code writerIndex} and increases the {@code writerIndex}
      * by the number of the transferred bytes (= {@code length}).
+     * If {@code this.writableBytes} is less than {@code length},
+     * the buffer {@link #capacity()} will be increased.
      *
      * @param src the buffer to write.
      * @param srcIndex the first index of the source
      * @param length   the number of bytes to transfer
      * @return self.
      * @throws IndexOutOfBoundsException
-     *         if the specified {@code srcIndex} is less than {@code 0},
+     *         if the specified {@code srcIndex} is less than {@code 0}, or
      *         if {@code srcIndex + length} is greater than
-     *            {@code src.capacity}, or
-     *         if {@code length} is greater than {@code this.writableBytes}
+     *            {@code src.capacity}
      */
     Buffer writeBytes(Buffer src, int srcIndex, int length);
 
@@ -1480,11 +1494,11 @@ public interface Buffer {
      * Transfers the specified source array's data to this buffer starting at
      * the current {@code writerIndex} and increases the {@code writerIndex}
      * by the number of the transferred bytes (= {@code src.length}).
+     * If {@code this.writableBytes} is less than {@code src.length},
+     * the buffer {@link #capacity()} will be increased.
      *
      * @param src the array to write.
      * @return self.
-     * @throws IndexOutOfBoundsException
-     *         if {@code src.length} is greater than {@code this.writableBytes}
      */
     Buffer writeBytes(byte[] src);
 
@@ -1492,16 +1506,17 @@ public interface Buffer {
      * Transfers the specified source array's data to this buffer starting at
      * the current {@code writerIndex} and increases the {@code writerIndex}
      * by the number of the transferred bytes (= {@code length}).
+     * If {@code this.writableBytes} is less than {@code length},
+     * the buffer {@link #capacity()} will be increased.
      *
      * @param src the array to write.
      * @param srcIndex the first index of the source
      * @param length   the number of bytes to transfer
      * @return self.
      * @throws IndexOutOfBoundsException
-     *         if the specified {@code srcIndex} is less than {@code 0},
+     *         if the specified {@code srcIndex} is less than {@code 0}, or
      *         if {@code srcIndex + length} is greater than
-     *            {@code src.length}, or
-     *         if {@code length} is greater than {@code this.writableBytes}
+     *            {@code src.length}
      */
     Buffer writeBytes(byte[] src, int srcIndex, int length);
 
@@ -1510,12 +1525,11 @@ public interface Buffer {
      * the current {@code writerIndex} until the source buffer's position
      * reaches its limit, and increases the {@code writerIndex} by the
      * number of the transferred bytes.
+     * If {@code this.writableBytes} is less than {@code src.remaining()},
+     * the buffer {@link #capacity()} will be increased.
      *
      * @param src the source buffer to write.
      * @return self.
-     * @throws IndexOutOfBoundsException
-     *         if {@code src.remaining()} is greater than
-     *            {@code this.writableBytes}
      */
     Buffer writeBytes(ByteBuffer src);
 
@@ -1523,6 +1537,8 @@ public interface Buffer {
      * Transfers ta fixed amount from the specified source InputStream's data to this buffer starting at
      * the current {@code writerIndex} until {@code length} bytes have been read, the end of stream
      * is reached, or an exception is thrown.
+     * If {@code this.writableBytes} is less than {@code length},
+     * the buffer {@link #capacity()} will be increased.
      * <p>
      * This method will increase the {@code writerIndex} by the number of the transferred bytes if the write operation was successful.
      *
@@ -1530,16 +1546,15 @@ public interface Buffer {
      * @param length the maximum number of bytes to transfer. The buffer may be resized to accommodate this amount of data.
      * @return the actual number of bytes read in from {@code src}.
      *         {@code -1} if the specified channel is closed.
-     * @throws IndexOutOfBoundsException
-     *         if {@code src.remaining()} is greater than
-     *            {@code this.writableBytes}
      * @throws IOException if the InputStream throws an exception while being read from.
      */
     int writeBytes(InputStream src, int length) throws IOException;
 
     /**
      * Transfers all the specified source InputStream's data to this buffer starting at
-     * the current {@code writerIndex} uuntil the end of stream is reached or an exception is thrown.
+     * the current {@code writerIndex} until the end of stream is reached or an exception is thrown.
+     * If {@code this.writableBytes} is less than the number of bytes in the InputStream,
+     * the buffer {@link #capacity()} will be increased.
      * <p>
      * This method will increase the {@code writerIndex} by the number of the transferred bytes if the write operation was successful.
      *
@@ -1547,9 +1562,6 @@ public interface Buffer {
      * @param chunkSize the amount of data that will be read from {@code src} on each read attempt.
      * @return the actual total number of bytes read in from {@code src}.
      *         {@code -1} if no bytes were read because the specified InputStream was closed when this method was called.
-     * @throws IndexOutOfBoundsException
-     *         if {@code src.remaining()} is greater than
-     *            {@code this.writableBytes}
      * @throws IOException if the InputStream throws an exception while being read from.
      */
     int writeBytesUntilEndStream(InputStream src, int chunkSize) throws IOException;
@@ -1558,6 +1570,9 @@ public interface Buffer {
      * Encode a {@link CharSequence} in <a href="http://en.wikipedia.org/wiki/ASCII">ASCII</a> and write it
      * to this buffer starting at {@code writerIndex} and increases the {@code writerIndex} by the
      * number of the transferred bytes.
+     * if {@code this.writableBytes} is not large enough to write the whole sequence,
+     * the buffer {@link #capacity()} will be increased.
+
      * @param seq the source of the data.
      * @return self.
      */
@@ -1567,6 +1582,9 @@ public interface Buffer {
      * Encode a {@link CharSequence} in <a href="http://en.wikipedia.org/wiki/UTF-8">UTF-8</a> and write it
      * to this buffer starting at {@code writerIndex} and increases the {@code writerIndex} by the
      * number of the transferred bytes.
+     * if {@code this.writableBytes} is not large enough to write the whole sequence,
+     * the buffer {@link #capacity()} will be increased.
+
      * @param seq the source of the data.
      * @return self.
      */
