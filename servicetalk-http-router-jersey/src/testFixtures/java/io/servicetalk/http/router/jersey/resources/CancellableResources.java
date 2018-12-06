@@ -21,7 +21,8 @@ import io.servicetalk.buffer.api.CompositeBuffer;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.http.router.jersey.ExecutionStrategy;
+import io.servicetalk.http.router.jersey.NoOffloadsRouteExecutionStrategy;
+import io.servicetalk.http.router.jersey.RouteExecutionStrategy;
 import io.servicetalk.transport.api.ConnectionContext;
 
 import java.io.InputStream;
@@ -42,7 +43,6 @@ import javax.ws.rs.sse.SseEventSink;
 
 import static io.servicetalk.concurrent.api.Publisher.just;
 import static io.servicetalk.concurrent.api.Single.never;
-import static io.servicetalk.http.router.jersey.ExecutionStrategy.ExecutorSelector.ROUTER_EXECUTOR;
 import static io.servicetalk.http.router.jersey.TestUtils.getContentAsString;
 import static io.servicetalk.http.router.jersey.resources.CancellableResources.PATH;
 import static java.lang.Thread.sleep;
@@ -73,7 +73,7 @@ public class CancellableResources {
         return never();
     }
 
-    @ExecutionStrategy(value = ROUTER_EXECUTOR, executorId = "test")
+    @RouteExecutionStrategy(id = "test")
     @Produces(TEXT_PLAIN)
     @Path("/offload")
     @GET
@@ -98,12 +98,21 @@ public class CancellableResources {
         };
     }
 
-    @ExecutionStrategy(value = ROUTER_EXECUTOR, executorId = "test")
+    @RouteExecutionStrategy(id = "test")
     @Consumes(TEXT_PLAIN)
     @Produces(TEXT_PLAIN)
     @Path("/offload-oio-streams")
     @POST
     public StreamingOutput postOffloadedOioStreams(final InputStream requestContent) {
+        return postOioStreams(requestContent);
+    }
+
+    @NoOffloadsRouteExecutionStrategy
+    @Consumes(TEXT_PLAIN)
+    @Produces(TEXT_PLAIN)
+    @Path("/no-offloads-oio-streams")
+    @POST
+    public StreamingOutput postNoOffloadsOioStreams(final InputStream requestContent) {
         return postOioStreams(requestContent);
     }
 
@@ -127,7 +136,7 @@ public class CancellableResources {
         }
     }
 
-    @ExecutionStrategy(value = ROUTER_EXECUTOR, executorId = "test")
+    @RouteExecutionStrategy(id = "test")
     @Consumes(TEXT_PLAIN)
     @Produces(TEXT_PLAIN)
     @Path("/offload-rs-streams")
@@ -135,6 +144,17 @@ public class CancellableResources {
     public Publisher<Buffer> postOffloadedRsStreams(@QueryParam("subscribe") final boolean subscribe,
                                                     final Publisher<Buffer> requestContent,
                                                     @Context final ConnectionContext ctx) {
+        return postRsStreams(subscribe, requestContent, ctx);
+    }
+
+    @NoOffloadsRouteExecutionStrategy
+    @Consumes(TEXT_PLAIN)
+    @Produces(TEXT_PLAIN)
+    @Path("/no-offloads-rs-streams")
+    @POST
+    public Publisher<Buffer> postNoOffloadsRsStreams(@QueryParam("subscribe") final boolean subscribe,
+                                                     final Publisher<Buffer> requestContent,
+                                                     @Context final ConnectionContext ctx) {
         return postRsStreams(subscribe, requestContent, ctx);
     }
 

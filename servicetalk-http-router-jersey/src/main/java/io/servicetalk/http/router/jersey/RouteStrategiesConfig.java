@@ -13,13 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.http.router.jersey.resources;
+package io.servicetalk.http.router.jersey;
 
-import io.servicetalk.http.router.jersey.ExecutionStrategy;
+import io.servicetalk.http.api.HttpExecutionStrategy;
 
-import static io.servicetalk.http.router.jersey.ExecutionStrategy.ExecutorSelector.ROUTER_EXECUTOR;
+import java.util.Map;
 
-@ExecutionStrategy(ROUTER_EXECUTOR)
-public class SynchronousResourcesRouterExec extends SynchronousResources {
-    // No extra method
+final class RouteStrategiesConfig {
+    final Map<String, HttpExecutionStrategy> routeStrategies;
+
+    RouteStrategiesConfig(final Map<String, HttpExecutionStrategy> routeStrategies) {
+        this.routeStrategies = routeStrategies;
+    }
 }

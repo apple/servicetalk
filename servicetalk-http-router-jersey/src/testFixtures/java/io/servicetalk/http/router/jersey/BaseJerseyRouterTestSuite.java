@@ -37,14 +37,8 @@ import org.junit.runners.Suite.SuiteClasses;
         CancellationTest.class,
 
         // Execution strategy tests
-        AsynchronousResourceRouterExecTest.class,
         ExecutionStrategyConfigurationFailuresTest.class,
-        ExecutionStrategyServerImmediateTest.class,
-        ExecutionStrategyTest.class,
-        GlobalFiltersRouterExecTest.class,
-        InputConsumingGlobalFiltersRouterExecTest.class,
-        InterceptorsRouterExecTest.class,
-        SynchronousResourceRouterExecTest.class
+        ExecutionStrategyTest.class
 })
 public abstract class BaseJerseyRouterTestSuite {
     // NOOP

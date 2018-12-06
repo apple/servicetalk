@@ -17,7 +17,7 @@ package io.servicetalk.http.router.jersey;
 
 import io.servicetalk.concurrent.api.ExecutorRule;
 import io.servicetalk.concurrent.internal.DefaultThreadFactory;
-import io.servicetalk.http.router.jersey.AbstractExecutionStrategyTest.TestApplication;
+import io.servicetalk.http.router.jersey.ExecutionStrategyTest.TestApplication;
 import io.servicetalk.http.router.jersey.resources.ExecutionStrategyResources.ResourceInvalidExecStrategy;
 import io.servicetalk.http.router.jersey.resources.ExecutionStrategyResources.ResourceUnsupportedAsync;
 
@@ -30,9 +30,11 @@ import java.util.Set;
 import javax.ws.rs.core.Application;
 
 import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
-import static io.servicetalk.http.router.jersey.ExecutionStrategy.DEFAULT_EXECUTOR_ID;
+import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
+import static io.servicetalk.http.router.jersey.ExecutionStrategyTest.asFactory;
 import static java.lang.Thread.NORM_PRIORITY;
 import static java.util.Collections.singleton;
+import static java.util.Collections.singletonMap;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.both;
 import static org.hamcrest.Matchers.containsString;
@@ -42,18 +44,14 @@ public class ExecutionStrategyConfigurationFailuresTest {
     public final ExpectedException expected = ExpectedException.none();
 
     @ClassRule
-    public static final ExecutorRule ROUTER_EXEC = new ExecutorRule(() ->
-            newCachedThreadExecutor(new DefaultThreadFactory("rtr-", true, NORM_PRIORITY)));
-
-    @ClassRule
     public static final ExecutorRule TEST_EXEC = new ExecutorRule(() ->
             newCachedThreadExecutor(new DefaultThreadFactory("test-", true, NORM_PRIORITY)));
 
     @Test
     public void invalidStrategies() {
         expected.expect(IllegalArgumentException.class);
-        expected.expectMessage(both(containsString("defaultStrategy()"))
-                .and(containsString("idWithServerExec()")));
+        expected.expectMessage(both(containsString("emptyId()"))
+                .and(containsString("conflictingAnnotations()")));
 
         new HttpJerseyRouterBuilder().build(new Application() {
             @Override
@@ -64,25 +62,12 @@ public class ExecutionStrategyConfigurationFailuresTest {
     }
 
     @Test
-    public void missingRouterExec() {
+    public void missingRouteExecId() {
         expected.expect(IllegalArgumentException.class);
         expected.expectMessage(both(containsString("subResourceDefault()"))
-                .and(containsString("subResourceRouterExec()")));
+                .and(containsString("subResourceRouteExecId()")));
 
-        new HttpJerseyRouterBuilder()
-                .executorFactory(id -> "test".equals(id) ? TEST_EXEC.getExecutor() : null)
-                .build(new TestApplication());
-    }
-
-    @Test
-    public void missingRouterExecId() {
-        expected.expect(IllegalArgumentException.class);
-        expected.expectMessage(both(containsString("subResourceDefault()"))
-                .and(containsString("subResourceRouterExecId()")));
-
-        new HttpJerseyRouterBuilder()
-                .executorFactory(id -> DEFAULT_EXECUTOR_ID.equals(id) ? ROUTER_EXEC.getExecutor() : null)
-                .build(new TestApplication());
+        new HttpJerseyRouterBuilder().build(new TestApplication());
     }
 
     @Test
@@ -95,7 +80,8 @@ public class ExecutionStrategyConfigurationFailuresTest {
                 containsString("cf()")));
 
         new HttpJerseyRouterBuilder()
-                .executorFactory(id -> DEFAULT_EXECUTOR_ID.equals(id) ? ROUTER_EXEC.getExecutor() : null)
+                .routeExecutionStrategyFactory(asFactory(
+                        singletonMap("test", defaultStrategy(TEST_EXEC.getExecutor()))))
                 .build(new Application() {
                     @Override
                     public Set<Class<?>> getClasses() {

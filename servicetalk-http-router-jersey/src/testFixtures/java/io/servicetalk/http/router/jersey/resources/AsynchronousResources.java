@@ -18,10 +18,17 @@ package io.servicetalk.http.router.jersey.resources;
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.Cancellable;
+import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.data.jackson.JacksonSerializationProvider;
 import io.servicetalk.http.router.jersey.AbstractResourceTest.TestFiltered;
 import io.servicetalk.http.router.jersey.TestPojo;
+import io.servicetalk.serialization.api.DefaultSerializer;
+import io.servicetalk.serialization.api.Serializer;
+import io.servicetalk.serialization.api.TypeHolder;
+import io.servicetalk.transport.api.ConnectionContext;
 
 import org.glassfish.jersey.internal.util.collection.Ref;
 import org.glassfish.jersey.internal.util.collection.Refs;
@@ -56,7 +63,11 @@ import javax.ws.rs.sse.Sse;
 import javax.ws.rs.sse.SseBroadcaster;
 import javax.ws.rs.sse.SseEventSink;
 
+import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Publisher.just;
+import static io.servicetalk.concurrent.api.Single.defer;
+import static io.servicetalk.concurrent.api.Single.error;
+import static io.servicetalk.concurrent.api.Single.success;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.http.router.jersey.resources.AsynchronousResources.PATH;
 import static java.lang.System.arraycopy;
@@ -77,8 +88,129 @@ import static javax.ws.rs.core.Response.noContent;
 import static javax.ws.rs.core.Response.ok;
 import static javax.ws.rs.core.Response.status;
 
+/**
+ * Asynchronous (in JAX-RS lingo) resources.
+ */
 @Path(PATH)
-public class AsynchronousResources extends AbstractAsynchronousResources {
+public class AsynchronousResources {
+    public static final String PATH = "/async";
+
+    private static final Serializer SERIALIZER = new DefaultSerializer(new JacksonSerializationProvider());
+    private static final TypeHolder<Map<String, Object>> STRING_OBJECT_MAP_TYPE =
+            new TypeHolder<Map<String, Object>>() { };
+
+    @Context
+    private ConnectionContext ctx;
+
+    @TestFiltered
+    @Path("/completable")
+    @GET
+    public Completable getCompletableOut(@QueryParam("fail") final boolean fail) {
+        return Completable.defer(() -> fail ? Completable.error(DELIBERATE_EXCEPTION) : completed());
+    }
+
+    @Produces(TEXT_PLAIN)
+    @Path("/single-string")
+    @GET
+    public Single<String> getStringSingle(final @QueryParam("fail") boolean fail) {
+        return ctx.executionContext().executor().timer(10, MILLISECONDS)
+                .concatWith(fail ? error(DELIBERATE_EXCEPTION) : success("DONE"));
+    }
+
+    @Consumes(APPLICATION_JSON)
+    @Produces(APPLICATION_JSON)
+    @Path("/json-buf-sglin-sglout")
+    @POST
+    public Single<Buffer> postJsonBufSingleInSingleOut(@QueryParam("fail") final boolean fail,
+                                                       final Single<Buffer> requestContent) {
+        final BufferAllocator allocator = ctx.executionContext().bufferAllocator();
+
+        return fail ? defer(() -> error(DELIBERATE_EXCEPTION)) :
+                requestContent.map(buf -> {
+                    final Map<String, Object> responseContent =
+                            new HashMap<>(SERIALIZER.deserializeAggregatedSingle(buf, STRING_OBJECT_MAP_TYPE));
+                    responseContent.put("foo", "bar6");
+                    return SERIALIZER.serialize(responseContent, allocator);
+                });
+    }
+
+    @Produces(TEXT_PLAIN)
+    @Path("/single-response")
+    @GET
+    public Single<Response> getResponseSingle(final @QueryParam("fail") boolean fail) {
+        return ctx.executionContext().executor().timer(10, MILLISECONDS)
+                .concatWith(fail ? error(DELIBERATE_EXCEPTION) : success(accepted("DONE").build()));
+    }
+
+    @Produces(TEXT_PLAIN)
+    @Path("/single-response-pub-entity")
+    @GET
+    public Single<Response> getResponseSinglePublisherEntity(@QueryParam("i") final int i) {
+        final BufferAllocator allocator = ctx.executionContext().bufferAllocator();
+        return ctx.executionContext().executor().timer(10, MILLISECONDS)
+                .concatWith(defer(() -> {
+                    final String contentString = "GOT: " + i;
+                    final Publisher<Buffer> responseContent = just(allocator.fromAscii(contentString));
+
+                    return success(status(i)
+                            // We know the content length so we set it, otherwise the response is chunked
+                            .header(CONTENT_LENGTH, contentString.length())
+                            // Wrap content Publisher to capture its generic type (i.e. Buffer)
+                            .entity(new GenericEntity<Publisher<Buffer>>(responseContent) {
+                            })
+                            .build());
+                }));
+    }
+
+    @Produces(APPLICATION_JSON)
+    @Path("/single-map")
+    @GET
+    public Single<Map<String, Object>> getMapSingle(final @QueryParam("fail") boolean fail) {
+        return ctx.executionContext().executor().timer(10, MILLISECONDS)
+                .concatWith(fail ? error(DELIBERATE_EXCEPTION) : defer(() -> success(singletonMap("foo", "bar4"))));
+    }
+
+    @Produces(APPLICATION_JSON)
+    @Path("/single-pojo")
+    @GET
+    public Single<TestPojo> getPojoSingle(final @QueryParam("fail") boolean fail) {
+        return ctx.executionContext().executor().timer(10, MILLISECONDS)
+                .concatWith(fail ? error(DELIBERATE_EXCEPTION) : defer(() -> {
+                    final TestPojo testPojo = new TestPojo();
+                    testPojo.setaString("boo");
+                    testPojo.setAnInt(456);
+                    return success(testPojo);
+                }));
+    }
+
+    @Consumes(APPLICATION_JSON)
+    @Produces(APPLICATION_JSON)
+    @Path("/json-pojoin-pojoout-single")
+    @POST
+    public Single<TestPojo> postJsonPojoInPojoOutSingle(@QueryParam("fail") final boolean fail,
+                                                        final TestPojo testPojo) {
+        return ctx.executionContext().executor().timer(10, MILLISECONDS)
+                .concatWith(fail ? error(DELIBERATE_EXCEPTION) : defer(() -> {
+                    testPojo.setAnInt(testPojo.getAnInt() + 1);
+                    testPojo.setaString(testPojo.getaString() + "x");
+                    return success(testPojo);
+                }));
+    }
+
+    @Consumes(APPLICATION_JSON)
+    @Produces(APPLICATION_JSON)
+    @Path("/json-pojoin-pojoout-response-single")
+    @POST
+    public Single<Response> postJsonPojoInPojoOutResponseSingle(@QueryParam("fail") final boolean fail,
+                                                                final TestPojo testPojo) {
+        return ctx.executionContext().executor().timer(10, MILLISECONDS)
+                .concatWith(fail ? error(DELIBERATE_EXCEPTION) : defer(() -> {
+                    testPojo.setAnInt(testPojo.getAnInt() + 1);
+                    testPojo.setaString(testPojo.getaString() + "x");
+                    return success(accepted(testPojo).build());
+                }));
+    }
+
     @Path("/void-completion")
     @GET
     public CompletionStage<Void> getVoidCompletion(@QueryParam("fail") final boolean fail,
@@ -252,7 +384,8 @@ public class AsynchronousResources extends AbstractAsynchronousResources {
                 // We know the content length so we set it, otherwise the response is chunked
                 .header(CONTENT_LENGTH, contentString.length())
                 // Wrap content Publisher to capture its generic type (i.e. Buffer)
-                .entity(new GenericEntity<Publisher<Buffer>>(responseContent) { })
+                .entity(new GenericEntity<Publisher<Buffer>>(responseContent) {
+                })
                 .build());
     }
 

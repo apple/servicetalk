@@ -21,7 +21,8 @@ import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.data.jackson.JacksonSerializationProvider;
 import io.servicetalk.http.api.StreamingHttpRequest;
-import io.servicetalk.http.router.jersey.ExecutionStrategy;
+import io.servicetalk.http.router.jersey.NoOffloadsRouteExecutionStrategy;
+import io.servicetalk.http.router.jersey.RouteExecutionStrategy;
 import io.servicetalk.serialization.api.DefaultSerializer;
 import io.servicetalk.serialization.api.Serializer;
 import io.servicetalk.transport.api.ConnectionContext;
@@ -45,10 +46,7 @@ import javax.ws.rs.sse.Sse;
 import javax.ws.rs.sse.SseEventSink;
 
 import static io.servicetalk.concurrent.api.Single.defer;
-import static io.servicetalk.concurrent.api.Single.error;
 import static io.servicetalk.concurrent.api.Single.success;
-import static io.servicetalk.http.router.jersey.ExecutionStrategy.ExecutorSelector.ROUTER_EXECUTOR;
-import static io.servicetalk.http.router.jersey.ExecutionStrategy.ExecutorSelector.SERVER_EXECUTOR;
 import static java.lang.Thread.currentThread;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
@@ -56,8 +54,9 @@ import static javax.ws.rs.core.MediaType.SERVER_SENT_EVENTS;
 import static javax.ws.rs.core.Response.ok;
 
 public final class ExecutionStrategyResources {
-    public static final String THREAD_NAME = "thread";
     public static final String EXEC_NAME = "exec";
+    public static final String RS_THREAD_NAME = "rs-thread";
+    public static final String THREAD_NAME = "thread";
 
     private ExecutionStrategyResources() {
         // no instances
@@ -119,146 +118,98 @@ public final class ExecutionStrategyResources {
         }
 
         //
-        // Server execution strategy
+        // Route execution strategy
         //
 
-        @ExecutionStrategy(SERVER_EXECUTOR)
+        @RouteExecutionStrategy(id = "test")
         @GET
-        @Path("/subrsc-srvr-exec")
-        public Map<String, String> subResourceServerExec() {
+        @Path("/subrsc-rte-exec-id")
+        public Map<String, String> subResourceRouteExecId() {
             return getThreadingInfo(ctx, req, uriInfo);
         }
 
-        @ExecutionStrategy(SERVER_EXECUTOR)
+        @RouteExecutionStrategy(id = "test")
         @GET
-        @Path("/subrsc-srvr-exec-single")
-        public Single<Map<String, String>> subResourceServerExecSingle() {
+        @Path("/subrsc-rte-exec-id-single")
+        public Single<Map<String, String>> subResourceRouteExecIdSingle() {
             return getThreadingInfoSingle();
         }
 
-        @ExecutionStrategy(SERVER_EXECUTOR)
+        @RouteExecutionStrategy(id = "test")
         @GET
-        @Path("/subrsc-srvr-exec-single-response")
-        public Single<Response> subResourceServerExecSingleResponse() {
+        @Path("/subrsc-rte-exec-id-single-response")
+        public Single<Response> subResourceRouteExecIdSingleResponse() {
             return getThreadingInfoSingleResponse();
         }
 
-        @ExecutionStrategy(SERVER_EXECUTOR)
+        @RouteExecutionStrategy(id = "test")
         @GET
-        @Path("/subrsc-srvr-exec-single-buffer")
-        public Single<Buffer> subResourceServerExecSingleBuffer() {
+        @Path("/subrsc-rte-exec-id-single-buffer")
+        public Single<Buffer> subResourceRouteExecIdSingleBuffer() {
             return getThreadingInfoSingleBuffer();
         }
 
-        @ExecutionStrategy(SERVER_EXECUTOR)
+        @RouteExecutionStrategy(id = "test")
         @Consumes(APPLICATION_JSON)
         @POST
-        @Path("/subrsc-srvr-exec-single-mapped")
-        public Single<Map<String, String>> subResourceServerExecSingleMapped(final Single<Buffer> body) {
+        @Path("/subrsc-rte-exec-id-single-mapped")
+        public Single<Map<String, String>> subResourceRouteExecIdSingleMapped(final Single<Buffer> body) {
             return getThreadingInfoSingleMapped(body);
         }
 
-        @ExecutionStrategy(SERVER_EXECUTOR)
+        @RouteExecutionStrategy(id = "test")
         @Consumes(APPLICATION_JSON)
         @POST
-        @Path("/subrsc-srvr-exec-publisher-mapped")
-        public Publisher<Buffer> subResourceServerExecPubMapped(final Publisher<Buffer> body) {
+        @Path("/subrsc-rte-exec-id-publisher-mapped")
+        public Publisher<Buffer> subResourceRouteExecIdPubMapped(final Publisher<Buffer> body) {
             return getThreadingInfoPublisherMapped(body);
         }
 
         //
-        // Router default execution strategy
+        // No offloads strategy
         //
 
-        @ExecutionStrategy(ROUTER_EXECUTOR)
+        @NoOffloadsRouteExecutionStrategy
         @GET
-        @Path("/subrsc-rtr-exec")
-        public Map<String, String> subResourceRouterExec() {
+        @Path("/subrsc-rte-no-offloads")
+        public Map<String, String> subResourceRouteNoOffloads() {
             return getThreadingInfo(ctx, req, uriInfo);
         }
 
-        @ExecutionStrategy(ROUTER_EXECUTOR)
+        @NoOffloadsRouteExecutionStrategy
         @GET
-        @Path("/subrsc-rtr-exec-single")
-        public Single<Map<String, String>> subResourceRouterExecSingle() {
+        @Path("/subrsc-rte-no-offloads-single")
+        public Single<Map<String, String>> subResourceRouteNoOffloadsSingle() {
             return getThreadingInfoSingle();
         }
 
-        @ExecutionStrategy(ROUTER_EXECUTOR)
+        @NoOffloadsRouteExecutionStrategy
         @GET
-        @Path("/subrsc-rtr-exec-single-response")
-        public Single<Response> subResourceRouterExecSingleResponse() {
+        @Path("/subrsc-rte-no-offloads-single-response")
+        public Single<Response> subResourceRouteNoOffloadsSingleResponse() {
             return getThreadingInfoSingleResponse();
         }
 
-        @ExecutionStrategy(ROUTER_EXECUTOR)
+        @NoOffloadsRouteExecutionStrategy
         @GET
-        @Path("/subrsc-rtr-exec-single-buffer")
-        public Single<Buffer> subResourceRouterExecSingleBuffer() {
+        @Path("/subrsc-rte-no-offloads-single-buffer")
+        public Single<Buffer> subResourceRouteNoOffloadsSingleBuffer() {
             return getThreadingInfoSingleBuffer();
         }
 
-        @ExecutionStrategy(ROUTER_EXECUTOR)
+        @NoOffloadsRouteExecutionStrategy
         @Consumes(APPLICATION_JSON)
         @POST
-        @Path("/subrsc-rtr-exec-single-mapped")
-        public Single<Map<String, String>> subResourceRouterExecSingleMapped(final Single<Buffer> body) {
+        @Path("/subrsc-rte-no-offloads-single-mapped")
+        public Single<Map<String, String>> subResourceRouteNoOffloadsSingleMapped(final Single<Buffer> body) {
             return getThreadingInfoSingleMapped(body);
         }
 
-        @ExecutionStrategy(ROUTER_EXECUTOR)
+        @NoOffloadsRouteExecutionStrategy
         @Consumes(APPLICATION_JSON)
         @POST
-        @Path("/subrsc-rtr-exec-publisher-mapped")
-        public Publisher<Buffer> subResourceRouterExecPubMapped(final Publisher<Buffer> body) {
-            return getThreadingInfoPublisherMapped(body);
-        }
-
-        //
-        // Router ID execution strategy
-        //
-
-        @ExecutionStrategy(value = ROUTER_EXECUTOR, executorId = "test")
-        @GET
-        @Path("/subrsc-rtr-exec-id")
-        public Map<String, String> subResourceRouterExecId() {
-            return getThreadingInfo(ctx, req, uriInfo);
-        }
-
-        @ExecutionStrategy(value = ROUTER_EXECUTOR, executorId = "test")
-        @GET
-        @Path("/subrsc-rtr-exec-id-single")
-        public Single<Map<String, String>> subResourceRouterExecIdSingle() {
-            return getThreadingInfoSingle();
-        }
-
-        @ExecutionStrategy(value = ROUTER_EXECUTOR, executorId = "test")
-        @GET
-        @Path("/subrsc-rtr-exec-id-single-response")
-        public Single<Response> subResourceRouterExecIdSingleResponse() {
-            return getThreadingInfoSingleResponse();
-        }
-
-        @ExecutionStrategy(value = ROUTER_EXECUTOR, executorId = "test")
-        @GET
-        @Path("/subrsc-rtr-exec-id-single-buffer")
-        public Single<Buffer> subResourceRouterExecIdSingleBuffer() {
-            return getThreadingInfoSingleBuffer();
-        }
-
-        @ExecutionStrategy(value = ROUTER_EXECUTOR, executorId = "test")
-        @Consumes(APPLICATION_JSON)
-        @POST
-        @Path("/subrsc-rtr-exec-id-single-mapped")
-        public Single<Map<String, String>> subResourceRouterExecIdSingleMapped(final Single<Buffer> body) {
-            return getThreadingInfoSingleMapped(body);
-        }
-
-        @ExecutionStrategy(value = ROUTER_EXECUTOR, executorId = "test")
-        @Consumes(APPLICATION_JSON)
-        @POST
-        @Path("/subrsc-rtr-exec-id-publisher-mapped")
-        public Publisher<Buffer> subResourceRouterExecIdPubMapped(final Publisher<Buffer> body) {
+        @Path("/subrsc-rte-no-offloads-publisher-mapped")
+        public Publisher<Buffer> subResourceRouteNoOffloadsPubMapped(final Publisher<Buffer> body) {
             return getThreadingInfoPublisherMapped(body);
         }
 
@@ -268,52 +219,39 @@ public final class ExecutionStrategyResources {
 
         private Single<Map<String, String>> getThreadingInfoSingle() {
             final Map<String, String> threadingInfo = getThreadingInfo(ctx, req, uriInfo);
-            final Thread resourceMethodThread = currentThread();
-
-            return defer(() -> fromSameExecutorAs(resourceMethodThread) ? success(threadingInfo) :
-                    error(new IllegalStateException("Expected resource method thread: " + resourceMethodThread +
-                            ", but got: " + currentThread())));
+            return defer(() -> {
+                threadingInfo.put(RS_THREAD_NAME, currentThread().getName());
+                return success(threadingInfo);
+            });
         }
 
         private Single<Response> getThreadingInfoSingleResponse() {
             final Map<String, String> threadingInfo = getThreadingInfo(ctx, req, uriInfo);
-            final Thread resourceMethodThread = currentThread();
-
-            return defer(() -> fromSameExecutorAs(resourceMethodThread) ? success(ok(threadingInfo).build()) :
-                    error(new IllegalStateException("Expected resource method thread: " + resourceMethodThread +
-                            ", but got: " + currentThread())));
+            return defer(() -> {
+                threadingInfo.put(RS_THREAD_NAME, currentThread().getName());
+                return success(ok(threadingInfo).build());
+            });
         }
 
         private Single<Buffer> getThreadingInfoSingleBuffer() {
             final BufferAllocator allocator = ctx.executionContext().bufferAllocator();
             final Map<String, String> threadingInfo = getThreadingInfo(ctx, req, uriInfo);
-            final Thread resourceMethodThread = currentThread();
-
-            return defer(() -> fromSameExecutorAs(resourceMethodThread) ?
-                    success(SERIALIZER.serialize(threadingInfo, allocator)) :
-                    error(new IllegalStateException("Expected resource method thread: " + resourceMethodThread +
-                            ", but got: " + currentThread())));
+            return defer(() -> {
+                threadingInfo.put(RS_THREAD_NAME, currentThread().getName());
+                return success(SERIALIZER.serialize(threadingInfo, allocator));
+            });
         }
 
         private Single<Map<String, String>> getThreadingInfoSingleMapped(final Single<Buffer> content) {
             final Map<String, String> threadingInfo = getThreadingInfo(ctx, req, uriInfo);
-            final Thread resourceMethodThread = currentThread();
-
-            return content.flatMap(__ -> fromSameExecutorAs(resourceMethodThread) ? success(threadingInfo) :
-                    error(new IllegalStateException("Expected resource method thread: " + resourceMethodThread +
-                            ", but got: " + currentThread())));
+            return content.flatMap(__ -> {
+                threadingInfo.put(RS_THREAD_NAME, currentThread().getName());
+                return success(threadingInfo);
+            });
         }
 
         private Publisher<Buffer> getThreadingInfoPublisherMapped(final Publisher<Buffer> content) {
-            // This single is deferred and will perform the resourceMethodThread comparison only when the response
-            // publisher will be subscribed
-            final Single<Buffer> bufferSingle = getThreadingInfoSingleBuffer();
-            final Thread resourceMethodThread = currentThread();
-
-            return content
-                    .doOnNext(__ -> requireFromSameExecutorAs(resourceMethodThread))
-                    .ignoreElements().concatWith(bufferSingle.toPublisher())
-                    .doOnRequest(__ -> requireFromSameExecutorAs(resourceMethodThread));
+            return content.ignoreElements().concatWith(getThreadingInfoSingleBuffer().toPublisher());
         }
 
         private static Map<String, String> getThreadingInfo(final ConnectionContext ctx, final StreamingHttpRequest req,
@@ -328,17 +266,6 @@ public final class ExecutionStrategyResources {
             info.put(EXEC_NAME, ctx.executionContext().executor().toString());
             return info;
         }
-
-        private static boolean fromSameExecutorAs(final Thread expectedThread) {
-            return currentThread().getName().replaceAll("\\d", "")
-                    .equals(expectedThread.getName().replaceAll("\\d", ""));
-        }
-
-        private static void requireFromSameExecutorAs(final Thread expectedThread) {
-            if (!fromSameExecutorAs(expectedThread)) {
-                throw new IllegalStateException("Expected thread: " + expectedThread + ", but got: " + currentThread());
-            }
-        }
     }
 
     @Path("/rsc-default")
@@ -346,42 +273,37 @@ public final class ExecutionStrategyResources {
         // No extra method
     }
 
-    @ExecutionStrategy(SERVER_EXECUTOR)
-    @Path("/rsc-srvr-exec")
-    public static class ResourceServerExecStrategy extends AbstractExecutionStrategyResource {
+    @RouteExecutionStrategy(id = "test")
+    @Path("/rsc-rte-exec-id")
+    public static class ResourceRouteExecIdStrategy extends AbstractExecutionStrategyResource {
         // No extra method
     }
 
-    @ExecutionStrategy(ROUTER_EXECUTOR)
-    @Path("/rsc-rtr-exec")
-    public static class ResourceRouterExecStrategy extends AbstractExecutionStrategyResource {
+    @NoOffloadsRouteExecutionStrategy
+    @Path("/rsc-rte-no-offloads")
+    public static class ResourceRouteNoOffloadsStrategy extends AbstractExecutionStrategyResource {
         // No extra method
     }
 
-    @ExecutionStrategy(value = ROUTER_EXECUTOR, executorId = "test")
-    @Path("/rsc-rtr-exec-id")
-    public static class ResourceRouterExecIdStrategy extends AbstractExecutionStrategyResource {
-        // No extra method
-    }
-
-    @ExecutionStrategy(value = SERVER_EXECUTOR, executorId = "test")
     @Path("/rsc-invalid")
     public static class ResourceInvalidExecStrategy {
-        @ExecutionStrategy(value = SERVER_EXECUTOR, executorId = "test")
+        @RouteExecutionStrategy(id = "")
         @GET
-        @Path("/id-with-srvr-exec")
-        public void idWithServerExec() {
+        @Path("/empty-id")
+        public void emptyId() {
             // NOOP
         }
 
+        @NoOffloadsRouteExecutionStrategy
+        @RouteExecutionStrategy(id = "test")
         @GET
-        @Path("/default")
-        public void defaultStrategy() {
+        @Path("/conflicting")
+        public void conflictingAnnotations() {
             // NOOP
         }
     }
 
-    @ExecutionStrategy(ROUTER_EXECUTOR)
+    @RouteExecutionStrategy(id = "test")
     @Path("/rsc-unsupported-async")
     public static class ResourceUnsupportedAsync {
         @GET

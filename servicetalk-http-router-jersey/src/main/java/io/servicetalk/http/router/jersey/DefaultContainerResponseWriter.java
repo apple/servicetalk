@@ -18,7 +18,6 @@ package io.servicetalk.http.router.jersey;
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.Single.Subscriber;
-import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.internal.ConnectableOutputStream;
 import io.servicetalk.http.api.HttpHeaders;
@@ -27,6 +26,7 @@ import io.servicetalk.http.api.HttpResponseStatus;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
+import io.servicetalk.transport.api.ExecutionStrategy;
 
 import org.glassfish.jersey.server.ContainerException;
 import org.glassfish.jersey.server.ContainerRequest;
@@ -53,7 +53,7 @@ import static io.servicetalk.http.api.HttpResponseStatuses.getResponseStatus;
 import static io.servicetalk.http.router.jersey.CharSequenceUtils.asCharSequence;
 import static io.servicetalk.http.router.jersey.internal.RequestProperties.getRequestCancellable;
 import static io.servicetalk.http.router.jersey.internal.RequestProperties.getResponseBufferPublisher;
-import static io.servicetalk.http.router.jersey.internal.RequestProperties.getResponseExecutorOffloader;
+import static io.servicetalk.http.router.jersey.internal.RequestProperties.getResponseExecutionStrategy;
 import static java.util.Arrays.stream;
 import static java.util.Collections.unmodifiableMap;
 import static java.util.Objects.requireNonNull;
@@ -232,9 +232,10 @@ final class DefaultContainerResponseWriter implements ContainerResponseWriter {
         final HttpResponseStatus status = getStatus(containerResponse);
         final StreamingHttpResponse response;
         if (content != null && !isHeadRequest()) {
-            final Executor executor = getResponseExecutorOffloader(request);
+            final ExecutionStrategy executionStrategy = getResponseExecutionStrategy(request);
             // TODO(scott): use request factory methods that accept a payload body to avoid overhead of payloadBody.
-            Publisher<Buffer> payloadBody = (executor != null ? content.subscribeOn(executor) : content)
+            final Publisher<Buffer> payloadBody = (executionStrategy != null ?
+                    executionStrategy.offloadSend(serviceCtx.executionContext().executor(), content) : content)
                     .doBeforeCancel(this::cancelResponse);  // Cleanup internal state if server cancels response body
 
             response = responseFactory.newResponse(status)

@@ -17,7 +17,6 @@ package io.servicetalk.http.router.jersey;
 
 import io.servicetalk.concurrent.Single.Subscriber;
 import io.servicetalk.concurrent.api.Completable;
-import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.DelayedCancellable;
 import io.servicetalk.http.api.HttpExecutionStrategy;
@@ -50,7 +49,7 @@ import static io.servicetalk.concurrent.api.Completable.error;
 import static io.servicetalk.http.router.jersey.CharSequenceUtils.ensureNoLeadingSlash;
 import static io.servicetalk.http.router.jersey.Context.CONNECTION_CONTEXT_REF_TYPE;
 import static io.servicetalk.http.router.jersey.Context.HTTP_REQUEST_REF_TYPE;
-import static io.servicetalk.http.router.jersey.ExecutionStrategyUtils.validateExecutorConfiguration;
+import static io.servicetalk.http.router.jersey.RouteExecutionStrategyUtils.validateRouteStrategies;
 import static io.servicetalk.http.router.jersey.internal.RequestProperties.initRequestProperties;
 import static java.util.Objects.requireNonNull;
 import static org.glassfish.jersey.server.internal.ContainerUtils.encodeUnsafeCharacters;
@@ -89,26 +88,26 @@ final class DefaultJerseyStreamingHttpRouter extends StreamingHttpService {
     DefaultJerseyStreamingHttpRouter(final Application application,
                                      final int publisherInputStreamQueueCapacity,
                                      final BiFunction<ConnectionContext, StreamingHttpRequest, String> baseUriFunction,
-                                     final Function<String, Executor> executorFactory,
+                                     final Function<String, HttpExecutionStrategy> routeStrategyFactory,
                                      final HttpExecutionStrategy strategy) {
         this(new ApplicationHandler(application), publisherInputStreamQueueCapacity, baseUriFunction,
-                executorFactory, strategy);
+                routeStrategyFactory, strategy);
     }
 
     DefaultJerseyStreamingHttpRouter(final Class<? extends Application> applicationClass,
                                      final int publisherInputStreamQueueCapacity,
                                      final BiFunction<ConnectionContext, StreamingHttpRequest, String> baseUriFunction,
-                                     final Function<String, Executor> executorFactory,
+                                     final Function<String, HttpExecutionStrategy> routeStrategyFactory,
                                      final HttpExecutionStrategy strategy) {
         this(new ApplicationHandler(applicationClass), publisherInputStreamQueueCapacity, baseUriFunction,
-                executorFactory, strategy);
+                routeStrategyFactory, strategy);
     }
 
     private DefaultJerseyStreamingHttpRouter(final ApplicationHandler applicationHandler,
                                              final int publisherInputStreamQueueCapacity,
                                              final BiFunction<ConnectionContext, StreamingHttpRequest,
                                                      String> baseUriFunction,
-                                             final Function<String, Executor> executorFactory,
+                                             final Function<String, HttpExecutionStrategy> routeStrategyFactory,
                                              final HttpExecutionStrategy strategy) {
         this.strategy = requireNonNull(strategy);
 
@@ -117,17 +116,18 @@ final class DefaultJerseyStreamingHttpRouter extends StreamingHttpService {
                     + " needs to be enabled for this application.");
         }
 
-        final ExecutorConfig executorConfig = validateExecutorConfiguration(applicationHandler, executorFactory);
+        final RouteStrategiesConfig routeStrategiesConfig =
+                validateRouteStrategies(applicationHandler, routeStrategyFactory);
 
         this.applicationHandler = applicationHandler;
         this.publisherInputStreamQueueCapacity = publisherInputStreamQueueCapacity;
         this.baseUriFunction = requireNonNull(baseUriFunction);
 
-        if (!executorConfig.executors.isEmpty()) {
+        if (!routeStrategiesConfig.routeStrategies.isEmpty()) {
             applicationHandler.getInjectionManager().register(new AbstractBinder() {
                 @Override
                 protected void configure() {
-                    bind(executorConfig).to(ExecutorConfig.class).proxy(false);
+                    bind(routeStrategiesConfig).to(RouteStrategiesConfig.class).proxy(false);
                 }
             });
         }
