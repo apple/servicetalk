@@ -15,6 +15,10 @@
  */
 package io.servicetalk.http.api;
 
+import javax.annotation.Nullable;
+
+import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
+
 /**
  * The equivalent of {@link StreamingHttpService} but with synchronous/blocking APIs instead of asynchronous APIs.
  */
@@ -64,6 +68,16 @@ public abstract class BlockingStreamingHttpService implements AutoCloseable, Blo
      */
     public final BlockingHttpService asBlockingService() {
         return asStreamingService().asBlockingService();
+    }
+
+    /**
+     * Returns the {@link HttpExecutionStrategy} for this {@link BlockingStreamingHttpService}.
+     *
+     * @return The {@link HttpExecutionStrategy} for this {@link BlockingStreamingHttpService}.
+     */
+    @Nullable
+    public HttpExecutionStrategy executionStrategy() {
+        return defaultStrategy();
     }
 
     /**

@@ -43,8 +43,9 @@ final class StreamingHttpClientToHttpClient extends HttpClient {
     }
 
     @Override
-    public Single<? extends ReservedHttpConnection> reserveConnection(final HttpRequest request) {
-        return client.reserveConnection(request.toStreamingRequest())
+    public Single<? extends ReservedHttpConnection> reserveConnection(final HttpExecutionStrategy strategy,
+                                                                      final HttpRequest request) {
+        return client.reserveConnection(strategy, request.toStreamingRequest())
                 .map(ReservedStreamingHttpConnectionToReservedHttpConnection::new);
     }
 
@@ -60,8 +61,8 @@ final class StreamingHttpClientToHttpClient extends HttpClient {
     }
 
     @Override
-    public Single<? extends HttpResponse> request(final HttpRequest request) {
-        return client.request(request.toStreamingRequest()).flatMap(StreamingHttpResponse::toResponse);
+    public Single<? extends HttpResponse> request(final HttpExecutionStrategy strategy, final HttpRequest request) {
+        return client.request(strategy, request.toStreamingRequest()).flatMap(StreamingHttpResponse::toResponse);
     }
 
     @Override
@@ -114,8 +115,8 @@ final class StreamingHttpClientToHttpClient extends HttpClient {
         }
 
         @Override
-        public Single<? extends HttpResponse> request(final HttpRequest request) {
-            return reservedConnection.request(request.toStreamingRequest())
+        public Single<? extends HttpResponse> request(final HttpExecutionStrategy strategy, final HttpRequest request) {
+            return reservedConnection.request(strategy, request.toStreamingRequest())
                     .flatMap(StreamingHttpResponse::toResponse);
         }
 

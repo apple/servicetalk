@@ -20,6 +20,7 @@ import io.servicetalk.concurrent.api.BiIntFunction;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpResponseMetaData;
 import io.servicetalk.http.api.StreamingHttpClient;
@@ -57,17 +58,19 @@ public final class RetryingHttpClientFilter extends StreamingHttpClientAdapter {
     }
 
     @Override
-    public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
+    public Single<StreamingHttpResponse> request(final HttpExecutionStrategy executionStrategy,
+                                                 final StreamingHttpRequest request) {
         if (isRetryable.test(request)) {
-            return delegate().request(request).retryWhen(strategy);
+            return delegate().request(executionStrategy, request).retryWhen(strategy);
         }
-        return delegate().request(request);
+        return delegate().request(executionStrategy, request);
     }
 
     @Override
-    public Single<? extends ReservedStreamingHttpConnection> reserveConnection(final StreamingHttpRequest request) {
+    public Single<? extends ReservedStreamingHttpConnection> reserveConnection(
+            final HttpExecutionStrategy executionStrategy, final StreamingHttpRequest request) {
         if (isRetryable.test(request)) {
-            return delegate().reserveConnection(request).retryWhen(strategy);
+            return delegate().reserveConnection(executionStrategy, request).retryWhen(strategy);
         }
         return delegate().reserveConnection(request);
     }

@@ -16,6 +16,7 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpHeaderNames;
 import io.servicetalk.http.api.StreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpConnectionAdapter;
@@ -70,10 +71,11 @@ final class HostHeaderHttpConnectionFilter extends StreamingHttpConnectionAdapte
     }
 
     @Override
-    public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
+    public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
+                                                 final StreamingHttpRequest request) {
         if (request.version() == HTTP_1_1 && !request.headers().contains(HOST)) {
             request.headers().set(HOST, fallbackHost);
         }
-        return delegate().request(request);
+        return delegate().request(strategy, request);
     }
 }

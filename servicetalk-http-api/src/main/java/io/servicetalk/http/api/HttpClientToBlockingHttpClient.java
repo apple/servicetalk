@@ -33,9 +33,10 @@ final class HttpClientToBlockingHttpClient extends BlockingHttpClient {
     }
 
     @Override
-    public ReservedBlockingHttpConnection reserveConnection(final HttpRequest request) throws Exception {
+    public ReservedBlockingHttpConnection reserveConnection(final HttpExecutionStrategy strategy,
+                                                            final HttpRequest request) throws Exception {
         return new ReservedHttpConnectionToReservedBlockingHttpConnection(
-                blockingInvocation(client.reserveConnection(request)));
+                blockingInvocation(client.reserveConnection(strategy, request)));
     }
 
     @Override
@@ -46,8 +47,8 @@ final class HttpClientToBlockingHttpClient extends BlockingHttpClient {
     }
 
     @Override
-    public HttpResponse request(final HttpRequest request) throws Exception {
-        return BlockingUtils.request(client, request);
+    public HttpResponse request(final HttpExecutionStrategy strategy, final HttpRequest request) throws Exception {
+        return blockingInvocation(client.request(strategy, request));
     }
 
     @Override
@@ -93,8 +94,8 @@ final class HttpClientToBlockingHttpClient extends BlockingHttpClient {
         }
 
         @Override
-        public HttpResponse request(final HttpRequest request) throws Exception {
-            return BlockingUtils.request(connection, request);
+        public HttpResponse request(final HttpExecutionStrategy strategy, final HttpRequest request) throws Exception {
+            return blockingInvocation(connection.request(strategy, request));
         }
 
         @Override

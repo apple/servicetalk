@@ -33,8 +33,9 @@ final class BlockingStreamingHttpRequesterToStreamingHttpRequester extends Strea
     }
 
     @Override
-    public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
-        return BlockingUtils.request(requester, request);
+    public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
+                                                 final StreamingHttpRequest request) {
+        return BlockingUtils.request(requester, strategy, request);
     }
 
     @Override

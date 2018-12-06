@@ -22,6 +22,7 @@ import io.servicetalk.concurrent.api.MockedSingleListenerRule;
 import io.servicetalk.concurrent.api.MockedSubscriberRule;
 import io.servicetalk.redis.api.RedisConnection;
 import io.servicetalk.redis.api.RedisData;
+import io.servicetalk.redis.api.RedisExecutionStrategy;
 import io.servicetalk.redis.api.RedisRequest;
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ExecutionContext;
@@ -102,7 +103,8 @@ public class RedisIdleConnectionReaperTest {
         delegateConnectionOnCloseCompletable = new CompletableProcessor();
         when(delegateConnection.closeAsync()).thenReturn(delegateConnectionOnCloseCompletable);
         when(delegateConnection.onClose()).thenReturn(delegateConnectionOnCloseCompletable);
-        when(delegateConnection.request(any(RedisRequest.class))).thenReturn(just(NULL));
+        when(delegateConnection.request(any(RedisExecutionStrategy.class), any(RedisRequest.class)))
+                .thenReturn(just(NULL));
         when(delegateConnection.connectionContext()).thenReturn(connectionContext);
         when(delegateConnection.executionContext()).thenReturn(mockExecutionCtx);
         when(mockExecutionCtx.bufferAllocator()).thenReturn(DEFAULT_ALLOCATOR);
@@ -164,7 +166,7 @@ public class RedisIdleConnectionReaperTest {
         verify(delegateConnection, times(1)).connectionContext();
         verify(mockExecutionCtx, times(1)).ioExecutor();
         assertThat("Unexpected timer subscriptions.", timerSubscribed.get(), is(3));
-        verify(delegateConnection).request(any(RedisRequest.class));
+        verify(delegateConnection).request(any(RedisExecutionStrategy.class), any(RedisRequest.class));
     }
 
     @Test
@@ -180,13 +182,14 @@ public class RedisIdleConnectionReaperTest {
         verify(delegateConnection, times(1)).connectionContext();
         verify(mockExecutionCtx, times(1)).ioExecutor();
         assertThat("Unexpected timer subscriptions.", timerSubscribed.get(), is(2));
-        verify(delegateConnection).request(any(RedisRequest.class));
+        verify(delegateConnection).request(any(RedisExecutionStrategy.class), any(RedisRequest.class));
         verify(delegateConnection).closeAsync();
     }
 
     @Test
     public void commanderRequestsAreInstrumented() {
-        when(delegateConnection.request(any(RedisRequest.class), eq(String.class))).thenReturn(success("pong"));
+        when(delegateConnection.request(any(RedisExecutionStrategy.class), any(RedisRequest.class), eq(String.class)))
+                .thenReturn(success("pong"));
 
         commandSubscriber.listen(idleAwareConnection.asCommander().ping())
                 .verifySuccess("pong");
@@ -197,7 +200,8 @@ public class RedisIdleConnectionReaperTest {
         verify(delegateConnection, times(1)).connectionContext();
         verify(mockExecutionCtx, times(1)).ioExecutor();
         assertThat("Unexpected timer subscriptions.", timerSubscribed.get(), is(2));
-        verify(delegateConnection).request(any(RedisRequest.class), eq(String.class));
+        verify(delegateConnection).request(any(RedisExecutionStrategy.class), any(RedisRequest.class),
+                eq(String.class));
     }
 
     private void completeTimer() {

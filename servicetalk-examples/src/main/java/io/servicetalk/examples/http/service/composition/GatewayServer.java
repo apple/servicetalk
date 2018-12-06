@@ -19,6 +19,7 @@ import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.data.jackson.JacksonSerializationProvider;
 import io.servicetalk.http.api.HttpClient;
+import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpSerializationProvider;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpClientAdapter;
@@ -125,8 +126,9 @@ public final class GatewayServer {
                         // Apply a timeout filter for the client to guard against latent clients.
                         .appendClientFilter(from(client -> new StreamingHttpClientAdapter(client) {
                                     @Override
-                                    public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
-                                        return super.request(request).timeout(ofMillis(500),
+                                    public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
+                                                                                 final StreamingHttpRequest request) {
+                                        return super.request(strategy, request).timeout(ofMillis(500),
                                                 client.executionContext().executor());
                                     }
                                 })

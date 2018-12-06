@@ -22,6 +22,7 @@ import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.api.HttpServerBuilder;
 import io.servicetalk.http.api.HttpServiceFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequestHandler;
+import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.transport.api.ContextFilter;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.ServerContext;
@@ -146,12 +147,6 @@ final class DefaultHttpServerBuilder implements HttpServerBuilder {
     }
 
     @Override
-    public HttpServerBuilder executor(final Executor executor) {
-        executionContextBuilder.executor(executor);
-        return this;
-    }
-
-    @Override
     public HttpServerBuilder bufferAllocator(final BufferAllocator allocator) {
         executionContextBuilder.bufferAllocator(allocator);
         return this;
@@ -160,7 +155,12 @@ final class DefaultHttpServerBuilder implements HttpServerBuilder {
     @Override
     public Single<ServerContext> listenStreaming(final StreamingHttpRequestHandler handler) {
         ReadOnlyHttpServerConfig roConfig = this.config.asReadOnly();
+        StreamingHttpService service = handler.asStreamingService();
+        Executor executor = service.executionStrategy().executor();
+        if (executor != null) {
+            executionContextBuilder.executor(executor);
+        }
         return bind(executionContextBuilder.build(), roConfig, address, contextFilter,
-                serviceFilter.apply(handler.asStreamingService()).asStreamingService());
+                serviceFilter.apply(service).asStreamingService());
     }
 }

@@ -24,6 +24,7 @@ import io.servicetalk.concurrent.api.RetryStrategies;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.redis.api.RedisClient;
 import io.servicetalk.redis.api.RedisData;
+import io.servicetalk.redis.api.RedisExecutionStrategy;
 import io.servicetalk.redis.api.RedisProtocolSupport.Command;
 import io.servicetalk.redis.api.RedisRequest;
 
@@ -58,27 +59,29 @@ public final class RetryingRedisClient extends DelegatingRedisClient {
     }
 
     @Override
-    public Publisher<RedisData> request(final RedisRequest request) {
+    public Publisher<RedisData> request(final RedisExecutionStrategy executionStrategy, final RedisRequest request) {
         if (!isRetryable.test(request.command())) {
-            return super.request(request);
+            return super.request(executionStrategy, request);
         }
-        return super.request(request).retryWhen(strategy);
+        return super.request(executionStrategy, request).retryWhen(strategy);
     }
 
     @Override
-    public <R> Single<R> request(final RedisRequest request, final Class<R> responseType) {
+    public <R> Single<R> request(final RedisExecutionStrategy executionStrategy, final RedisRequest request,
+                                 final Class<R> responseType) {
         if (!isRetryable.test(request.command())) {
-            return super.request(request, responseType);
+            return super.request(executionStrategy, request, responseType);
         }
-        return super.request(request, responseType).retryWhen(strategy);
+        return super.request(executionStrategy, request, responseType).retryWhen(strategy);
     }
 
     @Override
-    public Single<? extends ReservedRedisConnection> reserveConnection(Command command) {
+    public Single<? extends ReservedRedisConnection> reserveConnection(RedisExecutionStrategy executionStrategy,
+                                                                       Command command) {
         if (!isRetryable.test(command)) {
-            return super.reserveConnection(command);
+            return super.reserveConnection(executionStrategy, command);
         }
-        return super.reserveConnection(command).retryWhen(strategy);
+        return super.reserveConnection(executionStrategy, command).retryWhen(strategy);
     }
 
     /**

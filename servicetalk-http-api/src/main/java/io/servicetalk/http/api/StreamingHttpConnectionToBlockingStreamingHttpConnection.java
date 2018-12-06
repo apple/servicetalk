@@ -44,8 +44,9 @@ final class StreamingHttpConnectionToBlockingStreamingHttpConnection extends Blo
     }
 
     @Override
-    public BlockingStreamingHttpResponse request(final BlockingStreamingHttpRequest request) throws Exception {
-        return BlockingUtils.request(connection, request);
+    public BlockingStreamingHttpResponse request(final HttpExecutionStrategy strategy,
+                                                 final BlockingStreamingHttpRequest request) throws Exception {
+        return BlockingUtils.request(connection, strategy, request);
     }
 
     @Override

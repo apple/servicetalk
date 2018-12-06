@@ -61,8 +61,8 @@ final class StandAloneReservedRedisConnection extends RedisClient.ReservedRedisC
     }
 
     @Override
-    public Publisher<RedisData> request(RedisRequest request) {
-        return delegate.request(request);
+    public Publisher<RedisData> request(RedisExecutionStrategy strategy, RedisRequest request) {
+        return delegate.request(strategy, request);
     }
 
     @Override

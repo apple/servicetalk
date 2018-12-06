@@ -57,8 +57,8 @@ public abstract class HttpConnectionAdapter extends HttpConnection {
     }
 
     @Override
-    public Single<? extends HttpResponse> request(final HttpRequest request) {
-        return delegate.request(request);
+    public Single<? extends HttpResponse> request(final HttpExecutionStrategy strategy, final HttpRequest request) {
+        return delegate.request(strategy, request);
     }
 
     @Override

@@ -20,6 +20,7 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.transport.api.ExecutionContext;
 
 import static io.servicetalk.concurrent.internal.FutureUtils.awaitTermination;
+import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -43,7 +44,18 @@ public abstract class HttpRequester implements HttpRequestFactory, ListenableAsy
      * @param request the request to send.
      * @return The response.
      */
-    public abstract Single<? extends HttpResponse> request(HttpRequest request);
+    public Single<? extends HttpResponse> request(HttpRequest request) {
+        return request(executionStrategy(), request);
+    }
+
+    /**
+     * Send a {@code request} using the specified {@link HttpExecutionStrategy strategy}.
+     *
+     * @param strategy {@link HttpExecutionStrategy} to use for executing the request.
+     * @param request the request to send.
+     * @return The response.
+     */
+    public abstract Single<? extends HttpResponse> request(HttpExecutionStrategy strategy, HttpRequest request);
 
     /**
      * Get the {@link ExecutionContext} used during construction of this object.
@@ -98,6 +110,15 @@ public abstract class HttpRequester implements HttpRequestFactory, ListenableAsy
     @Override
     public final void close() {
         awaitTermination(closeAsyncGracefully().toFuture());
+    }
+
+    /**
+     * Returns the default {@link HttpExecutionStrategy} for this {@link HttpRequester}.
+     *
+     * @return Default {@link HttpExecutionStrategy} for this {@link HttpRequester}.
+     */
+    final HttpExecutionStrategy executionStrategy() {
+        return defaultStrategy();
     }
 
     StreamingHttpRequester asStreamingRequesterInternal() {

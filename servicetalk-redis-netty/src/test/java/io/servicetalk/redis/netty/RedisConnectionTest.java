@@ -25,6 +25,7 @@ import io.servicetalk.redis.api.RedisConnection;
 import io.servicetalk.redis.api.RedisData;
 import io.servicetalk.redis.api.RedisData.ArraySize;
 import io.servicetalk.redis.api.RedisData.CompleteBulkString;
+import io.servicetalk.redis.api.RedisExecutionStrategy;
 import io.servicetalk.redis.api.RedisRequest;
 import io.servicetalk.redis.api.RedisServerException;
 import io.servicetalk.transport.api.ConnectionContext;
@@ -335,9 +336,9 @@ public class RedisConnectionTest extends BaseRedisClientTest {
         }
 
         @Override
-        public Publisher<RedisData> request(RedisRequest request) {
+        public Publisher<RedisData> request(RedisExecutionStrategy strategy, RedisRequest request) {
             requestCalled.set(true);
-            return delegate.request(request);
+            return delegate.request(strategy, request);
         }
 
         @Override

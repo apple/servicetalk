@@ -20,6 +20,7 @@ import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.DefaultThreadFactory;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
+import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpRequest;
@@ -45,6 +46,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static io.servicetalk.concurrent.api.Single.success;
 import static io.servicetalk.http.api.CharSequences.newAsciiString;
+import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpResponseStatuses.BAD_REQUEST;
 import static io.servicetalk.http.api.HttpResponseStatuses.OK;
 import static io.servicetalk.transport.netty.internal.ExecutionContextRule.cached;
@@ -69,6 +71,8 @@ public class HttpServerMultipleRequestsTest {
     @Test
     public void consumeOfRequestBodyDoesNotCloseConnection() throws Exception {
         StreamingHttpService service = new StreamingHttpService() {
+
+            private final HttpExecutionStrategy strategy = defaultStrategy(serverExecution.executor());
             @Override
             public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
                                                         final StreamingHttpRequest request,
@@ -84,13 +88,17 @@ public class HttpServerMultipleRequestsTest {
                     return success(responseFactory.newResponse(BAD_REQUEST));
                 }
             }
+
+            @Override
+            public HttpExecutionStrategy executionStrategy() {
+                return strategy;
+            }
         };
         final int concurrency = 10;
         final int numRequests = 10;
         CompositeCloseable compositeCloseable = AsyncCloseables.newCompositeCloseable();
         ServerContext ctx = compositeCloseable.append(HttpServers.forAddress(LOCAL_0)
                 .ioExecutor(serverExecution.ioExecutor())
-                .executor(serverExecution.executor())
                 .listenStreamingAndAwait(service));
         ExecutorService executorService = Executors.newCachedThreadPool();
         try {

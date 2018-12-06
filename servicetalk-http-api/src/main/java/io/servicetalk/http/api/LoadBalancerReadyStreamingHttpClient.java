@@ -29,8 +29,9 @@ import static io.servicetalk.concurrent.api.Completable.error;
 import static java.util.Objects.requireNonNull;
 
 /**
- * A {@link StreamingHttpClient} filter that will account for transient failures introduced by a {@link LoadBalancer} not being
- * ready for {@link #request(StreamingHttpRequest)} and retry/delay requests until the {@link LoadBalancer} is ready.
+ * A {@link StreamingHttpClient} filter that will account for transient failures introduced by a {@link LoadBalancer}
+ * not being ready for {@link #request(StreamingHttpRequest)} and retry/delay requests until the {@link LoadBalancer}
+ * is ready.
  */
 public final class LoadBalancerReadyStreamingHttpClient extends StreamingHttpClient {
     private final LoadBalancerReadySubscriber loadBalancerReadySubscriber;
@@ -59,8 +60,9 @@ public final class LoadBalancerReadyStreamingHttpClient extends StreamingHttpCli
     }
 
     @Override
-    public Single<? extends ReservedStreamingHttpConnection> reserveConnection(final StreamingHttpRequest request) {
-        return next.reserveConnection(request).retryWhen(retryWhenFunction());
+    public Single<? extends ReservedStreamingHttpConnection> reserveConnection(final HttpExecutionStrategy strategy,
+                                                                               final StreamingHttpRequest request) {
+        return next.reserveConnection(strategy, request).retryWhen(retryWhenFunction());
     }
 
     @Override
@@ -69,8 +71,9 @@ public final class LoadBalancerReadyStreamingHttpClient extends StreamingHttpCli
     }
 
     @Override
-    public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
-        return next.request(request).retryWhen(retryWhenFunction());
+    public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
+                                                 final StreamingHttpRequest request) {
+        return next.request(strategy, request).retryWhen(retryWhenFunction());
     }
 
     @Override

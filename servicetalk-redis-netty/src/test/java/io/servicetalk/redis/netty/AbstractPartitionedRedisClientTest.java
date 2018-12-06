@@ -42,8 +42,8 @@ import java.util.Map;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
+import static io.servicetalk.redis.api.RedisExecutionStrategies.noOffloadsStrategy;
 import static io.servicetalk.redis.api.RedisProtocolSupport.Command.INFO;
 import static io.servicetalk.redis.api.RedisProtocolSupport.CommandFlag.PUBSUB;
 import static io.servicetalk.redis.api.RedisProtocolSupport.CommandFlag.WRITE;
@@ -142,7 +142,7 @@ public abstract class AbstractPartitionedRedisClientTest {
                 .maxPipelinedRequests(10)
                 .pingPeriod(ofSeconds(1))
                 .ioExecutor(ioExecutor)
-                .executor(immediate())
+                .executionStrategy(noOffloadsStrategy())
                 .build();
 
         sendHost1ServiceDiscoveryEvent(true);

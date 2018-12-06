@@ -35,7 +35,23 @@ public abstract class RedisClient extends RedisRequester {
      * request/response based commands.
      * @return a {@link ReservedRedisConnection}.
      */
-    public abstract Single<? extends ReservedRedisConnection> reserveConnection(Command command);
+    public Single<? extends ReservedRedisConnection> reserveConnection(Command command) {
+        return reserveConnection(executionStrategy(), command);
+    }
+
+    /**
+     * Reserve a {@link RedisConnection} for exclusive use. Caller is responsible for invoking
+     * {@link ReservedRedisConnection#releaseAsync()} after done using the return value.
+     *
+     * @param strategy {@link RedisExecutionStrategy} to use.
+     * @param command A command representing how the returned {@link ReservedRedisConnection} will be used. It is
+     * possible that this {@link RedisClient} will return different types of {@link ReservedRedisConnection} depending
+     * on usage. For example {@link Command#SUBSCRIBE} and {@link Command#MONITOR} may be treated differently than other
+     * request/response based commands.
+     * @return a {@link ReservedRedisConnection}.
+     */
+    public abstract Single<? extends ReservedRedisConnection> reserveConnection(RedisExecutionStrategy strategy,
+                                                                                Command command);
 
     /**
      * A {@link RedisConnection} that is reserved for exclusive use until {@link #releaseAsync() released}.

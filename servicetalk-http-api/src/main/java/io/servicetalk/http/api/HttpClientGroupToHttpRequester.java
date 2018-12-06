@@ -41,12 +41,13 @@ final class HttpClientGroupToHttpRequester<UnresolvedAddress> extends HttpReques
     }
 
     @Override
-    public Single<HttpResponse> request(final HttpRequest request) {
+    public Single<HttpResponse> request(final HttpExecutionStrategy strategy, final HttpRequest request) {
         return new Single<HttpResponse>() {
             @Override
             protected void handleSubscribe(final Subscriber<? super HttpResponse> subscriber) {
                 final Single<? extends HttpResponse> response;
                 try {
+                    //TODO: Add strategy to group
                     response = clientGroup.request(requestToGroupKeyFunc.apply(request), request);
                 } catch (final Throwable t) {
                     subscriber.onSubscribe(IGNORE_CANCEL);

@@ -17,6 +17,7 @@ package io.servicetalk.http.router.jersey;
 
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.transport.api.ConnectionContext;
@@ -26,6 +27,7 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import javax.ws.rs.core.Application;
 
+import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.utils.HttpRequestUriUtils.getBaseRequestUri;
 import static java.util.Objects.requireNonNull;
 
@@ -42,6 +44,7 @@ public final class HttpJerseyRouterBuilder {
     private BiFunction<ConnectionContext, StreamingHttpRequest, String> baseUriFunction =
             (ctx, req) -> getBaseRequestUri(ctx, req, false);
     private Function<String, Executor> executorFactory = __ -> null;
+    private HttpExecutionStrategy strategy = defaultStrategy();
 
     /**
      * Set the hint for the capacity of the intermediary queue that stores items when adapting {@link Publisher}s
@@ -50,7 +53,7 @@ public final class HttpJerseyRouterBuilder {
      * @param publisherInputStreamQueueCapacity the capacity hint.
      * @return this
      */
-    public HttpJerseyRouterBuilder setPublisherInputStreamQueueCapacity(final int publisherInputStreamQueueCapacity) {
+    public HttpJerseyRouterBuilder publisherInputStreamQueueCapacity(final int publisherInputStreamQueueCapacity) {
         if (publisherInputStreamQueueCapacity <= 0) {
             throw new IllegalArgumentException("Invalid queue capacity: " + publisherInputStreamQueueCapacity
                     + " (expected > 0).");
@@ -68,10 +71,21 @@ public final class HttpJerseyRouterBuilder {
      * @return this
      * @see <a href="https://tools.ietf.org/html/rfc3986#section-3">URI Syntax Components</a>
      */
-    public HttpJerseyRouterBuilder setBaseUriFunction(
+    public HttpJerseyRouterBuilder baseUriFunction(
             final BiFunction<ConnectionContext, StreamingHttpRequest, String> baseUriFunction) {
 
         this.baseUriFunction = requireNonNull(baseUriFunction);
+        return this;
+    }
+
+    /**
+     * Set the {@link HttpExecutionStrategy} for this router.
+     *
+     * @param strategy {@link HttpExecutionStrategy} to use.
+     * @return this
+     */
+    public HttpJerseyRouterBuilder executionStrategy(final HttpExecutionStrategy strategy) {
+        this.strategy = requireNonNull(strategy);
         return this;
     }
 
@@ -84,7 +98,7 @@ public final class HttpJerseyRouterBuilder {
      * @return this
      * @see ExecutionStrategy
      */
-    public HttpJerseyRouterBuilder setExecutorFactory(final Function<String, Executor> executorFactory) {
+    public HttpJerseyRouterBuilder executorFactory(final Function<String, Executor> executorFactory) {
         this.executorFactory = requireNonNull(executorFactory);
         return this;
     }
@@ -97,7 +111,7 @@ public final class HttpJerseyRouterBuilder {
      */
     public StreamingHttpService build(final Application application) {
         return new DefaultJerseyStreamingHttpRouter(application, publisherInputStreamQueueCapacity, baseUriFunction,
-                executorFactory);
+                executorFactory, strategy);
     }
 
     /**
@@ -108,6 +122,6 @@ public final class HttpJerseyRouterBuilder {
      */
     public StreamingHttpService build(final Class<? extends Application> applicationClass) {
         return new DefaultJerseyStreamingHttpRouter(applicationClass, publisherInputStreamQueueCapacity,
-                baseUriFunction, executorFactory);
+                baseUriFunction, executorFactory, strategy);
     }
 }

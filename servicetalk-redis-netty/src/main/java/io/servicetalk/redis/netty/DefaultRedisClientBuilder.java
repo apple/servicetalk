@@ -33,6 +33,7 @@ import io.servicetalk.redis.api.RedisClientFilterFactory;
 import io.servicetalk.redis.api.RedisConnection;
 import io.servicetalk.redis.api.RedisConnectionFilterFactory;
 import io.servicetalk.redis.api.RedisData;
+import io.servicetalk.redis.api.RedisExecutionStrategy;
 import io.servicetalk.redis.api.RedisProtocolSupport.Command;
 import io.servicetalk.redis.api.RedisRequest;
 import io.servicetalk.tcp.netty.internal.TcpClientConfig;
@@ -51,6 +52,7 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.loadbalancer.RoundRobinLoadBalancer.newRoundRobinFactory;
+import static io.servicetalk.redis.api.RedisExecutionStrategies.defaultStrategy;
 import static io.servicetalk.redis.netty.GlobalDnsServiceDiscoverer.globalDnsServiceDiscoverer;
 import static io.servicetalk.redis.netty.RedisUtils.isSubscribeModeCommand;
 import static java.util.Objects.requireNonNull;
@@ -81,6 +83,7 @@ final class DefaultRedisClientBuilder<U, R> implements RedisClientBuilder<U, R> 
     private RedisClientFilterFactory clientFilterFactory = RedisClientFilterFactory.identity();
     private RedisClientFilterFactory lbReadyFilter = LB_READY_FILTER;
     private ConnectionFactoryFilter<R, RedisConnection> connectionFactoryFilter = ConnectionFactoryFilter.identity();
+    private RedisExecutionStrategy strategy = defaultStrategy();
 
     DefaultRedisClientBuilder(final ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>> serviceDiscoverer,
                               final U address) {
@@ -120,8 +123,12 @@ final class DefaultRedisClientBuilder<U, R> implements RedisClientBuilder<U, R> 
     }
 
     @Override
-    public RedisClientBuilder<U, R> executor(final Executor executor) {
-        executionContextBuilder.executor(executor);
+    public RedisClientBuilder<U, R> executionStrategy(final RedisExecutionStrategy strategy) {
+        this.strategy = requireNonNull(strategy);
+        Executor executor = strategy.executor();
+        if (executor != null) {
+            executionContextBuilder.executor(executor);
+        }
         return this;
     }
 
@@ -273,7 +280,8 @@ final class DefaultRedisClientBuilder<U, R> implements RedisClientBuilder<U, R> 
                     (LoadBalancer<LoadBalancedRedisConnection>) lbfUntypedForCast;
 
             return clientFilterFactory.append(lbReadyFilter)
-                    .apply(closeOnException.append(new DefaultRedisClient(executionContext, subscribeLb, pipelineLb)),
+                    .apply(closeOnException.append(new DefaultRedisClient(executionContext, strategy, subscribeLb,
+                                    pipelineLb)),
                             subscribeLb.eventStream(), pipelineLb.eventStream());
         } catch (Throwable t) {
             closeOnException.closeAsync().subscribe();
@@ -283,30 +291,44 @@ final class DefaultRedisClientBuilder<U, R> implements RedisClientBuilder<U, R> 
 
     private static final class DefaultRedisClient extends RedisClient {
         private final ExecutionContext executionContext;
+        private final RedisExecutionStrategy strategy;
         private final LoadBalancer<LoadBalancedRedisConnection> subscribeLb;
         private final LoadBalancer<LoadBalancedRedisConnection> pipelineLb;
 
-        DefaultRedisClient(ExecutionContext executionContext,
+        DefaultRedisClient(ExecutionContext executionContext, RedisExecutionStrategy strategy,
                            LoadBalancer<LoadBalancedRedisConnection> subscribeLb,
                            LoadBalancer<LoadBalancedRedisConnection> pipelineLb) {
             this.executionContext = requireNonNull(executionContext);
+            this.strategy = strategy;
             this.subscribeLb = requireNonNull(subscribeLb);
             this.pipelineLb = requireNonNull(pipelineLb);
         }
 
         @Override
-        public Single<? extends ReservedRedisConnection> reserveConnection(Command command) {
-            return lbForCommand(command).selectConnection(SELECTOR_FOR_RESERVE);
+        public Single<? extends ReservedRedisConnection> reserveConnection(final Command command) {
+            return reserveConnection(strategy, command);
         }
 
         @Override
-        public Publisher<RedisData> request(RedisRequest request) {
+        public Publisher<RedisData> request(final RedisRequest request) {
+            return request(strategy, request);
+        }
+
+        @Override
+        public Single<? extends ReservedRedisConnection> reserveConnection(RedisExecutionStrategy strategy,
+                                                                           Command command) {
+            return strategy.offloadReceive(executionContext.executor(),
+                    lbForCommand(command).selectConnection(SELECTOR_FOR_RESERVE));
+        }
+
+        @Override
+        public Publisher<RedisData> request(RedisExecutionStrategy strategy, RedisRequest request) {
             // We have to do the incrementing/decrementing in the Client instead of LoadBalancedRedisConnection because
             // it is possible that someone can use the ConnectionFactory exported by this Client before the LoadBalancer
             // takes ownership of it (e.g. connection initialization) and in that case they will not be following the
             // LoadBalancer API which this Client depends upon to ensure the concurrent request count state is correct.
             return lbForCommand(request.command()).selectConnection(SELECTOR_FOR_REQUEST)
-                    .flatMapPublisher(conn -> conn.request(request).doBeforeFinally(conn::requestFinished));
+                    .flatMapPublisher(conn -> conn.request(strategy, request).doBeforeFinally(conn::requestFinished));
         }
 
         @Override

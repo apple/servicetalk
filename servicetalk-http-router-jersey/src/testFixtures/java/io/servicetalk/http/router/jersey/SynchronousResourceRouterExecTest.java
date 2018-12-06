@@ -38,7 +38,7 @@ public class SynchronousResourceRouterExecTest extends SynchronousResourceTest {
     @Override
     protected HttpJerseyRouterBuilder configureBuilder(final HttpJerseyRouterBuilder builder) {
         return super.configureBuilder(builder)
-                .setExecutorFactory(id -> DEFAULT_EXECUTOR_ID.equals(id) ? ROUTER_EXEC.getExecutor() : null);
+                .executorFactory(id -> DEFAULT_EXECUTOR_ID.equals(id) ? ROUTER_EXEC.getExecutor() : null);
     }
 
     public static class TestApplication extends Application {

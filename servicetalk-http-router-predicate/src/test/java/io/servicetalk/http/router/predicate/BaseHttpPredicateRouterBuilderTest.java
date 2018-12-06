@@ -21,6 +21,7 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.DefaultHttpHeadersFactory;
 import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
+import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpResponseStatus;
 import io.servicetalk.http.api.HttpServiceContext;
@@ -35,7 +36,6 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.rules.ExpectedException;
 import org.mockito.Mock;
-import org.mockito.invocation.InvocationOnMock;
 import org.mockito.junit.MockitoJUnit;
 import org.mockito.junit.MockitoRule;
 import org.mockito.stubbing.Answer;
@@ -76,6 +76,8 @@ public abstract class BaseHttpPredicateRouterBuilderTest {
     HttpHeaders headers;
     @Mock
     Single<StreamingHttpResponse> responseA, responseB, responseC, responseD, responseE, fallbackResponse;
+    @Mock
+    HttpExecutionStrategy strategy;
 
     @Before
     public void setUp() {
@@ -83,13 +85,18 @@ public abstract class BaseHttpPredicateRouterBuilderTest {
         when(executionCtx.executor()).thenReturn(immediate());
         when(request.version()).thenReturn(HTTP_1_1);
         when(request.headers()).thenReturn(headers);
-        when(factory.newResponse(any(HttpResponseStatus.class))).thenAnswer(new Answer<StreamingHttpResponse>() {
-            @Override
-            public StreamingHttpResponse answer(final InvocationOnMock invocation) throws Throwable {
-                HttpResponseStatus status = invocation.getArgument(0);
-                return reqRespFactory.newResponse(status);
-            }
+        when(factory.newResponse(any(HttpResponseStatus.class))).thenAnswer((Answer<StreamingHttpResponse>) invocation -> {
+            HttpResponseStatus status = invocation.getArgument(0);
+            return reqRespFactory.newResponse(status);
         });
+
+        when(strategy.offloadService(any(), any())).then(invocation -> invocation.getArgument(1));
+        when(serviceA.executionStrategy()).thenReturn(strategy);
+        when(serviceB.executionStrategy()).thenReturn(strategy);
+        when(serviceC.executionStrategy()).thenReturn(strategy);
+        when(serviceD.executionStrategy()).thenReturn(strategy);
+        when(serviceE.executionStrategy()).thenReturn(strategy);
+        when(fallbackService.executionStrategy()).thenReturn(strategy);
 
         when(serviceA.handle(eq(ctx), eq(request), any())).thenReturn(responseA);
         when(serviceB.handle(eq(ctx), eq(request), any())).thenReturn(responseB);

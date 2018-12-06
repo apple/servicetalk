@@ -16,6 +16,7 @@
 package io.servicetalk.opentracing.http;
 
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpResponseMetaData;
 import io.servicetalk.http.api.StreamingHttpConnection;
@@ -78,7 +79,8 @@ public class TracingHttpConnectionFilter extends StreamingHttpConnectionAdapter 
     }
 
     @Override
-    public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
+    public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
+                                                 final StreamingHttpRequest request) {
         return new Single<StreamingHttpResponse>() {
             @Override
             protected void handleSubscribe(final Subscriber<? super StreamingHttpResponse> subscriber) {
@@ -101,7 +103,7 @@ public class TracingHttpConnectionFilter extends StreamingHttpConnectionAdapter 
                     tempChildScope = spanBuilder.startActive(true);
                     tempScopeClosed = new AtomicBoolean();
                     tracer.inject(tempChildScope.span().context(), formatter, request.headers());
-                    responseSingle = requireNonNull(delegate().request(request));
+                    responseSingle = requireNonNull(delegate().request(strategy, request));
                 } catch (Throwable cause) {
                     handlePrematureException(tempChildScope, tempScopeClosed, subscriber, cause);
                     return;

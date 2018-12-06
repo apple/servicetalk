@@ -22,7 +22,6 @@ import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.api.LoadBalancerFactory;
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
-import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.IoExecutor;
 
@@ -46,12 +45,12 @@ public interface HttpClientBuilder<U, R> {
     HttpClientBuilder<U, R> ioExecutor(IoExecutor ioExecutor);
 
     /**
-     * Sets the {@link Executor} for all clients created from this {@link HttpClientBuilder}.
+     * Sets the {@link HttpExecutionStrategy} for all clients created from this {@link HttpClientBuilder}.
      *
-     * @param executor {@link Executor} to use.
+     * @param strategy {@link HttpExecutionStrategy} to use.
      * @return {@code this}.
      */
-    HttpClientBuilder<U, R> executor(Executor executor);
+    HttpClientBuilder<U, R> executionStrategy(HttpExecutionStrategy strategy);
 
     /**
      * Sets the {@link BufferAllocator} for all clients created from this {@link HttpClientBuilder}.
