@@ -386,9 +386,9 @@ public final class RedisRequests {
     static void writeNumber(final Buffer buffer, final long number) {
         if (NUMBER_CACHE_MIN <= number && number < NUMBER_CACHE_MAX) {
             buffer.writeBytes(NUMBER_CACHE[((int) number - NUMBER_CACHE_MIN)]);
-            return;
+        } else {
+            writeNumberNoCache(buffer, number);
         }
-        writeNumberNoCache(buffer, number);
     }
 
     private static byte[][] initNumberCache() {
