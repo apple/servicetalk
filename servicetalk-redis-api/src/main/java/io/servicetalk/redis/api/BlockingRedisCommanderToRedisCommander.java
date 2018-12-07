@@ -2077,9 +2077,9 @@ final class BlockingRedisCommanderToRedisCommander extends RedisCommander {
     @Override
     public Single<Long> zinterstore(@RedisProtocolSupport.Key final CharSequence destination, final long numkeys,
                                     @RedisProtocolSupport.Key final Collection<? extends CharSequence> keys,
-                                    final Collection<Long> weightses,
+                                    final Collection<Long> weights,
                                     @Nullable final RedisProtocolSupport.ZinterstoreAggregate aggregate) {
-        return blockingToSingle(() -> blockingCommander.zinterstore(destination, numkeys, keys, weightses, aggregate));
+        return blockingToSingle(() -> blockingCommander.zinterstore(destination, numkeys, keys, weights, aggregate));
     }
 
     @Override
@@ -2264,9 +2264,9 @@ final class BlockingRedisCommanderToRedisCommander extends RedisCommander {
     @Override
     public Single<Long> zunionstore(@RedisProtocolSupport.Key final CharSequence destination, final long numkeys,
                                     @RedisProtocolSupport.Key final Collection<? extends CharSequence> keys,
-                                    final Collection<Long> weightses,
+                                    final Collection<Long> weights,
                                     @Nullable final RedisProtocolSupport.ZunionstoreAggregate aggregate) {
-        return blockingToSingle(() -> blockingCommander.zunionstore(destination, numkeys, keys, weightses, aggregate));
+        return blockingToSingle(() -> blockingCommander.zunionstore(destination, numkeys, keys, weights, aggregate));
     }
 
     BlockingRedisCommander asBlockingCommanderInternal() {

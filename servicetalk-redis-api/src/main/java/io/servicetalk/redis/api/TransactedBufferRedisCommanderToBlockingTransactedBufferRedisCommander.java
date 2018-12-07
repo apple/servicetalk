@@ -2004,9 +2004,9 @@ final class TransactedBufferRedisCommanderToBlockingTransactedBufferRedisCommand
     @Override
     public Future<Long> zinterstore(@RedisProtocolSupport.Key final Buffer destination, final long numkeys,
                                     @RedisProtocolSupport.Key final Collection<Buffer> keys,
-                                    final Collection<Long> weightses,
+                                    final Collection<Long> weights,
                                     @Nullable final RedisProtocolSupport.ZinterstoreAggregate aggregate) {
-        return commander.zinterstore(destination, numkeys, keys, weightses, aggregate);
+        return commander.zinterstore(destination, numkeys, keys, weights, aggregate);
     }
 
     @Override
@@ -2183,8 +2183,8 @@ final class TransactedBufferRedisCommanderToBlockingTransactedBufferRedisCommand
     @Override
     public Future<Long> zunionstore(@RedisProtocolSupport.Key final Buffer destination, final long numkeys,
                                     @RedisProtocolSupport.Key final Collection<Buffer> keys,
-                                    final Collection<Long> weightses,
+                                    final Collection<Long> weights,
                                     @Nullable final RedisProtocolSupport.ZunionstoreAggregate aggregate) {
-        return commander.zunionstore(destination, numkeys, keys, weightses, aggregate);
+        return commander.zunionstore(destination, numkeys, keys, weights, aggregate);
     }
 }

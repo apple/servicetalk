@@ -4407,7 +4407,7 @@ public abstract class BlockingRedisCommander implements AutoCloseable {
      * @param destination the destination
      * @param numkeys the numkeys
      * @param keys the keys
-     * @param weightses the weightses
+     * @param weights the weights
      * @param aggregate the aggregate
      * @return a {@link Long} result
      * @throws Exception if an exception occurs during the request processing.
@@ -4415,7 +4415,7 @@ public abstract class BlockingRedisCommander implements AutoCloseable {
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.ZINTERSTORE)
     public abstract Long zinterstore(@RedisProtocolSupport.Key CharSequence destination, long numkeys,
                                      @RedisProtocolSupport.Key Collection<? extends CharSequence> keys,
-                                     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.WEIGHTS) Collection<Long> weightses,
+                                     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.WEIGHTS) Collection<Long> weights,
                                      @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.ZinterstoreAggregate aggregate) throws Exception;
 
     /**
@@ -4828,7 +4828,7 @@ public abstract class BlockingRedisCommander implements AutoCloseable {
      * @param destination the destination
      * @param numkeys the numkeys
      * @param keys the keys
-     * @param weightses the weightses
+     * @param weights the weights
      * @param aggregate the aggregate
      * @return a {@link Long} result
      * @throws Exception if an exception occurs during the request processing.
@@ -4836,7 +4836,7 @@ public abstract class BlockingRedisCommander implements AutoCloseable {
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.ZUNIONSTORE)
     public abstract Long zunionstore(@RedisProtocolSupport.Key CharSequence destination, long numkeys,
                                      @RedisProtocolSupport.Key Collection<? extends CharSequence> keys,
-                                     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.WEIGHTS) Collection<Long> weightses,
+                                     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.WEIGHTS) Collection<Long> weights,
                                      @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.ZunionstoreAggregate aggregate) throws Exception;
 
     /**

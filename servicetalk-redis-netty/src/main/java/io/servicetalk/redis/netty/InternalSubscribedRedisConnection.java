@@ -52,7 +52,6 @@ import static io.servicetalk.redis.api.RedisProtocolSupport.Command.PSUBSCRIBE;
 import static io.servicetalk.redis.api.RedisProtocolSupport.Command.QUIT;
 import static io.servicetalk.redis.api.RedisProtocolSupport.Command.SUBSCRIBE;
 import static io.servicetalk.redis.api.RedisRequests.newRequest;
-import static io.servicetalk.redis.internal.RedisUtils.newRequestCompositeBuffer;
 import static io.servicetalk.redis.netty.RedisUtils.isSubscribeModeCommand;
 import static io.servicetalk.redis.netty.SubscribedChannelReadStream.PubSubChannelMessage.KeyType.SimpleString;
 import static io.servicetalk.transport.netty.internal.NettyIoExecutors.toNettyIoExecutor;
@@ -154,9 +153,7 @@ final class InternalSubscribedRedisConnection extends AbstractRedisConnection {
 
     @Override
     Completable doClose() {
-        return writeQueue.quit(request(newRequest(QUIT, newRequestCompositeBuffer(1, QUIT.toRESPArgument(
-                connection.executionContext().bufferAllocator()),
-                connection.executionContext().bufferAllocator()))).ignoreElements())
+        return writeQueue.quit(request(newRequest(QUIT)).ignoreElements())
                 .onErrorResume(th -> matches(th, ClosedChannelException.class) ? completed() :
                         connection.closeAsync().concatWith(error(th)))
                 .concatWith(connection.closeAsync());

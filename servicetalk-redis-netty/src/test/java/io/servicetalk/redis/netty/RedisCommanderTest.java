@@ -251,13 +251,57 @@ public class RedisCommanderTest extends BaseRedisClientTest {
     @Test
     public void testHGetAll() throws Exception {
         String testKey = "key";
+        commandClient.del(testKey).toFuture().get();
         List<FieldValue> fields = new ArrayList<>(3);
         fields.add(new FieldValue("f", "v"));
         fields.add(new FieldValue("f1", "v1"));
         fields.add(new FieldValue("f2", "v2"));
         awaitIndefinitelyNonNull(commandClient.hmset(testKey, fields));
-        final List<Object> values = awaitIndefinitelyNonNull(commandClient.hgetall(testKey));
-        assertThat(values, is(asList("f", "v", "f1", "v1", "f2", "v2")));
+        final List<String> result = awaitIndefinitelyNonNull(commandClient.hgetall(testKey));
+        assertThat(result, is(asList("f", "v", "f1", "v1", "f2", "v2")));
+        final List<String> values = awaitIndefinitelyNonNull(commandClient.hmget(testKey, "f", "f1", "f2"));
+        assertThat(values, is(asList("v", "v1", "v2")));
+    }
+
+    @Test
+    public void testHMGet() throws Exception {
+        String testKey = "key";
+        commandClient.del(testKey).toFuture().get();
+        List<FieldValue> fields = new ArrayList<>(11);
+        fields.add(new FieldValue("f", "v"));
+        fields.add(new FieldValue("f1", "v1"));
+        fields.add(new FieldValue("f2", "v2"));
+        fields.add(new FieldValue("f3", "v3"));
+        fields.add(new FieldValue("f4", "v4"));
+        fields.add(new FieldValue("f5", "v5"));
+        fields.add(new FieldValue("f6", "v6"));
+        fields.add(new FieldValue("f7", "v7"));
+        fields.add(new FieldValue("f8", "v8"));
+        fields.add(new FieldValue("f9", "v9"));
+        fields.add(new FieldValue("f10", "v10"));
+        awaitIndefinitelyNonNull(commandClient.hmset(testKey, fields));
+        final List<String> values = awaitIndefinitelyNonNull(commandClient.hmget(testKey, asList("f", "f1", "f2", "f3", "f4", "f5", "f6", "f7", "f8", "f9", "f10")));
+        assertThat(values, is(asList("v", "v1", "v2", "v3", "v4", "v5", "v6", "v7", "v8", "v9", "v10")));
+    }
+
+    @Test
+    public void testSort() throws Exception {
+        String testKey = "key";
+        commandClient.del(testKey).toFuture().get();
+        awaitIndefinitelyNonNull(commandClient.rpush(testKey, "1"));
+        awaitIndefinitelyNonNull(commandClient.set("1-score", "1"));
+        awaitIndefinitelyNonNull(commandClient.set("1-ᕈгø⨯у", "proxy"));
+
+        assertThat(awaitIndefinitelyNonNull(commandClient.sort(testKey, "*-score", new RedisProtocolSupport.OffsetCount(0, 1), singletonList("*-ᕈгø⨯у"), RedisProtocolSupport.SortOrder.ASC, RedisProtocolSupport.SortSorting.ALPHA)),
+                is(singletonList("proxy")));
+        assertThat(awaitIndefinitelyNonNull(commandClient.sort(testKey, null, new RedisProtocolSupport.OffsetCount(0, 1), singletonList("*-ᕈгø⨯у"), RedisProtocolSupport.SortOrder.ASC, RedisProtocolSupport.SortSorting.ALPHA)),
+                is(singletonList("proxy")));
+        assertThat(awaitIndefinitelyNonNull(commandClient.sort(testKey, null, null, singletonList("*-ᕈгø⨯у"), RedisProtocolSupport.SortOrder.ASC, RedisProtocolSupport.SortSorting.ALPHA)),
+                is(singletonList("proxy")));
+        assertThat(awaitIndefinitelyNonNull(commandClient.sort(testKey, null, null, singletonList("*-ᕈгø⨯у"), null, RedisProtocolSupport.SortSorting.ALPHA)),
+                is(singletonList("proxy")));
+        assertThat(awaitIndefinitelyNonNull(commandClient.sort(testKey, null, null, singletonList("*-ᕈгø⨯у"), null, null)),
+                is(singletonList("proxy")));
     }
 
     @Test

@@ -2031,9 +2031,9 @@ final class BlockingBufferRedisCommanderToBufferRedisCommander extends BufferRed
     @Override
     public Single<Long> zinterstore(@RedisProtocolSupport.Key final Buffer destination, final long numkeys,
                                     @RedisProtocolSupport.Key final Collection<Buffer> keys,
-                                    final Collection<Long> weightses,
+                                    final Collection<Long> weights,
                                     @Nullable final RedisProtocolSupport.ZinterstoreAggregate aggregate) {
-        return blockingToSingle(() -> blockingCommander.zinterstore(destination, numkeys, keys, weightses, aggregate));
+        return blockingToSingle(() -> blockingCommander.zinterstore(destination, numkeys, keys, weights, aggregate));
     }
 
     @Override
@@ -2210,9 +2210,9 @@ final class BlockingBufferRedisCommanderToBufferRedisCommander extends BufferRed
     @Override
     public Single<Long> zunionstore(@RedisProtocolSupport.Key final Buffer destination, final long numkeys,
                                     @RedisProtocolSupport.Key final Collection<Buffer> keys,
-                                    final Collection<Long> weightses,
+                                    final Collection<Long> weights,
                                     @Nullable final RedisProtocolSupport.ZunionstoreAggregate aggregate) {
-        return blockingToSingle(() -> blockingCommander.zunionstore(destination, numkeys, keys, weightses, aggregate));
+        return blockingToSingle(() -> blockingCommander.zunionstore(destination, numkeys, keys, weights, aggregate));
     }
 
     BlockingBufferRedisCommander asBlockingBufferCommanderInternal() {
