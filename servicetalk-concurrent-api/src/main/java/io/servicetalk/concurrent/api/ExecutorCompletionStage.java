@@ -866,7 +866,7 @@ abstract class ExecutorCompletionStage<T> implements CompletionStage<T>, Future<
 
         @Override
         void completeFuture(final ExecutorCompletionStage<Void> stage, final Throwable cause) {
-            executor.execute(() -> stage.completeExceptionallyNoExec(cause));
+            jdkCompleteExceptionally(stage, cause);
         }
     }
 
@@ -940,7 +940,7 @@ abstract class ExecutorCompletionStage<T> implements CompletionStage<T>, Future<
 
         @Override
         void completeFuture(final ExecutorCompletionStage<Void> stage, final Throwable cause) {
-            executor.execute(() -> stage.completeExceptionallyNoExec(cause));
+            jdkCompleteExceptionally(stage, cause);
         }
     }
 
@@ -1023,7 +1023,7 @@ abstract class ExecutorCompletionStage<T> implements CompletionStage<T>, Future<
 
         @Override
         void completeFuture(final ExecutorCompletionStage<V> stage, final Throwable cause) {
-            executor.execute(() -> stage.completeExceptionallyNoExec(cause));
+            jdkCompleteExceptionally(stage, cause);
         }
     }
 
@@ -1334,7 +1334,7 @@ abstract class ExecutorCompletionStage<T> implements CompletionStage<T>, Future<
 
         @Override
         void onError(final Throwable cause) {
-            stage.completeExceptionally(cause);
+            jdkCompleteExceptionally(stage, cause);
         }
 
         @Override
@@ -1444,7 +1444,7 @@ abstract class ExecutorCompletionStage<T> implements CompletionStage<T>, Future<
 
         @Override
         void completeFuture(final ExecutorCompletionStage<Void> stage, final Throwable cause) {
-            stage.completeExceptionally(cause);
+            jdkCompleteExceptionally(stage, cause);
         }
     }
 
@@ -1534,7 +1534,7 @@ abstract class ExecutorCompletionStage<T> implements CompletionStage<T>, Future<
 
         @Override
         void completeFuture(final ExecutorCompletionStage<Void> stage, final Throwable cause) {
-            stage.completeExceptionally(cause);
+            jdkCompleteExceptionally(stage, cause);
         }
     }
 
@@ -1625,7 +1625,7 @@ abstract class ExecutorCompletionStage<T> implements CompletionStage<T>, Future<
 
         @Override
         void completeFuture(final ExecutorCompletionStage<U> stage, final Throwable cause) {
-            stage.completeExceptionally(cause);
+            jdkCompleteExceptionally(stage, cause);
         }
     }
 
@@ -1804,7 +1804,7 @@ abstract class ExecutorCompletionStage<T> implements CompletionStage<T>, Future<
 
         @Override
         void onError(final Throwable cause) {
-            stage.completeExceptionally(cause);
+            jdkCompleteExceptionally(stage, cause);
         }
 
         @Override
@@ -1887,7 +1887,7 @@ abstract class ExecutorCompletionStage<T> implements CompletionStage<T>, Future<
 
         @Override
         void onError(final Throwable cause) {
-            stage.completeExceptionally(cause);
+            jdkCompleteExceptionally(stage, cause);
         }
 
         @Override
@@ -1972,7 +1972,7 @@ abstract class ExecutorCompletionStage<T> implements CompletionStage<T>, Future<
 
         @Override
         void onError(final Throwable cause) {
-            stage.completeExceptionally(cause);
+            jdkCompleteExceptionally(stage, cause);
         }
 
         @Override
@@ -2051,6 +2051,19 @@ abstract class ExecutorCompletionStage<T> implements CompletionStage<T>, Future<
 
     private static <T> Object wrap(@Nullable T result) {
         return result == null ? NULL : result;
+    }
+
+    /**
+     * Complete a {@link ExecutorCompletionStage} that is associated with a JDK {@link Executor}.
+     * This method can be used when no user code is invoked, and instead the failure is just being propagated to the
+     * next stage. In this case we may be able to avoid an offload if the next stage is already completed or
+     * not associated with a JDK {@link Executor}.
+     * @param stage The {@link ExecutorCompletionStage} to complete.
+     * @param cause The failure cause.
+     * @param <U> The type of data for {@code stage}.
+     */
+    private static <U> void jdkCompleteExceptionally(ExecutorCompletionStage<U> stage, Throwable cause) {
+        stage.completeExceptionallyNoExec(cause);
     }
 
     private static final class ErrorResult {

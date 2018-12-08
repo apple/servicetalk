@@ -213,7 +213,7 @@ public class SingleToCompletionStageTest {
     }
 
     @Test
-    public void thenApplyMultipleTimesOnlySuscribesOnce() throws ExecutionException, InterruptedException {
+    public void thenApplyMultipleTimesOnlySubscribesOnce() throws ExecutionException, InterruptedException {
         String expected1 = "one";
         CompletionStage<String> stage1 = source.toCompletionStage();
 
