@@ -710,6 +710,8 @@ abstract class ExecutorCompletionStage<T> implements CompletionStage<T>, Future<
                 } catch (Throwable cause) {
                     if (overallCause == null) {
                         overallCause = cause;
+                    } else {
+                        overallCause.addSuppressed(cause);
                     }
                 }
             }
@@ -731,6 +733,8 @@ abstract class ExecutorCompletionStage<T> implements CompletionStage<T>, Future<
                 } catch (Throwable cause) {
                     if (overallCause == null) {
                         overallCause = cause;
+                    } else {
+                        overallCause.addSuppressed(cause);
                     }
                 }
             }
