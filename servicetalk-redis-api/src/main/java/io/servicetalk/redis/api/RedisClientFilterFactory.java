@@ -34,11 +34,10 @@ public interface RedisClientFilterFactory {
      * for pub/sub commands.
      * @param pipelinedLoadBalancerEvents The {@link LoadBalancer#eventStream()} for the load balancer responsible
      * for non-pub/sub commands.
-     * @return The filtered {@link RedisClient}.
+     * @return {@link RedisClientFilter} representing the filtered {@link RedisClient}.
      */
-    RedisClient apply(RedisClient client,
-                      Publisher<Object> subscribeLoadBalancerEvents,
-                      Publisher<Object> pipelinedLoadBalancerEvents);
+    RedisClientFilter apply(RedisClient client, Publisher<Object> subscribeLoadBalancerEvents,
+                            Publisher<Object> pipelinedLoadBalancerEvents);
 
     /**
      * Returns a composed function that first applies the {@code before} function to its input, and then applies
@@ -68,7 +67,7 @@ public interface RedisClientFilterFactory {
      * @return a function that always returns its input {@link RedisClient}.
      */
     static RedisClientFilterFactory identity() {
-        return (client, subscribeLoadBalancerEvents, pipelinedLoadBalancerEvents) -> client;
+        return (client, subscribeLoadBalancerEvents, pipelinedLoadBalancerEvents) -> new RedisClientFilter(client);
     }
 
     /**
@@ -80,6 +79,6 @@ public interface RedisClientFilterFactory {
      */
     static RedisClientFilterFactory from(UnaryOperator<RedisClient> function) {
         requireNonNull(function);
-        return (client, subscribeLBEvents, pipelinedLBEvents) -> function.apply(client);
+        return (client, subscribeLBEvents, pipelinedLBEvents) -> new RedisClientFilter(function.apply(client));
     }
 }

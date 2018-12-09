@@ -22,20 +22,40 @@ import io.servicetalk.http.api.StreamingHttpClient.ReservedStreamingHttpConnecti
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ExecutionContext;
 
+import javax.annotation.Nullable;
+
+import static java.util.Objects.requireNonNull;
+
 /**
  * A {@link ReservedStreamingHttpConnection} that delegates all methods to a different {@link StreamingHttpConnection}.
  */
-public abstract class ReservedFromStreamingHttpConnectionAdapter extends ReservedStreamingHttpConnection {
+public abstract class ReservedStreamingHttpConnectionAdapter extends ReservedStreamingHttpConnection {
     private final StreamingHttpConnection delegate;
+    @Nullable
+    private final HttpExecutionStrategy defaultStrategy;
 
     /**
      * Create a new instance.
      *
      * @param delegate The {@link StreamingHttpConnection} to delegate all calls to.
      */
-    protected ReservedFromStreamingHttpConnectionAdapter(final StreamingHttpConnection delegate) {
+    protected ReservedStreamingHttpConnectionAdapter(final StreamingHttpConnection delegate) {
         super(delegate.reqRespFactory);
         this.delegate = delegate;
+        defaultStrategy = null;
+    }
+
+    /**
+     * Create a new instance.
+     *
+     * @param delegate The {@link StreamingHttpConnection} to delegate all calls to.
+     * @param defaultStrategy Default {@link HttpExecutionStrategy} to use.
+     */
+    protected ReservedStreamingHttpConnectionAdapter(final StreamingHttpConnection delegate,
+                                                     final HttpExecutionStrategy defaultStrategy) {
+        super(delegate.reqRespFactory);
+        this.delegate = delegate;
+        this.defaultStrategy = requireNonNull(defaultStrategy);
     }
 
     /**
@@ -57,7 +77,13 @@ public abstract class ReservedFromStreamingHttpConnectionAdapter extends Reserve
     }
 
     @Override
-    public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy, final StreamingHttpRequest request) {
+    public final Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
+        return defaultStrategy == null ? delegate.request(request) : request(defaultStrategy, request);
+    }
+
+    @Override
+    public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
+                                                 final StreamingHttpRequest request) {
         return delegate.request(strategy, request);
     }
 
@@ -83,6 +109,6 @@ public abstract class ReservedFromStreamingHttpConnectionAdapter extends Reserve
 
     @Override
     public String toString() {
-        return ReservedFromStreamingHttpConnectionAdapter.class.getSimpleName() + "(" + delegate + ")";
+        return ReservedStreamingHttpConnectionAdapter.class.getSimpleName() + "(" + delegate + ")";
     }
 }

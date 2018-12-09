@@ -27,7 +27,7 @@ public interface HttpConnectionFilterFactory {
      * @param connection the {@link StreamingHttpConnection} to filter
      * @return the filtered {@link StreamingHttpConnection}
      */
-    StreamingHttpConnection apply(StreamingHttpConnection connection);
+    StreamingHttpConnectionFilter apply(StreamingHttpConnection connection);
 
     /**
      * Returns a composed function that first applies the {@code before} function to its input, and then applies
@@ -57,6 +57,6 @@ public interface HttpConnectionFilterFactory {
      * @return a function that always returns its input {@link StreamingHttpConnection}.
      */
     static HttpConnectionFilterFactory identity() {
-        return connection -> connection;
+        return StreamingHttpConnectionFilter::new;
     }
 }

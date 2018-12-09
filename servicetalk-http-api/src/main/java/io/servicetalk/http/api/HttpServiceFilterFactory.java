@@ -27,7 +27,7 @@ public interface HttpServiceFilterFactory {
      * @param service the {@link StreamingHttpService} to filter
      * @return the filtered {@link StreamingHttpService}
      */
-    StreamingHttpService apply(StreamingHttpService service);
+    StreamingHttpServiceFilter apply(StreamingHttpService service);
 
     /**
      * Returns a composed function that first applies the {@code before} function to its input, and then applies
@@ -51,11 +51,11 @@ public interface HttpServiceFilterFactory {
     }
 
     /**
-     * Returns a function that always returns its input {@link StreamingHttpClient}.
+     * Returns a function that always returns its input {@link HttpServiceFilterFactory}.
      *
-     * @return a function that always returns its input {@link StreamingHttpClient}.
+     * @return a function that always returns its input {@link HttpServiceFilterFactory}.
      */
     static HttpServiceFilterFactory identity() {
-        return service -> service;
+        return StreamingHttpServiceFilter::new;
     }
 }

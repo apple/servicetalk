@@ -18,7 +18,7 @@ package io.servicetalk.http.api;
 import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.concurrent.api.Publisher;
 
-import java.util.function.UnaryOperator;
+import java.util.function.Function;
 
 import static java.util.Objects.requireNonNull;
 
@@ -33,7 +33,7 @@ public interface HttpClientFilterFactory {
      * @param lbEvents the {@link LoadBalancer} events stream
      * @return the filtered {@link StreamingHttpClient}
      */
-    StreamingHttpClient apply(StreamingHttpClient client, Publisher<Object> lbEvents);
+    StreamingHttpClientFilter apply(StreamingHttpClient client, Publisher<Object> lbEvents);
 
     /**
      * Returns a composed function that first applies the {@code before} function to its input, and then applies
@@ -62,17 +62,17 @@ public interface HttpClientFilterFactory {
      * @return a function that always returns its input {@link StreamingHttpClient}.
      */
     static HttpClientFilterFactory identity() {
-        return (client, lbEvents) -> client;
+        return (client, lbEvents) -> new StreamingHttpClientFilter(client);
     }
 
     /**
-     * Returns a function that adapts from the {@link UnaryOperator}&lt;{@link StreamingHttpClient}&gt; function type to
-     * the {@link HttpClientFilterFactory}.
+     * Returns a function that adapts from a {@link Function}&lt;{@link StreamingHttpClient},
+     * {@link StreamingHttpClientFilter}&gt; to the {@link HttpClientFilterFactory}.
      *
-     * @param function the function that is applied to the input {@link StreamingHttpClient}
-     * @return the filtered {@link StreamingHttpClient}
+     * @param function the function that is applied to the original {@link StreamingHttpClient}
+     * @return A {@link HttpClientFilterFactory} that uses the passed filter {@link Function}.
      */
-    static HttpClientFilterFactory from(UnaryOperator<StreamingHttpClient> function) {
+    static HttpClientFilterFactory from(Function<StreamingHttpClient, StreamingHttpClientFilter> function) {
         requireNonNull(function);
         return (client, lbEvents) -> function.apply(client);
     }

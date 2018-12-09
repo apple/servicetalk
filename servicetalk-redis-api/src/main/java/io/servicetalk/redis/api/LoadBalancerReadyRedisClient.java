@@ -24,18 +24,15 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.redis.api.RedisProtocolSupport.Command;
-import io.servicetalk.transport.api.ExecutionContext;
 
 import static io.servicetalk.concurrent.api.Completable.error;
-import static java.util.Objects.requireNonNull;
 
 /**
  * A {@link RedisClient} filter that will account for transient failures introduced by a {@link LoadBalancer} not being
  * ready for {@link #request(RedisRequest)} and retry/delay requests until the {@link LoadBalancer} is ready.
  */
-public final class LoadBalancerReadyRedisClient extends RedisClient {
+public final class LoadBalancerReadyRedisClient extends RedisClientFilter {
     private final LoadBalancerReadySubscriber loadBalancerReadySubscriber;
-    private final RedisClient next;
     private final int maxRetryCount;
 
     /**
@@ -49,10 +46,10 @@ public final class LoadBalancerReadyRedisClient extends RedisClient {
     public LoadBalancerReadyRedisClient(int maxRetryCount,
                                         Publisher<Object> loadBalancerEvents,
                                         RedisClient next) {
+        super(next);
         if (maxRetryCount <= 0) {
             throw new IllegalArgumentException("maxRetryCount " + maxRetryCount + " (expected >0)");
         }
-        this.next = requireNonNull(next);
         this.maxRetryCount = maxRetryCount;
         loadBalancerReadySubscriber = new LoadBalancerReadySubscriber();
         loadBalancerEvents.subscribe(loadBalancerReadySubscriber);
@@ -61,32 +58,12 @@ public final class LoadBalancerReadyRedisClient extends RedisClient {
     @Override
     public Single<? extends ReservedRedisConnection> reserveConnection(RedisExecutionStrategy strategy,
                                                                        Command command) {
-        return next.reserveConnection(strategy, command).retryWhen(retryWhenFunction());
+        return delegate().reserveConnection(strategy, command).retryWhen(retryWhenFunction());
     }
 
     @Override
     public Publisher<RedisData> request(final RedisExecutionStrategy strategy, final RedisRequest request) {
-        return next.request(strategy, request).retryWhen(retryWhenFunction());
-    }
-
-    @Override
-    public ExecutionContext executionContext() {
-        return next.executionContext();
-    }
-
-    @Override
-    public Completable onClose() {
-        return next.onClose();
-    }
-
-    @Override
-    public Completable closeAsync() {
-        return next.closeAsync();
-    }
-
-    @Override
-    public Completable closeAsyncGracefully() {
-        return next.closeAsyncGracefully();
+        return delegate().request(strategy, request).retryWhen(retryWhenFunction());
     }
 
     private BiIntFunction<Throwable, Completable> retryWhenFunction() {

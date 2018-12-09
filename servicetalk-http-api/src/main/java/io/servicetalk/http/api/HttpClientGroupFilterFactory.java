@@ -69,7 +69,7 @@ public interface HttpClientGroupFilterFactory<U> {
      */
     default HttpClientFilterFactory asClientFilter(U address) {
         requireNonNull(address);
-        return (client, lbEvents) -> apply(address, client, lbEvents);
+        return (client, lbEvents) -> new StreamingHttpClientFilter(apply(address, client, lbEvents));
     }
 
     /**

@@ -16,8 +16,8 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.http.api.BlockingHttpClient;
+import io.servicetalk.http.api.HttpRequestHandlerFilterFactory;
 import io.servicetalk.http.api.HttpResponse;
-import io.servicetalk.http.api.HttpServiceFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequestHandler;
 import io.servicetalk.transport.api.ServerContext;
 
@@ -43,8 +43,8 @@ public class HttpServerFilterOrderTest {
         StreamingHttpRequestHandler filter1 = newMockHandler();
         StreamingHttpRequestHandler filter2 = newMockHandler();
         ServerContext serverContext = HttpServers.forPort(0)
-                .appendServiceFilter(addFilter(filter1))
-                .appendServiceFilter(addFilter(filter2))
+                .appendRequestHandlerFilter(addFilter(filter1))
+                .appendRequestHandlerFilter(addFilter(filter2))
                 .listenBlockingAndAwait((ctx, request, responseFactory) -> responseFactory.ok());
         BlockingHttpClient client = forSingleAddress(of((InetSocketAddress) serverContext.listenAddress()))
                 .buildBlocking();
@@ -62,11 +62,11 @@ public class HttpServerFilterOrderTest {
         return mock;
     }
 
-    private static HttpServiceFilterFactory addFilter(StreamingHttpRequestHandler filter) {
+    private static HttpRequestHandlerFilterFactory addFilter(StreamingHttpRequestHandler filter) {
         return orig -> {
             when(filter.handle(any(), any(), any()))
                     .thenAnswer(i -> orig.handle(i.getArgument(0), i.getArgument(1), i.getArgument(2)));
-            return filter.asStreamingService();
+            return filter;
         };
     }
 }

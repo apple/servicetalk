@@ -25,9 +25,9 @@ public interface RedisConnectionFilterFactory {
     /**
      * Function that allows to filter an {@link RedisConnection}.
      * @param connection the {@link RedisConnection} to filter
-     * @return the filtered {@link RedisConnection}
+     * @return {@link RedisConnectionFilter} representing the filtered {@link RedisConnection}.
      */
-    RedisConnection apply(RedisConnection connection);
+    RedisConnectionFilter apply(RedisConnection connection);
 
     /**
      * Returns a composed function that first applies the {@code before} function to its input, and then applies
@@ -57,6 +57,6 @@ public interface RedisConnectionFilterFactory {
      * @return a function that always returns its input {@link RedisConnectionFilterFactory}.
      */
     static RedisConnectionFilterFactory identity() {
-        return connection -> connection;
+        return RedisConnectionFilter::new;
     }
 }

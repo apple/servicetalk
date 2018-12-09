@@ -25,9 +25,9 @@ public interface PartitionedRedisClientFilterFactory {
     /**
      * Function that allows to filter an {@link PartitionedRedisClient}.
      * @param connection the {@link PartitionedRedisClient} to filter
-     * @return the filtered {@link PartitionedRedisClient}
+     * @return {@link PartitionedRedisClientFilter} that represents the filtered {@link PartitionedRedisClient}
      */
-    PartitionedRedisClient apply(PartitionedRedisClient connection);
+    PartitionedRedisClientFilter apply(PartitionedRedisClient connection);
 
     /**
      * Returns a composed function that first applies the {@code before} function to its input, and then applies
@@ -57,6 +57,6 @@ public interface PartitionedRedisClientFilterFactory {
      * @return a function that always returns its input {@link PartitionedRedisClientFilterFactory}.
      */
     static PartitionedRedisClientFilterFactory identity() {
-        return connection -> connection;
+        return PartitionedRedisClientFilter::new;
     }
 }

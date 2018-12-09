@@ -191,6 +191,28 @@ public interface HttpServerBuilder {
     HttpServerBuilder appendServiceFilter(HttpServiceFilterFactory factory);
 
     /**
+     * Append the filter to the chain of filters used to decorate the {@link StreamingHttpService} used by this
+     * builder.
+     * <p>
+     * Note this method will be used to decorate the {@link StreamingHttpRequestHandler} passed to
+     * {@link #listenStreaming(StreamingHttpRequestHandler)} before it is used by the server.
+     * <p>
+     * The order of execution of these filters are in order of append. If 3 filters are added as follows:
+     * <pre>
+     *     builder.append(filter1).append(filter2).append(filter3)
+     * </pre>
+     * accepting a request by a service wrapped by this filter chain, the order of invocation of these filters will be:
+     * <pre>
+     *     filter1 =&gt; filter2 =&gt; filter3 =&gt; service
+     * </pre>
+     * @param factory {@link HttpServiceFilterFactory} to append.
+     * @return {@code this}
+     */
+    default HttpServerBuilder appendRequestHandlerFilter(HttpRequestHandlerFilterFactory factory) {
+        return appendServiceFilter(factory.asServiceFilterFactory());
+    }
+
+    /**
      * Sets the address to listen on.
      *
      * @param address The listen address for the server.

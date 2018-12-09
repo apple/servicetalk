@@ -22,7 +22,7 @@ import io.servicetalk.http.api.HttpClient;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpSerializationProvider;
 import io.servicetalk.http.api.StreamingHttpClient;
-import io.servicetalk.http.api.StreamingHttpClientAdapter;
+import io.servicetalk.http.api.StreamingHttpClientFilter;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpService;
@@ -124,7 +124,7 @@ public final class GatewayServer {
                                 new RetryingHttpClientFilter.Builder(client).exponentialBackoff(ofMillis(100))
                                         .addJitter().retryCount(3).build()))
                         // Apply a timeout filter for the client to guard against latent clients.
-                        .appendClientFilter(from(client -> new StreamingHttpClientAdapter(client) {
+                        .appendClientFilter(from(client -> new StreamingHttpClientFilter(client) {
                                     @Override
                                     public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
                                                                                  final StreamingHttpRequest request) {
