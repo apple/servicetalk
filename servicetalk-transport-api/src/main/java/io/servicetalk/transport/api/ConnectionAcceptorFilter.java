@@ -22,20 +22,20 @@ import java.util.function.BiFunction;
 import javax.annotation.Nullable;
 
 /**
- * An implementation of {@link ContextFilter} that delegates all methods to another specified {@link ContextFilter}.
+ * An implementation of {@link ConnectionAcceptor} that delegates all methods to another {@link ConnectionAcceptor}.
  */
-public class ContextFilterAdapter implements ContextFilter {
+public class ConnectionAcceptorFilter implements ConnectionAcceptor {
 
-    private final ContextFilter delegate;
+    private final ConnectionAcceptor delegate;
     @Nullable
     private final BiFunction<ConnectionContext, Boolean, Single<Boolean>> apply;
 
     /**
      * New instance.
      *
-     * @param delegate {@link ContextFilter} to delegate all calls to.
+     * @param delegate {@link ConnectionAcceptor} to delegate all calls to.
      */
-    public ContextFilterAdapter(final ContextFilter delegate) {
+    public ConnectionAcceptorFilter(final ConnectionAcceptor delegate) {
         this.delegate = delegate;
         apply = null;
     }
@@ -43,21 +43,21 @@ public class ContextFilterAdapter implements ContextFilter {
     /**
      * New instance.
      *
-     * @param delegate {@link ContextFilter} to delegate all calls to.
-     * @param apply A {@link BiFunction} that is called after {@link ContextFilter#apply(ConnectionContext)} is called
-     * on the passed {@code delegate}. The second argument to the {@link BiFunction} is the result from the
+     * @param delegate {@link ConnectionAcceptor} to delegate all calls to.
+     * @param apply A {@link BiFunction} that is called after {@link ConnectionAcceptor#accept(ConnectionContext)} is
+     * called on the passed {@code delegate}. The second argument to the {@link BiFunction} is the result from the
      * {@code delegate}.
      */
-    public ContextFilterAdapter(final ContextFilter delegate,
-                                   final BiFunction<ConnectionContext, Boolean, Single<Boolean>> apply) {
+    public ConnectionAcceptorFilter(final ConnectionAcceptor delegate,
+                                    final BiFunction<ConnectionContext, Boolean, Single<Boolean>> apply) {
         this.delegate = delegate;
         this.apply = apply;
     }
 
     @Override
-    public Single<Boolean> apply(final ConnectionContext context) {
-        return apply == null ? delegate.apply(context) :
-                delegate.apply(context).flatMap(result -> apply.apply(context, result != null && result));
+    public Single<Boolean> accept(final ConnectionContext context) {
+        return apply == null ? delegate.accept(context) :
+                delegate.accept(context).flatMap(result -> apply.apply(context, result != null && result));
     }
 
     @Override

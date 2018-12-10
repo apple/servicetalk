@@ -30,7 +30,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import javax.annotation.Nonnull;
 
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
-import static io.servicetalk.transport.api.ContextFilter.ACCEPT_ALL;
+import static io.servicetalk.transport.api.ConnectionAcceptor.ACCEPT_ALL;
 import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -40,7 +40,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class ContextFilterTest {
+public class ConnectionAcceptorTest {
     @Rule
     public MockitoRule rule = MockitoJUnit.rule();
     @Rule
@@ -50,18 +50,18 @@ public class ContextFilterTest {
     private ConnectionContext context;
 
     @Spy
-    private ContextFilter first;
+    private ConnectionAcceptor first;
     @Spy
-    private ContextFilter second;
+    private ConnectionAcceptor second;
 
     @Test
     public void factoryAppend() throws Exception {
-        ContextFilterFactory f = ContextFilterFactory.identity();
+        ConnectionAcceptorFilterFactory f = ConnectionAcceptorFilterFactory.identity();
         ConcurrentLinkedQueue<Integer> order = new ConcurrentLinkedQueue<>();
-        f.append(original -> new OrderVerifyingContextFilterAdapter(original, order, 1))
-                .append(original -> new OrderVerifyingContextFilterAdapter(original, order, 2))
-                .append(original -> new OrderVerifyingContextFilterAdapter(original, order, 3))
-                .apply(ACCEPT_ALL).apply(context).toFuture().get();
+        f.append(original -> new OrderVerifyingConnectionAcceptorFilter(original, order, 1))
+                .append(original -> new OrderVerifyingConnectionAcceptorFilter(original, order, 2))
+                .append(original -> new OrderVerifyingConnectionAcceptorFilter(original, order, 3))
+                .apply(ACCEPT_ALL).accept(context).toFuture().get();
         assertThat("Unexpected filter order.", order, contains(1, 2, 3));
     }
 
@@ -73,8 +73,8 @@ public class ContextFilterTest {
         applyFilters();
         listener.verifySuccess(TRUE);
 
-        verify(first).apply(context);
-        verify(second).apply(context);
+        verify(first).accept(context);
+        verify(second).accept(context);
     }
 
     @Test
@@ -85,8 +85,8 @@ public class ContextFilterTest {
         applyFilters();
         listener.verifySuccess(FALSE);
 
-        verify(first).apply(context);
-        verify(second).apply(context);
+        verify(first).accept(context);
+        verify(second).accept(context);
     }
 
     @Test
@@ -97,8 +97,8 @@ public class ContextFilterTest {
         applyFilters();
         listener.verifyFailure(DeliberateException.class);
 
-        verify(first).apply(context);
-        verify(second).apply(context);
+        verify(first).accept(context);
+        verify(second).accept(context);
     }
 
     @Test
@@ -109,8 +109,8 @@ public class ContextFilterTest {
         applyFilters();
         listener.verifySuccess(TRUE);
 
-        verify(first).apply(context);
-        verify(second).apply(context);
+        verify(first).accept(context);
+        verify(second).accept(context);
     }
 
     @Test
@@ -121,8 +121,8 @@ public class ContextFilterTest {
         applyFilters();
         listener.verifySuccess(TRUE);
 
-        verify(first).apply(context);
-        verify(second).apply(context);
+        verify(first).accept(context);
+        verify(second).accept(context);
     }
 
     @Test
@@ -132,36 +132,36 @@ public class ContextFilterTest {
         applyFilters();
         listener.verifyFailure(DeliberateException.class);
 
-        verify(first).apply(context);
-        verify(second, never()).apply(any(ConnectionContext.class));
+        verify(first).accept(context);
+        verify(second, never()).accept(any(ConnectionContext.class));
     }
 
-    private void setFilterResult(final ContextFilter filter, final Single<Boolean> resultSingle) {
-        when(filter.apply(context)).thenReturn(resultSingle);
+    private void setFilterResult(final ConnectionAcceptor filter, final Single<Boolean> resultSingle) {
+        when(filter.accept(context)).thenReturn(resultSingle);
     }
 
     @Nonnull
     protected void applyFilters() {
-        ContextFilterFactory f = (original -> new ContextFilterAdapter(original, (ctx, prevResult) -> second.apply(ctx)));
-        f = f.append(original -> new ContextFilterAdapter(original, (ctx, prevResult) -> first.apply(ctx)));
-        listener.listen(f.apply(ACCEPT_ALL).apply(context));
+        ConnectionAcceptorFilterFactory f = (original -> new ConnectionAcceptorFilter(original, (ctx, prevResult) -> second.accept(ctx)));
+        f = f.append(original -> new ConnectionAcceptorFilter(original, (ctx, prevResult) -> first.accept(ctx)));
+        listener.listen(f.apply(ACCEPT_ALL).accept(context));
     }
 
-    private static class OrderVerifyingContextFilterAdapter extends ContextFilterAdapter {
+    private static class OrderVerifyingConnectionAcceptorFilter extends ConnectionAcceptorFilter {
         private final ConcurrentLinkedQueue<Integer> order;
         private final int index;
 
-        OrderVerifyingContextFilterAdapter(final ContextFilter original, final ConcurrentLinkedQueue<Integer> order,
-                                           final int index) {
+        OrderVerifyingConnectionAcceptorFilter(final ConnectionAcceptor original, final ConcurrentLinkedQueue<Integer> order,
+                                               final int index) {
             super(original);
             this.order = order;
             this.index = index;
         }
 
         @Override
-        public Single<Boolean> apply(final ConnectionContext context) {
+        public Single<Boolean> accept(final ConnectionContext context) {
             order.add(index);
-            return super.apply(context);
+            return super.accept(context);
         }
     }
 }

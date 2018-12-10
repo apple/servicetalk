@@ -31,7 +31,7 @@ import io.servicetalk.http.api.StreamingHttpRequester;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.api.StreamingHttpService;
-import io.servicetalk.transport.api.ContextFilterAdapter;
+import io.servicetalk.transport.api.ConnectionAcceptorFilter;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.netty.internal.ExecutionContextRule;
 
@@ -170,7 +170,7 @@ public class HttpServiceAsyncContextTest {
         StreamingHttpService service = newEmptyAsyncContextService(false);
         CompositeCloseable compositeCloseable = AsyncCloseables.newCompositeCloseable();
         ServerContext ctx = compositeCloseable.append(HttpServers.forAddress(LOCAL_0)
-                .appendContextFilter(original -> new ContextFilterAdapter(context -> {
+                .appendConnectionAcceptorFilter(original -> new ConnectionAcceptorFilter(context -> {
                     AsyncContext.put(K1, "v1");
                     return success(true);
                 }))

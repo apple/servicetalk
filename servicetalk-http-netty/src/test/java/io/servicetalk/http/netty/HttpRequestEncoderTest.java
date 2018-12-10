@@ -80,7 +80,7 @@ import static io.servicetalk.http.api.HttpHeaderValues.KEEP_ALIVE;
 import static io.servicetalk.http.api.HttpProtocolVersions.HTTP_1_1;
 import static io.servicetalk.http.api.HttpRequestMetaDataFactory.newRequestMetaData;
 import static io.servicetalk.http.api.HttpRequestMethods.GET;
-import static io.servicetalk.transport.api.ContextFilter.ACCEPT_ALL;
+import static io.servicetalk.transport.api.ConnectionAcceptor.ACCEPT_ALL;
 import static io.servicetalk.transport.netty.NettyIoExecutors.createIoExecutor;
 import static java.lang.Boolean.TRUE;
 import static java.lang.Integer.toHexString;

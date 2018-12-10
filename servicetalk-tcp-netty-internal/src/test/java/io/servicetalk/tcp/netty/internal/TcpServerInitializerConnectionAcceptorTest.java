@@ -20,8 +20,8 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.DeliberateException;
+import io.servicetalk.transport.api.ConnectionAcceptor;
 import io.servicetalk.transport.api.ConnectionContext;
-import io.servicetalk.transport.api.ContextFilter;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
 import io.servicetalk.transport.netty.internal.NettyConnection;
@@ -48,7 +48,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
 @RunWith(Parameterized.class)
-public class TcpServerInitializerContextFilterTest extends AbstractTcpServerTest {
+public class TcpServerInitializerConnectionAcceptorTest extends AbstractTcpServerTest {
 
     enum FilterMode {
         ACCEPT_ALL(true, false, (executor, context) -> success(true)),
@@ -67,8 +67,8 @@ public class TcpServerInitializerContextFilterTest extends AbstractTcpServerTest
                 executor.timer(100, MILLISECONDS).concatWith(success(true))),
         ACCEPT_ALL_CONSTANT(true, false, (executor, context) -> success(true)) {
             @Override
-            ContextFilter getContextFilter(final Executor executor) {
-                return ContextFilter.ACCEPT_ALL;
+            ConnectionAcceptor getContextFilter(final Executor executor) {
+                return ConnectionAcceptor.ACCEPT_ALL;
             }
         };
 
@@ -84,7 +84,7 @@ public class TcpServerInitializerContextFilterTest extends AbstractTcpServerTest
             this.contextFilterFunction = contextFilterFunction;
         }
 
-        ContextFilter getContextFilter(Executor executor) {
+        ConnectionAcceptor getContextFilter(Executor executor) {
             return (context) -> contextFilterFunction.apply(executor, context);
         }
     }
@@ -94,7 +94,7 @@ public class TcpServerInitializerContextFilterTest extends AbstractTcpServerTest
     @Nullable
     private volatile SSLSession sslSession;
 
-    public TcpServerInitializerContextFilterTest(final boolean enableSsl, final FilterMode filterMode) {
+    public TcpServerInitializerConnectionAcceptorTest(final boolean enableSsl, final FilterMode filterMode) {
         this.filterMode = filterMode;
         setSslEnabled(enableSsl);
         setService(conn -> {
@@ -102,14 +102,14 @@ public class TcpServerInitializerContextFilterTest extends AbstractTcpServerTest
             return conn.write(conn.read());
         });
         if (enableSsl) {
-            setContextFilter(ctx -> {
+            setConnectionAcceptor(ctx -> {
                 // Asserting that the SSL Session has been set by the time the filter is called must be done from the
                 // test thread, in order to fail the test with a useful message.
                 sslSession = ctx.sslSession();
-                return filterMode.getContextFilter(SERVER_CTX.executor()).apply(ctx);
+                return filterMode.getContextFilter(SERVER_CTX.executor()).accept(ctx);
             });
         } else {
-            setContextFilter(filterMode.getContextFilter(SERVER_CTX.executor()));
+            setConnectionAcceptor(filterMode.getContextFilter(SERVER_CTX.executor()));
         }
     }
 

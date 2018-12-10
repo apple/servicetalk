@@ -16,8 +16,8 @@
 package io.servicetalk.tcp.netty.internal;
 
 import io.servicetalk.concurrent.api.Executor;
+import io.servicetalk.transport.api.ConnectionAcceptor;
 import io.servicetalk.transport.api.ConnectionContext;
-import io.servicetalk.transport.api.ContextFilter;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.ssl.SniHandler;
@@ -29,20 +29,20 @@ import static io.netty.handler.ssl.SslHandshakeCompletionEvent.SUCCESS;
 /**
  * This class depends on the {@link SslHandler} or {@link SniHandler} having been added to the pipeline before it, so
  * that it can intercept the SSL handshake completion {@link SslHandshakeCompletionEvent#SUCCESS} event, in order to
- * execute the {@link ContextFilter}.
+ * execute the {@link ConnectionAcceptor}.
  */
 final class SslContextFilterChannelHandler extends AbstractContextFilterChannelHandler {
 
-    SslContextFilterChannelHandler(final ConnectionContext context, final ContextFilter contextFilter,
+    SslContextFilterChannelHandler(final ConnectionContext context, final ConnectionAcceptor connectionAcceptor,
                                    final Executor executor) {
-        super(context, contextFilter, executor);
+        super(context, connectionAcceptor, executor);
     }
 
     @Override
     public void channelActive(final ChannelHandlerContext ctx) {
         ctx.fireChannelActive();
 
-        // Since we are delaying Connection propagation with ContextFilter until SSL handshake is completed, user code
+        // Since we are delaying Connection propagation with ConnectionAcceptor until SSL handshake is completed, user code
         // will not generate a read. We need to generate a read() to initiate the handshake.
         ctx.read();
     }

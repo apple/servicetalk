@@ -22,24 +22,27 @@ import io.servicetalk.concurrent.api.Single;
 import static io.servicetalk.concurrent.api.Completable.completed;
 
 /**
- * Allow to filter connections a.k.a {@link ConnectionContext}s.
+ * A contract that defines the connection acceptance criterion.
  */
 @FunctionalInterface
-public interface ContextFilter extends AsyncCloseable {
+public interface ConnectionAcceptor extends AsyncCloseable {
 
     /**
-     * Just ACCEPT all connections.
+     * ACCEPT all connections.
      */
-    ContextFilter ACCEPT_ALL = (context) -> Single.success(Boolean.TRUE);
+    ConnectionAcceptor ACCEPT_ALL = (context) -> Single.success(Boolean.TRUE);
 
     /**
-     * Filter the {@link ConnectionContext} and notify the returned {@link Single} once done. If notified with
-     * {@link Boolean#FALSE} it will be rejected, with {@link Boolean#TRUE} accepted.
+     * Evaluate the passed {@link ConnectionContext} to accept or reject. If the returned {@link Single} terminates with
+     * a {@link Boolean#TRUE} then the passed {@link ConnectionContext} will be accepted, otherwise rejected. If the
+     * {@link Single} terminates with an error, the passed {@link ConnectionContext} will be rejected.
      *
-     * @param context the {@link ConnectionContext} for which the filter operation is done
-     * @return the {@link Single} which is notified once complete
+     * @param context the {@link ConnectionContext} to evaluate.
+     * @return {@link Single}, which when terminated with a {@link Boolean#TRUE}, the passed {@link ConnectionContext}
+     * is accepted, otherwise rejected. If it terminates with an error, the passed {@link ConnectionContext} will be
+     * rejected.
      */
-    Single<Boolean> apply(ConnectionContext context);
+    Single<Boolean> accept(ConnectionContext context);
 
     @Override
     default Completable closeAsync() {

@@ -18,18 +18,18 @@ package io.servicetalk.transport.api;
 import static java.util.Objects.requireNonNull;
 
 /**
- * A factory for filtering {@link ContextFilter}.
+ * A factory for filtering {@link ConnectionAcceptor}.
  */
 @FunctionalInterface
-public interface ContextFilterFactory {
+public interface ConnectionAcceptorFilterFactory {
 
     /**
-     * Function that allows to filter an {@link ContextFilter}.
+     * Function that allows to filter a {@link ConnectionAcceptor}.
      *
-     * @param original the {@link ContextFilter} to filter
-     * @return the filtered {@link ContextFilter}
+     * @param original the {@link ConnectionAcceptor} to filter
+     * @return the filtered {@link ConnectionAcceptor}
      */
-    ContextFilterAdapter apply(ContextFilter original);
+    ConnectionAcceptorFilter apply(ConnectionAcceptor original);
 
     /**
      * Returns a composed function that first applies the {@code before} function to its input, and then applies
@@ -37,7 +37,7 @@ public interface ContextFilterFactory {
      * <p>
      * The order of execution of these filters are in order of append. If 3 filters are added as follows:
      * <pre>
-     *     builder.append(filter1).append(filter2).append(filter3)
+     *     factory.append(filter1).append(filter2).append(filter3)
      * </pre>
      * accepting a connection by a filter wrapped by this filter chain, the order of invocation of these filters will
      * be:
@@ -48,17 +48,17 @@ public interface ContextFilterFactory {
      * @return a composed function that first applies the {@code before}
      * function and then applies this function
      */
-    default ContextFilterFactory append(ContextFilterFactory before) {
+    default ConnectionAcceptorFilterFactory append(ConnectionAcceptorFilterFactory before) {
         requireNonNull(before);
         return service -> apply(before.apply(service));
     }
 
     /**
-     * Returns a function that always returns its input {@link ContextFilter}.
+     * Returns a function that always returns its input {@link ConnectionAcceptor}.
      *
-     * @return a function that always returns its input {@link ContextFilter}.
+     * @return a function that always returns its input {@link ConnectionAcceptor}.
      */
-    static ContextFilterFactory identity() {
-        return ContextFilterAdapter::new;
+    static ConnectionAcceptorFilterFactory identity() {
+        return ConnectionAcceptorFilter::new;
     }
 }
