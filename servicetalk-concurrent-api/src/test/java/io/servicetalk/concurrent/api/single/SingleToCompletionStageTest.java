@@ -93,6 +93,33 @@ public class SingleToCompletionStageTest {
     }
 
     @Test
+    public void completableFutureFromSingleToCompletionStageToCompletableFutureFailure()
+            throws ExecutionException, InterruptedException {
+        CompletableFuture<Long> input = new CompletableFuture<>();
+        CompletableFuture<Long> output = Single.fromStage(input).toCompletionStage().toCompletableFuture()
+                .whenComplete((v, c) -> { })
+                .thenApply(l -> l + 1)
+                .whenComplete((v, c) -> { });
+        input.completeExceptionally(DELIBERATE_EXCEPTION);
+        thrown.expect(ExecutionException.class);
+        thrown.expectCause(is(DELIBERATE_EXCEPTION));
+        output.get();
+    }
+
+    @Test
+    public void completableFutureFromSingleToCompletionStageToCompletableFutureSuccess()
+            throws ExecutionException, InterruptedException {
+        CompletableFuture<Long> input = new CompletableFuture<>();
+        CompletableFuture<Long> output = Single.fromStage(input).toCompletionStage().toCompletableFuture()
+                .exceptionally(cause -> 2L)
+                .whenComplete((v, c) -> { })
+                .thenApply(l -> l + 1)
+                .whenComplete((v, c) -> { });
+        input.complete(123L);
+        assertEquals(124L, output.get().longValue());
+    }
+
+    @Test
     public void nestedInADifferentFuture() throws Exception {
         String result = CompletableFuture.completedFuture("foo")
                 .thenCompose(s -> Single.success(s + "bar").toCompletionStage())
@@ -186,7 +213,7 @@ public class SingleToCompletionStageTest {
     }
 
     @Test
-    public void thenApplyMultipleTimesOnlySuscribesOnce() throws ExecutionException, InterruptedException {
+    public void thenApplyMultipleTimesOnlySubscribesOnce() throws ExecutionException, InterruptedException {
         String expected1 = "one";
         CompletionStage<String> stage1 = source.toCompletionStage();
 
