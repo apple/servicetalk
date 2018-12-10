@@ -178,6 +178,28 @@ public class RedisDecoderTest {
     }
 
     @Test
+    public void shouldDecodeBulkStringWithTrailingPayload() {
+        assertTrue(channel.writeInbound(byteBufOf("$5\r\nabcde\r\n$7\r\ntrailer\r\n")));
+        RedisData.CompleteBulkString completeBulkString = channel.readInbound();
+        assertEquals("abcde", completeBulkString.getBufferValue().toString(UTF_8));
+        completeBulkString = channel.readInbound();
+        assertEquals("trailer", completeBulkString.getBufferValue().toString(UTF_8));
+    }
+
+    @Test
+    public void shouldDecodePartialBulkStringWithTrailingPayload() {
+        assertTrue(channel.writeInbound(byteBufOf("$5\r\nab")));
+        assertTrue(channel.writeInbound(byteBufOf("cde\r\n$7\r\ntrailer\r\n")));
+        RedisData.FirstBulkStringChunk firstBulkStringChunk = channel.readInbound();
+        assertEquals(5, firstBulkStringChunk.bulkStringLength());
+        assertEquals("ab", firstBulkStringChunk.getBufferValue().toString(UTF_8));
+        RedisData.LastBulkStringChunk lastBulkStringChunk = channel.readInbound();
+        assertEquals("cde", lastBulkStringChunk.getBufferValue().toString(UTF_8));
+        RedisData.CompleteBulkString completeBulkString = channel.readInbound();
+        assertEquals("trailer", completeBulkString.getBufferValue().toString(UTF_8));
+    }
+
+    @Test
     public void shouldDecodeEmptyBulkString() {
         assertTrue(channel.writeInbound(byteBufOf("$0\r\n\r\n")));
         RedisData.CompleteBulkString completeBulkString = channel.readInbound();

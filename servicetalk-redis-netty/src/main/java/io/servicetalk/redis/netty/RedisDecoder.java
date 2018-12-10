@@ -137,7 +137,6 @@ final class RedisDecoder extends ByteToMessageDecoder {
                     if (in.isReadable(expectBulkBytes + EOL_LENGTH)) {
                         // The entire bulk string is available to read.
                         final byte[] bytes = readBytes(in, expectBulkBytes);
-                        assert in.readableBytes() == 0;
                         ctx.fireChannelRead(new CompleteBulkString(allocator.wrap(bytes)));
                         expectBulkBytes -= bytes.length;
                         assert expectBulkBytes == 0;
@@ -157,11 +156,9 @@ final class RedisDecoder extends ByteToMessageDecoder {
                 case BulkContinue: {
                     if (in.isReadable(expectBulkBytes + EOL_LENGTH)) {
                         // The rest of the bulk string, including the EOL, is readable.
-                        final byte[] bytes = readRawBytes(in, expectBulkBytes);
+                        final byte[] bytes = readBytes(in, expectBulkBytes);
                         expectBulkBytes -= bytes.length;
                         assert expectBulkBytes == 0;
-                        readEndOfLine(in);
-                        assert in.readableBytes() == 0;
                         ctx.fireChannelRead(new LastBulkStringChunkImpl(allocator.wrap(bytes)));
                         state = Start;
                         return;
