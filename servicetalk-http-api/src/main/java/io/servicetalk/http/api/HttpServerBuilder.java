@@ -17,7 +17,8 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.transport.api.ContextFilter;
+import io.servicetalk.transport.api.ConnectionAcceptor;
+import io.servicetalk.transport.api.ConnectionAcceptorFilterFactory;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.api.SslConfig;
@@ -151,13 +152,23 @@ public interface HttpServerBuilder {
     HttpServerBuilder disableWireLogging();
 
     /**
-     * Sets the {@link ContextFilter} to use when accepting connections.
-     *
-     * @param contextFilter to use for filtering accepted connections. The returned {@link ServerContext} manages the
-     * lifecycle of the {@code contextFilter}, ensuring it is closed when the {@link ServerContext} is closed.
-     * @return {@code this}.
+     * Append the filter to the chain of filters used to decorate the {@link ConnectionAcceptor} used by this builder.
+     * <p>
+     * The order of execution of these filters are in order of append. If 3 filters are added as follows:
+     * <pre>
+     *     builder.appendConnectionAcceptorFilter(filter1).appendConnectionAcceptorFilter(filter2).
+     *     appendConnectionAcceptorFilter(filter3)
+     * </pre>
+     * accepting a connection by a filter wrapped by this filter chain, the order of invocation of these filters will
+     * be:
+     * <pre>
+     *     filter1 =&gt; filter2 =&gt; filter3
+     * </pre>
+     * @param factory {@link ConnectionAcceptorFilterFactory} to append. Lifetime of this
+     * {@link ConnectionAcceptorFilterFactory} is managed by this builder and the server started thereof.
+     * @return {@code this}
      */
-    HttpServerBuilder contextFilter(ContextFilter contextFilter);
+    HttpServerBuilder appendConnectionAcceptorFilter(ConnectionAcceptorFilterFactory factory);
 
     /**
      * Append the filter to the chain of filters used to decorate the {@link StreamingHttpService} used by this

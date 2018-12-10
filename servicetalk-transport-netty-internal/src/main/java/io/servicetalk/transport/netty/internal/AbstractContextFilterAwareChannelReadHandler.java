@@ -16,7 +16,7 @@
 package io.servicetalk.transport.netty.internal;
 
 import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.transport.api.ContextFilter;
+import io.servicetalk.transport.api.ConnectionAcceptor;
 
 import io.netty.channel.ChannelHandlerContext;
 import org.reactivestreams.Subscriber;
@@ -26,7 +26,7 @@ import java.util.function.Predicate;
 import static io.servicetalk.transport.netty.internal.ContextFilterSuccessful.COMPLETED;
 
 /**
- * Extends {@link AbstractChannelReadHandler} to provide notification of when the {@link ContextFilter} is done.
+ * Extends {@link AbstractChannelReadHandler} to provide notification of when the {@link ConnectionAcceptor} is done.
  *
  * @param <T> Type of elements emitted by the {@link Publisher} created by this handler.
  */
@@ -66,7 +66,7 @@ public abstract class AbstractContextFilterAwareChannelReadHandler<T> extends Ab
     }
 
     /**
-     * Callback to indicate the {@link ContextFilter} completed successfully, and the channel can now be read from and
+     * Callback to indicate the {@link ConnectionAcceptor} completed successfully, and the channel can now be read from and
      * written to.
      *
      * @param ctx Netty's {@link ChannelHandlerContext}.

@@ -17,7 +17,7 @@ package io.servicetalk.tcp.netty.internal;
 
 import io.servicetalk.buffer.netty.BufferUtil;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.transport.api.ContextFilter;
+import io.servicetalk.transport.api.ConnectionAcceptor;
 import io.servicetalk.transport.api.DefaultExecutionContext;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.ServerContext;
@@ -83,38 +83,38 @@ public final class TcpServerInitializer {
      * @return Single which completes when the server is started.
      */
     public Single<ServerContext> startWithDefaults(SocketAddress listenAddress) {
-        return startWithDefaults(listenAddress, ContextFilter.ACCEPT_ALL);
+        return startWithDefaults(listenAddress, ConnectionAcceptor.ACCEPT_ALL);
     }
 
     /**
      * Starts a server listening on the {@code listenAddress}.
      *
      * @param listenAddress for the server.
-     * @param contextFilter to use for filtering accepted connections.
+     * @param connectionAcceptor to use for filtering accepted connections.
      * @return Single which completes when the server is started.
      */
-    public Single<ServerContext> startWithDefaults(SocketAddress listenAddress, ContextFilter contextFilter) {
-        return start(listenAddress, contextFilter, new TcpServerChannelInitializer(config, contextFilter));
+    public Single<ServerContext> startWithDefaults(SocketAddress listenAddress, ConnectionAcceptor connectionAcceptor) {
+        return start(listenAddress, connectionAcceptor, new TcpServerChannelInitializer(config, connectionAcceptor));
     }
 
     /**
      * Starts a server using the passed {@code channelInitializer} on the {@code listenAddress}.
      *
      * @param listenAddress for the server.
-     * @param contextFilter to use for filtering accepted connections.
+     * @param connectionAcceptor to use for filtering accepted connections.
      * @param channelInitializer to use for initializing all accepted connections.
      * @return {@link Single} which completes when the server is started.
      */
-    public Single<ServerContext> start(SocketAddress listenAddress, ContextFilter contextFilter,
+    public Single<ServerContext> start(SocketAddress listenAddress, ConnectionAcceptor connectionAcceptor,
                                        ChannelInitializer channelInitializer) {
-        return start(listenAddress, contextFilter, channelInitializer, true, false);
+        return start(listenAddress, connectionAcceptor, channelInitializer, true, false);
     }
 
     /**
      * Starts a server using the passed {@code channelInitializer} on the {@code listenAddress}.
      *
      * @param listenAddress for the server.
-     * @param contextFilter to use for filtering accepted connections.
+     * @param connectionAcceptor to use for filtering accepted connections.
      * @param channelInitializer to use for initializing all accepted connections.
      * @param checkForRefCountedTrapper Whether to log a warning if a {@link RefCountedTrapper} is not found in the
      * pipeline.
@@ -122,11 +122,11 @@ public final class TcpServerInitializer {
      * @return {@link Single} which completes when the server is started.
      * @see CloseHandler to manage half-closing connections from the protocol
      */
-    public Single<ServerContext> start(SocketAddress listenAddress, ContextFilter contextFilter,
+    public Single<ServerContext> start(SocketAddress listenAddress, ConnectionAcceptor connectionAcceptor,
                                        ChannelInitializer channelInitializer,
                                        boolean checkForRefCountedTrapper, boolean enableHalfClosure) {
         requireNonNull(channelInitializer);
-        requireNonNull(contextFilter);
+        requireNonNull(connectionAcceptor);
         listenAddress = toNettyAddress(requireNonNull(listenAddress));
         ServerBootstrap bs = new ServerBootstrap();
         configure(bs, nettyIoExecutor.getEventLoopGroup(), listenAddress.getClass(), enableHalfClosure);
@@ -163,7 +163,7 @@ public final class TcpServerInitializer {
                     Channel channel = f.channel();
                     Throwable cause = f.cause();
                     if (cause == null) {
-                        subscriber.onSuccess(NettyServerContext.wrap(channel, channelSet, contextFilter,
+                        subscriber.onSuccess(NettyServerContext.wrap(channel, channelSet, connectionAcceptor,
                                 executionContext));
                     } else {
                         channel.close();

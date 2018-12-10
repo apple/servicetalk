@@ -21,8 +21,8 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.DeliberateException;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
+import io.servicetalk.transport.api.ConnectionAcceptor;
 import io.servicetalk.transport.api.ConnectionContext;
-import io.servicetalk.transport.api.ContextFilter;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -54,7 +54,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 
 @RunWith(Parameterized.class)
-public class NettyHttpServerContextFilterTest extends AbstractNettyHttpServerTest {
+public class NettyHttpServerConnectionAcceptorTest extends AbstractNettyHttpServerTest {
 
     enum FilterMode {
         ACCEPT_ALL(true, (executor, context) -> success(true)),
@@ -70,8 +70,8 @@ public class NettyHttpServerContextFilterTest extends AbstractNettyHttpServerTes
         SINGLE_ERROR(false, (executor, context) -> error(new DeliberateException())),
         ACCEPT_ALL_CONSTANT(true, (executor, context) -> success(true)) {
             @Override
-            ContextFilter getContextFilter(final Executor executor) {
-                return ContextFilter.ACCEPT_ALL;
+            ConnectionAcceptor getContextFilter(final Executor executor) {
+                return ConnectionAcceptor.ACCEPT_ALL;
             }
         };
 
@@ -85,7 +85,7 @@ public class NettyHttpServerContextFilterTest extends AbstractNettyHttpServerTes
             this.contextFilterFunction = contextFilterFunction;
         }
 
-        ContextFilter getContextFilter(Executor executor) {
+        ConnectionAcceptor getContextFilter(Executor executor) {
             return (context) -> contextFilterFunction.apply(executor, context);
         }
     }
@@ -94,21 +94,21 @@ public class NettyHttpServerContextFilterTest extends AbstractNettyHttpServerTes
     @Nullable
     private volatile SSLSession sslSession;
 
-    public NettyHttpServerContextFilterTest(final boolean enableSsl, final ExecutorSupplier clientExecutorSupplier,
-                                            final ExecutorSupplier serverExecutorSupplier,
-                                            final FilterMode filterMode) {
+    public NettyHttpServerConnectionAcceptorTest(final boolean enableSsl, final ExecutorSupplier clientExecutorSupplier,
+                                                 final ExecutorSupplier serverExecutorSupplier,
+                                                 final FilterMode filterMode) {
         super(clientExecutorSupplier, serverExecutorSupplier);
         this.filterMode = filterMode;
         setSslEnabled(enableSsl);
         if (enableSsl) {
-            setContextFilter(ctx -> {
+            setConnectionAcceptor(ctx -> {
                 // Asserting that the SSL Session has been set by the time the filter is called must be done from the
                 // test thread, in order to fail the test with a useful message.
                 sslSession = ctx.sslSession();
-                return filterMode.getContextFilter(serverExecutorSupplier.executorSupplier.get()).filter(ctx);
+                return filterMode.getContextFilter(serverExecutorSupplier.executorSupplier.get()).accept(ctx);
             });
         } else {
-            setContextFilter(filterMode.getContextFilter(serverExecutorSupplier.executorSupplier.get()));
+            setConnectionAcceptor(filterMode.getContextFilter(serverExecutorSupplier.executorSupplier.get()));
         }
     }
 

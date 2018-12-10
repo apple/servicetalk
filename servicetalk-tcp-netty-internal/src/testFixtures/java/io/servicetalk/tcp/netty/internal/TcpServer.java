@@ -18,8 +18,8 @@ package io.servicetalk.tcp.netty.internal;
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.transport.api.ConnectionAcceptor;
 import io.servicetalk.transport.api.ConnectionContext;
-import io.servicetalk.transport.api.ContextFilter;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.netty.internal.AbstractContextFilterAwareChannelReadHandler;
@@ -40,7 +40,7 @@ import java.util.function.Function;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitelyNonNull;
-import static io.servicetalk.transport.api.ContextFilter.ACCEPT_ALL;
+import static io.servicetalk.transport.api.ConnectionAcceptor.ACCEPT_ALL;
 import static io.servicetalk.transport.netty.internal.CloseHandler.UNSUPPORTED_PROTOCOL_CLOSE_HANDLER;
 
 /**
@@ -90,19 +90,19 @@ public class TcpServer {
      *
      * @param executionContext {@link ExecutionContext} to use for incoming connections.
      * @param port Port for the server.
-     * @param contextFilter to use for filtering accepted connections. The returned {@link ServerContext} manages the
-     * lifecycle of the {@code contextFilter}, ensuring it is closed when the {@link ServerContext} is closed.
+     * @param connectionAcceptor to use for filtering accepted connections. The returned {@link ServerContext} manages the
+     * lifecycle of the {@code connectionAcceptor}, ensuring it is closed when the {@link ServerContext} is closed.
      * @param service {@link Function} that is invoked for each accepted connection.
      * @return {@link ServerContext} for the started server.
      * @throws ExecutionException If the server start failed.
      * @throws InterruptedException If the calling thread was interrupted waiting for the server to start.
      */
-    public ServerContext start(ExecutionContext executionContext, int port, ContextFilter contextFilter,
+    public ServerContext start(ExecutionContext executionContext, int port, ConnectionAcceptor connectionAcceptor,
                                Function<NettyConnection<Buffer, Buffer>, Completable> service)
             throws ExecutionException, InterruptedException {
         TcpServerInitializer initializer = new TcpServerInitializer(executionContext, config);
-        return awaitIndefinitelyNonNull(initializer.start(new InetSocketAddress(port), contextFilter,
-                new TcpServerChannelInitializer(config, contextFilter)
+        return awaitIndefinitelyNonNull(initializer.start(new InetSocketAddress(port), connectionAcceptor,
+                new TcpServerChannelInitializer(config, connectionAcceptor)
                         .andThen(getChannelInitializer(service, executionContext)), false, false)
                 .doBeforeSuccess(ctx -> LOGGER.info("Server started on port {}.", getServerPort(ctx)))
                 .doBeforeError(throwable -> LOGGER.error("Failed starting server on port {}.", port)));

@@ -16,16 +16,16 @@
 package io.servicetalk.tcp.netty.internal;
 
 import io.servicetalk.concurrent.api.Executor;
+import io.servicetalk.transport.api.ConnectionAcceptor;
 import io.servicetalk.transport.api.ConnectionContext;
-import io.servicetalk.transport.api.ContextFilter;
 
 import io.netty.channel.ChannelHandlerContext;
 
 final class NonSslContextFilterChannelHandler extends AbstractContextFilterChannelHandler {
 
-    NonSslContextFilterChannelHandler(final ConnectionContext context, final ContextFilter contextFilter,
+    NonSslContextFilterChannelHandler(final ConnectionContext context, final ConnectionAcceptor connectionAcceptor,
                                       final Executor executor) {
-        super(context, contextFilter, executor);
+        super(context, connectionAcceptor, executor);
     }
 
     @Override

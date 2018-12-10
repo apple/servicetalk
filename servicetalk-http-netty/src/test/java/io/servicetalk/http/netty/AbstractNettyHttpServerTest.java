@@ -30,7 +30,8 @@ import io.servicetalk.http.api.StreamingHttpRequestFactory;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.test.resources.DefaultTestCerts;
-import io.servicetalk.transport.api.ContextFilter;
+import io.servicetalk.transport.api.ConnectionAcceptor;
+import io.servicetalk.transport.api.ConnectionAcceptorFilter;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.api.SslConfig;
@@ -64,7 +65,7 @@ import static io.servicetalk.concurrent.internal.Await.await;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitelyNonNull;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
-import static io.servicetalk.transport.api.ContextFilter.ACCEPT_ALL;
+import static io.servicetalk.transport.api.ConnectionAcceptor.ACCEPT_ALL;
 import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.parseBoolean;
 import static java.lang.Thread.NORM_PRIORITY;
@@ -109,7 +110,7 @@ public abstract class AbstractNettyHttpServerTest {
     private final Executor serverExecutor;
     private final ExecutorSupplier clientExecutorSupplier;
     private final ExecutorSupplier serverExecutorSupplier;
-    private ContextFilter contextFilter = ACCEPT_ALL;
+    private ConnectionAcceptor connectionAcceptor = ACCEPT_ALL;
     private boolean sslEnabled;
     private ServerContext serverContext;
     private StreamingHttpConnection httpConnection;
@@ -146,7 +147,7 @@ public abstract class AbstractNettyHttpServerTest {
             serverBuilder.sslConfig(sslConfig);
         }
         serverContext = awaitIndefinitelyNonNull(serverBuilder.ioExecutor(serverIoExecutor)
-                .contextFilter(contextFilter)
+                .appendConnectionAcceptorFilter(original -> new ConnectionAcceptorFilter(connectionAcceptor))
                 .listenStreaming(service)
                 .doBeforeSuccess(ctx -> LOGGER.debug("Server started on {}.", ctx.listenAddress()))
                 .doBeforeError(throwable -> LOGGER.debug("Failed starting server on {}.", bindAddress)));
@@ -186,8 +187,8 @@ public abstract class AbstractNettyHttpServerTest {
         awaitIndefinitely(newCompositeCloseable().appendAll(clientIoExecutor, serverIoExecutor).closeAsync());
     }
 
-    void setContextFilter(final ContextFilter contextFilter) {
-        this.contextFilter = contextFilter;
+    void setConnectionAcceptor(final ConnectionAcceptor connectionAcceptor) {
+        this.connectionAcceptor = connectionAcceptor;
     }
 
     void setSslEnabled(final boolean sslEnabled) {

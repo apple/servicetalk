@@ -15,35 +15,35 @@
  */
 package io.servicetalk.tcp.netty.internal;
 
+import io.servicetalk.transport.api.ConnectionAcceptor;
 import io.servicetalk.transport.api.ConnectionContext;
-import io.servicetalk.transport.api.ContextFilter;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
 
 import io.netty.channel.Channel;
 
 import static io.servicetalk.tcp.netty.internal.AcceptAllContextFilterChannelHandler.ACCEPT_ALL_HANDLER;
-import static io.servicetalk.transport.api.ContextFilter.ACCEPT_ALL;
+import static io.servicetalk.transport.api.ConnectionAcceptor.ACCEPT_ALL;
 
 class ContextFilterChannelInitializer implements ChannelInitializer {
 
-    private final ContextFilter contextFilter;
+    private final ConnectionAcceptor connectionAcceptor;
     private final boolean sslEnabled;
 
-    ContextFilterChannelInitializer(final ContextFilter contextFilter, final boolean sslEnabled) {
-        this.contextFilter = contextFilter;
+    ContextFilterChannelInitializer(final ConnectionAcceptor connectionAcceptor, final boolean sslEnabled) {
+        this.connectionAcceptor = connectionAcceptor;
         this.sslEnabled = sslEnabled;
     }
 
     @Override
     public ConnectionContext init(final Channel channel, final ConnectionContext context) {
-        if (contextFilter == ACCEPT_ALL) {
+        if (connectionAcceptor == ACCEPT_ALL) {
             channel.pipeline().addLast(ACCEPT_ALL_HANDLER);
         } else {
             if (sslEnabled) {
-                channel.pipeline().addLast(new SslContextFilterChannelHandler(context, contextFilter,
+                channel.pipeline().addLast(new SslContextFilterChannelHandler(context, connectionAcceptor,
                         context.executionContext().executor()));
             } else {
-                channel.pipeline().addLast(new NonSslContextFilterChannelHandler(context, contextFilter,
+                channel.pipeline().addLast(new NonSslContextFilterChannelHandler(context, connectionAcceptor,
                         context.executionContext().executor()));
             }
         }
