@@ -109,8 +109,8 @@ public abstract class RedisRequester implements ListenableAsyncCloseable {
      * @param <R>          the type of the response.
      * @return the response as a {@link Single}.
      */
-    public <R> Single<R> request(final RedisExecutionStrategy strategy, final RedisRequest request,
-                                 final Class<R> responseType) {
+    public final <R> Single<R> request(final RedisExecutionStrategy strategy, final RedisRequest request,
+                                       final Class<R> responseType) {
         if (CharSequence.class.isAssignableFrom(responseType)) {
             return new ToStringSingle<>(strategy, this, request);
         }

@@ -18,7 +18,6 @@ package io.servicetalk.redis.netty;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.SequentialCancellable;
 import io.servicetalk.redis.api.RedisConnection;
 import io.servicetalk.redis.api.RedisData;
@@ -165,14 +164,6 @@ final class RedisIdleConnectionReaper implements UnaryOperator<RedisConnection> 
         @Override
         public ExecutionContext executionContext() {
             return delegate.executionContext();
-        }
-
-        @Override
-        public <R> Single<R> request(final RedisExecutionStrategy strategy, final RedisRequest request,
-                                     final Class<R> responseType) {
-            return delegate.request(strategy, request, responseType)
-                    .doBeforeSubscribe(__ -> onRequestStarted())
-                    .doBeforeFinally(this::onRequestFinished);
         }
 
         private void onRequestStarted() {

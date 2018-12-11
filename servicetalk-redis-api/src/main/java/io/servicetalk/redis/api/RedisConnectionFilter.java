@@ -77,12 +77,6 @@ public class RedisConnectionFilter extends RedisConnection {
     }
 
     @Override
-    public <R> Single<R> request(final RedisExecutionStrategy strategy, final RedisRequest request,
-                                 final Class<R> responseType) {
-        return delegate.request(strategy, request, responseType);
-    }
-
-    @Override
     public Publisher<RedisData> request(final RedisExecutionStrategy strategy, final RedisRequest request) {
         return delegate.request(strategy, request);
     }

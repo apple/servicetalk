@@ -74,12 +74,6 @@ public class RedisClientFilter extends RedisClient {
     }
 
     @Override
-    public <R> Single<R> request(final RedisExecutionStrategy strategy, final RedisRequest request,
-                                 final Class<R> responseType) {
-        return delegate.request(strategy, request, responseType);
-    }
-
-    @Override
     public final Publisher<RedisData> request(final RedisRequest request) {
         return defaultStrategy == null ? super.request(request) : request(defaultStrategy, request);
     }
