@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
+import static io.servicetalk.http.api.CharSequences.newAsciiString;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
 import static io.servicetalk.http.api.HttpHeaderValues.APPLICATION_JSON;
 import static io.servicetalk.http.api.HttpHeaderValues.APPLICATION_X_WWW_FORM_URLENCODED;
@@ -65,7 +66,8 @@ public final class HttpSerializationProviders {
      * href="https://url.spec.whatwg.org/#application/x-www-form-urlencoded">x-www-form-urlencoded specification</a>
      */
     public static HttpSerializer<Map<String, List<String>>> formUrlEncodedSerializer(Charset charset) {
-        final String contentType = APPLICATION_X_WWW_FORM_URLENCODED + "; charset=" + charset.name();
+        final CharSequence contentType = newAsciiString(APPLICATION_X_WWW_FORM_URLENCODED + "; charset=" +
+                charset.name());
         return formUrlEncodedSerializer(charset, headers -> headers.set(CONTENT_TYPE, contentType));
     }
 
@@ -94,22 +96,39 @@ public final class HttpSerializationProviders {
      * href="https://url.spec.whatwg.org/#application/x-www-form-urlencoded">x-www-form-urlencoded specification</a>
      */
     public static HttpDeserializer<Map<String, List<String>>> formUrlEncodedDeserializer() {
-        return FormUrlEncodedHttpDeserializer.UTF_8;
+        return FormUrlEncodedHttpDeserializer.UTF8;
     }
 
     /**
      * Creates an {@link HttpDeserializer} that can deserialize key-values {@link Map}s
      * with {@link StandardCharsets#UTF_8} from urlencoded forms.
      *
-     * @param checkContentType A {@link Predicate} that validates the passed {@link HttpHeaders} as expected for the
+     * @param charset {@link Charset} for the key-value {@link Map} that will be deserialized.
      * deserialized payload. If the validation fails, then deserialization will fail with {@link SerializationException}
      * @return {@link HttpDeserializer} that could deserialize a key-value {@link Map}.
      * @see <a
      * href="https://url.spec.whatwg.org/#application/x-www-form-urlencoded">x-www-form-urlencoded specification</a>
      */
+    public static HttpDeserializer<Map<String, List<String>>> formUrlEncodedDeserializer(Charset charset) {
+        final CharSequence contentType = newAsciiString(APPLICATION_X_WWW_FORM_URLENCODED + "; charset=" +
+                charset.name());
+        return formUrlEncodedDeserializer(charset, headers -> headers.contains(CONTENT_TYPE, contentType));
+    }
+
+    /**
+     * Creates an {@link HttpDeserializer} that can deserialize key-values {@link Map}s
+     * with {@link StandardCharsets#UTF_8} from urlencoded forms.
+     *
+     * @param charset {@link Charset} for the key-value {@link Map} that will be deserialized.
+     * @param checkContentType Checks the {@link HttpHeaders} to see if a compatible encoding is found.
+     * deserialized payload. If the validation fails, then deserialization will fail with {@link SerializationException}
+     * @return {@link HttpDeserializer} that could deserialize a key-value {@link Map}.
+     * @see <a href="https://url.spec.whatwg.org/#application/x-www-form-urlencoded">x-www-form-urlencoded
+    specification</a>
+     */
     public static HttpDeserializer<Map<String, List<String>>> formUrlEncodedDeserializer(
-            Predicate<HttpHeaders> checkContentType) {
-        return new FormUrlEncodedHttpDeserializer(checkContentType);
+            Charset charset, Predicate<HttpHeaders> checkContentType) {
+        return new FormUrlEncodedHttpDeserializer(charset, checkContentType);
     }
 
     /**
@@ -129,7 +148,7 @@ public final class HttpSerializationProviders {
      * @return {@link HttpSerializer} that could serialize from {@link String}.
      */
     public static HttpSerializer<String> textSerializer(Charset charset) {
-        final String contentType = TEXT_PLAIN + "; charset=" + charset.name();
+        final CharSequence contentType = newAsciiString(TEXT_PLAIN + "; charset=" + charset.name());
         return textSerializer(charset, headers -> headers.set(CONTENT_TYPE, contentType));
     }
 
@@ -162,7 +181,7 @@ public final class HttpSerializationProviders {
      * @return {@link HttpDeserializer} that could deserialize {@link String}.
      */
     public static HttpDeserializer<String> textDeserializer(Charset charset) {
-        final String contentType = TEXT_PLAIN + "; charset=" + charset.name();
+        final CharSequence contentType = newAsciiString(TEXT_PLAIN + "; charset=" + charset.name());
         return textDeserializer(charset, headers -> headers.contains(CONTENT_TYPE, contentType));
     }
 

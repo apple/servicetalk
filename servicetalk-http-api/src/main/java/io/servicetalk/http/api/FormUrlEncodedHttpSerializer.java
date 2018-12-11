@@ -32,16 +32,15 @@ import java.util.function.Consumer;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
-import static io.servicetalk.http.api.HttpHeaderValues.APPLICATION_X_WWW_FORM_URLENCODED;
+import static io.servicetalk.http.api.HttpHeaderValues.APPLICATION_X_WWW_FORM_URLENCODED_UTF8;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
  * An {@link HttpSerializer} that serializes a key-values {@link Map} to an urlencoded form.
  */
 final class FormUrlEncodedHttpSerializer implements HttpSerializer<Map<String, List<String>>> {
-
     static final FormUrlEncodedHttpSerializer UTF8 = new FormUrlEncodedHttpSerializer(UTF_8,
-            headers -> headers.set(CONTENT_TYPE, APPLICATION_X_WWW_FORM_URLENCODED + "; charset=UTF-8"));
+            headers -> headers.set(CONTENT_TYPE, APPLICATION_X_WWW_FORM_URLENCODED_UTF8));
 
     private final Charset charset;
     private final Consumer<HttpHeaders> addContentType;

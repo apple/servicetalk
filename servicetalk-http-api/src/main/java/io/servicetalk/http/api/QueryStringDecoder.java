@@ -30,12 +30,14 @@
  */
 package io.servicetalk.http.api;
 
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
 import static io.servicetalk.http.api.HttpUri.decodeComponent;
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
  * Splits an HTTP query string into a path string and key-value parameter pairs.
@@ -75,14 +77,20 @@ final class QueryStringDecoder {
      * Decode the specified raw query. The decoder will assume that the query string is encoded in UTF-8.
      */
     static Map<String, List<String>> decodeParams(final String rawQuery) {
-        return decodeParams(rawQuery, DEFAULT_MAX_PARAMS);
+        return decodeParams(rawQuery, UTF_8);
     }
 
     /**
-     * Decode the specified raw query for the specified maximum number of parameters.
-     * The decoder will assume that the query string is encoded in UTF-8.
+     * Decode the specified raw query with the specified {@code charset}.
      */
-    static Map<String, List<String>> decodeParams(final String rawQuery, final int maxParams) {
+    static Map<String, List<String>> decodeParams(final String rawQuery, final Charset charset) {
+        return decodeParams(rawQuery, charset, DEFAULT_MAX_PARAMS);
+    }
+
+    /**
+     * Decode the specified raw query with the specified {@code charset} for the specified maximum number of parameters.
+     */
+    static Map<String, List<String>> decodeParams(final String rawQuery, final Charset charset, final int maxParams) {
         if (maxParams <= 0) {
             throw new IllegalArgumentException("maxParams: " + maxParams + " (expected: > 0)");
         }
@@ -110,7 +118,7 @@ final class QueryStringDecoder {
                     break;
                 case '&':
                 case ';':
-                    if (addParam(rawQuery, nameStart, valueStart, i, params)) {
+                    if (addParam(rawQuery, nameStart, valueStart, i, charset, params)) {
                         paramCountDown--;
                         if (paramCountDown == 0) {
                             return params;
@@ -124,11 +132,12 @@ final class QueryStringDecoder {
                     // continue
             }
         }
-        addParam(rawQuery, nameStart, valueStart, i, params);
+        addParam(rawQuery, nameStart, valueStart, i, charset, params);
         return params;
     }
 
     private static boolean addParam(final String s, final int nameStart, int valueStart, final int valueEnd,
+                                    final Charset charset,
                                     final Map<String, List<String>> params) {
         if (nameStart >= valueEnd) {
             return false;
@@ -136,8 +145,8 @@ final class QueryStringDecoder {
         if (valueStart <= nameStart) {
             valueStart = valueEnd + 1;
         }
-        final String name = decodeComponent(s, nameStart, valueStart - 1, false);
-        final String value = decodeComponent(s, valueStart, valueEnd, false);
+        final String name = decodeComponent(s, nameStart, valueStart - 1, false, charset);
+        final String value = decodeComponent(s, valueStart, valueEnd, false, charset);
         final List<String> values = params.computeIfAbsent(name, k -> new ArrayList<>(1)); // Often there's only 1 value
         values.add(value);
         return true;
