@@ -59,7 +59,7 @@ public interface BlockingStreamingHttpRequest extends HttpRequestMetaData {
     }
 
     /**
-     * Set the underlying payload body.
+     * Return a {@link BlockingStreamingHttpRequest} with its underlying payload set to {@code payloadBody}.
      * <p>
      * A best effort will be made to apply back pressure to the existing {@link Iterable} payload body. If this
      * default policy is not sufficient you can use {@link #transformPayloadBody(UnaryOperator)} for more fine grain
@@ -73,7 +73,7 @@ public interface BlockingStreamingHttpRequest extends HttpRequestMetaData {
     BlockingStreamingHttpRequest payloadBody(Iterable<Buffer> payloadBody);
 
     /**
-     * Set the underlying payload body.
+     * Return a {@link BlockingStreamingHttpRequest} with its underlying payload set to {@code payloadBody}.
      * <p>
      * A best effort will be made to apply back pressure to the existing {@link CloseableIterable} payload body. If this
      * default policy is not sufficient you can use {@link #transformPayloadBody(UnaryOperator)} for more fine grain
@@ -87,7 +87,7 @@ public interface BlockingStreamingHttpRequest extends HttpRequestMetaData {
     BlockingStreamingHttpRequest payloadBody(CloseableIterable<Buffer> payloadBody);
 
     /**
-     * Set the underlying payload body with the result of serialization.
+     * Return a {@link BlockingStreamingHttpRequest} with its underlying payload set to the result of serialization.
      * <p>
      * A best effort will be made to apply back pressure to the existing {@link Iterable} payload body. If this
      * default policy is not sufficient you can use {@link #transformPayloadBody(Function, HttpSerializer)} for more
@@ -103,7 +103,7 @@ public interface BlockingStreamingHttpRequest extends HttpRequestMetaData {
     <T> BlockingStreamingHttpRequest payloadBody(Iterable<T> payloadBody, HttpSerializer<T> serializer);
 
     /**
-     * Set the underlying payload body with the result of serialization.
+     * Return a {@link BlockingStreamingHttpRequest} with its underlying payload set to the result of serialization.
      * <p>
      * A best effort will be made to apply back pressure to the existing {@link CloseableIterable} payload body. If this
      * default policy is not sufficient you can use {@link #transformPayloadBody(Function, HttpSerializer)} for more
@@ -119,7 +119,8 @@ public interface BlockingStreamingHttpRequest extends HttpRequestMetaData {
     <T> BlockingStreamingHttpRequest payloadBody(CloseableIterable<T> payloadBody, HttpSerializer<T> serializer);
 
     /**
-     * Transform the underlying payload body with the result of serialization.
+     * Return a {@link BlockingStreamingHttpRequest} with its underlying payload transformed to the result of
+     * serialization.
      * @param transformer A {@link Function} which take as a parameter the existing payload body
      * {@link BlockingIterable} and returns the new payload body {@link BlockingIterable} prior to serialization. It is
      * assumed the existing payload body {@link BlockingIterable} will be transformed/consumed or else no more requests
@@ -132,7 +133,8 @@ public interface BlockingStreamingHttpRequest extends HttpRequestMetaData {
             Function<BlockingIterable<Buffer>, BlockingIterable<T>> transformer, HttpSerializer<T> serializer);
 
     /**
-     * Transform the underlying payload body with the result of serialization.
+     * Return a {@link BlockingStreamingHttpRequest} with its underlying payload transformed to the result of
+     * serialization.
      * @param transformer A {@link Function} which take as a parameter the existing payload body
      * {@link BlockingIterable} and returns the new payload body {@link BlockingIterable} prior to serialization. It is
      * assumed the existing payload body {@link BlockingIterable} will be transformed/consumed or else no more requests
@@ -150,7 +152,7 @@ public interface BlockingStreamingHttpRequest extends HttpRequestMetaData {
     }
 
     /**
-     * Transform the underlying payload body in the form of {@link Buffer}s.
+     * Return a {@link BlockingStreamingHttpRequest} with its underlying payload transformed to {@link Buffer}s.
      * @param transformer A {@link Function} which take as a parameter the existing payload body
      * {@link BlockingIterable} and returns the new payload body {@link BlockingIterable}. It is assumed the existing
      * payload body {@link BlockingIterable} will be transformed/consumed or else no more requests may be processed.
@@ -159,15 +161,17 @@ public interface BlockingStreamingHttpRequest extends HttpRequestMetaData {
     BlockingStreamingHttpRequest transformPayloadBody(UnaryOperator<BlockingIterable<Buffer>> transformer);
 
     /**
-     * Transform the underlying payload body. Note that the raw objects of the underlying {@link Iterable} may be
-     * exposed. The object types are not guaranteed to be homogeneous.
+     * Return a {@link BlockingStreamingHttpRequest} with its underlying payload transformed.
+     * Note that the raw objects of the underlying {@link Iterable} may be exposed.
+     * The object types are not guaranteed to be homogeneous.
      * @param transformer Responsible for transforming the payload body.
      * @return A {@link BlockingStreamingHttpRequest} with the new payload body.
      */
     BlockingStreamingHttpRequest transformRawPayloadBody(UnaryOperator<BlockingIterable<?>> transformer);
 
     /**
-     * Transform the underlying payload body in the form of {@link Buffer}s with access to the trailers.
+     * Return a {@link BlockingStreamingHttpRequest} with its underlying payload transformed to {@link Buffer}s,
+     * with access to the trailers.
      * @param stateSupplier Create a new state {@link Object} that will be provided to the {@code transformer} on each
      * invocation. The state will be persistent for each {@link Subscriber} of the underlying payload body.
      * @param transformer Responsible for transforming each {@link Buffer} of the payload body.
@@ -181,7 +185,8 @@ public interface BlockingStreamingHttpRequest extends HttpRequestMetaData {
                                                BiFunction<T, HttpHeaders, HttpHeaders> trailersTransformer);
 
     /**
-     * Transform the underlying payload body in the form of {@link Object}s with access to the trailers.
+     * Return a {@link BlockingStreamingHttpRequest} with its underlying payload transformed to {@link Object}s,
+     * with access to the trailers.
      * @param stateSupplier Create a new state {@link Object} that will be provided to the {@code transformer} on each
      * invocation. The state will be persistent for each {@link Subscriber} of the underlying payload body.
      * @param transformer Responsible for transforming each {@link Object} of the payload body.

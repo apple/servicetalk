@@ -22,14 +22,14 @@ import io.servicetalk.buffer.api.Buffer;
  */
 public interface HttpRequest extends HttpRequestMetaData, TrailersHolder {
     /**
-     * Gets the underlying payload as a {@link Buffer}.
+     * Get the underlying payload as a {@link Buffer}.
      *
      * @return The {@link Buffer} representation of the underlying payload.
      */
     Buffer payloadBody();
 
     /**
-     * Gets and deserialize the payload body.
+     * Get and deserialize the payload body.
      *
      * @param deserializer The function that deserializes the underlying {@link Object}.
      * @param <T> The resulting type of the deserialization operation.
@@ -40,7 +40,7 @@ public interface HttpRequest extends HttpRequestMetaData, TrailersHolder {
     }
 
     /**
-     * Sets the underlying payload.
+     * Return an {@link HttpRequest} with its underlying payload set to {@code payloadBody}.
      *
      * @param payloadBody the underlying payload.
      * @return A {@link HttpRequest} with the new serialized payload body.
@@ -48,7 +48,7 @@ public interface HttpRequest extends HttpRequestMetaData, TrailersHolder {
     HttpRequest payloadBody(Buffer payloadBody);
 
     /**
-     * Sets the underlying payload to be the results of serialization of {@code pojo}.
+     * Return an {@link HttpRequest} with its underlying payload set to the results of serialization of {@code pojo}.
      *
      * @param pojo The object to serialize.
      * @param serializer The {@link HttpSerializer} which converts {@code pojo} into bytes.
@@ -58,14 +58,14 @@ public interface HttpRequest extends HttpRequestMetaData, TrailersHolder {
     <T> HttpRequest payloadBody(T pojo, HttpSerializer<T> serializer);
 
     /**
-     * Translates this {@link HttpRequest} to a {@link StreamingHttpRequest}.
+     * Translate this {@link HttpRequest} to a {@link StreamingHttpRequest}.
      *
      * @return a {@link StreamingHttpRequest} representation of this {@link HttpRequest}.
      */
     StreamingHttpRequest toStreamingRequest();
 
     /**
-     * Translates this {@link HttpRequest} to a {@link BlockingStreamingHttpRequest}.
+     * Translate this {@link HttpRequest} to a {@link BlockingStreamingHttpRequest}.
      *
      * @return a {@link BlockingStreamingHttpRequest} representation of this {@link HttpRequest}.
      */
