@@ -106,7 +106,7 @@ public class RedisRequestsTest {
     public void testStringRequestArgument() {
         String arg = "abcde";
         assertWritten(
-                () -> RedisRequests.estimateRequestArgumentSize(arg),
+                () -> RedisRequests.calculateRequestArgumentSize(arg),
                 buf -> RedisRequests.writeRequestArgument(buf, arg),
                 "$5\r\nabcde\r\n");
     }

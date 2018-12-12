@@ -249,6 +249,17 @@ public final class RedisRequests {
     }
 
     /**
+     * Calculates the size of the buffer needed to write a {@link CharSequence}, including necessary
+     * <a href="https://redis.io/topics/protocol">RESP protocol</a> components.
+     *
+     * @param arg the {@link CharSequence} to calculate the buffer size for.
+     * @return The required buffer size.
+     */
+    public static int calculateRequestArgumentSize(final CharSequence arg) {
+        return calculateRequestArgumentSize(numberOfBytesUtf8(arg));
+    }
+
+    /**
      * Writes a {@link CharSequence} to {@code buffer}, including necessary
      * <a href="https://redis.io/topics/protocol">RESP protocol</a> components.
      *
@@ -256,15 +267,18 @@ public final class RedisRequests {
      * @param arg the {@link Buffer} to write.
      */
     public static void writeRequestArgument(final Buffer buffer, final CharSequence arg) {
-        final int length = numberOfBytesUtf8(arg);
-        writeLength(buffer, length);
+        writeRequestArgument(buffer, arg, numberOfBytesUtf8(arg));
+    }
+
+    static void writeRequestArgument(final Buffer buffer, final CharSequence arg, final int byteCount) {
+        writeLength(buffer, byteCount);
 
         final int beginIndex = buffer.writerIndex();
         buffer.writeUtf8(arg);
         final int endIndex = buffer.writerIndex();
 
-        assert endIndex - beginIndex == length :
-                "Wrote " + (endIndex - beginIndex) + " bytes when expecting " + length;
+        assert endIndex - beginIndex == byteCount :
+                "Wrote " + (endIndex - beginIndex) + " bytes when expecting " + byteCount;
 
         buffer.writeShort(EOL_SHORT);
     }
