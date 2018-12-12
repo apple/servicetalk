@@ -39,13 +39,13 @@ import java.util.function.BiFunction;
 import java.util.function.Predicate;
 
 import static io.servicetalk.concurrent.api.Single.success;
+import static io.servicetalk.redis.api.StringByteSizeUtil.numberOfBytesUtf8;
 import static io.servicetalk.redis.api.StringByteSizeUtil.numberOfDigits;
 import static io.servicetalk.redis.api.StringByteSizeUtil.numberOfDigitsPositive;
 import static io.servicetalk.redis.internal.RedisUtils.EOL_LENGTH;
 import static io.servicetalk.redis.internal.RedisUtils.EOL_SHORT;
 import static java.lang.System.arraycopy;
 import static java.nio.charset.StandardCharsets.US_ASCII;
-import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -256,7 +256,17 @@ public final class RedisRequests {
      * @param arg the {@link Buffer} to write.
      */
     public static void writeRequestArgument(final Buffer buffer, final CharSequence arg) {
-        writeRequestArgument(buffer, arg.toString().getBytes(UTF_8));
+        final int length = numberOfBytesUtf8(arg);
+        writeLength(buffer, length);
+
+        final int beginIndex = buffer.writerIndex();
+        buffer.writeUtf8(arg);
+        final int endIndex = buffer.writerIndex();
+
+        assert endIndex - beginIndex == length :
+                "Wrote " + (endIndex - beginIndex) + " bytes when expecting " + length;
+
+        buffer.writeShort(EOL_SHORT);
     }
 
     /**
