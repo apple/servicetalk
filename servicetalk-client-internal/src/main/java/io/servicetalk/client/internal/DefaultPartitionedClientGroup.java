@@ -275,7 +275,7 @@ public final class DefaultPartitionedClientGroup<U, R, Client extends Listenable
                 ? extends PartitionedServiceDiscovererEvent<R>> newGroup) {
             Client newClient = clientFactory.apply(newGroup.getKey().attributes,
                     new PartitionServiceDiscoverer<>(newGroup));
-            if (newClient == null) { // RCN_REDUNDANT_NULLCHECK_OF_NONNULL_VALUE excluded
+            if (newClient == null) {
                 LOGGER.error("<null> Client created for partition {}", newGroup.getKey().attributes);
             } else {
                 newGroup.getKey().setClient(newClient);

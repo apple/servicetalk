@@ -114,7 +114,8 @@ final class DefaultClientGroup<Key, Client extends ListenableAsyncCloseable> imp
         // Initialize new client while other requests are spinning until PLACEHOLDER_CLIENT is swapped out.
 
         if (closed) {
-            clientMap.remove(key); // PLACEHOLDER_CLIENT
+            final boolean removed = clientMap.remove(key, PLACEHOLDER_CLIENT);
+            assert removed : "Expected to remove PLACEHOLDER_CLIENT";
             throw new IllegalStateException(CLOSED_EXCEPTION_MSG);
         }
 
