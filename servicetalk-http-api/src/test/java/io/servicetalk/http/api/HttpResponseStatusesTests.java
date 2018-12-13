@@ -20,6 +20,7 @@ import org.junit.Test;
 import static io.servicetalk.buffer.api.EmptyBuffer.EMPTY_BUFFER;
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.http.api.HttpResponseStatuses.OK;
+import static io.servicetalk.http.api.HttpResponseStatuses.SWITCHING_PROTOCOLS;
 import static io.servicetalk.http.api.HttpResponseStatuses.getResponseStatus;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
@@ -31,5 +32,12 @@ public class HttpResponseStatusesTests {
         assertThat(getResponseStatus(200, DEFAULT_ALLOCATOR.fromAscii("OK")), is(OK));
         assertThat(getResponseStatus(200, EMPTY_BUFFER), is(OK));
         assertThat(getResponseStatus(200, DEFAULT_ALLOCATOR.fromAscii("YES")), is(not(OK)));
+    }
+
+    @Test
+    public void toStringRendering() {
+        assertThat(SWITCHING_PROTOCOLS.toString(), is("101 Switching Protocols"));
+        assertThat(getResponseStatus(555, DEFAULT_ALLOCATOR.fromAscii("Movie Area Code")).toString(),
+                is("555 Movie Area Code"));
     }
 }
