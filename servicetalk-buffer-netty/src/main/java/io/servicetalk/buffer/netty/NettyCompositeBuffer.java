@@ -357,4 +357,10 @@ final class NettyCompositeBuffer extends NettyBuffer<CompositeByteBuf> implement
         super.writeUtf8(seq);
         return this;
     }
+
+    @Override
+    public CompositeBuffer writeUtf8(CharSequence seq, int ensureWritable) {
+        super.writeUtf8(seq, ensureWritable);
+        return this;
+    }
 }

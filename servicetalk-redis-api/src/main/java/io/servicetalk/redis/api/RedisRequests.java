@@ -274,7 +274,7 @@ public final class RedisRequests {
         writeLength(buffer, byteCount);
 
         final int beginIndex = buffer.writerIndex();
-        buffer.writeUtf8(arg);
+        buffer.writeUtf8(arg, byteCount);
         final int endIndex = buffer.writerIndex();
 
         assert endIndex - beginIndex == byteCount :
