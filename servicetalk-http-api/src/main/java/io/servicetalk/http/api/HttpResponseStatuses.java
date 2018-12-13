@@ -22,6 +22,7 @@ import javax.annotation.Nullable;
 import static io.servicetalk.buffer.api.ReadOnlyBufferAllocators.PREFER_DIRECT_RO_ALLOCATOR;
 import static io.servicetalk.http.api.DefaultHttpResponseStatus.statusCodeToBuffer;
 import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.toStatusClass;
+import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -302,7 +303,6 @@ public enum HttpResponseStatuses implements HttpResponseStatus {
      */
     INSUFFICIENT_STORAGE(507, PREFER_DIRECT_RO_ALLOCATOR.fromAscii("Insufficient Storage")),
 
-
     /**
      * 510 Not Extended (RFC2774)
      */
@@ -346,15 +346,20 @@ public enum HttpResponseStatuses implements HttpResponseStatus {
         buffer.writeBytes(reasonPhrase, reasonPhrase.readerIndex(), reasonPhrase.readableBytes());
     }
 
+    @Override
+    public String toString() {
+        return Integer.toString(code) + ' ' + reasonPhrase.toString(US_ASCII);
+    }
+
     /**
      * Get a {@link HttpResponseStatus} for the specified {@code statusCode} and {@code reasonPhrase}. If the
      * {@code statusCode} and {@code reasonPhrase} match those of an existing constant, the constant will be returned,
      * otherwise a new instance will be returned.
      *
      * @param statusCode the three digit <a href="https://tools.ietf.org/html/rfc7231#section-6">status-code</a>
-     *                   indicating status of the response.
+     * indicating status of the response.
      * @param reasonPhrase the <a href="https://tools.ietf.org/html/rfc7230.html#section-3.1.2">reason-phrase</a>
-     *                     portion of the response.
+     * portion of the response.
      * @return a {@link HttpResponseStatus}.
      */
     public static HttpResponseStatus getResponseStatus(final int statusCode, final Buffer reasonPhrase) {

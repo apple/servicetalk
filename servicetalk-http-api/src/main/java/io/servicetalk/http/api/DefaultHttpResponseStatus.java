@@ -19,6 +19,7 @@ import io.servicetalk.buffer.api.Buffer;
 
 import static io.servicetalk.buffer.api.ReadOnlyBufferAllocators.DEFAULT_RO_ALLOCATOR;
 import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.toStatusClass;
+import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.util.Objects.requireNonNull;
 
 final class DefaultHttpResponseStatus implements HttpResponseStatus {
@@ -57,6 +58,11 @@ final class DefaultHttpResponseStatus implements HttpResponseStatus {
     @Override
     public StatusClass statusClass() {
         return statusClass;
+    }
+
+    @Override
+    public String toString() {
+        return Integer.toString(statusCode) + ' ' + reasonPhrase.toString(US_ASCII);
     }
 
     @Override
