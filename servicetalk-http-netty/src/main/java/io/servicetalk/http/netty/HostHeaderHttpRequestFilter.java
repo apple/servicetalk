@@ -15,12 +15,18 @@
  */
 package io.servicetalk.http.netty;
 
+import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.http.api.HttpClientFilterFactory;
+import io.servicetalk.http.api.HttpConnectionFilterFactory;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpHeaderNames;
+import io.servicetalk.http.api.StreamingHttpClient;
+import io.servicetalk.http.api.StreamingHttpClientFilter;
 import io.servicetalk.http.api.StreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpConnectionFilter;
 import io.servicetalk.http.api.StreamingHttpRequest;
+import io.servicetalk.http.api.StreamingHttpRequester;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.transport.api.HostAndPort;
 
@@ -34,16 +40,16 @@ import static java.util.Objects.requireNonNull;
 /**
  * A filter which will apply a fallback value for the {@link HttpHeaderNames#HOST} header if one is not present.
  */
-final class HostHeaderHttpConnectionFilter extends StreamingHttpConnectionFilter {
+final class HostHeaderHttpRequestFilter implements HttpClientFilterFactory,
+                                                   HttpConnectionFilterFactory {
     private final CharSequence fallbackHost;
 
     /**
      * Create a new instance.
      * @param fallbackHost The address to use as a fallback if a {@link HttpHeaderNames#HOST} header is not present.
-     * @param next The next {@link StreamingHttpConnection} in the filter chain.
      */
-    HostHeaderHttpConnectionFilter(HostAndPort fallbackHost, StreamingHttpConnection next) {
-        this(fallbackHost.getHostName(), fallbackHost.getPort(), next);
+    HostHeaderHttpRequestFilter(HostAndPort fallbackHost) {
+        this(fallbackHost.getHostName(), fallbackHost.getPort());
     }
 
     /**
@@ -51,31 +57,49 @@ final class HostHeaderHttpConnectionFilter extends StreamingHttpConnectionFilter
      * @param fallbackHostName The host name to use as a fallback if a {@link HttpHeaderNames#HOST} header is not
      * present.
      * @param fallbackPort The port to use as a fallback if a {@link HttpHeaderNames#HOST} header is not present.
-     * @param next The next {@link StreamingHttpConnection} in the filter chain.
      */
-    HostHeaderHttpConnectionFilter(String fallbackHostName, int fallbackPort,
-                                   StreamingHttpConnection next) {
-        super(next);
+    HostHeaderHttpRequestFilter(String fallbackHostName, int fallbackPort) {
         this.fallbackHost = requireNonNull(newAsciiString(toSocketAddressString(fallbackHostName, fallbackPort)));
     }
 
     /**
      * Create a new instance.
      * @param fallbackHost The address to use as a fallback if a {@link HttpHeaderNames#HOST} header is not present.
-     * @param next The next {@link StreamingHttpConnection} in the filter chain.
      */
-    HostHeaderHttpConnectionFilter(CharSequence fallbackHost, StreamingHttpConnection next) {
-        super(next);
+    HostHeaderHttpRequestFilter(CharSequence fallbackHost) {
         this.fallbackHost = newAsciiString(isValidIpV6Address(fallbackHost) && fallbackHost.charAt(0) != '[' ?
                 "[" + fallbackHost + "]" : fallbackHost.toString());
     }
 
     @Override
-    public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
-                                                 final StreamingHttpRequest request) {
+    public StreamingHttpClientFilter create(final StreamingHttpClient client, final Publisher<Object> lbEvents) {
+        return new StreamingHttpClientFilter(client) {
+            @Override
+            protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
+                                                            final HttpExecutionStrategy strategy,
+                                                            final StreamingHttpRequest request) {
+                return HostHeaderHttpRequestFilter.this.request(delegate, strategy, request);
+            }
+        };
+    }
+
+    @Override
+    public StreamingHttpConnectionFilter create(final StreamingHttpConnection connection) {
+        return new StreamingHttpConnectionFilter(connection) {
+            @Override
+            public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
+                                                         final StreamingHttpRequest request) {
+                return HostHeaderHttpRequestFilter.this.request(delegate(), strategy, request);
+            }
+        };
+    }
+
+    private Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
+                                                  final HttpExecutionStrategy strategy,
+                                                  final StreamingHttpRequest request) {
         if (request.version() == HTTP_1_1 && !request.headers().contains(HOST)) {
             request.headers().set(HOST, fallbackHost);
         }
-        return delegate().request(strategy, request);
+        return delegate.request(strategy, request);
     }
 }

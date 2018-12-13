@@ -40,7 +40,7 @@ import io.servicetalk.http.api.StreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.StreamingHttpResponse;
-import io.servicetalk.http.utils.RedirectingHttpClientFilter;
+import io.servicetalk.http.utils.RedirectingHttpRequestFilter;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.IoExecutor;
@@ -59,6 +59,7 @@ import javax.annotation.Nullable;
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.concurrent.api.AsyncCloseables.toListenableAsyncCloseable;
+import static io.servicetalk.concurrent.api.Publisher.empty;
 import static io.servicetalk.http.api.HttpHeaderNames.HOST;
 import static io.servicetalk.http.api.HttpScheme.schemeForValue;
 import static io.servicetalk.http.api.SslConfigProviders.plainByDefault;
@@ -115,7 +116,10 @@ final class DefaultMultiAddressUrlHttpClientBuilder
             StreamingHttpClient client = closeables.prepend(new StreamingUrlHttpClient(reqRespFactory, clientFactory,
                     keyFactory, executionContext));
 
-            client = maxRedirects <= 0 ? client : new RedirectingHttpClientFilter(client, maxRedirects);
+            if (maxRedirects > 0) {
+                // Needs to wrap the top level client (group) in order for non-relative redirects to work
+                client = new RedirectingHttpRequestFilter(false, maxRedirects).create(client, empty());
+            }
 
             return new StreamingHttpClientWithDependencies(client, toListenableAsyncCloseable(closeables),
                     reqRespFactory);

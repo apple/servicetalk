@@ -66,7 +66,7 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress> implements Http
         config = new HttpClientConfig(new TcpClientConfig(false));
     }
 
-    private static Predicate<Object> getLastChunkPredicate() {
+    private static Predicate<Object> lastChunkPredicate() {
         return LAST_CHUNK_PREDICATE;
     }
 
@@ -137,9 +137,10 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress> implements Http
                         .andThen(new HttpClientChannelInitializer(roConfig, closeHandler));
 
                 final TcpConnector<Object, Object> connector = new TcpConnector<>(roConfig.getTcpClientConfig(),
-                        initializer, DefaultHttpConnectionBuilder::getLastChunkPredicate, null, closeHandler);
+                        initializer, DefaultHttpConnectionBuilder::lastChunkPredicate, null, closeHandler);
 
-                connector.connect(executionContext, resolvedAddress, false).map(mapper).subscribe(subscriber);
+                connector.connect(executionContext, resolvedAddress, false)
+                        .map(mapper).subscribe(subscriber);
             }
         };
     }
@@ -153,7 +154,7 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress> implements Http
      * {@link SslConfig#getKeySupplier()}, or {@link SslConfig#getTrustCertChainSupplier()}
      * throws when {@link InputStream#close()} is called.
      */
-    public DefaultHttpConnectionBuilder<ResolvedAddress> setSslConfig(@Nullable final SslConfig sslConfig) {
+    public DefaultHttpConnectionBuilder<ResolvedAddress> sslConfig(@Nullable final SslConfig sslConfig) {
         config.getTcpClientConfig().setSslConfig(sslConfig);
         return this;
     }
@@ -166,7 +167,7 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress> implements Http
      * @param value the value.
      * @return this.
      */
-    public <T> DefaultHttpConnectionBuilder<ResolvedAddress> setSocketOption(final SocketOption<T> option, T value) {
+    public <T> DefaultHttpConnectionBuilder<ResolvedAddress> socketOption(final SocketOption<T> option, T value) {
         config.getTcpClientConfig().setSocketOption(option, value);
         return this;
     }
@@ -200,7 +201,7 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress> implements Http
      * @param headersFactory the {@link HttpHeadersFactory} to use.
      * @return {@code this}.
      */
-    public DefaultHttpConnectionBuilder<ResolvedAddress> setHeadersFactory(final HttpHeadersFactory headersFactory) {
+    public DefaultHttpConnectionBuilder<ResolvedAddress> headersFactory(final HttpHeadersFactory headersFactory) {
         config.setHeadersFactory(headersFactory);
         return this;
     }
@@ -212,7 +213,7 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress> implements Http
      * line exceeds this length.
      * @return {@code this}.
      */
-    public DefaultHttpConnectionBuilder<ResolvedAddress> setMaxInitialLineLength(final int maxInitialLineLength) {
+    public DefaultHttpConnectionBuilder<ResolvedAddress> maxInitialLineLength(final int maxInitialLineLength) {
         config.setMaxInitialLineLength(maxInitialLineLength);
         return this;
     }
@@ -224,7 +225,7 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress> implements Http
      * headers exceeds this length.
      * @return {@code this}.
      */
-    public DefaultHttpConnectionBuilder<ResolvedAddress> setMaxHeaderSize(final int maxHeaderSize) {
+    public DefaultHttpConnectionBuilder<ResolvedAddress> maxHeaderSize(final int maxHeaderSize) {
         config.setMaxHeaderSize(maxHeaderSize);
         return this;
     }
@@ -236,7 +237,7 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress> implements Http
      * @param headersEncodedSizeEstimate An estimated size of encoded initial line and headers.
      * @return {@code this}.
      */
-    public DefaultHttpConnectionBuilder<ResolvedAddress> setHeadersEncodedSizeEstimate(
+    public DefaultHttpConnectionBuilder<ResolvedAddress> headersEncodedSizeEstimate(
             final int headersEncodedSizeEstimate) {
         config.setHeadersEncodedSizeEstimate(headersEncodedSizeEstimate);
         return this;
@@ -249,7 +250,7 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress> implements Http
      * @param trailersEncodedSizeEstimate An estimated size of encoded trailers.
      * @return {@code this}.
      */
-    public DefaultHttpConnectionBuilder<ResolvedAddress> setTrailersEncodedSizeEstimate(
+    public DefaultHttpConnectionBuilder<ResolvedAddress> trailersEncodedSizeEstimate(
             final int trailersEncodedSizeEstimate) {
         config.setTrailersEncodedSizeEstimate(trailersEncodedSizeEstimate);
         return this;
@@ -264,7 +265,7 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress> implements Http
      * @param maxPipelinedRequests number of pipelined requests to queue up
      * @return {@code this}.
      */
-    public DefaultHttpConnectionBuilder<ResolvedAddress> setMaxPipelinedRequests(final int maxPipelinedRequests) {
+    public DefaultHttpConnectionBuilder<ResolvedAddress> maxPipelinedRequests(final int maxPipelinedRequests) {
         config.setMaxPipelinedRequests(maxPipelinedRequests);
         return this;
     }
@@ -278,9 +279,9 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress> implements Http
      * @param function decorates a {@link StreamingHttpConnection} for the purpose of filtering
      * @return {@code this}
      */
-    public DefaultHttpConnectionBuilder<ResolvedAddress> setConnectionFilterFunction(
+    public DefaultHttpConnectionBuilder<ResolvedAddress> appendConnectionFilter(
             final HttpConnectionFilterFactory function) {
-        this.connectionFilterFunction = requireNonNull(function);
+        connectionFilterFunction = connectionFilterFunction.append(requireNonNull(function));
         return this;
     }
 }

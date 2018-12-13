@@ -50,6 +50,8 @@ import static io.servicetalk.http.api.HttpResponseStatuses.OK;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.withSettings;
 import static org.mockito.MockitoAnnotations.initMocks;
 
 public class LoadBalancerReadyHttpClientTest {
@@ -77,11 +79,12 @@ public class LoadBalancerReadyHttpClientTest {
         }
     };
 
-    @Mock
     private ReservedStreamingHttpConnection mockReservedConnection;
 
     @Before
     public void setup() {
+        mockReservedConnection = mock(ReservedStreamingHttpConnection.class,
+                withSettings().useConstructor(reqRespFactory));
         initMocks(this);
     }
 

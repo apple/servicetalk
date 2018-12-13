@@ -40,7 +40,7 @@ final class StreamingHttpClientToBlockingStreamingHttpClient extends BlockingStr
     }
 
     @Override
-    public ExecutionContext getExecutionContext() {
+    public ExecutionContext executionContext() {
         return client.executionContext();
     }
 
@@ -101,7 +101,7 @@ final class StreamingHttpClientToBlockingStreamingHttpClient extends BlockingStr
         }
 
         @Override
-        public ExecutionContext getExecutionContext() {
+        public ExecutionContext executionContext() {
             return connection.executionContext();
         }
 

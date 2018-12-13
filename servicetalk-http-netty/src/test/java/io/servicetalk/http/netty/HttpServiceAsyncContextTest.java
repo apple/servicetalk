@@ -99,7 +99,7 @@ public class HttpServiceAsyncContextTest {
                     try {
                         HttpConnectionBuilder<SocketAddress> connectionBuilder =
                                 new DefaultHttpConnectionBuilder<SocketAddress>()
-                                .setMaxPipelinedRequests(numRequests);
+                                .maxPipelinedRequests(numRequests);
                         StreamingHttpConnection connection = (useImmediate ?
                                 connectionBuilder.ioExecutor(immediateExecutor.ioExecutor())
                                 .executor(immediateExecutor.executor())

@@ -55,6 +55,7 @@ final class RedirectSingle extends Single<StreamingHttpResponse> {
     private final StreamingHttpRequest originalRequest;
     private final int maxRedirects;
     private final StreamingHttpRequester requester;
+    private final boolean onlyRelative;
 
     /**
      * Create a new {@link Single}<{@link StreamingHttpResponse}> which will be able to handle redirects.
@@ -66,16 +67,21 @@ final class RedirectSingle extends Single<StreamingHttpResponse> {
      * @param maxRedirects The maximum number of follow up redirects.
      * @param requester The {@link StreamingHttpRequester} to send redirected requests, must be backed by
      * {@link StreamingHttpClient}.
+     * @param onlyRelative Limits the automated redirects to relative paths on the same host and port as the {@code
+     * originalRequest}, non-relative redirect responses will be returned as-is.
      */
-    RedirectSingle(final HttpExecutionStrategy strategy, final Single<StreamingHttpResponse> originalResponse,
+    RedirectSingle(final HttpExecutionStrategy strategy,
+                   final Single<StreamingHttpResponse> originalResponse,
                    final StreamingHttpRequest originalRequest,
                    final int maxRedirects,
-                   final StreamingHttpRequester requester) {
+                   final StreamingHttpRequester requester,
+                   final boolean onlyRelative) {
         this.strategy = strategy;
         this.originalResponse = requireNonNull(originalResponse);
         this.originalRequest = requireNonNull(originalRequest);
         this.maxRedirects = maxRedirects;
         this.requester = requireNonNull(requester);
+        this.onlyRelative = onlyRelative;
     }
 
     @Override
@@ -127,6 +133,14 @@ final class RedirectSingle extends Single<StreamingHttpResponse> {
             final StreamingHttpRequest newRequest;
             try {
                 newRequest = prepareRedirectRequest(request, result, redirectSingle.requester);
+                if (redirectSingle.onlyRelative && (
+                        !request.effectiveHost().equalsIgnoreCase(newRequest.effectiveHost()) ||
+                        request.effectivePort() != newRequest.effectivePort())) {
+                    // Bail on the redirect if non-relative when that was requested
+                    target.onSuccess(result);
+                    return;
+                }
+
             } catch (final Throwable cause) {
                 target.onError(cause);
                 return;
@@ -137,8 +151,9 @@ final class RedirectSingle extends Single<StreamingHttpResponse> {
             }
             // Consume any payload of the redirect response
             result.payloadBody().ignoreElements().subscribe();
-            redirectSingle.requester.request(redirectSingle.strategy, newRequest).subscribe(new RedirectSubscriber(
-                    target, redirectSingle, newRequest, redirectCount + 1, sequentialCancellable));
+            redirectSingle.requester.request(redirectSingle.strategy, newRequest)
+                    .subscribe(new RedirectSubscriber(
+                            target, redirectSingle, newRequest, redirectCount + 1, sequentialCancellable));
         }
 
         @Override

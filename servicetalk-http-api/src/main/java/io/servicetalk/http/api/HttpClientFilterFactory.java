@@ -18,8 +18,6 @@ package io.servicetalk.http.api;
 import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.concurrent.api.Publisher;
 
-import java.util.function.Function;
-
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -65,17 +63,5 @@ public interface HttpClientFilterFactory {
      */
     static HttpClientFilterFactory identity() {
         return (client, lbEvents) -> new StreamingHttpClientFilter(client);
-    }
-
-    /**
-     * Returns a function that adapts from a {@link Function}&lt;{@link StreamingHttpClient},
-     * {@link StreamingHttpClientFilter}&gt; to the {@link HttpClientFilterFactory}.
-     *
-     * @param function the function that is applied to the original {@link StreamingHttpClient}
-     * @return A {@link HttpClientFilterFactory} that uses the passed filter {@link Function}.
-     */
-    static HttpClientFilterFactory from(Function<StreamingHttpClient, StreamingHttpClientFilter> function) {
-        requireNonNull(function);
-        return (client, lbEvents) -> function.apply(client);
     }
 }
