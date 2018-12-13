@@ -205,7 +205,7 @@ public interface HttpServerBuilder {
      * <pre>
      *     filter1 =&gt; filter2 =&gt; filter3 =&gt; service
      * </pre>
-     * @param factory {@link HttpServiceFilterFactory} to append.
+     * @param factory {@link HttpRequestHandlerFilterFactory} to append.
      * @return {@code this}
      */
     default HttpServerBuilder appendRequestHandlerFilter(HttpRequestHandlerFilterFactory factory) {

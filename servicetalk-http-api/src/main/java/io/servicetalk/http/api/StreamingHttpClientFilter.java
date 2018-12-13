@@ -19,8 +19,6 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.transport.api.ExecutionContext;
 
-import javax.annotation.Nullable;
-
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -28,7 +26,6 @@ import static java.util.Objects.requireNonNull;
  */
 public class StreamingHttpClientFilter extends StreamingHttpClient {
     private final StreamingHttpClient delegate;
-    @Nullable
     private final HttpExecutionStrategy defaultStrategy;
 
     /**
@@ -39,7 +36,7 @@ public class StreamingHttpClientFilter extends StreamingHttpClient {
     public StreamingHttpClientFilter(final StreamingHttpClient delegate) {
         super(delegate.reqRespFactory);
         this.delegate = delegate;
-        defaultStrategy = null;
+        defaultStrategy = executionStrategy();
     }
 
     /**
@@ -64,9 +61,8 @@ public class StreamingHttpClientFilter extends StreamingHttpClient {
     }
 
     @Override
-    public Single<? extends ReservedStreamingHttpConnection> reserveConnection(final StreamingHttpRequest request) {
-        return defaultStrategy == null ? super.reserveConnection(request) :
-                reserveConnection(defaultStrategy, request);
+    public final Single<? extends ReservedStreamingHttpConnection> reserveConnection(final StreamingHttpRequest request) {
+        return reserveConnection(defaultStrategy, request);
     }
 
     @Override
@@ -82,7 +78,7 @@ public class StreamingHttpClientFilter extends StreamingHttpClient {
 
     @Override
     public final Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
-        return defaultStrategy == null ? super.request(request) : delegate.request(defaultStrategy, request);
+        return request(defaultStrategy, request);
     }
 
     @Override

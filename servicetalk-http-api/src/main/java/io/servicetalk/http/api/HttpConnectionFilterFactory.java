@@ -18,16 +18,18 @@ package io.servicetalk.http.api;
 import static java.util.Objects.requireNonNull;
 
 /**
- * A factory which filters the behavior of {@link StreamingHttpConnection} instances.
+ * A factory for {@link StreamingHttpConnectionFilter}.
  */
 @FunctionalInterface
 public interface HttpConnectionFilterFactory {
+
     /**
-     * Function that allows to filter an {@link StreamingHttpConnection}.
-     * @param connection the {@link StreamingHttpConnection} to filter
-     * @return the filtered {@link StreamingHttpConnection}
+     * Create a {@link StreamingHttpConnectionFilter} using the provided {@link StreamingHttpConnection}.
+     *
+     * @param connection {@link StreamingHttpConnection} to filter
+     * @return {@link StreamingHttpConnectionFilter} using the provided {@link StreamingHttpConnection}.
      */
-    StreamingHttpConnectionFilter apply(StreamingHttpConnection connection);
+    StreamingHttpConnectionFilter create(StreamingHttpConnection connection);
 
     /**
      * Returns a composed function that first applies the {@code before} function to its input, and then applies
@@ -48,7 +50,7 @@ public interface HttpConnectionFilterFactory {
      */
     default HttpConnectionFilterFactory append(HttpConnectionFilterFactory before) {
         requireNonNull(before);
-        return connection -> apply(before.apply(connection));
+        return connection -> create(before.create(connection));
     }
 
     /**

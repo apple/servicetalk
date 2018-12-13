@@ -219,7 +219,7 @@ final class DefaultPartitionedRedisClientBuilder<U, R> implements PartitionedRed
         final Publisher<? extends PartitionedServiceDiscovererEvent<R>> psdEvents =
                 (Publisher<? extends PartitionedServiceDiscovererEvent<R>>) copy.serviceDiscoverer().discover(address);
 
-        return partitionedClientFilterFactory.apply(
+        return partitionedClientFilterFactory.create(
                 new DefaultPartitionedRedisClient<>(psdEvents, serviceDiscoveryMaxQueueSize, clientFactory,
                         partitionAttributesBuilderFactory, copy.buildExecutionContext(), partitionMapFactory));
     }

@@ -20,16 +20,18 @@ import io.servicetalk.concurrent.api.Single;
 import static java.util.Objects.requireNonNull;
 
 /**
- * A factory which filters the behavior of {@link StreamingHttpRequestHandler} instances.
+ * A factory for {@link StreamingHttpRequestHandler}.
  */
 @FunctionalInterface
 public interface HttpRequestHandlerFilterFactory {
+
     /**
-     * Function that allows to filter an {@link StreamingHttpRequestHandler}.
-     * @param service the {@link StreamingHttpRequestHandler} to filter
-     * @return the filtered {@link StreamingHttpRequestHandler}
+     * Create another {@link StreamingHttpRequestHandler} using the provided {@link StreamingHttpRequestHandler}.
+     *
+     * @param handler {@link StreamingHttpRequestHandler} to filter
+     * @return {@link StreamingHttpRequestHandler} using the provided {@link StreamingHttpRequestHandler}.
      */
-    StreamingHttpRequestHandler apply(StreamingHttpRequestHandler service);
+    StreamingHttpRequestHandler create(StreamingHttpRequestHandler handler);
 
     /**
      * Returns a composed function that first applies the {@code before} function to its input, and then applies
@@ -49,7 +51,7 @@ public interface HttpRequestHandlerFilterFactory {
      */
     default HttpRequestHandlerFilterFactory append(HttpRequestHandlerFilterFactory before) {
         requireNonNull(before);
-        return service -> apply(before.apply(service));
+        return service -> create(before.create(service));
     }
 
     /**
@@ -59,7 +61,7 @@ public interface HttpRequestHandlerFilterFactory {
      */
     default HttpServiceFilterFactory asServiceFilterFactory() {
         return service -> {
-            StreamingHttpRequestHandler handler = apply(service);
+            StreamingHttpRequestHandler handler = create(service);
             // Make sure we delegate
             return new StreamingHttpServiceFilter(service) {
                 @Override

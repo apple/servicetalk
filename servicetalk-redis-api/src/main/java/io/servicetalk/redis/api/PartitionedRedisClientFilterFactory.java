@@ -18,16 +18,18 @@ package io.servicetalk.redis.api;
 import static java.util.Objects.requireNonNull;
 
 /**
- * A factory which filters the behavior of {@link PartitionedRedisClient} instances.
+ * A factory for {@link PartitionedRedisClientFilter}.
  */
 @FunctionalInterface
 public interface PartitionedRedisClientFilterFactory {
+
     /**
-     * Function that allows to filter an {@link PartitionedRedisClient}.
-     * @param connection the {@link PartitionedRedisClient} to filter
-     * @return {@link PartitionedRedisClientFilter} that represents the filtered {@link PartitionedRedisClient}
+     * Create a {@link PartitionedRedisClientFilter} using the provided {@link PartitionedRedisClient}.
+     *
+     * @param client {@link PartitionedRedisClient} to filter
+     * @return {@link PartitionedRedisClientFilter} using the provided {@link PartitionedRedisClient}
      */
-    PartitionedRedisClientFilter apply(PartitionedRedisClient connection);
+    PartitionedRedisClientFilter create(PartitionedRedisClient client);
 
     /**
      * Returns a composed function that first applies the {@code before} function to its input, and then applies
@@ -48,7 +50,7 @@ public interface PartitionedRedisClientFilterFactory {
      */
     default PartitionedRedisClientFilterFactory append(PartitionedRedisClientFilterFactory before) {
         requireNonNull(before);
-        return connection -> apply(before.apply(connection));
+        return connection -> create(before.create(connection));
     }
 
     /**

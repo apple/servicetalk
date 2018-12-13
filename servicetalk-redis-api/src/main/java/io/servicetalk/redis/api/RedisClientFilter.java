@@ -20,8 +20,6 @@ import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.transport.api.ExecutionContext;
 
-import javax.annotation.Nullable;
-
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -30,7 +28,6 @@ import static java.util.Objects.requireNonNull;
 public class RedisClientFilter extends RedisClient {
 
     private final RedisClient delegate;
-    @Nullable
     private final RedisExecutionStrategy defaultStrategy;
 
     /**
@@ -40,7 +37,7 @@ public class RedisClientFilter extends RedisClient {
      */
     public RedisClientFilter(final RedisClient delegate) {
         this.delegate = requireNonNull(delegate);
-        defaultStrategy = null;
+        defaultStrategy = executionStrategy();
     }
 
     /**
@@ -57,8 +54,7 @@ public class RedisClientFilter extends RedisClient {
     @Override
     public final Single<? extends ReservedRedisConnection> reserveConnection(
             final RedisProtocolSupport.Command command) {
-        return defaultStrategy == null ? super.reserveConnection(command) :
-                reserveConnection(defaultStrategy, command);
+        return reserveConnection(defaultStrategy, command);
     }
 
     @Override
@@ -69,13 +65,12 @@ public class RedisClientFilter extends RedisClient {
 
     @Override
     public final <R> Single<R> request(final RedisRequest request, final Class<R> responseType) {
-        return defaultStrategy == null ? super.request(request, responseType) :
-                request(defaultStrategy, request, responseType);
+        return request(defaultStrategy, request, responseType);
     }
 
     @Override
     public final Publisher<RedisData> request(final RedisRequest request) {
-        return defaultStrategy == null ? super.request(request) : request(defaultStrategy, request);
+        return request(defaultStrategy, request);
     }
 
     @Override

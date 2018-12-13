@@ -23,17 +23,19 @@ import java.util.function.Function;
 import static java.util.Objects.requireNonNull;
 
 /**
- * A factory which filters the behavior of {@link StreamingHttpClient} instances.
+ * A factory for {@link StreamingHttpClientFilter}.
  */
 @FunctionalInterface
 public interface HttpClientFilterFactory {
+
     /**
-     * Function that allows to filter an {@link StreamingHttpClient}.
-     * @param client the {@link StreamingHttpClient} to filter
+     * Create a {@link StreamingHttpClientFilter} using the provided {@link StreamingHttpClient}.
+     *
+     * @param client {@link StreamingHttpClient} to filter
      * @param lbEvents the {@link LoadBalancer} events stream
-     * @return the filtered {@link StreamingHttpClient}
+     * @return {@link StreamingHttpClientFilter} using the provided {@link StreamingHttpClient}.
      */
-    StreamingHttpClientFilter apply(StreamingHttpClient client, Publisher<Object> lbEvents);
+    StreamingHttpClientFilter create(StreamingHttpClient client, Publisher<Object> lbEvents);
 
     /**
      * Returns a composed function that first applies the {@code before} function to its input, and then applies
@@ -53,7 +55,7 @@ public interface HttpClientFilterFactory {
      */
     default HttpClientFilterFactory append(HttpClientFilterFactory before) {
         requireNonNull(before);
-        return (client, lbEvents) -> apply(before.apply(client, lbEvents), lbEvents);
+        return (client, lbEvents) -> create(before.create(client, lbEvents), lbEvents);
     }
 
     /**
