@@ -27,6 +27,7 @@ buildscript {
 }
 
 plugins {
+  id 'com.github.johnrengelman.shadow' version '4.0.3'
   id "me.champeau.gradle.jmh" version "0.4.7"
 }
 
@@ -38,6 +39,7 @@ dependencies {
 
   compile "io.servicetalk:servicetalk-concurrent-api:$project.version"
   compile "io.servicetalk:servicetalk-concurrent-api-internal:$project.version"
+  compile "org.openjdk.jmh:jmh-core:1.20"
 
   implementation "com.google.code.findbugs:jsr305"
   implementation "io.servicetalk:servicetalk-annotations:$project.version"
@@ -70,3 +72,10 @@ jmh {
   jvmArgsPrepend = "-Dio.netty.maxDirectMemory=9223372036854775807"
   // jvmArgsPrepend = "-XX:+UnlockCommercialFeatures -XX:+FlightRecorder"
 }
+
+jmhJar {
+  append('META-INF/spring.handlers')
+  append('META-INF/spring.schemas')
+  exclude 'LICENSE'
+}
+
