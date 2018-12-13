@@ -273,13 +273,9 @@ public final class DefaultPartitionedClientGroup<U, R, Client extends Listenable
         @Override
         public void onNext(final GroupedPublisher<Partition<Client>,
                 ? extends PartitionedServiceDiscovererEvent<R>> newGroup) {
-            Client newClient = clientFactory.apply(newGroup.getKey().attributes,
-                    new PartitionServiceDiscoverer<>(newGroup));
-            if (newClient == null) {
-                LOGGER.error("<null> Client created for partition {}", newGroup.getKey().attributes);
-            } else {
-                newGroup.getKey().setClient(newClient);
-            }
+            Client newClient = requireNonNull(clientFactory.apply(newGroup.getKey().attributes,
+                    new PartitionServiceDiscoverer<>(newGroup)), "<null> Client created for partition");
+            newGroup.getKey().setClient(newClient);
         }
 
         @Override
