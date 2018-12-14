@@ -185,11 +185,11 @@ final class RouteExecutionStrategyUtils {
 
         if (stream(method.getAnnotations())
                 .filter(RouteExecutionStrategyUtils::isRouteExecutionStrategyAnnotation).count() > 1) {
-            errors.add("More than one execution strategy annotation found on: " + method);
+            errors.add("More than one execution strategy annotation found on: " + clazz);
             annotation = null;
         } else if (stream(clazz.getAnnotations())
                 .filter(RouteExecutionStrategyUtils::isRouteExecutionStrategyAnnotation).count() > 1) {
-            errors.add("More than one execution strategy annotation found on: " + method);
+            errors.add("More than one execution strategy annotation found on: " + clazz);
             annotation = null;
         } else {
             annotation = getRouteExecutionStrategyAnnotation(clazz, method);
