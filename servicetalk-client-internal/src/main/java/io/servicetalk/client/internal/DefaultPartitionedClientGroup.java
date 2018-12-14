@@ -83,8 +83,8 @@ public final class DefaultPartitionedClientGroup<U, R, Client extends Listenable
     /**
      * Creates a new instance.
      *
-     * @param closedPartitionClient instance of a client that handles requests on a closed partition
-     * @param unknownPartitionClient instance of a client that handles requests for an unknown partition
+     * @param closedPartitionClient factory for clients that handle requests for a closed partition
+     * @param unknownPartitionClient factory for clients that handles requests for an unknown partition
      * @param clientFactory used to create clients for newly discovered partitions
      * @param partitionMapFactory factory to provide a {@link PartitionMap} implementation appropriate for the use-case
      * @param psdEvents the stream of {@link PartitionedServiceDiscovererEvent}s
@@ -130,7 +130,7 @@ public final class DefaultPartitionedClientGroup<U, R, Client extends Listenable
     public Client get(final PartitionAttributes partitionAttributes) {
         final Partition<Client> partition = partitionMap.get(partitionAttributes);
         final Client client;
-        if (partition == null || (client = partition.getClient()) == null) {
+        if (partition == null || (client = partition.client()) == null) {
             return unknownPartitionClient.apply(partitionAttributes);
         }
         return client;
@@ -212,7 +212,7 @@ public final class DefaultPartitionedClientGroup<U, R, Client extends Listenable
             this.closed = requireNonNull(closed, "Closed Client for partition is null");
         }
 
-        void setClient(C client) {
+        void client(C client) {
             if (!clientUpdater.compareAndSet(this, null, client)) {
                 client.closeAsync().subscribe();
             }
@@ -224,7 +224,7 @@ public final class DefaultPartitionedClientGroup<U, R, Client extends Listenable
 
         @Nullable
         @SuppressWarnings("unchecked")
-        C getClient() {
+        C client() {
             return (C) client;
         }
 
@@ -275,7 +275,7 @@ public final class DefaultPartitionedClientGroup<U, R, Client extends Listenable
                 ? extends PartitionedServiceDiscovererEvent<R>> newGroup) {
             Client newClient = requireNonNull(clientFactory.apply(newGroup.getKey().attributes,
                     new PartitionServiceDiscoverer<>(newGroup)), "<null> Client created for partition");
-            newGroup.getKey().setClient(newClient);
+            newGroup.getKey().client(newClient);
         }
 
         @Override

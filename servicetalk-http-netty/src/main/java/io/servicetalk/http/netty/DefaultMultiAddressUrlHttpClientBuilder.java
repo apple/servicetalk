@@ -71,6 +71,7 @@ import static java.util.Objects.requireNonNull;
  * <p>
  * It also provides a good set of default settings and configurations, which could be used by most users as-is or
  * could be overridden to address specific use cases.
+ *
  * @see <a href="https://tools.ietf.org/html/rfc7230#section-5.3.2">absolute-form rfc7230#section-5.3.2</a>
  */
 final class DefaultMultiAddressUrlHttpClientBuilder
@@ -109,7 +110,7 @@ final class DefaultMultiAddressUrlHttpClientBuilder
                     new DefaultStreamingHttpRequestResponseFactory(executionContext.bufferAllocator(),
                             clientFactory.headersFactory());
 
-             keyFactory = closeables.prepend(new CachingKeyFactory(sslConfigProvider));
+            keyFactory = closeables.prepend(new CachingKeyFactory(sslConfigProvider));
 
             StreamingHttpClient client = closeables.prepend(new StreamingUrlHttpClient(reqRespFactory, clientFactory,
                     keyFactory, executionContext));

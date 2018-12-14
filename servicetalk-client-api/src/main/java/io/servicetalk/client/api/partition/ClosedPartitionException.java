@@ -18,10 +18,11 @@ package io.servicetalk.client.api.partition;
 import static java.util.Objects.requireNonNull;
 
 /**
- * Thrown when a request is issued against a valid partition without active clients.
+ * Thrown when a request is issued against a valid partition that was closed after selection.
  */
 public final class ClosedPartitionException extends IllegalStateException {
-    private static final long serialVersionUID = 2870933612596267788L;
+
+    private static final long serialVersionUID = 9006673188565077317L;
 
     private final PartitionAttributes partitionSelector;
 
