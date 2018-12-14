@@ -46,7 +46,6 @@ import javax.annotation.Nullable;
 import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
 import static java.util.Arrays.stream;
 import static java.util.Collections.emptyMap;
-import static java.util.Collections.unmodifiableMap;
 
 final class RouteExecutionStrategyUtils {
     private static final class RouteExecutionStrategyValidator implements ResourceModelVisitor {
@@ -137,7 +136,7 @@ final class RouteExecutionStrategyUtils {
             throw new IllegalArgumentException("Invalid execution strategy configuration found:\n" + validator.errors);
         }
 
-        return new RouteStrategiesConfig(unmodifiableMap(validator.routeStrategies));
+        return new RouteStrategiesConfig(validator.routeStrategies);
     }
 
     @Nullable

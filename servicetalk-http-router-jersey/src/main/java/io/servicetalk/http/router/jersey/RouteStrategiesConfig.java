@@ -19,10 +19,13 @@ import io.servicetalk.http.api.HttpExecutionStrategy;
 
 import java.util.Map;
 
+import static java.util.Collections.unmodifiableMap;
+
 final class RouteStrategiesConfig {
     final Map<String, HttpExecutionStrategy> routeStrategies;
 
     RouteStrategiesConfig(final Map<String, HttpExecutionStrategy> routeStrategies) {
-        this.routeStrategies = routeStrategies;
+        // We do not clone routeStrategies because it comes from our code and no adverse mutation is expected
+        this.routeStrategies = unmodifiableMap(routeStrategies);
     }
 }

@@ -51,7 +51,7 @@ public class ExecutionStrategyConfigurationFailuresTest {
     public void invalidStrategies() {
         expected.expect(IllegalArgumentException.class);
         expected.expectMessage(both(containsString("emptyId()"))
-                .and(containsString("conflictingAnnotations()")));
+                .and(containsString("ResourceInvalidExecStrategy")));
 
         new HttpJerseyRouterBuilder().build(new Application() {
             @Override
