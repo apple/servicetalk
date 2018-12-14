@@ -26,6 +26,7 @@ import io.servicetalk.redis.api.PubSubRedisMessage;
 import io.servicetalk.redis.api.RedisClient.ReservedRedisConnection;
 import io.servicetalk.redis.api.RedisCommander;
 import io.servicetalk.redis.api.RedisData;
+import io.servicetalk.redis.api.RedisExecutionStrategy;
 import io.servicetalk.redis.api.RedisPartitionAttributesBuilder;
 import io.servicetalk.redis.api.RedisProtocolSupport.Command;
 import io.servicetalk.redis.api.RedisRequest;
@@ -34,6 +35,7 @@ import io.servicetalk.transport.api.ExecutionContext;
 import org.junit.Test;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
@@ -104,27 +106,31 @@ public class PartitionedRedisClientTest extends AbstractPartitionedRedisClientTe
 
     @Test
     public void redisCommanderUsesFilters() throws Exception {
-        final PartitionedRedisClient delegate = client;
+        final PartitionedRedisClient delegate = Objects.requireNonNull(client);
         final AtomicBoolean requestCalled = new AtomicBoolean();
         final AtomicBoolean closeCalled = new AtomicBoolean();
         PartitionedRedisClient filteredClient = new PartitionedRedisClient() {
             @Override
-            public Publisher<RedisData> request(PartitionAttributes partitionSelector, RedisRequest request) {
+            public Publisher<RedisData> request(final RedisExecutionStrategy strategy,
+                                                final PartitionAttributes partitionSelector,
+                                                final RedisRequest request) {
                 requestCalled.set(true);
-                return delegate.request(partitionSelector, request);
+                return delegate.request(strategy, partitionSelector, request);
             }
 
             @Override
-            public <R> Single<R> request(PartitionAttributes partitionSelector, RedisRequest request,
-                                         Class<R> responseType) {
+            public <R> Single<R> request(final RedisExecutionStrategy strategy,
+                                         final PartitionAttributes partitionSelector,
+                                         final RedisRequest request, final Class<R> responseType) {
                 requestCalled.set(true);
-                return delegate.request(partitionSelector, request, responseType);
+                return delegate.request(strategy, partitionSelector, request, responseType);
             }
 
             @Override
-            public Single<? extends ReservedRedisConnection> reserveConnection(PartitionAttributes partitionSelector,
-                                                                               Command command) {
-                return delegate.reserveConnection(partitionSelector, command);
+            public Single<? extends ReservedRedisConnection> reserveConnection(
+                    final RedisExecutionStrategy strategy, final PartitionAttributes partitionSelector,
+                    final Command command) {
+                return delegate.reserveConnection(strategy, partitionSelector, command);
             }
 
             @Override
@@ -133,7 +139,7 @@ public class PartitionedRedisClientTest extends AbstractPartitionedRedisClientTe
             }
 
             @Override
-            protected Function<Command, RedisPartitionAttributesBuilder> redisPartitionAttributesBuilderFunction() {
+            public Function<Command, RedisPartitionAttributesBuilder> redisPartitionAttributesBuilderFunction() {
                 return getPartitionAttributesBuilderFactory();
             }
 

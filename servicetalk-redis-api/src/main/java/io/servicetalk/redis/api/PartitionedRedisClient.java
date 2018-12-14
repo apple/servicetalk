@@ -28,6 +28,7 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.redis.api.RedisExecutionStrategies.defaultStrategy;
 import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater;
 
 /**
@@ -50,11 +51,37 @@ public abstract class PartitionedRedisClient implements ListenableAsyncCloseable
     /**
      * Send a {@code request}.
      *
+     * @param strategy {@link RedisExecutionStrategy} to use.
      * @param request the {@link RedisRequest} to send.
      * @param partitionSelector Defines the partition(s) that {@code request} can be sent to.
      * @return the response as a {@link Publisher}.
      */
-    public abstract Publisher<RedisData> request(PartitionAttributes partitionSelector, RedisRequest request);
+    public abstract Publisher<RedisData> request(RedisExecutionStrategy strategy, PartitionAttributes partitionSelector,
+                                                 RedisRequest request);
+
+    /**
+     * Send a {@code request}.
+     *
+     * @param request the {@link RedisRequest} to send.
+     * @param partitionSelector Defines the partition(s) that {@code request} can be sent to.
+     * @return the response as a {@link Publisher}.
+     */
+    public Publisher<RedisData> request(PartitionAttributes partitionSelector, RedisRequest request) {
+        return request(executionStrategy(), partitionSelector, request);
+    }
+
+    /**
+     * Send a {@code request} which expects the specified response type.
+     *
+     * @param strategy {@link RedisExecutionStrategy} to use.
+     * @param partitionSelector Defines the partition(s) that {@code request} can be sent to.
+     * @param request      the {@link RedisRequest} to send.
+     * @param responseType the {@link Class} to coerce the response to.
+     * @param <R>          the type of the response.
+     * @return the response as a {@link Single}.
+     */
+    public abstract <R> Single<R> request(RedisExecutionStrategy strategy, PartitionAttributes partitionSelector,
+                                          RedisRequest request, Class<R> responseType);
 
     /**
      * Send a {@code request} which expects the specified response type.
@@ -65,8 +92,9 @@ public abstract class PartitionedRedisClient implements ListenableAsyncCloseable
      * @param <R>          the type of the response.
      * @return the response as a {@link Single}.
      */
-    public abstract <R> Single<R> request(PartitionAttributes partitionSelector, RedisRequest request,
-                                          Class<R> responseType);
+    public <R> Single<R> request(PartitionAttributes partitionSelector, RedisRequest request, Class<R> responseType) {
+        return request(executionStrategy(), partitionSelector, request, responseType);
+    }
 
     /**
      * Reserve a {@link RedisConnection} for exclusive use. Caller is responsible for invoking
@@ -78,7 +106,24 @@ public abstract class PartitionedRedisClient implements ListenableAsyncCloseable
      * request/response based commands.
      * @return a {@link RedisConnection}.
      */
-    public abstract Single<? extends ReservedRedisConnection> reserveConnection(PartitionAttributes partitionSelector,
+    public Single<? extends ReservedRedisConnection> reserveConnection(PartitionAttributes partitionSelector,
+                                                                       Command command) {
+        return reserveConnection(executionStrategy(), partitionSelector, command);
+    }
+
+    /**
+     * Reserve a {@link RedisConnection} for exclusive use. Caller is responsible for invoking
+     * {@link ReservedRedisConnection#releaseAsync()} after done using the return value.
+     * @param strategy {@link RedisExecutionStrategy} to use.
+     * @param partitionSelector Defines the partition(s) that are valid for the returned {@link RedisConnection}.
+     * @param command A command representing how the returned {@link ReservedRedisConnection} will be used. It is
+     * possible that this {@link RedisClient} will return different types of {@link ReservedRedisConnection} depending
+     * on usage. For example {@link Command#SUBSCRIBE} and {@link Command#MONITOR} may be treated differently than other
+     * request/response based commands.
+     * @return a {@link RedisConnection}.
+     */
+    public abstract Single<? extends ReservedRedisConnection> reserveConnection(RedisExecutionStrategy strategy,
+                                                                                PartitionAttributes partitionSelector,
                                                                                 Command command);
 
     /**
@@ -96,7 +141,7 @@ public abstract class PartitionedRedisClient implements ListenableAsyncCloseable
      * @return the {@link Function} that is responsible for generating a {@link RedisPartitionAttributesBuilder} for
      * each {@link Command}.
      */
-    protected abstract Function<Command, RedisPartitionAttributesBuilder> redisPartitionAttributesBuilderFunction();
+    public abstract Function<Command, RedisPartitionAttributesBuilder> redisPartitionAttributesBuilderFunction();
 
     /**
      * Provides an alternative java API to this {@link PartitionedRedisClient}. The {@link RedisCommander} return value
@@ -168,5 +213,9 @@ public abstract class PartitionedRedisClient implements ListenableAsyncCloseable
      */
     public final BlockingBufferRedisCommander asBlockingBufferCommander() {
         return asBufferCommander().asBlockingBufferCommander();
+    }
+
+    final RedisExecutionStrategy executionStrategy() {
+        return defaultStrategy();
     }
 }

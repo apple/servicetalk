@@ -17,17 +17,13 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.client.api.ConnectionFactoryFilter;
-import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.api.LoadBalancerFactory;
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
-import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.SslConfig;
 
-import java.io.InputStream;
 import java.net.SocketOption;
-import java.util.function.BiFunction;
 import javax.annotation.Nullable;
 
 /**
@@ -38,7 +34,8 @@ import javax.annotation.Nullable;
  * @param <U> the type of address before resolution (unresolved address)
  * @param <R> the type of address after resolution (resolved address)
  */
-public interface SingleAddressHttpClientBuilder<U, R> extends HttpClientBuilder<U, R> {
+public interface SingleAddressHttpClientBuilder<U, R>
+        extends BaseSingleAddressHttpClientBuilder<U, R, ServiceDiscovererEvent<R>> {
 
     @Override
     SingleAddressHttpClientBuilder<U, R> ioExecutor(IoExecutor ioExecutor);
@@ -97,51 +94,12 @@ public interface SingleAddressHttpClientBuilder<U, R> extends HttpClientBuilder<
     SingleAddressHttpClientBuilder<U, R> loadBalancerFactory(
             LoadBalancerFactory<R, StreamingHttpConnection> loadBalancerFactory);
 
-    /**
-     * Automatically set the provided {@link HttpHeaderNames#HOST} on {@link StreamingHttpRequest}s when it's missing.
-     * <p>
-     * For known address types such as {@link HostAndPort} the {@link HttpHeaderNames#HOST} is inferred and
-     * automatically set by default, if you have a custom address type or want to override the inferred value use this
-     * method. Use {@link #disableHostHeaderFallback()} if you don't want any {@link HttpHeaderNames#HOST} manipulation
-     * at all.
-     * @param hostHeader the value for the {@link HttpHeaderNames#HOST}
-     * @return {@code this}
-     */
+    @Override
     SingleAddressHttpClientBuilder<U, R> enableHostHeaderFallback(CharSequence hostHeader);
 
-    /**
-     * Append the filter to the chain of filters used to decorate the {@link StreamingHttpClient} created by this
-     * builder.
-     * <p>
-     * Note this method will be used to decorate the result of {@link #buildStreaming()} before it is
-     * returned to the user.
-     * <p>
-     * The order of execution of these filters are in order of append. If 3 filters are added as follows:
-     * <pre>
-     *     builder.append(filter1).append(filter2).append(filter3)
-     * </pre>
-     * making a request to a client wrapped by this filter chain the order of invocation of these filters will be:
-     * <pre>
-     *     filter1 =&gt; filter2 =&gt; filter3 =&gt; client
-     * </pre>
-     * @param function {@link HttpClientFilterFactory} to decorate a {@link StreamingHttpClient} for the purpose of
-     * filtering.
-     * The signature of the {@link BiFunction} is as follows:
-     * <pre>
-     *     PostFilteredHttpClient func(PreFilteredHttpClient, {@link LoadBalancer#eventStream()})
-     * </pre>
-     * @return {@code this}
-     */
+    @Override
     SingleAddressHttpClientBuilder<U, R> appendClientFilter(HttpClientFilterFactory function);
 
-    /**
-     * Enable SSL/TLS using the provided {@link SslConfig}. To disable it pass in {@code null}.
-     *
-     * @param sslConfig the {@link SslConfig}.
-     * @return this.
-     * @throws IllegalStateException if the {@link SslConfig#getKeyCertChainSupplier()},
-     * {@link SslConfig#getKeySupplier()}, or {@link SslConfig#getTrustCertChainSupplier()}
-     * throws when {@link InputStream#close()} is called.
-     */
+    @Override
     SingleAddressHttpClientBuilder<U, R> sslConfig(@Nullable SslConfig sslConfig);
 }

@@ -85,7 +85,7 @@ public final class RedisClients {
      *
      * @param serviceDiscoverer The {@link ServiceDiscoverer} to resolve addresses of remote servers to connect to.
      * The lifecycle of the provided {@link ServiceDiscoverer} should be managed by the caller.
-     * @param address the {@code UnresolvedAddress} to connect to resolved using the provided {@code serviceDiscoverer}.
+     * @param address the {@code UnresolvedAddress} to resolve using the provided {@code serviceDiscoverer}.
      * @param partitionAttributesBuilderFactory A {@link Function} to provide a {@link PartitionAttributesBuilder} for
      * a {@link Command}.
      * @param <U> the type of address before resolution (unresolved address)
