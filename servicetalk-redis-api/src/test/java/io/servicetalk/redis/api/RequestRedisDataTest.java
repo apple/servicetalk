@@ -17,9 +17,9 @@ package io.servicetalk.redis.api;
 
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.redis.api.RedisData.ArraySize;
+import io.servicetalk.redis.api.RedisData.BulkStringChunkImpl;
 import io.servicetalk.redis.api.RedisData.CompleteBulkString;
 import io.servicetalk.redis.api.RedisData.FirstBulkStringChunkImpl;
-import io.servicetalk.redis.api.RedisData.LastBulkStringChunkImpl;
 import io.servicetalk.redis.api.RedisData.RequestRedisData;
 import io.servicetalk.redis.api.RedisData.SimpleString;
 import io.servicetalk.redis.api.RedisProtocolSupport.BitfieldOperations;
@@ -86,12 +86,12 @@ import static org.junit.Assert.assertThat;
 
 public class RequestRedisDataTest {
 
-    public static final Buffer BUFFER_ABCDE = DEFAULT_ALLOCATOR.fromUtf8("abcde");
-    public static final Buffer BUFFER_FGHIJ = DEFAULT_ALLOCATOR.fromUtf8("fghij");
+    public static final Buffer BUFFER_ABCDE = DEFAULT_ALLOCATOR.fromAscii("abcde");
+    public static final Buffer BUFFER_FGHIJ = DEFAULT_ALLOCATOR.fromAscii("fghij");
 
     @Test
     public void testSimpleString() {
-        assertWritten(new SimpleString("abcde"), "$5\r\nabcde\r\n");
+        assertWritten(new SimpleString("abcde"), "+abcde\r\n");
     }
 
     @Test
@@ -110,8 +110,8 @@ public class RequestRedisDataTest {
     }
 
     @Test
-    public void testLastBulkStringChunk() {
-        assertWritten(new LastBulkStringChunkImpl(BUFFER_ABCDE.duplicate()), "abcde\r\n");
+    public void testBulkStringChunk() {
+        assertWritten(new BulkStringChunkImpl(BUFFER_ABCDE.duplicate()), "abcde");
     }
 
     @Test

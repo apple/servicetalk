@@ -22,12 +22,12 @@ import java.util.List;
 
 import static io.servicetalk.redis.api.RedisRequests.calculateRequestArgumentArraySize;
 import static io.servicetalk.redis.api.RedisRequests.calculateRequestArgumentSize;
-import static io.servicetalk.redis.api.RedisRequests.estimateRequestArgumentSize;
 import static io.servicetalk.redis.api.RedisRequests.writeLength;
 import static io.servicetalk.redis.api.RedisRequests.writeRequestArgument;
 import static io.servicetalk.redis.api.RedisRequests.writeRequestArraySize;
 import static io.servicetalk.redis.internal.RedisUtils.EOL_LENGTH;
 import static io.servicetalk.redis.internal.RedisUtils.EOL_SHORT;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Arrays.asList;
 
 /**
@@ -146,12 +146,14 @@ public interface RedisData {
 
         @Override
         public int encodedByteCount() {
-            return estimateRequestArgumentSize(getValue());
+            // TODO(derek) Fix this to use StringByteSizeUtil when it's merged.
+            return 1 + getValue().toString().getBytes(UTF_8).length + EOL_LENGTH;
         }
 
         @Override
         public void encodeTo(Buffer buf) {
-            writeRequestArgument(buf, getValue());
+            // TODO(derek) Fix this to use Buffer.writeUtf8(CharSequence, int) when it's merged.
+            buf.writeByte('+').writeBytes(getValue().toString().getBytes(UTF_8)).writeShort(EOL_SHORT);
         }
     }
 
@@ -210,13 +212,6 @@ public interface RedisData {
     }
 
     /**
-     * The last chunk of <a href="https://redis.io/topics/protocol#resp-bulk-strings">Bulk String</a> representation of
-     * {@link RedisData}.
-     */
-    interface LastBulkStringChunk extends BulkStringChunk {
-    }
-
-    /**
      * Implmentation of {@link BulkStringChunk}.
      */
     class BulkStringChunkImpl extends DefaultBaseRedisData<Buffer> implements BulkStringChunk {
@@ -237,6 +232,11 @@ public interface RedisData {
         @Override
         public void encodeTo(final Buffer buffer) {
             buffer.writeBytes(getValue());
+        }
+
+        @Override
+        public Buffer asBuffer(final BufferAllocator allocator) {
+            return getValue();
         }
     }
 
@@ -271,30 +271,12 @@ public interface RedisData {
             writeLength(buffer, bulkStringLength);
             super.encodeTo(buffer);
         }
-    }
-
-    /**
-     * Implmentation of {@link LastBulkStringChunk}.
-     */
-    class LastBulkStringChunkImpl extends BulkStringChunkImpl implements LastBulkStringChunk {
-        public LastBulkStringChunkImpl(final Buffer value) {
-            super(value);
-        }
 
         @Override
-        public Buffer getBufferValue() {
-            return getValue();
-        }
-
-        @Override
-        public int encodedByteCount() {
-            return super.encodedByteCount() + EOL_LENGTH;
-        }
-
-        @Override
-        public void encodeTo(final Buffer buffer) {
-            buffer.writeBytes(getValue())
-                    .writeShort(EOL_SHORT);
+        public Buffer asBuffer(BufferAllocator allocator) {
+            final Buffer buffer = allocator.newBuffer(encodedByteCount());
+            encodeTo(buffer);
+            return buffer;
         }
     }
 
@@ -303,7 +285,6 @@ public interface RedisData {
      * {@link RedisData}.
      */
     final class CompleteBulkString extends BulkStringChunkImpl implements FirstBulkStringChunk,
-                                                                          LastBulkStringChunk,
                                                                           CompleteRequestRedisData {
         private final int bulkStringLength;
 
@@ -330,6 +311,13 @@ public interface RedisData {
         @Override
         public int encodedByteCount() {
             return calculateRequestArgumentSize(getValue());
+        }
+
+        @Override
+        public Buffer asBuffer(BufferAllocator allocator) {
+            final Buffer buffer = allocator.newBuffer(encodedByteCount());
+            encodeTo(buffer);
+            return buffer;
         }
     }
 

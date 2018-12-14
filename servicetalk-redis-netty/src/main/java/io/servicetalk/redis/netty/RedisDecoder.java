@@ -21,7 +21,6 @@ import io.servicetalk.redis.api.RedisData.ArraySize;
 import io.servicetalk.redis.api.RedisData.BulkStringChunkImpl;
 import io.servicetalk.redis.api.RedisData.CompleteBulkString;
 import io.servicetalk.redis.api.RedisData.FirstBulkStringChunkImpl;
-import io.servicetalk.redis.api.RedisData.LastBulkStringChunkImpl;
 import io.servicetalk.redis.api.RedisData.SimpleString;
 import io.servicetalk.transport.netty.internal.ByteToMessageDecoder;
 
@@ -50,7 +49,6 @@ final class RedisDecoder extends ByteToMessageDecoder {
         String,
         Error,
         Bulk,
-        BulkContinue,
         Array,
         Number,
         Reset,
@@ -68,7 +66,7 @@ final class RedisDecoder extends ByteToMessageDecoder {
     }
 
     @Override
-    protected void decode(final ChannelHandlerContext ctx, final ByteBuf in) throws Exception {
+    protected void decode(final ChannelHandlerContext ctx, final ByteBuf in) {
         checkLength(in);
         while (in.isReadable()) {
             switch (state) {
@@ -115,7 +113,9 @@ final class RedisDecoder extends ByteToMessageDecoder {
                     break;
                 }
                 case Bulk: {
+                    final boolean first;
                     if (expectBulkBytes == 0) {
+                        first = true;
                         final int length = endOfLine(in);
                         if (length == -1) {
                             return;
@@ -133,45 +133,45 @@ final class RedisDecoder extends ByteToMessageDecoder {
                             break;
                         }
                         expectBulkBytes = size;
-                    }
-                    if (in.isReadable(expectBulkBytes + EOL_LENGTH)) {
-                        // The entire bulk string is available to read.
-                        final byte[] bytes = readBytes(in, expectBulkBytes);
-                        ctx.fireChannelRead(new CompleteBulkString(allocator.wrap(bytes)));
-                        expectBulkBytes -= bytes.length;
-                        assert expectBulkBytes == 0;
-                        state = Start;
-                    } else {
-                        // Less than the entire bulk string is available to read, but we can send the first chunk,
-                        // with the bulk string length, even if we don't have any of the content available to read.
-                        final int len = Math.min(expectBulkBytes, in.readableBytes());
-                        final byte[] bytes = readRawBytes(in, len);
-                        ctx.fireChannelRead(new FirstBulkStringChunkImpl(
-                                allocator.wrap(bytes), expectBulkBytes));
-                        expectBulkBytes -= bytes.length;
-                        state = State.BulkContinue;
-                    }
-                    break;
-                }
-                case BulkContinue: {
-                    if (in.isReadable(expectBulkBytes + EOL_LENGTH)) {
-                        // The rest of the bulk string, including the EOL, is readable.
-                        final byte[] bytes = readBytes(in, expectBulkBytes);
-                        expectBulkBytes -= bytes.length;
-                        assert expectBulkBytes == 0;
-                        ctx.fireChannelRead(new LastBulkStringChunkImpl(allocator.wrap(bytes)));
-                        state = Start;
-                        return;
-                    } else {
-                        // There's some readable data, but not enough to finish.
-                        final int len = Math.min(expectBulkBytes, in.readableBytes());
-                        if (len > 0) {
-                            final byte[] bytes = readRawBytes(in, len);
-                            expectBulkBytes -= bytes.length;
-                            ctx.fireChannelRead(new BulkStringChunkImpl(allocator.wrap(bytes)));
+                    } else if (expectBulkBytes < 0) {
+                        if (in.isReadable(2)) {
+                            readEndOfLine(in);
+                            expectBulkBytes = 0;
+                            state = Start;
+                            break;
                         } else {
                             return;
                         }
+                    } else {
+                        first = false;
+                    }
+                    if (in.isReadable(expectBulkBytes + EOL_LENGTH)) {
+                        // The while/rest of the bulk string, including the EOL, is readable.
+                        final byte[] bytes = readBytes(in, expectBulkBytes);
+                        fireBulkStringChunk(first, ctx, bytes);
+                        expectBulkBytes -= bytes.length;
+                        assert expectBulkBytes == 0;
+                        state = Start;
+                        return;
+                    } else if (in.isReadable(expectBulkBytes)) {
+                        // All of the string data is available, but not the whole EOL
+                        final int len = Math.min(expectBulkBytes, in.readableBytes());
+                        final byte[] bytes = readRawBytes(in, len);
+                        fireBulkStringChunk(first, ctx, bytes);
+                        expectBulkBytes -= bytes.length;
+                        if (expectBulkBytes == 0) {
+                            if (in.isReadable(2)) {
+                                readEndOfLine(in);
+                            } else {
+                                expectBulkBytes = -2;
+                            }
+                        }
+                    } else if (in.isReadable()) {
+                        final byte[] bytes = readRawBytes(in, in.readableBytes());
+                        fireBulkStringChunk(first, ctx, bytes);
+                        expectBulkBytes -= bytes.length;
+                    } else if (first) {
+                        ctx.fireChannelRead(new FirstBulkStringChunkImpl(allocator.newBuffer(), expectBulkBytes));
                     }
                     break;
                 }
@@ -198,6 +198,14 @@ final class RedisDecoder extends ByteToMessageDecoder {
                 default:
                     throw new IllegalStateException("Unexpected state: " + state);
             }
+        }
+    }
+
+    private void fireBulkStringChunk(final boolean first, final ChannelHandlerContext ctx, final byte[] bytes) {
+        if (first) {
+            ctx.fireChannelRead(new FirstBulkStringChunkImpl(allocator.wrap(bytes), expectBulkBytes));
+        } else {
+            ctx.fireChannelRead(new BulkStringChunkImpl(allocator.wrap(bytes)));
         }
     }
 

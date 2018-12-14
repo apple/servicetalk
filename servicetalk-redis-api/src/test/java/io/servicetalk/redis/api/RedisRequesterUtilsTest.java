@@ -24,7 +24,6 @@ import io.servicetalk.redis.api.RedisData.BulkStringChunk;
 import io.servicetalk.redis.api.RedisData.BulkStringChunkImpl;
 import io.servicetalk.redis.api.RedisData.CompleteBulkString;
 import io.servicetalk.redis.api.RedisData.FirstBulkStringChunkImpl;
-import io.servicetalk.redis.api.RedisData.LastBulkStringChunkImpl;
 import io.servicetalk.redis.api.RedisData.SimpleString;
 import io.servicetalk.redis.api.RedisRequesterUtils.ToBufferSingle;
 import io.servicetalk.redis.api.RedisRequesterUtils.ToListSingle;
@@ -213,8 +212,6 @@ public class RedisRequesterUtilsTest {
                 .mapToInt(CharSequence::length)
                 .sum();
 
-        final int lastIdx = chunks.size() - 1;
-
         for (int i = 0; i < chunks.size(); i++) {
             final CharSequence chunk = chunks.get(i);
             Buffer buffer = allocator.fromAscii(chunk);
@@ -226,8 +223,6 @@ public class RedisRequesterUtilsTest {
                 redisData = new CompleteBulkString(buffer);
             } else if (i == 0) {
                 redisData = new FirstBulkStringChunkImpl(buffer, lengthOfAllChunks);
-            } else if (i == lastIdx) {
-                redisData = new LastBulkStringChunkImpl(buffer);
             } else {
                 redisData = new BulkStringChunkImpl(buffer);
             }

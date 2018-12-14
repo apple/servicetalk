@@ -15,15 +15,19 @@
  */
 package io.servicetalk.redis.netty;
 
+import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.redis.api.CoercionException;
 import io.servicetalk.redis.api.RedisData;
+import io.servicetalk.redis.api.RedisData.BulkStringChunk;
+import io.servicetalk.redis.api.RedisData.FirstBulkStringChunk;
 import io.servicetalk.redis.api.RedisProtocolSupport.Command;
 import io.servicetalk.redis.api.RedisRequest;
 
 import io.netty.buffer.ByteBuf;
 
+import java.util.function.Function;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.buffer.netty.BufferUtil.toByteBuf;
@@ -51,7 +55,7 @@ final class RedisUtils {
     }
 
     static Publisher<ByteBuf> encodeRequestContent(final RedisRequest request, final BufferAllocator allocator) {
-        return request.content().map(data -> toByteBuf(data.asBuffer(allocator)));
+        return request.content().map(new RedisDataEncoder(allocator));
     }
 
     @Nullable
@@ -67,5 +71,41 @@ final class RedisUtils {
         }
 
         throw new CoercionException(data, String.class);
+    }
+
+    private static class RedisDataEncoder implements Function<RedisData.RequestRedisData, ByteBuf> {
+        private final BufferAllocator allocator;
+        private int remainingBulkStringBytes;
+
+        RedisDataEncoder(final BufferAllocator allocator) {
+            this.allocator = allocator;
+        }
+
+        @Override
+        public ByteBuf apply(final RedisData.RequestRedisData data) {
+            if (data instanceof BulkStringChunk && !(data instanceof RedisData.CompleteBulkString)) {
+                final Buffer buffer = ((BulkStringChunk) data).getBufferValue();
+                if (data instanceof FirstBulkStringChunk) {
+                    remainingBulkStringBytes = ((FirstBulkStringChunk) data).bulkStringLength();
+                    if (remainingBulkStringBytes == buffer.readableBytes()) {
+                        return toByteBuf(writeAndAppendEol(data));
+                    }
+                    remainingBulkStringBytes -= buffer.readableBytes();
+                } else {
+                    remainingBulkStringBytes -= buffer.readableBytes();
+                    if (remainingBulkStringBytes == 0) {
+                        return toByteBuf(writeAndAppendEol(data));
+                    }
+                }
+            }
+            return toByteBuf(data.asBuffer(allocator));
+        }
+
+        private Buffer writeAndAppendEol(final RedisData.RequestRedisData data) {
+            final Buffer buffer = allocator.newBuffer(data.encodedByteCount()
+                    + io.servicetalk.redis.internal.RedisUtils.EOL_LENGTH);
+            data.encodeTo(buffer);
+            return buffer.writeShort(io.servicetalk.redis.internal.RedisUtils.EOL_SHORT);
+        }
     }
 }

@@ -29,7 +29,6 @@ import io.servicetalk.redis.api.RedisData.BulkStringChunkImpl;
 import io.servicetalk.redis.api.RedisData.CompleteBulkString;
 import io.servicetalk.redis.api.RedisData.FirstBulkStringChunk;
 import io.servicetalk.redis.api.RedisData.FirstBulkStringChunkImpl;
-import io.servicetalk.redis.api.RedisData.LastBulkStringChunkImpl;
 import io.servicetalk.redis.api.RedisData.RequestRedisData;
 import io.servicetalk.redis.api.RedisExecutionStrategy;
 import io.servicetalk.redis.api.RedisProtocolSupport.Command;
@@ -41,6 +40,7 @@ import io.servicetalk.transport.api.ExecutionContext;
 import org.junit.Test;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -74,6 +74,7 @@ import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.startsWith;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -149,7 +150,7 @@ public class RedisClientTest extends BaseRedisClientTest {
     }
 
     @Test
-    public void chunkedRequest() throws Exception {
+    public void chunkedRequestPing() throws Exception {
         final RequestRedisData[] args = new RequestRedisData[103];
         args[0] = new ArraySize(2L);
         args[1] = PING;
@@ -160,7 +161,7 @@ public class RedisClientTest extends BaseRedisClientTest {
             args[3 + i] = new BulkStringChunkImpl(buf("0123456789"));
         }
         expected.append("THISISEND!");
-        args[102] = new LastBulkStringChunkImpl(buf("THISISEND!"));
+        args[102] = new BulkStringChunkImpl(buf("THISISEND!"));
 
         final RedisRequest request = newRequest(PING, Publisher.from(args));
 
@@ -172,6 +173,39 @@ public class RedisClientTest extends BaseRedisClientTest {
               r.append(d.getBufferValue().toString(UTF_8));
             return r;
         })).toString();
+
+        assertThat(responseData, is(expected.toString()));
+    }
+
+    @Test
+    public void chunkedRequestSet() throws Exception {
+        final RequestRedisData[] args = new RequestRedisData[104];
+        args[0] = new ArraySize(3L);
+        args[1] = SET;
+        args[2] = new CompleteBulkString(buf("key"));
+        final StringBuilder expected = new StringBuilder(1000);
+        args[3] = new FirstBulkStringChunkImpl(EMPTY_BUFFER, 1000);
+        for (int i = 0; i < 99; i++) {
+            expected.append("0123456789");
+            args[4 + i] = new BulkStringChunkImpl(buf("0123456789"));
+        }
+        expected.append("THISISEND!");
+        args[103] = new BulkStringChunkImpl(buf("THISISEND!"));
+
+        final RedisRequest setRequest = newRequest(SET, Publisher.from(args));
+
+        final List<RedisData> setResponse = awaitIndefinitelyNonNull(getEnv().client.request(setRequest));
+        assertEquals(Collections.singletonList(new RedisData.SimpleString("OK")), setResponse);
+
+        final RedisRequest getRequest = newRequest(SET, Publisher.from(new ArraySize(2L), GET, new CompleteBulkString(buf("key"))));
+        final String responseData = awaitIndefinitelyNonNull(getEnv().client.request(getRequest).reduce(StringBuilder::new,
+                (r, d) -> {
+                    if (d instanceof FirstBulkStringChunk) {
+                        assertThat(((FirstBulkStringChunk) d).bulkStringLength(), is(1000));
+                    }
+                    r.append(d.getBufferValue().toString(UTF_8));
+                    return r;
+                })).toString();
 
         assertThat(responseData, is(expected.toString()));
     }
