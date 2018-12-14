@@ -21,6 +21,7 @@ import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.transport.api.ConnectionContext;
+import io.servicetalk.transport.api.ConnectionContextAdapter;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.ExecutionContextAdapter;
 
@@ -39,12 +40,10 @@ import org.glassfish.jersey.server.internal.routing.UriRoutingContext;
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
-import java.net.SocketAddress;
 import java.util.concurrent.CompletionStage;
 import javax.annotation.Nullable;
 import javax.annotation.Priority;
 import javax.inject.Provider;
-import javax.net.ssl.SSLSession;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.container.ContainerRequestFilter;
 import javax.ws.rs.container.ResourceInfo;
@@ -339,13 +338,13 @@ final class EndpointEnhancingRequestFilter implements ContainerRequestFilter {
         }
     }
 
-    private static final class ExecutorOverrideConnectionContext implements ConnectionContext {
-        private final ConnectionContext original;
+    private static final class ExecutorOverrideConnectionContext extends ConnectionContextAdapter {
         private final ExecutionContext execCtx;
 
         private ExecutorOverrideConnectionContext(final ConnectionContext original,
                                                   final Executor executor) {
-            this.original = original;
+            super(original);
+
             this.execCtx = new ExecutionContextAdapter(original.executionContext()) {
                 @Override
                 public Executor executor() {
@@ -355,39 +354,8 @@ final class EndpointEnhancingRequestFilter implements ContainerRequestFilter {
         }
 
         @Override
-        public SocketAddress localAddress() {
-            return original.localAddress();
-        }
-
-        @Override
-        public SocketAddress remoteAddress() {
-            return original.remoteAddress();
-        }
-
-        @Nullable
-        @Override
-        public SSLSession sslSession() {
-            return original.sslSession();
-        }
-
-        @Override
         public ExecutionContext executionContext() {
             return execCtx;
-        }
-
-        @Override
-        public Completable onClose() {
-            return original.onClose();
-        }
-
-        @Override
-        public Completable closeAsync() {
-            return original.closeAsync();
-        }
-
-        @Override
-        public Completable closeAsyncGracefully() {
-            return original.closeAsyncGracefully();
         }
     }
 }
