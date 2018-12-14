@@ -24,7 +24,7 @@ import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpResponseMetaData;
 import io.servicetalk.http.api.StreamingHttpClient;
-import io.servicetalk.http.api.StreamingHttpClientAdapter;
+import io.servicetalk.http.api.StreamingHttpClientFilter;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
 
@@ -44,7 +44,7 @@ import static java.util.Objects.requireNonNull;
  * A {@link StreamingHttpClient} to enable retries for requests. Use {@link #asBlockingClient()},
  * {@link #asBlockingStreamingClient()} or {@link #asClient()} to use this filter with other programming models.
  */
-public final class RetryingHttpClientFilter extends StreamingHttpClientAdapter {
+public final class RetryingHttpClientFilter extends StreamingHttpClientFilter {
 
     private final BiIntFunction<Throwable, Completable> strategy;
     private final Predicate<HttpRequestMetaData> isRetryable;

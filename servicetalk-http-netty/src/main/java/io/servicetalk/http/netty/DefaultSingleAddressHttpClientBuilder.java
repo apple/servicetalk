@@ -167,7 +167,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
             LoadBalancer<LoadBalancedStreamingHttpConnection> lb =
                     (LoadBalancer<LoadBalancedStreamingHttpConnection>) lbfUntypedForCast;
 
-            return clientFilterFunction.append(lbReadyFilter).apply(closeOnException.prepend(
+            return clientFilterFunction.append(lbReadyFilter).create(closeOnException.prepend(
                     new DefaultStreamingHttpClient(exec, strategy, lb, reqRespFactory)), lb.eventStream());
         } catch (final Throwable t) {
             closeOnException.closeAsync().subscribe();

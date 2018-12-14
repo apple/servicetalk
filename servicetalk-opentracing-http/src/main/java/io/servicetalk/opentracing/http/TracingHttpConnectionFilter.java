@@ -20,7 +20,7 @@ import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpResponseMetaData;
 import io.servicetalk.http.api.StreamingHttpConnection;
-import io.servicetalk.http.api.StreamingHttpConnectionAdapter;
+import io.servicetalk.http.api.StreamingHttpConnectionFilter;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.opentracing.inmemory.api.InMemoryTraceStateFormat;
@@ -44,7 +44,7 @@ import static java.util.Objects.requireNonNull;
 /**
  * A {@link StreamingHttpConnection} that supports open tracing.
  */
-public class TracingHttpConnectionFilter extends StreamingHttpConnectionAdapter {
+public class TracingHttpConnectionFilter extends StreamingHttpConnectionFilter {
     private final Tracer tracer;
     private final String componentName;
     private final InMemoryTraceStateFormat<HttpHeaders> formatter;

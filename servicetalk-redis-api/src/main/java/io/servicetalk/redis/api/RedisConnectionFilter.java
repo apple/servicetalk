@@ -13,37 +13,43 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.http.api;
+package io.servicetalk.redis.api;
 
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.http.api.StreamingHttpClient.ReservedStreamingHttpConnection;
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ExecutionContext;
 
+import static java.util.Objects.requireNonNull;
+
 /**
- * A {@link ReservedStreamingHttpConnection} that delegates all methods to a different {@link StreamingHttpConnection}.
+ * A {@link RedisConnection} that delegates all calls to another {@link RedisConnection}.
  */
-public abstract class ReservedFromStreamingHttpConnectionAdapter extends ReservedStreamingHttpConnection {
-    private final StreamingHttpConnection delegate;
+public class RedisConnectionFilter extends RedisConnection {
+
+    private final RedisConnection delegate;
+    private final RedisExecutionStrategy defaultStrategy;
 
     /**
-     * Create a new instance.
+     * New instance.
      *
-     * @param delegate The {@link StreamingHttpConnection} to delegate all calls to.
+     * @param delegate {@link RedisConnection} to delegate.
      */
-    protected ReservedFromStreamingHttpConnectionAdapter(final StreamingHttpConnection delegate) {
-        super(delegate.reqRespFactory);
-        this.delegate = delegate;
+    public RedisConnectionFilter(final RedisConnection delegate) {
+        this.delegate = requireNonNull(delegate);
+        defaultStrategy = executionStrategy();
     }
 
     /**
-     * Get the {@link ReservedStreamingHttpConnection} that this class delegates to.
-     * @return the {@link ReservedStreamingHttpConnection} that this class delegates to.
+     * New instance.
+     *
+     * @param delegate {@link RedisConnection} to delegate.
+     * @param defaultStrategy Default {@link RedisExecutionStrategy} to use.
      */
-    protected final StreamingHttpConnection delegate() {
-        return delegate;
+    public RedisConnectionFilter(final RedisConnection delegate, final RedisExecutionStrategy defaultStrategy) {
+        this.delegate = requireNonNull(delegate);
+        this.defaultStrategy = requireNonNull(defaultStrategy);
     }
 
     @Override
@@ -57,7 +63,17 @@ public abstract class ReservedFromStreamingHttpConnectionAdapter extends Reserve
     }
 
     @Override
-    public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy, final StreamingHttpRequest request) {
+    public final Publisher<RedisData> request(final RedisRequest request) {
+        return request(defaultStrategy, request);
+    }
+
+    @Override
+    public final <R> Single<R> request(final RedisRequest request, final Class<R> responseType) {
+        return request(defaultStrategy, request, responseType);
+    }
+
+    @Override
+    public Publisher<RedisData> request(final RedisExecutionStrategy strategy, final RedisRequest request) {
         return delegate.request(strategy, request);
     }
 
@@ -81,8 +97,12 @@ public abstract class ReservedFromStreamingHttpConnectionAdapter extends Reserve
         return delegate.closeAsyncGracefully();
     }
 
-    @Override
-    public String toString() {
-        return ReservedFromStreamingHttpConnectionAdapter.class.getSimpleName() + "(" + delegate + ")";
+    /**
+     * The {@link RedisConnection} to which all calls are delegated to.
+     *
+     * @return {@link RedisConnection} to which all calls are delegated.
+     */
+    protected final RedisConnection delegate() {
+        return delegate;
     }
 }

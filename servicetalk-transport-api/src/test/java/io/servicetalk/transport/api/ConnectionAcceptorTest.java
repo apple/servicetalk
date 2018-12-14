@@ -61,7 +61,7 @@ public class ConnectionAcceptorTest {
         f.append(original -> new OrderVerifyingConnectionAcceptorFilter(original, order, 1))
                 .append(original -> new OrderVerifyingConnectionAcceptorFilter(original, order, 2))
                 .append(original -> new OrderVerifyingConnectionAcceptorFilter(original, order, 3))
-                .apply(ACCEPT_ALL).accept(context).toFuture().get();
+                .create(ACCEPT_ALL).accept(context).toFuture().get();
         assertThat("Unexpected filter order.", order, contains(1, 2, 3));
     }
 
@@ -144,7 +144,7 @@ public class ConnectionAcceptorTest {
     protected void applyFilters() {
         ConnectionAcceptorFilterFactory f = (original -> new ConnectionAcceptorFilter(original, (ctx, prevResult) -> second.accept(ctx)));
         f = f.append(original -> new ConnectionAcceptorFilter(original, (ctx, prevResult) -> first.accept(ctx)));
-        listener.listen(f.apply(ACCEPT_ALL).accept(context));
+        listener.listen(f.create(ACCEPT_ALL).accept(context));
     }
 
     private static class OrderVerifyingConnectionAcceptorFilter extends ConnectionAcceptorFilter {

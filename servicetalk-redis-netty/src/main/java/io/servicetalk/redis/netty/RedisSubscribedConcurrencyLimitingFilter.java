@@ -16,64 +16,29 @@
 package io.servicetalk.redis.netty;
 
 import io.servicetalk.client.internal.RequestConcurrencyController;
-import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.redis.api.RedisConnection;
+import io.servicetalk.redis.api.RedisConnectionFilter;
 import io.servicetalk.redis.api.RedisData;
 import io.servicetalk.redis.api.RedisExecutionStrategy;
 import io.servicetalk.redis.api.RedisRequest;
-import io.servicetalk.transport.api.ConnectionContext;
-import io.servicetalk.transport.api.ExecutionContext;
 
-import static java.util.Objects.requireNonNull;
-
-final class RedisSubscribedConcurrencyLimitingFilter extends RedisConnection {
-    private final RedisConnection next;
+final class RedisSubscribedConcurrencyLimitingFilter extends RedisConnectionFilter {
     private final RequestConcurrencyController limiter;
 
     RedisSubscribedConcurrencyLimitingFilter(RedisConnection next) {
-        this.next = requireNonNull(next);
+        super(next);
         limiter = new RedisSubscribedReservableRequestConcurrencyController();
     }
 
     @Override
-    public Completable closeAsync() {
-        return next.closeAsync();
-    }
-
-    @Override
-    public Completable closeAsyncGracefully() {
-        return next.closeAsyncGracefully();
-    }
-
-    @Override
-    public Completable onClose() {
-        return next.onClose();
-    }
-
-    @Override
     public Publisher<RedisData> request(RedisExecutionStrategy strategy, RedisRequest request) {
-        return limiter.tryRequest() ? next.request(strategy, request) :
+        return limiter.tryRequest() ? delegate().request(strategy, request) :
                 Publisher.error(new IllegalStateException("Connection in invalid state for requests: " + this));
     }
 
     @Override
-    public ExecutionContext executionContext() {
-        return next.executionContext();
-    }
-
-    @Override
-    public ConnectionContext connectionContext() {
-        return next.connectionContext();
-    }
-
-    @Override
-    public <T> Publisher<T> settingStream(RedisConnection.SettingKey<T> settingKey) {
-        return next.settingStream(settingKey);
-    }
-
-    @Override
     public String toString() {
-        return RedisSubscribedConcurrencyLimitingFilter.class.getSimpleName() + "(" + next + ")";
+        return RedisSubscribedConcurrencyLimitingFilter.class.getSimpleName() + "(" + delegate() + ")";
     }
 }

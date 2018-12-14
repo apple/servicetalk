@@ -111,7 +111,7 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress> implements Http
             final HttpConnectionFilterFactory connectionFilterFunction,
             final StreamingHttpRequestResponseFactory reqRespFactory) {
         return buildStreaming(executionContext, resolvedAddress, roConfig, conn ->
-                connectionFilterFunction.apply(
+                connectionFilterFunction.create(
                         new PipelinedStreamingHttpConnection(conn, roConfig, executionContext, reqRespFactory)));
     }
 
@@ -120,7 +120,7 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress> implements Http
             final HttpConnectionFilterFactory connectionFilterFunction,
             final StreamingHttpRequestResponseFactory reqRespFactory) {
         return buildStreaming(executionContext, resolvedAddress, roConfig, conn ->
-                connectionFilterFunction.apply(
+                connectionFilterFunction.create(
                         new NonPipelinedStreamingHttpConnection(conn, roConfig, executionContext, reqRespFactory)));
     }
 

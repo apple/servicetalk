@@ -240,9 +240,9 @@ public final class DefaultRedisConnectionBuilder<ResolvedAddress> implements Red
                                                                        ReadOnlyRedisClientConfig roConfig,
                                                                RedisConnectionFilterFactory connectionFilterFactory) {
         return roConfig.getIdleConnectionTimeout() == null ? build(executionContext, resolvedAddress, roConfig, conn ->
-                connectionFilterFactory.apply(newSubscribedConnection(conn, executionContext, roConfig))) :
+                connectionFilterFactory.create(newSubscribedConnection(conn, executionContext, roConfig))) :
                 // User Filters -> IdleReaper -> Connection
-                build(executionContext, resolvedAddress, roConfig, conn -> connectionFilterFactory.apply(
+                build(executionContext, resolvedAddress, roConfig, conn -> connectionFilterFactory.create(
                         new RedisIdleConnectionReaper(roConfig.getIdleConnectionTimeout()).apply(
                                 newSubscribedConnection(conn, executionContext, roConfig))));
     }
@@ -252,9 +252,9 @@ public final class DefaultRedisConnectionBuilder<ResolvedAddress> implements Red
                                                                        ReadOnlyRedisClientConfig roConfig,
                                                                RedisConnectionFilterFactory connectionFilterFactory) {
         return roConfig.getIdleConnectionTimeout() == null ? build(executionContext, resolvedAddress, roConfig, conn ->
-                connectionFilterFactory.apply(newPipelinedConnection(conn, executionContext, roConfig))) :
+                connectionFilterFactory.create(newPipelinedConnection(conn, executionContext, roConfig))) :
                 // User Filters -> IdleReaper -> Connection
-                build(executionContext, resolvedAddress, roConfig, conn -> connectionFilterFactory.apply(
+                build(executionContext, resolvedAddress, roConfig, conn -> connectionFilterFactory.create(
                         new RedisIdleConnectionReaper(roConfig.getIdleConnectionTimeout()).apply(
                                 newPipelinedConnection(conn, executionContext, roConfig))));
     }

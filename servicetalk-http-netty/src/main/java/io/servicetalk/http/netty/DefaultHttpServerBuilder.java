@@ -163,6 +163,6 @@ final class DefaultHttpServerBuilder implements HttpServerBuilder {
             executionContextBuilder.executor(executor);
         }
         return bind(executionContextBuilder.build(), roConfig, address,
-                connectionAcceptorFilterFactory.apply(ACCEPT_ALL), serviceFilter.apply(service).asStreamingService());
+                connectionAcceptorFilterFactory.create(ACCEPT_ALL), serviceFilter.create(service).asStreamingService());
     }
 }

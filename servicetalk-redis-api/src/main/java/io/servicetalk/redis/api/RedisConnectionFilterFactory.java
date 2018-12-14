@@ -18,16 +18,18 @@ package io.servicetalk.redis.api;
 import static java.util.Objects.requireNonNull;
 
 /**
- * A factory which filters the behavior of {@link RedisConnection} instances.
+ * A factory for {@link RedisConnectionFilter}.
  */
 @FunctionalInterface
 public interface RedisConnectionFilterFactory {
+
     /**
-     * Function that allows to filter an {@link RedisConnection}.
-     * @param connection the {@link RedisConnection} to filter
-     * @return the filtered {@link RedisConnection}
+     * Create a {@link RedisConnectionFilter} using the provided {@link RedisConnection}.
+     *
+     * @param connection {@link RedisConnection} to filter
+     * @return {@link RedisConnectionFilter} using the provided {@link RedisConnection}.
      */
-    RedisConnection apply(RedisConnection connection);
+    RedisConnectionFilter create(RedisConnection connection);
 
     /**
      * Returns a composed function that first applies the {@code before} function to its input, and then applies
@@ -48,7 +50,7 @@ public interface RedisConnectionFilterFactory {
      */
     default RedisConnectionFilterFactory append(RedisConnectionFilterFactory before) {
         requireNonNull(before);
-        return connection -> apply(before.apply(connection));
+        return connection -> create(before.create(connection));
     }
 
     /**
@@ -57,6 +59,6 @@ public interface RedisConnectionFilterFactory {
      * @return a function that always returns its input {@link RedisConnectionFilterFactory}.
      */
     static RedisConnectionFilterFactory identity() {
-        return connection -> connection;
+        return RedisConnectionFilter::new;
     }
 }

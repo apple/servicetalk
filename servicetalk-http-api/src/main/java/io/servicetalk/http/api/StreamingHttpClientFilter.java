@@ -19,20 +19,37 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.transport.api.ExecutionContext;
 
+import static java.util.Objects.requireNonNull;
+
 /**
  * A {@link StreamingHttpClient} that delegates all methods to a different {@link StreamingHttpClient}.
  */
-public abstract class StreamingHttpClientAdapter extends StreamingHttpClient {
+public class StreamingHttpClientFilter extends StreamingHttpClient {
     private final StreamingHttpClient delegate;
+    private final HttpExecutionStrategy defaultStrategy;
 
     /**
      * Create a new instance.
      *
      * @param delegate The {@link StreamingHttpClient} to delegate all calls to.
      */
-    protected StreamingHttpClientAdapter(final StreamingHttpClient delegate) {
+    public StreamingHttpClientFilter(final StreamingHttpClient delegate) {
         super(delegate.reqRespFactory);
         this.delegate = delegate;
+        defaultStrategy = executionStrategy();
+    }
+
+    /**
+     * Create a new instance.
+     *
+     * @param delegate The {@link StreamingHttpClient} to delegate all calls to.
+     * @param defaultStrategy Default {@link HttpExecutionStrategy} to use.
+     */
+    public StreamingHttpClientFilter(final StreamingHttpClient delegate,
+                                     final HttpExecutionStrategy defaultStrategy) {
+        super(delegate.reqRespFactory);
+        this.delegate = delegate;
+        this.defaultStrategy = requireNonNull(defaultStrategy);
     }
 
     /**
@@ -44,6 +61,11 @@ public abstract class StreamingHttpClientAdapter extends StreamingHttpClient {
     }
 
     @Override
+    public final Single<? extends ReservedStreamingHttpConnection> reserveConnection(final StreamingHttpRequest request) {
+        return reserveConnection(defaultStrategy, request);
+    }
+
+    @Override
     public Single<? extends ReservedStreamingHttpConnection> reserveConnection(final HttpExecutionStrategy strategy,
                                                                                final StreamingHttpRequest request) {
         return delegate.reserveConnection(strategy, request);
@@ -52,6 +74,11 @@ public abstract class StreamingHttpClientAdapter extends StreamingHttpClient {
     @Override
     public Single<? extends UpgradableStreamingHttpResponse> upgradeConnection(final StreamingHttpRequest request) {
         return delegate.upgradeConnection(request);
+    }
+
+    @Override
+    public final Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
+        return request(defaultStrategy, request);
     }
 
     @Override
@@ -82,6 +109,6 @@ public abstract class StreamingHttpClientAdapter extends StreamingHttpClient {
 
     @Override
     public String toString() {
-        return StreamingHttpClientAdapter.class.getSimpleName() + "(" + delegate + ")";
+        return StreamingHttpClientFilter.class.getSimpleName() + "(" + delegate + ")";
     }
 }

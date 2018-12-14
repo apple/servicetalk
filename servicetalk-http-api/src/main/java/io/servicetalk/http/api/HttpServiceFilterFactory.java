@@ -18,16 +18,18 @@ package io.servicetalk.http.api;
 import static java.util.Objects.requireNonNull;
 
 /**
- * A factory which filters the behavior of {@link StreamingHttpService} instances.
+ * A factory for {@link StreamingHttpServiceFilter}.
  */
 @FunctionalInterface
 public interface HttpServiceFilterFactory {
+
     /**
-     * Function that allows to filter an {@link StreamingHttpService}.
-     * @param service the {@link StreamingHttpService} to filter
-     * @return the filtered {@link StreamingHttpService}
+     * Create a {@link StreamingHttpServiceFilter} using the provided {@link StreamingHttpService}.
+     *
+     * @param service {@link StreamingHttpService} to filter
+     * @return {@link StreamingHttpServiceFilter} using the provided {@link StreamingHttpService}.
      */
-    StreamingHttpService apply(StreamingHttpService service);
+    StreamingHttpServiceFilter create(StreamingHttpService service);
 
     /**
      * Returns a composed function that first applies the {@code before} function to its input, and then applies
@@ -47,15 +49,15 @@ public interface HttpServiceFilterFactory {
      */
     default HttpServiceFilterFactory append(HttpServiceFilterFactory before) {
         requireNonNull(before);
-        return service -> apply(before.apply(service));
+        return service -> create(before.create(service));
     }
 
     /**
-     * Returns a function that always returns its input {@link StreamingHttpClient}.
+     * Returns a function that always returns its input {@link HttpServiceFilterFactory}.
      *
-     * @return a function that always returns its input {@link StreamingHttpClient}.
+     * @return a function that always returns its input {@link HttpServiceFilterFactory}.
      */
     static HttpServiceFilterFactory identity() {
-        return service -> service;
+        return StreamingHttpServiceFilter::new;
     }
 }

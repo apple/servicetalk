@@ -18,28 +18,49 @@ package io.servicetalk.http.api;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.http.api.StreamingHttpClient.ReservedStreamingHttpConnection;
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ExecutionContext;
 
+import javax.annotation.Nullable;
+
+import static java.util.Objects.requireNonNull;
+
 /**
- * A {@link StreamingHttpConnection} that delegates all methods to a different {@link StreamingHttpConnection}.
+ * A {@link ReservedStreamingHttpConnection} that delegates all methods to a different {@link StreamingHttpConnection}.
  */
-public abstract class StreamingHttpConnectionAdapter extends StreamingHttpConnection {
+public abstract class ReservedStreamingHttpConnectionAdapter extends ReservedStreamingHttpConnection {
     private final StreamingHttpConnection delegate;
+    @Nullable
+    private final HttpExecutionStrategy defaultStrategy;
 
     /**
      * Create a new instance.
      *
      * @param delegate The {@link StreamingHttpConnection} to delegate all calls to.
      */
-    protected StreamingHttpConnectionAdapter(final StreamingHttpConnection delegate) {
+    protected ReservedStreamingHttpConnectionAdapter(final StreamingHttpConnection delegate) {
         super(delegate.reqRespFactory);
         this.delegate = delegate;
+        defaultStrategy = null;
     }
 
     /**
-     * Get the {@link StreamingHttpConnection} that this class delegates to.
-     * @return the {@link StreamingHttpConnection} that this class delegates to.
+     * Create a new instance.
+     *
+     * @param delegate The {@link StreamingHttpConnection} to delegate all calls to.
+     * @param defaultStrategy Default {@link HttpExecutionStrategy} to use.
+     */
+    protected ReservedStreamingHttpConnectionAdapter(final StreamingHttpConnection delegate,
+                                                     final HttpExecutionStrategy defaultStrategy) {
+        super(delegate.reqRespFactory);
+        this.delegate = delegate;
+        this.defaultStrategy = requireNonNull(defaultStrategy);
+    }
+
+    /**
+     * Get the {@link ReservedStreamingHttpConnection} that this class delegates to.
+     * @return the {@link ReservedStreamingHttpConnection} that this class delegates to.
      */
     protected final StreamingHttpConnection delegate() {
         return delegate;
@@ -53,6 +74,11 @@ public abstract class StreamingHttpConnectionAdapter extends StreamingHttpConnec
     @Override
     public <T> Publisher<T> settingStream(final SettingKey<T> settingKey) {
         return delegate.settingStream(settingKey);
+    }
+
+    @Override
+    public final Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
+        return defaultStrategy == null ? delegate.request(request) : request(defaultStrategy, request);
     }
 
     @Override
@@ -83,6 +109,6 @@ public abstract class StreamingHttpConnectionAdapter extends StreamingHttpConnec
 
     @Override
     public String toString() {
-        return StreamingHttpConnectionAdapter.class.getSimpleName() + "(" + delegate + ")";
+        return ReservedStreamingHttpConnectionAdapter.class.getSimpleName() + "(" + delegate + ")";
     }
 }
