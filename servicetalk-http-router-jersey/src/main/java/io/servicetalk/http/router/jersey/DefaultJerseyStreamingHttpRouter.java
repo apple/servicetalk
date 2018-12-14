@@ -123,14 +123,12 @@ final class DefaultJerseyStreamingHttpRouter extends StreamingHttpService {
         this.publisherInputStreamQueueCapacity = publisherInputStreamQueueCapacity;
         this.baseUriFunction = requireNonNull(baseUriFunction);
 
-        if (!routeStrategiesConfig.routeStrategies.isEmpty()) {
-            applicationHandler.getInjectionManager().register(new AbstractBinder() {
-                @Override
-                protected void configure() {
-                    bind(routeStrategiesConfig).to(RouteStrategiesConfig.class).proxy(false);
-                }
-            });
-        }
+        applicationHandler.getInjectionManager().register(new AbstractBinder() {
+            @Override
+            protected void configure() {
+                bind(routeStrategiesConfig).to(RouteStrategiesConfig.class).proxy(false);
+            }
+        });
 
         container = new DefaultContainer(applicationHandler);
         applicationHandler.onStartup(container);

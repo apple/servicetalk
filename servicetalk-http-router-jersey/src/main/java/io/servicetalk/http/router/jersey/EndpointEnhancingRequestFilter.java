@@ -93,9 +93,8 @@ final class EndpointEnhancingRequestFilter implements ContainerRequestFilter {
             return;
         }
 
-        final RouteStrategiesConfig routeStrategiesConfig = routeStrategiesConfigProvider.get();
-        final HttpExecutionStrategy routeExecutionStrategy = routeStrategiesConfig != null ?
-                getRouteExecutionStrategy(resourceClass, resourceMethod, routeStrategiesConfig) : null;
+        final HttpExecutionStrategy routeExecutionStrategy =
+                getRouteExecutionStrategy(resourceClass, resourceMethod, routeStrategiesConfigProvider.get());
 
         final Class<?> returnType = resourceMethod.getReturnType();
         if (Single.class.isAssignableFrom(returnType)) {
