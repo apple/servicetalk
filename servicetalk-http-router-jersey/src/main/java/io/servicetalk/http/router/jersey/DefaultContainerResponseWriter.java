@@ -20,13 +20,13 @@ import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.Single.Subscriber;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.internal.ConnectableOutputStream;
+import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpProtocolVersion;
 import io.servicetalk.http.api.HttpResponseStatus;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
-import io.servicetalk.transport.api.ExecutionStrategy;
 
 import org.glassfish.jersey.server.ContainerException;
 import org.glassfish.jersey.server.ContainerRequest;
@@ -232,7 +232,7 @@ final class DefaultContainerResponseWriter implements ContainerResponseWriter {
         final HttpResponseStatus status = getStatus(containerResponse);
         final StreamingHttpResponse response;
         if (content != null && !isHeadRequest()) {
-            final ExecutionStrategy executionStrategy = getResponseExecutionStrategy(request);
+            final HttpExecutionStrategy executionStrategy = getResponseExecutionStrategy(request);
             // TODO(scott): use request factory methods that accept a payload body to avoid overhead of payloadBody.
             final Publisher<Buffer> payloadBody = (executionStrategy != null ?
                     executionStrategy.offloadSend(serviceCtx.executionContext().executor(), content) : content)

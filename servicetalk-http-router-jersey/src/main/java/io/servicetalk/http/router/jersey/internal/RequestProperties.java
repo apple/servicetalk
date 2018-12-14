@@ -19,8 +19,8 @@ import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.internal.DelayedCancellable;
+import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.router.jersey.BufferPublisherInputStream;
-import io.servicetalk.transport.api.ExecutionStrategy;
 
 import javax.annotation.Nullable;
 import javax.ws.rs.container.ContainerRequestContext;
@@ -42,7 +42,7 @@ public final class RequestProperties {
             new GenericType<Publisher<Buffer>>() { }.getType().getTypeName();
 
     private static final String RESPONSE_EXEC_STRATEGY =
-            new GenericType<ExecutionStrategy>() { }.getType().getTypeName();
+            new GenericType<HttpExecutionStrategy>() { }.getType().getTypeName();
 
     private RequestProperties() {
         // no instances
@@ -119,23 +119,23 @@ public final class RequestProperties {
     }
 
     /**
-     * Get the response {@link ExecutionStrategy} used for offloading.
+     * Get the response {@link HttpExecutionStrategy} used for offloading.
      *
      * @param reqCtx the {@link ContainerRequestContext} for the request
-     * @return the response {@link ExecutionStrategy}
+     * @return the response {@link HttpExecutionStrategy}
      */
     @Nullable
-    public static ExecutionStrategy getResponseExecutionStrategy(final ContainerRequestContext reqCtx) {
-        return (ExecutionStrategy) reqCtx.getProperty(RESPONSE_EXEC_STRATEGY);
+    public static HttpExecutionStrategy getResponseExecutionStrategy(final ContainerRequestContext reqCtx) {
+        return (HttpExecutionStrategy) reqCtx.getProperty(RESPONSE_EXEC_STRATEGY);
     }
 
     /**
-     * Set the response {@link ExecutionStrategy} used for offloading.
+     * Set the response {@link HttpExecutionStrategy} used for offloading.
      *
-     * @param executor the response {@link ExecutionStrategy}
+     * @param executor the response {@link HttpExecutionStrategy}
      * @param reqCtx the {@link ContainerRequestContext} for the request
      */
-    public static void setResponseExecutionStrategy(final ExecutionStrategy executor,
+    public static void setResponseExecutionStrategy(final HttpExecutionStrategy executor,
                                                     final ContainerRequestContext reqCtx) {
         reqCtx.setProperty(RESPONSE_EXEC_STRATEGY, executor);
     }

@@ -19,7 +19,7 @@ import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.transport.api.ExecutionStrategy;
+import io.servicetalk.http.api.HttpExecutionStrategy;
 
 import org.glassfish.jersey.message.internal.EntityInputStream;
 
@@ -80,10 +80,10 @@ public final class BufferPublisherInputStream extends InputStream {
     /**
      * Offload operations on the wrapped {@link Publisher Publisher&lt;Buffer&gt;} to the designated executor.
      *
-     * @param executionStrategy the {@link ExecutionStrategy} to use.
-     * @param fallbackExecutor the {@link Executor} to use as a fallback with the {@link ExecutionStrategy}.
+     * @param executionStrategy the {@link HttpExecutionStrategy} to use.
+     * @param fallbackExecutor the {@link Executor} to use as a fallback with the {@link HttpExecutionStrategy}.
      */
-    void offloadSourcePublisher(final ExecutionStrategy executionStrategy,
+    void offloadSourcePublisher(final HttpExecutionStrategy executionStrategy,
                                 final Executor fallbackExecutor) {
         if (inputStream == EMPTY_INPUT_STREAM) {
             publisher = executionStrategy.offloadReceive(fallbackExecutor, publisher);
