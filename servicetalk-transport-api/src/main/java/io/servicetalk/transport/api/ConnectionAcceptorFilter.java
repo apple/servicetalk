@@ -69,4 +69,13 @@ public class ConnectionAcceptorFilter implements ConnectionAcceptor {
     public Completable closeAsyncGracefully() {
         return delegate.closeAsyncGracefully();
     }
+
+    /**
+     * The {@link ConnectionAcceptor} to which all calls are delegated to.
+     *
+     * @return {@link ConnectionAcceptor} to which all calls are delegated.
+     */
+    protected final ConnectionAcceptor delegate() {
+        return delegate;
+    }
 }

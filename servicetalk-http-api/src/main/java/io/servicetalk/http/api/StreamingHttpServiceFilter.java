@@ -75,7 +75,7 @@ public class StreamingHttpServiceFilter extends StreamingHttpService {
      *
      * @return {@link StreamingHttpService} to which all calls are delegated.
      */
-    protected StreamingHttpService delegate() {
+    protected final StreamingHttpService delegate() {
         return delegate;
     }
 }

@@ -19,7 +19,7 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpHeaderNames;
 import io.servicetalk.http.api.StreamingHttpClient;
-import io.servicetalk.http.api.StreamingHttpClientAdapter;
+import io.servicetalk.http.api.StreamingHttpClientFilter;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
 
@@ -41,7 +41,7 @@ import static java.util.Objects.requireNonNull;
  * </ul>
  *
  */
-public final class RedirectingHttpClientFilter extends StreamingHttpClientAdapter {
+public final class RedirectingHttpClientFilter extends StreamingHttpClientFilter {
 
     // https://tools.ietf.org/html/rfc2068#section-10.3 says:
     // A user agent SHOULD NOT automatically redirect a request more than 5 times,

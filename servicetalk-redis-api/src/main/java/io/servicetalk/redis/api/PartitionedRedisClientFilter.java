@@ -31,6 +31,7 @@ import static java.util.Objects.requireNonNull;
 public class PartitionedRedisClientFilter extends PartitionedRedisClient {
 
     private final PartitionedRedisClient delegate;
+    private final RedisExecutionStrategy defaultStrategy;
 
     /**
      * New instance.
@@ -39,23 +40,55 @@ public class PartitionedRedisClientFilter extends PartitionedRedisClient {
      */
     public PartitionedRedisClientFilter(final PartitionedRedisClient delegate) {
         this.delegate = requireNonNull(delegate);
+        this.defaultStrategy = executionStrategy();
+    }
+
+    /**
+     * New instance.
+     *
+     * @param delegate {@link PartitionedRedisClient} to delegate.
+     * @param defaultStrategy Default {@link RedisExecutionStrategy} to use.
+     */
+    public PartitionedRedisClientFilter(final PartitionedRedisClient delegate,
+                                        final RedisExecutionStrategy defaultStrategy) {
+        this.delegate = delegate;
+        this.defaultStrategy = defaultStrategy;
     }
 
     @Override
-    public Publisher<RedisData> request(final PartitionAttributes partitionSelector, final RedisRequest request) {
+    public Publisher<RedisData> request(final RedisExecutionStrategy strategy,
+                                        final PartitionAttributes partitionSelector, final RedisRequest request) {
         return delegate.request(partitionSelector, request);
     }
 
     @Override
-    public <R> Single<R> request(final PartitionAttributes partitionSelector, final RedisRequest request,
-                                 final Class<R> responseType) {
-        return delegate.request(partitionSelector, request, responseType);
+    public final Publisher<RedisData> request(final PartitionAttributes partitionSelector, final RedisRequest request) {
+        return request(defaultStrategy, partitionSelector, request);
+    }
+
+    @Override
+    public <R> Single<R> request(final RedisExecutionStrategy strategy, final PartitionAttributes partitionSelector,
+                                 final RedisRequest request, final Class<R> responseType) {
+        return delegate.request(strategy, partitionSelector, request, responseType);
+    }
+
+    @Override
+    public final <R> Single<R> request(final PartitionAttributes partitionSelector, final RedisRequest request,
+                                       final Class<R> responseType) {
+        return request(defaultStrategy, partitionSelector, request, responseType);
     }
 
     @Override
     public Single<? extends RedisClient.ReservedRedisConnection> reserveConnection(
             final PartitionAttributes partitionSelector, final RedisProtocolSupport.Command command) {
-        return delegate.reserveConnection(partitionSelector, command);
+        return reserveConnection(defaultStrategy, partitionSelector, command);
+    }
+
+    @Override
+    public Single<? extends RedisClient.ReservedRedisConnection> reserveConnection(
+            final RedisExecutionStrategy strategy, final PartitionAttributes partitionSelector,
+            final RedisProtocolSupport.Command command) {
+        return delegate.reserveConnection(strategy, partitionSelector, command);
     }
 
     @Override
@@ -82,5 +115,14 @@ public class PartitionedRedisClientFilter extends PartitionedRedisClient {
     @Override
     public Completable closeAsyncGracefully() {
         return delegate.closeAsyncGracefully();
+    }
+
+    /**
+     * The {@link PartitionedRedisClient} to which all calls are delegated to.
+     *
+     * @return {@link PartitionedRedisClient} to which all calls are delegated.
+     */
+    protected final PartitionedRedisClient delegate() {
+        return delegate;
     }
 }

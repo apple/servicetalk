@@ -103,7 +103,7 @@ public class RedisClientFilter extends RedisClient {
      *
      * @return {@link RedisClient} to which all calls are delegated.
      */
-    public final RedisClient delegate() {
+    protected final RedisClient delegate() {
         return delegate;
     }
 }
