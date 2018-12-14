@@ -40,6 +40,15 @@ public class ConnectionContextAdapter implements ConnectionContext {
         this.delegate = requireNonNull(delegate);
     }
 
+    /**
+     * Get the {@link ConnectionContext} that this class delegates to.
+     *
+     * @return the {@link ConnectionContext} that this class delegates to.
+     */
+    protected final ConnectionContext delegate() {
+        return delegate;
+    }
+
     @Override
     public SocketAddress localAddress() {
         return delegate.localAddress();
