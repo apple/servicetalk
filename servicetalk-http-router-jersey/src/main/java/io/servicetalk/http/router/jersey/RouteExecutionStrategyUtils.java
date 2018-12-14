@@ -145,7 +145,7 @@ final class RouteExecutionStrategyUtils {
                                                            final Method method,
                                                            final RouteStrategiesConfig routeStrategiesConfig) {
 
-        Annotation annotation = getFirstRouteExecutionStrategyAnnotation(clazz, method);
+        Annotation annotation = getRouteExecutionStrategyAnnotation(clazz, method);
         if (annotation == null) {
             return null;
         }
@@ -158,8 +158,8 @@ final class RouteExecutionStrategyUtils {
     }
 
     @Nullable
-    private static Annotation getFirstRouteExecutionStrategyAnnotation(final Class<?> clazz,
-                                                                       final Method method) {
+    private static Annotation getRouteExecutionStrategyAnnotation(final Class<?> clazz,
+                                                                  final Method method) {
         Annotation annotation = method.getAnnotation(NoOffloadsRouteExecutionStrategy.class);
         if (annotation != null) {
             return annotation;
@@ -192,7 +192,7 @@ final class RouteExecutionStrategyUtils {
             errors.add("More than one execution strategy annotation found on: " + method);
             annotation = null;
         } else {
-            annotation = getFirstRouteExecutionStrategyAnnotation(clazz, method);
+            annotation = getRouteExecutionStrategyAnnotation(clazz, method);
         }
 
         if (annotation == null) {
