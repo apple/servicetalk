@@ -55,7 +55,7 @@ public interface StreamingHttpResponse extends HttpResponseMetaData {
     Publisher<Object> payloadBodyAndTrailers();
 
     /**
-     * Set the underlying payload body.
+     * Return a {@link StreamingHttpResponse} with its underlying payload set to {@code payloadBody}.
      * <p>
      * A best effort will be made to apply back pressure to the existing {@link Publisher} payload body. If this default
      * policy is not sufficient you can use {@link #transformPayloadBody(UnaryOperator)} for more fine grain control.
@@ -68,7 +68,7 @@ public interface StreamingHttpResponse extends HttpResponseMetaData {
     StreamingHttpResponse payloadBody(Publisher<Buffer> payloadBody);
 
     /**
-     * Set the underlying payload body with the result of serialization.
+     * Return a {@link StreamingHttpResponse} with its underlying payload set to the result of serialization.
      * <p>
      * A best effort will be made to apply back pressure to the existing {@link Publisher} payload body. If this default
      * policy is not sufficient you can use {@link #transformPayloadBody(Function, HttpSerializer)} for more fine grain
@@ -84,7 +84,7 @@ public interface StreamingHttpResponse extends HttpResponseMetaData {
     <T> StreamingHttpResponse payloadBody(Publisher<T> payloadBody, HttpSerializer<T> serializer);
 
     /**
-     * Transform the underlying payload body with the result of serialization.
+     * Return a {@link StreamingHttpResponse} with its underlying payload transformed to the result of serialization.
      * @param transformer A {@link Function} which take as a parameter the existing payload body {@link Publisher} and
      * returns the new payload body {@link Publisher} prior to serialization. It is assumed the existing payload body
      * {@link Publisher} will be transformed/consumed or else no more responses may be processed.
@@ -96,7 +96,7 @@ public interface StreamingHttpResponse extends HttpResponseMetaData {
                                                    HttpSerializer<T> serializer);
 
     /**
-     * Transform the underlying payload body with the result of serialization.
+     * Return a {@link StreamingHttpResponse} with its underlying payload transformed to the result of serialization.
      * @param transformer A {@link Function} which take as a parameter the existing payload body {@link Publisher} and
      * returns the new payload body {@link Publisher} prior to serialization. It is assumed the existing payload body
      * {@link Publisher} will be transformed/consumed or else no more requests may be processed.
@@ -114,7 +114,7 @@ public interface StreamingHttpResponse extends HttpResponseMetaData {
     }
 
     /**
-     * Transform the underlying payload body in the form of {@link Buffer}s.
+     * Return a {@link StreamingHttpResponse} with its underlying payload transformed to {@link Buffer}s.
      * @param transformer A {@link Function} which take as a parameter the existing payload body {@link Publisher} and
      * returns the new payload body {@link Publisher}. It is assumed the existing payload body {@link Publisher} will be
      * transformed/consumed or else no more responses may be processed.
@@ -123,15 +123,17 @@ public interface StreamingHttpResponse extends HttpResponseMetaData {
     StreamingHttpResponse transformPayloadBody(UnaryOperator<Publisher<Buffer>> transformer);
 
     /**
-     * Transform the underlying payload body. Note that the raw objects of the underlying {@link Publisher} may be
-     * exposed. The object types are not guaranteed to be homogeneous.
+     * Return a {@link StreamingHttpResponse} with its underlying payload transformed.
+     * Note that the raw objects of the underlying {@link Publisher} may be exposed.
+     * The object types are not guaranteed to be homogeneous.
      * @param transformer Responsible for transforming the payload body.
      * @return A {@link StreamingHttpResponse} with the new payload body.
      */
     StreamingHttpResponse transformRawPayloadBody(UnaryOperator<Publisher<?>> transformer);
 
     /**
-     * Transform the underlying payload body in the form of {@link Buffer}s with access to the trailers.
+     * Return a {@link StreamingHttpResponse} with its underlying payload transformed to {@link Buffer}s,
+     * with access to the trailers.
      * @param stateSupplier Create a new state {@link Object} that will be provided to the {@code transformer} on each
      * invocation. The state will be persistent for each {@link Subscriber} of the underlying payload body.
      * @param transformer Responsible for transforming each {@link Buffer} of the payload body.
@@ -145,7 +147,8 @@ public interface StreamingHttpResponse extends HttpResponseMetaData {
                                         BiFunction<T, HttpHeaders, HttpHeaders> trailersTransformer);
 
     /**
-     * Transform the underlying payload body in the form of {@link Object}s with access to the trailers.
+     * Return a {@link StreamingHttpResponse} with its underlying payload transformed to {@link Object}s,
+     * with access to the trailers.
      * @param stateSupplier Create a new state {@link Object} that will be provided to the {@code transformer} on each
      * invocation. The state will be persistent for each {@link Subscriber} of the underlying payload body.
      * @param transformer Responsible for transforming each {@link Object} of the payload body.
