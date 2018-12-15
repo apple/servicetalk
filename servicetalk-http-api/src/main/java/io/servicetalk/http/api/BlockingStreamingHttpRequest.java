@@ -161,9 +161,8 @@ public interface BlockingStreamingHttpRequest extends HttpRequestMetaData {
     BlockingStreamingHttpRequest transformPayloadBody(UnaryOperator<BlockingIterable<Buffer>> transformer);
 
     /**
-     * Return a {@link BlockingStreamingHttpRequest} with its underlying payload transformed.
-     * Note that the raw objects of the underlying {@link Iterable} may be exposed.
-     * The object types are not guaranteed to be homogeneous.
+     * Return a {@link BlockingStreamingHttpRequest} with its underlying payload transformed. Note that the raw objects
+     * of the underlying {@link Iterable} may be exposed. The object types are not guaranteed to be homogeneous.
      * @param transformer Responsible for transforming the payload body.
      * @return A {@link BlockingStreamingHttpRequest} with the new payload body.
      */

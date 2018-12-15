@@ -122,9 +122,8 @@ public interface StreamingHttpRequest extends HttpRequestMetaData {
     StreamingHttpRequest transformPayloadBody(UnaryOperator<Publisher<Buffer>> transformer);
 
     /**
-     * Return a {@link StreamingHttpRequest} with its underlying payload transformed.
-     * Note that the raw objects of the underlying {@link Publisher} may be exposed.
-     * The object types are not guaranteed to be homogeneous.
+     * Return a {@link StreamingHttpRequest} with its underlying payload transformed. Note that the raw objects of the
+     * underlying {@link Publisher} may be exposed. The object types are not guaranteed to be homogeneous.
      * @param transformer Responsible for transforming the payload body.
      * @return A {@link StreamingHttpRequest} with the new payload body.
      */
