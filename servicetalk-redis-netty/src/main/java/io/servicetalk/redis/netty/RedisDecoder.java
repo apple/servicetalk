@@ -37,7 +37,6 @@ import static io.servicetalk.redis.internal.RedisUtils.EOL_SHORT;
 import static io.servicetalk.redis.netty.RedisDecoder.State.Start;
 
 final class RedisDecoder extends ByteToMessageDecoder {
-    private static final int MAX_ERRORS = 10;
 
     private static final CompleteBulkString EMPTY_BULK_STRING = new CompleteBulkString(
             newBufferFrom(Unpooled.EMPTY_BUFFER));
@@ -58,7 +57,6 @@ final class RedisDecoder extends ByteToMessageDecoder {
     private final BufferAllocator allocator;
     private State state = Start;
     private int expectBulkBytes;
-    private int consecutiveErrorCount;
 
     RedisDecoder(final BufferAllocator allocator) {
         this.allocator = allocator;
@@ -72,14 +70,9 @@ final class RedisDecoder extends ByteToMessageDecoder {
                     final byte b = in.readByte();
                     final State next = nextState(b);
                     if (next == State.Reset) {
-                        if (++consecutiveErrorCount > MAX_ERRORS) {
-                            consecutiveErrorCount = 0;
-                            throw new IllegalStateException("Can't find the start of the next block");
-                        }
-                    } else {
-                        consecutiveErrorCount = 0;
-                        state = next;
+                        throw new IllegalStateException("Can't find the start of the next block");
                     }
+                    state = next;
                     break;
                 }
                 case String: {
