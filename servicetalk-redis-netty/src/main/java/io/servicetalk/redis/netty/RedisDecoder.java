@@ -38,7 +38,6 @@ import static io.servicetalk.redis.netty.RedisDecoder.State.Start;
 
 final class RedisDecoder extends ByteToMessageDecoder {
     private static final int MAX_ERRORS = 10;
-    private static final int MAX_BUFFER_SIZE = 640 * 1024 * 1024;
 
     private static final CompleteBulkString EMPTY_BULK_STRING = new CompleteBulkString(
             newBufferFrom(Unpooled.EMPTY_BUFFER));
@@ -67,7 +66,6 @@ final class RedisDecoder extends ByteToMessageDecoder {
 
     @Override
     protected void decode(final ChannelHandlerContext ctx, final ByteBuf in) {
-        checkLength(in);
         while (in.isReadable()) {
             switch (state) {
                 case Start: {
@@ -206,15 +204,6 @@ final class RedisDecoder extends ByteToMessageDecoder {
             ctx.fireChannelRead(new FirstBulkStringChunkImpl(allocator.wrap(bytes), expectBulkBytes));
         } else {
             ctx.fireChannelRead(new BulkStringChunkImpl(allocator.wrap(bytes)));
-        }
-    }
-
-    private static void checkLength(final ByteBuf in) {
-        final int readableBytes = in.readableBytes();
-        if (readableBytes > MAX_BUFFER_SIZE) {
-            throw new IllegalStateException(
-                    String.format("The input byteBuf is over the limit: size=%d, max=%d",
-                            readableBytes, MAX_BUFFER_SIZE));
         }
     }
 
