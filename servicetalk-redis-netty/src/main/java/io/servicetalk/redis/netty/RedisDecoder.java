@@ -18,7 +18,6 @@ package io.servicetalk.redis.netty;
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.redis.api.RedisData;
 import io.servicetalk.redis.api.RedisData.ArraySize;
-import io.servicetalk.redis.api.RedisData.CompleteBulkString;
 import io.servicetalk.redis.api.RedisData.DefaultBulkStringChunk;
 import io.servicetalk.redis.api.RedisData.DefaultFirstBulkStringChunk;
 import io.servicetalk.redis.api.RedisData.SimpleString;
@@ -38,8 +37,8 @@ import static io.servicetalk.redis.netty.RedisDecoder.State.Start;
 
 final class RedisDecoder extends ByteToMessageDecoder {
 
-    private static final CompleteBulkString EMPTY_BULK_STRING = new CompleteBulkString(
-            newBufferFrom(Unpooled.EMPTY_BUFFER));
+    private static final DefaultFirstBulkStringChunk EMPTY_BULK_STRING = new DefaultFirstBulkStringChunk(
+            newBufferFrom(Unpooled.EMPTY_BUFFER), 0);
     private static final SimpleString EMPTY_SIMPLE_STRING = new SimpleString("");
 
     enum State {
