@@ -37,6 +37,15 @@ public class ExecutionContextAdapter implements ExecutionContext {
         this.delegate = requireNonNull(delegate);
     }
 
+    /**
+     * Get the {@link ExecutionContext} that this class delegates to.
+     *
+     * @return the {@link ExecutionContext} that this class delegates to.
+     */
+    protected final ExecutionContext delegate() {
+        return delegate;
+    }
+
     @Override
     public BufferAllocator bufferAllocator() {
         return delegate.bufferAllocator();

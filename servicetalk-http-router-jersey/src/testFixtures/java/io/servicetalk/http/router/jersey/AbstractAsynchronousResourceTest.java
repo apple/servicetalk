@@ -16,6 +16,7 @@
 package io.servicetalk.http.router.jersey;
 
 import io.servicetalk.http.api.StreamingHttpResponse;
+import io.servicetalk.http.router.jersey.resources.AsynchronousResources;
 
 import org.junit.Test;
 
@@ -27,7 +28,6 @@ import static io.servicetalk.http.api.HttpResponseStatuses.INTERNAL_SERVER_ERROR
 import static io.servicetalk.http.api.HttpResponseStatuses.NO_CONTENT;
 import static io.servicetalk.http.api.HttpResponseStatuses.OK;
 import static io.servicetalk.http.api.HttpResponseStatuses.PARTIAL_CONTENT;
-import static io.servicetalk.http.router.jersey.resources.AsynchronousResources.PATH;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.isEmptyString;
@@ -36,7 +36,7 @@ import static org.junit.Assert.assertThat;
 public abstract class AbstractAsynchronousResourceTest extends AbstractResourceTest {
     @Override
     String getResourcePath() {
-        return PATH;
+        return AsynchronousResources.PATH;
     }
 
     @Test
