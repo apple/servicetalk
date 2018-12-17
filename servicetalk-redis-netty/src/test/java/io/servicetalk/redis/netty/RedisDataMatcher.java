@@ -72,7 +72,11 @@ final class RedisDataMatcher extends BaseMatcher<RedisData> {
     }
 
     static RedisDataMatcher redisFirstBulkStringChunk(final Matcher<Buffer> bufMatcher) {
-        return new RedisDataMatcher(RedisData.FirstBulkStringChunk.class, RedisData::getBufferValue, bufMatcher);
+        return new RedisDataMatcher(RedisData.DefaultFirstBulkStringChunk.class, RedisData::getBufferValue, bufMatcher);
+    }
+
+    static RedisDataMatcher redisFirstBulkStringChunkSize(final Matcher<Integer> sizeMatcher) {
+        return new RedisDataMatcher(RedisData.DefaultFirstBulkStringChunk.class, rd -> rd.getBufferValue().readableBytes(), sizeMatcher);
     }
 
     static RedisDataMatcher redisCompleteBulkString(final Buffer buf) {

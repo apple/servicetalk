@@ -61,9 +61,9 @@ import static io.servicetalk.redis.api.RedisProtocolSupport.SubCommand.ENCODING;
 import static io.servicetalk.redis.api.RedisProtocolSupport.SubCommand.INFO;
 import static io.servicetalk.redis.api.RedisProtocolSupport.SubCommand.LIST;
 import static io.servicetalk.redis.api.RedisRequests.newRequest;
-import static io.servicetalk.redis.netty.RedisDataMatcher.redisCompleteBulkString;
-import static io.servicetalk.redis.netty.RedisDataMatcher.redisCompleteBulkStringSize;
 import static io.servicetalk.redis.netty.RedisDataMatcher.redisError;
+import static io.servicetalk.redis.netty.RedisDataMatcher.redisFirstBulkStringChunk;
+import static io.servicetalk.redis.netty.RedisDataMatcher.redisFirstBulkStringChunkSize;
 import static io.servicetalk.redis.netty.RedisDataMatcher.redisNull;
 import static io.servicetalk.redis.netty.RedisDataMatcher.redisSimpleString;
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -115,9 +115,9 @@ public class RedisClientTest extends BaseRedisClientTest {
     public void requestResponse() throws Exception {
         assertThat(awaitIndefinitely(getEnv().client.request(newRequest(PING))), contains(redisSimpleString("PONG")));
         assertThat(awaitIndefinitely(getEnv().client.request(newRequest(PING, new CompleteBulkString(buf("my-pong"))))),
-                contains(redisCompleteBulkString(buf("my-pong"))));
+                contains(redisFirstBulkStringChunk(buf("my-pong"))));
         assertThat(awaitIndefinitely(getEnv().client.request(newRequest(PING, new CompleteBulkString(buf(""))))),
-                contains(redisCompleteBulkString(buf(""))));
+                contains(redisFirstBulkStringChunk(buf(""))));
         assertThat(awaitIndefinitely(getEnv().client.request(newRequest(GET,
                 new CompleteBulkString(buf("missing-key"))))), contains(redisNull()));
 
@@ -133,7 +133,7 @@ public class RedisClientTest extends BaseRedisClientTest {
 
         assertThat(awaitIndefinitely(getEnv().client.request(newRequest(new RedisData.Array<>(PING,
                         new CompleteBulkString(buf("my-pong")))))),
-                contains(redisCompleteBulkString(buf("my-pong"))));
+                contains(redisFirstBulkStringChunk(buf("my-pong"))));
     }
 
     @Test
@@ -146,7 +146,7 @@ public class RedisClientTest extends BaseRedisClientTest {
                         new CompleteBulkString(buf("\u263A-foo")))))), contains(redisSimpleString("OK")));
 
         assertThat(awaitIndefinitely(getEnv().client.request(newRequest(GET,
-                new CompleteBulkString(buf("\u263A-rc"))))), contains(redisCompleteBulkString(buf("\u263A-foo"))));
+                new CompleteBulkString(buf("\u263A-rc"))))), contains(redisFirstBulkStringChunk(buf("\u263A-foo"))));
     }
 
     @Test
@@ -214,7 +214,7 @@ public class RedisClientTest extends BaseRedisClientTest {
     public void commandWithSubCommand() throws Exception {
         final RedisData actual = awaitIndefinitely(getEnv().client.request(newRequest(CLIENT, LIST)).first());
         assertThat(actual,
-                is(redisCompleteBulkStringSize(greaterThan(0))));
+                is(redisFirstBulkStringChunkSize(greaterThan(0))));
         assertThat(awaitIndefinitelyNonNull(getEnv().client.request(newRequest(COMMAND, INFO,
                 new CompleteBulkString(buf("GET"))), List.class)).size(), is(1));
         assertThat(awaitIndefinitelyNonNull(getEnv().client.request(newRequest(COMMAND, INFO,
