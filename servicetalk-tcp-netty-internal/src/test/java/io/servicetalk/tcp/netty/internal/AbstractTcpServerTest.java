@@ -20,7 +20,7 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Executors;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.test.resources.DefaultTestCerts;
-import io.servicetalk.transport.api.ContextFilter;
+import io.servicetalk.transport.api.ConnectionAcceptor;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.api.SslConfig;
 import io.servicetalk.transport.api.SslConfigBuilder;
@@ -38,7 +38,7 @@ import java.util.function.Function;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
-import static io.servicetalk.transport.api.ContextFilter.ACCEPT_ALL;
+import static io.servicetalk.transport.api.ConnectionAcceptor.ACCEPT_ALL;
 import static io.servicetalk.transport.netty.NettyIoExecutors.createIoExecutor;
 
 public abstract class AbstractTcpServerTest {
@@ -55,7 +55,7 @@ public abstract class AbstractTcpServerTest {
             () -> createIoExecutor(new IoThreadFactory("client-io-executor")),
             Executors::newCachedThreadExecutor);
 
-    private ContextFilter contextFilter = ACCEPT_ALL;
+    private ConnectionAcceptor connectionAcceptor = ACCEPT_ALL;
     private Function<NettyConnection<Buffer, Buffer>, Completable> service =
             conn -> conn.write(conn.read());
     ServerContext serverContext;
@@ -64,8 +64,8 @@ public abstract class AbstractTcpServerTest {
     TcpServer server;
     private boolean sslEnabled;
 
-    void setContextFilter(final ContextFilter contextFilter) {
-        this.contextFilter = contextFilter;
+    void setConnectionAcceptor(final ConnectionAcceptor connectionAcceptor) {
+        this.connectionAcceptor = connectionAcceptor;
     }
 
     void setService(final Function<NettyConnection<Buffer, Buffer>, Completable> service) {
@@ -83,7 +83,7 @@ public abstract class AbstractTcpServerTest {
     @Before
     public void startServer() throws Exception {
         server = createServer();
-        serverContext = server.start(SERVER_CTX, 0, contextFilter, service);
+        serverContext = server.start(SERVER_CTX, 0, connectionAcceptor, service);
         serverPort = TcpServer.getServerPort(serverContext);
         client = createClient();
     }

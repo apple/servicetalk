@@ -19,7 +19,7 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpHeaderNames;
 import io.servicetalk.http.api.StreamingHttpConnection;
-import io.servicetalk.http.api.StreamingHttpConnectionAdapter;
+import io.servicetalk.http.api.StreamingHttpConnectionFilter;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.transport.api.HostAndPort;
@@ -34,7 +34,7 @@ import static java.util.Objects.requireNonNull;
 /**
  * A filter which will apply a fallback value for the {@link HttpHeaderNames#HOST} header if one is not present.
  */
-final class HostHeaderHttpConnectionFilter extends StreamingHttpConnectionAdapter {
+final class HostHeaderHttpConnectionFilter extends StreamingHttpConnectionFilter {
     private final CharSequence fallbackHost;
 
     /**

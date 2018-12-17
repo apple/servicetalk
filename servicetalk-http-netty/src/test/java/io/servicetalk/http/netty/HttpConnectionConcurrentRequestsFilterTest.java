@@ -45,6 +45,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static io.servicetalk.buffer.api.EmptyBuffer.EMPTY_BUFFER;
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Publisher.just;
+import static io.servicetalk.concurrent.api.Single.error;
 import static io.servicetalk.concurrent.api.Single.success;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitelyNonNull;
@@ -88,7 +89,7 @@ public class HttpConnectionConcurrentRequestsFilterTest {
                     case 1: return success(reqRespFactory.ok().payloadBody(response1Publisher.getPublisher()));
                     case 2: return success(reqRespFactory.ok().payloadBody(response2Publisher.getPublisher()));
                     case 3: return success(reqRespFactory.ok().payloadBody(response3Publisher.getPublisher()));
-                    default: return super.request(strategy, request);
+                    default: return error(new UnsupportedOperationException());
                 }
             }
 

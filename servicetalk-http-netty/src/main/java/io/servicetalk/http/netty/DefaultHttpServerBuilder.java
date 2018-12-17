@@ -23,7 +23,7 @@ import io.servicetalk.http.api.HttpServerBuilder;
 import io.servicetalk.http.api.HttpServiceFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequestHandler;
 import io.servicetalk.http.api.StreamingHttpService;
-import io.servicetalk.transport.api.ContextFilter;
+import io.servicetalk.transport.api.ConnectionAcceptorFilterFactory;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.api.SslConfig;
@@ -36,13 +36,15 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.http.api.HttpServiceFilterFactory.identity;
 import static io.servicetalk.http.netty.NettyHttpServer.bind;
+import static io.servicetalk.transport.api.ConnectionAcceptor.ACCEPT_ALL;
 import static java.util.Objects.requireNonNull;
 
 final class DefaultHttpServerBuilder implements HttpServerBuilder {
 
     private final HttpServerConfig config = new HttpServerConfig();
     private final ExecutionContextBuilder executionContextBuilder = new ExecutionContextBuilder();
-    private ContextFilter contextFilter = ContextFilter.ACCEPT_ALL;
+    private ConnectionAcceptorFilterFactory connectionAcceptorFilterFactory =
+            ConnectionAcceptorFilterFactory.identity();
     private SocketAddress address;
     private HttpServiceFilterFactory serviceFilter = identity();
 
@@ -123,8 +125,8 @@ final class DefaultHttpServerBuilder implements HttpServerBuilder {
     }
 
     @Override
-    public HttpServerBuilder contextFilter(final ContextFilter contextFilter) {
-        this.contextFilter = requireNonNull(contextFilter);
+    public HttpServerBuilder appendConnectionAcceptorFilter(final ConnectionAcceptorFilterFactory factory) {
+        this.connectionAcceptorFilterFactory = connectionAcceptorFilterFactory.append(factory);
         return this;
     }
 
@@ -160,7 +162,7 @@ final class DefaultHttpServerBuilder implements HttpServerBuilder {
         if (executor != null) {
             executionContextBuilder.executor(executor);
         }
-        return bind(executionContextBuilder.build(), roConfig, address, contextFilter,
-                serviceFilter.apply(service).asStreamingService());
+        return bind(executionContextBuilder.build(), roConfig, address,
+                connectionAcceptorFilterFactory.create(ACCEPT_ALL), serviceFilter.create(service).asStreamingService());
     }
 }

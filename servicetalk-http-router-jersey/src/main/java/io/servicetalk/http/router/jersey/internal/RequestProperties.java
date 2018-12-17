@@ -17,9 +17,9 @@ package io.servicetalk.http.router.jersey.internal;
 
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.Cancellable;
-import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.internal.DelayedCancellable;
+import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.router.jersey.BufferPublisherInputStream;
 
 import javax.annotation.Nullable;
@@ -41,8 +41,8 @@ public final class RequestProperties {
     private static final String RESPONSE_BUFFER_PUBLISHER =
             new GenericType<Publisher<Buffer>>() { }.getType().getTypeName();
 
-    private static final String RESPONSE_EXEC_OFFLOADER =
-            new GenericType<Executor>() { }.getType().getTypeName();
+    private static final String RESPONSE_EXEC_STRATEGY =
+            new GenericType<HttpExecutionStrategy>() { }.getType().getTypeName();
 
     private RequestProperties() {
         // no instances
@@ -59,7 +59,7 @@ public final class RequestProperties {
         reqCtx.setProperty(REQUEST_BUFFER_PUBLISHER_IS, requireNonNull(entityStream));
         reqCtx.setProperty(REQUEST_CANCELLABLE, new DelayedCancellable());
         reqCtx.setProperty(RESPONSE_BUFFER_PUBLISHER, null);
-        reqCtx.setProperty(RESPONSE_EXEC_OFFLOADER, null);
+        reqCtx.setProperty(RESPONSE_EXEC_STRATEGY, null);
     }
 
     /**
@@ -119,24 +119,24 @@ public final class RequestProperties {
     }
 
     /**
-     * Get the response {@link Executor} used for offloading.
+     * Get the response {@link HttpExecutionStrategy} used for offloading.
      *
      * @param reqCtx the {@link ContainerRequestContext} for the request
-     * @return the response offloading {@link Executor}
+     * @return the response {@link HttpExecutionStrategy}
      */
     @Nullable
-    public static Executor getResponseExecutorOffloader(final ContainerRequestContext reqCtx) {
-        return (Executor) reqCtx.getProperty(RESPONSE_EXEC_OFFLOADER);
+    public static HttpExecutionStrategy getResponseExecutionStrategy(final ContainerRequestContext reqCtx) {
+        return (HttpExecutionStrategy) reqCtx.getProperty(RESPONSE_EXEC_STRATEGY);
     }
 
     /**
-     * Set the response {@link Executor} used for offloading.
+     * Set the response {@link HttpExecutionStrategy} used for offloading.
      *
-     * @param executor the response offloading {@link Executor}
+     * @param executor the response {@link HttpExecutionStrategy}
      * @param reqCtx the {@link ContainerRequestContext} for the request
      */
-    public static void setResponseExecutorOffloader(final Executor executor,
+    public static void setResponseExecutionStrategy(final HttpExecutionStrategy executor,
                                                     final ContainerRequestContext reqCtx) {
-        reqCtx.setProperty(RESPONSE_EXEC_OFFLOADER, executor);
+        reqCtx.setProperty(RESPONSE_EXEC_STRATEGY, executor);
     }
 }

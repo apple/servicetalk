@@ -20,7 +20,6 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 
-import java.nio.charset.StandardCharsets;
 import javax.annotation.Generated;
 
 import static io.servicetalk.redis.api.RedisCoercions.toPubSubPongMessages;
@@ -30,6 +29,7 @@ import static io.servicetalk.redis.api.RedisRequests.newRequest;
 import static io.servicetalk.redis.api.RedisRequests.reserveConnection;
 import static io.servicetalk.redis.api.RedisRequests.writeRequestArgument;
 import static io.servicetalk.redis.api.RedisRequests.writeRequestArraySize;
+import static io.servicetalk.redis.api.StringByteSizeUtil.numberOfBytesUtf8;
 import static java.util.Objects.requireNonNull;
 
 @Generated({})
@@ -76,13 +76,13 @@ final class DefaultPubSubRedisConnection extends PubSubRedisConnection {
     public Single<PubSubRedisMessage.Pong<String>> ping(final CharSequence message) {
         requireNonNull(message);
         final int len = 2;
-        final byte[] messageBytes = message.toString().getBytes(StandardCharsets.UTF_8);
+        final int messageBytes = numberOfBytesUtf8(message);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.PING) +
                     calculateRequestArgumentSize(messageBytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
         writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.PING.encodeTo(buffer);
-        writeRequestArgument(buffer, messageBytes);
+        writeRequestArgument(buffer, message, messageBytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.PING, buffer);
         return toPubSubPongMessages(reservedCnx.request(request), String.class).first();
     }
@@ -91,13 +91,13 @@ final class DefaultPubSubRedisConnection extends PubSubRedisConnection {
     public Single<PubSubRedisConnection> psubscribe(final CharSequence pattern) {
         requireNonNull(pattern);
         final int len = 2;
-        final byte[] patternBytes = pattern.toString().getBytes(StandardCharsets.UTF_8);
+        final int patternBytes = numberOfBytesUtf8(pattern);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.PSUBSCRIBE) +
                     calculateRequestArgumentSize(patternBytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
         writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.PSUBSCRIBE.encodeTo(buffer);
-        writeRequestArgument(buffer, patternBytes);
+        writeRequestArgument(buffer, pattern, patternBytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.PSUBSCRIBE, buffer);
         return reserveConnection(reservedCnx, request,
                     (rcnx, pub) -> new DefaultPubSubRedisConnection(rcnx, pub.map(msg -> (PubSubRedisMessage) msg)));
@@ -107,13 +107,13 @@ final class DefaultPubSubRedisConnection extends PubSubRedisConnection {
     public Single<PubSubRedisConnection> subscribe(final CharSequence channel) {
         requireNonNull(channel);
         final int len = 2;
-        final byte[] channelBytes = channel.toString().getBytes(StandardCharsets.UTF_8);
+        final int channelBytes = numberOfBytesUtf8(channel);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SUBSCRIBE) +
                     calculateRequestArgumentSize(channelBytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
         writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.SUBSCRIBE.encodeTo(buffer);
-        writeRequestArgument(buffer, channelBytes);
+        writeRequestArgument(buffer, channel, channelBytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SUBSCRIBE, buffer);
         return reserveConnection(reservedCnx, request,
                     (rcnx, pub) -> new DefaultPubSubRedisConnection(rcnx, pub.map(msg -> (PubSubRedisMessage) msg)));

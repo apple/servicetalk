@@ -19,9 +19,11 @@ import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.transport.api.ConnectionContext;
-import io.servicetalk.transport.api.DefaultExecutionContext;
+import io.servicetalk.transport.api.ConnectionContextAdapter;
 import io.servicetalk.transport.api.ExecutionContext;
+import io.servicetalk.transport.api.ExecutionContextAdapter;
 
 import org.glassfish.jersey.internal.util.collection.Ref;
 import org.glassfish.jersey.message.internal.OutboundJaxrsResponse;
@@ -38,12 +40,10 @@ import org.glassfish.jersey.server.internal.routing.UriRoutingContext;
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
-import java.net.SocketAddress;
 import java.util.concurrent.CompletionStage;
 import javax.annotation.Nullable;
 import javax.annotation.Priority;
 import javax.inject.Provider;
-import javax.net.ssl.SSLSession;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.container.ContainerRequestFilter;
 import javax.ws.rs.container.ResourceInfo;
@@ -53,10 +53,10 @@ import javax.ws.rs.core.Response;
 import static io.servicetalk.concurrent.api.Single.defer;
 import static io.servicetalk.concurrent.api.Single.error;
 import static io.servicetalk.concurrent.api.Single.success;
-import static io.servicetalk.http.router.jersey.ExecutionStrategyUtils.getResourceExecutor;
+import static io.servicetalk.http.router.jersey.RouteExecutionStrategyUtils.getRouteExecutionStrategy;
 import static io.servicetalk.http.router.jersey.internal.RequestProperties.getRequestBufferPublisherInputStream;
 import static io.servicetalk.http.router.jersey.internal.RequestProperties.setRequestCancellable;
-import static io.servicetalk.http.router.jersey.internal.RequestProperties.setResponseExecutorOffloader;
+import static io.servicetalk.http.router.jersey.internal.RequestProperties.setResponseExecutionStrategy;
 import static java.lang.Integer.MAX_VALUE;
 import static javax.ws.rs.core.Response.Status.NO_CONTENT;
 import static javax.ws.rs.core.Response.noContent;
@@ -78,7 +78,7 @@ final class EndpointEnhancingRequestFilter implements ContainerRequestFilter {
     private Provider<Ref<ConnectionContext>> ctxRefProvider;
 
     @Context
-    private Provider<ExecutorConfig> executorConfigProvider;
+    private Provider<RouteStrategiesConfig> routeStrategiesConfigProvider;
 
     @Context
     private RequestScope requestScope;
@@ -92,34 +92,17 @@ final class EndpointEnhancingRequestFilter implements ContainerRequestFilter {
             return;
         }
 
-        final ExecutorOverrideConnectionContext executorOverrideConnectionCtx =
-                getExecutorOverrideConnectionCtx(resourceClass, resourceMethod);
+        final HttpExecutionStrategy routeExecutionStrategy =
+                getRouteExecutionStrategy(resourceClass, resourceMethod, routeStrategiesConfigProvider.get());
 
         final Class<?> returnType = resourceMethod.getReturnType();
         if (Single.class.isAssignableFrom(returnType)) {
-            urc.setEndpoint(new SingleAwareEndpoint(urc, requestScope, executorOverrideConnectionCtx));
+            urc.setEndpoint(new SingleAwareEndpoint(urc, requestScope, ctxRefProvider, routeExecutionStrategy));
         } else if (Completable.class.isAssignableFrom(returnType)) {
-            urc.setEndpoint(new CompletableAwareEndpoint(urc, requestScope, executorOverrideConnectionCtx));
-        } else if (executorOverrideConnectionCtx != null) {
-            urc.setEndpoint(new ExecutorOffloadingEndpoint(urc, requestScope, executorOverrideConnectionCtx));
+            urc.setEndpoint(new CompletableAwareEndpoint(urc, requestScope, ctxRefProvider, routeExecutionStrategy));
+        } else if (routeExecutionStrategy != null) {
+            urc.setEndpoint(new ExecutorOffloadingEndpoint(urc, requestScope, ctxRefProvider, routeExecutionStrategy));
         }
-    }
-
-    @Nullable
-    private ExecutorOverrideConnectionContext getExecutorOverrideConnectionCtx(final Class<?> resourceClass,
-                                                                               final Method resourceMethod) {
-        final ExecutorConfig executorConfig = executorConfigProvider.get();
-        if (executorConfig == null) {
-            return null;
-        }
-
-        final Ref<ConnectionContext> ctxRef = ctxRefProvider.get();
-        final Executor currentExecutor = ctxRef.get().executionContext().executor();
-        final Executor resourceExecutor =
-                getResourceExecutor(resourceClass, resourceMethod, currentExecutor, executorConfig);
-
-        return resourceExecutor == currentExecutor ? null :
-                new ExecutorOverrideConnectionContext(ctxRef, resourceExecutor);
     }
 
     private abstract static class AbstractWrappedEndpoint implements Endpoint, ResourceInfo {
@@ -127,15 +110,28 @@ final class EndpointEnhancingRequestFilter implements ContainerRequestFilter {
         private final Endpoint originalEndpoint;
         private final RequestScope requestScope;
         @Nullable
-        private final ExecutorOverrideConnectionContext execOverrideCnxCtx;
+        private final HttpExecutionStrategy routeExecutionStrategy;
+        @Nullable
+        private final Ref<ConnectionContext> ctxRef;
+        @Nullable
+        private final ConnectionContext currentConnectionContext;
 
         protected AbstractWrappedEndpoint(final UriRoutingContext uriRoutingContext,
                                           final RequestScope requestScope,
-                                          @Nullable final ExecutorOverrideConnectionContext execOverrideCnxCtx) {
+                                          final Provider<Ref<ConnectionContext>> ctxRefProvider,
+                                          @Nullable final HttpExecutionStrategy routeExecutionStrategy) {
             this.uriRoutingContext = uriRoutingContext;
             this.originalEndpoint = uriRoutingContext.getEndpoint();
             this.requestScope = requestScope;
-            this.execOverrideCnxCtx = execOverrideCnxCtx;
+            this.routeExecutionStrategy = routeExecutionStrategy;
+
+            if (routeExecutionStrategy != null) {
+                ctxRef = ctxRefProvider.get();
+                currentConnectionContext = ctxRef.get();
+            } else {
+                ctxRef = null;
+                currentConnectionContext = null;
+            }
         }
 
         @Nullable
@@ -171,8 +167,10 @@ final class EndpointEnhancingRequestFilter implements ContainerRequestFilter {
                     .doAfterCancel(asyncContext::cancel);
 
             final Cancellable cancellable;
-            if (execOverrideCnxCtx != null) {
-                cancellable = objectSingle.subscribeOn(execOverrideCnxCtx.executionContext().executor())
+            if (routeExecutionStrategy != null) {
+                assert currentConnectionContext != null : "currentConnectionContext can't be null";
+                cancellable = routeExecutionStrategy
+                        .offloadSend(currentConnectionContext.executionContext().executor(), objectSingle)
                         .subscribe(asyncContext::resume);
             } else {
                 cancellable = objectSingle.subscribe(asyncContext::resume);
@@ -184,21 +182,26 @@ final class EndpointEnhancingRequestFilter implements ContainerRequestFilter {
         }
 
         private Single<ContainerResponse> callOriginalEndpoint(final RequestProcessingContext requestProcessingCtx) {
-            if (execOverrideCnxCtx != null) {
+            if (routeExecutionStrategy != null) {
                 final RequestContext requestContext = requestScope.referenceCurrent();
                 final ContainerRequest request = requestProcessingCtx.request();
-                final Executor executor = execOverrideCnxCtx.executionContext().executor();
 
-                return executor.submit(() -> {
-                    execOverrideCnxCtx.activate();
-                    return requestScope.runInScope(requestContext,
-                            () -> {
-                                getRequestBufferPublisherInputStream(request).offloadSourcePublisher(executor);
-                                setResponseExecutorOffloader(executor, request);
+                assert currentConnectionContext != null : "currentConnectionContext can't be null";
+                final ExecutionContext currentExecutionContext = currentConnectionContext.executionContext();
+
+                return routeExecutionStrategy.invokeService(currentExecutionContext.executor(),
+                        actualExecutor -> {
+                            assert ctxRef != null : "ctxRef can't be null";
+                            ctxRef.set(new ExecutorOverrideConnectionContext(currentConnectionContext, actualExecutor));
+                            return requestScope.runInScope(requestContext, () -> {
+                                getRequestBufferPublisherInputStream(request)
+                                        .offloadSourcePublisher(routeExecutionStrategy,
+                                                currentExecutionContext.executor());
+                                setResponseExecutionStrategy(routeExecutionStrategy, request);
 
                                 return originalEndpoint.apply(requestProcessingCtx);
                             });
-                });
+                        });
             }
 
             return defer(() -> {
@@ -210,7 +213,6 @@ final class EndpointEnhancingRequestFilter implements ContainerRequestFilter {
             });
         }
 
-        @SuppressWarnings("unchecked")
         protected Single<Response> handleContainerResponse(final ContainerResponse res) {
             return success(new OutboundJaxrsResponse(res.getStatusInfo(), res.getWrappedMessageContext()));
         }
@@ -218,10 +220,11 @@ final class EndpointEnhancingRequestFilter implements ContainerRequestFilter {
 
     private static final class ExecutorOffloadingEndpoint extends AbstractWrappedEndpoint {
 
-        private ExecutorOffloadingEndpoint(final UriRoutingContext uriRoutingContext,
-                                           final RequestScope requestScope,
-                                           final ExecutorOverrideConnectionContext execOverrideCnxCtx) {
-            super(uriRoutingContext, requestScope, execOverrideCnxCtx);
+        protected ExecutorOffloadingEndpoint(final UriRoutingContext uriRoutingContext,
+                                             final RequestScope requestScope,
+                                             final Provider<Ref<ConnectionContext>> ctxRefProvider,
+                                             @Nullable final HttpExecutionStrategy routeExecutionStrategy) {
+            super(uriRoutingContext, requestScope, ctxRefProvider, routeExecutionStrategy);
         }
     }
 
@@ -231,8 +234,9 @@ final class EndpointEnhancingRequestFilter implements ContainerRequestFilter {
         protected AbstractSourceAwareEndpoint(final UriRoutingContext uriRoutingContext,
                                               final Class<T> sourceType,
                                               final RequestScope requestScope,
-                                              @Nullable final ExecutorOverrideConnectionContext execOverrideCnxCtx) {
-            super(uriRoutingContext, requestScope, execOverrideCnxCtx);
+                                              final Provider<Ref<ConnectionContext>> ctxRefProvider,
+                                              @Nullable final HttpExecutionStrategy routeExecutionStrategy) {
+            super(uriRoutingContext, requestScope, ctxRefProvider, routeExecutionStrategy);
             this.sourceType = sourceType;
         }
 
@@ -253,8 +257,9 @@ final class EndpointEnhancingRequestFilter implements ContainerRequestFilter {
     private static final class CompletableAwareEndpoint extends AbstractSourceAwareEndpoint<Completable> {
         private CompletableAwareEndpoint(final UriRoutingContext uriRoutingContext,
                                          final RequestScope requestScope,
-                                         @Nullable final ExecutorOverrideConnectionContext execOverrideCnxCtx) {
-            super(uriRoutingContext, Completable.class, requestScope, execOverrideCnxCtx);
+                                         final Provider<Ref<ConnectionContext>> ctxRefProvider,
+                                         @Nullable final HttpExecutionStrategy routeExecutionStrategy) {
+            super(uriRoutingContext, Completable.class, requestScope, ctxRefProvider, routeExecutionStrategy);
         }
 
         @Override
@@ -267,8 +272,9 @@ final class EndpointEnhancingRequestFilter implements ContainerRequestFilter {
     private static final class SingleAwareEndpoint extends AbstractSourceAwareEndpoint<Single> {
         private SingleAwareEndpoint(final UriRoutingContext uriRoutingContext,
                                     final RequestScope requestScope,
-                                    @Nullable final ExecutorOverrideConnectionContext execOverrideCnxCtx) {
-            super(uriRoutingContext, Single.class, requestScope, execOverrideCnxCtx);
+                                    final Provider<Ref<ConnectionContext>> ctxRefProvider,
+                                    @Nullable final HttpExecutionStrategy routeExecutionStrategy) {
+            super(uriRoutingContext, Single.class, requestScope, ctxRefProvider, routeExecutionStrategy);
         }
 
         @SuppressWarnings("unchecked")
@@ -332,56 +338,24 @@ final class EndpointEnhancingRequestFilter implements ContainerRequestFilter {
         }
     }
 
-    private static final class ExecutorOverrideConnectionContext implements ConnectionContext {
-        private final Ref<ConnectionContext> ctxRef;
-        private final ConnectionContext original;
+    private static final class ExecutorOverrideConnectionContext extends ConnectionContextAdapter {
         private final ExecutionContext execCtx;
 
-        private ExecutorOverrideConnectionContext(final Ref<ConnectionContext> ctxRef, final Executor executor) {
-            this.ctxRef = ctxRef;
-            this.original = ctxRef.get();
-            this.execCtx = new DefaultExecutionContext(original.executionContext().bufferAllocator(),
-                    original.executionContext().ioExecutor(), executor);
-        }
+        private ExecutorOverrideConnectionContext(final ConnectionContext original,
+                                                  final Executor executor) {
+            super(original);
 
-        private void activate() {
-            ctxRef.set(this);
-        }
-
-        @Override
-        public SocketAddress localAddress() {
-            return original.localAddress();
-        }
-
-        @Override
-        public SocketAddress remoteAddress() {
-            return original.remoteAddress();
-        }
-
-        @Nullable
-        @Override
-        public SSLSession sslSession() {
-            return original.sslSession();
+            this.execCtx = new ExecutionContextAdapter(original.executionContext()) {
+                @Override
+                public Executor executor() {
+                    return executor;
+                }
+            };
         }
 
         @Override
         public ExecutionContext executionContext() {
             return execCtx;
-        }
-
-        @Override
-        public Completable onClose() {
-            return original.onClose();
-        }
-
-        @Override
-        public Completable closeAsync() {
-            return original.closeAsync();
-        }
-
-        @Override
-        public Completable closeAsyncGracefully() {
-            return original.closeAsyncGracefully();
         }
     }
 }

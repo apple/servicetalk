@@ -16,7 +16,6 @@
 package io.servicetalk.http.router.jersey;
 
 import io.servicetalk.buffer.api.Buffer;
-import io.servicetalk.concurrent.internal.DefaultThreadFactory;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.HttpProtocolVersion;
 import io.servicetalk.http.api.HttpRequestMethod;
@@ -28,7 +27,6 @@ import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.http.netty.HttpClients;
 import io.servicetalk.http.netty.HttpServers;
-import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.netty.IoThreadFactory;
 import io.servicetalk.transport.netty.internal.ExecutionContextRule;
@@ -50,7 +48,6 @@ import javax.ws.rs.core.Application;
 import javax.ws.rs.core.Configuration;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
-import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
 import static io.servicetalk.concurrent.api.Publisher.just;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.concurrent.internal.Await.awaitNonNull;
@@ -70,8 +67,7 @@ import static io.servicetalk.http.api.HttpRequestMethods.POST;
 import static io.servicetalk.http.api.HttpRequestMethods.PUT;
 import static io.servicetalk.http.router.jersey.TestUtils.getContentAsString;
 import static io.servicetalk.transport.api.HostAndPort.of;
-import static io.servicetalk.transport.netty.NettyIoExecutors.createIoExecutor;
-import static java.lang.Thread.NORM_PRIORITY;
+import static io.servicetalk.transport.netty.internal.ExecutionContextRule.cached;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.glassfish.jersey.CommonProperties.getValue;
 import static org.glassfish.jersey.internal.InternalProperties.JSON_FEATURE;
@@ -88,9 +84,7 @@ public abstract class AbstractJerseyStreamingHttpServiceTest {
     public final ExpectedException expected = ExpectedException.none();
 
     @ClassRule
-    public static final ExecutionContextRule SERVER_CTX = new ExecutionContextRule(() -> DEFAULT_ALLOCATOR,
-            () -> createIoExecutor(new IoThreadFactory("stserverio")),
-            () -> newCachedThreadExecutor(new DefaultThreadFactory("stserver-", true, NORM_PRIORITY)));
+    public static final ExecutionContextRule SERVER_CTX = cached(new IoThreadFactory("stserverio"));
 
     private ServerContext serverContext;
     private boolean streamingJsonEnabled;
@@ -98,17 +92,14 @@ public abstract class AbstractJerseyStreamingHttpServiceTest {
 
     @Before
     public final void initServerAndClient() throws Exception {
-        ExecutionContext serverExecutionContext = getServerExecutionContext();
-        final StreamingHttpService router = configureBuilder(new HttpJerseyRouterBuilder())
-                .executionStrategy(defaultStrategy(serverExecutionContext.executor()))
-                .build(getApplication());
+        final StreamingHttpService router = configureBuilder(new HttpJerseyRouterBuilder()).build(getApplication());
         final Configuration config = ((DefaultJerseyStreamingHttpRouter) router).getConfiguration();
         streamingJsonEnabled = getValue(config.getProperties(), config.getRuntimeType(), JSON_FEATURE, "",
                 String.class).toLowerCase().contains("servicetalk");
 
         serverContext = HttpServers.forPort(0)
-                .ioExecutor(serverExecutionContext.ioExecutor())
-                .bufferAllocator(serverExecutionContext.bufferAllocator())
+                .ioExecutor(SERVER_CTX.ioExecutor())
+                .bufferAllocator(SERVER_CTX.bufferAllocator())
                 .listenStreamingAndAwait(router);
 
         final InetSocketAddress serverAddress = (InetSocketAddress) serverContext.listenAddress();
@@ -116,11 +107,7 @@ public abstract class AbstractJerseyStreamingHttpServiceTest {
     }
 
     protected HttpJerseyRouterBuilder configureBuilder(final HttpJerseyRouterBuilder builder) {
-        return builder;
-    }
-
-    protected ExecutionContext getServerExecutionContext() {
-        return SERVER_CTX;
+        return builder.executionStrategy(defaultStrategy(SERVER_CTX.executor()));
     }
 
     @After
@@ -203,12 +190,11 @@ public abstract class AbstractJerseyStreamingHttpServiceTest {
         return sendAndAssertResponse(req, expectedStatus, null, "");
     }
 
-    protected StreamingHttpResponse sendAndAssertStatusOnly(final StreamingHttpRequest req,
-                                                            final HttpResponseStatus expectedStatus) {
+    protected String sendAndAssertStatusOnly(final StreamingHttpRequest req,
+                                             final HttpResponseStatus expectedStatus) {
         final StreamingHttpResponse res =
                 sendAndAssertStatus(req, HTTP_1_1, expectedStatus, DEFAULT_TIMEOUT_SECONDS, SECONDS);
-        getContentAsString(res);
-        return res;
+        return getContentAsString(res);
     }
 
     protected StreamingHttpResponse sendAndAssertResponse(final StreamingHttpRequest req,

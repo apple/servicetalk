@@ -15,8 +15,8 @@
  */
 package io.servicetalk.tcp.netty.internal;
 
+import io.servicetalk.transport.api.ConnectionAcceptor;
 import io.servicetalk.transport.api.ConnectionContext;
-import io.servicetalk.transport.api.ContextFilter;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
 import io.servicetalk.transport.netty.internal.IdleTimeoutInitializer;
 import io.servicetalk.transport.netty.internal.SslServerChannelInitializer;
@@ -34,9 +34,9 @@ public class TcpServerChannelInitializer implements ChannelInitializer {
      * Creates a {@link ChannelInitializer} for the {@code config}.
      *
      * @param config to use for initialization.
-     * @param contextFilter the {@link ContextFilter} to use for filtering connections.
+     * @param connectionAcceptor the {@link ConnectionAcceptor} to use for filtering connections.
      */
-    public TcpServerChannelInitializer(ReadOnlyTcpServerConfig config, ContextFilter contextFilter) {
+    public TcpServerChannelInitializer(ReadOnlyTcpServerConfig config, ConnectionAcceptor connectionAcceptor) {
         ChannelInitializer delegate = ChannelInitializer.defaultInitializer();
         if (config.getWireLoggingInitializer() != null) {
             delegate = delegate.andThen(config.getWireLoggingInitializer());
@@ -52,7 +52,7 @@ public class TcpServerChannelInitializer implements ChannelInitializer {
         } else {
             enableSsl = false;
         }
-        this.delegate = delegate.andThen(new ContextFilterChannelInitializer(contextFilter, enableSsl));
+        this.delegate = delegate.andThen(new ContextFilterChannelInitializer(connectionAcceptor, enableSsl));
     }
 
     @Override

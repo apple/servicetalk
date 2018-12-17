@@ -18,14 +18,12 @@ package io.servicetalk.redis.netty;
 import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.internal.MaxRequestLimitExceededRejectedSubscribeException;
 import io.servicetalk.client.internal.RequestConcurrencyController;
-import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.redis.api.RedisConnection;
+import io.servicetalk.redis.api.RedisConnectionFilter;
 import io.servicetalk.redis.api.RedisData;
 import io.servicetalk.redis.api.RedisExecutionStrategy;
 import io.servicetalk.redis.api.RedisRequest;
-import io.servicetalk.transport.api.ConnectionContext;
-import io.servicetalk.transport.api.ExecutionContext;
 
 import org.reactivestreams.Subscriber;
 
@@ -33,37 +31,20 @@ import static io.servicetalk.client.internal.RequestConcurrencyControllers.newCo
 import static io.servicetalk.client.internal.RequestConcurrencyControllers.newSingleController;
 import static io.servicetalk.concurrent.internal.EmptySubscription.EMPTY_SUBSCRIPTION;
 import static io.servicetalk.redis.api.RedisConnection.SettingKey.MAX_CONCURRENCY;
-import static java.util.Objects.requireNonNull;
 
 /**
  * A {@link RedisConnection} that enforces max allowed pending requests.
  * This is only used for connections built without a {@link LoadBalancer}.
  */
-final class RedisConnectionConcurrentRequestsFilter extends RedisConnection {
-    private final RedisConnection next;
+final class RedisConnectionConcurrentRequestsFilter extends RedisConnectionFilter {
     private final RequestConcurrencyController limiter;
 
     RedisConnectionConcurrentRequestsFilter(RedisConnection next,
                                             int defaultMaxPipelinedRequests) {
-        this.next = requireNonNull(next);
+        super(next);
         limiter = defaultMaxPipelinedRequests == 1 ?
                 newSingleController(next.settingStream(MAX_CONCURRENCY), next.onClose()) :
                 newController(next.settingStream(MAX_CONCURRENCY), next.onClose(), defaultMaxPipelinedRequests);
-    }
-
-    @Override
-    public Completable closeAsync() {
-        return next.closeAsync();
-    }
-
-    @Override
-    public Completable closeAsyncGracefully() {
-        return next.closeAsyncGracefully();
-    }
-
-    @Override
-    public Completable onClose() {
-        return next.onClose();
     }
 
     @Override
@@ -72,7 +53,8 @@ final class RedisConnectionConcurrentRequestsFilter extends RedisConnection {
             @Override
             protected void handleSubscribe(final Subscriber<? super RedisData> subscriber) {
                 if (limiter.tryRequest()) {
-                    next.request(strategy, request).doBeforeFinally(limiter::requestFinished).subscribe(subscriber);
+                    delegate().request(strategy, request).doBeforeFinally(limiter::requestFinished)
+                            .subscribe(subscriber);
                 } else {
                     subscriber.onSubscribe(EMPTY_SUBSCRIPTION);
                     subscriber.onError(new MaxRequestLimitExceededRejectedSubscribeException(
@@ -83,22 +65,7 @@ final class RedisConnectionConcurrentRequestsFilter extends RedisConnection {
     }
 
     @Override
-    public ExecutionContext executionContext() {
-        return next.executionContext();
-    }
-
-    @Override
-    public ConnectionContext connectionContext() {
-        return next.connectionContext();
-    }
-
-    @Override
-    public <T> Publisher<T> settingStream(SettingKey<T> settingKey) {
-        return next.settingStream(settingKey);
-    }
-
-    @Override
     public String toString() {
-        return RedisConnectionConcurrentRequestsFilter.class.getSimpleName() + "(" + next + ")";
+        return RedisConnectionConcurrentRequestsFilter.class.getSimpleName() + "(" + delegate() + ")";
     }
 }

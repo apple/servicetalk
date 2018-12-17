@@ -20,7 +20,7 @@ import io.servicetalk.client.internal.RequestConcurrencyController;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.StreamingHttpConnection;
-import io.servicetalk.http.api.StreamingHttpConnectionAdapter;
+import io.servicetalk.http.api.StreamingHttpConnectionFilter;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
 
@@ -29,7 +29,7 @@ import static io.servicetalk.client.internal.RequestConcurrencyControllers.newSi
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.http.api.StreamingHttpConnection.SettingKey.MAX_CONCURRENCY;
 
-final class ConcurrentRequestsHttpConnectionFilter extends StreamingHttpConnectionAdapter {
+final class ConcurrentRequestsHttpConnectionFilter extends StreamingHttpConnectionFilter {
     private final RequestConcurrencyController limiter;
 
     ConcurrentRequestsHttpConnectionFilter(StreamingHttpConnection next,

@@ -37,8 +37,8 @@
     <Bug pattern="NP_NONNULL_FIELD_NOT_INITIALIZED_IN_CONSTRUCTOR"/>
     <Or>
       <Field name="ctxRefProvider"/>
-      <Field name="executorConfigProvider"/>
       <Field name="requestScope"/>
+      <Field name="routeStrategiesConfigProvider"/>
     </Or>
   </Match>
 

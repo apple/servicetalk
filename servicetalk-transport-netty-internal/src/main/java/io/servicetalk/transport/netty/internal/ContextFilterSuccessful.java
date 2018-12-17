@@ -15,10 +15,10 @@
  */
 package io.servicetalk.transport.netty.internal;
 
-import io.servicetalk.transport.api.ContextFilter;
+import io.servicetalk.transport.api.ConnectionAcceptor;
 
 /**
- * Netty pipeline event that represents the successful completion of the {@link ContextFilter}.
+ * Netty pipeline event that represents the successful completion of the {@link ConnectionAcceptor}.
  */
 public final class ContextFilterSuccessful {
     public static final ContextFilterSuccessful COMPLETED = new ContextFilterSuccessful();

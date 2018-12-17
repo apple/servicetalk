@@ -39,13 +39,13 @@ import java.util.function.BiFunction;
 import java.util.function.Predicate;
 
 import static io.servicetalk.concurrent.api.Single.success;
+import static io.servicetalk.redis.api.StringByteSizeUtil.numberOfBytesUtf8;
 import static io.servicetalk.redis.api.StringByteSizeUtil.numberOfDigits;
 import static io.servicetalk.redis.api.StringByteSizeUtil.numberOfDigitsPositive;
 import static io.servicetalk.redis.internal.RedisUtils.EOL_LENGTH;
 import static io.servicetalk.redis.internal.RedisUtils.EOL_SHORT;
 import static java.lang.System.arraycopy;
 import static java.nio.charset.StandardCharsets.US_ASCII;
-import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -249,6 +249,17 @@ public final class RedisRequests {
     }
 
     /**
+     * Calculates the size of the buffer needed to write a {@link CharSequence}, including necessary
+     * <a href="https://redis.io/topics/protocol">RESP protocol</a> components.
+     *
+     * @param arg the {@link CharSequence} to calculate the buffer size for.
+     * @return The required buffer size.
+     */
+    public static int calculateRequestArgumentSize(final CharSequence arg) {
+        return calculateRequestArgumentSize(numberOfBytesUtf8(arg));
+    }
+
+    /**
      * Writes a {@link CharSequence} to {@code buffer}, including necessary
      * <a href="https://redis.io/topics/protocol">RESP protocol</a> components.
      *
@@ -256,7 +267,20 @@ public final class RedisRequests {
      * @param arg the {@link Buffer} to write.
      */
     public static void writeRequestArgument(final Buffer buffer, final CharSequence arg) {
-        writeRequestArgument(buffer, arg.toString().getBytes(UTF_8));
+        writeRequestArgument(buffer, arg, numberOfBytesUtf8(arg));
+    }
+
+    static void writeRequestArgument(final Buffer buffer, final CharSequence arg, final int byteCount) {
+        writeLength(buffer, byteCount);
+
+        final int beginIndex = buffer.writerIndex();
+        buffer.writeUtf8(arg, byteCount);
+        final int endIndex = buffer.writerIndex();
+
+        assert endIndex - beginIndex == byteCount :
+                "Wrote " + (endIndex - beginIndex) + " bytes when expecting " + byteCount;
+
+        buffer.writeShort(EOL_SHORT);
     }
 
     /**

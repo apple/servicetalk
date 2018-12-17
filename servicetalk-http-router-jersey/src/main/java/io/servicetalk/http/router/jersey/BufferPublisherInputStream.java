@@ -19,6 +19,7 @@ import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.http.api.HttpExecutionStrategy;
 
 import org.glassfish.jersey.message.internal.EntityInputStream;
 
@@ -27,7 +28,6 @@ import java.io.InputStream;
 import java.util.function.BiFunction;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.concurrent.api.Executors.immediate;
 import static java.util.Objects.requireNonNull;
 import static org.glassfish.jersey.message.internal.ReaderInterceptorExecutor.closeableInputStream;
 
@@ -80,14 +80,14 @@ public final class BufferPublisherInputStream extends InputStream {
     /**
      * Offload operations on the wrapped {@link Publisher Publisher&lt;Buffer&gt;} to the designated executor.
      *
-     * @param executor the {@link Executor} to offload to.
+     * @param executionStrategy the {@link HttpExecutionStrategy} to use.
+     * @param fallbackExecutor the {@link Executor} to use as a fallback with the {@link HttpExecutionStrategy}.
      */
-    void offloadSourcePublisher(final Executor executor) {
-        requireNonNull(executor);
-
+    void offloadSourcePublisher(final HttpExecutionStrategy executionStrategy,
+                                final Executor fallbackExecutor) {
         if (inputStream == EMPTY_INPUT_STREAM) {
-            publisher = publisher.publishOn(executor);
-        } else if (executor != immediate()) {
+            publisher = executionStrategy.offloadReceive(fallbackExecutor, publisher);
+        } else {
             throw new IllegalStateException("Can't offload source publisher because it is consumed via InputStream");
         }
     }

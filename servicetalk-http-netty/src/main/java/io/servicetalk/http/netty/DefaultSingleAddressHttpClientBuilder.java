@@ -64,12 +64,10 @@ import static java.util.Objects.requireNonNull;
  */
 final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddressHttpClientBuilder<U, R> {
 
-    // Allows creating builders with an unknown address until buildStreaming time, eg. MultiAddressUrlHttpClientBuilder
-    private static final HostAndPort UNKNOWN = HostAndPort.of("unknown.invalid", -1);
-
     private static final HttpClientFilterFactory LB_READY_FILTER =
             (client, lbEvents) -> new LoadBalancerReadyStreamingHttpClient(4, lbEvents, client);
 
+    @Nullable
     private final U address;
     private final HttpClientConfig config;
     private final ExecutionContextBuilder executionContextBuilder = new ExecutionContextBuilder();
@@ -85,19 +83,27 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
     private HttpExecutionStrategy strategy = defaultStrategy();
 
     DefaultSingleAddressHttpClientBuilder(
-            final ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>> serviceDiscoverer, final U address) {
+            final U address, final ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>> serviceDiscoverer) {
+        this.address = requireNonNull(address);
         config = new HttpClientConfig(new TcpClientConfig(false));
         this.loadBalancerFactory = newRoundRobinFactory();
         this.serviceDiscoverer = requireNonNull(serviceDiscoverer);
-        this.address = requireNonNull(address);
     }
 
-    private DefaultSingleAddressHttpClientBuilder(final U address,
+    private DefaultSingleAddressHttpClientBuilder(
+            final ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>> serviceDiscoverer) {
+        address = null; // Unknown address - template builder pending override via: copy(address)
+        config = new HttpClientConfig(new TcpClientConfig(false));
+        this.loadBalancerFactory = newRoundRobinFactory();
+        this.serviceDiscoverer = requireNonNull(serviceDiscoverer);
+    }
+
+    private DefaultSingleAddressHttpClientBuilder(@Nullable final U address,
                                                   final DefaultSingleAddressHttpClientBuilder<U, R> from) {
+        this.address = address;
         config = new HttpClientConfig(from.config);
-        this.address = requireNonNull(address);
-        this.serviceDiscoverer = from.serviceDiscoverer;
         this.loadBalancerFactory = from.loadBalancerFactory;
+        this.serviceDiscoverer = from.serviceDiscoverer;
         clientFilterFunction = from.clientFilterFunction;
         connectionFilterFunction = from.connectionFilterFunction;
         hostHeaderFilterFunction = from.hostHeaderFilterFunction;
@@ -106,20 +112,28 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
     }
 
     DefaultSingleAddressHttpClientBuilder<U, R> copy() {
-        return copy(address);
+        return new DefaultSingleAddressHttpClientBuilder<>(address, this);
     }
 
     DefaultSingleAddressHttpClientBuilder<U, R> copy(final U address) {
-        return new DefaultSingleAddressHttpClientBuilder<>(address, this);
+        return new DefaultSingleAddressHttpClientBuilder<>(requireNonNull(address), this);
     }
 
     static DefaultSingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> forHostAndPort(
             final HostAndPort address) {
-        return new DefaultSingleAddressHttpClientBuilder<>(globalDnsServiceDiscoverer(), address);
+        return new DefaultSingleAddressHttpClientBuilder<>(address, globalDnsServiceDiscoverer());
     }
 
     static DefaultSingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> forUnknownHostAndPort() {
-        return forHostAndPort(UNKNOWN);
+        return new DefaultSingleAddressHttpClientBuilder<>(globalDnsServiceDiscoverer());
+    }
+
+    HttpHeadersFactory headersFactory() {
+        return config.getHeadersFactory();
+    }
+
+    ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>> serviceDiscoverer() {
+        return serviceDiscoverer;
     }
 
     @Override
@@ -128,7 +142,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
     }
 
     StreamingHttpClient buildStreaming(ExecutionContext exec) {
-        assert UNKNOWN != address : "Attempted to buildStreaming with an unknown address";
+        assert address != null : "Attempted to buildStreaming with an unknown address";
         final ReadOnlyHttpClientConfig roConfig = config.asReadOnly();
         // Track resources that potentially need to be closed when an exception is thrown during buildStreaming
         final CompositeCloseable closeOnException = newCompositeCloseable();
@@ -144,8 +158,8 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
             // closed by the LoadBalancer
             ConnectionFactory<R, ? extends StreamingHttpConnection> connectionFactory =
                     connectionFactoryFilter.apply(closeOnException.prepend(roConfig.getMaxPipelinedRequests() == 1 ?
-                            new NonPipelinedLBHttpConnectionFactory<>(roConfig, exec, connectionFilters, reqRespFactory) :
-                            new PipelinedLBHttpConnectionFactory<>(roConfig, exec, connectionFilters, reqRespFactory)));
+                        new NonPipelinedLBHttpConnectionFactory<>(roConfig, exec, connectionFilters, reqRespFactory) :
+                        new PipelinedLBHttpConnectionFactory<>(roConfig, exec, connectionFilters, reqRespFactory)));
 
             LoadBalancer<? extends StreamingHttpConnection> lbfUntypedForCast = closeOnException.prepend(
                     loadBalancerFactory.newLoadBalancer(sdEvents, connectionFactory));
@@ -153,7 +167,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
             LoadBalancer<LoadBalancedStreamingHttpConnection> lb =
                     (LoadBalancer<LoadBalancedStreamingHttpConnection>) lbfUntypedForCast;
 
-            return clientFilterFunction.append(lbReadyFilter).apply(closeOnException.prepend(
+            return clientFilterFunction.append(lbReadyFilter).create(closeOnException.prepend(
                     new DefaultStreamingHttpClient(exec, strategy, lb, reqRespFactory)), lb.eventStream());
         } catch (final Throwable t) {
             closeOnException.closeAsync().subscribe();
@@ -219,10 +233,6 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
     public DefaultSingleAddressHttpClientBuilder<U, R> headersFactory(final HttpHeadersFactory headersFactory) {
         config.setHeadersFactory(headersFactory);
         return this;
-    }
-
-    HttpHeadersFactory getHeadersFactory() {
-        return config.getHeadersFactory();
     }
 
     @Override

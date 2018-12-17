@@ -280,7 +280,7 @@ final class DefaultRedisClientBuilder<U, R> implements RedisClientBuilder<U, R> 
                     (LoadBalancer<LoadBalancedRedisConnection>) lbfUntypedForCast;
 
             return clientFilterFactory.append(lbReadyFilter)
-                    .apply(closeOnException.append(new DefaultRedisClient(executionContext, strategy, subscribeLb,
+                    .create(closeOnException.append(new DefaultRedisClient(executionContext, strategy, subscribeLb,
                                     pipelineLb)),
                             subscribeLb.eventStream(), pipelineLb.eventStream());
         } catch (Throwable t) {

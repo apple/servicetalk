@@ -31,6 +31,12 @@ public final class HttpHeaderValues {
      */
     public static final CharSequence APPLICATION_X_WWW_FORM_URLENCODED =
             newAsciiString("application/x-www-form-urlencoded");
+
+    /**
+     * {@code "application/x-www-form-urlencoded; charset=UTF-8"}
+     */
+    public static final CharSequence APPLICATION_X_WWW_FORM_URLENCODED_UTF8 =
+            newAsciiString(APPLICATION_X_WWW_FORM_URLENCODED + "; charset=UTF-8");
     /**
      * {@code "base64"}
      */

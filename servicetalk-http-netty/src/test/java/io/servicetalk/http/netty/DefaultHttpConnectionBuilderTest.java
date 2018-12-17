@@ -20,7 +20,7 @@ import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.StreamingHttpConnection;
-import io.servicetalk.http.api.StreamingHttpConnectionAdapter;
+import io.servicetalk.http.api.StreamingHttpConnectionFilter;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
 
@@ -58,7 +58,7 @@ public class DefaultHttpConnectionBuilderTest extends AbstractEchoServerBasedHtt
         makeRequestValidateResponseAndClose(awaitIndefinitelyNonNull(connectionSingle));
     }
 
-    private static final class DummyFanoutFilter extends StreamingHttpConnectionAdapter {
+    private static final class DummyFanoutFilter extends StreamingHttpConnectionFilter {
 
         private DummyFanoutFilter(final StreamingHttpConnection connection) {
             super(connection);

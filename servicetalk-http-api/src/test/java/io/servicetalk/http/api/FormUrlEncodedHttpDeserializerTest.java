@@ -45,7 +45,7 @@ public class FormUrlEncodedHttpDeserializerTest {
 
     @Test
     public void formParametersAreDeserialized() {
-        final FormUrlEncodedHttpDeserializer deserializer = FormUrlEncodedHttpDeserializer.UTF_8;
+        final FormUrlEncodedHttpDeserializer deserializer = FormUrlEncodedHttpDeserializer.UTF8;
 
         final HttpHeaders headers = DefaultHttpHeadersFactory.INSTANCE.newHeaders();
         headers.set(CONTENT_TYPE, "application/x-www-form-urlencoded; charset=UTF-8");
@@ -67,7 +67,7 @@ public class FormUrlEncodedHttpDeserializerTest {
 
     @Test
     public void deserializeEmptyBuffer() {
-        final FormUrlEncodedHttpDeserializer deserializer = FormUrlEncodedHttpDeserializer.UTF_8;
+        final FormUrlEncodedHttpDeserializer deserializer = FormUrlEncodedHttpDeserializer.UTF8;
 
         final HttpHeaders headers = DefaultHttpHeadersFactory.INSTANCE.newHeaders();
         headers.set(CONTENT_TYPE, "application/x-www-form-urlencoded; charset=UTF-8");
@@ -79,7 +79,7 @@ public class FormUrlEncodedHttpDeserializerTest {
 
     @Test
     public void invalidContentTypeThrows() {
-        final FormUrlEncodedHttpDeserializer deserializer = FormUrlEncodedHttpDeserializer.UTF_8;
+        final FormUrlEncodedHttpDeserializer deserializer = FormUrlEncodedHttpDeserializer.UTF8;
 
         final HttpHeaders headers = DefaultHttpHeadersFactory.INSTANCE.newHeaders();
         headers.set(CONTENT_TYPE, "invalid/content/type");
@@ -91,7 +91,7 @@ public class FormUrlEncodedHttpDeserializerTest {
 
     @Test
     public void iterableCloseIsPropagated() throws Exception {
-        final FormUrlEncodedHttpDeserializer deserializer = FormUrlEncodedHttpDeserializer.UTF_8;
+        final FormUrlEncodedHttpDeserializer deserializer = FormUrlEncodedHttpDeserializer.UTF8;
         final HttpHeaders headers = DefaultHttpHeadersFactory.INSTANCE.newHeaders();
         headers.set(CONTENT_TYPE, "application/x-www-form-urlencoded; charset=UTF-8");
 

@@ -18,7 +18,7 @@ package io.servicetalk.http.netty;
 import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.internal.ReservableRequestConcurrencyController;
 import io.servicetalk.concurrent.api.Completable;
-import io.servicetalk.http.api.ReservedFromStreamingHttpConnectionAdapter;
+import io.servicetalk.http.api.ReservedStreamingHttpConnectionAdapter;
 import io.servicetalk.http.api.StreamingHttpConnection;
 
 import static java.util.Objects.requireNonNull;
@@ -26,7 +26,7 @@ import static java.util.Objects.requireNonNull;
 /**
  * Makes the wrapped {@link StreamingHttpConnection} aware of the {@link LoadBalancer}.
  */
-final class LoadBalancedStreamingHttpConnection extends ReservedFromStreamingHttpConnectionAdapter
+final class LoadBalancedStreamingHttpConnection extends ReservedStreamingHttpConnectionAdapter
         implements ReservableRequestConcurrencyController {
     private final ReservableRequestConcurrencyController limiter;
 

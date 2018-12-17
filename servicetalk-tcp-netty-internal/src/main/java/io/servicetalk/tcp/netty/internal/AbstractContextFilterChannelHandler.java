@@ -19,8 +19,8 @@ import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.SequentialCancellable;
+import io.servicetalk.transport.api.ConnectionAcceptor;
 import io.servicetalk.transport.api.ConnectionContext;
-import io.servicetalk.transport.api.ContextFilter;
 
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
@@ -43,15 +43,15 @@ abstract class AbstractContextFilterChannelHandler extends ChannelDuplexHandler 
     private static final byte CHANNEL_INACTIVE = 3;
 
     private final ConnectionContext context;
-    private final ContextFilter contextFilter;
+    private final ConnectionAcceptor connectionAcceptor;
     private final Executor executor;
     private final SequentialCancellable sequentialCancellable;
     private byte state;
 
-    AbstractContextFilterChannelHandler(final ConnectionContext context, final ContextFilter contextFilter,
+    AbstractContextFilterChannelHandler(final ConnectionContext context, final ConnectionAcceptor connectionAcceptor,
                                         final Executor executor) {
         this.context = context;
-        this.contextFilter = contextFilter;
+        this.connectionAcceptor = connectionAcceptor;
         this.executor = executor;
         sequentialCancellable = new SequentialCancellable();
     }
@@ -69,7 +69,7 @@ abstract class AbstractContextFilterChannelHandler extends ChannelDuplexHandler 
 
     private void runContextFilter(final ChannelHandlerContext ctx) {
         try {
-            contextFilter.filter(context).subscribe(new Single.Subscriber<Boolean>() {
+            connectionAcceptor.accept(context).subscribe(new Single.Subscriber<Boolean>() {
                 @Override
                 public void onSubscribe(final Cancellable cancellable) {
                     sequentialCancellable.setNextCancellable(cancellable);
@@ -98,13 +98,13 @@ abstract class AbstractContextFilterChannelHandler extends ChannelDuplexHandler 
 
                 @Override
                 public void onError(final Throwable t) {
-                    LOGGER.warn("Error from context filter {} for context {}.", contextFilter, context, t);
+                    LOGGER.warn("Error from context filter {} for context {}.", connectionAcceptor, context, t);
                     ctx.close();
                 }
             });
         } catch (Throwable t) {
+            LOGGER.warn("Exception from context filter {} for context {}.", connectionAcceptor, context, t);
             ctx.close();
-            LOGGER.warn("Exception from context filter {} for context {}.", contextFilter, context, t);
         }
     }
 

@@ -18,14 +18,20 @@ package io.servicetalk.http.netty;
 import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
+import io.servicetalk.client.api.partition.PartitionAttributes;
+import io.servicetalk.client.api.partition.PartitionAttributesBuilder;
+import io.servicetalk.client.api.partition.PartitionedServiceDiscovererEvent;
 import io.servicetalk.http.api.HttpClient;
 import io.servicetalk.http.api.HttpHeaderNames;
+import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.MultiAddressHttpClientBuilder;
+import io.servicetalk.http.api.PartitionedHttpClientBuilder;
 import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.transport.api.HostAndPort;
 
 import java.net.InetSocketAddress;
+import java.util.function.Function;
 
 import static io.servicetalk.http.netty.DefaultSingleAddressHttpClientBuilder.forUnknownHostAndPort;
 
@@ -100,6 +106,31 @@ public final class HttpClients {
     public static <U, R> SingleAddressHttpClientBuilder<U, R> forSingleAddress(
             final ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>> serviceDiscoverer,
             final U address) {
-        return new DefaultSingleAddressHttpClientBuilder<>(serviceDiscoverer, address);
+        return new DefaultSingleAddressHttpClientBuilder<>(address, serviceDiscoverer);
+    }
+
+    /**
+     * Creates a {@link PartitionedHttpClientBuilder} for a custom address type with default {@link LoadBalancer} and
+     * user provided {@link ServiceDiscoverer}.
+     *
+     * @param serviceDiscoverer The {@link ServiceDiscoverer} to resolve addresses of remote servers to connect to.
+     * The lifecycle of the provided {@link ServiceDiscoverer} should be managed by the caller.
+     * @param address the {@code UnresolvedAddress} to resolve using the provided {@code serviceDiscoverer}.
+     * This address will also be used for the {@link HttpHeaderNames#HOST} using a best effort conversion. Use {@link
+     * PartitionedHttpClientBuilder#enableHostHeaderFallback(CharSequence)} if you want to override that value or
+     * {@link PartitionedHttpClientBuilder#disableHostHeaderFallback()} if you want to disable this behavior.
+     * @param partitionAttributesBuilderFactory The factory {@link Function} used to build {@link PartitionAttributes}
+     * from {@link HttpRequestMetaData}.
+     * @param <U> the type of address before resolution (unresolved address)
+     * @param <R> the type of address after resolution (resolved address)
+     * @return new builder with provided configuration
+     */
+    public static <U, R> PartitionedHttpClientBuilder<U, R> forPartitionedAddress(
+            final ServiceDiscoverer<U, R, ? extends PartitionedServiceDiscovererEvent<R>> serviceDiscoverer,
+            final U address,
+            final Function<HttpRequestMetaData, PartitionAttributesBuilder> partitionAttributesBuilderFactory) {
+        return new DefaultPartitionedHttpClientBuilder<>(address,
+                new DefaultSingleAddressHttpClientBuilder<>(address, serviceDiscoverer),
+                partitionAttributesBuilderFactory);
     }
 }

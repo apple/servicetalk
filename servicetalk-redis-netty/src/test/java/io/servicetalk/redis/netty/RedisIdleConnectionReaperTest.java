@@ -23,6 +23,7 @@ import io.servicetalk.concurrent.api.MockedSubscriberRule;
 import io.servicetalk.redis.api.RedisConnection;
 import io.servicetalk.redis.api.RedisData;
 import io.servicetalk.redis.api.RedisExecutionStrategy;
+import io.servicetalk.redis.api.RedisProtocolSupport;
 import io.servicetalk.redis.api.RedisRequest;
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ExecutionContext;
@@ -46,7 +47,6 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Publisher.just;
-import static io.servicetalk.concurrent.api.Single.success;
 import static io.servicetalk.redis.api.RedisData.NULL;
 import static io.servicetalk.redis.api.RedisProtocolSupport.Command.PING;
 import static io.servicetalk.redis.api.RedisRequests.newRequest;
@@ -62,7 +62,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
-@SuppressWarnings("unchecked")
 public class RedisIdleConnectionReaperTest {
     @Rule
     public final MockitoRule rule = MockitoJUnit.rule();
@@ -188,8 +187,14 @@ public class RedisIdleConnectionReaperTest {
 
     @Test
     public void commanderRequestsAreInstrumented() {
-        when(delegateConnection.request(any(RedisExecutionStrategy.class), any(RedisRequest.class), eq(String.class)))
-                .thenReturn(success("pong"));
+        when(delegateConnection.request(any(RedisExecutionStrategy.class), any(RedisRequest.class)))
+                .thenAnswer(invocation -> {
+                    RedisProtocolSupport.Command cmd = ((RedisRequest) invocation.getArgument(1)).command();
+                    if ((cmd == PING)) {
+                        return just(new RedisData.SimpleString("pong"));
+                    }
+                    throw new IllegalArgumentException("Unknown command: " + cmd);
+                });
 
         commandSubscriber.listen(idleAwareConnection.asCommander().ping())
                 .verifySuccess("pong");
@@ -200,8 +205,8 @@ public class RedisIdleConnectionReaperTest {
         verify(delegateConnection, times(1)).connectionContext();
         verify(mockExecutionCtx, times(1)).ioExecutor();
         assertThat("Unexpected timer subscriptions.", timerSubscribed.get(), is(2));
-        verify(delegateConnection).request(any(RedisExecutionStrategy.class), any(RedisRequest.class),
-                eq(String.class));
+        verify(delegateConnection).request(any(RedisExecutionStrategy.class), any(RedisRequest.class));
+        verifyNoMoreInteractions(delegateConnection);
     }
 
     private void completeTimer() {

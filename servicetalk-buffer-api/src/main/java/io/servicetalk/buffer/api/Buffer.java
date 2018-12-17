@@ -1573,6 +1573,17 @@ public interface Buffer {
     Buffer writeUtf8(CharSequence seq);
 
     /**
+     * Encode a {@link CharSequence} in <a href="http://en.wikipedia.org/wiki/UTF-8">UTF-8</a> and write it
+     * to this buffer starting at {@code writerIndex} and increases the {@code writerIndex} by the
+     * number of the transferred bytes.
+     *
+     * @param seq the source of the data.
+     * @param ensureWritable the number of bytes to ensure are writeable.
+     * @return self.
+     */
+    Buffer writeUtf8(CharSequence seq, int ensureWritable);
+
+    /**
      * Locates the first occurrence of the specified {@code value} in this
      * buffer.  The search takes place from the specified {@code fromIndex}
      * (inclusive)  to the specified {@code toIndex} (exclusive).

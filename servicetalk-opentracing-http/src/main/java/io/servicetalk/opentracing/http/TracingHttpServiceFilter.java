@@ -15,13 +15,13 @@
  */
 package io.servicetalk.opentracing.http;
 
-import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpResponseMetaData;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StreamingHttpRequest;
+import io.servicetalk.http.api.StreamingHttpRequestHandler;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.api.StreamingHttpService;
@@ -48,8 +48,8 @@ import static java.util.Objects.requireNonNull;
 /**
  * A {@link StreamingHttpService} that supports open tracing.
  */
-public class TracingHttpServiceFilter extends StreamingHttpService {
-    private final StreamingHttpService next;
+public class TracingHttpServiceFilter implements StreamingHttpRequestHandler {
+    private final StreamingHttpRequestHandler next;
     private final Tracer tracer;
     private final String componentName;
     private final InMemoryTraceStateFormat<HttpHeaders> formatter;
@@ -62,7 +62,7 @@ public class TracingHttpServiceFilter extends StreamingHttpService {
      */
     public TracingHttpServiceFilter(Tracer tracer,
                                     String componentName,
-                                    StreamingHttpService next) {
+                                    StreamingHttpRequestHandler next) {
         this(tracer, componentName, next, true);
     }
 
@@ -75,7 +75,7 @@ public class TracingHttpServiceFilter extends StreamingHttpService {
      */
     public TracingHttpServiceFilter(Tracer tracer,
                                     String componentName,
-                                    StreamingHttpService next,
+                                    StreamingHttpRequestHandler next,
                                     boolean validateTraceKeyFormat) {
         this.tracer = requireNonNull(tracer);
         this.componentName = requireNonNull(componentName);
@@ -126,11 +126,6 @@ public class TracingHttpServiceFilter extends StreamingHttpService {
                   .subscribe(subscriber);
             }
         };
-    }
-
-    @Override
-    public Completable closeAsync() {
-        return next.closeAsync();
     }
 
     /**

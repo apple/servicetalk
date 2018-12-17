@@ -26,7 +26,7 @@ import static java.util.Objects.requireNonNull;
 
 /**
  * A factory which filters the behavior of {@link StreamingHttpClient} instances created from a
- * {@link StreamingHttpClientGroup}.
+ * {@link StreamingHttpClient}.
  * @param <U> the type of address before resolution (unresolved address).
  */
 @FunctionalInterface
@@ -69,7 +69,7 @@ public interface HttpClientGroupFilterFactory<U> {
      */
     default HttpClientFilterFactory asClientFilter(U address) {
         requireNonNull(address);
-        return (client, lbEvents) -> apply(address, client, lbEvents);
+        return (client, lbEvents) -> new StreamingHttpClientFilter(apply(address, client, lbEvents));
     }
 
     /**

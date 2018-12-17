@@ -23,7 +23,7 @@ import io.servicetalk.transport.api.ExecutionContext;
 
 import static io.servicetalk.concurrent.api.Single.error;
 
-public class TestStreamingHttpConnection extends StreamingHttpConnection {
+public abstract class TestStreamingHttpConnection extends StreamingHttpConnection {
     private final ExecutionContext executionContext;
     private final ConnectionContext connectionContext;
 
@@ -46,8 +46,7 @@ public class TestStreamingHttpConnection extends StreamingHttpConnection {
     }
 
     @Override
-    public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
-                                                 final StreamingHttpRequest request) {
+    public final Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
         return error(new UnsupportedOperationException());
     }
 

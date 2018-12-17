@@ -54,7 +54,7 @@ import static io.servicetalk.redis.api.RedisProtocolSupport.Command.PING;
 import static io.servicetalk.redis.api.RedisProtocolSupport.Command.PUNSUBSCRIBE;
 import static io.servicetalk.redis.api.RedisProtocolSupport.Command.UNSUBSCRIBE;
 import static io.servicetalk.redis.api.RedisRequests.calculateInitialCommandBufferSize;
-import static io.servicetalk.redis.api.RedisRequests.estimateRequestArgumentSize;
+import static io.servicetalk.redis.api.RedisRequests.calculateRequestArgumentSize;
 import static io.servicetalk.redis.api.RedisRequests.newRequest;
 import static io.servicetalk.redis.api.RedisRequests.writeRequestArgument;
 import static io.servicetalk.redis.api.RedisRequests.writeRequestArraySize;
@@ -282,7 +282,7 @@ final class ReadStreamSplitter {
                 @Override
                 public void cancel() {
                     final Command command = isPatternSubscribe ? PUNSUBSCRIBE : UNSUBSCRIBE;
-                    final int capacity = calculateInitialCommandBufferSize(2, command) + estimateRequestArgumentSize(channel);
+                    final int capacity = calculateInitialCommandBufferSize(2, command) + calculateRequestArgumentSize(channel);
                     final Buffer buf = connection.executionContext().bufferAllocator().newBuffer(capacity);
                     writeRequestArraySize(buf, 2);
                     command.encodeTo(buf);

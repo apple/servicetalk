@@ -22,7 +22,6 @@ import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.serialization.api.SerializationException;
 
 import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -31,21 +30,23 @@ import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
-import static io.servicetalk.http.api.HttpHeaderValues.APPLICATION_X_WWW_FORM_URLENCODED;
+import static io.servicetalk.http.api.HttpHeaderValues.APPLICATION_X_WWW_FORM_URLENCODED_UTF8;
 import static io.servicetalk.http.api.QueryStringDecoder.decodeParams;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Collections.emptyMap;
 
 /**
  * An {@link HttpDeserializer} that deserializes a key-values {@link Map} from an urlencoded form.
  */
 final class FormUrlEncodedHttpDeserializer implements HttpDeserializer<Map<String, List<String>>> {
-    static final FormUrlEncodedHttpDeserializer UTF_8 = new FormUrlEncodedHttpDeserializer(
-            headers -> headers.contains(CONTENT_TYPE, APPLICATION_X_WWW_FORM_URLENCODED + "; charset=UTF-8"));
+    static final FormUrlEncodedHttpDeserializer UTF8 = new FormUrlEncodedHttpDeserializer(UTF_8,
+            headers -> headers.contains(CONTENT_TYPE, APPLICATION_X_WWW_FORM_URLENCODED_UTF8));
 
-    private static final Charset DEFAULT_CHARSET = StandardCharsets.UTF_8;
+    private final Charset charset;
     private final Predicate<HttpHeaders> checkContentType;
 
-    FormUrlEncodedHttpDeserializer(final Predicate<HttpHeaders> checkContentType) {
+    FormUrlEncodedHttpDeserializer(final Charset charset, final Predicate<HttpHeaders> checkContentType) {
+        this.charset = charset;
         this.checkContentType = checkContentType;
     }
 
@@ -105,9 +106,9 @@ final class FormUrlEncodedHttpDeserializer implements HttpDeserializer<Map<Strin
     }
 
     private Map<String, List<String>> deserialize(@Nullable final Buffer buffer) {
-        if (buffer == null || buffer.capacity() == 0) {
+        if (buffer == null || buffer.readableBytes() == 0) {
             return emptyMap();
         }
-        return decodeParams(buffer.toString(DEFAULT_CHARSET));
+        return decodeParams(buffer.toString(charset), charset);
     }
 }

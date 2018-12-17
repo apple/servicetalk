@@ -23,7 +23,6 @@ import io.servicetalk.redis.api.CommanderUtils.DiscardSingle;
 import io.servicetalk.redis.api.CommanderUtils.ExecCompletable;
 import io.servicetalk.redis.internal.RedisUtils;
 
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -38,6 +37,9 @@ import static io.servicetalk.redis.api.RedisRequests.calculateInitialCommandBuff
 import static io.servicetalk.redis.api.RedisRequests.calculateRequestArgumentSize;
 import static io.servicetalk.redis.api.RedisRequests.estimateRequestArgumentSize;
 import static io.servicetalk.redis.api.RedisRequests.newRequest;
+import static io.servicetalk.redis.api.RedisRequests.writeRequestArgument;
+import static io.servicetalk.redis.api.RedisRequests.writeRequestArraySize;
+import static io.servicetalk.redis.api.StringByteSizeUtil.numberOfBytesUtf8;
 import static java.util.Objects.requireNonNull;
 
 @Generated({})
@@ -77,15 +79,15 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(key);
         requireNonNull(value);
         final int len = 3;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] valueBytes = value.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
+        final int valueBytes = numberOfBytesUtf8(value);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.APPEND) +
                     calculateRequestArgumentSize(keyBytes) + calculateRequestArgumentSize(valueBytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.APPEND.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
-        RedisRequests.writeRequestArgument(buffer, valueBytes);
+        writeRequestArgument(buffer, key, keyBytes);
+        writeRequestArgument(buffer, value, valueBytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.APPEND, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
@@ -96,13 +98,13 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
     public Future<String> auth(final CharSequence password) {
         requireNonNull(password);
         final int len = 2;
-        final byte[] passwordBytes = password.toString().getBytes(StandardCharsets.UTF_8);
+        final int passwordBytes = numberOfBytesUtf8(password);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.AUTH) +
                     calculateRequestArgumentSize(passwordBytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.AUTH.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, passwordBytes);
+        writeRequestArgument(buffer, password, passwordBytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.AUTH, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<String> result = enqueueForExecute(state, singles, queued);
@@ -114,7 +116,7 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         final int len = 1;
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.BGREWRITEAOF);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.BGREWRITEAOF.encodeTo(buffer);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.BGREWRITEAOF, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
@@ -127,7 +129,7 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         final int len = 1;
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.BGSAVE);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.BGSAVE.encodeTo(buffer);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.BGSAVE, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
@@ -139,13 +141,13 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
     public Future<Long> bitcount(@RedisProtocolSupport.Key final CharSequence key) {
         requireNonNull(key);
         final int len = 2;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.BITCOUNT) +
                     calculateRequestArgumentSize(keyBytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.BITCOUNT.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
+        writeRequestArgument(buffer, key, keyBytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.BITCOUNT, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
@@ -157,19 +159,19 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
                                  @Nullable final Long end) {
         requireNonNull(key);
         final int len = 2 + (start == null ? 0 : 1) + (end == null ? 0 : 1);
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.BITCOUNT) +
                     calculateRequestArgumentSize(keyBytes) + (start == null ? 0 : calculateRequestArgumentSize(start)) +
                     (end == null ? 0 : calculateRequestArgumentSize(end));
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.BITCOUNT.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
+        writeRequestArgument(buffer, key, keyBytes);
         if (start != null) {
-            RedisRequests.writeRequestArgument(buffer, start);
+            writeRequestArgument(buffer, start);
         }
         if (end != null) {
-            RedisRequests.writeRequestArgument(buffer, end);
+            writeRequestArgument(buffer, end);
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.BITCOUNT, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
@@ -195,7 +197,7 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
             }
         }
         final int len = 2 + collectionLen;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
         int operationsCapacity = 0;
         if (operations instanceof List && operations instanceof RandomAccess) {
             final List<RedisProtocolSupport.BitfieldOperation> list = (List<RedisProtocolSupport.BitfieldOperation>) operations;
@@ -211,9 +213,9 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.BITFIELD) +
                     calculateRequestArgumentSize(keyBytes) + operationsCapacity;
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.BITFIELD.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
+        writeRequestArgument(buffer, key, keyBytes);
         if (operations instanceof List && operations instanceof RandomAccess) {
             final List<RedisProtocolSupport.BitfieldOperation> list = (List<RedisProtocolSupport.BitfieldOperation>) operations;
             for (int i = 0; i < list.size(); ++i) {
@@ -238,18 +240,18 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(destkey);
         requireNonNull(key);
         final int len = 4;
-        final byte[] operationBytes = operation.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] destkeyBytes = destkey.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
+        final int operationBytes = numberOfBytesUtf8(operation);
+        final int destkeyBytes = numberOfBytesUtf8(destkey);
+        final int keyBytes = numberOfBytesUtf8(key);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.BITOP) +
                     calculateRequestArgumentSize(operationBytes) + calculateRequestArgumentSize(destkeyBytes) +
                     calculateRequestArgumentSize(keyBytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.BITOP.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, operationBytes);
-        RedisRequests.writeRequestArgument(buffer, destkeyBytes);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
+        writeRequestArgument(buffer, operation, operationBytes);
+        writeRequestArgument(buffer, destkey, destkeyBytes);
+        writeRequestArgument(buffer, key, keyBytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.BITOP, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
@@ -265,20 +267,20 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(key1);
         requireNonNull(key2);
         final int len = 5;
-        final byte[] operationBytes = operation.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] destkeyBytes = destkey.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] key1Bytes = key1.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] key2Bytes = key2.toString().getBytes(StandardCharsets.UTF_8);
+        final int operationBytes = numberOfBytesUtf8(operation);
+        final int destkeyBytes = numberOfBytesUtf8(destkey);
+        final int key1Bytes = numberOfBytesUtf8(key1);
+        final int key2Bytes = numberOfBytesUtf8(key2);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.BITOP) +
                     calculateRequestArgumentSize(operationBytes) + calculateRequestArgumentSize(destkeyBytes) +
                     calculateRequestArgumentSize(key1Bytes) + calculateRequestArgumentSize(key2Bytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.BITOP.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, operationBytes);
-        RedisRequests.writeRequestArgument(buffer, destkeyBytes);
-        RedisRequests.writeRequestArgument(buffer, key1Bytes);
-        RedisRequests.writeRequestArgument(buffer, key2Bytes);
+        writeRequestArgument(buffer, operation, operationBytes);
+        writeRequestArgument(buffer, destkey, destkeyBytes);
+        writeRequestArgument(buffer, key1, key1Bytes);
+        writeRequestArgument(buffer, key2, key2Bytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.BITOP, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
@@ -296,23 +298,23 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(key2);
         requireNonNull(key3);
         final int len = 6;
-        final byte[] operationBytes = operation.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] destkeyBytes = destkey.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] key1Bytes = key1.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] key2Bytes = key2.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] key3Bytes = key3.toString().getBytes(StandardCharsets.UTF_8);
+        final int operationBytes = numberOfBytesUtf8(operation);
+        final int destkeyBytes = numberOfBytesUtf8(destkey);
+        final int key1Bytes = numberOfBytesUtf8(key1);
+        final int key2Bytes = numberOfBytesUtf8(key2);
+        final int key3Bytes = numberOfBytesUtf8(key3);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.BITOP) +
                     calculateRequestArgumentSize(operationBytes) + calculateRequestArgumentSize(destkeyBytes) +
                     calculateRequestArgumentSize(key1Bytes) + calculateRequestArgumentSize(key2Bytes) +
                     calculateRequestArgumentSize(key3Bytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.BITOP.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, operationBytes);
-        RedisRequests.writeRequestArgument(buffer, destkeyBytes);
-        RedisRequests.writeRequestArgument(buffer, key1Bytes);
-        RedisRequests.writeRequestArgument(buffer, key2Bytes);
-        RedisRequests.writeRequestArgument(buffer, key3Bytes);
+        writeRequestArgument(buffer, operation, operationBytes);
+        writeRequestArgument(buffer, destkey, destkeyBytes);
+        writeRequestArgument(buffer, key1, key1Bytes);
+        writeRequestArgument(buffer, key2, key2Bytes);
+        writeRequestArgument(buffer, key3, key3Bytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.BITOP, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
@@ -326,8 +328,8 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(destkey);
         requireNonNull(keys);
         final int len = 3 + keys.size();
-        final byte[] operationBytes = operation.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] destkeyBytes = destkey.toString().getBytes(StandardCharsets.UTF_8);
+        final int operationBytes = numberOfBytesUtf8(operation);
+        final int destkeyBytes = numberOfBytesUtf8(destkey);
         int keysCapacity = 0;
         if (keys instanceof List && keys instanceof RandomAccess) {
             final List<CharSequence> list = (List<CharSequence>) keys;
@@ -344,19 +346,19 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
                     calculateRequestArgumentSize(operationBytes) + calculateRequestArgumentSize(destkeyBytes) +
                     keysCapacity;
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.BITOP.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, operationBytes);
-        RedisRequests.writeRequestArgument(buffer, destkeyBytes);
+        writeRequestArgument(buffer, operation, operationBytes);
+        writeRequestArgument(buffer, destkey, destkeyBytes);
         if (keys instanceof List && keys instanceof RandomAccess) {
             final List<CharSequence> list = (List<CharSequence>) keys;
             for (int i = 0; i < list.size(); ++i) {
                 final CharSequence arg = list.get(i);
-                RedisRequests.writeRequestArgument(buffer, arg);
+                writeRequestArgument(buffer, arg);
             }
         } else {
             for (CharSequence arg : keys) {
-                RedisRequests.writeRequestArgument(buffer, arg);
+                writeRequestArgument(buffer, arg);
             }
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.BITOP, buffer);
@@ -369,14 +371,14 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
     public Future<Long> bitpos(@RedisProtocolSupport.Key final CharSequence key, final long bit) {
         requireNonNull(key);
         final int len = 3;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.BITPOS) +
                     calculateRequestArgumentSize(keyBytes) + calculateRequestArgumentSize(bit);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.BITPOS.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
-        RedisRequests.writeRequestArgument(buffer, bit);
+        writeRequestArgument(buffer, key, keyBytes);
+        writeRequestArgument(buffer, bit);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.BITPOS, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
@@ -388,21 +390,21 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
                                @Nullable final Long start, @Nullable final Long end) {
         requireNonNull(key);
         final int len = 3 + (start == null ? 0 : 1) + (end == null ? 0 : 1);
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.BITPOS) +
                     calculateRequestArgumentSize(keyBytes) + calculateRequestArgumentSize(bit) +
                     (start == null ? 0 : calculateRequestArgumentSize(start)) +
                     (end == null ? 0 : calculateRequestArgumentSize(end));
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.BITPOS.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
-        RedisRequests.writeRequestArgument(buffer, bit);
+        writeRequestArgument(buffer, key, keyBytes);
+        writeRequestArgument(buffer, bit);
         if (start != null) {
-            RedisRequests.writeRequestArgument(buffer, start);
+            writeRequestArgument(buffer, start);
         }
         if (end != null) {
-            RedisRequests.writeRequestArgument(buffer, end);
+            writeRequestArgument(buffer, end);
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.BITPOS, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
@@ -430,20 +432,20 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.BLPOP) + keysCapacity +
                     calculateRequestArgumentSize(timeout);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.BLPOP.encodeTo(buffer);
         if (keys instanceof List && keys instanceof RandomAccess) {
             final List<CharSequence> list = (List<CharSequence>) keys;
             for (int i = 0; i < list.size(); ++i) {
                 final CharSequence arg = list.get(i);
-                RedisRequests.writeRequestArgument(buffer, arg);
+                writeRequestArgument(buffer, arg);
             }
         } else {
             for (CharSequence arg : keys) {
-                RedisRequests.writeRequestArgument(buffer, arg);
+                writeRequestArgument(buffer, arg);
             }
         }
-        RedisRequests.writeRequestArgument(buffer, timeout);
+        writeRequestArgument(buffer, timeout);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.BLPOP, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
@@ -470,20 +472,20 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.BRPOP) + keysCapacity +
                     calculateRequestArgumentSize(timeout);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.BRPOP.encodeTo(buffer);
         if (keys instanceof List && keys instanceof RandomAccess) {
             final List<CharSequence> list = (List<CharSequence>) keys;
             for (int i = 0; i < list.size(); ++i) {
                 final CharSequence arg = list.get(i);
-                RedisRequests.writeRequestArgument(buffer, arg);
+                writeRequestArgument(buffer, arg);
             }
         } else {
             for (CharSequence arg : keys) {
-                RedisRequests.writeRequestArgument(buffer, arg);
+                writeRequestArgument(buffer, arg);
             }
         }
-        RedisRequests.writeRequestArgument(buffer, timeout);
+        writeRequestArgument(buffer, timeout);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.BRPOP, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
@@ -496,17 +498,17 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(source);
         requireNonNull(destination);
         final int len = 4;
-        final byte[] sourceBytes = source.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] destinationBytes = destination.toString().getBytes(StandardCharsets.UTF_8);
+        final int sourceBytes = numberOfBytesUtf8(source);
+        final int destinationBytes = numberOfBytesUtf8(destination);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.BRPOPLPUSH) +
                     calculateRequestArgumentSize(sourceBytes) + calculateRequestArgumentSize(destinationBytes) +
                     calculateRequestArgumentSize(timeout);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.BRPOPLPUSH.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, sourceBytes);
-        RedisRequests.writeRequestArgument(buffer, destinationBytes);
-        RedisRequests.writeRequestArgument(buffer, timeout);
+        writeRequestArgument(buffer, source, sourceBytes);
+        writeRequestArgument(buffer, destination, destinationBytes);
+        writeRequestArgument(buffer, timeout);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.BRPOPLPUSH, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<String> result = enqueueForExecute(state, singles, queued);
@@ -533,20 +535,20 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.BZPOPMAX) +
                     keysCapacity + calculateRequestArgumentSize(timeout);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.BZPOPMAX.encodeTo(buffer);
         if (keys instanceof List && keys instanceof RandomAccess) {
             final List<CharSequence> list = (List<CharSequence>) keys;
             for (int i = 0; i < list.size(); ++i) {
                 final CharSequence arg = list.get(i);
-                RedisRequests.writeRequestArgument(buffer, arg);
+                writeRequestArgument(buffer, arg);
             }
         } else {
             for (CharSequence arg : keys) {
-                RedisRequests.writeRequestArgument(buffer, arg);
+                writeRequestArgument(buffer, arg);
             }
         }
-        RedisRequests.writeRequestArgument(buffer, timeout);
+        writeRequestArgument(buffer, timeout);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.BZPOPMAX, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
@@ -573,20 +575,20 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.BZPOPMIN) +
                     keysCapacity + calculateRequestArgumentSize(timeout);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.BZPOPMIN.encodeTo(buffer);
         if (keys instanceof List && keys instanceof RandomAccess) {
             final List<CharSequence> list = (List<CharSequence>) keys;
             for (int i = 0; i < list.size(); ++i) {
                 final CharSequence arg = list.get(i);
-                RedisRequests.writeRequestArgument(buffer, arg);
+                writeRequestArgument(buffer, arg);
             }
         } else {
             for (CharSequence arg : keys) {
-                RedisRequests.writeRequestArgument(buffer, arg);
+                writeRequestArgument(buffer, arg);
             }
         }
-        RedisRequests.writeRequestArgument(buffer, timeout);
+        writeRequestArgument(buffer, timeout);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.BZPOPMIN, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
@@ -598,10 +600,8 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
                                    @Nullable final CharSequence addrIpPort, @Nullable final CharSequence skipmeYesNo) {
         final int len = 2 + (id == null ? 0 : 2) + (type == null ? 0 : 1) + (addrIpPort == null ? 0 : 2) +
                     (skipmeYesNo == null ? 0 : 2);
-        final byte[] addrIpPortBytes = addrIpPort == null ? null
-                    : addrIpPort.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] skipmeYesNoBytes = skipmeYesNo == null ? null
-                    : skipmeYesNo.toString().getBytes(StandardCharsets.UTF_8);
+        final int addrIpPortBytes = addrIpPort == null ? 0 : numberOfBytesUtf8(addrIpPort);
+        final int skipmeYesNoBytes = skipmeYesNo == null ? 0 : numberOfBytesUtf8(skipmeYesNo);
         final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.CLIENT) +
                     (id == null ? 0 : RedisProtocolSupport.SubCommand.ID.encodedByteCount()) +
                     (id == null ? 0 : calculateRequestArgumentSize(id)) + (type == null ? 0 : type.encodedByteCount()) +
@@ -610,23 +610,23 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
                     (skipmeYesNo == null ? 0 : RedisProtocolSupport.SubCommand.SKIPME.encodedByteCount()) +
                     (skipmeYesNo == null ? 0 : calculateRequestArgumentSize(skipmeYesNoBytes));
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.CLIENT.encodeTo(buffer);
         RedisProtocolSupport.SubCommand.KILL.encodeTo(buffer);
         if (id != null) {
             RedisProtocolSupport.SubCommand.ID.encodeTo(buffer);
-            RedisRequests.writeRequestArgument(buffer, id);
+            writeRequestArgument(buffer, id);
         }
         if (type != null) {
             type.encodeTo(buffer);
         }
         if (addrIpPort != null) {
             RedisProtocolSupport.SubCommand.ADDR.encodeTo(buffer);
-            RedisRequests.writeRequestArgument(buffer, addrIpPortBytes);
+            writeRequestArgument(buffer, addrIpPort, addrIpPortBytes);
         }
         if (skipmeYesNo != null) {
             RedisProtocolSupport.SubCommand.SKIPME.encodeTo(buffer);
-            RedisRequests.writeRequestArgument(buffer, skipmeYesNoBytes);
+            writeRequestArgument(buffer, skipmeYesNo, skipmeYesNoBytes);
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLIENT, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
@@ -639,7 +639,7 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         final int len = 2;
         final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.CLIENT);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.CLIENT.encodeTo(buffer);
         RedisProtocolSupport.SubCommand.LIST.encodeTo(buffer);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLIENT, buffer);
@@ -653,7 +653,7 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         final int len = 2;
         final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.CLIENT);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.CLIENT.encodeTo(buffer);
         RedisProtocolSupport.SubCommand.GETNAME.encodeTo(buffer);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLIENT, buffer);
@@ -668,10 +668,10 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.CLIENT) +
                     calculateRequestArgumentSize(timeout);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.CLIENT.encodeTo(buffer);
         RedisProtocolSupport.SubCommand.PAUSE.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, timeout);
+        writeRequestArgument(buffer, timeout);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLIENT, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<String> result = enqueueForExecute(state, singles, queued);
@@ -685,7 +685,7 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.CLIENT) +
                     replyMode.encodedByteCount();
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.CLIENT.encodeTo(buffer);
         RedisProtocolSupport.SubCommand.REPLY.encodeTo(buffer);
         replyMode.encodeTo(buffer);
@@ -699,14 +699,14 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
     public Future<String> clientSetname(final CharSequence connectionName) {
         requireNonNull(connectionName);
         final int len = 3;
-        final byte[] connectionNameBytes = connectionName.toString().getBytes(StandardCharsets.UTF_8);
+        final int connectionNameBytes = numberOfBytesUtf8(connectionName);
         final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.CLIENT) +
                     calculateRequestArgumentSize(connectionNameBytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.CLIENT.encodeTo(buffer);
         RedisProtocolSupport.SubCommand.SETNAME.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, connectionNameBytes);
+        writeRequestArgument(buffer, connectionName, connectionNameBytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLIENT, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<String> result = enqueueForExecute(state, singles, queued);
@@ -719,10 +719,10 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.CLUSTER) +
                     calculateRequestArgumentSize(slot);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.CLUSTER.encodeTo(buffer);
         RedisProtocolSupport.SubCommand.ADDSLOTS.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, slot);
+        writeRequestArgument(buffer, slot);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<String> result = enqueueForExecute(state, singles, queued);
@@ -735,11 +735,11 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.CLUSTER) +
                     calculateRequestArgumentSize(slot1) + calculateRequestArgumentSize(slot2);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.CLUSTER.encodeTo(buffer);
         RedisProtocolSupport.SubCommand.ADDSLOTS.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, slot1);
-        RedisRequests.writeRequestArgument(buffer, slot2);
+        writeRequestArgument(buffer, slot1);
+        writeRequestArgument(buffer, slot2);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<String> result = enqueueForExecute(state, singles, queued);
@@ -753,12 +753,12 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
                     calculateRequestArgumentSize(slot1) + calculateRequestArgumentSize(slot2) +
                     calculateRequestArgumentSize(slot3);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.CLUSTER.encodeTo(buffer);
         RedisProtocolSupport.SubCommand.ADDSLOTS.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, slot1);
-        RedisRequests.writeRequestArgument(buffer, slot2);
-        RedisRequests.writeRequestArgument(buffer, slot3);
+        writeRequestArgument(buffer, slot1);
+        writeRequestArgument(buffer, slot2);
+        writeRequestArgument(buffer, slot3);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<String> result = enqueueForExecute(state, singles, queued);
@@ -784,18 +784,18 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.CLUSTER) +
                     slotsCapacity;
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.CLUSTER.encodeTo(buffer);
         RedisProtocolSupport.SubCommand.ADDSLOTS.encodeTo(buffer);
         if (slots instanceof List && slots instanceof RandomAccess) {
             final List<Long> list = (List<Long>) slots;
             for (int i = 0; i < list.size(); ++i) {
                 final Long arg = list.get(i);
-                RedisRequests.writeRequestArgument(buffer, arg);
+                writeRequestArgument(buffer, arg);
             }
         } else {
             for (Long arg : slots) {
-                RedisRequests.writeRequestArgument(buffer, arg);
+                writeRequestArgument(buffer, arg);
             }
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, buffer);
@@ -808,14 +808,14 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
     public Future<Long> clusterCountFailureReports(final CharSequence nodeId) {
         requireNonNull(nodeId);
         final int len = 3;
-        final byte[] nodeIdBytes = nodeId.toString().getBytes(StandardCharsets.UTF_8);
+        final int nodeIdBytes = numberOfBytesUtf8(nodeId);
         final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.CLUSTER) +
                     calculateRequestArgumentSize(nodeIdBytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.CLUSTER.encodeTo(buffer);
         RedisProtocolSupport.SubCommand.COUNT_FAILURE_REPORTS.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, nodeIdBytes);
+        writeRequestArgument(buffer, nodeId, nodeIdBytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
@@ -828,10 +828,10 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.CLUSTER) +
                     calculateRequestArgumentSize(slot);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.CLUSTER.encodeTo(buffer);
         RedisProtocolSupport.SubCommand.COUNTKEYSINSLOT.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, slot);
+        writeRequestArgument(buffer, slot);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
@@ -844,10 +844,10 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.CLUSTER) +
                     calculateRequestArgumentSize(slot);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.CLUSTER.encodeTo(buffer);
         RedisProtocolSupport.SubCommand.DELSLOTS.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, slot);
+        writeRequestArgument(buffer, slot);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<String> result = enqueueForExecute(state, singles, queued);
@@ -860,11 +860,11 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.CLUSTER) +
                     calculateRequestArgumentSize(slot1) + calculateRequestArgumentSize(slot2);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.CLUSTER.encodeTo(buffer);
         RedisProtocolSupport.SubCommand.DELSLOTS.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, slot1);
-        RedisRequests.writeRequestArgument(buffer, slot2);
+        writeRequestArgument(buffer, slot1);
+        writeRequestArgument(buffer, slot2);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<String> result = enqueueForExecute(state, singles, queued);
@@ -878,12 +878,12 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
                     calculateRequestArgumentSize(slot1) + calculateRequestArgumentSize(slot2) +
                     calculateRequestArgumentSize(slot3);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.CLUSTER.encodeTo(buffer);
         RedisProtocolSupport.SubCommand.DELSLOTS.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, slot1);
-        RedisRequests.writeRequestArgument(buffer, slot2);
-        RedisRequests.writeRequestArgument(buffer, slot3);
+        writeRequestArgument(buffer, slot1);
+        writeRequestArgument(buffer, slot2);
+        writeRequestArgument(buffer, slot3);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<String> result = enqueueForExecute(state, singles, queued);
@@ -909,18 +909,18 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.CLUSTER) +
                     slotsCapacity;
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.CLUSTER.encodeTo(buffer);
         RedisProtocolSupport.SubCommand.DELSLOTS.encodeTo(buffer);
         if (slots instanceof List && slots instanceof RandomAccess) {
             final List<Long> list = (List<Long>) slots;
             for (int i = 0; i < list.size(); ++i) {
                 final Long arg = list.get(i);
-                RedisRequests.writeRequestArgument(buffer, arg);
+                writeRequestArgument(buffer, arg);
             }
         } else {
             for (Long arg : slots) {
-                RedisRequests.writeRequestArgument(buffer, arg);
+                writeRequestArgument(buffer, arg);
             }
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, buffer);
@@ -934,7 +934,7 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         final int len = 2;
         final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.CLUSTER);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.CLUSTER.encodeTo(buffer);
         RedisProtocolSupport.SubCommand.FAILOVER.encodeTo(buffer);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, buffer);
@@ -949,7 +949,7 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.CLUSTER) +
                     (options == null ? 0 : options.encodedByteCount());
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.CLUSTER.encodeTo(buffer);
         RedisProtocolSupport.SubCommand.FAILOVER.encodeTo(buffer);
         if (options != null) {
@@ -965,14 +965,14 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
     public Future<String> clusterForget(final CharSequence nodeId) {
         requireNonNull(nodeId);
         final int len = 3;
-        final byte[] nodeIdBytes = nodeId.toString().getBytes(StandardCharsets.UTF_8);
+        final int nodeIdBytes = numberOfBytesUtf8(nodeId);
         final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.CLUSTER) +
                     calculateRequestArgumentSize(nodeIdBytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.CLUSTER.encodeTo(buffer);
         RedisProtocolSupport.SubCommand.FORGET.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, nodeIdBytes);
+        writeRequestArgument(buffer, nodeId, nodeIdBytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<String> result = enqueueForExecute(state, singles, queued);
@@ -985,11 +985,11 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.CLUSTER) +
                     calculateRequestArgumentSize(slot) + calculateRequestArgumentSize(count);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.CLUSTER.encodeTo(buffer);
         RedisProtocolSupport.SubCommand.GETKEYSINSLOT.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, slot);
-        RedisRequests.writeRequestArgument(buffer, count);
+        writeRequestArgument(buffer, slot);
+        writeRequestArgument(buffer, count);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
@@ -1001,7 +1001,7 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         final int len = 2;
         final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.CLUSTER);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.CLUSTER.encodeTo(buffer);
         RedisProtocolSupport.SubCommand.INFO.encodeTo(buffer);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, buffer);
@@ -1014,14 +1014,14 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
     public Future<Long> clusterKeyslot(final CharSequence key) {
         requireNonNull(key);
         final int len = 3;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
         final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.CLUSTER) +
                     calculateRequestArgumentSize(keyBytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.CLUSTER.encodeTo(buffer);
         RedisProtocolSupport.SubCommand.KEYSLOT.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
+        writeRequestArgument(buffer, key, keyBytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
@@ -1032,15 +1032,15 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
     public Future<String> clusterMeet(final CharSequence ip, final long port) {
         requireNonNull(ip);
         final int len = 4;
-        final byte[] ipBytes = ip.toString().getBytes(StandardCharsets.UTF_8);
+        final int ipBytes = numberOfBytesUtf8(ip);
         final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.CLUSTER) +
                     calculateRequestArgumentSize(ipBytes) + calculateRequestArgumentSize(port);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.CLUSTER.encodeTo(buffer);
         RedisProtocolSupport.SubCommand.MEET.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, ipBytes);
-        RedisRequests.writeRequestArgument(buffer, port);
+        writeRequestArgument(buffer, ip, ipBytes);
+        writeRequestArgument(buffer, port);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<String> result = enqueueForExecute(state, singles, queued);
@@ -1052,7 +1052,7 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         final int len = 2;
         final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.CLUSTER);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.CLUSTER.encodeTo(buffer);
         RedisProtocolSupport.SubCommand.NODES.encodeTo(buffer);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, buffer);
@@ -1065,14 +1065,14 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
     public Future<String> clusterReplicate(final CharSequence nodeId) {
         requireNonNull(nodeId);
         final int len = 3;
-        final byte[] nodeIdBytes = nodeId.toString().getBytes(StandardCharsets.UTF_8);
+        final int nodeIdBytes = numberOfBytesUtf8(nodeId);
         final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.CLUSTER) +
                     calculateRequestArgumentSize(nodeIdBytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.CLUSTER.encodeTo(buffer);
         RedisProtocolSupport.SubCommand.REPLICATE.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, nodeIdBytes);
+        writeRequestArgument(buffer, nodeId, nodeIdBytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<String> result = enqueueForExecute(state, singles, queued);
@@ -1084,7 +1084,7 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         final int len = 2;
         final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.CLUSTER);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.CLUSTER.encodeTo(buffer);
         RedisProtocolSupport.SubCommand.RESET.encodeTo(buffer);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, buffer);
@@ -1099,7 +1099,7 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.CLUSTER) +
                     (resetType == null ? 0 : resetType.encodedByteCount());
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.CLUSTER.encodeTo(buffer);
         RedisProtocolSupport.SubCommand.RESET.encodeTo(buffer);
         if (resetType != null) {
@@ -1116,7 +1116,7 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         final int len = 2;
         final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.CLUSTER);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.CLUSTER.encodeTo(buffer);
         RedisProtocolSupport.SubCommand.SAVECONFIG.encodeTo(buffer);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, buffer);
@@ -1131,10 +1131,10 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.CLUSTER) +
                     calculateRequestArgumentSize(configEpoch);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.CLUSTER.encodeTo(buffer);
         RedisProtocolSupport.SubCommand.SET_CONFIG_EPOCH.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, configEpoch);
+        writeRequestArgument(buffer, configEpoch);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<String> result = enqueueForExecute(state, singles, queued);
@@ -1149,10 +1149,10 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.CLUSTER) +
                     calculateRequestArgumentSize(slot) + subcommand.encodedByteCount();
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.CLUSTER.encodeTo(buffer);
         RedisProtocolSupport.SubCommand.SETSLOT.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, slot);
+        writeRequestArgument(buffer, slot);
         subcommand.encodeTo(buffer);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
@@ -1166,18 +1166,18 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
                                          @Nullable final CharSequence nodeId) {
         requireNonNull(subcommand);
         final int len = 4 + (nodeId == null ? 0 : 1);
-        final byte[] nodeIdBytes = nodeId == null ? null : nodeId.toString().getBytes(StandardCharsets.UTF_8);
+        final int nodeIdBytes = nodeId == null ? 0 : numberOfBytesUtf8(nodeId);
         final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.CLUSTER) +
                     calculateRequestArgumentSize(slot) + subcommand.encodedByteCount() +
                     (nodeId == null ? 0 : calculateRequestArgumentSize(nodeIdBytes));
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.CLUSTER.encodeTo(buffer);
         RedisProtocolSupport.SubCommand.SETSLOT.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, slot);
+        writeRequestArgument(buffer, slot);
         subcommand.encodeTo(buffer);
         if (nodeId != null) {
-            RedisRequests.writeRequestArgument(buffer, nodeIdBytes);
+            writeRequestArgument(buffer, nodeId, nodeIdBytes);
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
@@ -1189,14 +1189,14 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
     public Future<String> clusterSlaves(final CharSequence nodeId) {
         requireNonNull(nodeId);
         final int len = 3;
-        final byte[] nodeIdBytes = nodeId.toString().getBytes(StandardCharsets.UTF_8);
+        final int nodeIdBytes = numberOfBytesUtf8(nodeId);
         final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.CLUSTER) +
                     calculateRequestArgumentSize(nodeIdBytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.CLUSTER.encodeTo(buffer);
         RedisProtocolSupport.SubCommand.SLAVES.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, nodeIdBytes);
+        writeRequestArgument(buffer, nodeId, nodeIdBytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<String> result = enqueueForExecute(state, singles, queued);
@@ -1208,7 +1208,7 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         final int len = 2;
         final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.CLUSTER);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.CLUSTER.encodeTo(buffer);
         RedisProtocolSupport.SubCommand.SLOTS.encodeTo(buffer);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, buffer);
@@ -1222,7 +1222,7 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         final int len = 1;
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.COMMAND);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.COMMAND.encodeTo(buffer);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.COMMAND, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
@@ -1235,7 +1235,7 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         final int len = 2;
         final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.COMMAND);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.COMMAND.encodeTo(buffer);
         RedisProtocolSupport.SubCommand.COUNT.encodeTo(buffer);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.COMMAND, buffer);
@@ -1249,7 +1249,7 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         final int len = 2;
         final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.COMMAND);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.COMMAND.encodeTo(buffer);
         RedisProtocolSupport.SubCommand.GETKEYS.encodeTo(buffer);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.COMMAND, buffer);
@@ -1262,14 +1262,14 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
     public <T> Future<List<T>> commandInfo(final CharSequence commandName) {
         requireNonNull(commandName);
         final int len = 3;
-        final byte[] commandNameBytes = commandName.toString().getBytes(StandardCharsets.UTF_8);
+        final int commandNameBytes = numberOfBytesUtf8(commandName);
         final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.COMMAND) +
                     calculateRequestArgumentSize(commandNameBytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.COMMAND.encodeTo(buffer);
         RedisProtocolSupport.SubCommand.INFO.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, commandNameBytes);
+        writeRequestArgument(buffer, commandName, commandNameBytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.COMMAND, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
@@ -1281,16 +1281,16 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(commandName1);
         requireNonNull(commandName2);
         final int len = 4;
-        final byte[] commandName1Bytes = commandName1.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] commandName2Bytes = commandName2.toString().getBytes(StandardCharsets.UTF_8);
+        final int commandName1Bytes = numberOfBytesUtf8(commandName1);
+        final int commandName2Bytes = numberOfBytesUtf8(commandName2);
         final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.COMMAND) +
                     calculateRequestArgumentSize(commandName1Bytes) + calculateRequestArgumentSize(commandName2Bytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.COMMAND.encodeTo(buffer);
         RedisProtocolSupport.SubCommand.INFO.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, commandName1Bytes);
-        RedisRequests.writeRequestArgument(buffer, commandName2Bytes);
+        writeRequestArgument(buffer, commandName1, commandName1Bytes);
+        writeRequestArgument(buffer, commandName2, commandName2Bytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.COMMAND, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
@@ -1304,19 +1304,19 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(commandName2);
         requireNonNull(commandName3);
         final int len = 5;
-        final byte[] commandName1Bytes = commandName1.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] commandName2Bytes = commandName2.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] commandName3Bytes = commandName3.toString().getBytes(StandardCharsets.UTF_8);
+        final int commandName1Bytes = numberOfBytesUtf8(commandName1);
+        final int commandName2Bytes = numberOfBytesUtf8(commandName2);
+        final int commandName3Bytes = numberOfBytesUtf8(commandName3);
         final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.COMMAND) +
                     calculateRequestArgumentSize(commandName1Bytes) + calculateRequestArgumentSize(commandName2Bytes) +
                     calculateRequestArgumentSize(commandName3Bytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.COMMAND.encodeTo(buffer);
         RedisProtocolSupport.SubCommand.INFO.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, commandName1Bytes);
-        RedisRequests.writeRequestArgument(buffer, commandName2Bytes);
-        RedisRequests.writeRequestArgument(buffer, commandName3Bytes);
+        writeRequestArgument(buffer, commandName1, commandName1Bytes);
+        writeRequestArgument(buffer, commandName2, commandName2Bytes);
+        writeRequestArgument(buffer, commandName3, commandName3Bytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.COMMAND, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
@@ -1342,18 +1342,18 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.COMMAND) +
                     commandNamesCapacity;
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.COMMAND.encodeTo(buffer);
         RedisProtocolSupport.SubCommand.INFO.encodeTo(buffer);
         if (commandNames instanceof List && commandNames instanceof RandomAccess) {
             final List<CharSequence> list = (List<CharSequence>) commandNames;
             for (int i = 0; i < list.size(); ++i) {
                 final CharSequence arg = list.get(i);
-                RedisRequests.writeRequestArgument(buffer, arg);
+                writeRequestArgument(buffer, arg);
             }
         } else {
             for (CharSequence arg : commandNames) {
-                RedisRequests.writeRequestArgument(buffer, arg);
+                writeRequestArgument(buffer, arg);
             }
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.COMMAND, buffer);
@@ -1366,14 +1366,14 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
     public <T> Future<List<T>> configGet(final CharSequence parameter) {
         requireNonNull(parameter);
         final int len = 3;
-        final byte[] parameterBytes = parameter.toString().getBytes(StandardCharsets.UTF_8);
+        final int parameterBytes = numberOfBytesUtf8(parameter);
         final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.CONFIG) +
                     calculateRequestArgumentSize(parameterBytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.CONFIG.encodeTo(buffer);
         RedisProtocolSupport.SubCommand.GET.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, parameterBytes);
+        writeRequestArgument(buffer, parameter, parameterBytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CONFIG, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
@@ -1385,7 +1385,7 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         final int len = 2;
         final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.CONFIG);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.CONFIG.encodeTo(buffer);
         RedisProtocolSupport.SubCommand.REWRITE.encodeTo(buffer);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CONFIG, buffer);
@@ -1399,16 +1399,16 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(parameter);
         requireNonNull(value);
         final int len = 4;
-        final byte[] parameterBytes = parameter.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] valueBytes = value.toString().getBytes(StandardCharsets.UTF_8);
+        final int parameterBytes = numberOfBytesUtf8(parameter);
+        final int valueBytes = numberOfBytesUtf8(value);
         final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.CONFIG) +
                     calculateRequestArgumentSize(parameterBytes) + calculateRequestArgumentSize(valueBytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.CONFIG.encodeTo(buffer);
         RedisProtocolSupport.SubCommand.SET.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, parameterBytes);
-        RedisRequests.writeRequestArgument(buffer, valueBytes);
+        writeRequestArgument(buffer, parameter, parameterBytes);
+        writeRequestArgument(buffer, value, valueBytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CONFIG, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<String> result = enqueueForExecute(state, singles, queued);
@@ -1420,7 +1420,7 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         final int len = 2;
         final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.CONFIG);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.CONFIG.encodeTo(buffer);
         RedisProtocolSupport.SubCommand.RESETSTAT.encodeTo(buffer);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CONFIG, buffer);
@@ -1434,7 +1434,7 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         final int len = 1;
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.DBSIZE);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.DBSIZE.encodeTo(buffer);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.DBSIZE, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
@@ -1446,14 +1446,14 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
     public Future<String> debugObject(@RedisProtocolSupport.Key final CharSequence key) {
         requireNonNull(key);
         final int len = 3;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
         final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.DEBUG) +
                     calculateRequestArgumentSize(keyBytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.DEBUG.encodeTo(buffer);
         RedisProtocolSupport.SubCommand.OBJECT.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
+        writeRequestArgument(buffer, key, keyBytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.DEBUG, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<String> result = enqueueForExecute(state, singles, queued);
@@ -1465,7 +1465,7 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         final int len = 2;
         final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.DEBUG);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.DEBUG.encodeTo(buffer);
         RedisProtocolSupport.SubCommand.SEGFAULT.encodeTo(buffer);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.DEBUG, buffer);
@@ -1478,13 +1478,13 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
     public Future<Long> decr(@RedisProtocolSupport.Key final CharSequence key) {
         requireNonNull(key);
         final int len = 2;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.DECR) +
                     calculateRequestArgumentSize(keyBytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.DECR.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
+        writeRequestArgument(buffer, key, keyBytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.DECR, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
@@ -1495,14 +1495,14 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
     public Future<Long> decrby(@RedisProtocolSupport.Key final CharSequence key, final long decrement) {
         requireNonNull(key);
         final int len = 3;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.DECRBY) +
                     calculateRequestArgumentSize(keyBytes) + calculateRequestArgumentSize(decrement);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.DECRBY.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
-        RedisRequests.writeRequestArgument(buffer, decrement);
+        writeRequestArgument(buffer, key, keyBytes);
+        writeRequestArgument(buffer, decrement);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.DECRBY, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
@@ -1513,13 +1513,13 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
     public Future<Long> del(@RedisProtocolSupport.Key final CharSequence key) {
         requireNonNull(key);
         final int len = 2;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.DEL) +
                     calculateRequestArgumentSize(keyBytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.DEL.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
+        writeRequestArgument(buffer, key, keyBytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.DEL, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
@@ -1532,15 +1532,15 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(key1);
         requireNonNull(key2);
         final int len = 3;
-        final byte[] key1Bytes = key1.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] key2Bytes = key2.toString().getBytes(StandardCharsets.UTF_8);
+        final int key1Bytes = numberOfBytesUtf8(key1);
+        final int key2Bytes = numberOfBytesUtf8(key2);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.DEL) +
                     calculateRequestArgumentSize(key1Bytes) + calculateRequestArgumentSize(key2Bytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.DEL.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, key1Bytes);
-        RedisRequests.writeRequestArgument(buffer, key2Bytes);
+        writeRequestArgument(buffer, key1, key1Bytes);
+        writeRequestArgument(buffer, key2, key2Bytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.DEL, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
@@ -1555,18 +1555,18 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(key2);
         requireNonNull(key3);
         final int len = 4;
-        final byte[] key1Bytes = key1.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] key2Bytes = key2.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] key3Bytes = key3.toString().getBytes(StandardCharsets.UTF_8);
+        final int key1Bytes = numberOfBytesUtf8(key1);
+        final int key2Bytes = numberOfBytesUtf8(key2);
+        final int key3Bytes = numberOfBytesUtf8(key3);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.DEL) +
                     calculateRequestArgumentSize(key1Bytes) + calculateRequestArgumentSize(key2Bytes) +
                     calculateRequestArgumentSize(key3Bytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.DEL.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, key1Bytes);
-        RedisRequests.writeRequestArgument(buffer, key2Bytes);
-        RedisRequests.writeRequestArgument(buffer, key3Bytes);
+        writeRequestArgument(buffer, key1, key1Bytes);
+        writeRequestArgument(buffer, key2, key2Bytes);
+        writeRequestArgument(buffer, key3, key3Bytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.DEL, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
@@ -1591,17 +1591,17 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         }
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.DEL) + keysCapacity;
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.DEL.encodeTo(buffer);
         if (keys instanceof List && keys instanceof RandomAccess) {
             final List<CharSequence> list = (List<CharSequence>) keys;
             for (int i = 0; i < list.size(); ++i) {
                 final CharSequence arg = list.get(i);
-                RedisRequests.writeRequestArgument(buffer, arg);
+                writeRequestArgument(buffer, arg);
             }
         } else {
             for (CharSequence arg : keys) {
-                RedisRequests.writeRequestArgument(buffer, arg);
+                writeRequestArgument(buffer, arg);
             }
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.DEL, buffer);
@@ -1615,7 +1615,7 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         final int len = 1;
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.DISCARD);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.DISCARD.encodeTo(buffer);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.DISCARD, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
@@ -1628,13 +1628,13 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
     public Future<String> dump(@RedisProtocolSupport.Key final CharSequence key) {
         requireNonNull(key);
         final int len = 2;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.DUMP) +
                     calculateRequestArgumentSize(keyBytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.DUMP.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
+        writeRequestArgument(buffer, key, keyBytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.DUMP, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<String> result = enqueueForExecute(state, singles, queued);
@@ -1645,13 +1645,13 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
     public Future<String> echo(final CharSequence message) {
         requireNonNull(message);
         final int len = 2;
-        final byte[] messageBytes = message.toString().getBytes(StandardCharsets.UTF_8);
+        final int messageBytes = numberOfBytesUtf8(message);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.ECHO) +
                     calculateRequestArgumentSize(messageBytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.ECHO.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, messageBytes);
+        writeRequestArgument(buffer, message, messageBytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ECHO, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<String> result = enqueueForExecute(state, singles, queued);
@@ -1666,7 +1666,7 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(keys);
         requireNonNull(args);
         final int len = 3 + keys.size() + args.size();
-        final byte[] scriptBytes = script.toString().getBytes(StandardCharsets.UTF_8);
+        final int scriptBytes = numberOfBytesUtf8(script);
         int keysCapacity = 0;
         if (keys instanceof List && keys instanceof RandomAccess) {
             final List<CharSequence> list = (List<CharSequence>) keys;
@@ -1695,30 +1695,30 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
                     calculateRequestArgumentSize(scriptBytes) + calculateRequestArgumentSize(numkeys) + keysCapacity +
                     argsCapacity;
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.EVAL.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, scriptBytes);
-        RedisRequests.writeRequestArgument(buffer, numkeys);
+        writeRequestArgument(buffer, script, scriptBytes);
+        writeRequestArgument(buffer, numkeys);
         if (keys instanceof List && keys instanceof RandomAccess) {
             final List<CharSequence> list = (List<CharSequence>) keys;
             for (int i = 0; i < list.size(); ++i) {
                 final CharSequence arg = list.get(i);
-                RedisRequests.writeRequestArgument(buffer, arg);
+                writeRequestArgument(buffer, arg);
             }
         } else {
             for (CharSequence arg : keys) {
-                RedisRequests.writeRequestArgument(buffer, arg);
+                writeRequestArgument(buffer, arg);
             }
         }
         if (args instanceof List && args instanceof RandomAccess) {
             final List<CharSequence> list = (List<CharSequence>) args;
             for (int i = 0; i < list.size(); ++i) {
                 final CharSequence arg = list.get(i);
-                RedisRequests.writeRequestArgument(buffer, arg);
+                writeRequestArgument(buffer, arg);
             }
         } else {
             for (CharSequence arg : args) {
-                RedisRequests.writeRequestArgument(buffer, arg);
+                writeRequestArgument(buffer, arg);
             }
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.EVAL, buffer);
@@ -1735,7 +1735,7 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(keys);
         requireNonNull(args);
         final int len = 3 + keys.size() + args.size();
-        final byte[] scriptBytes = script.toString().getBytes(StandardCharsets.UTF_8);
+        final int scriptBytes = numberOfBytesUtf8(script);
         int keysCapacity = 0;
         if (keys instanceof List && keys instanceof RandomAccess) {
             final List<CharSequence> list = (List<CharSequence>) keys;
@@ -1764,30 +1764,30 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
                     calculateRequestArgumentSize(scriptBytes) + calculateRequestArgumentSize(numkeys) + keysCapacity +
                     argsCapacity;
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.EVAL.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, scriptBytes);
-        RedisRequests.writeRequestArgument(buffer, numkeys);
+        writeRequestArgument(buffer, script, scriptBytes);
+        writeRequestArgument(buffer, numkeys);
         if (keys instanceof List && keys instanceof RandomAccess) {
             final List<CharSequence> list = (List<CharSequence>) keys;
             for (int i = 0; i < list.size(); ++i) {
                 final CharSequence arg = list.get(i);
-                RedisRequests.writeRequestArgument(buffer, arg);
+                writeRequestArgument(buffer, arg);
             }
         } else {
             for (CharSequence arg : keys) {
-                RedisRequests.writeRequestArgument(buffer, arg);
+                writeRequestArgument(buffer, arg);
             }
         }
         if (args instanceof List && args instanceof RandomAccess) {
             final List<CharSequence> list = (List<CharSequence>) args;
             for (int i = 0; i < list.size(); ++i) {
                 final CharSequence arg = list.get(i);
-                RedisRequests.writeRequestArgument(buffer, arg);
+                writeRequestArgument(buffer, arg);
             }
         } else {
             for (CharSequence arg : args) {
-                RedisRequests.writeRequestArgument(buffer, arg);
+                writeRequestArgument(buffer, arg);
             }
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.EVAL, buffer);
@@ -1804,7 +1804,7 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(keys);
         requireNonNull(args);
         final int len = 3 + keys.size() + args.size();
-        final byte[] scriptBytes = script.toString().getBytes(StandardCharsets.UTF_8);
+        final int scriptBytes = numberOfBytesUtf8(script);
         int keysCapacity = 0;
         if (keys instanceof List && keys instanceof RandomAccess) {
             final List<CharSequence> list = (List<CharSequence>) keys;
@@ -1833,30 +1833,30 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
                     calculateRequestArgumentSize(scriptBytes) + calculateRequestArgumentSize(numkeys) + keysCapacity +
                     argsCapacity;
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.EVAL.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, scriptBytes);
-        RedisRequests.writeRequestArgument(buffer, numkeys);
+        writeRequestArgument(buffer, script, scriptBytes);
+        writeRequestArgument(buffer, numkeys);
         if (keys instanceof List && keys instanceof RandomAccess) {
             final List<CharSequence> list = (List<CharSequence>) keys;
             for (int i = 0; i < list.size(); ++i) {
                 final CharSequence arg = list.get(i);
-                RedisRequests.writeRequestArgument(buffer, arg);
+                writeRequestArgument(buffer, arg);
             }
         } else {
             for (CharSequence arg : keys) {
-                RedisRequests.writeRequestArgument(buffer, arg);
+                writeRequestArgument(buffer, arg);
             }
         }
         if (args instanceof List && args instanceof RandomAccess) {
             final List<CharSequence> list = (List<CharSequence>) args;
             for (int i = 0; i < list.size(); ++i) {
                 final CharSequence arg = list.get(i);
-                RedisRequests.writeRequestArgument(buffer, arg);
+                writeRequestArgument(buffer, arg);
             }
         } else {
             for (CharSequence arg : args) {
-                RedisRequests.writeRequestArgument(buffer, arg);
+                writeRequestArgument(buffer, arg);
             }
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.EVAL, buffer);
@@ -1873,7 +1873,7 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(keys);
         requireNonNull(args);
         final int len = 3 + keys.size() + args.size();
-        final byte[] sha1Bytes = sha1.toString().getBytes(StandardCharsets.UTF_8);
+        final int sha1Bytes = numberOfBytesUtf8(sha1);
         int keysCapacity = 0;
         if (keys instanceof List && keys instanceof RandomAccess) {
             final List<CharSequence> list = (List<CharSequence>) keys;
@@ -1902,30 +1902,30 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
                     calculateRequestArgumentSize(sha1Bytes) + calculateRequestArgumentSize(numkeys) + keysCapacity +
                     argsCapacity;
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.EVALSHA.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, sha1Bytes);
-        RedisRequests.writeRequestArgument(buffer, numkeys);
+        writeRequestArgument(buffer, sha1, sha1Bytes);
+        writeRequestArgument(buffer, numkeys);
         if (keys instanceof List && keys instanceof RandomAccess) {
             final List<CharSequence> list = (List<CharSequence>) keys;
             for (int i = 0; i < list.size(); ++i) {
                 final CharSequence arg = list.get(i);
-                RedisRequests.writeRequestArgument(buffer, arg);
+                writeRequestArgument(buffer, arg);
             }
         } else {
             for (CharSequence arg : keys) {
-                RedisRequests.writeRequestArgument(buffer, arg);
+                writeRequestArgument(buffer, arg);
             }
         }
         if (args instanceof List && args instanceof RandomAccess) {
             final List<CharSequence> list = (List<CharSequence>) args;
             for (int i = 0; i < list.size(); ++i) {
                 final CharSequence arg = list.get(i);
-                RedisRequests.writeRequestArgument(buffer, arg);
+                writeRequestArgument(buffer, arg);
             }
         } else {
             for (CharSequence arg : args) {
-                RedisRequests.writeRequestArgument(buffer, arg);
+                writeRequestArgument(buffer, arg);
             }
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.EVALSHA, buffer);
@@ -1942,7 +1942,7 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(keys);
         requireNonNull(args);
         final int len = 3 + keys.size() + args.size();
-        final byte[] sha1Bytes = sha1.toString().getBytes(StandardCharsets.UTF_8);
+        final int sha1Bytes = numberOfBytesUtf8(sha1);
         int keysCapacity = 0;
         if (keys instanceof List && keys instanceof RandomAccess) {
             final List<CharSequence> list = (List<CharSequence>) keys;
@@ -1971,30 +1971,30 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
                     calculateRequestArgumentSize(sha1Bytes) + calculateRequestArgumentSize(numkeys) + keysCapacity +
                     argsCapacity;
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.EVALSHA.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, sha1Bytes);
-        RedisRequests.writeRequestArgument(buffer, numkeys);
+        writeRequestArgument(buffer, sha1, sha1Bytes);
+        writeRequestArgument(buffer, numkeys);
         if (keys instanceof List && keys instanceof RandomAccess) {
             final List<CharSequence> list = (List<CharSequence>) keys;
             for (int i = 0; i < list.size(); ++i) {
                 final CharSequence arg = list.get(i);
-                RedisRequests.writeRequestArgument(buffer, arg);
+                writeRequestArgument(buffer, arg);
             }
         } else {
             for (CharSequence arg : keys) {
-                RedisRequests.writeRequestArgument(buffer, arg);
+                writeRequestArgument(buffer, arg);
             }
         }
         if (args instanceof List && args instanceof RandomAccess) {
             final List<CharSequence> list = (List<CharSequence>) args;
             for (int i = 0; i < list.size(); ++i) {
                 final CharSequence arg = list.get(i);
-                RedisRequests.writeRequestArgument(buffer, arg);
+                writeRequestArgument(buffer, arg);
             }
         } else {
             for (CharSequence arg : args) {
-                RedisRequests.writeRequestArgument(buffer, arg);
+                writeRequestArgument(buffer, arg);
             }
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.EVALSHA, buffer);
@@ -2011,7 +2011,7 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(keys);
         requireNonNull(args);
         final int len = 3 + keys.size() + args.size();
-        final byte[] sha1Bytes = sha1.toString().getBytes(StandardCharsets.UTF_8);
+        final int sha1Bytes = numberOfBytesUtf8(sha1);
         int keysCapacity = 0;
         if (keys instanceof List && keys instanceof RandomAccess) {
             final List<CharSequence> list = (List<CharSequence>) keys;
@@ -2040,30 +2040,30 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
                     calculateRequestArgumentSize(sha1Bytes) + calculateRequestArgumentSize(numkeys) + keysCapacity +
                     argsCapacity;
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.EVALSHA.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, sha1Bytes);
-        RedisRequests.writeRequestArgument(buffer, numkeys);
+        writeRequestArgument(buffer, sha1, sha1Bytes);
+        writeRequestArgument(buffer, numkeys);
         if (keys instanceof List && keys instanceof RandomAccess) {
             final List<CharSequence> list = (List<CharSequence>) keys;
             for (int i = 0; i < list.size(); ++i) {
                 final CharSequence arg = list.get(i);
-                RedisRequests.writeRequestArgument(buffer, arg);
+                writeRequestArgument(buffer, arg);
             }
         } else {
             for (CharSequence arg : keys) {
-                RedisRequests.writeRequestArgument(buffer, arg);
+                writeRequestArgument(buffer, arg);
             }
         }
         if (args instanceof List && args instanceof RandomAccess) {
             final List<CharSequence> list = (List<CharSequence>) args;
             for (int i = 0; i < list.size(); ++i) {
                 final CharSequence arg = list.get(i);
-                RedisRequests.writeRequestArgument(buffer, arg);
+                writeRequestArgument(buffer, arg);
             }
         } else {
             for (CharSequence arg : args) {
-                RedisRequests.writeRequestArgument(buffer, arg);
+                writeRequestArgument(buffer, arg);
             }
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.EVALSHA, buffer);
@@ -2077,7 +2077,7 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         final int len = 1;
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.EXEC);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.EXEC.encodeTo(buffer);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.EXEC, buffer);
         final Single<List<Object>> queued = (Single) reservedCnx.request(request,
@@ -2091,13 +2091,13 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
     public Future<Long> exists(@RedisProtocolSupport.Key final CharSequence key) {
         requireNonNull(key);
         final int len = 2;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.EXISTS) +
                     calculateRequestArgumentSize(keyBytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.EXISTS.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
+        writeRequestArgument(buffer, key, keyBytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.EXISTS, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
@@ -2110,15 +2110,15 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(key1);
         requireNonNull(key2);
         final int len = 3;
-        final byte[] key1Bytes = key1.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] key2Bytes = key2.toString().getBytes(StandardCharsets.UTF_8);
+        final int key1Bytes = numberOfBytesUtf8(key1);
+        final int key2Bytes = numberOfBytesUtf8(key2);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.EXISTS) +
                     calculateRequestArgumentSize(key1Bytes) + calculateRequestArgumentSize(key2Bytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.EXISTS.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, key1Bytes);
-        RedisRequests.writeRequestArgument(buffer, key2Bytes);
+        writeRequestArgument(buffer, key1, key1Bytes);
+        writeRequestArgument(buffer, key2, key2Bytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.EXISTS, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
@@ -2133,18 +2133,18 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(key2);
         requireNonNull(key3);
         final int len = 4;
-        final byte[] key1Bytes = key1.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] key2Bytes = key2.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] key3Bytes = key3.toString().getBytes(StandardCharsets.UTF_8);
+        final int key1Bytes = numberOfBytesUtf8(key1);
+        final int key2Bytes = numberOfBytesUtf8(key2);
+        final int key3Bytes = numberOfBytesUtf8(key3);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.EXISTS) +
                     calculateRequestArgumentSize(key1Bytes) + calculateRequestArgumentSize(key2Bytes) +
                     calculateRequestArgumentSize(key3Bytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.EXISTS.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, key1Bytes);
-        RedisRequests.writeRequestArgument(buffer, key2Bytes);
-        RedisRequests.writeRequestArgument(buffer, key3Bytes);
+        writeRequestArgument(buffer, key1, key1Bytes);
+        writeRequestArgument(buffer, key2, key2Bytes);
+        writeRequestArgument(buffer, key3, key3Bytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.EXISTS, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
@@ -2169,17 +2169,17 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         }
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.EXISTS) + keysCapacity;
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.EXISTS.encodeTo(buffer);
         if (keys instanceof List && keys instanceof RandomAccess) {
             final List<CharSequence> list = (List<CharSequence>) keys;
             for (int i = 0; i < list.size(); ++i) {
                 final CharSequence arg = list.get(i);
-                RedisRequests.writeRequestArgument(buffer, arg);
+                writeRequestArgument(buffer, arg);
             }
         } else {
             for (CharSequence arg : keys) {
-                RedisRequests.writeRequestArgument(buffer, arg);
+                writeRequestArgument(buffer, arg);
             }
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.EXISTS, buffer);
@@ -2192,14 +2192,14 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
     public Future<Long> expire(@RedisProtocolSupport.Key final CharSequence key, final long seconds) {
         requireNonNull(key);
         final int len = 3;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.EXPIRE) +
                     calculateRequestArgumentSize(keyBytes) + calculateRequestArgumentSize(seconds);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.EXPIRE.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
-        RedisRequests.writeRequestArgument(buffer, seconds);
+        writeRequestArgument(buffer, key, keyBytes);
+        writeRequestArgument(buffer, seconds);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.EXPIRE, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
@@ -2210,14 +2210,14 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
     public Future<Long> expireat(@RedisProtocolSupport.Key final CharSequence key, final long timestamp) {
         requireNonNull(key);
         final int len = 3;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.EXPIREAT) +
                     calculateRequestArgumentSize(keyBytes) + calculateRequestArgumentSize(timestamp);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.EXPIREAT.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
-        RedisRequests.writeRequestArgument(buffer, timestamp);
+        writeRequestArgument(buffer, key, keyBytes);
+        writeRequestArgument(buffer, timestamp);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.EXPIREAT, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
@@ -2229,7 +2229,7 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         final int len = 1;
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.FLUSHALL);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.FLUSHALL.encodeTo(buffer);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.FLUSHALL, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
@@ -2243,7 +2243,7 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.FLUSHALL) +
                     (async == null ? 0 : async.encodedByteCount());
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.FLUSHALL.encodeTo(buffer);
         if (async != null) {
             async.encodeTo(buffer);
@@ -2259,7 +2259,7 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         final int len = 1;
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.FLUSHDB);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.FLUSHDB.encodeTo(buffer);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.FLUSHDB, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
@@ -2273,7 +2273,7 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.FLUSHDB) +
                     (async == null ? 0 : async.encodedByteCount());
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.FLUSHDB.encodeTo(buffer);
         if (async != null) {
             async.encodeTo(buffer);
@@ -2290,18 +2290,18 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(key);
         requireNonNull(member);
         final int len = 5;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] memberBytes = member.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
+        final int memberBytes = numberOfBytesUtf8(member);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.GEOADD) +
                     calculateRequestArgumentSize(keyBytes) + calculateRequestArgumentSize(longitude) +
                     calculateRequestArgumentSize(latitude) + calculateRequestArgumentSize(memberBytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.GEOADD.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
-        RedisRequests.writeRequestArgument(buffer, longitude);
-        RedisRequests.writeRequestArgument(buffer, latitude);
-        RedisRequests.writeRequestArgument(buffer, memberBytes);
+        writeRequestArgument(buffer, key, keyBytes);
+        writeRequestArgument(buffer, longitude);
+        writeRequestArgument(buffer, latitude);
+        writeRequestArgument(buffer, member, memberBytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.GEOADD, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
@@ -2316,24 +2316,24 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(member1);
         requireNonNull(member2);
         final int len = 8;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] member1Bytes = member1.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] member2Bytes = member2.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
+        final int member1Bytes = numberOfBytesUtf8(member1);
+        final int member2Bytes = numberOfBytesUtf8(member2);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.GEOADD) +
                     calculateRequestArgumentSize(keyBytes) + calculateRequestArgumentSize(longitude1) +
                     calculateRequestArgumentSize(latitude1) + calculateRequestArgumentSize(member1Bytes) +
                     calculateRequestArgumentSize(longitude2) + calculateRequestArgumentSize(latitude2) +
                     calculateRequestArgumentSize(member2Bytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.GEOADD.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
-        RedisRequests.writeRequestArgument(buffer, longitude1);
-        RedisRequests.writeRequestArgument(buffer, latitude1);
-        RedisRequests.writeRequestArgument(buffer, member1Bytes);
-        RedisRequests.writeRequestArgument(buffer, longitude2);
-        RedisRequests.writeRequestArgument(buffer, latitude2);
-        RedisRequests.writeRequestArgument(buffer, member2Bytes);
+        writeRequestArgument(buffer, key, keyBytes);
+        writeRequestArgument(buffer, longitude1);
+        writeRequestArgument(buffer, latitude1);
+        writeRequestArgument(buffer, member1, member1Bytes);
+        writeRequestArgument(buffer, longitude2);
+        writeRequestArgument(buffer, latitude2);
+        writeRequestArgument(buffer, member2, member2Bytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.GEOADD, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
@@ -2350,10 +2350,10 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(member2);
         requireNonNull(member3);
         final int len = 11;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] member1Bytes = member1.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] member2Bytes = member2.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] member3Bytes = member3.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
+        final int member1Bytes = numberOfBytesUtf8(member1);
+        final int member2Bytes = numberOfBytesUtf8(member2);
+        final int member3Bytes = numberOfBytesUtf8(member3);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.GEOADD) +
                     calculateRequestArgumentSize(keyBytes) + calculateRequestArgumentSize(longitude1) +
                     calculateRequestArgumentSize(latitude1) + calculateRequestArgumentSize(member1Bytes) +
@@ -2361,18 +2361,18 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
                     calculateRequestArgumentSize(member2Bytes) + calculateRequestArgumentSize(longitude3) +
                     calculateRequestArgumentSize(latitude3) + calculateRequestArgumentSize(member3Bytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.GEOADD.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
-        RedisRequests.writeRequestArgument(buffer, longitude1);
-        RedisRequests.writeRequestArgument(buffer, latitude1);
-        RedisRequests.writeRequestArgument(buffer, member1Bytes);
-        RedisRequests.writeRequestArgument(buffer, longitude2);
-        RedisRequests.writeRequestArgument(buffer, latitude2);
-        RedisRequests.writeRequestArgument(buffer, member2Bytes);
-        RedisRequests.writeRequestArgument(buffer, longitude3);
-        RedisRequests.writeRequestArgument(buffer, latitude3);
-        RedisRequests.writeRequestArgument(buffer, member3Bytes);
+        writeRequestArgument(buffer, key, keyBytes);
+        writeRequestArgument(buffer, longitude1);
+        writeRequestArgument(buffer, latitude1);
+        writeRequestArgument(buffer, member1, member1Bytes);
+        writeRequestArgument(buffer, longitude2);
+        writeRequestArgument(buffer, latitude2);
+        writeRequestArgument(buffer, member2, member2Bytes);
+        writeRequestArgument(buffer, longitude3);
+        writeRequestArgument(buffer, latitude3);
+        writeRequestArgument(buffer, member3, member3Bytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.GEOADD, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
@@ -2385,7 +2385,7 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(key);
         requireNonNull(longitudeLatitudeMembers);
         final int len = 2 + RedisProtocolSupport.LongitudeLatitudeMember.SIZE * longitudeLatitudeMembers.size();
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
         int longitudeLatitudeMembersCapacity = 0;
         if (longitudeLatitudeMembers instanceof List && longitudeLatitudeMembers instanceof RandomAccess) {
             final List<RedisProtocolSupport.LongitudeLatitudeMember> list = (List<RedisProtocolSupport.LongitudeLatitudeMember>) longitudeLatitudeMembers;
@@ -2401,9 +2401,9 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.GEOADD) +
                     calculateRequestArgumentSize(keyBytes) + longitudeLatitudeMembersCapacity;
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.GEOADD.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
+        writeRequestArgument(buffer, key, keyBytes);
         if (longitudeLatitudeMembers instanceof List && longitudeLatitudeMembers instanceof RandomAccess) {
             final List<RedisProtocolSupport.LongitudeLatitudeMember> list = (List<RedisProtocolSupport.LongitudeLatitudeMember>) longitudeLatitudeMembers;
             for (int i = 0; i < list.size(); ++i) {
@@ -2428,18 +2428,18 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(member1);
         requireNonNull(member2);
         final int len = 4;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] member1Bytes = member1.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] member2Bytes = member2.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
+        final int member1Bytes = numberOfBytesUtf8(member1);
+        final int member2Bytes = numberOfBytesUtf8(member2);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.GEODIST) +
                     calculateRequestArgumentSize(keyBytes) + calculateRequestArgumentSize(member1Bytes) +
                     calculateRequestArgumentSize(member2Bytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.GEODIST.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
-        RedisRequests.writeRequestArgument(buffer, member1Bytes);
-        RedisRequests.writeRequestArgument(buffer, member2Bytes);
+        writeRequestArgument(buffer, key, keyBytes);
+        writeRequestArgument(buffer, member1, member1Bytes);
+        writeRequestArgument(buffer, member2, member2Bytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.GEODIST, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Double> result = enqueueForExecute(state, singles, queued);
@@ -2453,22 +2453,22 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(member1);
         requireNonNull(member2);
         final int len = 4 + (unit == null ? 0 : 1);
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] member1Bytes = member1.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] member2Bytes = member2.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] unitBytes = unit == null ? null : unit.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
+        final int member1Bytes = numberOfBytesUtf8(member1);
+        final int member2Bytes = numberOfBytesUtf8(member2);
+        final int unitBytes = unit == null ? 0 : numberOfBytesUtf8(unit);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.GEODIST) +
                     calculateRequestArgumentSize(keyBytes) + calculateRequestArgumentSize(member1Bytes) +
                     calculateRequestArgumentSize(member2Bytes) +
                     (unit == null ? 0 : calculateRequestArgumentSize(unitBytes));
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.GEODIST.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
-        RedisRequests.writeRequestArgument(buffer, member1Bytes);
-        RedisRequests.writeRequestArgument(buffer, member2Bytes);
+        writeRequestArgument(buffer, key, keyBytes);
+        writeRequestArgument(buffer, member1, member1Bytes);
+        writeRequestArgument(buffer, member2, member2Bytes);
         if (unit != null) {
-            RedisRequests.writeRequestArgument(buffer, unitBytes);
+            writeRequestArgument(buffer, unit, unitBytes);
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.GEODIST, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
@@ -2481,15 +2481,15 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(key);
         requireNonNull(member);
         final int len = 3;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] memberBytes = member.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
+        final int memberBytes = numberOfBytesUtf8(member);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.GEOHASH) +
                     calculateRequestArgumentSize(keyBytes) + calculateRequestArgumentSize(memberBytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.GEOHASH.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
-        RedisRequests.writeRequestArgument(buffer, memberBytes);
+        writeRequestArgument(buffer, key, keyBytes);
+        writeRequestArgument(buffer, member, memberBytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.GEOHASH, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
@@ -2503,18 +2503,18 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(member1);
         requireNonNull(member2);
         final int len = 4;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] member1Bytes = member1.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] member2Bytes = member2.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
+        final int member1Bytes = numberOfBytesUtf8(member1);
+        final int member2Bytes = numberOfBytesUtf8(member2);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.GEOHASH) +
                     calculateRequestArgumentSize(keyBytes) + calculateRequestArgumentSize(member1Bytes) +
                     calculateRequestArgumentSize(member2Bytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.GEOHASH.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
-        RedisRequests.writeRequestArgument(buffer, member1Bytes);
-        RedisRequests.writeRequestArgument(buffer, member2Bytes);
+        writeRequestArgument(buffer, key, keyBytes);
+        writeRequestArgument(buffer, member1, member1Bytes);
+        writeRequestArgument(buffer, member2, member2Bytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.GEOHASH, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
@@ -2529,20 +2529,20 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(member2);
         requireNonNull(member3);
         final int len = 5;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] member1Bytes = member1.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] member2Bytes = member2.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] member3Bytes = member3.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
+        final int member1Bytes = numberOfBytesUtf8(member1);
+        final int member2Bytes = numberOfBytesUtf8(member2);
+        final int member3Bytes = numberOfBytesUtf8(member3);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.GEOHASH) +
                     calculateRequestArgumentSize(keyBytes) + calculateRequestArgumentSize(member1Bytes) +
                     calculateRequestArgumentSize(member2Bytes) + calculateRequestArgumentSize(member3Bytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.GEOHASH.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
-        RedisRequests.writeRequestArgument(buffer, member1Bytes);
-        RedisRequests.writeRequestArgument(buffer, member2Bytes);
-        RedisRequests.writeRequestArgument(buffer, member3Bytes);
+        writeRequestArgument(buffer, key, keyBytes);
+        writeRequestArgument(buffer, member1, member1Bytes);
+        writeRequestArgument(buffer, member2, member2Bytes);
+        writeRequestArgument(buffer, member3, member3Bytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.GEOHASH, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
@@ -2555,7 +2555,7 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(key);
         requireNonNull(members);
         final int len = 2 + members.size();
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
         int membersCapacity = 0;
         if (members instanceof List && members instanceof RandomAccess) {
             final List<CharSequence> list = (List<CharSequence>) members;
@@ -2571,18 +2571,18 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.GEOHASH) +
                     calculateRequestArgumentSize(keyBytes) + membersCapacity;
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.GEOHASH.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
+        writeRequestArgument(buffer, key, keyBytes);
         if (members instanceof List && members instanceof RandomAccess) {
             final List<CharSequence> list = (List<CharSequence>) members;
             for (int i = 0; i < list.size(); ++i) {
                 final CharSequence arg = list.get(i);
-                RedisRequests.writeRequestArgument(buffer, arg);
+                writeRequestArgument(buffer, arg);
             }
         } else {
             for (CharSequence arg : members) {
-                RedisRequests.writeRequestArgument(buffer, arg);
+                writeRequestArgument(buffer, arg);
             }
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.GEOHASH, buffer);
@@ -2596,15 +2596,15 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(key);
         requireNonNull(member);
         final int len = 3;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] memberBytes = member.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
+        final int memberBytes = numberOfBytesUtf8(member);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.GEOPOS) +
                     calculateRequestArgumentSize(keyBytes) + calculateRequestArgumentSize(memberBytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.GEOPOS.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
-        RedisRequests.writeRequestArgument(buffer, memberBytes);
+        writeRequestArgument(buffer, key, keyBytes);
+        writeRequestArgument(buffer, member, memberBytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.GEOPOS, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
@@ -2618,18 +2618,18 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(member1);
         requireNonNull(member2);
         final int len = 4;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] member1Bytes = member1.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] member2Bytes = member2.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
+        final int member1Bytes = numberOfBytesUtf8(member1);
+        final int member2Bytes = numberOfBytesUtf8(member2);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.GEOPOS) +
                     calculateRequestArgumentSize(keyBytes) + calculateRequestArgumentSize(member1Bytes) +
                     calculateRequestArgumentSize(member2Bytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.GEOPOS.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
-        RedisRequests.writeRequestArgument(buffer, member1Bytes);
-        RedisRequests.writeRequestArgument(buffer, member2Bytes);
+        writeRequestArgument(buffer, key, keyBytes);
+        writeRequestArgument(buffer, member1, member1Bytes);
+        writeRequestArgument(buffer, member2, member2Bytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.GEOPOS, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
@@ -2644,20 +2644,20 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(member2);
         requireNonNull(member3);
         final int len = 5;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] member1Bytes = member1.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] member2Bytes = member2.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] member3Bytes = member3.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
+        final int member1Bytes = numberOfBytesUtf8(member1);
+        final int member2Bytes = numberOfBytesUtf8(member2);
+        final int member3Bytes = numberOfBytesUtf8(member3);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.GEOPOS) +
                     calculateRequestArgumentSize(keyBytes) + calculateRequestArgumentSize(member1Bytes) +
                     calculateRequestArgumentSize(member2Bytes) + calculateRequestArgumentSize(member3Bytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.GEOPOS.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
-        RedisRequests.writeRequestArgument(buffer, member1Bytes);
-        RedisRequests.writeRequestArgument(buffer, member2Bytes);
-        RedisRequests.writeRequestArgument(buffer, member3Bytes);
+        writeRequestArgument(buffer, key, keyBytes);
+        writeRequestArgument(buffer, member1, member1Bytes);
+        writeRequestArgument(buffer, member2, member2Bytes);
+        writeRequestArgument(buffer, member3, member3Bytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.GEOPOS, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
@@ -2670,7 +2670,7 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(key);
         requireNonNull(members);
         final int len = 2 + members.size();
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
         int membersCapacity = 0;
         if (members instanceof List && members instanceof RandomAccess) {
             final List<CharSequence> list = (List<CharSequence>) members;
@@ -2686,18 +2686,18 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.GEOPOS) +
                     calculateRequestArgumentSize(keyBytes) + membersCapacity;
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.GEOPOS.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
+        writeRequestArgument(buffer, key, keyBytes);
         if (members instanceof List && members instanceof RandomAccess) {
             final List<CharSequence> list = (List<CharSequence>) members;
             for (int i = 0; i < list.size(); ++i) {
                 final CharSequence arg = list.get(i);
-                RedisRequests.writeRequestArgument(buffer, arg);
+                writeRequestArgument(buffer, arg);
             }
         } else {
             for (CharSequence arg : members) {
-                RedisRequests.writeRequestArgument(buffer, arg);
+                writeRequestArgument(buffer, arg);
             }
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.GEOPOS, buffer);
@@ -2713,18 +2713,18 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(key);
         requireNonNull(unit);
         final int len = 6;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.GEORADIUS) +
                     calculateRequestArgumentSize(keyBytes) + calculateRequestArgumentSize(longitude) +
                     calculateRequestArgumentSize(latitude) + calculateRequestArgumentSize(radius) +
                     unit.encodedByteCount();
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.GEORADIUS.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
-        RedisRequests.writeRequestArgument(buffer, longitude);
-        RedisRequests.writeRequestArgument(buffer, latitude);
-        RedisRequests.writeRequestArgument(buffer, radius);
+        writeRequestArgument(buffer, key, keyBytes);
+        writeRequestArgument(buffer, longitude);
+        writeRequestArgument(buffer, latitude);
+        writeRequestArgument(buffer, radius);
         unit.encodeTo(buffer);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.GEORADIUS, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
@@ -2748,10 +2748,9 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         final int len = 6 + (withcoord == null ? 0 : 1) + (withdist == null ? 0 : 1) + (withhash == null ? 0 : 1) +
                     (count == null ? 0 : 2) + (order == null ? 0 : 1) + (storeKey == null ? 0 : 2) +
                     (storedistKey == null ? 0 : 2);
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] storeKeyBytes = storeKey == null ? null : storeKey.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] storedistKeyBytes = storedistKey == null ? null
-                    : storedistKey.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
+        final int storeKeyBytes = storeKey == null ? 0 : numberOfBytesUtf8(storeKey);
+        final int storedistKeyBytes = storedistKey == null ? 0 : numberOfBytesUtf8(storedistKey);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.GEORADIUS) +
                     calculateRequestArgumentSize(keyBytes) + calculateRequestArgumentSize(longitude) +
                     calculateRequestArgumentSize(latitude) + calculateRequestArgumentSize(radius) +
@@ -2766,12 +2765,12 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
                     (storedistKey == null ? 0 : RedisProtocolSupport.SubCommand.STOREDIST.encodedByteCount()) +
                     (storedistKey == null ? 0 : calculateRequestArgumentSize(storedistKeyBytes));
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.GEORADIUS.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
-        RedisRequests.writeRequestArgument(buffer, longitude);
-        RedisRequests.writeRequestArgument(buffer, latitude);
-        RedisRequests.writeRequestArgument(buffer, radius);
+        writeRequestArgument(buffer, key, keyBytes);
+        writeRequestArgument(buffer, longitude);
+        writeRequestArgument(buffer, latitude);
+        writeRequestArgument(buffer, radius);
         unit.encodeTo(buffer);
         if (withcoord != null) {
             withcoord.encodeTo(buffer);
@@ -2784,18 +2783,18 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         }
         if (count != null) {
             RedisProtocolSupport.SubCommand.COUNT.encodeTo(buffer);
-            RedisRequests.writeRequestArgument(buffer, count);
+            writeRequestArgument(buffer, count);
         }
         if (order != null) {
             order.encodeTo(buffer);
         }
         if (storeKey != null) {
             RedisProtocolSupport.SubCommand.STORE.encodeTo(buffer);
-            RedisRequests.writeRequestArgument(buffer, storeKeyBytes);
+            writeRequestArgument(buffer, storeKey, storeKeyBytes);
         }
         if (storedistKey != null) {
             RedisProtocolSupport.SubCommand.STOREDIST.encodeTo(buffer);
-            RedisRequests.writeRequestArgument(buffer, storedistKeyBytes);
+            writeRequestArgument(buffer, storedistKey, storedistKeyBytes);
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.GEORADIUS, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
@@ -2811,17 +2810,17 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(member);
         requireNonNull(unit);
         final int len = 5;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] memberBytes = member.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
+        final int memberBytes = numberOfBytesUtf8(member);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.GEORADIUSBYMEMBER) +
                     calculateRequestArgumentSize(keyBytes) + calculateRequestArgumentSize(memberBytes) +
                     calculateRequestArgumentSize(radius) + unit.encodedByteCount();
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.GEORADIUSBYMEMBER.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
-        RedisRequests.writeRequestArgument(buffer, memberBytes);
-        RedisRequests.writeRequestArgument(buffer, radius);
+        writeRequestArgument(buffer, key, keyBytes);
+        writeRequestArgument(buffer, member, memberBytes);
+        writeRequestArgument(buffer, radius);
         unit.encodeTo(buffer);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.GEORADIUSBYMEMBER, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
@@ -2846,11 +2845,10 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         final int len = 5 + (withcoord == null ? 0 : 1) + (withdist == null ? 0 : 1) + (withhash == null ? 0 : 1) +
                     (count == null ? 0 : 2) + (order == null ? 0 : 1) + (storeKey == null ? 0 : 2) +
                     (storedistKey == null ? 0 : 2);
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] memberBytes = member.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] storeKeyBytes = storeKey == null ? null : storeKey.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] storedistKeyBytes = storedistKey == null ? null
-                    : storedistKey.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
+        final int memberBytes = numberOfBytesUtf8(member);
+        final int storeKeyBytes = storeKey == null ? 0 : numberOfBytesUtf8(storeKey);
+        final int storedistKeyBytes = storedistKey == null ? 0 : numberOfBytesUtf8(storedistKey);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.GEORADIUSBYMEMBER) +
                     calculateRequestArgumentSize(keyBytes) + calculateRequestArgumentSize(memberBytes) +
                     calculateRequestArgumentSize(radius) + unit.encodedByteCount() +
@@ -2865,11 +2863,11 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
                     (storedistKey == null ? 0 : RedisProtocolSupport.SubCommand.STOREDIST.encodedByteCount()) +
                     (storedistKey == null ? 0 : calculateRequestArgumentSize(storedistKeyBytes));
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.GEORADIUSBYMEMBER.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
-        RedisRequests.writeRequestArgument(buffer, memberBytes);
-        RedisRequests.writeRequestArgument(buffer, radius);
+        writeRequestArgument(buffer, key, keyBytes);
+        writeRequestArgument(buffer, member, memberBytes);
+        writeRequestArgument(buffer, radius);
         unit.encodeTo(buffer);
         if (withcoord != null) {
             withcoord.encodeTo(buffer);
@@ -2882,18 +2880,18 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         }
         if (count != null) {
             RedisProtocolSupport.SubCommand.COUNT.encodeTo(buffer);
-            RedisRequests.writeRequestArgument(buffer, count);
+            writeRequestArgument(buffer, count);
         }
         if (order != null) {
             order.encodeTo(buffer);
         }
         if (storeKey != null) {
             RedisProtocolSupport.SubCommand.STORE.encodeTo(buffer);
-            RedisRequests.writeRequestArgument(buffer, storeKeyBytes);
+            writeRequestArgument(buffer, storeKey, storeKeyBytes);
         }
         if (storedistKey != null) {
             RedisProtocolSupport.SubCommand.STOREDIST.encodeTo(buffer);
-            RedisRequests.writeRequestArgument(buffer, storedistKeyBytes);
+            writeRequestArgument(buffer, storedistKey, storedistKeyBytes);
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.GEORADIUSBYMEMBER, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
@@ -2905,13 +2903,13 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
     public Future<String> get(@RedisProtocolSupport.Key final CharSequence key) {
         requireNonNull(key);
         final int len = 2;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.GET) +
                     calculateRequestArgumentSize(keyBytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.GET.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
+        writeRequestArgument(buffer, key, keyBytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.GET, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<String> result = enqueueForExecute(state, singles, queued);
@@ -2922,14 +2920,14 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
     public Future<Long> getbit(@RedisProtocolSupport.Key final CharSequence key, final long offset) {
         requireNonNull(key);
         final int len = 3;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.GETBIT) +
                     calculateRequestArgumentSize(keyBytes) + calculateRequestArgumentSize(offset);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.GETBIT.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
-        RedisRequests.writeRequestArgument(buffer, offset);
+        writeRequestArgument(buffer, key, keyBytes);
+        writeRequestArgument(buffer, offset);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.GETBIT, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
@@ -2940,16 +2938,16 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
     public Future<String> getrange(@RedisProtocolSupport.Key final CharSequence key, final long start, final long end) {
         requireNonNull(key);
         final int len = 4;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.GETRANGE) +
                     calculateRequestArgumentSize(keyBytes) + calculateRequestArgumentSize(start) +
                     calculateRequestArgumentSize(end);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.GETRANGE.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
-        RedisRequests.writeRequestArgument(buffer, start);
-        RedisRequests.writeRequestArgument(buffer, end);
+        writeRequestArgument(buffer, key, keyBytes);
+        writeRequestArgument(buffer, start);
+        writeRequestArgument(buffer, end);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.GETRANGE, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<String> result = enqueueForExecute(state, singles, queued);
@@ -2961,15 +2959,15 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(key);
         requireNonNull(value);
         final int len = 3;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] valueBytes = value.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
+        final int valueBytes = numberOfBytesUtf8(value);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.GETSET) +
                     calculateRequestArgumentSize(keyBytes) + calculateRequestArgumentSize(valueBytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.GETSET.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
-        RedisRequests.writeRequestArgument(buffer, valueBytes);
+        writeRequestArgument(buffer, key, keyBytes);
+        writeRequestArgument(buffer, value, valueBytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.GETSET, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<String> result = enqueueForExecute(state, singles, queued);
@@ -2981,15 +2979,15 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(key);
         requireNonNull(field);
         final int len = 3;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] fieldBytes = field.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
+        final int fieldBytes = numberOfBytesUtf8(field);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.HDEL) +
                     calculateRequestArgumentSize(keyBytes) + calculateRequestArgumentSize(fieldBytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.HDEL.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
-        RedisRequests.writeRequestArgument(buffer, fieldBytes);
+        writeRequestArgument(buffer, key, keyBytes);
+        writeRequestArgument(buffer, field, fieldBytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.HDEL, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
@@ -3003,18 +3001,18 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(field1);
         requireNonNull(field2);
         final int len = 4;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] field1Bytes = field1.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] field2Bytes = field2.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
+        final int field1Bytes = numberOfBytesUtf8(field1);
+        final int field2Bytes = numberOfBytesUtf8(field2);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.HDEL) +
                     calculateRequestArgumentSize(keyBytes) + calculateRequestArgumentSize(field1Bytes) +
                     calculateRequestArgumentSize(field2Bytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.HDEL.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
-        RedisRequests.writeRequestArgument(buffer, field1Bytes);
-        RedisRequests.writeRequestArgument(buffer, field2Bytes);
+        writeRequestArgument(buffer, key, keyBytes);
+        writeRequestArgument(buffer, field1, field1Bytes);
+        writeRequestArgument(buffer, field2, field2Bytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.HDEL, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
@@ -3029,20 +3027,20 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(field2);
         requireNonNull(field3);
         final int len = 5;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] field1Bytes = field1.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] field2Bytes = field2.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] field3Bytes = field3.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
+        final int field1Bytes = numberOfBytesUtf8(field1);
+        final int field2Bytes = numberOfBytesUtf8(field2);
+        final int field3Bytes = numberOfBytesUtf8(field3);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.HDEL) +
                     calculateRequestArgumentSize(keyBytes) + calculateRequestArgumentSize(field1Bytes) +
                     calculateRequestArgumentSize(field2Bytes) + calculateRequestArgumentSize(field3Bytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.HDEL.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
-        RedisRequests.writeRequestArgument(buffer, field1Bytes);
-        RedisRequests.writeRequestArgument(buffer, field2Bytes);
-        RedisRequests.writeRequestArgument(buffer, field3Bytes);
+        writeRequestArgument(buffer, key, keyBytes);
+        writeRequestArgument(buffer, field1, field1Bytes);
+        writeRequestArgument(buffer, field2, field2Bytes);
+        writeRequestArgument(buffer, field3, field3Bytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.HDEL, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
@@ -3055,7 +3053,7 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(key);
         requireNonNull(fields);
         final int len = 2 + fields.size();
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
         int fieldsCapacity = 0;
         if (fields instanceof List && fields instanceof RandomAccess) {
             final List<CharSequence> list = (List<CharSequence>) fields;
@@ -3071,18 +3069,18 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.HDEL) +
                     calculateRequestArgumentSize(keyBytes) + fieldsCapacity;
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.HDEL.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
+        writeRequestArgument(buffer, key, keyBytes);
         if (fields instanceof List && fields instanceof RandomAccess) {
             final List<CharSequence> list = (List<CharSequence>) fields;
             for (int i = 0; i < list.size(); ++i) {
                 final CharSequence arg = list.get(i);
-                RedisRequests.writeRequestArgument(buffer, arg);
+                writeRequestArgument(buffer, arg);
             }
         } else {
             for (CharSequence arg : fields) {
-                RedisRequests.writeRequestArgument(buffer, arg);
+                writeRequestArgument(buffer, arg);
             }
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.HDEL, buffer);
@@ -3096,15 +3094,15 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(key);
         requireNonNull(field);
         final int len = 3;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] fieldBytes = field.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
+        final int fieldBytes = numberOfBytesUtf8(field);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.HEXISTS) +
                     calculateRequestArgumentSize(keyBytes) + calculateRequestArgumentSize(fieldBytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.HEXISTS.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
-        RedisRequests.writeRequestArgument(buffer, fieldBytes);
+        writeRequestArgument(buffer, key, keyBytes);
+        writeRequestArgument(buffer, field, fieldBytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.HEXISTS, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
@@ -3116,15 +3114,15 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(key);
         requireNonNull(field);
         final int len = 3;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] fieldBytes = field.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
+        final int fieldBytes = numberOfBytesUtf8(field);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.HGET) +
                     calculateRequestArgumentSize(keyBytes) + calculateRequestArgumentSize(fieldBytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.HGET.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
-        RedisRequests.writeRequestArgument(buffer, fieldBytes);
+        writeRequestArgument(buffer, key, keyBytes);
+        writeRequestArgument(buffer, field, fieldBytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.HGET, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<String> result = enqueueForExecute(state, singles, queued);
@@ -3135,13 +3133,13 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
     public <T> Future<List<T>> hgetall(@RedisProtocolSupport.Key final CharSequence key) {
         requireNonNull(key);
         final int len = 2;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.HGETALL) +
                     calculateRequestArgumentSize(keyBytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.HGETALL.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
+        writeRequestArgument(buffer, key, keyBytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.HGETALL, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
@@ -3154,17 +3152,17 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(key);
         requireNonNull(field);
         final int len = 4;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] fieldBytes = field.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
+        final int fieldBytes = numberOfBytesUtf8(field);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.HINCRBY) +
                     calculateRequestArgumentSize(keyBytes) + calculateRequestArgumentSize(fieldBytes) +
                     calculateRequestArgumentSize(increment);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.HINCRBY.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
-        RedisRequests.writeRequestArgument(buffer, fieldBytes);
-        RedisRequests.writeRequestArgument(buffer, increment);
+        writeRequestArgument(buffer, key, keyBytes);
+        writeRequestArgument(buffer, field, fieldBytes);
+        writeRequestArgument(buffer, increment);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.HINCRBY, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
@@ -3177,17 +3175,17 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(key);
         requireNonNull(field);
         final int len = 4;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] fieldBytes = field.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
+        final int fieldBytes = numberOfBytesUtf8(field);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.HINCRBYFLOAT) +
                     calculateRequestArgumentSize(keyBytes) + calculateRequestArgumentSize(fieldBytes) +
                     calculateRequestArgumentSize(increment);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.HINCRBYFLOAT.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
-        RedisRequests.writeRequestArgument(buffer, fieldBytes);
-        RedisRequests.writeRequestArgument(buffer, increment);
+        writeRequestArgument(buffer, key, keyBytes);
+        writeRequestArgument(buffer, field, fieldBytes);
+        writeRequestArgument(buffer, increment);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.HINCRBYFLOAT, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Double> result = enqueueForExecute(state, singles, queued);
@@ -3198,13 +3196,13 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
     public <T> Future<List<T>> hkeys(@RedisProtocolSupport.Key final CharSequence key) {
         requireNonNull(key);
         final int len = 2;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.HKEYS) +
                     calculateRequestArgumentSize(keyBytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.HKEYS.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
+        writeRequestArgument(buffer, key, keyBytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.HKEYS, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
@@ -3215,13 +3213,13 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
     public Future<Long> hlen(@RedisProtocolSupport.Key final CharSequence key) {
         requireNonNull(key);
         final int len = 2;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.HLEN) +
                     calculateRequestArgumentSize(keyBytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.HLEN.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
+        writeRequestArgument(buffer, key, keyBytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.HLEN, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
@@ -3233,15 +3231,15 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(key);
         requireNonNull(field);
         final int len = 3;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] fieldBytes = field.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
+        final int fieldBytes = numberOfBytesUtf8(field);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.HMGET) +
                     calculateRequestArgumentSize(keyBytes) + calculateRequestArgumentSize(fieldBytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.HMGET.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
-        RedisRequests.writeRequestArgument(buffer, fieldBytes);
+        writeRequestArgument(buffer, key, keyBytes);
+        writeRequestArgument(buffer, field, fieldBytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.HMGET, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<String>> result = enqueueForExecute(state, singles, queued);
@@ -3255,18 +3253,18 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(field1);
         requireNonNull(field2);
         final int len = 4;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] field1Bytes = field1.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] field2Bytes = field2.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
+        final int field1Bytes = numberOfBytesUtf8(field1);
+        final int field2Bytes = numberOfBytesUtf8(field2);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.HMGET) +
                     calculateRequestArgumentSize(keyBytes) + calculateRequestArgumentSize(field1Bytes) +
                     calculateRequestArgumentSize(field2Bytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.HMGET.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
-        RedisRequests.writeRequestArgument(buffer, field1Bytes);
-        RedisRequests.writeRequestArgument(buffer, field2Bytes);
+        writeRequestArgument(buffer, key, keyBytes);
+        writeRequestArgument(buffer, field1, field1Bytes);
+        writeRequestArgument(buffer, field2, field2Bytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.HMGET, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<String>> result = enqueueForExecute(state, singles, queued);
@@ -3281,20 +3279,20 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(field2);
         requireNonNull(field3);
         final int len = 5;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] field1Bytes = field1.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] field2Bytes = field2.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] field3Bytes = field3.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
+        final int field1Bytes = numberOfBytesUtf8(field1);
+        final int field2Bytes = numberOfBytesUtf8(field2);
+        final int field3Bytes = numberOfBytesUtf8(field3);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.HMGET) +
                     calculateRequestArgumentSize(keyBytes) + calculateRequestArgumentSize(field1Bytes) +
                     calculateRequestArgumentSize(field2Bytes) + calculateRequestArgumentSize(field3Bytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.HMGET.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
-        RedisRequests.writeRequestArgument(buffer, field1Bytes);
-        RedisRequests.writeRequestArgument(buffer, field2Bytes);
-        RedisRequests.writeRequestArgument(buffer, field3Bytes);
+        writeRequestArgument(buffer, key, keyBytes);
+        writeRequestArgument(buffer, field1, field1Bytes);
+        writeRequestArgument(buffer, field2, field2Bytes);
+        writeRequestArgument(buffer, field3, field3Bytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.HMGET, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<String>> result = enqueueForExecute(state, singles, queued);
@@ -3307,7 +3305,7 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(key);
         requireNonNull(fields);
         final int len = 2 + fields.size();
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
         int fieldsCapacity = 0;
         if (fields instanceof List && fields instanceof RandomAccess) {
             final List<CharSequence> list = (List<CharSequence>) fields;
@@ -3323,18 +3321,18 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.HMGET) +
                     calculateRequestArgumentSize(keyBytes) + fieldsCapacity;
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.HMGET.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
+        writeRequestArgument(buffer, key, keyBytes);
         if (fields instanceof List && fields instanceof RandomAccess) {
             final List<CharSequence> list = (List<CharSequence>) fields;
             for (int i = 0; i < list.size(); ++i) {
                 final CharSequence arg = list.get(i);
-                RedisRequests.writeRequestArgument(buffer, arg);
+                writeRequestArgument(buffer, arg);
             }
         } else {
             for (CharSequence arg : fields) {
-                RedisRequests.writeRequestArgument(buffer, arg);
+                writeRequestArgument(buffer, arg);
             }
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.HMGET, buffer);
@@ -3350,18 +3348,18 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(field);
         requireNonNull(value);
         final int len = 4;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] fieldBytes = field.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] valueBytes = value.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
+        final int fieldBytes = numberOfBytesUtf8(field);
+        final int valueBytes = numberOfBytesUtf8(value);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.HMSET) +
                     calculateRequestArgumentSize(keyBytes) + calculateRequestArgumentSize(fieldBytes) +
                     calculateRequestArgumentSize(valueBytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.HMSET.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
-        RedisRequests.writeRequestArgument(buffer, fieldBytes);
-        RedisRequests.writeRequestArgument(buffer, valueBytes);
+        writeRequestArgument(buffer, key, keyBytes);
+        writeRequestArgument(buffer, field, fieldBytes);
+        writeRequestArgument(buffer, value, valueBytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.HMSET, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<String> result = enqueueForExecute(state, singles, queued);
@@ -3377,23 +3375,23 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(field2);
         requireNonNull(value2);
         final int len = 6;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] field1Bytes = field1.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] value1Bytes = value1.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] field2Bytes = field2.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] value2Bytes = value2.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
+        final int field1Bytes = numberOfBytesUtf8(field1);
+        final int value1Bytes = numberOfBytesUtf8(value1);
+        final int field2Bytes = numberOfBytesUtf8(field2);
+        final int value2Bytes = numberOfBytesUtf8(value2);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.HMSET) +
                     calculateRequestArgumentSize(keyBytes) + calculateRequestArgumentSize(field1Bytes) +
                     calculateRequestArgumentSize(value1Bytes) + calculateRequestArgumentSize(field2Bytes) +
                     calculateRequestArgumentSize(value2Bytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.HMSET.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
-        RedisRequests.writeRequestArgument(buffer, field1Bytes);
-        RedisRequests.writeRequestArgument(buffer, value1Bytes);
-        RedisRequests.writeRequestArgument(buffer, field2Bytes);
-        RedisRequests.writeRequestArgument(buffer, value2Bytes);
+        writeRequestArgument(buffer, key, keyBytes);
+        writeRequestArgument(buffer, field1, field1Bytes);
+        writeRequestArgument(buffer, value1, value1Bytes);
+        writeRequestArgument(buffer, field2, field2Bytes);
+        writeRequestArgument(buffer, value2, value2Bytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.HMSET, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<String> result = enqueueForExecute(state, singles, queued);
@@ -3412,28 +3410,28 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(field3);
         requireNonNull(value3);
         final int len = 8;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] field1Bytes = field1.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] value1Bytes = value1.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] field2Bytes = field2.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] value2Bytes = value2.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] field3Bytes = field3.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] value3Bytes = value3.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
+        final int field1Bytes = numberOfBytesUtf8(field1);
+        final int value1Bytes = numberOfBytesUtf8(value1);
+        final int field2Bytes = numberOfBytesUtf8(field2);
+        final int value2Bytes = numberOfBytesUtf8(value2);
+        final int field3Bytes = numberOfBytesUtf8(field3);
+        final int value3Bytes = numberOfBytesUtf8(value3);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.HMSET) +
                     calculateRequestArgumentSize(keyBytes) + calculateRequestArgumentSize(field1Bytes) +
                     calculateRequestArgumentSize(value1Bytes) + calculateRequestArgumentSize(field2Bytes) +
                     calculateRequestArgumentSize(value2Bytes) + calculateRequestArgumentSize(field3Bytes) +
                     calculateRequestArgumentSize(value3Bytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.HMSET.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
-        RedisRequests.writeRequestArgument(buffer, field1Bytes);
-        RedisRequests.writeRequestArgument(buffer, value1Bytes);
-        RedisRequests.writeRequestArgument(buffer, field2Bytes);
-        RedisRequests.writeRequestArgument(buffer, value2Bytes);
-        RedisRequests.writeRequestArgument(buffer, field3Bytes);
-        RedisRequests.writeRequestArgument(buffer, value3Bytes);
+        writeRequestArgument(buffer, key, keyBytes);
+        writeRequestArgument(buffer, field1, field1Bytes);
+        writeRequestArgument(buffer, value1, value1Bytes);
+        writeRequestArgument(buffer, field2, field2Bytes);
+        writeRequestArgument(buffer, value2, value2Bytes);
+        writeRequestArgument(buffer, field3, field3Bytes);
+        writeRequestArgument(buffer, value3, value3Bytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.HMSET, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<String> result = enqueueForExecute(state, singles, queued);
@@ -3446,7 +3444,7 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(key);
         requireNonNull(fieldValues);
         final int len = 2 + RedisProtocolSupport.FieldValue.SIZE * fieldValues.size();
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
         int fieldValuesCapacity = 0;
         if (fieldValues instanceof List && fieldValues instanceof RandomAccess) {
             final List<RedisProtocolSupport.FieldValue> list = (List<RedisProtocolSupport.FieldValue>) fieldValues;
@@ -3462,9 +3460,9 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.HMSET) +
                     calculateRequestArgumentSize(keyBytes) + fieldValuesCapacity;
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.HMSET.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
+        writeRequestArgument(buffer, key, keyBytes);
         if (fieldValues instanceof List && fieldValues instanceof RandomAccess) {
             final List<RedisProtocolSupport.FieldValue> list = (List<RedisProtocolSupport.FieldValue>) fieldValues;
             for (int i = 0; i < list.size(); ++i) {
@@ -3486,14 +3484,14 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
     public <T> Future<List<T>> hscan(@RedisProtocolSupport.Key final CharSequence key, final long cursor) {
         requireNonNull(key);
         final int len = 3;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.HSCAN) +
                     calculateRequestArgumentSize(keyBytes) + calculateRequestArgumentSize(cursor);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.HSCAN.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
-        RedisRequests.writeRequestArgument(buffer, cursor);
+        writeRequestArgument(buffer, key, keyBytes);
+        writeRequestArgument(buffer, cursor);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.HSCAN, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
@@ -3505,9 +3503,8 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
                                      @Nullable final CharSequence matchPattern, @Nullable final Long count) {
         requireNonNull(key);
         final int len = 3 + (matchPattern == null ? 0 : 2) + (count == null ? 0 : 2);
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] matchPatternBytes = matchPattern == null ? null
-                    : matchPattern.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
+        final int matchPatternBytes = matchPattern == null ? 0 : numberOfBytesUtf8(matchPattern);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.HSCAN) +
                     calculateRequestArgumentSize(keyBytes) + calculateRequestArgumentSize(cursor) +
                     (matchPattern == null ? 0 : RedisProtocolSupport.SubCommand.MATCH.encodedByteCount()) +
@@ -3515,17 +3512,17 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
                     (count == null ? 0 : RedisProtocolSupport.SubCommand.COUNT.encodedByteCount()) +
                     (count == null ? 0 : calculateRequestArgumentSize(count));
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.HSCAN.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
-        RedisRequests.writeRequestArgument(buffer, cursor);
+        writeRequestArgument(buffer, key, keyBytes);
+        writeRequestArgument(buffer, cursor);
         if (matchPattern != null) {
             RedisProtocolSupport.SubCommand.MATCH.encodeTo(buffer);
-            RedisRequests.writeRequestArgument(buffer, matchPatternBytes);
+            writeRequestArgument(buffer, matchPattern, matchPatternBytes);
         }
         if (count != null) {
             RedisProtocolSupport.SubCommand.COUNT.encodeTo(buffer);
-            RedisRequests.writeRequestArgument(buffer, count);
+            writeRequestArgument(buffer, count);
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.HSCAN, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
@@ -3540,18 +3537,18 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(field);
         requireNonNull(value);
         final int len = 4;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] fieldBytes = field.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] valueBytes = value.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
+        final int fieldBytes = numberOfBytesUtf8(field);
+        final int valueBytes = numberOfBytesUtf8(value);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.HSET) +
                     calculateRequestArgumentSize(keyBytes) + calculateRequestArgumentSize(fieldBytes) +
                     calculateRequestArgumentSize(valueBytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.HSET.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
-        RedisRequests.writeRequestArgument(buffer, fieldBytes);
-        RedisRequests.writeRequestArgument(buffer, valueBytes);
+        writeRequestArgument(buffer, key, keyBytes);
+        writeRequestArgument(buffer, field, fieldBytes);
+        writeRequestArgument(buffer, value, valueBytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.HSET, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
@@ -3565,18 +3562,18 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(field);
         requireNonNull(value);
         final int len = 4;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] fieldBytes = field.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] valueBytes = value.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
+        final int fieldBytes = numberOfBytesUtf8(field);
+        final int valueBytes = numberOfBytesUtf8(value);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.HSETNX) +
                     calculateRequestArgumentSize(keyBytes) + calculateRequestArgumentSize(fieldBytes) +
                     calculateRequestArgumentSize(valueBytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.HSETNX.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
-        RedisRequests.writeRequestArgument(buffer, fieldBytes);
-        RedisRequests.writeRequestArgument(buffer, valueBytes);
+        writeRequestArgument(buffer, key, keyBytes);
+        writeRequestArgument(buffer, field, fieldBytes);
+        writeRequestArgument(buffer, value, valueBytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.HSETNX, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
@@ -3588,15 +3585,15 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(key);
         requireNonNull(field);
         final int len = 3;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] fieldBytes = field.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
+        final int fieldBytes = numberOfBytesUtf8(field);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.HSTRLEN) +
                     calculateRequestArgumentSize(keyBytes) + calculateRequestArgumentSize(fieldBytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.HSTRLEN.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
-        RedisRequests.writeRequestArgument(buffer, fieldBytes);
+        writeRequestArgument(buffer, key, keyBytes);
+        writeRequestArgument(buffer, field, fieldBytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.HSTRLEN, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
@@ -3607,13 +3604,13 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
     public <T> Future<List<T>> hvals(@RedisProtocolSupport.Key final CharSequence key) {
         requireNonNull(key);
         final int len = 2;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.HVALS) +
                     calculateRequestArgumentSize(keyBytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.HVALS.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
+        writeRequestArgument(buffer, key, keyBytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.HVALS, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
@@ -3624,13 +3621,13 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
     public Future<Long> incr(@RedisProtocolSupport.Key final CharSequence key) {
         requireNonNull(key);
         final int len = 2;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.INCR) +
                     calculateRequestArgumentSize(keyBytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.INCR.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
+        writeRequestArgument(buffer, key, keyBytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.INCR, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
@@ -3641,14 +3638,14 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
     public Future<Long> incrby(@RedisProtocolSupport.Key final CharSequence key, final long increment) {
         requireNonNull(key);
         final int len = 3;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.INCRBY) +
                     calculateRequestArgumentSize(keyBytes) + calculateRequestArgumentSize(increment);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.INCRBY.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
-        RedisRequests.writeRequestArgument(buffer, increment);
+        writeRequestArgument(buffer, key, keyBytes);
+        writeRequestArgument(buffer, increment);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.INCRBY, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
@@ -3659,14 +3656,14 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
     public Future<Double> incrbyfloat(@RedisProtocolSupport.Key final CharSequence key, final double increment) {
         requireNonNull(key);
         final int len = 3;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.INCRBYFLOAT) +
                     calculateRequestArgumentSize(keyBytes) + calculateRequestArgumentSize(increment);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.INCRBYFLOAT.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
-        RedisRequests.writeRequestArgument(buffer, increment);
+        writeRequestArgument(buffer, key, keyBytes);
+        writeRequestArgument(buffer, increment);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.INCRBYFLOAT, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Double> result = enqueueForExecute(state, singles, queued);
@@ -3678,7 +3675,7 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         final int len = 1;
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.INFO);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.INFO.encodeTo(buffer);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.INFO, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
@@ -3689,14 +3686,14 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
     @Override
     public Future<String> info(@Nullable final CharSequence section) {
         final int len = 1 + (section == null ? 0 : 1);
-        final byte[] sectionBytes = section == null ? null : section.toString().getBytes(StandardCharsets.UTF_8);
+        final int sectionBytes = section == null ? 0 : numberOfBytesUtf8(section);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.INFO) +
                     (section == null ? 0 : calculateRequestArgumentSize(sectionBytes));
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.INFO.encodeTo(buffer);
         if (section != null) {
-            RedisRequests.writeRequestArgument(buffer, sectionBytes);
+            writeRequestArgument(buffer, section, sectionBytes);
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.INFO, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
@@ -3708,13 +3705,13 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
     public <T> Future<List<T>> keys(final CharSequence pattern) {
         requireNonNull(pattern);
         final int len = 2;
-        final byte[] patternBytes = pattern.toString().getBytes(StandardCharsets.UTF_8);
+        final int patternBytes = numberOfBytesUtf8(pattern);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.KEYS) +
                     calculateRequestArgumentSize(patternBytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.KEYS.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, patternBytes);
+        writeRequestArgument(buffer, pattern, patternBytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.KEYS, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
@@ -3726,7 +3723,7 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         final int len = 1;
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.LASTSAVE);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.LASTSAVE.encodeTo(buffer);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.LASTSAVE, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
@@ -3738,14 +3735,14 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
     public Future<String> lindex(@RedisProtocolSupport.Key final CharSequence key, final long index) {
         requireNonNull(key);
         final int len = 3;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.LINDEX) +
                     calculateRequestArgumentSize(keyBytes) + calculateRequestArgumentSize(index);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.LINDEX.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
-        RedisRequests.writeRequestArgument(buffer, index);
+        writeRequestArgument(buffer, key, keyBytes);
+        writeRequestArgument(buffer, index);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.LINDEX, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<String> result = enqueueForExecute(state, singles, queued);
@@ -3761,19 +3758,19 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(pivot);
         requireNonNull(value);
         final int len = 5;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] pivotBytes = pivot.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] valueBytes = value.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
+        final int pivotBytes = numberOfBytesUtf8(pivot);
+        final int valueBytes = numberOfBytesUtf8(value);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.LINSERT) +
                     calculateRequestArgumentSize(keyBytes) + where.encodedByteCount() +
                     calculateRequestArgumentSize(pivotBytes) + calculateRequestArgumentSize(valueBytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.LINSERT.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
+        writeRequestArgument(buffer, key, keyBytes);
         where.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, pivotBytes);
-        RedisRequests.writeRequestArgument(buffer, valueBytes);
+        writeRequestArgument(buffer, pivot, pivotBytes);
+        writeRequestArgument(buffer, value, valueBytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.LINSERT, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
@@ -3784,13 +3781,13 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
     public Future<Long> llen(@RedisProtocolSupport.Key final CharSequence key) {
         requireNonNull(key);
         final int len = 2;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.LLEN) +
                     calculateRequestArgumentSize(keyBytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.LLEN.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
+        writeRequestArgument(buffer, key, keyBytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.LLEN, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
@@ -3801,13 +3798,13 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
     public Future<String> lpop(@RedisProtocolSupport.Key final CharSequence key) {
         requireNonNull(key);
         final int len = 2;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.LPOP) +
                     calculateRequestArgumentSize(keyBytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.LPOP.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
+        writeRequestArgument(buffer, key, keyBytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.LPOP, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<String> result = enqueueForExecute(state, singles, queued);
@@ -3819,15 +3816,15 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(key);
         requireNonNull(value);
         final int len = 3;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] valueBytes = value.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
+        final int valueBytes = numberOfBytesUtf8(value);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.LPUSH) +
                     calculateRequestArgumentSize(keyBytes) + calculateRequestArgumentSize(valueBytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.LPUSH.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
-        RedisRequests.writeRequestArgument(buffer, valueBytes);
+        writeRequestArgument(buffer, key, keyBytes);
+        writeRequestArgument(buffer, value, valueBytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.LPUSH, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
@@ -3841,18 +3838,18 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(value1);
         requireNonNull(value2);
         final int len = 4;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] value1Bytes = value1.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] value2Bytes = value2.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
+        final int value1Bytes = numberOfBytesUtf8(value1);
+        final int value2Bytes = numberOfBytesUtf8(value2);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.LPUSH) +
                     calculateRequestArgumentSize(keyBytes) + calculateRequestArgumentSize(value1Bytes) +
                     calculateRequestArgumentSize(value2Bytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.LPUSH.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
-        RedisRequests.writeRequestArgument(buffer, value1Bytes);
-        RedisRequests.writeRequestArgument(buffer, value2Bytes);
+        writeRequestArgument(buffer, key, keyBytes);
+        writeRequestArgument(buffer, value1, value1Bytes);
+        writeRequestArgument(buffer, value2, value2Bytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.LPUSH, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
@@ -3867,20 +3864,20 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(value2);
         requireNonNull(value3);
         final int len = 5;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] value1Bytes = value1.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] value2Bytes = value2.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] value3Bytes = value3.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
+        final int value1Bytes = numberOfBytesUtf8(value1);
+        final int value2Bytes = numberOfBytesUtf8(value2);
+        final int value3Bytes = numberOfBytesUtf8(value3);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.LPUSH) +
                     calculateRequestArgumentSize(keyBytes) + calculateRequestArgumentSize(value1Bytes) +
                     calculateRequestArgumentSize(value2Bytes) + calculateRequestArgumentSize(value3Bytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.LPUSH.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
-        RedisRequests.writeRequestArgument(buffer, value1Bytes);
-        RedisRequests.writeRequestArgument(buffer, value2Bytes);
-        RedisRequests.writeRequestArgument(buffer, value3Bytes);
+        writeRequestArgument(buffer, key, keyBytes);
+        writeRequestArgument(buffer, value1, value1Bytes);
+        writeRequestArgument(buffer, value2, value2Bytes);
+        writeRequestArgument(buffer, value3, value3Bytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.LPUSH, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
@@ -3893,7 +3890,7 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(key);
         requireNonNull(values);
         final int len = 2 + values.size();
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
         int valuesCapacity = 0;
         if (values instanceof List && values instanceof RandomAccess) {
             final List<CharSequence> list = (List<CharSequence>) values;
@@ -3909,18 +3906,18 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.LPUSH) +
                     calculateRequestArgumentSize(keyBytes) + valuesCapacity;
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.LPUSH.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
+        writeRequestArgument(buffer, key, keyBytes);
         if (values instanceof List && values instanceof RandomAccess) {
             final List<CharSequence> list = (List<CharSequence>) values;
             for (int i = 0; i < list.size(); ++i) {
                 final CharSequence arg = list.get(i);
-                RedisRequests.writeRequestArgument(buffer, arg);
+                writeRequestArgument(buffer, arg);
             }
         } else {
             for (CharSequence arg : values) {
-                RedisRequests.writeRequestArgument(buffer, arg);
+                writeRequestArgument(buffer, arg);
             }
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.LPUSH, buffer);
@@ -3934,15 +3931,15 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(key);
         requireNonNull(value);
         final int len = 3;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] valueBytes = value.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
+        final int valueBytes = numberOfBytesUtf8(value);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.LPUSHX) +
                     calculateRequestArgumentSize(keyBytes) + calculateRequestArgumentSize(valueBytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.LPUSHX.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
-        RedisRequests.writeRequestArgument(buffer, valueBytes);
+        writeRequestArgument(buffer, key, keyBytes);
+        writeRequestArgument(buffer, value, valueBytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.LPUSHX, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
@@ -3954,16 +3951,16 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
                                       final long stop) {
         requireNonNull(key);
         final int len = 4;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.LRANGE) +
                     calculateRequestArgumentSize(keyBytes) + calculateRequestArgumentSize(start) +
                     calculateRequestArgumentSize(stop);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.LRANGE.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
-        RedisRequests.writeRequestArgument(buffer, start);
-        RedisRequests.writeRequestArgument(buffer, stop);
+        writeRequestArgument(buffer, key, keyBytes);
+        writeRequestArgument(buffer, start);
+        writeRequestArgument(buffer, stop);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.LRANGE, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
@@ -3976,17 +3973,17 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(key);
         requireNonNull(value);
         final int len = 4;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] valueBytes = value.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
+        final int valueBytes = numberOfBytesUtf8(value);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.LREM) +
                     calculateRequestArgumentSize(keyBytes) + calculateRequestArgumentSize(count) +
                     calculateRequestArgumentSize(valueBytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.LREM.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
-        RedisRequests.writeRequestArgument(buffer, count);
-        RedisRequests.writeRequestArgument(buffer, valueBytes);
+        writeRequestArgument(buffer, key, keyBytes);
+        writeRequestArgument(buffer, count);
+        writeRequestArgument(buffer, value, valueBytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.LREM, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
@@ -3999,17 +3996,17 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(key);
         requireNonNull(value);
         final int len = 4;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] valueBytes = value.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
+        final int valueBytes = numberOfBytesUtf8(value);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.LSET) +
                     calculateRequestArgumentSize(keyBytes) + calculateRequestArgumentSize(index) +
                     calculateRequestArgumentSize(valueBytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.LSET.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
-        RedisRequests.writeRequestArgument(buffer, index);
-        RedisRequests.writeRequestArgument(buffer, valueBytes);
+        writeRequestArgument(buffer, key, keyBytes);
+        writeRequestArgument(buffer, index);
+        writeRequestArgument(buffer, value, valueBytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.LSET, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<String> result = enqueueForExecute(state, singles, queued);
@@ -4020,16 +4017,16 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
     public Future<String> ltrim(@RedisProtocolSupport.Key final CharSequence key, final long start, final long stop) {
         requireNonNull(key);
         final int len = 4;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.LTRIM) +
                     calculateRequestArgumentSize(keyBytes) + calculateRequestArgumentSize(start) +
                     calculateRequestArgumentSize(stop);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.LTRIM.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
-        RedisRequests.writeRequestArgument(buffer, start);
-        RedisRequests.writeRequestArgument(buffer, stop);
+        writeRequestArgument(buffer, key, keyBytes);
+        writeRequestArgument(buffer, start);
+        writeRequestArgument(buffer, stop);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.LTRIM, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<String> result = enqueueForExecute(state, singles, queued);
@@ -4041,7 +4038,7 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         final int len = 2;
         final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.MEMORY);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.MEMORY.encodeTo(buffer);
         RedisProtocolSupport.SubCommand.DOCTOR.encodeTo(buffer);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.MEMORY, buffer);
@@ -4055,7 +4052,7 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         final int len = 2;
         final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.MEMORY);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.MEMORY.encodeTo(buffer);
         RedisProtocolSupport.SubCommand.HELP.encodeTo(buffer);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.MEMORY, buffer);
@@ -4069,7 +4066,7 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         final int len = 2;
         final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.MEMORY);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.MEMORY.encodeTo(buffer);
         RedisProtocolSupport.SubCommand.MALLOC_STATS.encodeTo(buffer);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.MEMORY, buffer);
@@ -4083,7 +4080,7 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         final int len = 2;
         final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.MEMORY);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.MEMORY.encodeTo(buffer);
         RedisProtocolSupport.SubCommand.PURGE.encodeTo(buffer);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.MEMORY, buffer);
@@ -4097,7 +4094,7 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         final int len = 2;
         final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.MEMORY);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.MEMORY.encodeTo(buffer);
         RedisProtocolSupport.SubCommand.STATS.encodeTo(buffer);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.MEMORY, buffer);
@@ -4110,14 +4107,14 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
     public Future<Long> memoryUsage(@RedisProtocolSupport.Key final CharSequence key) {
         requireNonNull(key);
         final int len = 3;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
         final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.MEMORY) +
                     calculateRequestArgumentSize(keyBytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.MEMORY.encodeTo(buffer);
         RedisProtocolSupport.SubCommand.USAGE.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
+        writeRequestArgument(buffer, key, keyBytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.MEMORY, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
@@ -4129,19 +4126,19 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
                                     @Nullable final Long samplesCount) {
         requireNonNull(key);
         final int len = 3 + (samplesCount == null ? 0 : 2);
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
         final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.MEMORY) +
                     calculateRequestArgumentSize(keyBytes) +
                     (samplesCount == null ? 0 : RedisProtocolSupport.SubCommand.SAMPLES.encodedByteCount()) +
                     (samplesCount == null ? 0 : calculateRequestArgumentSize(samplesCount));
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.MEMORY.encodeTo(buffer);
         RedisProtocolSupport.SubCommand.USAGE.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
+        writeRequestArgument(buffer, key, keyBytes);
         if (samplesCount != null) {
             RedisProtocolSupport.SubCommand.SAMPLES.encodeTo(buffer);
-            RedisRequests.writeRequestArgument(buffer, samplesCount);
+            writeRequestArgument(buffer, samplesCount);
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.MEMORY, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
@@ -4153,13 +4150,13 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
     public Future<List<String>> mget(@RedisProtocolSupport.Key final CharSequence key) {
         requireNonNull(key);
         final int len = 2;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.MGET) +
                     calculateRequestArgumentSize(keyBytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.MGET.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
+        writeRequestArgument(buffer, key, keyBytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.MGET, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<String>> result = enqueueForExecute(state, singles, queued);
@@ -4172,15 +4169,15 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(key1);
         requireNonNull(key2);
         final int len = 3;
-        final byte[] key1Bytes = key1.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] key2Bytes = key2.toString().getBytes(StandardCharsets.UTF_8);
+        final int key1Bytes = numberOfBytesUtf8(key1);
+        final int key2Bytes = numberOfBytesUtf8(key2);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.MGET) +
                     calculateRequestArgumentSize(key1Bytes) + calculateRequestArgumentSize(key2Bytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.MGET.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, key1Bytes);
-        RedisRequests.writeRequestArgument(buffer, key2Bytes);
+        writeRequestArgument(buffer, key1, key1Bytes);
+        writeRequestArgument(buffer, key2, key2Bytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.MGET, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<String>> result = enqueueForExecute(state, singles, queued);
@@ -4195,18 +4192,18 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(key2);
         requireNonNull(key3);
         final int len = 4;
-        final byte[] key1Bytes = key1.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] key2Bytes = key2.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] key3Bytes = key3.toString().getBytes(StandardCharsets.UTF_8);
+        final int key1Bytes = numberOfBytesUtf8(key1);
+        final int key2Bytes = numberOfBytesUtf8(key2);
+        final int key3Bytes = numberOfBytesUtf8(key3);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.MGET) +
                     calculateRequestArgumentSize(key1Bytes) + calculateRequestArgumentSize(key2Bytes) +
                     calculateRequestArgumentSize(key3Bytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.MGET.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, key1Bytes);
-        RedisRequests.writeRequestArgument(buffer, key2Bytes);
-        RedisRequests.writeRequestArgument(buffer, key3Bytes);
+        writeRequestArgument(buffer, key1, key1Bytes);
+        writeRequestArgument(buffer, key2, key2Bytes);
+        writeRequestArgument(buffer, key3, key3Bytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.MGET, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<String>> result = enqueueForExecute(state, singles, queued);
@@ -4231,17 +4228,17 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         }
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.MGET) + keysCapacity;
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.MGET.encodeTo(buffer);
         if (keys instanceof List && keys instanceof RandomAccess) {
             final List<CharSequence> list = (List<CharSequence>) keys;
             for (int i = 0; i < list.size(); ++i) {
                 final CharSequence arg = list.get(i);
-                RedisRequests.writeRequestArgument(buffer, arg);
+                writeRequestArgument(buffer, arg);
             }
         } else {
             for (CharSequence arg : keys) {
-                RedisRequests.writeRequestArgument(buffer, arg);
+                writeRequestArgument(buffer, arg);
             }
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.MGET, buffer);
@@ -4254,14 +4251,14 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
     public Future<Long> move(@RedisProtocolSupport.Key final CharSequence key, final long db) {
         requireNonNull(key);
         final int len = 3;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.MOVE) +
                     calculateRequestArgumentSize(keyBytes) + calculateRequestArgumentSize(db);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.MOVE.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
-        RedisRequests.writeRequestArgument(buffer, db);
+        writeRequestArgument(buffer, key, keyBytes);
+        writeRequestArgument(buffer, db);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.MOVE, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
@@ -4273,15 +4270,15 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(key);
         requireNonNull(value);
         final int len = 3;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] valueBytes = value.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
+        final int valueBytes = numberOfBytesUtf8(value);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.MSET) +
                     calculateRequestArgumentSize(keyBytes) + calculateRequestArgumentSize(valueBytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.MSET.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
-        RedisRequests.writeRequestArgument(buffer, valueBytes);
+        writeRequestArgument(buffer, key, keyBytes);
+        writeRequestArgument(buffer, value, valueBytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.MSET, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<String> result = enqueueForExecute(state, singles, queued);
@@ -4296,20 +4293,20 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(key2);
         requireNonNull(value2);
         final int len = 5;
-        final byte[] key1Bytes = key1.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] value1Bytes = value1.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] key2Bytes = key2.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] value2Bytes = value2.toString().getBytes(StandardCharsets.UTF_8);
+        final int key1Bytes = numberOfBytesUtf8(key1);
+        final int value1Bytes = numberOfBytesUtf8(value1);
+        final int key2Bytes = numberOfBytesUtf8(key2);
+        final int value2Bytes = numberOfBytesUtf8(value2);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.MSET) +
                     calculateRequestArgumentSize(key1Bytes) + calculateRequestArgumentSize(value1Bytes) +
                     calculateRequestArgumentSize(key2Bytes) + calculateRequestArgumentSize(value2Bytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.MSET.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, key1Bytes);
-        RedisRequests.writeRequestArgument(buffer, value1Bytes);
-        RedisRequests.writeRequestArgument(buffer, key2Bytes);
-        RedisRequests.writeRequestArgument(buffer, value2Bytes);
+        writeRequestArgument(buffer, key1, key1Bytes);
+        writeRequestArgument(buffer, value1, value1Bytes);
+        writeRequestArgument(buffer, key2, key2Bytes);
+        writeRequestArgument(buffer, value2, value2Bytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.MSET, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<String> result = enqueueForExecute(state, singles, queued);
@@ -4327,25 +4324,25 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(key3);
         requireNonNull(value3);
         final int len = 7;
-        final byte[] key1Bytes = key1.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] value1Bytes = value1.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] key2Bytes = key2.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] value2Bytes = value2.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] key3Bytes = key3.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] value3Bytes = value3.toString().getBytes(StandardCharsets.UTF_8);
+        final int key1Bytes = numberOfBytesUtf8(key1);
+        final int value1Bytes = numberOfBytesUtf8(value1);
+        final int key2Bytes = numberOfBytesUtf8(key2);
+        final int value2Bytes = numberOfBytesUtf8(value2);
+        final int key3Bytes = numberOfBytesUtf8(key3);
+        final int value3Bytes = numberOfBytesUtf8(value3);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.MSET) +
                     calculateRequestArgumentSize(key1Bytes) + calculateRequestArgumentSize(value1Bytes) +
                     calculateRequestArgumentSize(key2Bytes) + calculateRequestArgumentSize(value2Bytes) +
                     calculateRequestArgumentSize(key3Bytes) + calculateRequestArgumentSize(value3Bytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.MSET.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, key1Bytes);
-        RedisRequests.writeRequestArgument(buffer, value1Bytes);
-        RedisRequests.writeRequestArgument(buffer, key2Bytes);
-        RedisRequests.writeRequestArgument(buffer, value2Bytes);
-        RedisRequests.writeRequestArgument(buffer, key3Bytes);
-        RedisRequests.writeRequestArgument(buffer, value3Bytes);
+        writeRequestArgument(buffer, key1, key1Bytes);
+        writeRequestArgument(buffer, value1, value1Bytes);
+        writeRequestArgument(buffer, key2, key2Bytes);
+        writeRequestArgument(buffer, value2, value2Bytes);
+        writeRequestArgument(buffer, key3, key3Bytes);
+        writeRequestArgument(buffer, value3, value3Bytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.MSET, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<String> result = enqueueForExecute(state, singles, queued);
@@ -4371,7 +4368,7 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.MSET) +
                     keyValuesCapacity;
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.MSET.encodeTo(buffer);
         if (keyValues instanceof List && keyValues instanceof RandomAccess) {
             final List<RedisProtocolSupport.KeyValue> list = (List<RedisProtocolSupport.KeyValue>) keyValues;
@@ -4395,15 +4392,15 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(key);
         requireNonNull(value);
         final int len = 3;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] valueBytes = value.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
+        final int valueBytes = numberOfBytesUtf8(value);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.MSETNX) +
                     calculateRequestArgumentSize(keyBytes) + calculateRequestArgumentSize(valueBytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.MSETNX.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
-        RedisRequests.writeRequestArgument(buffer, valueBytes);
+        writeRequestArgument(buffer, key, keyBytes);
+        writeRequestArgument(buffer, value, valueBytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.MSETNX, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
@@ -4418,20 +4415,20 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(key2);
         requireNonNull(value2);
         final int len = 5;
-        final byte[] key1Bytes = key1.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] value1Bytes = value1.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] key2Bytes = key2.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] value2Bytes = value2.toString().getBytes(StandardCharsets.UTF_8);
+        final int key1Bytes = numberOfBytesUtf8(key1);
+        final int value1Bytes = numberOfBytesUtf8(value1);
+        final int key2Bytes = numberOfBytesUtf8(key2);
+        final int value2Bytes = numberOfBytesUtf8(value2);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.MSETNX) +
                     calculateRequestArgumentSize(key1Bytes) + calculateRequestArgumentSize(value1Bytes) +
                     calculateRequestArgumentSize(key2Bytes) + calculateRequestArgumentSize(value2Bytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.MSETNX.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, key1Bytes);
-        RedisRequests.writeRequestArgument(buffer, value1Bytes);
-        RedisRequests.writeRequestArgument(buffer, key2Bytes);
-        RedisRequests.writeRequestArgument(buffer, value2Bytes);
+        writeRequestArgument(buffer, key1, key1Bytes);
+        writeRequestArgument(buffer, value1, value1Bytes);
+        writeRequestArgument(buffer, key2, key2Bytes);
+        writeRequestArgument(buffer, value2, value2Bytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.MSETNX, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
@@ -4449,25 +4446,25 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(key3);
         requireNonNull(value3);
         final int len = 7;
-        final byte[] key1Bytes = key1.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] value1Bytes = value1.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] key2Bytes = key2.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] value2Bytes = value2.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] key3Bytes = key3.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] value3Bytes = value3.toString().getBytes(StandardCharsets.UTF_8);
+        final int key1Bytes = numberOfBytesUtf8(key1);
+        final int value1Bytes = numberOfBytesUtf8(value1);
+        final int key2Bytes = numberOfBytesUtf8(key2);
+        final int value2Bytes = numberOfBytesUtf8(value2);
+        final int key3Bytes = numberOfBytesUtf8(key3);
+        final int value3Bytes = numberOfBytesUtf8(value3);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.MSETNX) +
                     calculateRequestArgumentSize(key1Bytes) + calculateRequestArgumentSize(value1Bytes) +
                     calculateRequestArgumentSize(key2Bytes) + calculateRequestArgumentSize(value2Bytes) +
                     calculateRequestArgumentSize(key3Bytes) + calculateRequestArgumentSize(value3Bytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.MSETNX.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, key1Bytes);
-        RedisRequests.writeRequestArgument(buffer, value1Bytes);
-        RedisRequests.writeRequestArgument(buffer, key2Bytes);
-        RedisRequests.writeRequestArgument(buffer, value2Bytes);
-        RedisRequests.writeRequestArgument(buffer, key3Bytes);
-        RedisRequests.writeRequestArgument(buffer, value3Bytes);
+        writeRequestArgument(buffer, key1, key1Bytes);
+        writeRequestArgument(buffer, value1, value1Bytes);
+        writeRequestArgument(buffer, key2, key2Bytes);
+        writeRequestArgument(buffer, value2, value2Bytes);
+        writeRequestArgument(buffer, key3, key3Bytes);
+        writeRequestArgument(buffer, value3, value3Bytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.MSETNX, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
@@ -4493,7 +4490,7 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.MSETNX) +
                     keyValuesCapacity;
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.MSETNX.encodeTo(buffer);
         if (keyValues instanceof List && keyValues instanceof RandomAccess) {
             final List<RedisProtocolSupport.KeyValue> list = (List<RedisProtocolSupport.KeyValue>) keyValues;
@@ -4516,14 +4513,14 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
     public Future<String> objectEncoding(@RedisProtocolSupport.Key final CharSequence key) {
         requireNonNull(key);
         final int len = 3;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
         final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.OBJECT) +
                     calculateRequestArgumentSize(keyBytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.OBJECT.encodeTo(buffer);
         RedisProtocolSupport.SubCommand.ENCODING.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
+        writeRequestArgument(buffer, key, keyBytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.OBJECT, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<String> result = enqueueForExecute(state, singles, queued);
@@ -4534,14 +4531,14 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
     public Future<Long> objectFreq(@RedisProtocolSupport.Key final CharSequence key) {
         requireNonNull(key);
         final int len = 3;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
         final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.OBJECT) +
                     calculateRequestArgumentSize(keyBytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.OBJECT.encodeTo(buffer);
         RedisProtocolSupport.SubCommand.FREQ.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
+        writeRequestArgument(buffer, key, keyBytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.OBJECT, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
@@ -4553,7 +4550,7 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         final int len = 2;
         final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.OBJECT);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.OBJECT.encodeTo(buffer);
         RedisProtocolSupport.SubCommand.HELP.encodeTo(buffer);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.OBJECT, buffer);
@@ -4566,14 +4563,14 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
     public Future<Long> objectIdletime(@RedisProtocolSupport.Key final CharSequence key) {
         requireNonNull(key);
         final int len = 3;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
         final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.OBJECT) +
                     calculateRequestArgumentSize(keyBytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.OBJECT.encodeTo(buffer);
         RedisProtocolSupport.SubCommand.IDLETIME.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
+        writeRequestArgument(buffer, key, keyBytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.OBJECT, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
@@ -4584,14 +4581,14 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
     public Future<Long> objectRefcount(@RedisProtocolSupport.Key final CharSequence key) {
         requireNonNull(key);
         final int len = 3;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
         final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.OBJECT) +
                     calculateRequestArgumentSize(keyBytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.OBJECT.encodeTo(buffer);
         RedisProtocolSupport.SubCommand.REFCOUNT.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
+        writeRequestArgument(buffer, key, keyBytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.OBJECT, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
@@ -4602,13 +4599,13 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
     public Future<Long> persist(@RedisProtocolSupport.Key final CharSequence key) {
         requireNonNull(key);
         final int len = 2;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.PERSIST) +
                     calculateRequestArgumentSize(keyBytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.PERSIST.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
+        writeRequestArgument(buffer, key, keyBytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.PERSIST, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
@@ -4619,14 +4616,14 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
     public Future<Long> pexpire(@RedisProtocolSupport.Key final CharSequence key, final long milliseconds) {
         requireNonNull(key);
         final int len = 3;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.PEXPIRE) +
                     calculateRequestArgumentSize(keyBytes) + calculateRequestArgumentSize(milliseconds);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.PEXPIRE.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
-        RedisRequests.writeRequestArgument(buffer, milliseconds);
+        writeRequestArgument(buffer, key, keyBytes);
+        writeRequestArgument(buffer, milliseconds);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.PEXPIRE, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
@@ -4637,14 +4634,14 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
     public Future<Long> pexpireat(@RedisProtocolSupport.Key final CharSequence key, final long millisecondsTimestamp) {
         requireNonNull(key);
         final int len = 3;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.PEXPIREAT) +
                     calculateRequestArgumentSize(keyBytes) + calculateRequestArgumentSize(millisecondsTimestamp);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.PEXPIREAT.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
-        RedisRequests.writeRequestArgument(buffer, millisecondsTimestamp);
+        writeRequestArgument(buffer, key, keyBytes);
+        writeRequestArgument(buffer, millisecondsTimestamp);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.PEXPIREAT, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
@@ -4656,15 +4653,15 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(key);
         requireNonNull(element);
         final int len = 3;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] elementBytes = element.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
+        final int elementBytes = numberOfBytesUtf8(element);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.PFADD) +
                     calculateRequestArgumentSize(keyBytes) + calculateRequestArgumentSize(elementBytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.PFADD.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
-        RedisRequests.writeRequestArgument(buffer, elementBytes);
+        writeRequestArgument(buffer, key, keyBytes);
+        writeRequestArgument(buffer, element, elementBytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.PFADD, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
@@ -4678,18 +4675,18 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(element1);
         requireNonNull(element2);
         final int len = 4;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] element1Bytes = element1.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] element2Bytes = element2.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
+        final int element1Bytes = numberOfBytesUtf8(element1);
+        final int element2Bytes = numberOfBytesUtf8(element2);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.PFADD) +
                     calculateRequestArgumentSize(keyBytes) + calculateRequestArgumentSize(element1Bytes) +
                     calculateRequestArgumentSize(element2Bytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.PFADD.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
-        RedisRequests.writeRequestArgument(buffer, element1Bytes);
-        RedisRequests.writeRequestArgument(buffer, element2Bytes);
+        writeRequestArgument(buffer, key, keyBytes);
+        writeRequestArgument(buffer, element1, element1Bytes);
+        writeRequestArgument(buffer, element2, element2Bytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.PFADD, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
@@ -4704,20 +4701,20 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(element2);
         requireNonNull(element3);
         final int len = 5;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] element1Bytes = element1.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] element2Bytes = element2.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] element3Bytes = element3.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
+        final int element1Bytes = numberOfBytesUtf8(element1);
+        final int element2Bytes = numberOfBytesUtf8(element2);
+        final int element3Bytes = numberOfBytesUtf8(element3);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.PFADD) +
                     calculateRequestArgumentSize(keyBytes) + calculateRequestArgumentSize(element1Bytes) +
                     calculateRequestArgumentSize(element2Bytes) + calculateRequestArgumentSize(element3Bytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.PFADD.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
-        RedisRequests.writeRequestArgument(buffer, element1Bytes);
-        RedisRequests.writeRequestArgument(buffer, element2Bytes);
-        RedisRequests.writeRequestArgument(buffer, element3Bytes);
+        writeRequestArgument(buffer, key, keyBytes);
+        writeRequestArgument(buffer, element1, element1Bytes);
+        writeRequestArgument(buffer, element2, element2Bytes);
+        writeRequestArgument(buffer, element3, element3Bytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.PFADD, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
@@ -4730,7 +4727,7 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(key);
         requireNonNull(elements);
         final int len = 2 + elements.size();
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
         int elementsCapacity = 0;
         if (elements instanceof List && elements instanceof RandomAccess) {
             final List<CharSequence> list = (List<CharSequence>) elements;
@@ -4746,18 +4743,18 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.PFADD) +
                     calculateRequestArgumentSize(keyBytes) + elementsCapacity;
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.PFADD.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
+        writeRequestArgument(buffer, key, keyBytes);
         if (elements instanceof List && elements instanceof RandomAccess) {
             final List<CharSequence> list = (List<CharSequence>) elements;
             for (int i = 0; i < list.size(); ++i) {
                 final CharSequence arg = list.get(i);
-                RedisRequests.writeRequestArgument(buffer, arg);
+                writeRequestArgument(buffer, arg);
             }
         } else {
             for (CharSequence arg : elements) {
-                RedisRequests.writeRequestArgument(buffer, arg);
+                writeRequestArgument(buffer, arg);
             }
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.PFADD, buffer);
@@ -4770,13 +4767,13 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
     public Future<Long> pfcount(@RedisProtocolSupport.Key final CharSequence key) {
         requireNonNull(key);
         final int len = 2;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.PFCOUNT) +
                     calculateRequestArgumentSize(keyBytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.PFCOUNT.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
+        writeRequestArgument(buffer, key, keyBytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.PFCOUNT, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
@@ -4789,15 +4786,15 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(key1);
         requireNonNull(key2);
         final int len = 3;
-        final byte[] key1Bytes = key1.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] key2Bytes = key2.toString().getBytes(StandardCharsets.UTF_8);
+        final int key1Bytes = numberOfBytesUtf8(key1);
+        final int key2Bytes = numberOfBytesUtf8(key2);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.PFCOUNT) +
                     calculateRequestArgumentSize(key1Bytes) + calculateRequestArgumentSize(key2Bytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.PFCOUNT.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, key1Bytes);
-        RedisRequests.writeRequestArgument(buffer, key2Bytes);
+        writeRequestArgument(buffer, key1, key1Bytes);
+        writeRequestArgument(buffer, key2, key2Bytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.PFCOUNT, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
@@ -4812,18 +4809,18 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(key2);
         requireNonNull(key3);
         final int len = 4;
-        final byte[] key1Bytes = key1.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] key2Bytes = key2.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] key3Bytes = key3.toString().getBytes(StandardCharsets.UTF_8);
+        final int key1Bytes = numberOfBytesUtf8(key1);
+        final int key2Bytes = numberOfBytesUtf8(key2);
+        final int key3Bytes = numberOfBytesUtf8(key3);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.PFCOUNT) +
                     calculateRequestArgumentSize(key1Bytes) + calculateRequestArgumentSize(key2Bytes) +
                     calculateRequestArgumentSize(key3Bytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.PFCOUNT.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, key1Bytes);
-        RedisRequests.writeRequestArgument(buffer, key2Bytes);
-        RedisRequests.writeRequestArgument(buffer, key3Bytes);
+        writeRequestArgument(buffer, key1, key1Bytes);
+        writeRequestArgument(buffer, key2, key2Bytes);
+        writeRequestArgument(buffer, key3, key3Bytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.PFCOUNT, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
@@ -4849,17 +4846,17 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.PFCOUNT) +
                     keysCapacity;
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.PFCOUNT.encodeTo(buffer);
         if (keys instanceof List && keys instanceof RandomAccess) {
             final List<CharSequence> list = (List<CharSequence>) keys;
             for (int i = 0; i < list.size(); ++i) {
                 final CharSequence arg = list.get(i);
-                RedisRequests.writeRequestArgument(buffer, arg);
+                writeRequestArgument(buffer, arg);
             }
         } else {
             for (CharSequence arg : keys) {
-                RedisRequests.writeRequestArgument(buffer, arg);
+                writeRequestArgument(buffer, arg);
             }
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.PFCOUNT, buffer);
@@ -4874,15 +4871,15 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(destkey);
         requireNonNull(sourcekey);
         final int len = 3;
-        final byte[] destkeyBytes = destkey.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] sourcekeyBytes = sourcekey.toString().getBytes(StandardCharsets.UTF_8);
+        final int destkeyBytes = numberOfBytesUtf8(destkey);
+        final int sourcekeyBytes = numberOfBytesUtf8(sourcekey);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.PFMERGE) +
                     calculateRequestArgumentSize(destkeyBytes) + calculateRequestArgumentSize(sourcekeyBytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.PFMERGE.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, destkeyBytes);
-        RedisRequests.writeRequestArgument(buffer, sourcekeyBytes);
+        writeRequestArgument(buffer, destkey, destkeyBytes);
+        writeRequestArgument(buffer, sourcekey, sourcekeyBytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.PFMERGE, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<String> result = enqueueForExecute(state, singles, queued);
@@ -4897,18 +4894,18 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(sourcekey1);
         requireNonNull(sourcekey2);
         final int len = 4;
-        final byte[] destkeyBytes = destkey.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] sourcekey1Bytes = sourcekey1.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] sourcekey2Bytes = sourcekey2.toString().getBytes(StandardCharsets.UTF_8);
+        final int destkeyBytes = numberOfBytesUtf8(destkey);
+        final int sourcekey1Bytes = numberOfBytesUtf8(sourcekey1);
+        final int sourcekey2Bytes = numberOfBytesUtf8(sourcekey2);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.PFMERGE) +
                     calculateRequestArgumentSize(destkeyBytes) + calculateRequestArgumentSize(sourcekey1Bytes) +
                     calculateRequestArgumentSize(sourcekey2Bytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.PFMERGE.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, destkeyBytes);
-        RedisRequests.writeRequestArgument(buffer, sourcekey1Bytes);
-        RedisRequests.writeRequestArgument(buffer, sourcekey2Bytes);
+        writeRequestArgument(buffer, destkey, destkeyBytes);
+        writeRequestArgument(buffer, sourcekey1, sourcekey1Bytes);
+        writeRequestArgument(buffer, sourcekey2, sourcekey2Bytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.PFMERGE, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<String> result = enqueueForExecute(state, singles, queued);
@@ -4925,20 +4922,20 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(sourcekey2);
         requireNonNull(sourcekey3);
         final int len = 5;
-        final byte[] destkeyBytes = destkey.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] sourcekey1Bytes = sourcekey1.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] sourcekey2Bytes = sourcekey2.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] sourcekey3Bytes = sourcekey3.toString().getBytes(StandardCharsets.UTF_8);
+        final int destkeyBytes = numberOfBytesUtf8(destkey);
+        final int sourcekey1Bytes = numberOfBytesUtf8(sourcekey1);
+        final int sourcekey2Bytes = numberOfBytesUtf8(sourcekey2);
+        final int sourcekey3Bytes = numberOfBytesUtf8(sourcekey3);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.PFMERGE) +
                     calculateRequestArgumentSize(destkeyBytes) + calculateRequestArgumentSize(sourcekey1Bytes) +
                     calculateRequestArgumentSize(sourcekey2Bytes) + calculateRequestArgumentSize(sourcekey3Bytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.PFMERGE.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, destkeyBytes);
-        RedisRequests.writeRequestArgument(buffer, sourcekey1Bytes);
-        RedisRequests.writeRequestArgument(buffer, sourcekey2Bytes);
-        RedisRequests.writeRequestArgument(buffer, sourcekey3Bytes);
+        writeRequestArgument(buffer, destkey, destkeyBytes);
+        writeRequestArgument(buffer, sourcekey1, sourcekey1Bytes);
+        writeRequestArgument(buffer, sourcekey2, sourcekey2Bytes);
+        writeRequestArgument(buffer, sourcekey3, sourcekey3Bytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.PFMERGE, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<String> result = enqueueForExecute(state, singles, queued);
@@ -4951,7 +4948,7 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(destkey);
         requireNonNull(sourcekeys);
         final int len = 2 + sourcekeys.size();
-        final byte[] destkeyBytes = destkey.toString().getBytes(StandardCharsets.UTF_8);
+        final int destkeyBytes = numberOfBytesUtf8(destkey);
         int sourcekeysCapacity = 0;
         if (sourcekeys instanceof List && sourcekeys instanceof RandomAccess) {
             final List<CharSequence> list = (List<CharSequence>) sourcekeys;
@@ -4967,18 +4964,18 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.PFMERGE) +
                     calculateRequestArgumentSize(destkeyBytes) + sourcekeysCapacity;
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.PFMERGE.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, destkeyBytes);
+        writeRequestArgument(buffer, destkey, destkeyBytes);
         if (sourcekeys instanceof List && sourcekeys instanceof RandomAccess) {
             final List<CharSequence> list = (List<CharSequence>) sourcekeys;
             for (int i = 0; i < list.size(); ++i) {
                 final CharSequence arg = list.get(i);
-                RedisRequests.writeRequestArgument(buffer, arg);
+                writeRequestArgument(buffer, arg);
             }
         } else {
             for (CharSequence arg : sourcekeys) {
-                RedisRequests.writeRequestArgument(buffer, arg);
+                writeRequestArgument(buffer, arg);
             }
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.PFMERGE, buffer);
@@ -4992,7 +4989,7 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         final int len = 1;
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.PING);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.PING.encodeTo(buffer);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.PING, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
@@ -5004,13 +5001,13 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
     public Future<String> ping(final CharSequence message) {
         requireNonNull(message);
         final int len = 2;
-        final byte[] messageBytes = message.toString().getBytes(StandardCharsets.UTF_8);
+        final int messageBytes = numberOfBytesUtf8(message);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.PING) +
                     calculateRequestArgumentSize(messageBytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.PING.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, messageBytes);
+        writeRequestArgument(buffer, message, messageBytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.PING, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<String> result = enqueueForExecute(state, singles, queued);
@@ -5023,17 +5020,17 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(key);
         requireNonNull(value);
         final int len = 4;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] valueBytes = value.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
+        final int valueBytes = numberOfBytesUtf8(value);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.PSETEX) +
                     calculateRequestArgumentSize(keyBytes) + calculateRequestArgumentSize(milliseconds) +
                     calculateRequestArgumentSize(valueBytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.PSETEX.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
-        RedisRequests.writeRequestArgument(buffer, milliseconds);
-        RedisRequests.writeRequestArgument(buffer, valueBytes);
+        writeRequestArgument(buffer, key, keyBytes);
+        writeRequestArgument(buffer, milliseconds);
+        writeRequestArgument(buffer, value, valueBytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.PSETEX, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<String> result = enqueueForExecute(state, singles, queued);
@@ -5044,13 +5041,13 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
     public Future<Long> pttl(@RedisProtocolSupport.Key final CharSequence key) {
         requireNonNull(key);
         final int len = 2;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.PTTL) +
                     calculateRequestArgumentSize(keyBytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.PTTL.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
+        writeRequestArgument(buffer, key, keyBytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.PTTL, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
@@ -5062,15 +5059,15 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(channel);
         requireNonNull(message);
         final int len = 3;
-        final byte[] channelBytes = channel.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] messageBytes = message.toString().getBytes(StandardCharsets.UTF_8);
+        final int channelBytes = numberOfBytesUtf8(channel);
+        final int messageBytes = numberOfBytesUtf8(message);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.PUBLISH) +
                     calculateRequestArgumentSize(channelBytes) + calculateRequestArgumentSize(messageBytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.PUBLISH.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, channelBytes);
-        RedisRequests.writeRequestArgument(buffer, messageBytes);
+        writeRequestArgument(buffer, channel, channelBytes);
+        writeRequestArgument(buffer, message, messageBytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.PUBLISH, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
@@ -5082,7 +5079,7 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         final int len = 2;
         final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.PUBSUB);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.PUBSUB.encodeTo(buffer);
         RedisProtocolSupport.SubCommand.CHANNELS.encodeTo(buffer);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.PUBSUB, buffer);
@@ -5094,15 +5091,15 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
     @Override
     public Future<List<String>> pubsubChannels(@Nullable final CharSequence pattern) {
         final int len = 2 + (pattern == null ? 0 : 1);
-        final byte[] patternBytes = pattern == null ? null : pattern.toString().getBytes(StandardCharsets.UTF_8);
+        final int patternBytes = pattern == null ? 0 : numberOfBytesUtf8(pattern);
         final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.PUBSUB) +
                     (pattern == null ? 0 : calculateRequestArgumentSize(patternBytes));
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.PUBSUB.encodeTo(buffer);
         RedisProtocolSupport.SubCommand.CHANNELS.encodeTo(buffer);
         if (pattern != null) {
-            RedisRequests.writeRequestArgument(buffer, patternBytes);
+            writeRequestArgument(buffer, pattern, patternBytes);
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.PUBSUB, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
@@ -5114,20 +5111,20 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
     public Future<List<String>> pubsubChannels(@Nullable final CharSequence pattern1,
                                                @Nullable final CharSequence pattern2) {
         final int len = 2 + (pattern1 == null ? 0 : 1) + (pattern2 == null ? 0 : 1);
-        final byte[] pattern1Bytes = pattern1 == null ? null : pattern1.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] pattern2Bytes = pattern2 == null ? null : pattern2.toString().getBytes(StandardCharsets.UTF_8);
+        final int pattern1Bytes = pattern1 == null ? 0 : numberOfBytesUtf8(pattern1);
+        final int pattern2Bytes = pattern2 == null ? 0 : numberOfBytesUtf8(pattern2);
         final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.PUBSUB) +
                     (pattern1 == null ? 0 : calculateRequestArgumentSize(pattern1Bytes)) +
                     (pattern2 == null ? 0 : calculateRequestArgumentSize(pattern2Bytes));
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.PUBSUB.encodeTo(buffer);
         RedisProtocolSupport.SubCommand.CHANNELS.encodeTo(buffer);
         if (pattern1 != null) {
-            RedisRequests.writeRequestArgument(buffer, pattern1Bytes);
+            writeRequestArgument(buffer, pattern1, pattern1Bytes);
         }
         if (pattern2 != null) {
-            RedisRequests.writeRequestArgument(buffer, pattern2Bytes);
+            writeRequestArgument(buffer, pattern2, pattern2Bytes);
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.PUBSUB, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
@@ -5140,25 +5137,25 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
                                                @Nullable final CharSequence pattern2,
                                                @Nullable final CharSequence pattern3) {
         final int len = 2 + (pattern1 == null ? 0 : 1) + (pattern2 == null ? 0 : 1) + (pattern3 == null ? 0 : 1);
-        final byte[] pattern1Bytes = pattern1 == null ? null : pattern1.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] pattern2Bytes = pattern2 == null ? null : pattern2.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] pattern3Bytes = pattern3 == null ? null : pattern3.toString().getBytes(StandardCharsets.UTF_8);
+        final int pattern1Bytes = pattern1 == null ? 0 : numberOfBytesUtf8(pattern1);
+        final int pattern2Bytes = pattern2 == null ? 0 : numberOfBytesUtf8(pattern2);
+        final int pattern3Bytes = pattern3 == null ? 0 : numberOfBytesUtf8(pattern3);
         final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.PUBSUB) +
                     (pattern1 == null ? 0 : calculateRequestArgumentSize(pattern1Bytes)) +
                     (pattern2 == null ? 0 : calculateRequestArgumentSize(pattern2Bytes)) +
                     (pattern3 == null ? 0 : calculateRequestArgumentSize(pattern3Bytes));
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.PUBSUB.encodeTo(buffer);
         RedisProtocolSupport.SubCommand.CHANNELS.encodeTo(buffer);
         if (pattern1 != null) {
-            RedisRequests.writeRequestArgument(buffer, pattern1Bytes);
+            writeRequestArgument(buffer, pattern1, pattern1Bytes);
         }
         if (pattern2 != null) {
-            RedisRequests.writeRequestArgument(buffer, pattern2Bytes);
+            writeRequestArgument(buffer, pattern2, pattern2Bytes);
         }
         if (pattern3 != null) {
-            RedisRequests.writeRequestArgument(buffer, pattern3Bytes);
+            writeRequestArgument(buffer, pattern3, pattern3Bytes);
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.PUBSUB, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
@@ -5185,18 +5182,18 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.PUBSUB) +
                     patternsCapacity;
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.PUBSUB.encodeTo(buffer);
         RedisProtocolSupport.SubCommand.CHANNELS.encodeTo(buffer);
         if (patterns instanceof List && patterns instanceof RandomAccess) {
             final List<CharSequence> list = (List<CharSequence>) patterns;
             for (int i = 0; i < list.size(); ++i) {
                 final CharSequence arg = list.get(i);
-                RedisRequests.writeRequestArgument(buffer, arg);
+                writeRequestArgument(buffer, arg);
             }
         } else {
             for (CharSequence arg : patterns) {
-                RedisRequests.writeRequestArgument(buffer, arg);
+                writeRequestArgument(buffer, arg);
             }
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.PUBSUB, buffer);
@@ -5210,7 +5207,7 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         final int len = 2;
         final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.PUBSUB);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.PUBSUB.encodeTo(buffer);
         RedisProtocolSupport.SubCommand.NUMSUB.encodeTo(buffer);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.PUBSUB, buffer);
@@ -5222,15 +5219,15 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
     @Override
     public <T> Future<List<T>> pubsubNumsub(@Nullable final CharSequence channel) {
         final int len = 2 + (channel == null ? 0 : 1);
-        final byte[] channelBytes = channel == null ? null : channel.toString().getBytes(StandardCharsets.UTF_8);
+        final int channelBytes = channel == null ? 0 : numberOfBytesUtf8(channel);
         final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.PUBSUB) +
                     (channel == null ? 0 : calculateRequestArgumentSize(channelBytes));
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.PUBSUB.encodeTo(buffer);
         RedisProtocolSupport.SubCommand.NUMSUB.encodeTo(buffer);
         if (channel != null) {
-            RedisRequests.writeRequestArgument(buffer, channelBytes);
+            writeRequestArgument(buffer, channel, channelBytes);
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.PUBSUB, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
@@ -5242,20 +5239,20 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
     public <T> Future<List<T>> pubsubNumsub(@Nullable final CharSequence channel1,
                                             @Nullable final CharSequence channel2) {
         final int len = 2 + (channel1 == null ? 0 : 1) + (channel2 == null ? 0 : 1);
-        final byte[] channel1Bytes = channel1 == null ? null : channel1.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] channel2Bytes = channel2 == null ? null : channel2.toString().getBytes(StandardCharsets.UTF_8);
+        final int channel1Bytes = channel1 == null ? 0 : numberOfBytesUtf8(channel1);
+        final int channel2Bytes = channel2 == null ? 0 : numberOfBytesUtf8(channel2);
         final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.PUBSUB) +
                     (channel1 == null ? 0 : calculateRequestArgumentSize(channel1Bytes)) +
                     (channel2 == null ? 0 : calculateRequestArgumentSize(channel2Bytes));
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.PUBSUB.encodeTo(buffer);
         RedisProtocolSupport.SubCommand.NUMSUB.encodeTo(buffer);
         if (channel1 != null) {
-            RedisRequests.writeRequestArgument(buffer, channel1Bytes);
+            writeRequestArgument(buffer, channel1, channel1Bytes);
         }
         if (channel2 != null) {
-            RedisRequests.writeRequestArgument(buffer, channel2Bytes);
+            writeRequestArgument(buffer, channel2, channel2Bytes);
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.PUBSUB, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
@@ -5268,25 +5265,25 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
                                             @Nullable final CharSequence channel2,
                                             @Nullable final CharSequence channel3) {
         final int len = 2 + (channel1 == null ? 0 : 1) + (channel2 == null ? 0 : 1) + (channel3 == null ? 0 : 1);
-        final byte[] channel1Bytes = channel1 == null ? null : channel1.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] channel2Bytes = channel2 == null ? null : channel2.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] channel3Bytes = channel3 == null ? null : channel3.toString().getBytes(StandardCharsets.UTF_8);
+        final int channel1Bytes = channel1 == null ? 0 : numberOfBytesUtf8(channel1);
+        final int channel2Bytes = channel2 == null ? 0 : numberOfBytesUtf8(channel2);
+        final int channel3Bytes = channel3 == null ? 0 : numberOfBytesUtf8(channel3);
         final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.PUBSUB) +
                     (channel1 == null ? 0 : calculateRequestArgumentSize(channel1Bytes)) +
                     (channel2 == null ? 0 : calculateRequestArgumentSize(channel2Bytes)) +
                     (channel3 == null ? 0 : calculateRequestArgumentSize(channel3Bytes));
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.PUBSUB.encodeTo(buffer);
         RedisProtocolSupport.SubCommand.NUMSUB.encodeTo(buffer);
         if (channel1 != null) {
-            RedisRequests.writeRequestArgument(buffer, channel1Bytes);
+            writeRequestArgument(buffer, channel1, channel1Bytes);
         }
         if (channel2 != null) {
-            RedisRequests.writeRequestArgument(buffer, channel2Bytes);
+            writeRequestArgument(buffer, channel2, channel2Bytes);
         }
         if (channel3 != null) {
-            RedisRequests.writeRequestArgument(buffer, channel3Bytes);
+            writeRequestArgument(buffer, channel3, channel3Bytes);
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.PUBSUB, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
@@ -5313,18 +5310,18 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.PUBSUB) +
                     channelsCapacity;
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.PUBSUB.encodeTo(buffer);
         RedisProtocolSupport.SubCommand.NUMSUB.encodeTo(buffer);
         if (channels instanceof List && channels instanceof RandomAccess) {
             final List<CharSequence> list = (List<CharSequence>) channels;
             for (int i = 0; i < list.size(); ++i) {
                 final CharSequence arg = list.get(i);
-                RedisRequests.writeRequestArgument(buffer, arg);
+                writeRequestArgument(buffer, arg);
             }
         } else {
             for (CharSequence arg : channels) {
-                RedisRequests.writeRequestArgument(buffer, arg);
+                writeRequestArgument(buffer, arg);
             }
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.PUBSUB, buffer);
@@ -5338,7 +5335,7 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         final int len = 2;
         final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.PUBSUB);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.PUBSUB.encodeTo(buffer);
         RedisProtocolSupport.SubCommand.NUMPAT.encodeTo(buffer);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.PUBSUB, buffer);
@@ -5352,7 +5349,7 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         final int len = 1;
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.RANDOMKEY);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.RANDOMKEY.encodeTo(buffer);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.RANDOMKEY, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
@@ -5365,7 +5362,7 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         final int len = 1;
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.READONLY);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.READONLY.encodeTo(buffer);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.READONLY, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
@@ -5378,7 +5375,7 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         final int len = 1;
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.READWRITE);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.READWRITE.encodeTo(buffer);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.READWRITE, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
@@ -5392,15 +5389,15 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(key);
         requireNonNull(newkey);
         final int len = 3;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] newkeyBytes = newkey.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
+        final int newkeyBytes = numberOfBytesUtf8(newkey);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.RENAME) +
                     calculateRequestArgumentSize(keyBytes) + calculateRequestArgumentSize(newkeyBytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.RENAME.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
-        RedisRequests.writeRequestArgument(buffer, newkeyBytes);
+        writeRequestArgument(buffer, key, keyBytes);
+        writeRequestArgument(buffer, newkey, newkeyBytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.RENAME, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<String> result = enqueueForExecute(state, singles, queued);
@@ -5413,15 +5410,15 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(key);
         requireNonNull(newkey);
         final int len = 3;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] newkeyBytes = newkey.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
+        final int newkeyBytes = numberOfBytesUtf8(newkey);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.RENAMENX) +
                     calculateRequestArgumentSize(keyBytes) + calculateRequestArgumentSize(newkeyBytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.RENAMENX.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
-        RedisRequests.writeRequestArgument(buffer, newkeyBytes);
+        writeRequestArgument(buffer, key, keyBytes);
+        writeRequestArgument(buffer, newkey, newkeyBytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.RENAMENX, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
@@ -5434,17 +5431,17 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(key);
         requireNonNull(serializedValue);
         final int len = 4;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] serializedValueBytes = serializedValue.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
+        final int serializedValueBytes = numberOfBytesUtf8(serializedValue);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.RESTORE) +
                     calculateRequestArgumentSize(keyBytes) + calculateRequestArgumentSize(ttl) +
                     calculateRequestArgumentSize(serializedValueBytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.RESTORE.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
-        RedisRequests.writeRequestArgument(buffer, ttl);
-        RedisRequests.writeRequestArgument(buffer, serializedValueBytes);
+        writeRequestArgument(buffer, key, keyBytes);
+        writeRequestArgument(buffer, ttl);
+        writeRequestArgument(buffer, serializedValue, serializedValueBytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.RESTORE, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<String> result = enqueueForExecute(state, singles, queued);
@@ -5458,18 +5455,18 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(key);
         requireNonNull(serializedValue);
         final int len = 4 + (replace == null ? 0 : 1);
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] serializedValueBytes = serializedValue.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
+        final int serializedValueBytes = numberOfBytesUtf8(serializedValue);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.RESTORE) +
                     calculateRequestArgumentSize(keyBytes) + calculateRequestArgumentSize(ttl) +
                     calculateRequestArgumentSize(serializedValueBytes) +
                     (replace == null ? 0 : replace.encodedByteCount());
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.RESTORE.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
-        RedisRequests.writeRequestArgument(buffer, ttl);
-        RedisRequests.writeRequestArgument(buffer, serializedValueBytes);
+        writeRequestArgument(buffer, key, keyBytes);
+        writeRequestArgument(buffer, ttl);
+        writeRequestArgument(buffer, serializedValue, serializedValueBytes);
         if (replace != null) {
             replace.encodeTo(buffer);
         }
@@ -5484,7 +5481,7 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         final int len = 1;
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.ROLE);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.ROLE.encodeTo(buffer);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ROLE, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
@@ -5496,13 +5493,13 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
     public Future<String> rpop(@RedisProtocolSupport.Key final CharSequence key) {
         requireNonNull(key);
         final int len = 2;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.RPOP) +
                     calculateRequestArgumentSize(keyBytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.RPOP.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
+        writeRequestArgument(buffer, key, keyBytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.RPOP, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<String> result = enqueueForExecute(state, singles, queued);
@@ -5515,15 +5512,15 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(source);
         requireNonNull(destination);
         final int len = 3;
-        final byte[] sourceBytes = source.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] destinationBytes = destination.toString().getBytes(StandardCharsets.UTF_8);
+        final int sourceBytes = numberOfBytesUtf8(source);
+        final int destinationBytes = numberOfBytesUtf8(destination);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.RPOPLPUSH) +
                     calculateRequestArgumentSize(sourceBytes) + calculateRequestArgumentSize(destinationBytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.RPOPLPUSH.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, sourceBytes);
-        RedisRequests.writeRequestArgument(buffer, destinationBytes);
+        writeRequestArgument(buffer, source, sourceBytes);
+        writeRequestArgument(buffer, destination, destinationBytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.RPOPLPUSH, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<String> result = enqueueForExecute(state, singles, queued);
@@ -5535,15 +5532,15 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(key);
         requireNonNull(value);
         final int len = 3;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] valueBytes = value.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
+        final int valueBytes = numberOfBytesUtf8(value);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.RPUSH) +
                     calculateRequestArgumentSize(keyBytes) + calculateRequestArgumentSize(valueBytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.RPUSH.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
-        RedisRequests.writeRequestArgument(buffer, valueBytes);
+        writeRequestArgument(buffer, key, keyBytes);
+        writeRequestArgument(buffer, value, valueBytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.RPUSH, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
@@ -5557,18 +5554,18 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(value1);
         requireNonNull(value2);
         final int len = 4;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] value1Bytes = value1.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] value2Bytes = value2.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
+        final int value1Bytes = numberOfBytesUtf8(value1);
+        final int value2Bytes = numberOfBytesUtf8(value2);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.RPUSH) +
                     calculateRequestArgumentSize(keyBytes) + calculateRequestArgumentSize(value1Bytes) +
                     calculateRequestArgumentSize(value2Bytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.RPUSH.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
-        RedisRequests.writeRequestArgument(buffer, value1Bytes);
-        RedisRequests.writeRequestArgument(buffer, value2Bytes);
+        writeRequestArgument(buffer, key, keyBytes);
+        writeRequestArgument(buffer, value1, value1Bytes);
+        writeRequestArgument(buffer, value2, value2Bytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.RPUSH, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
@@ -5583,20 +5580,20 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(value2);
         requireNonNull(value3);
         final int len = 5;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] value1Bytes = value1.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] value2Bytes = value2.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] value3Bytes = value3.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
+        final int value1Bytes = numberOfBytesUtf8(value1);
+        final int value2Bytes = numberOfBytesUtf8(value2);
+        final int value3Bytes = numberOfBytesUtf8(value3);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.RPUSH) +
                     calculateRequestArgumentSize(keyBytes) + calculateRequestArgumentSize(value1Bytes) +
                     calculateRequestArgumentSize(value2Bytes) + calculateRequestArgumentSize(value3Bytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.RPUSH.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
-        RedisRequests.writeRequestArgument(buffer, value1Bytes);
-        RedisRequests.writeRequestArgument(buffer, value2Bytes);
-        RedisRequests.writeRequestArgument(buffer, value3Bytes);
+        writeRequestArgument(buffer, key, keyBytes);
+        writeRequestArgument(buffer, value1, value1Bytes);
+        writeRequestArgument(buffer, value2, value2Bytes);
+        writeRequestArgument(buffer, value3, value3Bytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.RPUSH, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
@@ -5609,7 +5606,7 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(key);
         requireNonNull(values);
         final int len = 2 + values.size();
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
         int valuesCapacity = 0;
         if (values instanceof List && values instanceof RandomAccess) {
             final List<CharSequence> list = (List<CharSequence>) values;
@@ -5625,18 +5622,18 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.RPUSH) +
                     calculateRequestArgumentSize(keyBytes) + valuesCapacity;
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.RPUSH.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
+        writeRequestArgument(buffer, key, keyBytes);
         if (values instanceof List && values instanceof RandomAccess) {
             final List<CharSequence> list = (List<CharSequence>) values;
             for (int i = 0; i < list.size(); ++i) {
                 final CharSequence arg = list.get(i);
-                RedisRequests.writeRequestArgument(buffer, arg);
+                writeRequestArgument(buffer, arg);
             }
         } else {
             for (CharSequence arg : values) {
-                RedisRequests.writeRequestArgument(buffer, arg);
+                writeRequestArgument(buffer, arg);
             }
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.RPUSH, buffer);
@@ -5650,15 +5647,15 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(key);
         requireNonNull(value);
         final int len = 3;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] valueBytes = value.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
+        final int valueBytes = numberOfBytesUtf8(value);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.RPUSHX) +
                     calculateRequestArgumentSize(keyBytes) + calculateRequestArgumentSize(valueBytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.RPUSHX.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
-        RedisRequests.writeRequestArgument(buffer, valueBytes);
+        writeRequestArgument(buffer, key, keyBytes);
+        writeRequestArgument(buffer, value, valueBytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.RPUSHX, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
@@ -5670,15 +5667,15 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(key);
         requireNonNull(member);
         final int len = 3;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] memberBytes = member.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
+        final int memberBytes = numberOfBytesUtf8(member);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SADD) +
                     calculateRequestArgumentSize(keyBytes) + calculateRequestArgumentSize(memberBytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.SADD.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
-        RedisRequests.writeRequestArgument(buffer, memberBytes);
+        writeRequestArgument(buffer, key, keyBytes);
+        writeRequestArgument(buffer, member, memberBytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SADD, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
@@ -5692,18 +5689,18 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(member1);
         requireNonNull(member2);
         final int len = 4;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] member1Bytes = member1.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] member2Bytes = member2.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
+        final int member1Bytes = numberOfBytesUtf8(member1);
+        final int member2Bytes = numberOfBytesUtf8(member2);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SADD) +
                     calculateRequestArgumentSize(keyBytes) + calculateRequestArgumentSize(member1Bytes) +
                     calculateRequestArgumentSize(member2Bytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.SADD.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
-        RedisRequests.writeRequestArgument(buffer, member1Bytes);
-        RedisRequests.writeRequestArgument(buffer, member2Bytes);
+        writeRequestArgument(buffer, key, keyBytes);
+        writeRequestArgument(buffer, member1, member1Bytes);
+        writeRequestArgument(buffer, member2, member2Bytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SADD, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
@@ -5718,20 +5715,20 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(member2);
         requireNonNull(member3);
         final int len = 5;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] member1Bytes = member1.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] member2Bytes = member2.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] member3Bytes = member3.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
+        final int member1Bytes = numberOfBytesUtf8(member1);
+        final int member2Bytes = numberOfBytesUtf8(member2);
+        final int member3Bytes = numberOfBytesUtf8(member3);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SADD) +
                     calculateRequestArgumentSize(keyBytes) + calculateRequestArgumentSize(member1Bytes) +
                     calculateRequestArgumentSize(member2Bytes) + calculateRequestArgumentSize(member3Bytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.SADD.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
-        RedisRequests.writeRequestArgument(buffer, member1Bytes);
-        RedisRequests.writeRequestArgument(buffer, member2Bytes);
-        RedisRequests.writeRequestArgument(buffer, member3Bytes);
+        writeRequestArgument(buffer, key, keyBytes);
+        writeRequestArgument(buffer, member1, member1Bytes);
+        writeRequestArgument(buffer, member2, member2Bytes);
+        writeRequestArgument(buffer, member3, member3Bytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SADD, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
@@ -5744,7 +5741,7 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(key);
         requireNonNull(members);
         final int len = 2 + members.size();
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
         int membersCapacity = 0;
         if (members instanceof List && members instanceof RandomAccess) {
             final List<CharSequence> list = (List<CharSequence>) members;
@@ -5760,18 +5757,18 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SADD) +
                     calculateRequestArgumentSize(keyBytes) + membersCapacity;
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.SADD.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
+        writeRequestArgument(buffer, key, keyBytes);
         if (members instanceof List && members instanceof RandomAccess) {
             final List<CharSequence> list = (List<CharSequence>) members;
             for (int i = 0; i < list.size(); ++i) {
                 final CharSequence arg = list.get(i);
-                RedisRequests.writeRequestArgument(buffer, arg);
+                writeRequestArgument(buffer, arg);
             }
         } else {
             for (CharSequence arg : members) {
-                RedisRequests.writeRequestArgument(buffer, arg);
+                writeRequestArgument(buffer, arg);
             }
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SADD, buffer);
@@ -5785,7 +5782,7 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         final int len = 1;
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SAVE);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.SAVE.encodeTo(buffer);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SAVE, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
@@ -5799,9 +5796,9 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SCAN) +
                     calculateRequestArgumentSize(cursor);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.SCAN.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, cursor);
+        writeRequestArgument(buffer, cursor);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SCAN, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
@@ -5812,8 +5809,7 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
     public <T> Future<List<T>> scan(final long cursor, @Nullable final CharSequence matchPattern,
                                     @Nullable final Long count) {
         final int len = 2 + (matchPattern == null ? 0 : 2) + (count == null ? 0 : 2);
-        final byte[] matchPatternBytes = matchPattern == null ? null
-                    : matchPattern.toString().getBytes(StandardCharsets.UTF_8);
+        final int matchPatternBytes = matchPattern == null ? 0 : numberOfBytesUtf8(matchPattern);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SCAN) +
                     calculateRequestArgumentSize(cursor) +
                     (matchPattern == null ? 0 : RedisProtocolSupport.SubCommand.MATCH.encodedByteCount()) +
@@ -5821,16 +5817,16 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
                     (count == null ? 0 : RedisProtocolSupport.SubCommand.COUNT.encodedByteCount()) +
                     (count == null ? 0 : calculateRequestArgumentSize(count));
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.SCAN.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, cursor);
+        writeRequestArgument(buffer, cursor);
         if (matchPattern != null) {
             RedisProtocolSupport.SubCommand.MATCH.encodeTo(buffer);
-            RedisRequests.writeRequestArgument(buffer, matchPatternBytes);
+            writeRequestArgument(buffer, matchPattern, matchPatternBytes);
         }
         if (count != null) {
             RedisProtocolSupport.SubCommand.COUNT.encodeTo(buffer);
-            RedisRequests.writeRequestArgument(buffer, count);
+            writeRequestArgument(buffer, count);
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SCAN, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
@@ -5842,13 +5838,13 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
     public Future<Long> scard(@RedisProtocolSupport.Key final CharSequence key) {
         requireNonNull(key);
         final int len = 2;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SCARD) +
                     calculateRequestArgumentSize(keyBytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.SCARD.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
+        writeRequestArgument(buffer, key, keyBytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SCARD, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
@@ -5862,7 +5858,7 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SCRIPT) +
                     mode.encodedByteCount();
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.SCRIPT.encodeTo(buffer);
         RedisProtocolSupport.SubCommand.DEBUG.encodeTo(buffer);
         mode.encodeTo(buffer);
@@ -5876,14 +5872,14 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
     public <T> Future<List<T>> scriptExists(final CharSequence sha1) {
         requireNonNull(sha1);
         final int len = 3;
-        final byte[] sha1Bytes = sha1.toString().getBytes(StandardCharsets.UTF_8);
+        final int sha1Bytes = numberOfBytesUtf8(sha1);
         final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SCRIPT) +
                     calculateRequestArgumentSize(sha1Bytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.SCRIPT.encodeTo(buffer);
         RedisProtocolSupport.SubCommand.EXISTS.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, sha1Bytes);
+        writeRequestArgument(buffer, sha1, sha1Bytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SCRIPT, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
@@ -5895,16 +5891,16 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(sha11);
         requireNonNull(sha12);
         final int len = 4;
-        final byte[] sha11Bytes = sha11.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] sha12Bytes = sha12.toString().getBytes(StandardCharsets.UTF_8);
+        final int sha11Bytes = numberOfBytesUtf8(sha11);
+        final int sha12Bytes = numberOfBytesUtf8(sha12);
         final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SCRIPT) +
                     calculateRequestArgumentSize(sha11Bytes) + calculateRequestArgumentSize(sha12Bytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.SCRIPT.encodeTo(buffer);
         RedisProtocolSupport.SubCommand.EXISTS.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, sha11Bytes);
-        RedisRequests.writeRequestArgument(buffer, sha12Bytes);
+        writeRequestArgument(buffer, sha11, sha11Bytes);
+        writeRequestArgument(buffer, sha12, sha12Bytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SCRIPT, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
@@ -5918,19 +5914,19 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(sha12);
         requireNonNull(sha13);
         final int len = 5;
-        final byte[] sha11Bytes = sha11.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] sha12Bytes = sha12.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] sha13Bytes = sha13.toString().getBytes(StandardCharsets.UTF_8);
+        final int sha11Bytes = numberOfBytesUtf8(sha11);
+        final int sha12Bytes = numberOfBytesUtf8(sha12);
+        final int sha13Bytes = numberOfBytesUtf8(sha13);
         final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SCRIPT) +
                     calculateRequestArgumentSize(sha11Bytes) + calculateRequestArgumentSize(sha12Bytes) +
                     calculateRequestArgumentSize(sha13Bytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.SCRIPT.encodeTo(buffer);
         RedisProtocolSupport.SubCommand.EXISTS.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, sha11Bytes);
-        RedisRequests.writeRequestArgument(buffer, sha12Bytes);
-        RedisRequests.writeRequestArgument(buffer, sha13Bytes);
+        writeRequestArgument(buffer, sha11, sha11Bytes);
+        writeRequestArgument(buffer, sha12, sha12Bytes);
+        writeRequestArgument(buffer, sha13, sha13Bytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SCRIPT, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
@@ -5956,18 +5952,18 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SCRIPT) +
                     sha1sCapacity;
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.SCRIPT.encodeTo(buffer);
         RedisProtocolSupport.SubCommand.EXISTS.encodeTo(buffer);
         if (sha1s instanceof List && sha1s instanceof RandomAccess) {
             final List<CharSequence> list = (List<CharSequence>) sha1s;
             for (int i = 0; i < list.size(); ++i) {
                 final CharSequence arg = list.get(i);
-                RedisRequests.writeRequestArgument(buffer, arg);
+                writeRequestArgument(buffer, arg);
             }
         } else {
             for (CharSequence arg : sha1s) {
-                RedisRequests.writeRequestArgument(buffer, arg);
+                writeRequestArgument(buffer, arg);
             }
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SCRIPT, buffer);
@@ -5981,7 +5977,7 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         final int len = 2;
         final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SCRIPT);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.SCRIPT.encodeTo(buffer);
         RedisProtocolSupport.SubCommand.FLUSH.encodeTo(buffer);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SCRIPT, buffer);
@@ -5995,7 +5991,7 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         final int len = 2;
         final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SCRIPT);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.SCRIPT.encodeTo(buffer);
         RedisProtocolSupport.SubCommand.KILL.encodeTo(buffer);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SCRIPT, buffer);
@@ -6008,14 +6004,14 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
     public Future<String> scriptLoad(final CharSequence script) {
         requireNonNull(script);
         final int len = 3;
-        final byte[] scriptBytes = script.toString().getBytes(StandardCharsets.UTF_8);
+        final int scriptBytes = numberOfBytesUtf8(script);
         final int capacity = 1 + calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SCRIPT) +
                     calculateRequestArgumentSize(scriptBytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.SCRIPT.encodeTo(buffer);
         RedisProtocolSupport.SubCommand.LOAD.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, scriptBytes);
+        writeRequestArgument(buffer, script, scriptBytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SCRIPT, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<String> result = enqueueForExecute(state, singles, queued);
@@ -6026,13 +6022,13 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
     public <T> Future<List<T>> sdiff(@RedisProtocolSupport.Key final CharSequence firstkey) {
         requireNonNull(firstkey);
         final int len = 2;
-        final byte[] firstkeyBytes = firstkey.toString().getBytes(StandardCharsets.UTF_8);
+        final int firstkeyBytes = numberOfBytesUtf8(firstkey);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SDIFF) +
                     calculateRequestArgumentSize(firstkeyBytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.SDIFF.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, firstkeyBytes);
+        writeRequestArgument(buffer, firstkey, firstkeyBytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SDIFF, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
@@ -6044,17 +6040,17 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
                                      @Nullable @RedisProtocolSupport.Key final CharSequence otherkey) {
         requireNonNull(firstkey);
         final int len = 2 + (otherkey == null ? 0 : 1);
-        final byte[] firstkeyBytes = firstkey.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] otherkeyBytes = otherkey == null ? null : otherkey.toString().getBytes(StandardCharsets.UTF_8);
+        final int firstkeyBytes = numberOfBytesUtf8(firstkey);
+        final int otherkeyBytes = otherkey == null ? 0 : numberOfBytesUtf8(otherkey);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SDIFF) +
                     calculateRequestArgumentSize(firstkeyBytes) +
                     (otherkey == null ? 0 : calculateRequestArgumentSize(otherkeyBytes));
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.SDIFF.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, firstkeyBytes);
+        writeRequestArgument(buffer, firstkey, firstkeyBytes);
         if (otherkey != null) {
-            RedisRequests.writeRequestArgument(buffer, otherkeyBytes);
+            writeRequestArgument(buffer, otherkey, otherkeyBytes);
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SDIFF, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
@@ -6068,22 +6064,22 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
                                      @Nullable @RedisProtocolSupport.Key final CharSequence otherkey2) {
         requireNonNull(firstkey);
         final int len = 2 + (otherkey1 == null ? 0 : 1) + (otherkey2 == null ? 0 : 1);
-        final byte[] firstkeyBytes = firstkey.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] otherkey1Bytes = otherkey1 == null ? null : otherkey1.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] otherkey2Bytes = otherkey2 == null ? null : otherkey2.toString().getBytes(StandardCharsets.UTF_8);
+        final int firstkeyBytes = numberOfBytesUtf8(firstkey);
+        final int otherkey1Bytes = otherkey1 == null ? 0 : numberOfBytesUtf8(otherkey1);
+        final int otherkey2Bytes = otherkey2 == null ? 0 : numberOfBytesUtf8(otherkey2);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SDIFF) +
                     calculateRequestArgumentSize(firstkeyBytes) +
                     (otherkey1 == null ? 0 : calculateRequestArgumentSize(otherkey1Bytes)) +
                     (otherkey2 == null ? 0 : calculateRequestArgumentSize(otherkey2Bytes));
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.SDIFF.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, firstkeyBytes);
+        writeRequestArgument(buffer, firstkey, firstkeyBytes);
         if (otherkey1 != null) {
-            RedisRequests.writeRequestArgument(buffer, otherkey1Bytes);
+            writeRequestArgument(buffer, otherkey1, otherkey1Bytes);
         }
         if (otherkey2 != null) {
-            RedisRequests.writeRequestArgument(buffer, otherkey2Bytes);
+            writeRequestArgument(buffer, otherkey2, otherkey2Bytes);
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SDIFF, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
@@ -6098,27 +6094,27 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
                                      @Nullable @RedisProtocolSupport.Key final CharSequence otherkey3) {
         requireNonNull(firstkey);
         final int len = 2 + (otherkey1 == null ? 0 : 1) + (otherkey2 == null ? 0 : 1) + (otherkey3 == null ? 0 : 1);
-        final byte[] firstkeyBytes = firstkey.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] otherkey1Bytes = otherkey1 == null ? null : otherkey1.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] otherkey2Bytes = otherkey2 == null ? null : otherkey2.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] otherkey3Bytes = otherkey3 == null ? null : otherkey3.toString().getBytes(StandardCharsets.UTF_8);
+        final int firstkeyBytes = numberOfBytesUtf8(firstkey);
+        final int otherkey1Bytes = otherkey1 == null ? 0 : numberOfBytesUtf8(otherkey1);
+        final int otherkey2Bytes = otherkey2 == null ? 0 : numberOfBytesUtf8(otherkey2);
+        final int otherkey3Bytes = otherkey3 == null ? 0 : numberOfBytesUtf8(otherkey3);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SDIFF) +
                     calculateRequestArgumentSize(firstkeyBytes) +
                     (otherkey1 == null ? 0 : calculateRequestArgumentSize(otherkey1Bytes)) +
                     (otherkey2 == null ? 0 : calculateRequestArgumentSize(otherkey2Bytes)) +
                     (otherkey3 == null ? 0 : calculateRequestArgumentSize(otherkey3Bytes));
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.SDIFF.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, firstkeyBytes);
+        writeRequestArgument(buffer, firstkey, firstkeyBytes);
         if (otherkey1 != null) {
-            RedisRequests.writeRequestArgument(buffer, otherkey1Bytes);
+            writeRequestArgument(buffer, otherkey1, otherkey1Bytes);
         }
         if (otherkey2 != null) {
-            RedisRequests.writeRequestArgument(buffer, otherkey2Bytes);
+            writeRequestArgument(buffer, otherkey2, otherkey2Bytes);
         }
         if (otherkey3 != null) {
-            RedisRequests.writeRequestArgument(buffer, otherkey3Bytes);
+            writeRequestArgument(buffer, otherkey3, otherkey3Bytes);
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SDIFF, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
@@ -6132,7 +6128,7 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(firstkey);
         requireNonNull(otherkeys);
         final int len = 2 + otherkeys.size();
-        final byte[] firstkeyBytes = firstkey.toString().getBytes(StandardCharsets.UTF_8);
+        final int firstkeyBytes = numberOfBytesUtf8(firstkey);
         int otherkeysCapacity = 0;
         if (otherkeys instanceof List && otherkeys instanceof RandomAccess) {
             final List<CharSequence> list = (List<CharSequence>) otherkeys;
@@ -6148,18 +6144,18 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SDIFF) +
                     calculateRequestArgumentSize(firstkeyBytes) + otherkeysCapacity;
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.SDIFF.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, firstkeyBytes);
+        writeRequestArgument(buffer, firstkey, firstkeyBytes);
         if (otherkeys instanceof List && otherkeys instanceof RandomAccess) {
             final List<CharSequence> list = (List<CharSequence>) otherkeys;
             for (int i = 0; i < list.size(); ++i) {
                 final CharSequence arg = list.get(i);
-                RedisRequests.writeRequestArgument(buffer, arg);
+                writeRequestArgument(buffer, arg);
             }
         } else {
             for (CharSequence arg : otherkeys) {
-                RedisRequests.writeRequestArgument(buffer, arg);
+                writeRequestArgument(buffer, arg);
             }
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SDIFF, buffer);
@@ -6174,15 +6170,15 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(destination);
         requireNonNull(firstkey);
         final int len = 3;
-        final byte[] destinationBytes = destination.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] firstkeyBytes = firstkey.toString().getBytes(StandardCharsets.UTF_8);
+        final int destinationBytes = numberOfBytesUtf8(destination);
+        final int firstkeyBytes = numberOfBytesUtf8(firstkey);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SDIFFSTORE) +
                     calculateRequestArgumentSize(destinationBytes) + calculateRequestArgumentSize(firstkeyBytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.SDIFFSTORE.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, destinationBytes);
-        RedisRequests.writeRequestArgument(buffer, firstkeyBytes);
+        writeRequestArgument(buffer, destination, destinationBytes);
+        writeRequestArgument(buffer, firstkey, firstkeyBytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SDIFFSTORE, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
@@ -6196,19 +6192,19 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(destination);
         requireNonNull(firstkey);
         final int len = 3 + (otherkey == null ? 0 : 1);
-        final byte[] destinationBytes = destination.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] firstkeyBytes = firstkey.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] otherkeyBytes = otherkey == null ? null : otherkey.toString().getBytes(StandardCharsets.UTF_8);
+        final int destinationBytes = numberOfBytesUtf8(destination);
+        final int firstkeyBytes = numberOfBytesUtf8(firstkey);
+        final int otherkeyBytes = otherkey == null ? 0 : numberOfBytesUtf8(otherkey);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SDIFFSTORE) +
                     calculateRequestArgumentSize(destinationBytes) + calculateRequestArgumentSize(firstkeyBytes) +
                     (otherkey == null ? 0 : calculateRequestArgumentSize(otherkeyBytes));
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.SDIFFSTORE.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, destinationBytes);
-        RedisRequests.writeRequestArgument(buffer, firstkeyBytes);
+        writeRequestArgument(buffer, destination, destinationBytes);
+        writeRequestArgument(buffer, firstkey, firstkeyBytes);
         if (otherkey != null) {
-            RedisRequests.writeRequestArgument(buffer, otherkeyBytes);
+            writeRequestArgument(buffer, otherkey, otherkeyBytes);
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SDIFFSTORE, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
@@ -6224,24 +6220,24 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(destination);
         requireNonNull(firstkey);
         final int len = 3 + (otherkey1 == null ? 0 : 1) + (otherkey2 == null ? 0 : 1);
-        final byte[] destinationBytes = destination.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] firstkeyBytes = firstkey.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] otherkey1Bytes = otherkey1 == null ? null : otherkey1.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] otherkey2Bytes = otherkey2 == null ? null : otherkey2.toString().getBytes(StandardCharsets.UTF_8);
+        final int destinationBytes = numberOfBytesUtf8(destination);
+        final int firstkeyBytes = numberOfBytesUtf8(firstkey);
+        final int otherkey1Bytes = otherkey1 == null ? 0 : numberOfBytesUtf8(otherkey1);
+        final int otherkey2Bytes = otherkey2 == null ? 0 : numberOfBytesUtf8(otherkey2);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SDIFFSTORE) +
                     calculateRequestArgumentSize(destinationBytes) + calculateRequestArgumentSize(firstkeyBytes) +
                     (otherkey1 == null ? 0 : calculateRequestArgumentSize(otherkey1Bytes)) +
                     (otherkey2 == null ? 0 : calculateRequestArgumentSize(otherkey2Bytes));
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.SDIFFSTORE.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, destinationBytes);
-        RedisRequests.writeRequestArgument(buffer, firstkeyBytes);
+        writeRequestArgument(buffer, destination, destinationBytes);
+        writeRequestArgument(buffer, firstkey, firstkeyBytes);
         if (otherkey1 != null) {
-            RedisRequests.writeRequestArgument(buffer, otherkey1Bytes);
+            writeRequestArgument(buffer, otherkey1, otherkey1Bytes);
         }
         if (otherkey2 != null) {
-            RedisRequests.writeRequestArgument(buffer, otherkey2Bytes);
+            writeRequestArgument(buffer, otherkey2, otherkey2Bytes);
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SDIFFSTORE, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
@@ -6258,29 +6254,29 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(destination);
         requireNonNull(firstkey);
         final int len = 3 + (otherkey1 == null ? 0 : 1) + (otherkey2 == null ? 0 : 1) + (otherkey3 == null ? 0 : 1);
-        final byte[] destinationBytes = destination.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] firstkeyBytes = firstkey.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] otherkey1Bytes = otherkey1 == null ? null : otherkey1.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] otherkey2Bytes = otherkey2 == null ? null : otherkey2.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] otherkey3Bytes = otherkey3 == null ? null : otherkey3.toString().getBytes(StandardCharsets.UTF_8);
+        final int destinationBytes = numberOfBytesUtf8(destination);
+        final int firstkeyBytes = numberOfBytesUtf8(firstkey);
+        final int otherkey1Bytes = otherkey1 == null ? 0 : numberOfBytesUtf8(otherkey1);
+        final int otherkey2Bytes = otherkey2 == null ? 0 : numberOfBytesUtf8(otherkey2);
+        final int otherkey3Bytes = otherkey3 == null ? 0 : numberOfBytesUtf8(otherkey3);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SDIFFSTORE) +
                     calculateRequestArgumentSize(destinationBytes) + calculateRequestArgumentSize(firstkeyBytes) +
                     (otherkey1 == null ? 0 : calculateRequestArgumentSize(otherkey1Bytes)) +
                     (otherkey2 == null ? 0 : calculateRequestArgumentSize(otherkey2Bytes)) +
                     (otherkey3 == null ? 0 : calculateRequestArgumentSize(otherkey3Bytes));
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.SDIFFSTORE.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, destinationBytes);
-        RedisRequests.writeRequestArgument(buffer, firstkeyBytes);
+        writeRequestArgument(buffer, destination, destinationBytes);
+        writeRequestArgument(buffer, firstkey, firstkeyBytes);
         if (otherkey1 != null) {
-            RedisRequests.writeRequestArgument(buffer, otherkey1Bytes);
+            writeRequestArgument(buffer, otherkey1, otherkey1Bytes);
         }
         if (otherkey2 != null) {
-            RedisRequests.writeRequestArgument(buffer, otherkey2Bytes);
+            writeRequestArgument(buffer, otherkey2, otherkey2Bytes);
         }
         if (otherkey3 != null) {
-            RedisRequests.writeRequestArgument(buffer, otherkey3Bytes);
+            writeRequestArgument(buffer, otherkey3, otherkey3Bytes);
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SDIFFSTORE, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
@@ -6296,8 +6292,8 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(firstkey);
         requireNonNull(otherkeys);
         final int len = 3 + otherkeys.size();
-        final byte[] destinationBytes = destination.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] firstkeyBytes = firstkey.toString().getBytes(StandardCharsets.UTF_8);
+        final int destinationBytes = numberOfBytesUtf8(destination);
+        final int firstkeyBytes = numberOfBytesUtf8(firstkey);
         int otherkeysCapacity = 0;
         if (otherkeys instanceof List && otherkeys instanceof RandomAccess) {
             final List<CharSequence> list = (List<CharSequence>) otherkeys;
@@ -6314,19 +6310,19 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
                     calculateRequestArgumentSize(destinationBytes) + calculateRequestArgumentSize(firstkeyBytes) +
                     otherkeysCapacity;
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.SDIFFSTORE.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, destinationBytes);
-        RedisRequests.writeRequestArgument(buffer, firstkeyBytes);
+        writeRequestArgument(buffer, destination, destinationBytes);
+        writeRequestArgument(buffer, firstkey, firstkeyBytes);
         if (otherkeys instanceof List && otherkeys instanceof RandomAccess) {
             final List<CharSequence> list = (List<CharSequence>) otherkeys;
             for (int i = 0; i < list.size(); ++i) {
                 final CharSequence arg = list.get(i);
-                RedisRequests.writeRequestArgument(buffer, arg);
+                writeRequestArgument(buffer, arg);
             }
         } else {
             for (CharSequence arg : otherkeys) {
-                RedisRequests.writeRequestArgument(buffer, arg);
+                writeRequestArgument(buffer, arg);
             }
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SDIFFSTORE, buffer);
@@ -6341,9 +6337,9 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SELECT) +
                     calculateRequestArgumentSize(index);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.SELECT.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, index);
+        writeRequestArgument(buffer, index);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SELECT, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<String> result = enqueueForExecute(state, singles, queued);
@@ -6355,15 +6351,15 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(key);
         requireNonNull(value);
         final int len = 3;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] valueBytes = value.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
+        final int valueBytes = numberOfBytesUtf8(value);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SET) +
                     calculateRequestArgumentSize(keyBytes) + calculateRequestArgumentSize(valueBytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.SET.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
-        RedisRequests.writeRequestArgument(buffer, valueBytes);
+        writeRequestArgument(buffer, key, keyBytes);
+        writeRequestArgument(buffer, value, valueBytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SET, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<String> result = enqueueForExecute(state, singles, queued);
@@ -6378,17 +6374,17 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(value);
         final int len = 3 + (expireDuration == null ? 0 : RedisProtocolSupport.ExpireDuration.SIZE) +
                     (condition == null ? 0 : 1);
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] valueBytes = value.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
+        final int valueBytes = numberOfBytesUtf8(value);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SET) +
                     calculateRequestArgumentSize(keyBytes) + calculateRequestArgumentSize(valueBytes) +
                     (expireDuration == null ? 0 : expireDuration.encodedByteCount()) +
                     (condition == null ? 0 : condition.encodedByteCount());
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.SET.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
-        RedisRequests.writeRequestArgument(buffer, valueBytes);
+        writeRequestArgument(buffer, key, keyBytes);
+        writeRequestArgument(buffer, value, valueBytes);
         if (expireDuration != null) {
             expireDuration.encodeTo(buffer);
         }
@@ -6407,17 +6403,17 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(key);
         requireNonNull(value);
         final int len = 4;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] valueBytes = value.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
+        final int valueBytes = numberOfBytesUtf8(value);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SETBIT) +
                     calculateRequestArgumentSize(keyBytes) + calculateRequestArgumentSize(offset) +
                     calculateRequestArgumentSize(valueBytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.SETBIT.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
-        RedisRequests.writeRequestArgument(buffer, offset);
-        RedisRequests.writeRequestArgument(buffer, valueBytes);
+        writeRequestArgument(buffer, key, keyBytes);
+        writeRequestArgument(buffer, offset);
+        writeRequestArgument(buffer, value, valueBytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SETBIT, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
@@ -6430,17 +6426,17 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(key);
         requireNonNull(value);
         final int len = 4;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] valueBytes = value.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
+        final int valueBytes = numberOfBytesUtf8(value);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SETEX) +
                     calculateRequestArgumentSize(keyBytes) + calculateRequestArgumentSize(seconds) +
                     calculateRequestArgumentSize(valueBytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.SETEX.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
-        RedisRequests.writeRequestArgument(buffer, seconds);
-        RedisRequests.writeRequestArgument(buffer, valueBytes);
+        writeRequestArgument(buffer, key, keyBytes);
+        writeRequestArgument(buffer, seconds);
+        writeRequestArgument(buffer, value, valueBytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SETEX, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<String> result = enqueueForExecute(state, singles, queued);
@@ -6452,15 +6448,15 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(key);
         requireNonNull(value);
         final int len = 3;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] valueBytes = value.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
+        final int valueBytes = numberOfBytesUtf8(value);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SETNX) +
                     calculateRequestArgumentSize(keyBytes) + calculateRequestArgumentSize(valueBytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.SETNX.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
-        RedisRequests.writeRequestArgument(buffer, valueBytes);
+        writeRequestArgument(buffer, key, keyBytes);
+        writeRequestArgument(buffer, value, valueBytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SETNX, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
@@ -6473,17 +6469,17 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(key);
         requireNonNull(value);
         final int len = 4;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] valueBytes = value.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
+        final int valueBytes = numberOfBytesUtf8(value);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SETRANGE) +
                     calculateRequestArgumentSize(keyBytes) + calculateRequestArgumentSize(offset) +
                     calculateRequestArgumentSize(valueBytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.SETRANGE.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
-        RedisRequests.writeRequestArgument(buffer, offset);
-        RedisRequests.writeRequestArgument(buffer, valueBytes);
+        writeRequestArgument(buffer, key, keyBytes);
+        writeRequestArgument(buffer, offset);
+        writeRequestArgument(buffer, value, valueBytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SETRANGE, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
@@ -6495,7 +6491,7 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         final int len = 1;
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SHUTDOWN);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.SHUTDOWN.encodeTo(buffer);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SHUTDOWN, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
@@ -6509,7 +6505,7 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SHUTDOWN) +
                     (saveMode == null ? 0 : saveMode.encodedByteCount());
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.SHUTDOWN.encodeTo(buffer);
         if (saveMode != null) {
             saveMode.encodeTo(buffer);
@@ -6524,13 +6520,13 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
     public <T> Future<List<T>> sinter(@RedisProtocolSupport.Key final CharSequence key) {
         requireNonNull(key);
         final int len = 2;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SINTER) +
                     calculateRequestArgumentSize(keyBytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.SINTER.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
+        writeRequestArgument(buffer, key, keyBytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SINTER, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
@@ -6543,15 +6539,15 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(key1);
         requireNonNull(key2);
         final int len = 3;
-        final byte[] key1Bytes = key1.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] key2Bytes = key2.toString().getBytes(StandardCharsets.UTF_8);
+        final int key1Bytes = numberOfBytesUtf8(key1);
+        final int key2Bytes = numberOfBytesUtf8(key2);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SINTER) +
                     calculateRequestArgumentSize(key1Bytes) + calculateRequestArgumentSize(key2Bytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.SINTER.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, key1Bytes);
-        RedisRequests.writeRequestArgument(buffer, key2Bytes);
+        writeRequestArgument(buffer, key1, key1Bytes);
+        writeRequestArgument(buffer, key2, key2Bytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SINTER, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
@@ -6566,18 +6562,18 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(key2);
         requireNonNull(key3);
         final int len = 4;
-        final byte[] key1Bytes = key1.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] key2Bytes = key2.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] key3Bytes = key3.toString().getBytes(StandardCharsets.UTF_8);
+        final int key1Bytes = numberOfBytesUtf8(key1);
+        final int key2Bytes = numberOfBytesUtf8(key2);
+        final int key3Bytes = numberOfBytesUtf8(key3);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SINTER) +
                     calculateRequestArgumentSize(key1Bytes) + calculateRequestArgumentSize(key2Bytes) +
                     calculateRequestArgumentSize(key3Bytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.SINTER.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, key1Bytes);
-        RedisRequests.writeRequestArgument(buffer, key2Bytes);
-        RedisRequests.writeRequestArgument(buffer, key3Bytes);
+        writeRequestArgument(buffer, key1, key1Bytes);
+        writeRequestArgument(buffer, key2, key2Bytes);
+        writeRequestArgument(buffer, key3, key3Bytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SINTER, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
@@ -6602,17 +6598,17 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         }
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SINTER) + keysCapacity;
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.SINTER.encodeTo(buffer);
         if (keys instanceof List && keys instanceof RandomAccess) {
             final List<CharSequence> list = (List<CharSequence>) keys;
             for (int i = 0; i < list.size(); ++i) {
                 final CharSequence arg = list.get(i);
-                RedisRequests.writeRequestArgument(buffer, arg);
+                writeRequestArgument(buffer, arg);
             }
         } else {
             for (CharSequence arg : keys) {
-                RedisRequests.writeRequestArgument(buffer, arg);
+                writeRequestArgument(buffer, arg);
             }
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SINTER, buffer);
@@ -6627,15 +6623,15 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(destination);
         requireNonNull(key);
         final int len = 3;
-        final byte[] destinationBytes = destination.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
+        final int destinationBytes = numberOfBytesUtf8(destination);
+        final int keyBytes = numberOfBytesUtf8(key);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SINTERSTORE) +
                     calculateRequestArgumentSize(destinationBytes) + calculateRequestArgumentSize(keyBytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.SINTERSTORE.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, destinationBytes);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
+        writeRequestArgument(buffer, destination, destinationBytes);
+        writeRequestArgument(buffer, key, keyBytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SINTERSTORE, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
@@ -6650,18 +6646,18 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(key1);
         requireNonNull(key2);
         final int len = 4;
-        final byte[] destinationBytes = destination.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] key1Bytes = key1.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] key2Bytes = key2.toString().getBytes(StandardCharsets.UTF_8);
+        final int destinationBytes = numberOfBytesUtf8(destination);
+        final int key1Bytes = numberOfBytesUtf8(key1);
+        final int key2Bytes = numberOfBytesUtf8(key2);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SINTERSTORE) +
                     calculateRequestArgumentSize(destinationBytes) + calculateRequestArgumentSize(key1Bytes) +
                     calculateRequestArgumentSize(key2Bytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.SINTERSTORE.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, destinationBytes);
-        RedisRequests.writeRequestArgument(buffer, key1Bytes);
-        RedisRequests.writeRequestArgument(buffer, key2Bytes);
+        writeRequestArgument(buffer, destination, destinationBytes);
+        writeRequestArgument(buffer, key1, key1Bytes);
+        writeRequestArgument(buffer, key2, key2Bytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SINTERSTORE, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
@@ -6678,20 +6674,20 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(key2);
         requireNonNull(key3);
         final int len = 5;
-        final byte[] destinationBytes = destination.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] key1Bytes = key1.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] key2Bytes = key2.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] key3Bytes = key3.toString().getBytes(StandardCharsets.UTF_8);
+        final int destinationBytes = numberOfBytesUtf8(destination);
+        final int key1Bytes = numberOfBytesUtf8(key1);
+        final int key2Bytes = numberOfBytesUtf8(key2);
+        final int key3Bytes = numberOfBytesUtf8(key3);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SINTERSTORE) +
                     calculateRequestArgumentSize(destinationBytes) + calculateRequestArgumentSize(key1Bytes) +
                     calculateRequestArgumentSize(key2Bytes) + calculateRequestArgumentSize(key3Bytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.SINTERSTORE.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, destinationBytes);
-        RedisRequests.writeRequestArgument(buffer, key1Bytes);
-        RedisRequests.writeRequestArgument(buffer, key2Bytes);
-        RedisRequests.writeRequestArgument(buffer, key3Bytes);
+        writeRequestArgument(buffer, destination, destinationBytes);
+        writeRequestArgument(buffer, key1, key1Bytes);
+        writeRequestArgument(buffer, key2, key2Bytes);
+        writeRequestArgument(buffer, key3, key3Bytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SINTERSTORE, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
@@ -6704,7 +6700,7 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(destination);
         requireNonNull(keys);
         final int len = 2 + keys.size();
-        final byte[] destinationBytes = destination.toString().getBytes(StandardCharsets.UTF_8);
+        final int destinationBytes = numberOfBytesUtf8(destination);
         int keysCapacity = 0;
         if (keys instanceof List && keys instanceof RandomAccess) {
             final List<CharSequence> list = (List<CharSequence>) keys;
@@ -6720,18 +6716,18 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SINTERSTORE) +
                     calculateRequestArgumentSize(destinationBytes) + keysCapacity;
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.SINTERSTORE.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, destinationBytes);
+        writeRequestArgument(buffer, destination, destinationBytes);
         if (keys instanceof List && keys instanceof RandomAccess) {
             final List<CharSequence> list = (List<CharSequence>) keys;
             for (int i = 0; i < list.size(); ++i) {
                 final CharSequence arg = list.get(i);
-                RedisRequests.writeRequestArgument(buffer, arg);
+                writeRequestArgument(buffer, arg);
             }
         } else {
             for (CharSequence arg : keys) {
-                RedisRequests.writeRequestArgument(buffer, arg);
+                writeRequestArgument(buffer, arg);
             }
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SINTERSTORE, buffer);
@@ -6745,15 +6741,15 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(key);
         requireNonNull(member);
         final int len = 3;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] memberBytes = member.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
+        final int memberBytes = numberOfBytesUtf8(member);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SISMEMBER) +
                     calculateRequestArgumentSize(keyBytes) + calculateRequestArgumentSize(memberBytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.SISMEMBER.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
-        RedisRequests.writeRequestArgument(buffer, memberBytes);
+        writeRequestArgument(buffer, key, keyBytes);
+        writeRequestArgument(buffer, member, memberBytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SISMEMBER, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
@@ -6765,15 +6761,15 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(host);
         requireNonNull(port);
         final int len = 3;
-        final byte[] hostBytes = host.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] portBytes = port.toString().getBytes(StandardCharsets.UTF_8);
+        final int hostBytes = numberOfBytesUtf8(host);
+        final int portBytes = numberOfBytesUtf8(port);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SLAVEOF) +
                     calculateRequestArgumentSize(hostBytes) + calculateRequestArgumentSize(portBytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.SLAVEOF.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, hostBytes);
-        RedisRequests.writeRequestArgument(buffer, portBytes);
+        writeRequestArgument(buffer, host, hostBytes);
+        writeRequestArgument(buffer, port, portBytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SLAVEOF, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<String> result = enqueueForExecute(state, singles, queued);
@@ -6784,13 +6780,13 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
     public <T> Future<List<T>> slowlog(final CharSequence subcommand) {
         requireNonNull(subcommand);
         final int len = 2;
-        final byte[] subcommandBytes = subcommand.toString().getBytes(StandardCharsets.UTF_8);
+        final int subcommandBytes = numberOfBytesUtf8(subcommand);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SLOWLOG) +
                     calculateRequestArgumentSize(subcommandBytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.SLOWLOG.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, subcommandBytes);
+        writeRequestArgument(buffer, subcommand, subcommandBytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SLOWLOG, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
@@ -6801,17 +6797,17 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
     public <T> Future<List<T>> slowlog(final CharSequence subcommand, @Nullable final CharSequence argument) {
         requireNonNull(subcommand);
         final int len = 2 + (argument == null ? 0 : 1);
-        final byte[] subcommandBytes = subcommand.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] argumentBytes = argument == null ? null : argument.toString().getBytes(StandardCharsets.UTF_8);
+        final int subcommandBytes = numberOfBytesUtf8(subcommand);
+        final int argumentBytes = argument == null ? 0 : numberOfBytesUtf8(argument);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SLOWLOG) +
                     calculateRequestArgumentSize(subcommandBytes) +
                     (argument == null ? 0 : calculateRequestArgumentSize(argumentBytes));
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.SLOWLOG.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, subcommandBytes);
+        writeRequestArgument(buffer, subcommand, subcommandBytes);
         if (argument != null) {
-            RedisRequests.writeRequestArgument(buffer, argumentBytes);
+            writeRequestArgument(buffer, argument, argumentBytes);
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SLOWLOG, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
@@ -6823,13 +6819,13 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
     public <T> Future<List<T>> smembers(@RedisProtocolSupport.Key final CharSequence key) {
         requireNonNull(key);
         final int len = 2;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SMEMBERS) +
                     calculateRequestArgumentSize(keyBytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.SMEMBERS.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
+        writeRequestArgument(buffer, key, keyBytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SMEMBERS, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
@@ -6843,18 +6839,18 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(destination);
         requireNonNull(member);
         final int len = 4;
-        final byte[] sourceBytes = source.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] destinationBytes = destination.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] memberBytes = member.toString().getBytes(StandardCharsets.UTF_8);
+        final int sourceBytes = numberOfBytesUtf8(source);
+        final int destinationBytes = numberOfBytesUtf8(destination);
+        final int memberBytes = numberOfBytesUtf8(member);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SMOVE) +
                     calculateRequestArgumentSize(sourceBytes) + calculateRequestArgumentSize(destinationBytes) +
                     calculateRequestArgumentSize(memberBytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.SMOVE.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, sourceBytes);
-        RedisRequests.writeRequestArgument(buffer, destinationBytes);
-        RedisRequests.writeRequestArgument(buffer, memberBytes);
+        writeRequestArgument(buffer, source, sourceBytes);
+        writeRequestArgument(buffer, destination, destinationBytes);
+        writeRequestArgument(buffer, member, memberBytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SMOVE, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
@@ -6865,13 +6861,13 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
     public <T> Future<List<T>> sort(@RedisProtocolSupport.Key final CharSequence key) {
         requireNonNull(key);
         final int len = 2;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SORT) +
                     calculateRequestArgumentSize(keyBytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.SORT.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
+        writeRequestArgument(buffer, key, keyBytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SORT, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
@@ -6890,8 +6886,8 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         final int len = 3 + (byPattern == null ? 0 : 2) +
                     (offsetCount == null ? 0 : RedisProtocolSupport.OffsetCount.SIZE) + getPatterns.size() +
                     (order == null ? 0 : 1) + (sorting == null ? 0 : 1);
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] byPatternBytes = byPattern == null ? null : byPattern.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
+        final int byPatternBytes = byPattern == null ? 0 : numberOfBytesUtf8(byPattern);
         int getPatternsCapacity = 0;
         if (getPatterns instanceof List && getPatterns instanceof RandomAccess) {
             final List<CharSequence> list = (List<CharSequence>) getPatterns;
@@ -6912,12 +6908,12 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
                     RedisProtocolSupport.SubCommand.GET.encodedByteCount() + getPatternsCapacity +
                     (order == null ? 0 : order.encodedByteCount()) + (sorting == null ? 0 : sorting.encodedByteCount());
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.SORT.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
+        writeRequestArgument(buffer, key, keyBytes);
         if (byPattern != null) {
             RedisProtocolSupport.SubCommand.BY.encodeTo(buffer);
-            RedisRequests.writeRequestArgument(buffer, byPatternBytes);
+            writeRequestArgument(buffer, byPattern, byPatternBytes);
         }
         if (offsetCount != null) {
             offsetCount.encodeTo(buffer);
@@ -6927,11 +6923,11 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
             final List<CharSequence> list = (List<CharSequence>) getPatterns;
             for (int i = 0; i < list.size(); ++i) {
                 final CharSequence arg = list.get(i);
-                RedisRequests.writeRequestArgument(buffer, arg);
+                writeRequestArgument(buffer, arg);
             }
         } else {
             for (CharSequence arg : getPatterns) {
-                RedisRequests.writeRequestArgument(buffer, arg);
+                writeRequestArgument(buffer, arg);
             }
         }
         if (order != null) {
@@ -6952,17 +6948,17 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(key);
         requireNonNull(storeDestination);
         final int len = 4;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] storeDestinationBytes = storeDestination.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
+        final int storeDestinationBytes = numberOfBytesUtf8(storeDestination);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SORT) +
                     calculateRequestArgumentSize(keyBytes) + RedisProtocolSupport.SubCommand.STORE.encodedByteCount() +
                     calculateRequestArgumentSize(storeDestinationBytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.SORT.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
+        writeRequestArgument(buffer, key, keyBytes);
         RedisProtocolSupport.SubCommand.STORE.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, storeDestinationBytes);
+        writeRequestArgument(buffer, storeDestination, storeDestinationBytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SORT, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
@@ -6983,9 +6979,9 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         final int len = 5 + (byPattern == null ? 0 : 2) +
                     (offsetCount == null ? 0 : RedisProtocolSupport.OffsetCount.SIZE) + getPatterns.size() +
                     (order == null ? 0 : 1) + (sorting == null ? 0 : 1);
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] storeDestinationBytes = storeDestination.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] byPatternBytes = byPattern == null ? null : byPattern.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
+        final int storeDestinationBytes = numberOfBytesUtf8(storeDestination);
+        final int byPatternBytes = byPattern == null ? 0 : numberOfBytesUtf8(byPattern);
         int getPatternsCapacity = 0;
         if (getPatterns instanceof List && getPatterns instanceof RandomAccess) {
             final List<CharSequence> list = (List<CharSequence>) getPatterns;
@@ -7007,14 +7003,14 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
                     RedisProtocolSupport.SubCommand.GET.encodedByteCount() + getPatternsCapacity +
                     (order == null ? 0 : order.encodedByteCount()) + (sorting == null ? 0 : sorting.encodedByteCount());
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.SORT.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
+        writeRequestArgument(buffer, key, keyBytes);
         RedisProtocolSupport.SubCommand.STORE.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, storeDestinationBytes);
+        writeRequestArgument(buffer, storeDestination, storeDestinationBytes);
         if (byPattern != null) {
             RedisProtocolSupport.SubCommand.BY.encodeTo(buffer);
-            RedisRequests.writeRequestArgument(buffer, byPatternBytes);
+            writeRequestArgument(buffer, byPattern, byPatternBytes);
         }
         if (offsetCount != null) {
             offsetCount.encodeTo(buffer);
@@ -7024,11 +7020,11 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
             final List<CharSequence> list = (List<CharSequence>) getPatterns;
             for (int i = 0; i < list.size(); ++i) {
                 final CharSequence arg = list.get(i);
-                RedisRequests.writeRequestArgument(buffer, arg);
+                writeRequestArgument(buffer, arg);
             }
         } else {
             for (CharSequence arg : getPatterns) {
-                RedisRequests.writeRequestArgument(buffer, arg);
+                writeRequestArgument(buffer, arg);
             }
         }
         if (order != null) {
@@ -7047,13 +7043,13 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
     public Future<String> spop(@RedisProtocolSupport.Key final CharSequence key) {
         requireNonNull(key);
         final int len = 2;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SPOP) +
                     calculateRequestArgumentSize(keyBytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.SPOP.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
+        writeRequestArgument(buffer, key, keyBytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SPOP, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<String> result = enqueueForExecute(state, singles, queued);
@@ -7064,15 +7060,15 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
     public Future<String> spop(@RedisProtocolSupport.Key final CharSequence key, @Nullable final Long count) {
         requireNonNull(key);
         final int len = 2 + (count == null ? 0 : 1);
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SPOP) +
                     calculateRequestArgumentSize(keyBytes) + (count == null ? 0 : calculateRequestArgumentSize(count));
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.SPOP.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
+        writeRequestArgument(buffer, key, keyBytes);
         if (count != null) {
-            RedisRequests.writeRequestArgument(buffer, count);
+            writeRequestArgument(buffer, count);
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SPOP, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
@@ -7084,13 +7080,13 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
     public Future<String> srandmember(@RedisProtocolSupport.Key final CharSequence key) {
         requireNonNull(key);
         final int len = 2;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SRANDMEMBER) +
                     calculateRequestArgumentSize(keyBytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.SRANDMEMBER.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
+        writeRequestArgument(buffer, key, keyBytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SRANDMEMBER, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<String> result = enqueueForExecute(state, singles, queued);
@@ -7101,14 +7097,14 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
     public Future<List<String>> srandmember(@RedisProtocolSupport.Key final CharSequence key, final long count) {
         requireNonNull(key);
         final int len = 3;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SRANDMEMBER) +
                     calculateRequestArgumentSize(keyBytes) + calculateRequestArgumentSize(count);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.SRANDMEMBER.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
-        RedisRequests.writeRequestArgument(buffer, count);
+        writeRequestArgument(buffer, key, keyBytes);
+        writeRequestArgument(buffer, count);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SRANDMEMBER, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<String>> result = enqueueForExecute(state, singles, queued);
@@ -7120,15 +7116,15 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(key);
         requireNonNull(member);
         final int len = 3;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] memberBytes = member.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
+        final int memberBytes = numberOfBytesUtf8(member);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SREM) +
                     calculateRequestArgumentSize(keyBytes) + calculateRequestArgumentSize(memberBytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.SREM.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
-        RedisRequests.writeRequestArgument(buffer, memberBytes);
+        writeRequestArgument(buffer, key, keyBytes);
+        writeRequestArgument(buffer, member, memberBytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SREM, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
@@ -7142,18 +7138,18 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(member1);
         requireNonNull(member2);
         final int len = 4;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] member1Bytes = member1.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] member2Bytes = member2.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
+        final int member1Bytes = numberOfBytesUtf8(member1);
+        final int member2Bytes = numberOfBytesUtf8(member2);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SREM) +
                     calculateRequestArgumentSize(keyBytes) + calculateRequestArgumentSize(member1Bytes) +
                     calculateRequestArgumentSize(member2Bytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.SREM.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
-        RedisRequests.writeRequestArgument(buffer, member1Bytes);
-        RedisRequests.writeRequestArgument(buffer, member2Bytes);
+        writeRequestArgument(buffer, key, keyBytes);
+        writeRequestArgument(buffer, member1, member1Bytes);
+        writeRequestArgument(buffer, member2, member2Bytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SREM, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
@@ -7168,20 +7164,20 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(member2);
         requireNonNull(member3);
         final int len = 5;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] member1Bytes = member1.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] member2Bytes = member2.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] member3Bytes = member3.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
+        final int member1Bytes = numberOfBytesUtf8(member1);
+        final int member2Bytes = numberOfBytesUtf8(member2);
+        final int member3Bytes = numberOfBytesUtf8(member3);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SREM) +
                     calculateRequestArgumentSize(keyBytes) + calculateRequestArgumentSize(member1Bytes) +
                     calculateRequestArgumentSize(member2Bytes) + calculateRequestArgumentSize(member3Bytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.SREM.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
-        RedisRequests.writeRequestArgument(buffer, member1Bytes);
-        RedisRequests.writeRequestArgument(buffer, member2Bytes);
-        RedisRequests.writeRequestArgument(buffer, member3Bytes);
+        writeRequestArgument(buffer, key, keyBytes);
+        writeRequestArgument(buffer, member1, member1Bytes);
+        writeRequestArgument(buffer, member2, member2Bytes);
+        writeRequestArgument(buffer, member3, member3Bytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SREM, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
@@ -7194,7 +7190,7 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(key);
         requireNonNull(members);
         final int len = 2 + members.size();
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
         int membersCapacity = 0;
         if (members instanceof List && members instanceof RandomAccess) {
             final List<CharSequence> list = (List<CharSequence>) members;
@@ -7210,18 +7206,18 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SREM) +
                     calculateRequestArgumentSize(keyBytes) + membersCapacity;
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.SREM.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
+        writeRequestArgument(buffer, key, keyBytes);
         if (members instanceof List && members instanceof RandomAccess) {
             final List<CharSequence> list = (List<CharSequence>) members;
             for (int i = 0; i < list.size(); ++i) {
                 final CharSequence arg = list.get(i);
-                RedisRequests.writeRequestArgument(buffer, arg);
+                writeRequestArgument(buffer, arg);
             }
         } else {
             for (CharSequence arg : members) {
-                RedisRequests.writeRequestArgument(buffer, arg);
+                writeRequestArgument(buffer, arg);
             }
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SREM, buffer);
@@ -7234,14 +7230,14 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
     public <T> Future<List<T>> sscan(@RedisProtocolSupport.Key final CharSequence key, final long cursor) {
         requireNonNull(key);
         final int len = 3;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SSCAN) +
                     calculateRequestArgumentSize(keyBytes) + calculateRequestArgumentSize(cursor);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.SSCAN.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
-        RedisRequests.writeRequestArgument(buffer, cursor);
+        writeRequestArgument(buffer, key, keyBytes);
+        writeRequestArgument(buffer, cursor);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SSCAN, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
@@ -7253,9 +7249,8 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
                                      @Nullable final CharSequence matchPattern, @Nullable final Long count) {
         requireNonNull(key);
         final int len = 3 + (matchPattern == null ? 0 : 2) + (count == null ? 0 : 2);
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] matchPatternBytes = matchPattern == null ? null
-                    : matchPattern.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
+        final int matchPatternBytes = matchPattern == null ? 0 : numberOfBytesUtf8(matchPattern);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SSCAN) +
                     calculateRequestArgumentSize(keyBytes) + calculateRequestArgumentSize(cursor) +
                     (matchPattern == null ? 0 : RedisProtocolSupport.SubCommand.MATCH.encodedByteCount()) +
@@ -7263,17 +7258,17 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
                     (count == null ? 0 : RedisProtocolSupport.SubCommand.COUNT.encodedByteCount()) +
                     (count == null ? 0 : calculateRequestArgumentSize(count));
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.SSCAN.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
-        RedisRequests.writeRequestArgument(buffer, cursor);
+        writeRequestArgument(buffer, key, keyBytes);
+        writeRequestArgument(buffer, cursor);
         if (matchPattern != null) {
             RedisProtocolSupport.SubCommand.MATCH.encodeTo(buffer);
-            RedisRequests.writeRequestArgument(buffer, matchPatternBytes);
+            writeRequestArgument(buffer, matchPattern, matchPatternBytes);
         }
         if (count != null) {
             RedisProtocolSupport.SubCommand.COUNT.encodeTo(buffer);
-            RedisRequests.writeRequestArgument(buffer, count);
+            writeRequestArgument(buffer, count);
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SSCAN, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
@@ -7285,13 +7280,13 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
     public Future<Long> strlen(@RedisProtocolSupport.Key final CharSequence key) {
         requireNonNull(key);
         final int len = 2;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.STRLEN) +
                     calculateRequestArgumentSize(keyBytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.STRLEN.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
+        writeRequestArgument(buffer, key, keyBytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.STRLEN, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
@@ -7302,13 +7297,13 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
     public <T> Future<List<T>> sunion(@RedisProtocolSupport.Key final CharSequence key) {
         requireNonNull(key);
         final int len = 2;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SUNION) +
                     calculateRequestArgumentSize(keyBytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.SUNION.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
+        writeRequestArgument(buffer, key, keyBytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SUNION, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
@@ -7321,15 +7316,15 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(key1);
         requireNonNull(key2);
         final int len = 3;
-        final byte[] key1Bytes = key1.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] key2Bytes = key2.toString().getBytes(StandardCharsets.UTF_8);
+        final int key1Bytes = numberOfBytesUtf8(key1);
+        final int key2Bytes = numberOfBytesUtf8(key2);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SUNION) +
                     calculateRequestArgumentSize(key1Bytes) + calculateRequestArgumentSize(key2Bytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.SUNION.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, key1Bytes);
-        RedisRequests.writeRequestArgument(buffer, key2Bytes);
+        writeRequestArgument(buffer, key1, key1Bytes);
+        writeRequestArgument(buffer, key2, key2Bytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SUNION, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
@@ -7344,18 +7339,18 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(key2);
         requireNonNull(key3);
         final int len = 4;
-        final byte[] key1Bytes = key1.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] key2Bytes = key2.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] key3Bytes = key3.toString().getBytes(StandardCharsets.UTF_8);
+        final int key1Bytes = numberOfBytesUtf8(key1);
+        final int key2Bytes = numberOfBytesUtf8(key2);
+        final int key3Bytes = numberOfBytesUtf8(key3);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SUNION) +
                     calculateRequestArgumentSize(key1Bytes) + calculateRequestArgumentSize(key2Bytes) +
                     calculateRequestArgumentSize(key3Bytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.SUNION.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, key1Bytes);
-        RedisRequests.writeRequestArgument(buffer, key2Bytes);
-        RedisRequests.writeRequestArgument(buffer, key3Bytes);
+        writeRequestArgument(buffer, key1, key1Bytes);
+        writeRequestArgument(buffer, key2, key2Bytes);
+        writeRequestArgument(buffer, key3, key3Bytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SUNION, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
@@ -7380,17 +7375,17 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         }
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SUNION) + keysCapacity;
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.SUNION.encodeTo(buffer);
         if (keys instanceof List && keys instanceof RandomAccess) {
             final List<CharSequence> list = (List<CharSequence>) keys;
             for (int i = 0; i < list.size(); ++i) {
                 final CharSequence arg = list.get(i);
-                RedisRequests.writeRequestArgument(buffer, arg);
+                writeRequestArgument(buffer, arg);
             }
         } else {
             for (CharSequence arg : keys) {
-                RedisRequests.writeRequestArgument(buffer, arg);
+                writeRequestArgument(buffer, arg);
             }
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SUNION, buffer);
@@ -7405,15 +7400,15 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(destination);
         requireNonNull(key);
         final int len = 3;
-        final byte[] destinationBytes = destination.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
+        final int destinationBytes = numberOfBytesUtf8(destination);
+        final int keyBytes = numberOfBytesUtf8(key);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SUNIONSTORE) +
                     calculateRequestArgumentSize(destinationBytes) + calculateRequestArgumentSize(keyBytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.SUNIONSTORE.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, destinationBytes);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
+        writeRequestArgument(buffer, destination, destinationBytes);
+        writeRequestArgument(buffer, key, keyBytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SUNIONSTORE, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
@@ -7428,18 +7423,18 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(key1);
         requireNonNull(key2);
         final int len = 4;
-        final byte[] destinationBytes = destination.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] key1Bytes = key1.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] key2Bytes = key2.toString().getBytes(StandardCharsets.UTF_8);
+        final int destinationBytes = numberOfBytesUtf8(destination);
+        final int key1Bytes = numberOfBytesUtf8(key1);
+        final int key2Bytes = numberOfBytesUtf8(key2);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SUNIONSTORE) +
                     calculateRequestArgumentSize(destinationBytes) + calculateRequestArgumentSize(key1Bytes) +
                     calculateRequestArgumentSize(key2Bytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.SUNIONSTORE.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, destinationBytes);
-        RedisRequests.writeRequestArgument(buffer, key1Bytes);
-        RedisRequests.writeRequestArgument(buffer, key2Bytes);
+        writeRequestArgument(buffer, destination, destinationBytes);
+        writeRequestArgument(buffer, key1, key1Bytes);
+        writeRequestArgument(buffer, key2, key2Bytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SUNIONSTORE, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
@@ -7456,20 +7451,20 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(key2);
         requireNonNull(key3);
         final int len = 5;
-        final byte[] destinationBytes = destination.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] key1Bytes = key1.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] key2Bytes = key2.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] key3Bytes = key3.toString().getBytes(StandardCharsets.UTF_8);
+        final int destinationBytes = numberOfBytesUtf8(destination);
+        final int key1Bytes = numberOfBytesUtf8(key1);
+        final int key2Bytes = numberOfBytesUtf8(key2);
+        final int key3Bytes = numberOfBytesUtf8(key3);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SUNIONSTORE) +
                     calculateRequestArgumentSize(destinationBytes) + calculateRequestArgumentSize(key1Bytes) +
                     calculateRequestArgumentSize(key2Bytes) + calculateRequestArgumentSize(key3Bytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.SUNIONSTORE.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, destinationBytes);
-        RedisRequests.writeRequestArgument(buffer, key1Bytes);
-        RedisRequests.writeRequestArgument(buffer, key2Bytes);
-        RedisRequests.writeRequestArgument(buffer, key3Bytes);
+        writeRequestArgument(buffer, destination, destinationBytes);
+        writeRequestArgument(buffer, key1, key1Bytes);
+        writeRequestArgument(buffer, key2, key2Bytes);
+        writeRequestArgument(buffer, key3, key3Bytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SUNIONSTORE, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
@@ -7482,7 +7477,7 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(destination);
         requireNonNull(keys);
         final int len = 2 + keys.size();
-        final byte[] destinationBytes = destination.toString().getBytes(StandardCharsets.UTF_8);
+        final int destinationBytes = numberOfBytesUtf8(destination);
         int keysCapacity = 0;
         if (keys instanceof List && keys instanceof RandomAccess) {
             final List<CharSequence> list = (List<CharSequence>) keys;
@@ -7498,18 +7493,18 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SUNIONSTORE) +
                     calculateRequestArgumentSize(destinationBytes) + keysCapacity;
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.SUNIONSTORE.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, destinationBytes);
+        writeRequestArgument(buffer, destination, destinationBytes);
         if (keys instanceof List && keys instanceof RandomAccess) {
             final List<CharSequence> list = (List<CharSequence>) keys;
             for (int i = 0; i < list.size(); ++i) {
                 final CharSequence arg = list.get(i);
-                RedisRequests.writeRequestArgument(buffer, arg);
+                writeRequestArgument(buffer, arg);
             }
         } else {
             for (CharSequence arg : keys) {
-                RedisRequests.writeRequestArgument(buffer, arg);
+                writeRequestArgument(buffer, arg);
             }
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SUNIONSTORE, buffer);
@@ -7524,10 +7519,10 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.SWAPDB) +
                     calculateRequestArgumentSize(index) + calculateRequestArgumentSize(index1);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.SWAPDB.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, index);
-        RedisRequests.writeRequestArgument(buffer, index1);
+        writeRequestArgument(buffer, index);
+        writeRequestArgument(buffer, index1);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SWAPDB, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<String> result = enqueueForExecute(state, singles, queued);
@@ -7539,7 +7534,7 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         final int len = 1;
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.TIME);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.TIME.encodeTo(buffer);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.TIME, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
@@ -7551,13 +7546,13 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
     public Future<Long> touch(@RedisProtocolSupport.Key final CharSequence key) {
         requireNonNull(key);
         final int len = 2;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.TOUCH) +
                     calculateRequestArgumentSize(keyBytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.TOUCH.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
+        writeRequestArgument(buffer, key, keyBytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.TOUCH, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
@@ -7570,15 +7565,15 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(key1);
         requireNonNull(key2);
         final int len = 3;
-        final byte[] key1Bytes = key1.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] key2Bytes = key2.toString().getBytes(StandardCharsets.UTF_8);
+        final int key1Bytes = numberOfBytesUtf8(key1);
+        final int key2Bytes = numberOfBytesUtf8(key2);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.TOUCH) +
                     calculateRequestArgumentSize(key1Bytes) + calculateRequestArgumentSize(key2Bytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.TOUCH.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, key1Bytes);
-        RedisRequests.writeRequestArgument(buffer, key2Bytes);
+        writeRequestArgument(buffer, key1, key1Bytes);
+        writeRequestArgument(buffer, key2, key2Bytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.TOUCH, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
@@ -7593,18 +7588,18 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(key2);
         requireNonNull(key3);
         final int len = 4;
-        final byte[] key1Bytes = key1.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] key2Bytes = key2.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] key3Bytes = key3.toString().getBytes(StandardCharsets.UTF_8);
+        final int key1Bytes = numberOfBytesUtf8(key1);
+        final int key2Bytes = numberOfBytesUtf8(key2);
+        final int key3Bytes = numberOfBytesUtf8(key3);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.TOUCH) +
                     calculateRequestArgumentSize(key1Bytes) + calculateRequestArgumentSize(key2Bytes) +
                     calculateRequestArgumentSize(key3Bytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.TOUCH.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, key1Bytes);
-        RedisRequests.writeRequestArgument(buffer, key2Bytes);
-        RedisRequests.writeRequestArgument(buffer, key3Bytes);
+        writeRequestArgument(buffer, key1, key1Bytes);
+        writeRequestArgument(buffer, key2, key2Bytes);
+        writeRequestArgument(buffer, key3, key3Bytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.TOUCH, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
@@ -7629,17 +7624,17 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         }
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.TOUCH) + keysCapacity;
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.TOUCH.encodeTo(buffer);
         if (keys instanceof List && keys instanceof RandomAccess) {
             final List<CharSequence> list = (List<CharSequence>) keys;
             for (int i = 0; i < list.size(); ++i) {
                 final CharSequence arg = list.get(i);
-                RedisRequests.writeRequestArgument(buffer, arg);
+                writeRequestArgument(buffer, arg);
             }
         } else {
             for (CharSequence arg : keys) {
-                RedisRequests.writeRequestArgument(buffer, arg);
+                writeRequestArgument(buffer, arg);
             }
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.TOUCH, buffer);
@@ -7652,13 +7647,13 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
     public Future<Long> ttl(@RedisProtocolSupport.Key final CharSequence key) {
         requireNonNull(key);
         final int len = 2;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.TTL) +
                     calculateRequestArgumentSize(keyBytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.TTL.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
+        writeRequestArgument(buffer, key, keyBytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.TTL, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
@@ -7669,13 +7664,13 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
     public Future<String> type(@RedisProtocolSupport.Key final CharSequence key) {
         requireNonNull(key);
         final int len = 2;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.TYPE) +
                     calculateRequestArgumentSize(keyBytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.TYPE.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
+        writeRequestArgument(buffer, key, keyBytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.TYPE, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<String> result = enqueueForExecute(state, singles, queued);
@@ -7686,13 +7681,13 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
     public Future<Long> unlink(@RedisProtocolSupport.Key final CharSequence key) {
         requireNonNull(key);
         final int len = 2;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.UNLINK) +
                     calculateRequestArgumentSize(keyBytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.UNLINK.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
+        writeRequestArgument(buffer, key, keyBytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.UNLINK, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
@@ -7705,15 +7700,15 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(key1);
         requireNonNull(key2);
         final int len = 3;
-        final byte[] key1Bytes = key1.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] key2Bytes = key2.toString().getBytes(StandardCharsets.UTF_8);
+        final int key1Bytes = numberOfBytesUtf8(key1);
+        final int key2Bytes = numberOfBytesUtf8(key2);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.UNLINK) +
                     calculateRequestArgumentSize(key1Bytes) + calculateRequestArgumentSize(key2Bytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.UNLINK.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, key1Bytes);
-        RedisRequests.writeRequestArgument(buffer, key2Bytes);
+        writeRequestArgument(buffer, key1, key1Bytes);
+        writeRequestArgument(buffer, key2, key2Bytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.UNLINK, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
@@ -7728,18 +7723,18 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(key2);
         requireNonNull(key3);
         final int len = 4;
-        final byte[] key1Bytes = key1.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] key2Bytes = key2.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] key3Bytes = key3.toString().getBytes(StandardCharsets.UTF_8);
+        final int key1Bytes = numberOfBytesUtf8(key1);
+        final int key2Bytes = numberOfBytesUtf8(key2);
+        final int key3Bytes = numberOfBytesUtf8(key3);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.UNLINK) +
                     calculateRequestArgumentSize(key1Bytes) + calculateRequestArgumentSize(key2Bytes) +
                     calculateRequestArgumentSize(key3Bytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.UNLINK.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, key1Bytes);
-        RedisRequests.writeRequestArgument(buffer, key2Bytes);
-        RedisRequests.writeRequestArgument(buffer, key3Bytes);
+        writeRequestArgument(buffer, key1, key1Bytes);
+        writeRequestArgument(buffer, key2, key2Bytes);
+        writeRequestArgument(buffer, key3, key3Bytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.UNLINK, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
@@ -7764,17 +7759,17 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         }
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.UNLINK) + keysCapacity;
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.UNLINK.encodeTo(buffer);
         if (keys instanceof List && keys instanceof RandomAccess) {
             final List<CharSequence> list = (List<CharSequence>) keys;
             for (int i = 0; i < list.size(); ++i) {
                 final CharSequence arg = list.get(i);
-                RedisRequests.writeRequestArgument(buffer, arg);
+                writeRequestArgument(buffer, arg);
             }
         } else {
             for (CharSequence arg : keys) {
-                RedisRequests.writeRequestArgument(buffer, arg);
+                writeRequestArgument(buffer, arg);
             }
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.UNLINK, buffer);
@@ -7788,7 +7783,7 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         final int len = 1;
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.UNWATCH);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.UNWATCH.encodeTo(buffer);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.UNWATCH, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
@@ -7802,10 +7797,10 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.WAIT) +
                     calculateRequestArgumentSize(numslaves) + calculateRequestArgumentSize(timeout);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.WAIT.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, numslaves);
-        RedisRequests.writeRequestArgument(buffer, timeout);
+        writeRequestArgument(buffer, numslaves);
+        writeRequestArgument(buffer, timeout);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.WAIT, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
@@ -7816,13 +7811,13 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
     public Future<String> watch(@RedisProtocolSupport.Key final CharSequence key) {
         requireNonNull(key);
         final int len = 2;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.WATCH) +
                     calculateRequestArgumentSize(keyBytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.WATCH.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
+        writeRequestArgument(buffer, key, keyBytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.WATCH, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<String> result = enqueueForExecute(state, singles, queued);
@@ -7835,15 +7830,15 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(key1);
         requireNonNull(key2);
         final int len = 3;
-        final byte[] key1Bytes = key1.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] key2Bytes = key2.toString().getBytes(StandardCharsets.UTF_8);
+        final int key1Bytes = numberOfBytesUtf8(key1);
+        final int key2Bytes = numberOfBytesUtf8(key2);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.WATCH) +
                     calculateRequestArgumentSize(key1Bytes) + calculateRequestArgumentSize(key2Bytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.WATCH.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, key1Bytes);
-        RedisRequests.writeRequestArgument(buffer, key2Bytes);
+        writeRequestArgument(buffer, key1, key1Bytes);
+        writeRequestArgument(buffer, key2, key2Bytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.WATCH, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<String> result = enqueueForExecute(state, singles, queued);
@@ -7858,18 +7853,18 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(key2);
         requireNonNull(key3);
         final int len = 4;
-        final byte[] key1Bytes = key1.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] key2Bytes = key2.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] key3Bytes = key3.toString().getBytes(StandardCharsets.UTF_8);
+        final int key1Bytes = numberOfBytesUtf8(key1);
+        final int key2Bytes = numberOfBytesUtf8(key2);
+        final int key3Bytes = numberOfBytesUtf8(key3);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.WATCH) +
                     calculateRequestArgumentSize(key1Bytes) + calculateRequestArgumentSize(key2Bytes) +
                     calculateRequestArgumentSize(key3Bytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.WATCH.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, key1Bytes);
-        RedisRequests.writeRequestArgument(buffer, key2Bytes);
-        RedisRequests.writeRequestArgument(buffer, key3Bytes);
+        writeRequestArgument(buffer, key1, key1Bytes);
+        writeRequestArgument(buffer, key2, key2Bytes);
+        writeRequestArgument(buffer, key3, key3Bytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.WATCH, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<String> result = enqueueForExecute(state, singles, queued);
@@ -7894,17 +7889,17 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         }
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.WATCH) + keysCapacity;
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.WATCH.encodeTo(buffer);
         if (keys instanceof List && keys instanceof RandomAccess) {
             final List<CharSequence> list = (List<CharSequence>) keys;
             for (int i = 0; i < list.size(); ++i) {
                 final CharSequence arg = list.get(i);
-                RedisRequests.writeRequestArgument(buffer, arg);
+                writeRequestArgument(buffer, arg);
             }
         } else {
             for (CharSequence arg : keys) {
-                RedisRequests.writeRequestArgument(buffer, arg);
+                writeRequestArgument(buffer, arg);
             }
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.WATCH, buffer);
@@ -7921,20 +7916,20 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(field);
         requireNonNull(value);
         final int len = 5;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] idBytes = id.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] fieldBytes = field.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] valueBytes = value.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
+        final int idBytes = numberOfBytesUtf8(id);
+        final int fieldBytes = numberOfBytesUtf8(field);
+        final int valueBytes = numberOfBytesUtf8(value);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.XADD) +
                     calculateRequestArgumentSize(keyBytes) + calculateRequestArgumentSize(idBytes) +
                     calculateRequestArgumentSize(fieldBytes) + calculateRequestArgumentSize(valueBytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.XADD.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
-        RedisRequests.writeRequestArgument(buffer, idBytes);
-        RedisRequests.writeRequestArgument(buffer, fieldBytes);
-        RedisRequests.writeRequestArgument(buffer, valueBytes);
+        writeRequestArgument(buffer, key, keyBytes);
+        writeRequestArgument(buffer, id, idBytes);
+        writeRequestArgument(buffer, field, fieldBytes);
+        writeRequestArgument(buffer, value, valueBytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.XADD, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<String> result = enqueueForExecute(state, singles, queued);
@@ -7952,25 +7947,25 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(field2);
         requireNonNull(value2);
         final int len = 7;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] idBytes = id.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] field1Bytes = field1.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] value1Bytes = value1.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] field2Bytes = field2.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] value2Bytes = value2.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
+        final int idBytes = numberOfBytesUtf8(id);
+        final int field1Bytes = numberOfBytesUtf8(field1);
+        final int value1Bytes = numberOfBytesUtf8(value1);
+        final int field2Bytes = numberOfBytesUtf8(field2);
+        final int value2Bytes = numberOfBytesUtf8(value2);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.XADD) +
                     calculateRequestArgumentSize(keyBytes) + calculateRequestArgumentSize(idBytes) +
                     calculateRequestArgumentSize(field1Bytes) + calculateRequestArgumentSize(value1Bytes) +
                     calculateRequestArgumentSize(field2Bytes) + calculateRequestArgumentSize(value2Bytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.XADD.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
-        RedisRequests.writeRequestArgument(buffer, idBytes);
-        RedisRequests.writeRequestArgument(buffer, field1Bytes);
-        RedisRequests.writeRequestArgument(buffer, value1Bytes);
-        RedisRequests.writeRequestArgument(buffer, field2Bytes);
-        RedisRequests.writeRequestArgument(buffer, value2Bytes);
+        writeRequestArgument(buffer, key, keyBytes);
+        writeRequestArgument(buffer, id, idBytes);
+        writeRequestArgument(buffer, field1, field1Bytes);
+        writeRequestArgument(buffer, value1, value1Bytes);
+        writeRequestArgument(buffer, field2, field2Bytes);
+        writeRequestArgument(buffer, value2, value2Bytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.XADD, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<String> result = enqueueForExecute(state, singles, queued);
@@ -7990,30 +7985,30 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(field3);
         requireNonNull(value3);
         final int len = 9;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] idBytes = id.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] field1Bytes = field1.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] value1Bytes = value1.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] field2Bytes = field2.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] value2Bytes = value2.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] field3Bytes = field3.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] value3Bytes = value3.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
+        final int idBytes = numberOfBytesUtf8(id);
+        final int field1Bytes = numberOfBytesUtf8(field1);
+        final int value1Bytes = numberOfBytesUtf8(value1);
+        final int field2Bytes = numberOfBytesUtf8(field2);
+        final int value2Bytes = numberOfBytesUtf8(value2);
+        final int field3Bytes = numberOfBytesUtf8(field3);
+        final int value3Bytes = numberOfBytesUtf8(value3);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.XADD) +
                     calculateRequestArgumentSize(keyBytes) + calculateRequestArgumentSize(idBytes) +
                     calculateRequestArgumentSize(field1Bytes) + calculateRequestArgumentSize(value1Bytes) +
                     calculateRequestArgumentSize(field2Bytes) + calculateRequestArgumentSize(value2Bytes) +
                     calculateRequestArgumentSize(field3Bytes) + calculateRequestArgumentSize(value3Bytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.XADD.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
-        RedisRequests.writeRequestArgument(buffer, idBytes);
-        RedisRequests.writeRequestArgument(buffer, field1Bytes);
-        RedisRequests.writeRequestArgument(buffer, value1Bytes);
-        RedisRequests.writeRequestArgument(buffer, field2Bytes);
-        RedisRequests.writeRequestArgument(buffer, value2Bytes);
-        RedisRequests.writeRequestArgument(buffer, field3Bytes);
-        RedisRequests.writeRequestArgument(buffer, value3Bytes);
+        writeRequestArgument(buffer, key, keyBytes);
+        writeRequestArgument(buffer, id, idBytes);
+        writeRequestArgument(buffer, field1, field1Bytes);
+        writeRequestArgument(buffer, value1, value1Bytes);
+        writeRequestArgument(buffer, field2, field2Bytes);
+        writeRequestArgument(buffer, value2, value2Bytes);
+        writeRequestArgument(buffer, field3, field3Bytes);
+        writeRequestArgument(buffer, value3, value3Bytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.XADD, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<String> result = enqueueForExecute(state, singles, queued);
@@ -8027,8 +8022,8 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(id);
         requireNonNull(fieldValues);
         final int len = 3 + RedisProtocolSupport.FieldValue.SIZE * fieldValues.size();
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] idBytes = id.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
+        final int idBytes = numberOfBytesUtf8(id);
         int fieldValuesCapacity = 0;
         if (fieldValues instanceof List && fieldValues instanceof RandomAccess) {
             final List<RedisProtocolSupport.FieldValue> list = (List<RedisProtocolSupport.FieldValue>) fieldValues;
@@ -8045,10 +8040,10 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
                     calculateRequestArgumentSize(keyBytes) + calculateRequestArgumentSize(idBytes) +
                     fieldValuesCapacity;
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.XADD.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
-        RedisRequests.writeRequestArgument(buffer, idBytes);
+        writeRequestArgument(buffer, key, keyBytes);
+        writeRequestArgument(buffer, id, idBytes);
         if (fieldValues instanceof List && fieldValues instanceof RandomAccess) {
             final List<RedisProtocolSupport.FieldValue> list = (List<RedisProtocolSupport.FieldValue>) fieldValues;
             for (int i = 0; i < list.size(); ++i) {
@@ -8070,13 +8065,13 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
     public Future<Long> xlen(@RedisProtocolSupport.Key final CharSequence key) {
         requireNonNull(key);
         final int len = 2;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.XLEN) +
                     calculateRequestArgumentSize(keyBytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.XLEN.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
+        writeRequestArgument(buffer, key, keyBytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.XLEN, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
@@ -8088,15 +8083,15 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(key);
         requireNonNull(group);
         final int len = 3;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] groupBytes = group.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
+        final int groupBytes = numberOfBytesUtf8(group);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.XPENDING) +
                     calculateRequestArgumentSize(keyBytes) + calculateRequestArgumentSize(groupBytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.XPENDING.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
-        RedisRequests.writeRequestArgument(buffer, groupBytes);
+        writeRequestArgument(buffer, key, keyBytes);
+        writeRequestArgument(buffer, group, groupBytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.XPENDING, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
@@ -8111,11 +8106,11 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(group);
         final int len = 3 + (start == null ? 0 : 1) + (end == null ? 0 : 1) + (count == null ? 0 : 1) +
                     (consumer == null ? 0 : 1);
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] groupBytes = group.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] startBytes = start == null ? null : start.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] endBytes = end == null ? null : end.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] consumerBytes = consumer == null ? null : consumer.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
+        final int groupBytes = numberOfBytesUtf8(group);
+        final int startBytes = start == null ? 0 : numberOfBytesUtf8(start);
+        final int endBytes = end == null ? 0 : numberOfBytesUtf8(end);
+        final int consumerBytes = consumer == null ? 0 : numberOfBytesUtf8(consumer);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.XPENDING) +
                     calculateRequestArgumentSize(keyBytes) + calculateRequestArgumentSize(groupBytes) +
                     (start == null ? 0 : calculateRequestArgumentSize(startBytes)) +
@@ -8123,21 +8118,21 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
                     (count == null ? 0 : calculateRequestArgumentSize(count)) +
                     (consumer == null ? 0 : calculateRequestArgumentSize(consumerBytes));
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.XPENDING.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
-        RedisRequests.writeRequestArgument(buffer, groupBytes);
+        writeRequestArgument(buffer, key, keyBytes);
+        writeRequestArgument(buffer, group, groupBytes);
         if (start != null) {
-            RedisRequests.writeRequestArgument(buffer, startBytes);
+            writeRequestArgument(buffer, start, startBytes);
         }
         if (end != null) {
-            RedisRequests.writeRequestArgument(buffer, endBytes);
+            writeRequestArgument(buffer, end, endBytes);
         }
         if (count != null) {
-            RedisRequests.writeRequestArgument(buffer, count);
+            writeRequestArgument(buffer, count);
         }
         if (consumer != null) {
-            RedisRequests.writeRequestArgument(buffer, consumerBytes);
+            writeRequestArgument(buffer, consumer, consumerBytes);
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.XPENDING, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
@@ -8152,18 +8147,18 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(start);
         requireNonNull(end);
         final int len = 4;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] startBytes = start.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] endBytes = end.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
+        final int startBytes = numberOfBytesUtf8(start);
+        final int endBytes = numberOfBytesUtf8(end);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.XRANGE) +
                     calculateRequestArgumentSize(keyBytes) + calculateRequestArgumentSize(startBytes) +
                     calculateRequestArgumentSize(endBytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.XRANGE.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
-        RedisRequests.writeRequestArgument(buffer, startBytes);
-        RedisRequests.writeRequestArgument(buffer, endBytes);
+        writeRequestArgument(buffer, key, keyBytes);
+        writeRequestArgument(buffer, start, startBytes);
+        writeRequestArgument(buffer, end, endBytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.XRANGE, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
@@ -8177,23 +8172,23 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(start);
         requireNonNull(end);
         final int len = 4 + (count == null ? 0 : 2);
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] startBytes = start.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] endBytes = end.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
+        final int startBytes = numberOfBytesUtf8(start);
+        final int endBytes = numberOfBytesUtf8(end);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.XRANGE) +
                     calculateRequestArgumentSize(keyBytes) + calculateRequestArgumentSize(startBytes) +
                     calculateRequestArgumentSize(endBytes) +
                     (count == null ? 0 : RedisProtocolSupport.SubCommand.COUNT.encodedByteCount()) +
                     (count == null ? 0 : calculateRequestArgumentSize(count));
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.XRANGE.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
-        RedisRequests.writeRequestArgument(buffer, startBytes);
-        RedisRequests.writeRequestArgument(buffer, endBytes);
+        writeRequestArgument(buffer, key, keyBytes);
+        writeRequestArgument(buffer, start, startBytes);
+        writeRequestArgument(buffer, end, endBytes);
         if (count != null) {
             RedisProtocolSupport.SubCommand.COUNT.encodeTo(buffer);
-            RedisRequests.writeRequestArgument(buffer, count);
+            writeRequestArgument(buffer, count);
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.XRANGE, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
@@ -8234,29 +8229,29 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.XREAD) +
                     RedisProtocolSupport.XreadStreams.values()[0].encodedByteCount() + keysCapacity + idsCapacity;
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.XREAD.encodeTo(buffer);
         RedisProtocolSupport.XreadStreams.values()[0].encodeTo(buffer);
         if (keys instanceof List && keys instanceof RandomAccess) {
             final List<CharSequence> list = (List<CharSequence>) keys;
             for (int i = 0; i < list.size(); ++i) {
                 final CharSequence arg = list.get(i);
-                RedisRequests.writeRequestArgument(buffer, arg);
+                writeRequestArgument(buffer, arg);
             }
         } else {
             for (CharSequence arg : keys) {
-                RedisRequests.writeRequestArgument(buffer, arg);
+                writeRequestArgument(buffer, arg);
             }
         }
         if (ids instanceof List && ids instanceof RandomAccess) {
             final List<CharSequence> list = (List<CharSequence>) ids;
             for (int i = 0; i < list.size(); ++i) {
                 final CharSequence arg = list.get(i);
-                RedisRequests.writeRequestArgument(buffer, arg);
+                writeRequestArgument(buffer, arg);
             }
         } else {
             for (CharSequence arg : ids) {
-                RedisRequests.writeRequestArgument(buffer, arg);
+                writeRequestArgument(buffer, arg);
             }
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.XREAD, buffer);
@@ -8303,37 +8298,37 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
                     (blockMilliseconds == null ? 0 : calculateRequestArgumentSize(blockMilliseconds)) +
                     RedisProtocolSupport.XreadStreams.values()[0].encodedByteCount() + keysCapacity + idsCapacity;
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.XREAD.encodeTo(buffer);
         if (count != null) {
             RedisProtocolSupport.SubCommand.COUNT.encodeTo(buffer);
-            RedisRequests.writeRequestArgument(buffer, count);
+            writeRequestArgument(buffer, count);
         }
         if (blockMilliseconds != null) {
             RedisProtocolSupport.SubCommand.BLOCK.encodeTo(buffer);
-            RedisRequests.writeRequestArgument(buffer, blockMilliseconds);
+            writeRequestArgument(buffer, blockMilliseconds);
         }
         RedisProtocolSupport.XreadStreams.values()[0].encodeTo(buffer);
         if (keys instanceof List && keys instanceof RandomAccess) {
             final List<CharSequence> list = (List<CharSequence>) keys;
             for (int i = 0; i < list.size(); ++i) {
                 final CharSequence arg = list.get(i);
-                RedisRequests.writeRequestArgument(buffer, arg);
+                writeRequestArgument(buffer, arg);
             }
         } else {
             for (CharSequence arg : keys) {
-                RedisRequests.writeRequestArgument(buffer, arg);
+                writeRequestArgument(buffer, arg);
             }
         }
         if (ids instanceof List && ids instanceof RandomAccess) {
             final List<CharSequence> list = (List<CharSequence>) ids;
             for (int i = 0; i < list.size(); ++i) {
                 final CharSequence arg = list.get(i);
-                RedisRequests.writeRequestArgument(buffer, arg);
+                writeRequestArgument(buffer, arg);
             }
         } else {
             for (CharSequence arg : ids) {
-                RedisRequests.writeRequestArgument(buffer, arg);
+                writeRequestArgument(buffer, arg);
             }
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.XREAD, buffer);
@@ -8378,7 +8373,7 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
                     groupConsumer.encodedByteCount() +
                     RedisProtocolSupport.XreadgroupStreams.values()[0].encodedByteCount() + keysCapacity + idsCapacity;
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.XREADGROUP.encodeTo(buffer);
         groupConsumer.encodeTo(buffer);
         RedisProtocolSupport.XreadgroupStreams.values()[0].encodeTo(buffer);
@@ -8386,22 +8381,22 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
             final List<CharSequence> list = (List<CharSequence>) keys;
             for (int i = 0; i < list.size(); ++i) {
                 final CharSequence arg = list.get(i);
-                RedisRequests.writeRequestArgument(buffer, arg);
+                writeRequestArgument(buffer, arg);
             }
         } else {
             for (CharSequence arg : keys) {
-                RedisRequests.writeRequestArgument(buffer, arg);
+                writeRequestArgument(buffer, arg);
             }
         }
         if (ids instanceof List && ids instanceof RandomAccess) {
             final List<CharSequence> list = (List<CharSequence>) ids;
             for (int i = 0; i < list.size(); ++i) {
                 final CharSequence arg = list.get(i);
-                RedisRequests.writeRequestArgument(buffer, arg);
+                writeRequestArgument(buffer, arg);
             }
         } else {
             for (CharSequence arg : ids) {
-                RedisRequests.writeRequestArgument(buffer, arg);
+                writeRequestArgument(buffer, arg);
             }
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.XREADGROUP, buffer);
@@ -8452,38 +8447,38 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
                     (blockMilliseconds == null ? 0 : calculateRequestArgumentSize(blockMilliseconds)) +
                     RedisProtocolSupport.XreadgroupStreams.values()[0].encodedByteCount() + keysCapacity + idsCapacity;
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.XREADGROUP.encodeTo(buffer);
         groupConsumer.encodeTo(buffer);
         if (count != null) {
             RedisProtocolSupport.SubCommand.COUNT.encodeTo(buffer);
-            RedisRequests.writeRequestArgument(buffer, count);
+            writeRequestArgument(buffer, count);
         }
         if (blockMilliseconds != null) {
             RedisProtocolSupport.SubCommand.BLOCK.encodeTo(buffer);
-            RedisRequests.writeRequestArgument(buffer, blockMilliseconds);
+            writeRequestArgument(buffer, blockMilliseconds);
         }
         RedisProtocolSupport.XreadgroupStreams.values()[0].encodeTo(buffer);
         if (keys instanceof List && keys instanceof RandomAccess) {
             final List<CharSequence> list = (List<CharSequence>) keys;
             for (int i = 0; i < list.size(); ++i) {
                 final CharSequence arg = list.get(i);
-                RedisRequests.writeRequestArgument(buffer, arg);
+                writeRequestArgument(buffer, arg);
             }
         } else {
             for (CharSequence arg : keys) {
-                RedisRequests.writeRequestArgument(buffer, arg);
+                writeRequestArgument(buffer, arg);
             }
         }
         if (ids instanceof List && ids instanceof RandomAccess) {
             final List<CharSequence> list = (List<CharSequence>) ids;
             for (int i = 0; i < list.size(); ++i) {
                 final CharSequence arg = list.get(i);
-                RedisRequests.writeRequestArgument(buffer, arg);
+                writeRequestArgument(buffer, arg);
             }
         } else {
             for (CharSequence arg : ids) {
-                RedisRequests.writeRequestArgument(buffer, arg);
+                writeRequestArgument(buffer, arg);
             }
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.XREADGROUP, buffer);
@@ -8499,18 +8494,18 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(end);
         requireNonNull(start);
         final int len = 4;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] endBytes = end.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] startBytes = start.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
+        final int endBytes = numberOfBytesUtf8(end);
+        final int startBytes = numberOfBytesUtf8(start);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.XREVRANGE) +
                     calculateRequestArgumentSize(keyBytes) + calculateRequestArgumentSize(endBytes) +
                     calculateRequestArgumentSize(startBytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.XREVRANGE.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
-        RedisRequests.writeRequestArgument(buffer, endBytes);
-        RedisRequests.writeRequestArgument(buffer, startBytes);
+        writeRequestArgument(buffer, key, keyBytes);
+        writeRequestArgument(buffer, end, endBytes);
+        writeRequestArgument(buffer, start, startBytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.XREVRANGE, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
@@ -8524,23 +8519,23 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(end);
         requireNonNull(start);
         final int len = 4 + (count == null ? 0 : 2);
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] endBytes = end.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] startBytes = start.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
+        final int endBytes = numberOfBytesUtf8(end);
+        final int startBytes = numberOfBytesUtf8(start);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.XREVRANGE) +
                     calculateRequestArgumentSize(keyBytes) + calculateRequestArgumentSize(endBytes) +
                     calculateRequestArgumentSize(startBytes) +
                     (count == null ? 0 : RedisProtocolSupport.SubCommand.COUNT.encodedByteCount()) +
                     (count == null ? 0 : calculateRequestArgumentSize(count));
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.XREVRANGE.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
-        RedisRequests.writeRequestArgument(buffer, endBytes);
-        RedisRequests.writeRequestArgument(buffer, startBytes);
+        writeRequestArgument(buffer, key, keyBytes);
+        writeRequestArgument(buffer, end, endBytes);
+        writeRequestArgument(buffer, start, startBytes);
         if (count != null) {
             RedisProtocolSupport.SubCommand.COUNT.encodeTo(buffer);
-            RedisRequests.writeRequestArgument(buffer, count);
+            writeRequestArgument(buffer, count);
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.XREVRANGE, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
@@ -8554,7 +8549,7 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(key);
         requireNonNull(scoreMembers);
         final int len = 2 + RedisProtocolSupport.ScoreMember.SIZE * scoreMembers.size();
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
         int scoreMembersCapacity = 0;
         if (scoreMembers instanceof List && scoreMembers instanceof RandomAccess) {
             final List<RedisProtocolSupport.ScoreMember> list = (List<RedisProtocolSupport.ScoreMember>) scoreMembers;
@@ -8570,9 +8565,9 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.ZADD) +
                     calculateRequestArgumentSize(keyBytes) + scoreMembersCapacity;
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.ZADD.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
+        writeRequestArgument(buffer, key, keyBytes);
         if (scoreMembers instanceof List && scoreMembers instanceof RandomAccess) {
             final List<RedisProtocolSupport.ScoreMember> list = (List<RedisProtocolSupport.ScoreMember>) scoreMembers;
             for (int i = 0; i < list.size(); ++i) {
@@ -8598,24 +8593,24 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(key);
         requireNonNull(member);
         final int len = 4 + (condition == null ? 0 : 1) + (change == null ? 0 : 1);
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] memberBytes = member.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
+        final int memberBytes = numberOfBytesUtf8(member);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.ZADD) +
                     calculateRequestArgumentSize(keyBytes) + (condition == null ? 0 : condition.encodedByteCount()) +
                     (change == null ? 0 : change.encodedByteCount()) + calculateRequestArgumentSize(score) +
                     calculateRequestArgumentSize(memberBytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.ZADD.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
+        writeRequestArgument(buffer, key, keyBytes);
         if (condition != null) {
             condition.encodeTo(buffer);
         }
         if (change != null) {
             change.encodeTo(buffer);
         }
-        RedisRequests.writeRequestArgument(buffer, score);
-        RedisRequests.writeRequestArgument(buffer, memberBytes);
+        writeRequestArgument(buffer, score);
+        writeRequestArgument(buffer, member, memberBytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZADD, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
@@ -8631,28 +8626,28 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(member1);
         requireNonNull(member2);
         final int len = 6 + (condition == null ? 0 : 1) + (change == null ? 0 : 1);
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] member1Bytes = member1.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] member2Bytes = member2.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
+        final int member1Bytes = numberOfBytesUtf8(member1);
+        final int member2Bytes = numberOfBytesUtf8(member2);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.ZADD) +
                     calculateRequestArgumentSize(keyBytes) + (condition == null ? 0 : condition.encodedByteCount()) +
                     (change == null ? 0 : change.encodedByteCount()) + calculateRequestArgumentSize(score1) +
                     calculateRequestArgumentSize(member1Bytes) + calculateRequestArgumentSize(score2) +
                     calculateRequestArgumentSize(member2Bytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.ZADD.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
+        writeRequestArgument(buffer, key, keyBytes);
         if (condition != null) {
             condition.encodeTo(buffer);
         }
         if (change != null) {
             change.encodeTo(buffer);
         }
-        RedisRequests.writeRequestArgument(buffer, score1);
-        RedisRequests.writeRequestArgument(buffer, member1Bytes);
-        RedisRequests.writeRequestArgument(buffer, score2);
-        RedisRequests.writeRequestArgument(buffer, member2Bytes);
+        writeRequestArgument(buffer, score1);
+        writeRequestArgument(buffer, member1, member1Bytes);
+        writeRequestArgument(buffer, score2);
+        writeRequestArgument(buffer, member2, member2Bytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZADD, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
@@ -8670,10 +8665,10 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(member2);
         requireNonNull(member3);
         final int len = 8 + (condition == null ? 0 : 1) + (change == null ? 0 : 1);
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] member1Bytes = member1.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] member2Bytes = member2.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] member3Bytes = member3.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
+        final int member1Bytes = numberOfBytesUtf8(member1);
+        final int member2Bytes = numberOfBytesUtf8(member2);
+        final int member3Bytes = numberOfBytesUtf8(member3);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.ZADD) +
                     calculateRequestArgumentSize(keyBytes) + (condition == null ? 0 : condition.encodedByteCount()) +
                     (change == null ? 0 : change.encodedByteCount()) + calculateRequestArgumentSize(score1) +
@@ -8681,21 +8676,21 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
                     calculateRequestArgumentSize(member2Bytes) + calculateRequestArgumentSize(score3) +
                     calculateRequestArgumentSize(member3Bytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.ZADD.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
+        writeRequestArgument(buffer, key, keyBytes);
         if (condition != null) {
             condition.encodeTo(buffer);
         }
         if (change != null) {
             change.encodeTo(buffer);
         }
-        RedisRequests.writeRequestArgument(buffer, score1);
-        RedisRequests.writeRequestArgument(buffer, member1Bytes);
-        RedisRequests.writeRequestArgument(buffer, score2);
-        RedisRequests.writeRequestArgument(buffer, member2Bytes);
-        RedisRequests.writeRequestArgument(buffer, score3);
-        RedisRequests.writeRequestArgument(buffer, member3Bytes);
+        writeRequestArgument(buffer, score1);
+        writeRequestArgument(buffer, member1, member1Bytes);
+        writeRequestArgument(buffer, score2);
+        writeRequestArgument(buffer, member2, member2Bytes);
+        writeRequestArgument(buffer, score3);
+        writeRequestArgument(buffer, member3, member3Bytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZADD, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
@@ -8711,7 +8706,7 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(scoreMembers);
         final int len = 2 + (condition == null ? 0 : 1) + (change == null ? 0 : 1) +
                     RedisProtocolSupport.ScoreMember.SIZE * scoreMembers.size();
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
         int scoreMembersCapacity = 0;
         if (scoreMembers instanceof List && scoreMembers instanceof RandomAccess) {
             final List<RedisProtocolSupport.ScoreMember> list = (List<RedisProtocolSupport.ScoreMember>) scoreMembers;
@@ -8728,9 +8723,9 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
                     calculateRequestArgumentSize(keyBytes) + (condition == null ? 0 : condition.encodedByteCount()) +
                     (change == null ? 0 : change.encodedByteCount()) + scoreMembersCapacity;
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.ZADD.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
+        writeRequestArgument(buffer, key, keyBytes);
         if (condition != null) {
             condition.encodeTo(buffer);
         }
@@ -8760,7 +8755,7 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(key);
         requireNonNull(scoreMembers);
         final int len = 3 + RedisProtocolSupport.ScoreMember.SIZE * scoreMembers.size();
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
         int scoreMembersCapacity = 0;
         if (scoreMembers instanceof List && scoreMembers instanceof RandomAccess) {
             final List<RedisProtocolSupport.ScoreMember> list = (List<RedisProtocolSupport.ScoreMember>) scoreMembers;
@@ -8777,9 +8772,9 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
                     calculateRequestArgumentSize(keyBytes) +
                     RedisProtocolSupport.ZaddIncrement.values()[0].encodedByteCount() + scoreMembersCapacity;
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.ZADD.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
+        writeRequestArgument(buffer, key, keyBytes);
         RedisProtocolSupport.ZaddIncrement.values()[0].encodeTo(buffer);
         if (scoreMembers instanceof List && scoreMembers instanceof RandomAccess) {
             final List<RedisProtocolSupport.ScoreMember> list = (List<RedisProtocolSupport.ScoreMember>) scoreMembers;
@@ -8806,8 +8801,8 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(key);
         requireNonNull(member);
         final int len = 5 + (condition == null ? 0 : 1) + (change == null ? 0 : 1);
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] memberBytes = member.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
+        final int memberBytes = numberOfBytesUtf8(member);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.ZADD) +
                     calculateRequestArgumentSize(keyBytes) +
                     RedisProtocolSupport.ZaddIncrement.values()[0].encodedByteCount() +
@@ -8815,9 +8810,9 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
                     (change == null ? 0 : change.encodedByteCount()) + calculateRequestArgumentSize(score) +
                     calculateRequestArgumentSize(memberBytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.ZADD.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
+        writeRequestArgument(buffer, key, keyBytes);
         RedisProtocolSupport.ZaddIncrement.values()[0].encodeTo(buffer);
         if (condition != null) {
             condition.encodeTo(buffer);
@@ -8825,8 +8820,8 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         if (change != null) {
             change.encodeTo(buffer);
         }
-        RedisRequests.writeRequestArgument(buffer, score);
-        RedisRequests.writeRequestArgument(buffer, memberBytes);
+        writeRequestArgument(buffer, score);
+        writeRequestArgument(buffer, member, memberBytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZADD, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Double> result = enqueueForExecute(state, singles, queued);
@@ -8842,9 +8837,9 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(member1);
         requireNonNull(member2);
         final int len = 7 + (condition == null ? 0 : 1) + (change == null ? 0 : 1);
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] member1Bytes = member1.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] member2Bytes = member2.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
+        final int member1Bytes = numberOfBytesUtf8(member1);
+        final int member2Bytes = numberOfBytesUtf8(member2);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.ZADD) +
                     calculateRequestArgumentSize(keyBytes) +
                     RedisProtocolSupport.ZaddIncrement.values()[0].encodedByteCount() +
@@ -8853,9 +8848,9 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
                     calculateRequestArgumentSize(member1Bytes) + calculateRequestArgumentSize(score2) +
                     calculateRequestArgumentSize(member2Bytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.ZADD.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
+        writeRequestArgument(buffer, key, keyBytes);
         RedisProtocolSupport.ZaddIncrement.values()[0].encodeTo(buffer);
         if (condition != null) {
             condition.encodeTo(buffer);
@@ -8863,10 +8858,10 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         if (change != null) {
             change.encodeTo(buffer);
         }
-        RedisRequests.writeRequestArgument(buffer, score1);
-        RedisRequests.writeRequestArgument(buffer, member1Bytes);
-        RedisRequests.writeRequestArgument(buffer, score2);
-        RedisRequests.writeRequestArgument(buffer, member2Bytes);
+        writeRequestArgument(buffer, score1);
+        writeRequestArgument(buffer, member1, member1Bytes);
+        writeRequestArgument(buffer, score2);
+        writeRequestArgument(buffer, member2, member2Bytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZADD, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Double> result = enqueueForExecute(state, singles, queued);
@@ -8884,10 +8879,10 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(member2);
         requireNonNull(member3);
         final int len = 9 + (condition == null ? 0 : 1) + (change == null ? 0 : 1);
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] member1Bytes = member1.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] member2Bytes = member2.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] member3Bytes = member3.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
+        final int member1Bytes = numberOfBytesUtf8(member1);
+        final int member2Bytes = numberOfBytesUtf8(member2);
+        final int member3Bytes = numberOfBytesUtf8(member3);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.ZADD) +
                     calculateRequestArgumentSize(keyBytes) +
                     RedisProtocolSupport.ZaddIncrement.values()[0].encodedByteCount() +
@@ -8897,9 +8892,9 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
                     calculateRequestArgumentSize(member2Bytes) + calculateRequestArgumentSize(score3) +
                     calculateRequestArgumentSize(member3Bytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.ZADD.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
+        writeRequestArgument(buffer, key, keyBytes);
         RedisProtocolSupport.ZaddIncrement.values()[0].encodeTo(buffer);
         if (condition != null) {
             condition.encodeTo(buffer);
@@ -8907,12 +8902,12 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         if (change != null) {
             change.encodeTo(buffer);
         }
-        RedisRequests.writeRequestArgument(buffer, score1);
-        RedisRequests.writeRequestArgument(buffer, member1Bytes);
-        RedisRequests.writeRequestArgument(buffer, score2);
-        RedisRequests.writeRequestArgument(buffer, member2Bytes);
-        RedisRequests.writeRequestArgument(buffer, score3);
-        RedisRequests.writeRequestArgument(buffer, member3Bytes);
+        writeRequestArgument(buffer, score1);
+        writeRequestArgument(buffer, member1, member1Bytes);
+        writeRequestArgument(buffer, score2);
+        writeRequestArgument(buffer, member2, member2Bytes);
+        writeRequestArgument(buffer, score3);
+        writeRequestArgument(buffer, member3, member3Bytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZADD, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Double> result = enqueueForExecute(state, singles, queued);
@@ -8928,7 +8923,7 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(scoreMembers);
         final int len = 3 + (condition == null ? 0 : 1) + (change == null ? 0 : 1) +
                     RedisProtocolSupport.ScoreMember.SIZE * scoreMembers.size();
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
         int scoreMembersCapacity = 0;
         if (scoreMembers instanceof List && scoreMembers instanceof RandomAccess) {
             final List<RedisProtocolSupport.ScoreMember> list = (List<RedisProtocolSupport.ScoreMember>) scoreMembers;
@@ -8947,9 +8942,9 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
                     (condition == null ? 0 : condition.encodedByteCount()) +
                     (change == null ? 0 : change.encodedByteCount()) + scoreMembersCapacity;
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.ZADD.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
+        writeRequestArgument(buffer, key, keyBytes);
         RedisProtocolSupport.ZaddIncrement.values()[0].encodeTo(buffer);
         if (condition != null) {
             condition.encodeTo(buffer);
@@ -8978,13 +8973,13 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
     public Future<Long> zcard(@RedisProtocolSupport.Key final CharSequence key) {
         requireNonNull(key);
         final int len = 2;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.ZCARD) +
                     calculateRequestArgumentSize(keyBytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.ZCARD.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
+        writeRequestArgument(buffer, key, keyBytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZCARD, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
@@ -8995,16 +8990,16 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
     public Future<Long> zcount(@RedisProtocolSupport.Key final CharSequence key, final double min, final double max) {
         requireNonNull(key);
         final int len = 4;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.ZCOUNT) +
                     calculateRequestArgumentSize(keyBytes) + calculateRequestArgumentSize(min) +
                     calculateRequestArgumentSize(max);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.ZCOUNT.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
-        RedisRequests.writeRequestArgument(buffer, min);
-        RedisRequests.writeRequestArgument(buffer, max);
+        writeRequestArgument(buffer, key, keyBytes);
+        writeRequestArgument(buffer, min);
+        writeRequestArgument(buffer, max);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZCOUNT, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
@@ -9017,17 +9012,17 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(key);
         requireNonNull(member);
         final int len = 4;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] memberBytes = member.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
+        final int memberBytes = numberOfBytesUtf8(member);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.ZINCRBY) +
                     calculateRequestArgumentSize(keyBytes) + calculateRequestArgumentSize(increment) +
                     calculateRequestArgumentSize(memberBytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.ZINCRBY.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
-        RedisRequests.writeRequestArgument(buffer, increment);
-        RedisRequests.writeRequestArgument(buffer, memberBytes);
+        writeRequestArgument(buffer, key, keyBytes);
+        writeRequestArgument(buffer, increment);
+        writeRequestArgument(buffer, member, memberBytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZINCRBY, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Double> result = enqueueForExecute(state, singles, queued);
@@ -9040,7 +9035,7 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(destination);
         requireNonNull(keys);
         final int len = 3 + keys.size();
-        final byte[] destinationBytes = destination.toString().getBytes(StandardCharsets.UTF_8);
+        final int destinationBytes = numberOfBytesUtf8(destination);
         int keysCapacity = 0;
         if (keys instanceof List && keys instanceof RandomAccess) {
             final List<CharSequence> list = (List<CharSequence>) keys;
@@ -9057,19 +9052,19 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
                     calculateRequestArgumentSize(destinationBytes) + calculateRequestArgumentSize(numkeys) +
                     keysCapacity;
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.ZINTERSTORE.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, destinationBytes);
-        RedisRequests.writeRequestArgument(buffer, numkeys);
+        writeRequestArgument(buffer, destination, destinationBytes);
+        writeRequestArgument(buffer, numkeys);
         if (keys instanceof List && keys instanceof RandomAccess) {
             final List<CharSequence> list = (List<CharSequence>) keys;
             for (int i = 0; i < list.size(); ++i) {
                 final CharSequence arg = list.get(i);
-                RedisRequests.writeRequestArgument(buffer, arg);
+                writeRequestArgument(buffer, arg);
             }
         } else {
             for (CharSequence arg : keys) {
-                RedisRequests.writeRequestArgument(buffer, arg);
+                writeRequestArgument(buffer, arg);
             }
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZINTERSTORE, buffer);
@@ -9087,7 +9082,7 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(keys);
         requireNonNull(weights);
         final int len = 4 + keys.size() + weights.size() + (aggregate == null ? 0 : 1);
-        final byte[] destinationBytes = destination.toString().getBytes(StandardCharsets.UTF_8);
+        final int destinationBytes = numberOfBytesUtf8(destination);
         int keysCapacity = 0;
         if (keys instanceof List && keys instanceof RandomAccess) {
             final List<CharSequence> list = (List<CharSequence>) keys;
@@ -9117,19 +9112,19 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
                     keysCapacity + RedisProtocolSupport.SubCommand.WEIGHTS.encodedByteCount() + weightsCapacity +
                     (aggregate == null ? 0 : aggregate.encodedByteCount());
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.ZINTERSTORE.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, destinationBytes);
-        RedisRequests.writeRequestArgument(buffer, numkeys);
+        writeRequestArgument(buffer, destination, destinationBytes);
+        writeRequestArgument(buffer, numkeys);
         if (keys instanceof List && keys instanceof RandomAccess) {
             final List<CharSequence> list = (List<CharSequence>) keys;
             for (int i = 0; i < list.size(); ++i) {
                 final CharSequence arg = list.get(i);
-                RedisRequests.writeRequestArgument(buffer, arg);
+                writeRequestArgument(buffer, arg);
             }
         } else {
             for (CharSequence arg : keys) {
-                RedisRequests.writeRequestArgument(buffer, arg);
+                writeRequestArgument(buffer, arg);
             }
         }
         RedisProtocolSupport.SubCommand.WEIGHTS.encodeTo(buffer);
@@ -9137,11 +9132,11 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
             final List<Long> list = (List<Long>) weights;
             for (int i = 0; i < list.size(); ++i) {
                 final Long arg = list.get(i);
-                RedisRequests.writeRequestArgument(buffer, arg);
+                writeRequestArgument(buffer, arg);
             }
         } else {
             for (Long arg : weights) {
-                RedisRequests.writeRequestArgument(buffer, arg);
+                writeRequestArgument(buffer, arg);
             }
         }
         if (aggregate != null) {
@@ -9160,18 +9155,18 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(min);
         requireNonNull(max);
         final int len = 4;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] minBytes = min.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] maxBytes = max.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
+        final int minBytes = numberOfBytesUtf8(min);
+        final int maxBytes = numberOfBytesUtf8(max);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.ZLEXCOUNT) +
                     calculateRequestArgumentSize(keyBytes) + calculateRequestArgumentSize(minBytes) +
                     calculateRequestArgumentSize(maxBytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.ZLEXCOUNT.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
-        RedisRequests.writeRequestArgument(buffer, minBytes);
-        RedisRequests.writeRequestArgument(buffer, maxBytes);
+        writeRequestArgument(buffer, key, keyBytes);
+        writeRequestArgument(buffer, min, minBytes);
+        writeRequestArgument(buffer, max, maxBytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZLEXCOUNT, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
@@ -9182,13 +9177,13 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
     public <T> Future<List<T>> zpopmax(@RedisProtocolSupport.Key final CharSequence key) {
         requireNonNull(key);
         final int len = 2;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.ZPOPMAX) +
                     calculateRequestArgumentSize(keyBytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.ZPOPMAX.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
+        writeRequestArgument(buffer, key, keyBytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZPOPMAX, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
@@ -9199,15 +9194,15 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
     public <T> Future<List<T>> zpopmax(@RedisProtocolSupport.Key final CharSequence key, @Nullable final Long count) {
         requireNonNull(key);
         final int len = 2 + (count == null ? 0 : 1);
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.ZPOPMAX) +
                     calculateRequestArgumentSize(keyBytes) + (count == null ? 0 : calculateRequestArgumentSize(count));
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.ZPOPMAX.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
+        writeRequestArgument(buffer, key, keyBytes);
         if (count != null) {
-            RedisRequests.writeRequestArgument(buffer, count);
+            writeRequestArgument(buffer, count);
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZPOPMAX, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
@@ -9219,13 +9214,13 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
     public <T> Future<List<T>> zpopmin(@RedisProtocolSupport.Key final CharSequence key) {
         requireNonNull(key);
         final int len = 2;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.ZPOPMIN) +
                     calculateRequestArgumentSize(keyBytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.ZPOPMIN.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
+        writeRequestArgument(buffer, key, keyBytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZPOPMIN, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
@@ -9236,15 +9231,15 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
     public <T> Future<List<T>> zpopmin(@RedisProtocolSupport.Key final CharSequence key, @Nullable final Long count) {
         requireNonNull(key);
         final int len = 2 + (count == null ? 0 : 1);
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.ZPOPMIN) +
                     calculateRequestArgumentSize(keyBytes) + (count == null ? 0 : calculateRequestArgumentSize(count));
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.ZPOPMIN.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
+        writeRequestArgument(buffer, key, keyBytes);
         if (count != null) {
-            RedisRequests.writeRequestArgument(buffer, count);
+            writeRequestArgument(buffer, count);
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZPOPMIN, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
@@ -9257,16 +9252,16 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
                                       final long stop) {
         requireNonNull(key);
         final int len = 4;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.ZRANGE) +
                     calculateRequestArgumentSize(keyBytes) + calculateRequestArgumentSize(start) +
                     calculateRequestArgumentSize(stop);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.ZRANGE.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
-        RedisRequests.writeRequestArgument(buffer, start);
-        RedisRequests.writeRequestArgument(buffer, stop);
+        writeRequestArgument(buffer, key, keyBytes);
+        writeRequestArgument(buffer, start);
+        writeRequestArgument(buffer, stop);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZRANGE, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
@@ -9279,16 +9274,16 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
                                       @Nullable final RedisProtocolSupport.ZrangeWithscores withscores) {
         requireNonNull(key);
         final int len = 4 + (withscores == null ? 0 : 1);
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.ZRANGE) +
                     calculateRequestArgumentSize(keyBytes) + calculateRequestArgumentSize(start) +
                     calculateRequestArgumentSize(stop) + (withscores == null ? 0 : withscores.encodedByteCount());
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.ZRANGE.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
-        RedisRequests.writeRequestArgument(buffer, start);
-        RedisRequests.writeRequestArgument(buffer, stop);
+        writeRequestArgument(buffer, key, keyBytes);
+        writeRequestArgument(buffer, start);
+        writeRequestArgument(buffer, stop);
         if (withscores != null) {
             withscores.encodeTo(buffer);
         }
@@ -9305,18 +9300,18 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(min);
         requireNonNull(max);
         final int len = 4;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] minBytes = min.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] maxBytes = max.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
+        final int minBytes = numberOfBytesUtf8(min);
+        final int maxBytes = numberOfBytesUtf8(max);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.ZRANGEBYLEX) +
                     calculateRequestArgumentSize(keyBytes) + calculateRequestArgumentSize(minBytes) +
                     calculateRequestArgumentSize(maxBytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.ZRANGEBYLEX.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
-        RedisRequests.writeRequestArgument(buffer, minBytes);
-        RedisRequests.writeRequestArgument(buffer, maxBytes);
+        writeRequestArgument(buffer, key, keyBytes);
+        writeRequestArgument(buffer, min, minBytes);
+        writeRequestArgument(buffer, max, maxBytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZRANGEBYLEX, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
@@ -9331,18 +9326,18 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(min);
         requireNonNull(max);
         final int len = 4 + (offsetCount == null ? 0 : RedisProtocolSupport.OffsetCount.SIZE);
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] minBytes = min.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] maxBytes = max.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
+        final int minBytes = numberOfBytesUtf8(min);
+        final int maxBytes = numberOfBytesUtf8(max);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.ZRANGEBYLEX) +
                     calculateRequestArgumentSize(keyBytes) + calculateRequestArgumentSize(minBytes) +
                     calculateRequestArgumentSize(maxBytes) + (offsetCount == null ? 0 : offsetCount.encodedByteCount());
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.ZRANGEBYLEX.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
-        RedisRequests.writeRequestArgument(buffer, minBytes);
-        RedisRequests.writeRequestArgument(buffer, maxBytes);
+        writeRequestArgument(buffer, key, keyBytes);
+        writeRequestArgument(buffer, min, minBytes);
+        writeRequestArgument(buffer, max, maxBytes);
         if (offsetCount != null) {
             offsetCount.encodeTo(buffer);
         }
@@ -9357,16 +9352,16 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
                                              final double max) {
         requireNonNull(key);
         final int len = 4;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.ZRANGEBYSCORE) +
                     calculateRequestArgumentSize(keyBytes) + calculateRequestArgumentSize(min) +
                     calculateRequestArgumentSize(max);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.ZRANGEBYSCORE.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
-        RedisRequests.writeRequestArgument(buffer, min);
-        RedisRequests.writeRequestArgument(buffer, max);
+        writeRequestArgument(buffer, key, keyBytes);
+        writeRequestArgument(buffer, min);
+        writeRequestArgument(buffer, max);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZRANGEBYSCORE, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
@@ -9381,17 +9376,17 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(key);
         final int len = 4 + (withscores == null ? 0 : 1) +
                     (offsetCount == null ? 0 : RedisProtocolSupport.OffsetCount.SIZE);
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.ZRANGEBYSCORE) +
                     calculateRequestArgumentSize(keyBytes) + calculateRequestArgumentSize(min) +
                     calculateRequestArgumentSize(max) + (withscores == null ? 0 : withscores.encodedByteCount()) +
                     (offsetCount == null ? 0 : offsetCount.encodedByteCount());
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.ZRANGEBYSCORE.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
-        RedisRequests.writeRequestArgument(buffer, min);
-        RedisRequests.writeRequestArgument(buffer, max);
+        writeRequestArgument(buffer, key, keyBytes);
+        writeRequestArgument(buffer, min);
+        writeRequestArgument(buffer, max);
         if (withscores != null) {
             withscores.encodeTo(buffer);
         }
@@ -9409,15 +9404,15 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(key);
         requireNonNull(member);
         final int len = 3;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] memberBytes = member.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
+        final int memberBytes = numberOfBytesUtf8(member);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.ZRANK) +
                     calculateRequestArgumentSize(keyBytes) + calculateRequestArgumentSize(memberBytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.ZRANK.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
-        RedisRequests.writeRequestArgument(buffer, memberBytes);
+        writeRequestArgument(buffer, key, keyBytes);
+        writeRequestArgument(buffer, member, memberBytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZRANK, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
@@ -9429,15 +9424,15 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(key);
         requireNonNull(member);
         final int len = 3;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] memberBytes = member.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
+        final int memberBytes = numberOfBytesUtf8(member);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.ZREM) +
                     calculateRequestArgumentSize(keyBytes) + calculateRequestArgumentSize(memberBytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.ZREM.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
-        RedisRequests.writeRequestArgument(buffer, memberBytes);
+        writeRequestArgument(buffer, key, keyBytes);
+        writeRequestArgument(buffer, member, memberBytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZREM, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
@@ -9451,18 +9446,18 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(member1);
         requireNonNull(member2);
         final int len = 4;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] member1Bytes = member1.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] member2Bytes = member2.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
+        final int member1Bytes = numberOfBytesUtf8(member1);
+        final int member2Bytes = numberOfBytesUtf8(member2);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.ZREM) +
                     calculateRequestArgumentSize(keyBytes) + calculateRequestArgumentSize(member1Bytes) +
                     calculateRequestArgumentSize(member2Bytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.ZREM.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
-        RedisRequests.writeRequestArgument(buffer, member1Bytes);
-        RedisRequests.writeRequestArgument(buffer, member2Bytes);
+        writeRequestArgument(buffer, key, keyBytes);
+        writeRequestArgument(buffer, member1, member1Bytes);
+        writeRequestArgument(buffer, member2, member2Bytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZREM, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
@@ -9477,20 +9472,20 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(member2);
         requireNonNull(member3);
         final int len = 5;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] member1Bytes = member1.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] member2Bytes = member2.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] member3Bytes = member3.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
+        final int member1Bytes = numberOfBytesUtf8(member1);
+        final int member2Bytes = numberOfBytesUtf8(member2);
+        final int member3Bytes = numberOfBytesUtf8(member3);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.ZREM) +
                     calculateRequestArgumentSize(keyBytes) + calculateRequestArgumentSize(member1Bytes) +
                     calculateRequestArgumentSize(member2Bytes) + calculateRequestArgumentSize(member3Bytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.ZREM.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
-        RedisRequests.writeRequestArgument(buffer, member1Bytes);
-        RedisRequests.writeRequestArgument(buffer, member2Bytes);
-        RedisRequests.writeRequestArgument(buffer, member3Bytes);
+        writeRequestArgument(buffer, key, keyBytes);
+        writeRequestArgument(buffer, member1, member1Bytes);
+        writeRequestArgument(buffer, member2, member2Bytes);
+        writeRequestArgument(buffer, member3, member3Bytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZREM, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
@@ -9503,7 +9498,7 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(key);
         requireNonNull(members);
         final int len = 2 + members.size();
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
         int membersCapacity = 0;
         if (members instanceof List && members instanceof RandomAccess) {
             final List<CharSequence> list = (List<CharSequence>) members;
@@ -9519,18 +9514,18 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.ZREM) +
                     calculateRequestArgumentSize(keyBytes) + membersCapacity;
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.ZREM.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
+        writeRequestArgument(buffer, key, keyBytes);
         if (members instanceof List && members instanceof RandomAccess) {
             final List<CharSequence> list = (List<CharSequence>) members;
             for (int i = 0; i < list.size(); ++i) {
                 final CharSequence arg = list.get(i);
-                RedisRequests.writeRequestArgument(buffer, arg);
+                writeRequestArgument(buffer, arg);
             }
         } else {
             for (CharSequence arg : members) {
-                RedisRequests.writeRequestArgument(buffer, arg);
+                writeRequestArgument(buffer, arg);
             }
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZREM, buffer);
@@ -9546,18 +9541,18 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(min);
         requireNonNull(max);
         final int len = 4;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] minBytes = min.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] maxBytes = max.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
+        final int minBytes = numberOfBytesUtf8(min);
+        final int maxBytes = numberOfBytesUtf8(max);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.ZREMRANGEBYLEX) +
                     calculateRequestArgumentSize(keyBytes) + calculateRequestArgumentSize(minBytes) +
                     calculateRequestArgumentSize(maxBytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.ZREMRANGEBYLEX.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
-        RedisRequests.writeRequestArgument(buffer, minBytes);
-        RedisRequests.writeRequestArgument(buffer, maxBytes);
+        writeRequestArgument(buffer, key, keyBytes);
+        writeRequestArgument(buffer, min, minBytes);
+        writeRequestArgument(buffer, max, maxBytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZREMRANGEBYLEX, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
@@ -9569,16 +9564,16 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
                                         final long stop) {
         requireNonNull(key);
         final int len = 4;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.ZREMRANGEBYRANK) +
                     calculateRequestArgumentSize(keyBytes) + calculateRequestArgumentSize(start) +
                     calculateRequestArgumentSize(stop);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.ZREMRANGEBYRANK.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
-        RedisRequests.writeRequestArgument(buffer, start);
-        RedisRequests.writeRequestArgument(buffer, stop);
+        writeRequestArgument(buffer, key, keyBytes);
+        writeRequestArgument(buffer, start);
+        writeRequestArgument(buffer, stop);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZREMRANGEBYRANK, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
@@ -9590,16 +9585,16 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
                                          final double max) {
         requireNonNull(key);
         final int len = 4;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.ZREMRANGEBYSCORE) +
                     calculateRequestArgumentSize(keyBytes) + calculateRequestArgumentSize(min) +
                     calculateRequestArgumentSize(max);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.ZREMRANGEBYSCORE.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
-        RedisRequests.writeRequestArgument(buffer, min);
-        RedisRequests.writeRequestArgument(buffer, max);
+        writeRequestArgument(buffer, key, keyBytes);
+        writeRequestArgument(buffer, min);
+        writeRequestArgument(buffer, max);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZREMRANGEBYSCORE, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
@@ -9611,16 +9606,16 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
                                          final long stop) {
         requireNonNull(key);
         final int len = 4;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.ZREVRANGE) +
                     calculateRequestArgumentSize(keyBytes) + calculateRequestArgumentSize(start) +
                     calculateRequestArgumentSize(stop);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.ZREVRANGE.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
-        RedisRequests.writeRequestArgument(buffer, start);
-        RedisRequests.writeRequestArgument(buffer, stop);
+        writeRequestArgument(buffer, key, keyBytes);
+        writeRequestArgument(buffer, start);
+        writeRequestArgument(buffer, stop);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZREVRANGE, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
@@ -9633,16 +9628,16 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
                                          @Nullable final RedisProtocolSupport.ZrevrangeWithscores withscores) {
         requireNonNull(key);
         final int len = 4 + (withscores == null ? 0 : 1);
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.ZREVRANGE) +
                     calculateRequestArgumentSize(keyBytes) + calculateRequestArgumentSize(start) +
                     calculateRequestArgumentSize(stop) + (withscores == null ? 0 : withscores.encodedByteCount());
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.ZREVRANGE.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
-        RedisRequests.writeRequestArgument(buffer, start);
-        RedisRequests.writeRequestArgument(buffer, stop);
+        writeRequestArgument(buffer, key, keyBytes);
+        writeRequestArgument(buffer, start);
+        writeRequestArgument(buffer, stop);
         if (withscores != null) {
             withscores.encodeTo(buffer);
         }
@@ -9659,18 +9654,18 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(max);
         requireNonNull(min);
         final int len = 4;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] maxBytes = max.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] minBytes = min.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
+        final int maxBytes = numberOfBytesUtf8(max);
+        final int minBytes = numberOfBytesUtf8(min);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.ZREVRANGEBYLEX) +
                     calculateRequestArgumentSize(keyBytes) + calculateRequestArgumentSize(maxBytes) +
                     calculateRequestArgumentSize(minBytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.ZREVRANGEBYLEX.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
-        RedisRequests.writeRequestArgument(buffer, maxBytes);
-        RedisRequests.writeRequestArgument(buffer, minBytes);
+        writeRequestArgument(buffer, key, keyBytes);
+        writeRequestArgument(buffer, max, maxBytes);
+        writeRequestArgument(buffer, min, minBytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZREVRANGEBYLEX, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
@@ -9685,18 +9680,18 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(max);
         requireNonNull(min);
         final int len = 4 + (offsetCount == null ? 0 : RedisProtocolSupport.OffsetCount.SIZE);
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] maxBytes = max.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] minBytes = min.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
+        final int maxBytes = numberOfBytesUtf8(max);
+        final int minBytes = numberOfBytesUtf8(min);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.ZREVRANGEBYLEX) +
                     calculateRequestArgumentSize(keyBytes) + calculateRequestArgumentSize(maxBytes) +
                     calculateRequestArgumentSize(minBytes) + (offsetCount == null ? 0 : offsetCount.encodedByteCount());
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.ZREVRANGEBYLEX.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
-        RedisRequests.writeRequestArgument(buffer, maxBytes);
-        RedisRequests.writeRequestArgument(buffer, minBytes);
+        writeRequestArgument(buffer, key, keyBytes);
+        writeRequestArgument(buffer, max, maxBytes);
+        writeRequestArgument(buffer, min, minBytes);
         if (offsetCount != null) {
             offsetCount.encodeTo(buffer);
         }
@@ -9711,16 +9706,16 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
                                                 final double min) {
         requireNonNull(key);
         final int len = 4;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.ZREVRANGEBYSCORE) +
                     calculateRequestArgumentSize(keyBytes) + calculateRequestArgumentSize(max) +
                     calculateRequestArgumentSize(min);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.ZREVRANGEBYSCORE.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
-        RedisRequests.writeRequestArgument(buffer, max);
-        RedisRequests.writeRequestArgument(buffer, min);
+        writeRequestArgument(buffer, key, keyBytes);
+        writeRequestArgument(buffer, max);
+        writeRequestArgument(buffer, min);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZREVRANGEBYSCORE, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
@@ -9735,17 +9730,17 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(key);
         final int len = 4 + (withscores == null ? 0 : 1) +
                     (offsetCount == null ? 0 : RedisProtocolSupport.OffsetCount.SIZE);
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.ZREVRANGEBYSCORE) +
                     calculateRequestArgumentSize(keyBytes) + calculateRequestArgumentSize(max) +
                     calculateRequestArgumentSize(min) + (withscores == null ? 0 : withscores.encodedByteCount()) +
                     (offsetCount == null ? 0 : offsetCount.encodedByteCount());
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.ZREVRANGEBYSCORE.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
-        RedisRequests.writeRequestArgument(buffer, max);
-        RedisRequests.writeRequestArgument(buffer, min);
+        writeRequestArgument(buffer, key, keyBytes);
+        writeRequestArgument(buffer, max);
+        writeRequestArgument(buffer, min);
         if (withscores != null) {
             withscores.encodeTo(buffer);
         }
@@ -9763,15 +9758,15 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(key);
         requireNonNull(member);
         final int len = 3;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] memberBytes = member.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
+        final int memberBytes = numberOfBytesUtf8(member);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.ZREVRANK) +
                     calculateRequestArgumentSize(keyBytes) + calculateRequestArgumentSize(memberBytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.ZREVRANK.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
-        RedisRequests.writeRequestArgument(buffer, memberBytes);
+        writeRequestArgument(buffer, key, keyBytes);
+        writeRequestArgument(buffer, member, memberBytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZREVRANK, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Long> result = enqueueForExecute(state, singles, queued);
@@ -9782,14 +9777,14 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
     public <T> Future<List<T>> zscan(@RedisProtocolSupport.Key final CharSequence key, final long cursor) {
         requireNonNull(key);
         final int len = 3;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.ZSCAN) +
                     calculateRequestArgumentSize(keyBytes) + calculateRequestArgumentSize(cursor);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.ZSCAN.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
-        RedisRequests.writeRequestArgument(buffer, cursor);
+        writeRequestArgument(buffer, key, keyBytes);
+        writeRequestArgument(buffer, cursor);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZSCAN, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<List<T>> result = enqueueForExecute(state, singles, queued);
@@ -9801,9 +9796,8 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
                                      @Nullable final CharSequence matchPattern, @Nullable final Long count) {
         requireNonNull(key);
         final int len = 3 + (matchPattern == null ? 0 : 2) + (count == null ? 0 : 2);
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] matchPatternBytes = matchPattern == null ? null
-                    : matchPattern.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
+        final int matchPatternBytes = matchPattern == null ? 0 : numberOfBytesUtf8(matchPattern);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.ZSCAN) +
                     calculateRequestArgumentSize(keyBytes) + calculateRequestArgumentSize(cursor) +
                     (matchPattern == null ? 0 : RedisProtocolSupport.SubCommand.MATCH.encodedByteCount()) +
@@ -9811,17 +9805,17 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
                     (count == null ? 0 : RedisProtocolSupport.SubCommand.COUNT.encodedByteCount()) +
                     (count == null ? 0 : calculateRequestArgumentSize(count));
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.ZSCAN.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
-        RedisRequests.writeRequestArgument(buffer, cursor);
+        writeRequestArgument(buffer, key, keyBytes);
+        writeRequestArgument(buffer, cursor);
         if (matchPattern != null) {
             RedisProtocolSupport.SubCommand.MATCH.encodeTo(buffer);
-            RedisRequests.writeRequestArgument(buffer, matchPatternBytes);
+            writeRequestArgument(buffer, matchPattern, matchPatternBytes);
         }
         if (count != null) {
             RedisProtocolSupport.SubCommand.COUNT.encodeTo(buffer);
-            RedisRequests.writeRequestArgument(buffer, count);
+            writeRequestArgument(buffer, count);
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZSCAN, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
@@ -9834,15 +9828,15 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(key);
         requireNonNull(member);
         final int len = 3;
-        final byte[] keyBytes = key.toString().getBytes(StandardCharsets.UTF_8);
-        final byte[] memberBytes = member.toString().getBytes(StandardCharsets.UTF_8);
+        final int keyBytes = numberOfBytesUtf8(key);
+        final int memberBytes = numberOfBytesUtf8(member);
         final int capacity = calculateInitialCommandBufferSize(len, RedisProtocolSupport.Command.ZSCORE) +
                     calculateRequestArgumentSize(keyBytes) + calculateRequestArgumentSize(memberBytes);
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.ZSCORE.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, keyBytes);
-        RedisRequests.writeRequestArgument(buffer, memberBytes);
+        writeRequestArgument(buffer, key, keyBytes);
+        writeRequestArgument(buffer, member, memberBytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZSCORE, buffer);
         final Single<String> queued = reservedCnx.request(request, String.class);
         Future<Double> result = enqueueForExecute(state, singles, queued);
@@ -9855,7 +9849,7 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(destination);
         requireNonNull(keys);
         final int len = 3 + keys.size();
-        final byte[] destinationBytes = destination.toString().getBytes(StandardCharsets.UTF_8);
+        final int destinationBytes = numberOfBytesUtf8(destination);
         int keysCapacity = 0;
         if (keys instanceof List && keys instanceof RandomAccess) {
             final List<CharSequence> list = (List<CharSequence>) keys;
@@ -9872,19 +9866,19 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
                     calculateRequestArgumentSize(destinationBytes) + calculateRequestArgumentSize(numkeys) +
                     keysCapacity;
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.ZUNIONSTORE.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, destinationBytes);
-        RedisRequests.writeRequestArgument(buffer, numkeys);
+        writeRequestArgument(buffer, destination, destinationBytes);
+        writeRequestArgument(buffer, numkeys);
         if (keys instanceof List && keys instanceof RandomAccess) {
             final List<CharSequence> list = (List<CharSequence>) keys;
             for (int i = 0; i < list.size(); ++i) {
                 final CharSequence arg = list.get(i);
-                RedisRequests.writeRequestArgument(buffer, arg);
+                writeRequestArgument(buffer, arg);
             }
         } else {
             for (CharSequence arg : keys) {
-                RedisRequests.writeRequestArgument(buffer, arg);
+                writeRequestArgument(buffer, arg);
             }
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZUNIONSTORE, buffer);
@@ -9902,7 +9896,7 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         requireNonNull(keys);
         requireNonNull(weights);
         final int len = 4 + keys.size() + weights.size() + (aggregate == null ? 0 : 1);
-        final byte[] destinationBytes = destination.toString().getBytes(StandardCharsets.UTF_8);
+        final int destinationBytes = numberOfBytesUtf8(destination);
         int keysCapacity = 0;
         if (keys instanceof List && keys instanceof RandomAccess) {
             final List<CharSequence> list = (List<CharSequence>) keys;
@@ -9932,19 +9926,19 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
                     keysCapacity + RedisProtocolSupport.SubCommand.WEIGHTS.encodedByteCount() + weightsCapacity +
                     (aggregate == null ? 0 : aggregate.encodedByteCount());
         Buffer buffer = reservedCnx.executionContext().bufferAllocator().newBuffer(capacity);
-        RedisRequests.writeRequestArraySize(buffer, len);
+        writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.ZUNIONSTORE.encodeTo(buffer);
-        RedisRequests.writeRequestArgument(buffer, destinationBytes);
-        RedisRequests.writeRequestArgument(buffer, numkeys);
+        writeRequestArgument(buffer, destination, destinationBytes);
+        writeRequestArgument(buffer, numkeys);
         if (keys instanceof List && keys instanceof RandomAccess) {
             final List<CharSequence> list = (List<CharSequence>) keys;
             for (int i = 0; i < list.size(); ++i) {
                 final CharSequence arg = list.get(i);
-                RedisRequests.writeRequestArgument(buffer, arg);
+                writeRequestArgument(buffer, arg);
             }
         } else {
             for (CharSequence arg : keys) {
-                RedisRequests.writeRequestArgument(buffer, arg);
+                writeRequestArgument(buffer, arg);
             }
         }
         RedisProtocolSupport.SubCommand.WEIGHTS.encodeTo(buffer);
@@ -9952,11 +9946,11 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
             final List<Long> list = (List<Long>) weights;
             for (int i = 0; i < list.size(); ++i) {
                 final Long arg = list.get(i);
-                RedisRequests.writeRequestArgument(buffer, arg);
+                writeRequestArgument(buffer, arg);
             }
         } else {
             for (Long arg : weights) {
-                RedisRequests.writeRequestArgument(buffer, arg);
+                writeRequestArgument(buffer, arg);
             }
         }
         if (aggregate != null) {

@@ -33,8 +33,9 @@ import java.util.function.Function;
  *
  * @param <U> the type of address before resolution (unresolved address)
  * @param <R> the type of address after resolution (resolved address)
+ * @param <SDE> the type of {@link ServiceDiscovererEvent}
  */
-public interface HttpClientBuilder<U, R> {
+interface HttpClientBuilder<U, R, SDE extends ServiceDiscovererEvent<R>> {
 
     /**
      * Sets the {@link IoExecutor} for all clients created from this {@link HttpClientBuilder}.
@@ -42,7 +43,7 @@ public interface HttpClientBuilder<U, R> {
      * @param ioExecutor {@link IoExecutor} to use.
      * @return {@code this}.
      */
-    HttpClientBuilder<U, R> ioExecutor(IoExecutor ioExecutor);
+    HttpClientBuilder<U, R, SDE> ioExecutor(IoExecutor ioExecutor);
 
     /**
      * Sets the {@link HttpExecutionStrategy} for all clients created from this {@link HttpClientBuilder}.
@@ -50,7 +51,7 @@ public interface HttpClientBuilder<U, R> {
      * @param strategy {@link HttpExecutionStrategy} to use.
      * @return {@code this}.
      */
-    HttpClientBuilder<U, R> executionStrategy(HttpExecutionStrategy strategy);
+    HttpClientBuilder<U, R, SDE> executionStrategy(HttpExecutionStrategy strategy);
 
     /**
      * Sets the {@link BufferAllocator} for all clients created from this {@link HttpClientBuilder}.
@@ -58,7 +59,7 @@ public interface HttpClientBuilder<U, R> {
      * @param allocator {@link BufferAllocator} to use.
      * @return {@code this}.
      */
-    HttpClientBuilder<U, R> bufferAllocator(BufferAllocator allocator);
+    HttpClientBuilder<U, R, SDE> bufferAllocator(BufferAllocator allocator);
 
     /**
      * Add a {@link SocketOption} for all connections created by this client.
@@ -68,7 +69,7 @@ public interface HttpClientBuilder<U, R> {
      * @param <T> the type of the value.
      * @return {@code this}.
      */
-    <T> HttpClientBuilder<U, R> socketOption(SocketOption<T> option, T value);
+    <T> HttpClientBuilder<U, R, SDE> socketOption(SocketOption<T> option, T value);
 
     /**
      * Enable wire-logging for connections created by this builder. All wire events will be logged at trace level.
@@ -76,7 +77,7 @@ public interface HttpClientBuilder<U, R> {
      * @param loggerName The name of the logger to log wire events.
      * @return {@code this}.
      */
-    HttpClientBuilder<U, R> enableWireLogging(String loggerName);
+    HttpClientBuilder<U, R, SDE> enableWireLogging(String loggerName);
 
     /**
      * Disable previously configured wire-logging for connections created by this builder.
@@ -85,7 +86,7 @@ public interface HttpClientBuilder<U, R> {
      * @return {@code this}.
      * @see #enableWireLogging(String)
      */
-    HttpClientBuilder<U, R> disableWireLogging();
+    HttpClientBuilder<U, R, SDE> disableWireLogging();
 
     /**
      * Set the {@link HttpHeadersFactory} to be used for creating {@link HttpHeaders} when decoding responses.
@@ -93,7 +94,7 @@ public interface HttpClientBuilder<U, R> {
      * @param headersFactory the {@link HttpHeadersFactory} to use.
      * @return {@code this}.
      */
-    HttpClientBuilder<U, R> headersFactory(HttpHeadersFactory headersFactory);
+    HttpClientBuilder<U, R, SDE> headersFactory(HttpHeadersFactory headersFactory);
 
     /**
      * Set the maximum size of the initial HTTP line for created {@link StreamingHttpClient}.
@@ -102,7 +103,7 @@ public interface HttpClientBuilder<U, R> {
      * line exceeds this length.
      * @return {@code this}.
      */
-    HttpClientBuilder<U, R> maxInitialLineLength(int maxInitialLineLength);
+    HttpClientBuilder<U, R, SDE> maxInitialLineLength(int maxInitialLineLength);
 
     /**
      * Set the maximum total size of HTTP headers, which could be send be created {@link StreamingHttpClient}.
@@ -111,7 +112,7 @@ public interface HttpClientBuilder<U, R> {
      * HTTP headers exceeds this length.
      * @return {@code this}.
      */
-    HttpClientBuilder<U, R> maxHeaderSize(int maxHeaderSize);
+    HttpClientBuilder<U, R, SDE> maxHeaderSize(int maxHeaderSize);
 
     /**
      * Set the value used to calculate an exponential moving average of the encoded size of the initial line and the
@@ -120,7 +121,7 @@ public interface HttpClientBuilder<U, R> {
      * @param headersEncodedSizeEstimate An estimated size of encoded initial line and headers.
      * @return {@code this}.
      */
-    HttpClientBuilder<U, R> headersEncodedSizeEstimate(int headersEncodedSizeEstimate);
+    HttpClientBuilder<U, R, SDE> headersEncodedSizeEstimate(int headersEncodedSizeEstimate);
 
     /**
      * Set the value used to calculate an exponential moving average of the encoded size of the trailers for a guess for
@@ -129,7 +130,7 @@ public interface HttpClientBuilder<U, R> {
      * @param trailersEncodedSizeEstimate An estimated size of encoded trailers.
      * @return {@code this}.
      */
-    HttpClientBuilder<U, R> trailersEncodedSizeEstimate(int trailersEncodedSizeEstimate);
+    HttpClientBuilder<U, R, SDE> trailersEncodedSizeEstimate(int trailersEncodedSizeEstimate);
 
     /**
      * Set the maximum number of pipelined HTTP requests to queue up, anything above this will be rejected,
@@ -140,7 +141,7 @@ public interface HttpClientBuilder<U, R> {
      * @param maxPipelinedRequests number of pipelined requests to queue up
      * @return {@code this}.
      */
-    HttpClientBuilder<U, R> maxPipelinedRequests(int maxPipelinedRequests);
+    HttpClientBuilder<U, R, SDE> maxPipelinedRequests(int maxPipelinedRequests);
 
     /**
      * Append the filter to the chain of filters used to decorate the {@link StreamingHttpConnection} created by this
@@ -162,7 +163,7 @@ public interface HttpClientBuilder<U, R> {
      * of filtering.
      * @return {@code this}
      */
-    HttpClientBuilder<U, R> appendConnectionFilter(HttpConnectionFilterFactory factory);
+    HttpClientBuilder<U, R, SDE> appendConnectionFilter(HttpConnectionFilterFactory factory);
 
     /**
      * Append the filter to the chain of filters used to decorate the {@link ConnectionFactory} used by this
@@ -183,7 +184,8 @@ public interface HttpClientBuilder<U, R> {
      * @param factory {@link ConnectionFactoryFilter} to use.
      * @return {@code this}
      */
-    HttpClientBuilder<U, R> appendConnectionFactoryFilter(ConnectionFactoryFilter<R, StreamingHttpConnection> factory);
+    HttpClientBuilder<U, R, SDE> appendConnectionFactoryFilter(
+            ConnectionFactoryFilter<R, StreamingHttpConnection> factory);
 
     /**
      * Disable automatically setting {@code Host} headers by inferring from the address or {@link StreamingHttpRequest}.
@@ -193,14 +195,14 @@ public interface HttpClientBuilder<U, R> {
      * @see SingleAddressHttpClientBuilder#enableHostHeaderFallback(CharSequence)
      * @see MultiAddressHttpClientBuilder#enableHostHeaderFallback(Function)
      */
-    HttpClientBuilder<U, R> disableHostHeaderFallback();
+    HttpClientBuilder<U, R, SDE> disableHostHeaderFallback();
 
     /**
      * Disable automatically delaying {@link StreamingHttpRequest}s until the {@link LoadBalancer} is ready.
      *
      * @return {@code this}
      */
-    HttpClientBuilder<U, R> disableWaitForLoadBalancer();
+    HttpClientBuilder<U, R, SDE> disableWaitForLoadBalancer();
 
     /**
      * Set a {@link ServiceDiscoverer} to resolve addresses of remote servers to connect to.
@@ -210,8 +212,7 @@ public interface HttpClientBuilder<U, R> {
      * this {@link ServiceDiscoverer} is no longer needed.
      * @return {@code this}.
      */
-    HttpClientBuilder<U, R> serviceDiscoverer(
-            ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>> serviceDiscoverer);
+    HttpClientBuilder<U, R, SDE> serviceDiscoverer(ServiceDiscoverer<U, R, ? extends SDE> serviceDiscoverer);
 
     /**
      * Set a {@link LoadBalancerFactory} to generate {@link LoadBalancer} objects.
@@ -219,7 +220,8 @@ public interface HttpClientBuilder<U, R> {
      * @param loadBalancerFactory The {@link LoadBalancerFactory} which generates {@link LoadBalancer} objects.
      * @return {@code this}.
      */
-    HttpClientBuilder<U, R> loadBalancerFactory(LoadBalancerFactory<R, StreamingHttpConnection> loadBalancerFactory);
+    HttpClientBuilder<U, R, SDE> loadBalancerFactory(
+            LoadBalancerFactory<R, StreamingHttpConnection> loadBalancerFactory);
 
     /**
      * Build a new {@link StreamingHttpClient}, using a default {@link ExecutionContext}.

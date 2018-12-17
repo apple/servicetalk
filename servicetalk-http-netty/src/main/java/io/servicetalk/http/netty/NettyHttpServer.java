@@ -25,8 +25,8 @@ import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.tcp.netty.internal.TcpServerChannelInitializer;
 import io.servicetalk.tcp.netty.internal.TcpServerInitializer;
+import io.servicetalk.transport.api.ConnectionAcceptor;
 import io.servicetalk.transport.api.ConnectionContext;
-import io.servicetalk.transport.api.ContextFilter;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.netty.internal.AbstractContextFilterAwareChannelReadHandler;
@@ -63,15 +63,15 @@ final class NettyHttpServer {
     }
 
     static Single<ServerContext> bind(final ExecutionContext executionContext, final ReadOnlyHttpServerConfig config,
-                                      final SocketAddress address, final ContextFilter contextFilter,
+                                      final SocketAddress address, final ConnectionAcceptor connectionAcceptor,
                                       final StreamingHttpService service) {
         final TcpServerInitializer initializer = new TcpServerInitializer(executionContext, config.getTcpConfig());
 
         final ChannelInitializer channelInitializer = new TcpServerChannelInitializer(config.getTcpConfig(),
-                contextFilter).andThen(getChannelInitializer(config, service));
+                connectionAcceptor).andThen(getChannelInitializer(config, service));
 
-        // The ServerContext returned by TcpServerInitializer takes care of closing the contextFilter.
-        return initializer.start(address, contextFilter, channelInitializer, false, true)
+        // The ServerContext returned by TcpServerInitializer takes care of closing the connectionAcceptor.
+        return initializer.start(address, connectionAcceptor, channelInitializer, false, true)
                 .map((ServerContext delegate) -> {
                     LOGGER.debug("Started HTTP server for address {}.", delegate.listenAddress());
                     return new NettyHttpServerContext(delegate, service);
