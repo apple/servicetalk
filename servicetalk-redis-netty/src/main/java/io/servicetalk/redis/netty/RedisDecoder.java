@@ -188,8 +188,10 @@ final class RedisDecoder extends ByteToMessageDecoder {
         }
     }
 
-    private void readBulkStringChunk(final ChannelHandlerContext ctx, final ByteBuf in, final boolean first, final int len) {
-        final Buffer bytes = readRawBytes(in, len);
+    private void readBulkStringChunk(final ChannelHandlerContext ctx, final ByteBuf in, final boolean first,
+                                     final int len) {
+        final Buffer bytes = allocator.newBuffer(len);
+        in.readBytes(BufferUtil.toByteBufNoThrow(bytes), len);
         final int bulkStringLength = this.expectBulkBytes;
         expectBulkBytes -= len;
         if (first) {
@@ -234,19 +236,6 @@ final class RedisDecoder extends ByteToMessageDecoder {
         final CharSequence cs = in.readCharSequence(length, CharsetUtil.UTF_8);
         readEndOfLine(in);
         return cs;
-    }
-
-    private Buffer readBytes(final ByteBuf in, final int length) {
-        Buffer dst = allocator.newBuffer(length);
-        in.readBytes(BufferUtil.toByteBufNoThrow(dst), length);
-        readEndOfLine(in);
-        return dst;
-    }
-
-    private Buffer readRawBytes(final ByteBuf in, final int length) {
-        Buffer dst = allocator.newBuffer(length);
-        in.readBytes(BufferUtil.toByteBufNoThrow(dst), length);
-        return dst;
     }
 
     private static void readEndOfLine(final ByteBuf in) {
