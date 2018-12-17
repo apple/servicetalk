@@ -144,7 +144,7 @@ final class RedisDecoder extends ByteToMessageDecoder {
                         readEndOfLine(in);
                         return;
                     } else if (in.isReadable(expectBulkBytes)) {
-                        // All of the string data is available, but not the whole EOL
+                        // All of the string data is available, but not the whole EOL.
                         readBulkStringChunk(ctx, in, first, Math.min(expectBulkBytes, in.readableBytes()));
                         if (expectBulkBytes == 0) {
                             if (in.isReadable(2)) {
@@ -154,8 +154,10 @@ final class RedisDecoder extends ByteToMessageDecoder {
                             }
                         }
                     } else if (in.isReadable()) {
+                        // Some string data is available, but not enough to read to the end of it.
                         readBulkStringChunk(ctx, in, first, in.readableBytes());
                     } else if (first) {
+                        // There is no string data available, but we need to fire the bulk string length.
                         ctx.fireChannelRead(new DefaultFirstBulkStringChunk(allocator.newBuffer(), expectBulkBytes));
                     }
                     break;
