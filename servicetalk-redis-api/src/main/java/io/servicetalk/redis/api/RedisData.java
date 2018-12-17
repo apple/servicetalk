@@ -214,8 +214,8 @@ public interface RedisData {
     /**
      * Implmentation of {@link BulkStringChunk}.
      */
-    class BulkStringChunkImpl extends DefaultBaseRedisData<Buffer> implements BulkStringChunk {
-        public BulkStringChunkImpl(final Buffer value) {
+    class DefaultBulkStringChunk extends DefaultBaseRedisData<Buffer> implements BulkStringChunk {
+        public DefaultBulkStringChunk(final Buffer value) {
             super(value);
         }
 
@@ -243,10 +243,10 @@ public interface RedisData {
     /**
      * Implmentation of {@link FirstBulkStringChunk}.
      */
-    class FirstBulkStringChunkImpl extends BulkStringChunkImpl implements FirstBulkStringChunk {
+    class DefaultFirstBulkStringChunk extends DefaultBulkStringChunk implements FirstBulkStringChunk {
         private final int bulkStringLength;
 
-        public FirstBulkStringChunkImpl(final Buffer value, final int bulkStringLength) {
+        public DefaultFirstBulkStringChunk(final Buffer value, final int bulkStringLength) {
             super(value);
             this.bulkStringLength = bulkStringLength;
         }
@@ -284,8 +284,8 @@ public interface RedisData {
      * Complete <a href="https://redis.io/topics/protocol#resp-bulk-strings">Bulk String</a> representation of
      * {@link RedisData}.
      */
-    final class CompleteBulkString extends BulkStringChunkImpl implements FirstBulkStringChunk,
-                                                                          CompleteRequestRedisData {
+    final class CompleteBulkString extends DefaultBulkStringChunk implements FirstBulkStringChunk,
+                                                                             CompleteRequestRedisData {
         private final int bulkStringLength;
 
         public CompleteBulkString(final Buffer value) {

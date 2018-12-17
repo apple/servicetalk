@@ -19,9 +19,9 @@ import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.buffer.netty.BufferAllocators;
 import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.redis.api.RedisData.BulkStringChunkImpl;
 import io.servicetalk.redis.api.RedisData.CompleteBulkString;
-import io.servicetalk.redis.api.RedisData.FirstBulkStringChunkImpl;
+import io.servicetalk.redis.api.RedisData.DefaultBulkStringChunk;
+import io.servicetalk.redis.api.RedisData.DefaultFirstBulkStringChunk;
 import io.servicetalk.redis.api.RedisData.RequestRedisData;
 import io.servicetalk.redis.api.RedisData.SimpleString;
 import io.servicetalk.redis.api.RedisProtocolSupport;
@@ -45,29 +45,29 @@ public class RedisUtilsTest {
     @Test
     public void testBulkStringChunks() throws Exception {
         assertEncoded("$10\r\nabcdefghij\r\n", Publisher.from(
-                new FirstBulkStringChunkImpl(buf("abcd"), 10),
-                new BulkStringChunkImpl(buf("efghij"))));
+                new DefaultFirstBulkStringChunk(buf("abcd"), 10),
+                new DefaultBulkStringChunk(buf("efghij"))));
 
         assertEncoded("$10\r\nabcdefghij\r\n", Publisher.from(
-                new FirstBulkStringChunkImpl(buf("abcdefghi"), 10),
-                new BulkStringChunkImpl(buf("j"))));
+                new DefaultFirstBulkStringChunk(buf("abcdefghi"), 10),
+                new DefaultBulkStringChunk(buf("j"))));
 
         assertEncoded("$10\r\nabcdefghij\r\n", Publisher.from(
-                new FirstBulkStringChunkImpl(buf("abcd"), 10),
-                new BulkStringChunkImpl(buf("e")),
-                new BulkStringChunkImpl(buf("fg")),
-                new BulkStringChunkImpl(buf("hi")),
-                new BulkStringChunkImpl(buf("j"))));
+                new DefaultFirstBulkStringChunk(buf("abcd"), 10),
+                new DefaultBulkStringChunk(buf("e")),
+                new DefaultBulkStringChunk(buf("fg")),
+                new DefaultBulkStringChunk(buf("hi")),
+                new DefaultBulkStringChunk(buf("j"))));
     }
 
     @Test
     public void testFirstBulkStringChunk() throws Exception {
-        assertEncoded("$6\r\nabcde", Publisher.from(new FirstBulkStringChunkImpl(buf("abcde"), 6)));
+        assertEncoded("$6\r\nabcde", Publisher.from(new DefaultFirstBulkStringChunk(buf("abcde"), 6)));
     }
 
     @Test
     public void testFirstBulkStringChunkWithFullBulkString() throws Exception {
-        assertEncoded("$5\r\nabcde\r\n", Publisher.from(new FirstBulkStringChunkImpl(buf("abcde"), 5)));
+        assertEncoded("$5\r\nabcde\r\n", Publisher.from(new DefaultFirstBulkStringChunk(buf("abcde"), 5)));
     }
 
     @Test

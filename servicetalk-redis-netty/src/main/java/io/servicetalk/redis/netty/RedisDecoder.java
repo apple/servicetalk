@@ -18,9 +18,9 @@ package io.servicetalk.redis.netty;
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.redis.api.RedisData;
 import io.servicetalk.redis.api.RedisData.ArraySize;
-import io.servicetalk.redis.api.RedisData.BulkStringChunkImpl;
 import io.servicetalk.redis.api.RedisData.CompleteBulkString;
-import io.servicetalk.redis.api.RedisData.FirstBulkStringChunkImpl;
+import io.servicetalk.redis.api.RedisData.DefaultBulkStringChunk;
+import io.servicetalk.redis.api.RedisData.DefaultFirstBulkStringChunk;
 import io.servicetalk.redis.api.RedisData.SimpleString;
 import io.servicetalk.transport.netty.internal.ByteToMessageDecoder;
 
@@ -162,7 +162,7 @@ final class RedisDecoder extends ByteToMessageDecoder {
                         fireBulkStringChunk(first, ctx, bytes);
                         expectBulkBytes -= bytes.length;
                     } else if (first) {
-                        ctx.fireChannelRead(new FirstBulkStringChunkImpl(allocator.newBuffer(), expectBulkBytes));
+                        ctx.fireChannelRead(new DefaultFirstBulkStringChunk(allocator.newBuffer(), expectBulkBytes));
                     }
                     break;
                 }
@@ -194,9 +194,9 @@ final class RedisDecoder extends ByteToMessageDecoder {
 
     private void fireBulkStringChunk(final boolean first, final ChannelHandlerContext ctx, final byte[] bytes) {
         if (first) {
-            ctx.fireChannelRead(new FirstBulkStringChunkImpl(allocator.wrap(bytes), expectBulkBytes));
+            ctx.fireChannelRead(new DefaultFirstBulkStringChunk(allocator.wrap(bytes), expectBulkBytes));
         } else {
-            ctx.fireChannelRead(new BulkStringChunkImpl(allocator.wrap(bytes)));
+            ctx.fireChannelRead(new DefaultBulkStringChunk(allocator.wrap(bytes)));
         }
     }
 

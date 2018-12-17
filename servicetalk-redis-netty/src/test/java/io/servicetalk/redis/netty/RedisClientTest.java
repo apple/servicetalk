@@ -25,10 +25,10 @@ import io.servicetalk.redis.api.RedisClient.ReservedRedisConnection;
 import io.servicetalk.redis.api.RedisCommander;
 import io.servicetalk.redis.api.RedisData;
 import io.servicetalk.redis.api.RedisData.ArraySize;
-import io.servicetalk.redis.api.RedisData.BulkStringChunkImpl;
 import io.servicetalk.redis.api.RedisData.CompleteBulkString;
+import io.servicetalk.redis.api.RedisData.DefaultBulkStringChunk;
+import io.servicetalk.redis.api.RedisData.DefaultFirstBulkStringChunk;
 import io.servicetalk.redis.api.RedisData.FirstBulkStringChunk;
-import io.servicetalk.redis.api.RedisData.FirstBulkStringChunkImpl;
 import io.servicetalk.redis.api.RedisData.RequestRedisData;
 import io.servicetalk.redis.api.RedisExecutionStrategy;
 import io.servicetalk.redis.api.RedisProtocolSupport.Command;
@@ -155,13 +155,13 @@ public class RedisClientTest extends BaseRedisClientTest {
         args[0] = new ArraySize(2L);
         args[1] = PING;
         final StringBuilder expected = new StringBuilder(1000);
-        args[2] = new FirstBulkStringChunkImpl(EMPTY_BUFFER, 1000);
+        args[2] = new DefaultFirstBulkStringChunk(EMPTY_BUFFER, 1000);
         for (int i = 0; i < 99; i++) {
             expected.append("0123456789");
-            args[3 + i] = new BulkStringChunkImpl(buf("0123456789"));
+            args[3 + i] = new DefaultBulkStringChunk(buf("0123456789"));
         }
         expected.append("THISISEND!");
-        args[102] = new BulkStringChunkImpl(buf("THISISEND!"));
+        args[102] = new DefaultBulkStringChunk(buf("THISISEND!"));
 
         final RedisRequest request = newRequest(PING, Publisher.from(args));
 
@@ -184,13 +184,13 @@ public class RedisClientTest extends BaseRedisClientTest {
         args[1] = SET;
         args[2] = new CompleteBulkString(buf("key"));
         final StringBuilder expected = new StringBuilder(1000);
-        args[3] = new FirstBulkStringChunkImpl(EMPTY_BUFFER, 1000);
+        args[3] = new DefaultFirstBulkStringChunk(EMPTY_BUFFER, 1000);
         for (int i = 0; i < 99; i++) {
             expected.append("0123456789");
-            args[4 + i] = new BulkStringChunkImpl(buf("0123456789"));
+            args[4 + i] = new DefaultBulkStringChunk(buf("0123456789"));
         }
         expected.append("THISISEND!");
-        args[103] = new BulkStringChunkImpl(buf("THISISEND!"));
+        args[103] = new DefaultBulkStringChunk(buf("THISISEND!"));
 
         final RedisRequest setRequest = newRequest(SET, Publisher.from(args));
 

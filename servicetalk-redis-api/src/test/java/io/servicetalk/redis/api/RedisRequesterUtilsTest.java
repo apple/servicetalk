@@ -21,9 +21,9 @@ import io.servicetalk.concurrent.api.MockedSingleListenerRule;
 import io.servicetalk.concurrent.api.PublisherRule;
 import io.servicetalk.redis.api.RedisData.ArraySize;
 import io.servicetalk.redis.api.RedisData.BulkStringChunk;
-import io.servicetalk.redis.api.RedisData.BulkStringChunkImpl;
 import io.servicetalk.redis.api.RedisData.CompleteBulkString;
-import io.servicetalk.redis.api.RedisData.FirstBulkStringChunkImpl;
+import io.servicetalk.redis.api.RedisData.DefaultBulkStringChunk;
+import io.servicetalk.redis.api.RedisData.DefaultFirstBulkStringChunk;
 import io.servicetalk.redis.api.RedisData.SimpleString;
 import io.servicetalk.redis.api.RedisRequesterUtils.ToBufferSingle;
 import io.servicetalk.redis.api.RedisRequesterUtils.ToListSingle;
@@ -86,11 +86,11 @@ public class RedisRequesterUtilsTest {
         bufferSubscriber.listen(aggregator);
 
         Buffer buffer = allocator.newBuffer(1).writeByte(1).asReadOnly();
-        BulkStringChunk bufferChunk = new BulkStringChunkImpl(buffer);
+        BulkStringChunk bufferChunk = new DefaultBulkStringChunk(buffer);
         publisher.sendItems(bufferChunk);
 
         buffer = allocator.newBuffer(1).writeByte(2).asReadOnly();
-        bufferChunk = new BulkStringChunkImpl(buffer);
+        bufferChunk = new DefaultBulkStringChunk(buffer);
         publisher.sendItems(bufferChunk);
 
         publisher.complete();
@@ -222,9 +222,9 @@ public class RedisRequesterUtilsTest {
             if (chunks.size() == 1) {
                 redisData = new CompleteBulkString(buffer);
             } else if (i == 0) {
-                redisData = new FirstBulkStringChunkImpl(buffer, lengthOfAllChunks);
+                redisData = new DefaultFirstBulkStringChunk(buffer, lengthOfAllChunks);
             } else {
-                redisData = new BulkStringChunkImpl(buffer);
+                redisData = new DefaultBulkStringChunk(buffer);
             }
             publisher.sendItems(redisData);
         }

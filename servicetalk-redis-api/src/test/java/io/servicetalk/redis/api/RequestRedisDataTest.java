@@ -17,9 +17,9 @@ package io.servicetalk.redis.api;
 
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.redis.api.RedisData.ArraySize;
-import io.servicetalk.redis.api.RedisData.BulkStringChunkImpl;
 import io.servicetalk.redis.api.RedisData.CompleteBulkString;
-import io.servicetalk.redis.api.RedisData.FirstBulkStringChunkImpl;
+import io.servicetalk.redis.api.RedisData.DefaultBulkStringChunk;
+import io.servicetalk.redis.api.RedisData.DefaultFirstBulkStringChunk;
 import io.servicetalk.redis.api.RedisData.RequestRedisData;
 import io.servicetalk.redis.api.RedisData.SimpleString;
 import io.servicetalk.redis.api.RedisProtocolSupport.BitfieldOperations;
@@ -101,17 +101,17 @@ public class RequestRedisDataTest {
 
     @Test
     public void testFirstBulkStringChunk() {
-        assertWritten(new FirstBulkStringChunkImpl(BUFFER_ABCDE.duplicate(), 42), "$42\r\nabcde");
+        assertWritten(new DefaultFirstBulkStringChunk(BUFFER_ABCDE.duplicate(), 42), "$42\r\nabcde");
     }
 
     @Test
     public void testEmptyFirstBulkStringChunk() {
-        assertWritten(new FirstBulkStringChunkImpl(EMPTY_BUFFER, 42), "$42\r\n");
+        assertWritten(new DefaultFirstBulkStringChunk(EMPTY_BUFFER, 42), "$42\r\n");
     }
 
     @Test
     public void testBulkStringChunk() {
-        assertWritten(new BulkStringChunkImpl(BUFFER_ABCDE.duplicate()), "abcde");
+        assertWritten(new DefaultBulkStringChunk(BUFFER_ABCDE.duplicate()), "abcde");
     }
 
     @Test
