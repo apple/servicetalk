@@ -15,7 +15,9 @@
  */
 package io.servicetalk.redis.netty;
 
+import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
+import io.servicetalk.buffer.netty.BufferUtil;
 import io.servicetalk.redis.api.RedisData;
 import io.servicetalk.redis.api.RedisData.ArraySize;
 import io.servicetalk.redis.api.RedisData.DefaultBulkStringChunk;
@@ -84,7 +86,7 @@ final class RedisDecoder extends ByteToMessageDecoder {
                             ctx.fireChannelRead(EMPTY_SIMPLE_STRING);
                             break;
                         default:
-                            ctx.fireChannelRead(new SimpleString(readString(in, length)));
+                            ctx.fireChannelRead(new SimpleString(readCharSequence(in, length)));
                             break;
                     }
                     state = Start;
@@ -137,18 +139,13 @@ final class RedisDecoder extends ByteToMessageDecoder {
                     }
                     if (in.isReadable(expectBulkBytes + EOL_LENGTH)) {
                         // The while/rest of the bulk string, including the EOL, is readable.
-                        final byte[] bytes = readBytes(in, expectBulkBytes);
-                        fireBulkStringChunk(first, ctx, bytes);
-                        expectBulkBytes -= bytes.length;
-                        assert expectBulkBytes == 0;
                         state = Start;
+                        readBulkStringChunk(ctx, in, first, expectBulkBytes);
+                        readEndOfLine(in);
                         return;
                     } else if (in.isReadable(expectBulkBytes)) {
                         // All of the string data is available, but not the whole EOL
-                        final int len = Math.min(expectBulkBytes, in.readableBytes());
-                        final byte[] bytes = readRawBytes(in, len);
-                        fireBulkStringChunk(first, ctx, bytes);
-                        expectBulkBytes -= bytes.length;
+                        readBulkStringChunk(ctx, in, first, Math.min(expectBulkBytes, in.readableBytes()));
                         if (expectBulkBytes == 0) {
                             if (in.isReadable(2)) {
                                 readEndOfLine(in);
@@ -157,9 +154,7 @@ final class RedisDecoder extends ByteToMessageDecoder {
                             }
                         }
                     } else if (in.isReadable()) {
-                        final byte[] bytes = readRawBytes(in, in.readableBytes());
-                        fireBulkStringChunk(first, ctx, bytes);
-                        expectBulkBytes -= bytes.length;
+                        readBulkStringChunk(ctx, in, first, in.readableBytes());
                     } else if (first) {
                         ctx.fireChannelRead(new DefaultFirstBulkStringChunk(allocator.newBuffer(), expectBulkBytes));
                     }
@@ -170,7 +165,7 @@ final class RedisDecoder extends ByteToMessageDecoder {
                     if (length == -1) {
                         return;
                     }
-                    final String message = readString(in, length);
+                    final CharSequence message = readCharSequence(in, length);
                     ctx.fireChannelRead(new RedisData.Error(message));
                     state = Start;
                     break;
@@ -191,11 +186,14 @@ final class RedisDecoder extends ByteToMessageDecoder {
         }
     }
 
-    private void fireBulkStringChunk(final boolean first, final ChannelHandlerContext ctx, final byte[] bytes) {
+    private void readBulkStringChunk(final ChannelHandlerContext ctx, final ByteBuf in, final boolean first, final int len) {
+        final Buffer bytes = readRawBytes(in, len);
+        final int bulkStringLength = this.expectBulkBytes;
+        expectBulkBytes -= len;
         if (first) {
-            ctx.fireChannelRead(new DefaultFirstBulkStringChunk(allocator.wrap(bytes), expectBulkBytes));
+            ctx.fireChannelRead(new DefaultFirstBulkStringChunk(bytes, bulkStringLength));
         } else {
-            ctx.fireChannelRead(new DefaultBulkStringChunk(allocator.wrap(bytes)));
+            ctx.fireChannelRead(new DefaultBulkStringChunk(bytes));
         }
     }
 
@@ -230,24 +228,23 @@ final class RedisDecoder extends ByteToMessageDecoder {
         return number;
     }
 
-    private static String readString(final ByteBuf in, final int length) {
-        final String string = in.toString(in.readerIndex(), length, CharsetUtil.UTF_8);
-        in.skipBytes(length);
+    private static CharSequence readCharSequence(final ByteBuf in, final int length) {
+        final CharSequence cs = in.readCharSequence(length, CharsetUtil.UTF_8);
         readEndOfLine(in);
-        return string;
+        return cs;
     }
 
-    private static byte[] readBytes(final ByteBuf in, final int length) {
-        final byte[] data = new byte[length];
-        in.readBytes(data, 0, length);
+    private Buffer readBytes(final ByteBuf in, final int length) {
+        Buffer dst = allocator.newBuffer(length);
+        in.readBytes(BufferUtil.toByteBufNoThrow(dst), length);
         readEndOfLine(in);
-        return data;
+        return dst;
     }
 
-    private static byte[] readRawBytes(final ByteBuf in, final int length) {
-        final byte[] data = new byte[length];
-        in.readBytes(data, 0, length);
-        return data;
+    private Buffer readRawBytes(final ByteBuf in, final int length) {
+        Buffer dst = allocator.newBuffer(length);
+        in.readBytes(BufferUtil.toByteBufNoThrow(dst), length);
+        return dst;
     }
 
     private static void readEndOfLine(final ByteBuf in) {
@@ -259,16 +256,9 @@ final class RedisDecoder extends ByteToMessageDecoder {
     }
 
     private static int bytesUntilEol(final ByteBuf in) {
-        final int fromIndex = in.readerIndex() + 1;
-        final int toIndex = in.writerIndex();
-        // don't even make the call if less than 2 bytes
-        if (toIndex > fromIndex) {
-            // search for last byte first
-            final int i = in.indexOf(fromIndex, toIndex, (byte) '\n');
-            if (i > 0) {
-                assert in.getByte(i - 1) == '\r';
-                return i - fromIndex;
-            }
+        int indexOfSlashN = in.forEachByte(value -> value != '\n');
+        if (indexOfSlashN >= 1) {
+            return in.getByte(indexOfSlashN - 1) == '\r' ? (indexOfSlashN - in.readerIndex() - 1) : -1;
         }
         return -1;
     }
