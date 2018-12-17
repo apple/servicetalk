@@ -22,14 +22,14 @@ import io.servicetalk.buffer.api.Buffer;
  */
 public interface HttpResponse extends HttpResponseMetaData, TrailersHolder {
     /**
-     * Get the underlying payload as a {@link Buffer}.
+     * Gets the underlying payload as a {@link Buffer}.
      *
      * @return The {@link Buffer} representation of the underlying payload.
      */
     Buffer payloadBody();
 
     /**
-     * Get and deserialize the payload body.
+     * Gets and deserializes the payload body.
      *
      * @param deserializer The function that deserializes the underlying {@link Object}.
      * @param <T> The resulting type of the deserialization operation.
@@ -40,7 +40,7 @@ public interface HttpResponse extends HttpResponseMetaData, TrailersHolder {
     }
 
     /**
-     * Return an {@link HttpResponse} with its underlying payload set to {@code payloadBody}.
+     * Returns an {@link HttpResponse} with its underlying payload set to {@code payloadBody}.
      *
      * @param payloadBody the underlying payload.
      * @return An {@link HttpResponse} with the new serialized payload body.
@@ -48,7 +48,7 @@ public interface HttpResponse extends HttpResponseMetaData, TrailersHolder {
     HttpResponse payloadBody(Buffer payloadBody);
 
     /**
-     * Return an {@link HttpResponse} with its underlying payload set to the results of serialization of {@code pojo}.
+     * Returns an {@link HttpResponse} with its underlying payload set to the results of serialization of {@code pojo}.
      *
      * @param pojo The object to serialize.
      * @param serializer The {@link HttpSerializer} which converts {@code pojo} into bytes.
