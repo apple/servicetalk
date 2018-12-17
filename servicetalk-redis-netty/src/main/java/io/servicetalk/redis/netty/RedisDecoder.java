@@ -85,7 +85,7 @@ final class RedisDecoder extends ByteToMessageDecoder {
                     break;
                 }
                 case String: {
-                    final int length = endOfLine(in);
+                    final int length = bytesUntilEol(in);
                     switch (length) {
                         case -1:
                             return;
@@ -101,7 +101,7 @@ final class RedisDecoder extends ByteToMessageDecoder {
                     break;
                 }
                 case Number: {
-                    final int length = endOfLine(in);
+                    final int length = bytesUntilEol(in);
                     if (length == -1) {
                         return;
                     }
@@ -116,7 +116,7 @@ final class RedisDecoder extends ByteToMessageDecoder {
                     final boolean first;
                     if (expectBulkBytes == 0) {
                         first = true;
-                        final int length = endOfLine(in);
+                        final int length = bytesUntilEol(in);
                         if (length == -1) {
                             return;
                         }
@@ -176,7 +176,7 @@ final class RedisDecoder extends ByteToMessageDecoder {
                     break;
                 }
                 case Error: {
-                    final int length = endOfLine(in);
+                    final int length = bytesUntilEol(in);
                     if (length == -1) {
                         return;
                     }
@@ -186,7 +186,7 @@ final class RedisDecoder extends ByteToMessageDecoder {
                     break;
                 }
                 case Array: {
-                    final int length = endOfLine(in);
+                    final int length = bytesUntilEol(in);
                     if (length == -1) {
                         return;
                     }
@@ -277,7 +277,7 @@ final class RedisDecoder extends ByteToMessageDecoder {
         throw new IllegalStateException("expected: \\r\\n received: " + Integer.toHexString(endOfLine));
     }
 
-    private static int endOfLine(final ByteBuf in) {
+    private static int bytesUntilEol(final ByteBuf in) {
         final int fromIndex = in.readerIndex() + 1;
         final int toIndex = in.writerIndex();
         // don't even make the call if less than 2 bytes
