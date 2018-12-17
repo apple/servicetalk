@@ -23,7 +23,6 @@ import java.util.List;
 import static io.servicetalk.redis.api.RedisRequests.calculateRequestArgumentArraySize;
 import static io.servicetalk.redis.api.RedisRequests.calculateRequestArgumentLengthSize;
 import static io.servicetalk.redis.api.RedisRequests.calculateRequestArgumentSize;
-import static io.servicetalk.redis.api.RedisRequests.estimateRequestArgumentSize;
 import static io.servicetalk.redis.api.RedisRequests.writeLength;
 import static io.servicetalk.redis.api.RedisRequests.writeRequestArgument;
 import static io.servicetalk.redis.api.RedisRequests.writeRequestArraySize;
@@ -147,7 +146,7 @@ public interface RedisData {
 
         @Override
         public int encodedByteCount() {
-            return estimateRequestArgumentSize(getValue());
+            return calculateRequestArgumentSize(getValue());
         }
 
         @Override

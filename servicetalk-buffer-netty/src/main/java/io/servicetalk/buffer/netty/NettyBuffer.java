@@ -702,6 +702,12 @@ class NettyBuffer<T extends ByteBuf> implements Buffer {
     }
 
     @Override
+    public Buffer writeUtf8(CharSequence seq, int ensureWritable) {
+        ByteBufUtil.reserveAndWriteUtf8(buffer, seq, ensureWritable);
+        return this;
+    }
+
+    @Override
     public int indexOf(int fromIndex, int toIndex, byte value) {
         return buffer.indexOf(fromIndex, toIndex, value);
     }

@@ -23,11 +23,35 @@
 package io.servicetalk.redis.api;
 
 /**
- * Utility for calculating the number of digits in a number.
+ * String byte size util.
  */
 final class StringByteSizeUtil {
     private StringByteSizeUtil() {
         // no instances
+    }
+
+    /**
+     * Number of bytes in UTF8.
+     *
+     * @param sequence string
+     * @return number of bytes
+     */
+    public static int numberOfBytesUtf8(final CharSequence sequence) {
+        int count = 0;
+        for (int i = 0, len = sequence.length(); i < len; i++) {
+            final char ch = sequence.charAt(i);
+            if (ch <= 0x7F) {
+                count++;
+            } else if (ch <= 0x7FF) {
+                count += 2;
+            } else if (Character.isHighSurrogate(ch)) {
+                count += 4;
+                ++i;
+            } else {
+                count += 3;
+            }
+        }
+        return count;
     }
 
     /**

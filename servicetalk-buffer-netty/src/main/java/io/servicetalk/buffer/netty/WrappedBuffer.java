@@ -653,6 +653,12 @@ class WrappedBuffer implements Buffer {
     }
 
     @Override
+    public Buffer writeUtf8(CharSequence seq, int ensureWritable) {
+        buffer.writeUtf8(seq, ensureWritable);
+        return this;
+    }
+
+    @Override
     public int indexOf(int fromIndex, int toIndex, byte value) {
         return buffer.indexOf(fromIndex, toIndex, value);
     }

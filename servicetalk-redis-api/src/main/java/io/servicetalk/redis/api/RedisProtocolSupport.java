@@ -29,7 +29,6 @@ import javax.annotation.Generated;
 import javax.annotation.Nonnegative;
 
 import static io.servicetalk.redis.api.RedisRequests.calculateRequestArgumentSize;
-import static io.servicetalk.redis.api.RedisRequests.estimateRequestArgumentSize;
 import static io.servicetalk.redis.api.RedisRequests.writeRequestArgument;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.util.Objects.requireNonNull;
@@ -2176,7 +2175,7 @@ public final class RedisProtocolSupport {
 
         @Override
         public int encodedByteCount() {
-            return estimateRequestArgumentSize(field) + estimateRequestArgumentSize(value);
+            return calculateRequestArgumentSize(field) + calculateRequestArgumentSize(value);
         }
 
         @Override
@@ -2237,8 +2236,8 @@ public final class RedisProtocolSupport {
 
         @Override
         public int encodedByteCount() {
-            return SubCommand.GROUP.encodedByteCount() + estimateRequestArgumentSize(group) +
-                        estimateRequestArgumentSize(consumer);
+            return SubCommand.GROUP.encodedByteCount() + calculateRequestArgumentSize(group) +
+                        calculateRequestArgumentSize(consumer);
         }
 
         @Override
@@ -2299,7 +2298,7 @@ public final class RedisProtocolSupport {
 
         @Override
         public int encodedByteCount() {
-            return estimateRequestArgumentSize(key) + estimateRequestArgumentSize(value);
+            return calculateRequestArgumentSize(key) + calculateRequestArgumentSize(value);
         }
 
         @Override
@@ -2367,7 +2366,7 @@ public final class RedisProtocolSupport {
         @Override
         public int encodedByteCount() {
             return calculateRequestArgumentSize(longitude) + calculateRequestArgumentSize(latitude) +
-                        estimateRequestArgumentSize(member);
+                        calculateRequestArgumentSize(member);
         }
 
         @Override
@@ -2489,7 +2488,7 @@ public final class RedisProtocolSupport {
 
         @Override
         public int encodedByteCount() {
-            return calculateRequestArgumentSize(score) + estimateRequestArgumentSize(member);
+            return calculateRequestArgumentSize(score) + calculateRequestArgumentSize(member);
         }
 
         @Override

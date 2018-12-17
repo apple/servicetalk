@@ -383,6 +383,11 @@ final class ReadOnlyByteBuffer extends AbstractBuffer {
     }
 
     @Override
+    public Buffer writeUtf8(CharSequence seq, int ensureWritable) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public Buffer readBytes(int length) {
         if (length == 0) {
             return EMPTY_BUFFER;

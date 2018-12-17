@@ -647,6 +647,11 @@ public final class EmptyBuffer implements Buffer {
     }
 
     @Override
+    public Buffer writeUtf8(CharSequence seq, int ensureWritable) {
+        throw new IndexOutOfBoundsException();
+    }
+
+    @Override
     public int indexOf(int fromIndex, int toIndex, byte value) {
         checkIndex(fromIndex);
         checkIndex(toIndex);
