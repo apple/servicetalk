@@ -75,7 +75,7 @@ import static java.util.Objects.requireNonNull;
  *
  * @param <UserInfo> a type for authenticated user info object
  */
-public final class BasicAuthStreamingHttpServiceFilterBuilder<UserInfo> {
+public final class BasicAuthHttpServiceFilterBuilder<UserInfo> {
 
     /**
      * Verifies {@code user-id} and {@code password}, parsed from the 'Basic' HTTP Authentication Scheme credentials.
@@ -108,8 +108,8 @@ public final class BasicAuthStreamingHttpServiceFilterBuilder<UserInfo> {
     private Key<UserInfo> userInfoKey;
     private boolean utf8;
 
-    private BasicAuthStreamingHttpServiceFilterBuilder(final CredentialsVerifier<UserInfo> credentialsVerifier,
-                                                       final String realm, final boolean proxy) {
+    private BasicAuthHttpServiceFilterBuilder(final CredentialsVerifier<UserInfo> credentialsVerifier,
+                                              final String realm, final boolean proxy) {
         this.credentialsVerifier = requireNonNull(credentialsVerifier);
         this.realm = requireNonNull(realm);
         this.proxy = proxy;
@@ -139,11 +139,11 @@ public final class BasicAuthStreamingHttpServiceFilterBuilder<UserInfo> {
      * @param credentialsVerifier a {@link CredentialsVerifier} for {@code user-id} and {@code passwords} pair
      * @param realm a <a href="https://tools.ietf.org/html/rfc7235#section-2.2">protection space (realm)</a>
      * @param <UserInfo> a type for authenticated user info object
-     * @return a new {@link BasicAuthStreamingHttpServiceFilterBuilder}
+     * @return a new {@link BasicAuthHttpServiceFilterBuilder}
      */
-    public static <UserInfo> BasicAuthStreamingHttpServiceFilterBuilder<UserInfo> newBasicAuthBuilder(
+    public static <UserInfo> BasicAuthHttpServiceFilterBuilder<UserInfo> newBasicAuthBuilder(
             final CredentialsVerifier<UserInfo> credentialsVerifier, final String realm) {
-        return new BasicAuthStreamingHttpServiceFilterBuilder<>(credentialsVerifier, realm, false);
+        return new BasicAuthHttpServiceFilterBuilder<>(credentialsVerifier, realm, false);
     }
 
     /**
@@ -170,11 +170,11 @@ public final class BasicAuthStreamingHttpServiceFilterBuilder<UserInfo> {
      * @param credentialsVerifier a {@link CredentialsVerifier} for {@code user-id} and {@code passwords} pair
      * @param realm a <a href="https://tools.ietf.org/html/rfc7235#section-2.2">protection space (realm)</a>
      * @param <UserInfo> a type for authenticated user info object
-     * @return a new {@link BasicAuthStreamingHttpServiceFilterBuilder}
+     * @return a new {@link BasicAuthHttpServiceFilterBuilder}
      */
-    public static <UserInfo> BasicAuthStreamingHttpServiceFilterBuilder<UserInfo> newBasicAuthBuilderForProxy(
+    public static <UserInfo> BasicAuthHttpServiceFilterBuilder<UserInfo> newBasicAuthBuilderForProxy(
             final CredentialsVerifier<UserInfo> credentialsVerifier, final String realm) {
-        return new BasicAuthStreamingHttpServiceFilterBuilder<>(credentialsVerifier, realm, true);
+        return new BasicAuthHttpServiceFilterBuilder<>(credentialsVerifier, realm, true);
     }
 
     /**
@@ -183,7 +183,7 @@ public final class BasicAuthStreamingHttpServiceFilterBuilder<UserInfo> {
      * @param userInfoKey a key to store a user info object in {@link AsyncContextMap}
      * @return {@code this}
      */
-    public BasicAuthStreamingHttpServiceFilterBuilder<UserInfo> setUserInfoKey(final Key<UserInfo> userInfoKey) {
+    public BasicAuthHttpServiceFilterBuilder<UserInfo> setUserInfoKey(final Key<UserInfo> userInfoKey) {
         this.userInfoKey = userInfoKey;
         return this;
     }
@@ -199,7 +199,7 @@ public final class BasicAuthStreamingHttpServiceFilterBuilder<UserInfo> {
      * header
      * @return {@code this}
      */
-    public BasicAuthStreamingHttpServiceFilterBuilder<UserInfo> setCharsetUtf8(final boolean utf8) {
+    public BasicAuthHttpServiceFilterBuilder<UserInfo> setCharsetUtf8(final boolean utf8) {
         this.utf8 = utf8;
         return this;
     }
