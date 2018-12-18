@@ -205,9 +205,9 @@ public final class BasicAuthStreamingHttpServiceFilterBuilder<UserInfo> {
     }
 
     /**
-     * Builds a new Basic HTTP Auth filtering {@link StreamingHttpServiceFilter}.  The returned
+     * Builds a new Basic HTTP Auth filtering {@link StreamingHttpServiceFilter}. The returned
      * {@link StreamingHttpServiceFilter} manages the lifecycle of the passed {@link StreamingHttpService}, ensuring it
-     * is closed when the {@link StreamingHttpServiceFilter} is closed
+     * is closed when the {@link StreamingHttpServiceFilter} is closed.
      *
      * @param next an {@link StreamingHttpService} to protect against unauthorized access
      * @return a new {@link StreamingHttpServiceFilter}
