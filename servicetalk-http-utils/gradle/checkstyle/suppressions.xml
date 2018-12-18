@@ -21,5 +21,5 @@
 <suppressions>
   <!-- We use new String(byte[], Charset) to create a String from byte-array with specified charset -->
   <suppress id="IllegalInstantiationOfString"
-            files="io/servicetalk/http/utils/auth/BasicAuthHttpServiceBuilder.java"/>
+            files="io/servicetalk/http/utils/auth/BasicAuthStreamingHttpServiceFilterBuilder.java"/>
 </suppressions>

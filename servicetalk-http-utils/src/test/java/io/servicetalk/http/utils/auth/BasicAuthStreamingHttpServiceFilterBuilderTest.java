@@ -29,7 +29,7 @@ import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.api.StreamingHttpService;
-import io.servicetalk.http.utils.auth.BasicAuthHttpServiceBuilder.CredentialsVerifier;
+import io.servicetalk.http.utils.auth.BasicAuthStreamingHttpServiceFilterBuilder.CredentialsVerifier;
 import io.servicetalk.transport.api.ExecutionContext;
 
 import org.junit.After;
@@ -59,8 +59,8 @@ import static io.servicetalk.http.api.HttpHeaderValues.ZERO;
 import static io.servicetalk.http.api.HttpResponseStatuses.OK;
 import static io.servicetalk.http.api.HttpResponseStatuses.PROXY_AUTHENTICATION_REQUIRED;
 import static io.servicetalk.http.api.HttpResponseStatuses.UNAUTHORIZED;
-import static io.servicetalk.http.utils.auth.BasicAuthHttpServiceBuilder.newBasicAuthBuilder;
-import static io.servicetalk.http.utils.auth.BasicAuthHttpServiceBuilder.newBasicAuthBuilderForProxy;
+import static io.servicetalk.http.utils.auth.BasicAuthStreamingHttpServiceFilterBuilder.newBasicAuthBuilder;
+import static io.servicetalk.http.utils.auth.BasicAuthStreamingHttpServiceFilterBuilder.newBasicAuthBuilderForProxy;
 import static java.util.Base64.getEncoder;
 import static java.util.Objects.requireNonNull;
 import static org.junit.Assert.assertEquals;
@@ -69,7 +69,7 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class BasicAuthStreamingHttpServiceBuilderTest {
+public class BasicAuthStreamingHttpServiceFilterBuilderTest {
 
     private static final CharSequence USER_ID_HEADER_NAME = newAsciiString("test-userid");
     private static final Key<BasicUserInfo> USER_INFO_KEY = newKey("basicUserInfo");

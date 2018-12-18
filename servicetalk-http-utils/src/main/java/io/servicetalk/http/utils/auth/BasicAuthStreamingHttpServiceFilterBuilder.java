@@ -30,6 +30,7 @@ import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.api.StreamingHttpService;
+import io.servicetalk.http.api.StreamingHttpServiceFilter;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,7 +56,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Objects.requireNonNull;
 
 /**
- * A builder for an {@link StreamingHttpService}, which filters HTTP requests using
+ * A builder for an {@link StreamingHttpServiceFilter}, which filters HTTP requests using
  * <a href="https://tools.ietf.org/html/rfc7617">RFC7617</a>: The 'Basic' HTTP Authentication Scheme.
  * <p>
  * It accepts credentials as {@code user-id:password} pairs, encoded using {@link Base64} for
@@ -74,7 +75,7 @@ import static java.util.Objects.requireNonNull;
  *
  * @param <UserInfo> a type for authenticated user info object
  */
-public final class BasicAuthHttpServiceBuilder<UserInfo> {
+public final class BasicAuthStreamingHttpServiceFilterBuilder<UserInfo> {
 
     /**
      * Verifies {@code user-id} and {@code password}, parsed from the 'Basic' HTTP Authentication Scheme credentials.
@@ -107,8 +108,8 @@ public final class BasicAuthHttpServiceBuilder<UserInfo> {
     private Key<UserInfo> userInfoKey;
     private boolean utf8;
 
-    private BasicAuthHttpServiceBuilder(final CredentialsVerifier<UserInfo> credentialsVerifier,
-                                        final String realm, final boolean proxy) {
+    private BasicAuthStreamingHttpServiceFilterBuilder(final CredentialsVerifier<UserInfo> credentialsVerifier,
+                                                       final String realm, final boolean proxy) {
         this.credentialsVerifier = requireNonNull(credentialsVerifier);
         this.realm = requireNonNull(realm);
         this.proxy = proxy;
@@ -122,29 +123,27 @@ public final class BasicAuthHttpServiceBuilder<UserInfo> {
      * <blockquote><table cellpadding=1 cellspacing=0
      * summary="Response status code, authenticate and authorization headers for non-proxy Basic auth">
      * <tr>
-     *     <td>Response status code</td>
-     *     <td><a href="https://tools.ietf.org/html/rfc7235#section-3.1">401 (Unauthorized)</a></td>
+     * <td>Response status code</td>
+     * <td><a href="https://tools.ietf.org/html/rfc7235#section-3.1">401 (Unauthorized)</a></td>
      * </tr>
      * <tr>
-     *     <td>Authenticate header</td>
-     *     <td><a href="https://tools.ietf.org/html/rfc7235#section-4.1">WWW-Authenticate</a></td>
+     * <td>Authenticate header</td>
+     * <td><a href="https://tools.ietf.org/html/rfc7235#section-4.1">WWW-Authenticate</a></td>
      * </tr>
      * <tr>
-     *     <td>Authorization header</td>
-     *     <td><a href="https://tools.ietf.org/html/rfc7235#section-4.2">Authorization</a></td>
+     * <td>Authorization header</td>
+     * <td><a href="https://tools.ietf.org/html/rfc7235#section-4.2">Authorization</a></td>
      * </tr>
      * </table></blockquote>
      *
-     * @param credentialsVerifier a {@link CredentialsVerifier} for {@code user-id} and {@code passwords} pair. The
-     * future built {@link StreamingHttpService} will manage the lifecycle of the passed one, ensuring it is closed when the
-     * {@link StreamingHttpService} is closed
+     * @param credentialsVerifier a {@link CredentialsVerifier} for {@code user-id} and {@code passwords} pair
      * @param realm a <a href="https://tools.ietf.org/html/rfc7235#section-2.2">protection space (realm)</a>
      * @param <UserInfo> a type for authenticated user info object
-     * @return a new {@link BasicAuthHttpServiceBuilder}
+     * @return a new {@link BasicAuthStreamingHttpServiceFilterBuilder}
      */
-    public static <UserInfo> BasicAuthHttpServiceBuilder<UserInfo> newBasicAuthBuilder(
+    public static <UserInfo> BasicAuthStreamingHttpServiceFilterBuilder<UserInfo> newBasicAuthBuilder(
             final CredentialsVerifier<UserInfo> credentialsVerifier, final String realm) {
-        return new BasicAuthHttpServiceBuilder<>(credentialsVerifier, realm, false);
+        return new BasicAuthStreamingHttpServiceFilterBuilder<>(credentialsVerifier, realm, false);
     }
 
     /**
@@ -155,29 +154,27 @@ public final class BasicAuthHttpServiceBuilder<UserInfo> {
      * <blockquote><table cellpadding=1 cellspacing=0
      * summary="Response status code, authenticate and authorization headers for proxy Basic auth">
      * <tr>
-     *     <td>Response status code</td>
-     *     <td><a href="https://tools.ietf.org/html/rfc7235#section-3.2">407 (Proxy Authentication Required)</a></td>
+     * <td>Response status code</td>
+     * <td><a href="https://tools.ietf.org/html/rfc7235#section-3.2">407 (Proxy Authentication Required)</a></td>
      * </tr>
      * <tr>
-     *     <td>Authenticate header</td>
-     *     <td><a href="https://tools.ietf.org/html/rfc7235#section-4.3">Proxy-Authenticate</a></td>
+     * <td>Authenticate header</td>
+     * <td><a href="https://tools.ietf.org/html/rfc7235#section-4.3">Proxy-Authenticate</a></td>
      * </tr>
      * <tr>
-     *     <td>Authorization header</td>
-     *     <td><a href="https://tools.ietf.org/html/rfc7235#section-4.5">Proxy-Authorization</a></td>
+     * <td>Authorization header</td>
+     * <td><a href="https://tools.ietf.org/html/rfc7235#section-4.5">Proxy-Authorization</a></td>
      * </tr>
      * </table></blockquote>
      *
-     * @param credentialsVerifier a {@link CredentialsVerifier} for {@code user-id} and {@code passwords} pair. The
-     * future built {@link StreamingHttpService} will manage the lifecycle of the passed one, ensuring it is closed when the
-     * {@link StreamingHttpService} is closed
+     * @param credentialsVerifier a {@link CredentialsVerifier} for {@code user-id} and {@code passwords} pair
      * @param realm a <a href="https://tools.ietf.org/html/rfc7235#section-2.2">protection space (realm)</a>
      * @param <UserInfo> a type for authenticated user info object
-     * @return a new {@link BasicAuthHttpServiceBuilder}
+     * @return a new {@link BasicAuthStreamingHttpServiceFilterBuilder}
      */
-    public static <UserInfo> BasicAuthHttpServiceBuilder<UserInfo> newBasicAuthBuilderForProxy(
+    public static <UserInfo> BasicAuthStreamingHttpServiceFilterBuilder<UserInfo> newBasicAuthBuilderForProxy(
             final CredentialsVerifier<UserInfo> credentialsVerifier, final String realm) {
-        return new BasicAuthHttpServiceBuilder<>(credentialsVerifier, realm, true);
+        return new BasicAuthStreamingHttpServiceFilterBuilder<>(credentialsVerifier, realm, true);
     }
 
     /**
@@ -186,7 +183,7 @@ public final class BasicAuthHttpServiceBuilder<UserInfo> {
      * @param userInfoKey a key to store a user info object in {@link AsyncContextMap}
      * @return {@code this}
      */
-    public BasicAuthHttpServiceBuilder<UserInfo> setUserInfoKey(final Key<UserInfo> userInfoKey) {
+    public BasicAuthStreamingHttpServiceFilterBuilder<UserInfo> setUserInfoKey(final Key<UserInfo> userInfoKey) {
         this.userInfoKey = userInfoKey;
         return this;
     }
@@ -202,23 +199,25 @@ public final class BasicAuthHttpServiceBuilder<UserInfo> {
      * header
      * @return {@code this}
      */
-    public BasicAuthHttpServiceBuilder<UserInfo> setCharsetUtf8(final boolean utf8) {
+    public BasicAuthStreamingHttpServiceFilterBuilder<UserInfo> setCharsetUtf8(final boolean utf8) {
         this.utf8 = utf8;
         return this;
     }
 
     /**
-     * Builds a new Basic HTTP Auth filtering {@link StreamingHttpService}.
+     * Builds a new Basic HTTP Auth filtering {@link StreamingHttpServiceFilter}.  The returned
+     * {@link StreamingHttpServiceFilter} manages the lifecycle of the passed {@link StreamingHttpService}, ensuring it
+     * is closed when the {@link StreamingHttpServiceFilter} is closed
      *
-     * @param next an {@link StreamingHttpService} to protect against unauthorized access. The returned {@link StreamingHttpService}
-     * manages the lifecycle of the passed one, ensuring it is closed when the {@link StreamingHttpService} is closed
-     * @return a new {@link StreamingHttpService}
+     * @param next an {@link StreamingHttpService} to protect against unauthorized access
+     * @return a new {@link StreamingHttpServiceFilter}
      */
-    public StreamingHttpService build(final StreamingHttpService next) {
-        return new BasicAuthStreamingHttpService<>(credentialsVerifier, realm, proxy, userInfoKey, utf8, requireNonNull(next));
+    public StreamingHttpServiceFilter build(final StreamingHttpService next) {
+        return new BasicAuthStreamingHttpService<>(credentialsVerifier, realm, proxy, userInfoKey, utf8,
+                requireNonNull(next));
     }
 
-    private static final class BasicAuthStreamingHttpService<UserInfo> extends StreamingHttpService {
+    private static final class BasicAuthStreamingHttpService<UserInfo> extends StreamingHttpServiceFilter {
 
         private static final Logger LOGGER = LoggerFactory.getLogger(BasicAuthStreamingHttpService.class);
 
@@ -230,7 +229,6 @@ public final class BasicAuthHttpServiceBuilder<UserInfo> {
         private final boolean proxy;
         @Nullable
         private final Key<UserInfo> userInfoKey;
-        private final StreamingHttpService next;
         private final AsyncCloseable closeable;
 
         BasicAuthStreamingHttpService(final CredentialsVerifier<UserInfo> credentialsVerifier,
@@ -239,11 +237,11 @@ public final class BasicAuthHttpServiceBuilder<UserInfo> {
                                       @Nullable final Key<UserInfo> userInfoKey,
                                       final boolean utf8,
                                       final StreamingHttpService next) {
+            super(next);
             this.credentialsVerifier = credentialsVerifier;
             this.authenticateHeader = "Basic realm=\"" + realm + (utf8 ? "\", charset=\"UTF-8\"" : '"');
             this.proxy = proxy;
             this.userInfoKey = userInfoKey;
-            this.next = next;
             closeable = newCompositeCloseable().appendAll(next, credentialsVerifier);
         }
 
@@ -331,13 +329,13 @@ public final class BasicAuthHttpServiceBuilder<UserInfo> {
         }
 
         private Single<StreamingHttpResponse> onAuthenticated(final HttpServiceContext ctx,
-                                                                        final StreamingHttpRequest request,
-                                                                        final StreamingHttpResponseFactory factory,
-                                                                        final UserInfo userInfo) {
+                                                              final StreamingHttpRequest request,
+                                                              final StreamingHttpResponseFactory factory,
+                                                              final UserInfo userInfo) {
             if (userInfoKey != null) {
                 AsyncContext.put(userInfoKey, userInfo);
             }
-            return next.handle(ctx, request, factory);
+            return delegate().handle(ctx, request, factory);
         }
     }
 }
