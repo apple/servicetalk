@@ -29,9 +29,6 @@ import io.servicetalk.redis.api.RedisData.RequestRedisData;
 import io.servicetalk.redis.api.RedisProtocolSupport.Command;
 import io.servicetalk.redis.api.RedisProtocolSupport.SubCommand;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.Collection;
 import java.util.List;
 import java.util.RandomAccess;
@@ -52,9 +49,6 @@ import static java.util.Objects.requireNonNull;
  * Factory methods for creating {@link RedisRequest}s.
  */
 public final class RedisRequests {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(RedisRequests.class);
-
     private static final int NUMBER_CACHE_MIN = -1;
     private static final int NUMBER_CACHE_MAX = 32;
     private static final byte[][] NUMBER_CACHE = initNumberCache();
