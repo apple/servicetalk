@@ -29,7 +29,7 @@ import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.api.StreamingHttpService;
-import io.servicetalk.http.utils.auth.BasicAuthHttpServiceBuilder.CredentialsVerifier;
+import io.servicetalk.http.utils.auth.BasicAuthHttpServiceFilterBuilder.CredentialsVerifier;
 import io.servicetalk.transport.api.ExecutionContext;
 
 import org.junit.After;
@@ -59,8 +59,8 @@ import static io.servicetalk.http.api.HttpHeaderValues.ZERO;
 import static io.servicetalk.http.api.HttpResponseStatuses.OK;
 import static io.servicetalk.http.api.HttpResponseStatuses.PROXY_AUTHENTICATION_REQUIRED;
 import static io.servicetalk.http.api.HttpResponseStatuses.UNAUTHORIZED;
-import static io.servicetalk.http.utils.auth.BasicAuthHttpServiceBuilder.newBasicAuthBuilder;
-import static io.servicetalk.http.utils.auth.BasicAuthHttpServiceBuilder.newBasicAuthBuilderForProxy;
+import static io.servicetalk.http.utils.auth.BasicAuthHttpServiceFilterBuilder.newBasicAuthBuilder;
+import static io.servicetalk.http.utils.auth.BasicAuthHttpServiceFilterBuilder.newBasicAuthBuilderForProxy;
 import static java.util.Base64.getEncoder;
 import static java.util.Objects.requireNonNull;
 import static org.junit.Assert.assertEquals;
@@ -69,10 +69,11 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class BasicAuthStreamingHttpServiceBuilderTest {
+public class BasicAuthHttpServiceFilterBuilderTest {
 
     private static final CharSequence USER_ID_HEADER_NAME = newAsciiString("test-userid");
     private static final Key<BasicUserInfo> USER_INFO_KEY = newKey("basicUserInfo");
+
     private static final class BasicUserInfo {
 
         private final String userId;
@@ -103,19 +104,19 @@ public class BasicAuthStreamingHttpServiceBuilderTest {
 
     private static final CredentialsVerifier<BasicUserInfo> CREDENTIALS_VERIFIER =
             new CredentialsVerifier<BasicUserInfo>() {
-        @Override
-        public Single<BasicUserInfo> apply(final String userId, final String password) {
-            if ("password".equals(password)) {
-                return success(new BasicUserInfo(userId));
-            }
-            return error(new AuthenticationException("Wrong password"));
-        }
+                @Override
+                public Single<BasicUserInfo> apply(final String userId, final String password) {
+                    if ("password".equals(password)) {
+                        return success(new BasicUserInfo(userId));
+                    }
+                    return error(new AuthenticationException("Wrong password"));
+                }
 
-        @Override
-        public Completable closeAsync() {
-            return completed();
-        }
-    };
+                @Override
+                public Completable closeAsync() {
+                    return completed();
+                }
+            };
 
     private static final String REALM_VALUE = "hw_realm";
     private static final HttpServiceContext CONN_CTX = mock(HttpServiceContext.class);
