@@ -25,9 +25,9 @@ import static io.servicetalk.redis.api.RedisRequests.calculateRequestArgumentSiz
 import static io.servicetalk.redis.api.RedisRequests.writeLength;
 import static io.servicetalk.redis.api.RedisRequests.writeRequestArgument;
 import static io.servicetalk.redis.api.RedisRequests.writeRequestArraySize;
+import static io.servicetalk.redis.api.StringByteSizeUtil.numberOfBytesUtf8;
 import static io.servicetalk.redis.internal.RedisUtils.EOL_LENGTH;
 import static io.servicetalk.redis.internal.RedisUtils.EOL_SHORT;
-import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Arrays.asList;
 
 /**
@@ -146,14 +146,12 @@ public interface RedisData {
 
         @Override
         public int encodedByteCount() {
-            // TODO(derek) Fix this to use StringByteSizeUtil when it's merged.
-            return 1 + getValue().toString().getBytes(UTF_8).length + EOL_LENGTH;
+            return 1 + numberOfBytesUtf8(getValue()) + EOL_LENGTH;
         }
 
         @Override
         public void encodeTo(Buffer buf) {
-            // TODO(derek) Fix this to use Buffer.writeUtf8(CharSequence, int) when it's merged.
-            buf.writeByte('+').writeBytes(getValue().toString().getBytes(UTF_8)).writeShort(EOL_SHORT);
+            buf.writeByte('+').writeUtf8(getValue(), numberOfBytesUtf8(getValue())).writeShort(EOL_SHORT);
         }
     }
 
