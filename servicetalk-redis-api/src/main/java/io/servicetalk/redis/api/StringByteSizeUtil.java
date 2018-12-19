@@ -22,6 +22,8 @@
  */
 package io.servicetalk.redis.api;
 
+import static java.lang.Character.isHighSurrogate;
+
 /**
  * String byte size util.
  */
@@ -36,19 +38,20 @@ final class StringByteSizeUtil {
      * @param sequence string
      * @return number of bytes
      */
-    public static int numberOfBytesUtf8(final CharSequence sequence) {
-        int count = 0;
-        for (int i = 0, len = sequence.length(); i < len; i++) {
+    static int numberOfBytesUtf8(final CharSequence sequence) {
+        final int len = sequence.length();
+        int count = len;
+        for (int i = 0; i < len; ++i) {
             final char ch = sequence.charAt(i);
             if (ch <= 0x7F) {
-                count++;
+                // len is initialized to sequence.length(), so nothing to do here.
             } else if (ch <= 0x7FF) {
-                count += 2;
-            } else if (Character.isHighSurrogate(ch)) {
-                count += 4;
+                ++count;
+            } else if (isHighSurrogate(ch)) {
+                count += 3;
                 ++i;
             } else {
-                count += 3;
+                count += 2;
             }
         }
         return count;
