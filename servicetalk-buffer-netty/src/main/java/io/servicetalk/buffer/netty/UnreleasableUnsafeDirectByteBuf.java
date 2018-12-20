@@ -17,6 +17,7 @@ package io.servicetalk.buffer.netty;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
+import io.netty.buffer.Unpooled;
 import io.netty.buffer.UnpooledUnsafeDirectByteBuf;
 
 import java.nio.ByteBuffer;
@@ -32,12 +33,12 @@ final class UnreleasableUnsafeDirectByteBuf extends UnpooledUnsafeDirectByteBuf 
 
     @Override
     public ByteBuf asReadOnly() {
-        return new UnreleasableByteBuf(super.asReadOnly());
+        return Unpooled.unreleasableBuffer(super.asReadOnly());
     }
 
     @Override
     public ByteBuf readSlice(int length) {
-        return new UnreleasableByteBuf(super.readSlice(length));
+        return Unpooled.unreleasableBuffer(super.readSlice(length));
     }
 
     @Override
@@ -47,12 +48,12 @@ final class UnreleasableUnsafeDirectByteBuf extends UnpooledUnsafeDirectByteBuf 
 
     @Override
     public ByteBuf slice() {
-        return new UnreleasableByteBuf(super.slice());
+        return Unpooled.unreleasableBuffer(super.slice());
     }
 
     @Override
     public ByteBuf slice(int index, int length) {
-        return new UnreleasableByteBuf(super.slice(index, length));
+        return Unpooled.unreleasableBuffer(super.slice(index, length));
     }
 
     @Override
@@ -67,7 +68,7 @@ final class UnreleasableUnsafeDirectByteBuf extends UnpooledUnsafeDirectByteBuf 
 
     @Override
     public ByteBuf duplicate() {
-        return new UnreleasableByteBuf(super.duplicate());
+        return Unpooled.unreleasableBuffer(super.duplicate());
     }
 
     @Override
