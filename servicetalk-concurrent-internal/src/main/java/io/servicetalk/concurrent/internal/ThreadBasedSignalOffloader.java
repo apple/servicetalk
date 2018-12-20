@@ -17,6 +17,7 @@ package io.servicetalk.concurrent.internal;
 
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.Completable;
+import io.servicetalk.concurrent.Executor;
 import io.servicetalk.concurrent.Single;
 
 import org.reactivestreams.Subscriber;
@@ -49,19 +50,19 @@ import static java.util.concurrent.locks.LockSupport.unpark;
 /**
  * An implementation of {@link SignalOffloader} that uses a single thread to offload all signals.
  */
-final class DefaultSignalOffloader implements SignalOffloader, Runnable {
+final class ThreadBasedSignalOffloader implements SignalOffloader, Runnable {
 
     private static final int INDEX_INIT = -1;
     private static final int INDEX_OFFLOADER_TERMINATED = -2;
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(DefaultSignalOffloader.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(ThreadBasedSignalOffloader.class);
 
     private static final String UNKNOWN_EXECUTOR_THREAD_NAME = "signal-offloader-<unknown>";
 
-    private static final AtomicIntegerFieldUpdater<DefaultSignalOffloader> lastEntityIndexUpdater =
-            newUpdater(DefaultSignalOffloader.class, "lastEntityIndex");
+    private static final AtomicIntegerFieldUpdater<ThreadBasedSignalOffloader> lastEntityIndexUpdater =
+            newUpdater(ThreadBasedSignalOffloader.class, "lastEntityIndex");
 
-    private final Consumer<Runnable> executor;
+    private final Executor executor;
     private final int publisherSignalQueueInitialCapacity;
 
     // Why not use a Queue?
@@ -78,12 +79,26 @@ final class DefaultSignalOffloader implements SignalOffloader, Runnable {
     @Nullable
     private volatile Thread executorThread;
 
-    DefaultSignalOffloader(Consumer<Runnable> executor) {
+    /**
+     * New instance.
+     *
+     * @param executor A {@link Executor} to use for offloading signals.
+     */
+    ThreadBasedSignalOffloader(Executor executor) {
         this(executor, 2, 2);
     }
 
-    DefaultSignalOffloader(final Consumer<Runnable> executor, final int expectedOffloadingEntities,
-                           final int publisherSignalQueueInitialCapacity) {
+    /**
+     * New instance.
+     *
+     * @param executor A {@link Consumer} representing an executor and hence provides the memory visibility guarantee:
+     * {@link Runnable} submitted to this consumer happens-before invoking {@link Runnable#run()} on that
+     * {@link Runnable}.
+     * @param expectedOffloadingEntities An approximation of the number of entities offloaded.
+     * @param publisherSignalQueueInitialCapacity Initial capacity for the queue of signals to a {@link Subscriber}.
+     */
+    ThreadBasedSignalOffloader(final Executor executor, final int expectedOffloadingEntities,
+                               final int publisherSignalQueueInitialCapacity) {
         this.executor = requireNonNull(executor);
         this.publisherSignalQueueInitialCapacity = publisherSignalQueueInitialCapacity;
         offloadedEntities = new OffloadedEntity[expectedOffloadingEntities];
@@ -164,16 +179,6 @@ final class DefaultSignalOffloader implements SignalOffloader, Runnable {
     }
 
     @Override
-    public boolean isInOffloadThreadForPublish() {
-        return executorThread == currentThread();
-    }
-
-    @Override
-    public boolean isInOffloadThreadForSubscribe() {
-        return executorThread == currentThread();
-    }
-
-    @Override
     public void run() {
         assert executorThread == null; // This only runs once.
         final Thread executorThread = currentThread();
@@ -244,11 +249,6 @@ final class DefaultSignalOffloader implements SignalOffloader, Runnable {
         unpark(executorThread);
     }
 
-    // Visible for testing
-    boolean isTerminated() {
-        return lastEntityIndex == INDEX_OFFLOADER_TERMINATED;
-    }
-
     private <T extends OffloadedEntity> T addOffloadedEntity(T offloadedEntity) {
         return addOffloadedEntity(offloadedEntity, false);
     }
@@ -287,12 +287,12 @@ final class DefaultSignalOffloader implements SignalOffloader, Runnable {
         if (nextIndex == 0) {
             if (wrapEnqueueFailure) {
                 try {
-                    executor.accept(this);
+                    executor.execute(this);
                 } catch (RejectedExecutionException re) {
                     throw new EnqueueForOffloadingFailed(re);
                 }
             } else {
-                executor.accept(this);
+                executor.execute(this);
             }
         } else {
             final Thread executorThread = this.executorThread;
@@ -356,12 +356,12 @@ final class DefaultSignalOffloader implements SignalOffloader, Runnable {
         private static final AtomicIntegerFieldUpdater<AbstractOffloadedEntity> notifyUpdater =
                 newUpdater(AbstractOffloadedEntity.class, "notify");
         private boolean terminated; // only accessed from the drain thread.
-        private final DefaultSignalOffloader offloader;
+        private final ThreadBasedSignalOffloader offloader;
 
         @SuppressWarnings("unused")
         private volatile int notify;
 
-        AbstractOffloadedEntity(DefaultSignalOffloader offloader) {
+        AbstractOffloadedEntity(ThreadBasedSignalOffloader offloader) {
             this.offloader = offloader;
         }
 
@@ -413,14 +413,14 @@ final class DefaultSignalOffloader implements SignalOffloader, Runnable {
     private static final class OffloadedSubscriber<T> extends AbstractOffloadedEntity implements Subscriber<T> {
 
         private static final Object NULL_ON_NEXT = new Object();
-        private final DefaultSignalOffloader offloader;
+        private final ThreadBasedSignalOffloader offloader;
         private final Subscriber<? super T> original;
         private final Queue<Object> signals;
         @Nullable
         private Subscription subscription;
         private boolean cancelled;
 
-        OffloadedSubscriber(DefaultSignalOffloader offloader, Subscriber<? super T> original) {
+        OffloadedSubscriber(ThreadBasedSignalOffloader offloader, Subscriber<? super T> original) {
             super(offloader);
             this.offloader = offloader;
             this.original = original;
@@ -572,7 +572,7 @@ final class DefaultSignalOffloader implements SignalOffloader, Runnable {
         @Nullable
         private volatile Object result = INITIAL_VALUE;
 
-        AbstractOffloadedSingleValueSubscriber(DefaultSignalOffloader offloader) {
+        AbstractOffloadedSingleValueSubscriber(ThreadBasedSignalOffloader offloader) {
             super(offloader);
         }
 
@@ -639,7 +639,7 @@ final class DefaultSignalOffloader implements SignalOffloader, Runnable {
 
         private final Single.Subscriber<? super T> original;
 
-        OffloadedSingleSubscriber(DefaultSignalOffloader offloader, Single.Subscriber<? super T> original) {
+        OffloadedSingleSubscriber(ThreadBasedSignalOffloader offloader, Single.Subscriber<? super T> original) {
             super(offloader);
             this.original = original;
         }
@@ -703,7 +703,7 @@ final class DefaultSignalOffloader implements SignalOffloader, Runnable {
         private static final Object COMPLETE_SIGNAL = new Object();
         private final Completable.Subscriber original;
 
-        OffloadedCompletableSubscriber(DefaultSignalOffloader offloader, Completable.Subscriber original) {
+        OffloadedCompletableSubscriber(ThreadBasedSignalOffloader offloader, Completable.Subscriber original) {
             super(offloader);
             this.original = original;
         }
@@ -780,7 +780,7 @@ final class DefaultSignalOffloader implements SignalOffloader, Runnable {
         @SuppressWarnings("unused")
         private volatile long requested;
 
-        OffloadedSubscription(DefaultSignalOffloader offloader, Subscriber<? super T> original) {
+        OffloadedSubscription(ThreadBasedSignalOffloader offloader, Subscriber<? super T> original) {
             super(offloader);
             this.original = original;
         }
@@ -886,7 +886,7 @@ final class DefaultSignalOffloader implements SignalOffloader, Runnable {
         @Nullable
         private Cancellable cancellable;
 
-        AbstractOffloadedCancellable(DefaultSignalOffloader offloader) {
+        AbstractOffloadedCancellable(ThreadBasedSignalOffloader offloader) {
             super(offloader);
         }
 
@@ -942,7 +942,7 @@ final class DefaultSignalOffloader implements SignalOffloader, Runnable {
 
         private final Single.Subscriber<? super T> original;
 
-        private OffloadedSingleCancellable(DefaultSignalOffloader offloader, Single.Subscriber<? super T> original) {
+        private OffloadedSingleCancellable(ThreadBasedSignalOffloader offloader, Single.Subscriber<? super T> original) {
             super(offloader);
             this.original = original;
         }
@@ -971,7 +971,7 @@ final class DefaultSignalOffloader implements SignalOffloader, Runnable {
 
         private final Completable.Subscriber original;
 
-        OffloadedCompletableCancellable(DefaultSignalOffloader offloader, Completable.Subscriber original) {
+        OffloadedCompletableCancellable(ThreadBasedSignalOffloader offloader, Completable.Subscriber original) {
             super(offloader);
             this.original = original;
         }

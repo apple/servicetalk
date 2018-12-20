@@ -20,6 +20,7 @@ import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
+import io.servicetalk.http.api.HttpExecutionStrategies;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StreamingHttpClient;
@@ -52,7 +53,7 @@ import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseabl
 import static io.servicetalk.concurrent.api.Executors.from;
 import static io.servicetalk.concurrent.api.Executors.newFixedSizeExecutor;
 import static io.servicetalk.concurrent.api.Single.success;
-import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
+import static io.servicetalk.http.api.HttpExecutionStrategies.customStrategyBuilder;
 import static io.servicetalk.http.api.HttpResponseStatuses.SERVICE_UNAVAILABLE;
 import static io.servicetalk.http.netty.HttpClients.forSingleAddress;
 import static io.servicetalk.http.netty.HttpServers.forPort;
@@ -70,22 +71,26 @@ public class InsufficientlySizedExecutorHttpTest {
     @Rule
     public final ExpectedException expectedException = none();
     private final int capacity;
+    private final boolean threadBased;
     private final Executor executor;
     @Nullable
     private StreamingHttpClient client;
     @Nullable
     private ServerContext server;
 
-    public InsufficientlySizedExecutorHttpTest(final int capacity, final Executor executor) {
+    public InsufficientlySizedExecutorHttpTest(final int capacity, final boolean threadBased, final Executor executor) {
         this.capacity = capacity;
+        this.threadBased = threadBased;
         this.executor = executor;
     }
 
-    @Parameterized.Parameters(name = "{index} - capacity: {0} ")
+    @Parameterized.Parameters(name = "{index} - capacity: {0} thread based: {1}")
     public static Collection<Object[]> executors() {
         List<Object[]> executors = new ArrayList<>();
-        executors.add(newParam(0));
-        executors.add(newParam(1));
+        executors.add(newParam(0, true));
+        executors.add(newParam(0, false));
+        executors.add(newParam(1, true));
+        executors.add(newParam(1, false));
         return executors;
     }
 
@@ -105,7 +110,7 @@ public class InsufficientlySizedExecutorHttpTest {
     public void insufficientServerCapacityStreaming() throws Exception {
         initClientAndServer(false);
         assert client != null;
-        if (capacity <= 1) {
+        if (threadBased && capacity <= 1 || !threadBased && capacity == 0) {
             // If there are no threads, we can not start processing.
             // If there is a single thread, it is used by the connection to listen for close events.
             expectedException.expect(instanceOf(ExecutionException.class));
@@ -118,7 +123,9 @@ public class InsufficientlySizedExecutorHttpTest {
 
     private void initClientAndServer(boolean clientUnderProvisioned) throws Exception {
         InetSocketAddress addr;
-        final HttpExecutionStrategy strategy = defaultStrategy(executor);
+        HttpExecutionStrategies.Builder strategyBuilder = customStrategyBuilder().offloadAll().executor(this.executor);
+        final HttpExecutionStrategy strategy = threadBased ? strategyBuilder.offloadWithThreadAffinity().build() :
+                strategyBuilder.build();
         if (clientUnderProvisioned) {
             server = forPort(0).listenStreamingAndAwait(
                     (ctx, request, responseFactory) -> success(responseFactory.ok()));
@@ -156,14 +163,14 @@ public class InsufficientlySizedExecutorHttpTest {
         closeable.append(executor);
     }
 
-    private static Object[] newParam(final int capacity) {
-        return new Object[]{capacity, getExecutorForCapacity(capacity)};
+    private static Object[] newParam(final int capacity, final boolean threadBased) {
+        return new Object[]{capacity, threadBased, getExecutorForCapacity(capacity)};
     }
 
     @Nonnull
     private static Executor getExecutorForCapacity(final int clientCapacity) {
         return clientCapacity == 0 ? from(task -> {
-                throw new RejectedExecutionException();
+            throw new RejectedExecutionException();
         }) : newFixedSizeExecutor(clientCapacity);
     }
 }

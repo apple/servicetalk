@@ -18,6 +18,7 @@ package io.servicetalk.concurrent.api.single;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.ExecutorRule;
 import io.servicetalk.concurrent.api.MockedSingleListenerRule;
+import io.servicetalk.concurrent.api.OffloaderAwareExecutor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.PublisherRule;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
@@ -126,10 +127,10 @@ public class ReduceSingleTest {
     public void reduceShouldOffloadOnce() throws Exception {
         Executor executor = newFixedSizeExecutor(1);
         AtomicInteger taskCount = new AtomicInteger();
-        Executor wrapped = from(task -> {
+        Executor wrapped = new OffloaderAwareExecutor(from(task -> {
             taskCount.incrementAndGet();
             executor.execute(task);
-        });
+        }), true);
         int sum = Publisher.from(1, 2, 3, 4).publishAndSubscribeOn(wrapped)
                 .reduce(() -> 0, (cumulative, integer) -> cumulative + integer).toFuture().get();
         assertThat("Unexpected sum.", sum, is(10));

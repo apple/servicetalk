@@ -17,15 +17,20 @@ package io.servicetalk.concurrent.internal;
 
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Executor;
+import io.servicetalk.concurrent.api.Executors;
 
+import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExternalResource;
+import org.junit.rules.Timeout;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import org.slf4j.Logger;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
@@ -33,11 +38,12 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
+import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.api.Completable.completed;
-import static io.servicetalk.concurrent.api.Executors.newFixedSizeExecutor;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.concurrent.internal.FlowControlUtil.addWithOverflowProtectionIfNotNegative;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.isRequestNValid;
@@ -50,17 +56,40 @@ import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.is;
 import static org.slf4j.LoggerFactory.getLogger;
 
-public class DefaultSignalOffloaderConcurrentPublisherTest {
-
-    private static final Logger LOGGER = getLogger(DefaultSignalOffloaderConcurrentPublisherTest.class);
+@RunWith(Parameterized.class)
+public class SignalOffloaderConcurrentPublisherTest {
+    private static final Logger LOGGER = getLogger(SignalOffloaderConcurrentPublisherTest.class);
 
     @Rule
-    public final OffloaderRule state = new OffloaderRule();
+    public final Timeout timeout = new ServiceTalkTestTimeout();
+
+    public final OffloaderHolder state;
+
+    public SignalOffloaderConcurrentPublisherTest(Supplier<OffloaderHolder> state,
+                                                  @SuppressWarnings("unused") boolean supportsTermination) {
+        this.state = state.get();
+    }
+
+    @Parameterized.Parameters(name = "{index} - thread based: {1}")
+    public static Collection<Object[]> offloaders() {
+        Collection<Object[]> offloaders = new ArrayList<>();
+        offloaders.add(new Object[]{(Supplier<OffloaderHolder>) () ->
+                new OffloaderHolder(ThreadBasedSignalOffloader::new), true});
+        offloaders.add(new Object[]{(Supplier<OffloaderHolder>) () ->
+                new OffloaderHolder(TaskBasedOffloader::new), false});
+        return offloaders;
+    }
+
+    @After
+    public void tearDown() throws Exception {
+        state.shutdown();
+    }
 
     @Test
     public void concurrentSignalsMultipleEntities() throws Exception {
         final int entityCount = 100;
-        final OffloaderRule.SubscriberSubscriptionPair[] pairs = new OffloaderRule.SubscriberSubscriptionPair[entityCount];
+        final OffloaderHolder.SubscriberSubscriptionPair[] pairs =
+                new OffloaderHolder.SubscriberSubscriptionPair[entityCount];
         for (int i = 0; i < entityCount; i++) {
             pairs[i] = state.newPair((i + 1) * 100);
         }
@@ -81,35 +110,39 @@ public class DefaultSignalOffloaderConcurrentPublisherTest {
     }
 
     @Test
-    public void concurrentSignalsFromSubscriberAndSubscription() throws InterruptedException, ExecutionException {
-        OffloaderRule.SubscriberSubscriptionPair pair = state.newPair(10_000);
+    public void concurrentSignalsFromSubscriberAndSubscription() throws Exception {
+        OffloaderHolder.SubscriberSubscriptionPair pair = state.newPair(10_000);
         awaitIndefinitely(pair.sendItems(10_000));
         state.awaitTermination();
         pair.subscriber.verifyNoErrors();
         pair.subscription.verifyRequested(10_000);
     }
 
-    private static final class OffloaderRule extends ExternalResource {
+    private static final class OffloaderHolder {
 
         private ExecutorService emitters;
         private Executor executor;
-        private DefaultSignalOffloader offloader;
+        private SignalOffloader offloader;
 
-        @Override
-        protected void before() {
+        OffloaderHolder(Function<Executor, SignalOffloader> offloaderFactory) {
             emitters = java.util.concurrent.Executors.newCachedThreadPool();
-            executor = newFixedSizeExecutor(1);
-            offloader = new DefaultSignalOffloader(executor::execute);
+            executor = Executors.from(java.util.concurrent.Executors.newSingleThreadExecutor());
+            offloader = offloaderFactory.apply(executor);
         }
 
-        @Override
-        protected void after() {
+        void shutdown() {
             try {
-                awaitIndefinitely(executor.closeAsync());
+                Await.awaitIndefinitely(executor.closeAsync());
                 emitters.shutdownNow();
             } catch (Exception e) {
                 LOGGER.warn("Failed to close the executor {}.", executor, e);
             }
+        }
+
+        void awaitTermination() throws Exception {
+            // Submit a task, since we use a single thread executor, this means all previous tasks have been
+            // completed.
+            executor.submit(() -> { }).toFuture().get();
         }
 
         SubscriberSubscriptionPair newPair(int expectedItems) {
@@ -117,12 +150,6 @@ public class DefaultSignalOffloaderConcurrentPublisherTest {
             SubscriberImpl subscriber = new SubscriberImpl(expectedItems);
             SubscriptionImpl subscription = new SubscriptionImpl(subscriber, demand);
             return new SubscriberSubscriptionPair(subscriber, subscription, demand);
-        }
-
-        void awaitTermination() throws InterruptedException {
-            while (!offloader.isTerminated()) {
-                Thread.sleep(10);
-            }
         }
 
         private final class SubscriberSubscriptionPair {
@@ -293,10 +320,6 @@ public class DefaultSignalOffloaderConcurrentPublisherTest {
 
         void verifyRequested(long expected) {
             assertThat("Unexpected items requested.", requested, is(expected));
-        }
-
-        void verifyRequested(String errorMessage, long expected) {
-            assertThat(errorMessage, requested, is(expected));
         }
     }
 }

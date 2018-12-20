@@ -16,6 +16,7 @@
 package io.servicetalk.concurrent.api.publisher;
 
 import io.servicetalk.concurrent.api.ExecutorRule;
+import io.servicetalk.concurrent.api.OffloaderAwareExecutor;
 import io.servicetalk.concurrent.api.Publisher;
 
 import org.junit.Rule;
@@ -23,6 +24,7 @@ import org.junit.Test;
 
 import java.util.concurrent.atomic.AtomicReferenceArray;
 
+import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
@@ -30,7 +32,8 @@ import static org.hamcrest.Matchers.not;
 public class PublishAndSubscribeOnTest extends AbstractPublishAndSubscribeOnTest {
 
     @Rule
-    public final ExecutorRule executorRule = new ExecutorRule();
+    public final ExecutorRule executorRule =
+            new ExecutorRule(() -> new OffloaderAwareExecutor(newCachedThreadExecutor(), true));
 
     @Test
     public void testPublishOnNoOverride() throws InterruptedException {

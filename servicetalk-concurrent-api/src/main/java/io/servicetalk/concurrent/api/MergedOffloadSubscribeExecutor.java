@@ -101,15 +101,5 @@ final class MergedOffloadSubscribeExecutor extends DelegatingExecutor implements
         public <T> void offloadSignal(final T signal, final Consumer<T> signalConsumer) {
             offloader.offloadSignal(signal, signalConsumer);
         }
-
-        @Override
-        public boolean isInOffloadThreadForPublish() {
-            return fallback.isInOffloadThreadForPublish();
-        }
-
-        @Override
-        public boolean isInOffloadThreadForSubscribe() {
-            return offloader.isInOffloadThreadForSubscribe();
-        }
     }
 }

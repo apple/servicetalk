@@ -238,7 +238,7 @@ final class TimeoutPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
             for (;;) {
                 final long nextTimeoutNs = parent.durationNs - (nanoTime() - lastOnNextNs);
                 if (nextTimeoutNs <= 0) { // Timeout!
-                    tryOffloadTimeout(new TimeoutException("timeout after " + NANOSECONDS.toMillis(parent.durationNs) +
+                    offloadTimeout(new TimeoutException("timeout after " + NANOSECONDS.toMillis(parent.durationNs) +
                             "ms"));
                     return;
                 } else {
@@ -247,7 +247,7 @@ final class TimeoutPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
                         nextTimerCancellable = requireNonNull(
                                 parent.timeoutExecutor.schedule(this, nextTimeoutNs, NANOSECONDS));
                     } catch (Throwable cause) {
-                        tryOffloadTimeout(cause);
+                        offloadTimeout(cause);
                         return;
                     }
 
@@ -277,12 +277,8 @@ final class TimeoutPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
             }
         }
 
-        private void tryOffloadTimeout(Throwable cause) {
-            if (signalOffloader.isInOffloadThreadForPublish()) {
-                processTimeout(cause);
-            } else {
-                signalOffloader.offloadSignal(cause, this::processTimeout);
-            }
+        private void offloadTimeout(Throwable cause) {
+            signalOffloader.offloadSignal(cause, this::processTimeout);
         }
 
         private void processTimeout(Throwable cause) {

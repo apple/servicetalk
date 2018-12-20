@@ -15,7 +15,7 @@
  */
 package io.servicetalk.concurrent.internal;
 
-import java.util.function.Consumer;
+import io.servicetalk.concurrent.Executor;
 
 /**
  * A factory for creating different {@link SignalOffloader}s.
@@ -29,10 +29,32 @@ public final class SignalOffloaders {
     /**
      * Create a new instance of {@link SignalOffloader} using the passed {@code executor}.
      *
-     * @param executor {@link Consumer} to be used by the returned {@link SignalOffloader} to offload signals.
+     * @param executor {@link Executor} to be used by the returned {@link SignalOffloader} to offload signals.
      * @return Newly created {@link SignalOffloader}.
      */
-    public static SignalOffloader newOffloaderFor(Consumer<Runnable> executor) {
-        return new DefaultSignalOffloader(executor);
+    public static SignalOffloader newOffloaderFor(Executor executor) {
+        return new TaskBasedOffloader(executor);
+    }
+
+    /**
+     * Create a new instance of {@link SignalOffloader} using the passed {@code executor} that uses granular tasks for
+     * sending signals.
+     *
+     * @param executor {@link Executor} to be used by the returned {@link SignalOffloader} to offload signals.
+     * @return Newly created {@link SignalOffloader}.
+     */
+    public static SignalOffloader newTaskBasedOffloader(Executor executor) {
+        return new TaskBasedOffloader(executor);
+    }
+
+    /**
+     * Create a new instance of {@link SignalOffloader} using the passed {@code executor} that captures a thread for
+     * its lifetime.
+     *
+     * @param executor {@link Executor} to be used by the returned {@link SignalOffloader} to offload signals.
+     * @return Newly created {@link SignalOffloader}.
+     */
+    public static SignalOffloader newThreadBasedOffloader(Executor executor) {
+        return new ThreadBasedSignalOffloader(executor);
     }
 }

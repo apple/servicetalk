@@ -16,25 +16,28 @@
 package io.servicetalk.concurrent.internal;
 
 import io.servicetalk.concurrent.Cancellable;
-import io.servicetalk.concurrent.Single.Subscriber;
+import io.servicetalk.concurrent.Completable.Subscriber;
 import io.servicetalk.concurrent.api.Executor;
 
+import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-import org.junit.rules.ExternalResource;
 import org.junit.rules.Timeout;
-import org.junit.runner.Description;
-import org.junit.runners.model.Statement;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 import org.mockito.ArgumentCaptor;
 import org.slf4j.Logger;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicReference;
-import javax.annotation.Nullable;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
-import static io.servicetalk.concurrent.api.Executors.newFixedSizeExecutor;
+import static io.servicetalk.concurrent.api.Executors.from;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.concurrent.internal.NoopRunnable.NOOP_RUNNABLE;
 import static io.servicetalk.concurrent.internal.ThrowingRunnable.THROWING_RUNNABLE;
@@ -45,6 +48,7 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.sameInstance;
+import static org.junit.Assume.assumeThat;
 import static org.mockito.ArgumentCaptor.forClass;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
@@ -52,30 +56,51 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.slf4j.LoggerFactory.getLogger;
 
-public class DefaultSignalOffloaderSingleTest {
+@RunWith(Parameterized.class)
+public class SignalOffloaderCompletableTest {
 
-    private static final Logger LOGGER = getLogger(DefaultSignalOffloaderSingleTest.class);
+    private static final Logger LOGGER = getLogger(SignalOffloaderCompletableTest.class);
 
     @Rule
     public final ExpectedException expected = ExpectedException.none();
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
-    @Rule
-    public final OffloaderRule state = new OffloaderRule();
+    public final OffloaderHolder state;
+    private final boolean supportsTermination;
+
+    public SignalOffloaderCompletableTest(Supplier<OffloaderHolder> state, boolean supportsTermination) {
+        this.state = state.get();
+        this.supportsTermination = supportsTermination;
+    }
+
+    @Parameterized.Parameters(name = "{index} - thread based: {1}")
+    public static Collection<Object[]> offloaders() {
+        Collection<Object[]> offloaders = new ArrayList<>();
+        offloaders.add(new Object[]{(Supplier<OffloaderHolder>) () ->
+                new OffloaderHolder(ThreadBasedSignalOffloader::new), true});
+        offloaders.add(new Object[]{(Supplier<OffloaderHolder>) () ->
+                new OffloaderHolder(TaskBasedOffloader::new), false});
+        return offloaders;
+    }
+
+    @After
+    public void tearDown() throws Exception {
+        state.shutdown();
+    }
 
     @Test
-    public void offloadingSubscriberShouldNotOffloadCancellable() throws InterruptedException {
-        Subscriber<? super String> offloadedSubscriber = state.offloader.offloadCancellable(state.subscriber);
-        Subscriber<? super String> offloaded = state.offloader.offloadSubscriber(offloadedSubscriber);
+    public void offloadingSubscriberShouldNotOffloadCancellable() throws Exception {
+        Subscriber offloadedSubscriber = state.offloader.offloadCancellable(state.subscriber);
+        Subscriber offloaded = state.offloader.offloadSubscriber(offloadedSubscriber);
         state.verifyOnSubscribeOffloaded(offloaded);
         state.verifyCancelNotOffloaded(state.cancellable)
-                .verifyOnSuccessOffloaded(offloaded)
+                .verifyOnCompleteOffloaded(offloaded)
                 .awaitTermination();
     }
 
     @Test
-    public void offloadingCancellableShouldNotOffloadSubscriber() throws InterruptedException {
-        Subscriber<? super String> offloaded = state.offloader.offloadCancellable(state.subscriber);
+    public void offloadingCancellableShouldNotOffloadSubscriber() throws Exception {
+        Subscriber offloaded = state.offloader.offloadCancellable(state.subscriber);
 
         Cancellable received = state.sendOnSubscribe(offloaded);
         state.verifyOnSubscribeNotOffloaded(offloaded)
@@ -84,72 +109,66 @@ public class DefaultSignalOffloaderSingleTest {
     }
 
     @Test
-    public void offloadSubscriber() throws InterruptedException {
-        Subscriber<? super String> offloaded = state.offloader.offloadSubscriber(state.subscriber);
+    public void offloadSubscriber() throws Exception {
+        Subscriber offloaded = state.offloader.offloadSubscriber(state.subscriber);
         state.verifyOnSubscribeOffloaded(offloaded);
-        state.verifyOnSuccessOffloaded(offloaded)
+        state.verifyOnCompleteOffloaded(offloaded)
                 .awaitTermination();
     }
 
     @Test
-    public void cancelShouldTerminateOffloadingWithMultipleEntities() throws InterruptedException {
-        Subscriber<? super String> offloadedCancellable = state.offloader.offloadCancellable(state.subscriber);
-        Subscriber<? super String> offloadedSubscriber = state.offloader.offloadSubscriber(offloadedCancellable);
+    public void cancelShouldTerminateOffloadingWithMultipleEntities() throws Exception {
+        Subscriber offloadedCancellable = state.offloader.offloadCancellable(state.subscriber);
+        Subscriber offloadedSubscriber = state.offloader.offloadSubscriber(offloadedCancellable);
         Cancellable received = state.verifyOnSubscribeOffloaded(offloadedSubscriber);
         state.verifyCancelOffloaded(received)
                 .awaitTermination();
     }
 
     @Test
-    public void onErrorShouldTerminateOffloadingWithMultipleEntities() throws InterruptedException {
-        Subscriber<? super String> offloadedCancellable = state.offloader.offloadCancellable(state.subscriber);
-        Subscriber<? super String> offloadedSubscriber = state.offloader.offloadSubscriber(offloadedCancellable);
+    public void onErrorShouldTerminateOffloadingWithMultipleEntities() throws Exception {
+        Subscriber offloadedCancellable = state.offloader.offloadCancellable(state.subscriber);
+        Subscriber offloadedSubscriber = state.offloader.offloadSubscriber(offloadedCancellable);
         state.verifyOnSubscribeOffloaded(offloadedSubscriber);
         state.verifyOnErrorOffloaded(offloadedSubscriber).awaitTermination();
     }
 
     @Test
-    public void onSuccessShouldTerminateOffloadingWithMultipleEntities() throws InterruptedException {
-        Subscriber<? super String> offloadedCancellable = state.offloader.offloadCancellable(state.subscriber);
-        Subscriber<? super String> offloadedSubscriber = state.offloader.offloadSubscriber(offloadedCancellable);
+    public void onCompleteShouldTerminateOffloadingWithMultipleEntities() throws Exception {
+        Subscriber offloadedCancellable = state.offloader.offloadCancellable(state.subscriber);
+        Subscriber offloadedSubscriber = state.offloader.offloadSubscriber(offloadedCancellable);
         state.verifyOnSubscribeOffloaded(offloadedSubscriber);
-        state.verifyOnSuccessOffloaded(offloadedSubscriber).awaitTermination();
+        state.verifyOnCompleteOffloaded(offloadedSubscriber).awaitTermination();
     }
 
     @Test
-    public void onSuccessSupportsNull() throws InterruptedException {
-        Subscriber<? super String> offloaded = state.offloader.offloadSubscriber(state.subscriber);
-        state.verifyOnSubscribeOffloaded(offloaded);
-        state.verifyOnSuccessOffloaded(offloaded, null).awaitTermination();
-    }
-
-    @Test
-    public void onSubscribeThrows() throws InterruptedException {
-        Subscriber<? super String> offloaded = state.offloader.offloadSubscriber(state.subscriber);
+    public void onSubscribeThrows() throws Exception {
+        Subscriber offloaded = state.offloader.offloadSubscriber(state.subscriber);
         state.verifyOnSubscribeOffloadedWhenThrows(offloaded);
         state.awaitTermination();
         verify(state.cancellable).cancel();
     }
 
     @Test
-    public void onSuccessThrows() throws InterruptedException {
-        Subscriber<? super String> offloaded = state.offloader.offloadSubscriber(state.subscriber);
+    public void onSuccessThrows() throws Exception {
+        Subscriber offloaded = state.offloader.offloadSubscriber(state.subscriber);
         state.verifyOnSubscribeOffloaded(offloaded);
-        state.verifyOnSuccessOffloadedWhenThrows(offloaded);
+        state.verifyOnCompleteOffloadedWhenThrows(offloaded);
         state.awaitTermination();
     }
 
     @Test
-    public void onErrorThrows() throws InterruptedException {
-        Subscriber<? super String> offloaded = state.offloader.offloadSubscriber(state.subscriber);
+    public void onErrorThrows() throws Exception {
+        Subscriber offloaded = state.offloader.offloadSubscriber(state.subscriber);
         state.verifyOnSubscribeOffloaded(offloaded);
         state.verifyOnErrorOffloadedWhenThrows(offloaded);
         state.awaitTermination();
     }
 
     @Test
-    public void offloadPostTermination() throws InterruptedException {
-        Subscriber<? super String> offloaded = state.offloader.offloadSubscriber(state.subscriber);
+    public void offloadPostTermination() throws Exception {
+        assumeThat("Termination test not supported by this offloader.", supportsTermination, is(true));
+        Subscriber offloaded = state.offloader.offloadSubscriber(state.subscriber);
         state.verifyOnSubscribeOffloaded(offloaded);
         state.verifyOnErrorOffloaded(offloaded);
         state.awaitTermination();
@@ -159,9 +178,9 @@ public class DefaultSignalOffloaderSingleTest {
 
     @Test
     public void executorRejectsForHandleSubscribe() {
-        DefaultSignalOffloader offloader = new DefaultSignalOffloader(task -> {
+        ThreadBasedSignalOffloader offloader = new ThreadBasedSignalOffloader(from(task -> {
             throw new RejectedExecutionException();
-        });
+        }));
         offloader.offloadSubscribe(state.subscriber, __ -> {
         });
         verify(state.subscriber).onSubscribe(any(Cancellable.class));
@@ -171,34 +190,21 @@ public class DefaultSignalOffloaderSingleTest {
                 instanceOf(RejectedExecutionException.class));
     }
 
-    private static final class OffloaderRule extends ExternalResource {
+    private static final class OffloaderHolder {
 
         private Executor executor;
-        private DefaultSignalOffloader offloader;
+        private SignalOffloader offloader;
         private Cancellable cancellable;
-        private Subscriber<String> subscriber;
+        private Subscriber subscriber;
 
-        @Override
-        public Statement apply(Statement base, Description description) {
-            return new Statement() {
-                @Override
-                public void evaluate() throws Throwable {
-                    executor = newFixedSizeExecutor(1);
-                    offloader = new DefaultSignalOffloader(executor::execute);
-                    cancellable = mock(Cancellable.class);
-                    subscriber = mockSubscriber();
-                    base.evaluate();
-                }
-
-                @SuppressWarnings("unchecked")
-                private Subscriber<String> mockSubscriber() {
-                    return mock(Subscriber.class);
-                }
-            };
+        OffloaderHolder(Function<Executor, SignalOffloader> offloaderFactory) {
+            executor = from(java.util.concurrent.Executors.newSingleThreadExecutor());
+            offloader = offloaderFactory.apply(executor);
+            cancellable = mock(Cancellable.class);
+            subscriber = mock(Subscriber.class);
         }
 
-        @Override
-        protected void after() {
+        void shutdown() {
             try {
                 Await.awaitIndefinitely(executor.closeAsync());
             } catch (Exception e) {
@@ -206,81 +212,75 @@ public class DefaultSignalOffloaderSingleTest {
             }
         }
 
-        void awaitTermination() throws InterruptedException {
-            while (!offloader.isTerminated()) {
-                Thread.sleep(10);
-            }
+        void awaitTermination() throws Exception {
+            // Submit a task, since we use a single thread executor, this means all previous tasks have been
+            // completed.
+            executor.submit(() -> { }).toFuture().get();
         }
 
-        Cancellable sendOnSubscribe(Subscriber<? super String> offloaded) {
+        Cancellable sendOnSubscribe(Subscriber offloaded) {
             offloaded.onSubscribe(cancellable);
             Cancellable received = captureReceivedCancellable();
             assertThat("Unexpected subscription received.", received, is(notNullValue()));
             return received;
         }
 
-        OffloaderRule verifyOnSubscribeNotOffloaded(Subscriber<? super String> offloaded) throws InterruptedException {
+        OffloaderHolder verifyOnSubscribeNotOffloaded(Subscriber offloaded) throws Exception {
             final Thread invoker = sendOnSubscribeAndReturnCaller(offloaded, NOOP_RUNNABLE);
             assertThat("Unexpected thread invoked offloaded Subscriber.", invoker,
                     sameInstance(currentThread()));
             return this;
         }
 
-        OffloaderRule verifyCancelNotOffloaded(Cancellable received) throws InterruptedException {
+        OffloaderHolder verifyCancelNotOffloaded(Cancellable received) throws Exception {
             Thread invoker = sendCancelAndReturnCaller(received);
             assertThat("Unexpected thread invoked offloaded Subscription.", invoker,
                     sameInstance(currentThread()));
             return this;
         }
 
-        Cancellable verifyOnSubscribeOffloaded(Subscriber<? super String> offloaded) throws InterruptedException {
+        Cancellable verifyOnSubscribeOffloaded(Subscriber offloaded) throws Exception {
             final Thread invoker = sendOnSubscribeAndReturnCaller(offloaded, NOOP_RUNNABLE);
             assertThat("Unexpected thread invoked offloaded Subscriber.", invoker,
                     not(sameInstance(currentThread())));
             return captureReceivedCancellable();
         }
 
-        void verifyOnSubscribeOffloadedWhenThrows(Subscriber<? super String> offloaded)
-                throws InterruptedException {
+        void verifyOnSubscribeOffloadedWhenThrows(Subscriber offloaded) throws Exception {
             final Thread invoker = sendOnSubscribeAndReturnCaller(offloaded, THROWING_RUNNABLE);
             assertThat("Unexpected thread invoked offloaded Subscriber.", invoker,
                     not(sameInstance(currentThread())));
             captureReceivedCancellable();
         }
 
-        OffloaderRule verifyOnErrorOffloaded(Subscriber<? super String> offloaded) throws InterruptedException {
+        OffloaderHolder verifyOnErrorOffloaded(Subscriber offloaded) throws Exception {
             Thread invoker = sendOnErrorAndReturnCaller(offloaded, NOOP_RUNNABLE);
             assertThat("Unexpected thread invoked offloaded Subscriber.", invoker,
                     not(sameInstance(currentThread())));
             return this;
         }
 
-        void verifyOnErrorOffloadedWhenThrows(Subscriber<? super String> offloaded) throws InterruptedException {
+        void verifyOnErrorOffloadedWhenThrows(Subscriber offloaded) throws Exception {
             Thread invoker = sendOnErrorAndReturnCaller(offloaded, THROWING_RUNNABLE);
             assertThat("Unexpected thread invoked offloaded Subscriber.", invoker,
                     not(sameInstance(currentThread())));
         }
 
-        OffloaderRule verifyOnSuccessOffloaded(Subscriber<? super String> offloaded) throws InterruptedException {
-            return verifyOnSuccessOffloaded(offloaded, "Hello");
-        }
-
-        OffloaderRule verifyOnSuccessOffloadedWhenThrows(Subscriber<? super String> offloaded) throws InterruptedException {
-            Thread invoker = sendOnSuccessAndReturnCaller(offloaded, "Hello", THROWING_RUNNABLE);
+        OffloaderHolder verifyOnCompleteOffloaded(Subscriber offloaded) throws Exception {
+            Thread invoker = sendOnCompleteAndReturnCaller(offloaded, NOOP_RUNNABLE);
             assertThat("Unexpected thread invoked offloaded Subscriber.", invoker,
                     not(sameInstance(currentThread())));
             return this;
         }
 
-        OffloaderRule verifyOnSuccessOffloaded(Subscriber<? super String> offloaded, @Nullable String item)
-                throws InterruptedException {
-            Thread invoker = sendOnSuccessAndReturnCaller(offloaded, item, NOOP_RUNNABLE);
+        OffloaderHolder verifyOnCompleteOffloadedWhenThrows(Subscriber offloaded) throws Exception {
+            Thread invoker = sendOnCompleteAndReturnCaller(offloaded, THROWING_RUNNABLE);
             assertThat("Unexpected thread invoked offloaded Subscriber.", invoker,
                     not(sameInstance(currentThread())));
             return this;
         }
 
-        OffloaderRule verifyCancelOffloaded(Cancellable received) throws InterruptedException {
+        OffloaderHolder verifyCancelOffloaded(Cancellable received) throws Exception {
             Thread invoker = sendCancelAndReturnCaller(received);
             assertThat("Unexpected thread invoked offloaded Subscription.", invoker,
                     not(sameInstance(currentThread())));
@@ -293,7 +293,7 @@ public class DefaultSignalOffloaderSingleTest {
             return captor.getValue();
         }
 
-        private Thread sendCancelAndReturnCaller(Cancellable received) throws InterruptedException {
+        private Thread sendCancelAndReturnCaller(Cancellable received) throws Exception {
             CountDownLatch latch = new CountDownLatch(1);
             final AtomicReference<Thread> invoker = new AtomicReference<>();
             doAnswer(invocation -> {
@@ -306,8 +306,8 @@ public class DefaultSignalOffloaderSingleTest {
             return invoker.get();
         }
 
-        private Thread sendOnSubscribeAndReturnCaller(Subscriber<? super String> offloaded, Runnable doOnSubscribe)
-                throws InterruptedException {
+        private Thread sendOnSubscribeAndReturnCaller(Subscriber offloaded, Runnable doOnSubscribe)
+                throws Exception {
             CountDownLatch latch = new CountDownLatch(1);
             final AtomicReference<Thread> subscriberInvoker = new AtomicReference<>();
             doAnswer(invocation -> {
@@ -321,8 +321,8 @@ public class DefaultSignalOffloaderSingleTest {
             return subscriberInvoker.get();
         }
 
-        private Thread sendOnErrorAndReturnCaller(Subscriber<? super String> offloaded, Runnable doOnError)
-                throws InterruptedException {
+        private Thread sendOnErrorAndReturnCaller(Subscriber offloaded, Runnable doOnError)
+                throws Exception {
             CountDownLatch latch = new CountDownLatch(1);
             final AtomicReference<Thread> subscriberInvoker = new AtomicReference<>();
             doAnswer(invocation -> {
@@ -336,8 +336,8 @@ public class DefaultSignalOffloaderSingleTest {
             return subscriberInvoker.get();
         }
 
-        private Thread sendOnSuccessAndReturnCaller(Subscriber<? super String> offloaded, @Nullable String item,
-                                                    Runnable doOnComplete) throws InterruptedException {
+        private Thread sendOnCompleteAndReturnCaller(Subscriber offloaded, Runnable doOnComplete)
+                throws Exception {
             CountDownLatch latch = new CountDownLatch(1);
             final AtomicReference<Thread> subscriberInvoker = new AtomicReference<>();
             doAnswer(invocation -> {
@@ -345,8 +345,8 @@ public class DefaultSignalOffloaderSingleTest {
                 latch.countDown();
                 doOnComplete.run();
                 return null;
-            }).when(subscriber).onSuccess(item);
-            offloaded.onSuccess(item);
+            }).when(subscriber).onComplete();
+            offloaded.onComplete();
             latch.await();
             return subscriberInvoker.get();
         }

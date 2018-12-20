@@ -28,6 +28,7 @@ import io.netty.channel.EventLoop;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.concurrent.RejectedExecutionException;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Executors.immediate;
@@ -61,7 +62,18 @@ abstract class AbstractContextFilterChannelHandler extends ChannelDuplexHandler 
         if (executor == immediate()) {
             runContextFilter(ctx);
         } else {
-            executor.execute(() -> runContextFilter(ctx));
+            try {
+                executor.execute(() -> runContextFilter(ctx));
+            } catch (RejectedExecutionException e) {
+                // If we fail to execute the ContextFilter then nothing else will happen for this connection.
+                // Netty will fire exceptionCaught event on the pipeline, but will not close the channel. Since, no
+                // ServiceTalk code specific to the connection will be invoked, we will not have visibility of this
+                // exception, eg: we will not subscribe to the read stream, neither will we write anything, so we
+                // would never know about this connection.
+                LOGGER.warn("Failed to enqueue task to the executor {} for context filter {} for context {}.",
+                        executor, connectionAcceptor, context, e);
+                ctx.close();
+            }
         }
     }
 

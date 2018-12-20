@@ -64,7 +64,7 @@ public final class Executors {
         // removed.
         return executor instanceof SignalOffloaderFactory ?
                 ((SignalOffloaderFactory) executor).newSignalOffloader() :
-                SignalOffloaders.newOffloaderFor(executor::execute);
+                SignalOffloaders.newOffloaderFor(executor);
     }
 
     /**

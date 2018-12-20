@@ -16,26 +16,32 @@
 package io.servicetalk.concurrent.internal;
 
 import io.servicetalk.concurrent.Cancellable;
-import io.servicetalk.concurrent.Single.Subscriber;
+import io.servicetalk.concurrent.Completable.Subscriber;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Executor;
+import io.servicetalk.concurrent.api.Executors;
 
+import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExternalResource;
+import org.junit.rules.Timeout;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 import org.slf4j.Logger;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
+import java.util.function.Function;
+import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.api.Completable.completed;
-import static io.servicetalk.concurrent.api.Executors.newFixedSizeExecutor;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.concurrent.internal.TerminalNotification.error;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -43,25 +49,48 @@ import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.is;
 import static org.slf4j.LoggerFactory.getLogger;
 
-public class DefaultSignalOffloaderConcurrentSingleTest {
-
-    private static final Logger LOGGER = getLogger(DefaultSignalOffloaderConcurrentSingleTest.class);
+@RunWith(Parameterized.class)
+public class SignalOffloaderConcurrentCompletableTest {
+    private static final Logger LOGGER = getLogger(SignalOffloaderConcurrentCompletableTest.class);
 
     @Rule
-    public final OffloaderRule state = new OffloaderRule();
+    public final Timeout timeout = new ServiceTalkTestTimeout();
+
+    public final OffloaderHolder state;
+
+    public SignalOffloaderConcurrentCompletableTest(Supplier<OffloaderHolder> state,
+                                                    @SuppressWarnings("unused") boolean supportsTermination) {
+        this.state = state.get();
+    }
+
+    @Parameterized.Parameters(name = "{index} - thread based: {1}")
+    public static Collection<Object[]> offloaders() {
+        Collection<Object[]> offloaders = new ArrayList<>();
+        offloaders.add(new Object[]{(Supplier<OffloaderHolder>) () ->
+                new OffloaderHolder(ThreadBasedSignalOffloader::new), true});
+        offloaders.add(new Object[]{(Supplier<OffloaderHolder>) () ->
+                new OffloaderHolder(TaskBasedOffloader::new), false});
+        return offloaders;
+    }
+
+    @After
+    public void tearDown() throws Exception {
+        state.shutdown();
+    }
 
     @Test
     public void concurrentSignalsMultipleEntities() throws Exception {
         final int entityCount = 100;
-        final OffloaderRule.SubscriberCancellablePair[] pairs = new OffloaderRule.SubscriberCancellablePair[entityCount];
+        final OffloaderHolder.SubscriberCancellablePair[] pairs =
+                new OffloaderHolder.SubscriberCancellablePair[entityCount];
         for (int i = 0; i < entityCount; i++) {
-            pairs[i] = state.newPair(i);
+            pairs[i] = state.newPair();
         }
 
         // Send terminations only after everything is registered (Invariant for the offloader)
         final Completable[] results = new Completable[entityCount];
         for (int i = 0; i < entityCount; i++) {
-            results[i] = pairs[i].sendResult(i);
+            results[i] = pairs[i].sendResult();
         }
 
         awaitIndefinitely(completed().mergeDelayError(results));
@@ -73,47 +102,45 @@ public class DefaultSignalOffloaderConcurrentSingleTest {
         }
     }
 
-    private static final class OffloaderRule extends ExternalResource {
+    private static final class OffloaderHolder {
 
         private ExecutorService emitters;
         private Executor executor;
-        private DefaultSignalOffloader offloader;
+        private SignalOffloader offloader;
 
-        @Override
-        protected void before() {
+        OffloaderHolder(Function<Executor, SignalOffloader> offloaderFactory) {
             emitters = java.util.concurrent.Executors.newCachedThreadPool();
-            executor = newFixedSizeExecutor(1);
-            offloader = new DefaultSignalOffloader(executor::execute);
+            executor = Executors.from(java.util.concurrent.Executors.newSingleThreadExecutor());
+            offloader = offloaderFactory.apply(executor);
         }
 
-        @Override
-        protected void after() {
+        void shutdown() {
             try {
-                awaitIndefinitely(executor.closeAsync());
+                Await.awaitIndefinitely(executor.closeAsync());
                 emitters.shutdownNow();
             } catch (Exception e) {
                 LOGGER.warn("Failed to close the executor {}.", executor, e);
             }
         }
 
-        SubscriberCancellablePair newPair(int expectedResult) {
-            SubscriberImpl subscriber = new SubscriberImpl(expectedResult);
-            CancellableImpl subscription = new CancellableImpl();
-            return new SubscriberCancellablePair(subscriber, subscription);
+        void awaitTermination() throws Exception {
+            // Submit a task, since we use a single thread executor, this means all previous tasks have been
+            // completed.
+            executor.submit(() -> { }).toFuture().get();
         }
 
-        void awaitTermination() throws InterruptedException {
-            while (!offloader.isTerminated()) {
-                Thread.sleep(10);
-            }
+        SubscriberCancellablePair newPair() {
+            SubscriberImpl subscriber = new SubscriberImpl();
+            CancellableImpl subscription = new CancellableImpl();
+            return new SubscriberCancellablePair(subscriber, subscription);
         }
 
         private final class SubscriberCancellablePair {
 
             final SubscriberImpl subscriber;
             final CancellableImpl cancellable;
-            private Subscriber<? super Integer> offloadCancellable;
-            private Subscriber<? super Integer> offloadSubscriber;
+            private Subscriber offloadCancellable;
+            private Subscriber offloadSubscriber;
 
             SubscriberCancellablePair(SubscriberImpl subscriber, CancellableImpl cancellable) {
                 this.subscriber = subscriber;
@@ -122,11 +149,11 @@ public class DefaultSignalOffloaderConcurrentSingleTest {
                 offloadSubscriber = offloader.offloadSubscriber(offloadCancellable);
             }
 
-            Completable sendResult(int result) throws InterruptedException {
+            Completable sendResult() throws InterruptedException {
                 offloadSubscriber.onSubscribe(cancellable);
                 this.subscriber.awaitOnSubscribe();
                 Future<Void> subscriberEmitter = emitters.submit(() -> {
-                    offloadSubscriber.onSuccess(result);
+                    offloadSubscriber.onComplete();
                     return null;
                 });
 
@@ -146,7 +173,7 @@ public class DefaultSignalOffloaderConcurrentSingleTest {
         }
     }
 
-    private static final class SubscriberImpl implements Subscriber<Integer> {
+    private static final class SubscriberImpl implements Subscriber {
 
         private final CountDownLatch awaitOnSubscribe = new CountDownLatch(1);
         @Nullable
@@ -154,11 +181,6 @@ public class DefaultSignalOffloaderConcurrentSingleTest {
         @Nullable
         private TerminalNotification terminalNotification;
         private List<AssertionError> unexpected = new ArrayList<>();
-        private final int expectedValue;
-
-        private SubscriberImpl(int expectedValue) {
-            this.expectedValue = expectedValue;
-        }
 
         @Override
         public void onSubscribe(Cancellable cancellable) {
@@ -167,13 +189,9 @@ public class DefaultSignalOffloaderConcurrentSingleTest {
         }
 
         @Override
-        public void onSuccess(Integer val) {
+        public void onComplete() {
             if (cancellable == null) {
                 unexpected.add(new AssertionError("onSuccess arrived before onSubscribe."));
-            }
-            if (expectedValue != val) {
-                unexpected.add(new AssertionError("Unexpected result. Expected: " + expectedValue
-                        + ", got: " + val));
             }
         }
 
