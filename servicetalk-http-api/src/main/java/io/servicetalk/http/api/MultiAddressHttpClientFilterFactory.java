@@ -20,17 +20,18 @@ import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.concurrent.api.Publisher;
 
 import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.function.UnaryOperator;
 
 import static java.util.Objects.requireNonNull;
 
 /**
- * A factory which filters the behavior of {@link StreamingHttpClient} instances created from a
- * {@link StreamingHttpClient}.
+ * A factory for {@link StreamingHttpClientFilter}.
+ *
  * @param <U> the type of address before resolution (unresolved address).
  */
 @FunctionalInterface
-public interface HttpClientGroupFilterFactory<U> {
+public interface MultiAddressHttpClientFilterFactory<U> {
     /**
      * Applies a filter function to the {@link StreamingHttpClient}.
      * @param address the {@code UnresolvedAddress} for the {@link StreamingHttpClient}
@@ -38,7 +39,7 @@ public interface HttpClientGroupFilterFactory<U> {
      * @param lbEvents the {@link LoadBalancer} events stream
      * @return the filtered {@link StreamingHttpClient}
      */
-    StreamingHttpClient apply(U address, StreamingHttpClient client, Publisher<Object> lbEvents);
+    StreamingHttpClientFilter apply(U address, StreamingHttpClient client, Publisher<Object> lbEvents);
 
     /**
      * Returns a composed function that first applies the {@code before} function to its input, and then applies
@@ -56,13 +57,13 @@ public interface HttpClientGroupFilterFactory<U> {
      * applies the {@code before} function and then applies this function
      * @return a composed function that first applies the {@code before} function and then applies this function
      */
-    default HttpClientGroupFilterFactory<U> append(HttpClientGroupFilterFactory<U> before) {
+    default MultiAddressHttpClientFilterFactory<U> append(MultiAddressHttpClientFilterFactory<U> before) {
         requireNonNull(before);
         return (group, client, lbEvents) -> apply(group, before.apply(group, client, lbEvents), lbEvents);
     }
 
     /**
-     * Returns a {@link HttpClientFilterFactory} that adapts from a {@link HttpClientGroupFilterFactory}.
+     * Returns a {@link HttpClientFilterFactory} that adapts from a {@link MultiAddressHttpClientFilterFactory}.
      *
      * @param address will be passed in all {@link HttpClientFilterFactory} applications
      * @return a {@link HttpClientFilterFactory} function with a provided {@link GroupKey}
@@ -78,32 +79,34 @@ public interface HttpClientGroupFilterFactory<U> {
      * @param <U> the type of address before resolution (unresolved address)
      * @return a function that always returns its input {@link StreamingHttpClient}.
      */
-    static <U> HttpClientGroupFilterFactory<U> identity() {
-        return (group, client, lbEvents) -> client;
+    static <U> MultiAddressHttpClientFilterFactory<U> identity() {
+        return (group, client, lbEvents) -> new StreamingHttpClientFilter(client);
     }
 
     /**
      * Returns a function that adapts from the {@link UnaryOperator}&lt;{@link StreamingHttpClient}&gt; function type to
-     * the {@link HttpClientGroupFilterFactory}.
+     * the {@link MultiAddressHttpClientFilterFactory}.
      *
      * @param function the function that is applied to the input {@link GroupKey} and {@link StreamingHttpClient}
      * @param <U> the type of address before resolution (unresolved address)
-     * @return the resulting {@link HttpClientGroupFilterFactory}
+     * @return the resulting {@link MultiAddressHttpClientFilterFactory}
      */
-    static <U> HttpClientGroupFilterFactory<U> from(BiFunction<U, StreamingHttpClient, StreamingHttpClient> function) {
+    static <U> MultiAddressHttpClientFilterFactory<U> from(
+            BiFunction<U, StreamingHttpClient, StreamingHttpClientFilter> function) {
         requireNonNull(function);
         return (address, client, lbEvents) -> function.apply(address, client);
     }
 
     /**
-     * Returns a function that adapts from the {@link UnaryOperator}&lt;{@link StreamingHttpClient}&gt; function type to
-     * the {@link HttpClientGroupFilterFactory}.
+     * Returns a function that adapts from a {@link Function}&lt;{@link StreamingHttpClient},
+     * {@link StreamingHttpClientFilter}&gt; to the {@link HttpClientFilterFactory}.
      *
-     * @param function the function that is applied to the input {@link StreamingHttpClient}
+     * @param function the function that is applied to the original {@link StreamingHttpClient}
      * @param <U> the type of address before resolution (unresolved address)
-     * @return the resulting {@link HttpClientGroupFilterFactory}
+     * @return A {@link HttpClientFilterFactory} that uses the passed filter {@link Function}.
      */
-    static <U> HttpClientGroupFilterFactory<U> from(UnaryOperator<StreamingHttpClient> function) {
+    static <U> MultiAddressHttpClientFilterFactory<U> from(
+            Function<StreamingHttpClient, StreamingHttpClientFilter> function) {
         requireNonNull(function);
         return (address, client, lbEvents) -> function.apply(client);
     }

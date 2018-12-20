@@ -28,8 +28,8 @@ import java.net.SocketOption;
 import java.util.function.Function;
 
 /**
- * A builder of {@link StreamingHttpClient} instances which have a capacity to call any server based on the parsed absolute-form
- * URL address information from each {@link StreamingHttpRequest}.
+ * A builder of {@link StreamingHttpClient} instances which have a capacity to call any server based on the parsed
+ * absolute-form URL address information from each {@link StreamingHttpRequest}.
  * <p>
  * It also provides a good set of default settings and configurations, which could be used by most users as-is or
  * could be overridden to address specific use cases.
@@ -123,11 +123,11 @@ public interface MultiAddressHttpClientBuilder<U, R> extends HttpClientBuilder<U
      * <pre>
      *     filter1 =&gt; filter2 =&gt; filter3 =&gt; client
      * </pre>
-     * @param function {@link HttpClientGroupFilterFactory} to decorate a {@link StreamingHttpClient} for the purpose
-     * of filtering.
+     * @param function {@link MultiAddressHttpClientFilterFactory} to decorate a {@link StreamingHttpClient} for the
+     * purpose of filtering.
      * @return {@code this}
      */
-    MultiAddressHttpClientBuilder<U, R> appendClientFilter(HttpClientGroupFilterFactory<U> function);
+    MultiAddressHttpClientBuilder<U, R> appendClientFilter(MultiAddressHttpClientFilterFactory<U> function);
 
     /**
      * Set a {@link SslConfigProvider} for appropriate {@link SslConfig}s.

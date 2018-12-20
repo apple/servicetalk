@@ -27,12 +27,12 @@ import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
-import io.servicetalk.http.api.HttpClientGroupFilterFactory;
 import io.servicetalk.http.api.HttpConnectionFilterFactory;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.api.HttpScheme;
 import io.servicetalk.http.api.MultiAddressHttpClientBuilder;
+import io.servicetalk.http.api.MultiAddressHttpClientFilterFactory;
 import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
 import io.servicetalk.http.api.SslConfigProvider;
 import io.servicetalk.http.api.StreamingHttpClient;
@@ -87,7 +87,7 @@ final class DefaultMultiAddressUrlHttpClientBuilder
     private final DefaultSingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> builderTemplate;
     private SslConfigProvider sslConfigProvider = plainByDefault();
     private int maxRedirects = DEFAULT_MAX_REDIRECTS;
-    private HttpClientGroupFilterFactory<HostAndPort> clientFilterFunction = HttpClientGroupFilterFactory.identity();
+    private MultiAddressHttpClientFilterFactory<HostAndPort> clientFilterFunction = MultiAddressHttpClientFilterFactory.identity();
     @Nullable
     private Function<HostAndPort, CharSequence> hostHeaderTransformer;
 
@@ -217,7 +217,7 @@ final class DefaultMultiAddressUrlHttpClientBuilder
 
         private final DefaultSingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> builderTemplate;
         private final SslConfigProvider sslConfigProvider;
-        private final HttpClientGroupFilterFactory<HostAndPort> clientFilterFunction;
+        private final MultiAddressHttpClientFilterFactory<HostAndPort> clientFilterFunction;
         @Nullable
         private final Function<HostAndPort, CharSequence> hostHeaderTransformer;
         private final ExecutionContext executionContext;
@@ -225,7 +225,7 @@ final class DefaultMultiAddressUrlHttpClientBuilder
         ClientFactory(
                 final DefaultSingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> builderTemplate,
                 final SslConfigProvider sslConfigProvider,
-                final HttpClientGroupFilterFactory<HostAndPort> clientFilterFunction,
+                final MultiAddressHttpClientFilterFactory<HostAndPort> clientFilterFunction,
                 @Nullable final Function<HostAndPort, CharSequence> hostHeaderTransformer,
                 final ExecutionContext executionContext) {
             // Copy existing builder to prevent runtime changes after buildStreaming() was invoked
@@ -549,7 +549,7 @@ final class DefaultMultiAddressUrlHttpClientBuilder
 
     @Override
     public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> appendClientFilter(
-            final HttpClientGroupFilterFactory<HostAndPort> function) {
+            final MultiAddressHttpClientFilterFactory<HostAndPort> function) {
         clientFilterFunction = clientFilterFunction.append(requireNonNull(function));
         return this;
     }
