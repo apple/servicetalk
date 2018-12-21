@@ -26,9 +26,10 @@ import java.util.function.UnaryOperator;
 import static java.util.Objects.requireNonNull;
 
 /**
- * A factory for {@link StreamingHttpClientFilter}.
+ * A factory for {@link StreamingHttpClientFilter} to filter clients for different unresolved addresses.
  *
  * @param <U> the type of address before resolution (unresolved address).
+ * @see HttpClientFilterFactory
  */
 @FunctionalInterface
 public interface MultiAddressHttpClientFilterFactory<U> {
