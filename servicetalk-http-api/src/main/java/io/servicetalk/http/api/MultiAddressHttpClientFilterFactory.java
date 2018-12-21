@@ -33,13 +33,15 @@ import static java.util.Objects.requireNonNull;
 @FunctionalInterface
 public interface MultiAddressHttpClientFilterFactory<U> {
     /**
-     * Applies a filter function to the {@link StreamingHttpClient}.
+     * Create a {@link StreamingHttpClientFilter} for the passed {@code address} using the provided
+     * {@link StreamingHttpClient}.
+     *
      * @param address the {@code UnresolvedAddress} for the {@link StreamingHttpClient}
      * @param client the {@link StreamingHttpClient} to filter
      * @param lbEvents the {@link LoadBalancer} events stream
      * @return the filtered {@link StreamingHttpClient}
      */
-    StreamingHttpClientFilter apply(U address, StreamingHttpClient client, Publisher<Object> lbEvents);
+    StreamingHttpClientFilter create(U address, StreamingHttpClient client, Publisher<Object> lbEvents);
 
     /**
      * Returns a composed function that first applies the {@code before} function to its input, and then applies
@@ -59,7 +61,7 @@ public interface MultiAddressHttpClientFilterFactory<U> {
      */
     default MultiAddressHttpClientFilterFactory<U> append(MultiAddressHttpClientFilterFactory<U> before) {
         requireNonNull(before);
-        return (group, client, lbEvents) -> apply(group, before.apply(group, client, lbEvents), lbEvents);
+        return (group, client, lbEvents) -> create(group, before.create(group, client, lbEvents), lbEvents);
     }
 
     /**
@@ -70,7 +72,7 @@ public interface MultiAddressHttpClientFilterFactory<U> {
      */
     default HttpClientFilterFactory asClientFilter(U address) {
         requireNonNull(address);
-        return (client, lbEvents) -> new StreamingHttpClientFilter(apply(address, client, lbEvents));
+        return (client, lbEvents) -> new StreamingHttpClientFilter(create(address, client, lbEvents));
     }
 
     /**
