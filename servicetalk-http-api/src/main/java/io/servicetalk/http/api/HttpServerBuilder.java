@@ -28,9 +28,11 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.net.SocketOption;
 import java.util.Map;
+import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.http.api.BlockingUtils.blockingInvocation;
+import static java.util.Objects.requireNonNull;
 
 /**
  * A builder for building HTTP Servers.
@@ -191,6 +193,33 @@ public interface HttpServerBuilder {
     HttpServerBuilder appendServiceFilter(HttpServiceFilterFactory factory);
 
     /**
+     * Conditionally append the filter to the chain of filters used to decorate the {@link StreamingHttpService} used by
+     * this builder.
+     * <p>
+     * Note this method will be used to decorate the {@link StreamingHttpRequestHandler} passed to
+     * {@link #listenStreaming(StreamingHttpRequestHandler)} before it is used by the server.
+     * <p>
+     * The order of execution of these filters are in order of append. If 3 filters are added as follows:
+     * <pre>
+     *     builder.append(filter1).append(filter2).append(filter3)
+     * </pre>
+     * accepting a request by a service wrapped by this filter chain, the order of invocation of these filters will be:
+     * <pre>
+     *     filter1 =&gt; filter2 =&gt; filter3 =&gt; service
+     * </pre>
+     * @param predicate the {@link Predicate} to test if the filter must be applied.
+     * @param factory {@link HttpServiceFilterFactory} to append.
+     * @return {@code this}
+     */
+    default HttpServerBuilder appendServiceFilter(Predicate<StreamingHttpRequest> predicate,
+                                                  HttpServiceFilterFactory factory) {
+        requireNonNull(predicate);
+        requireNonNull(factory);
+
+        return appendServiceFilter(service -> new ConditionalHttpServiceFilter(predicate, factory, service));
+    }
+
+    /**
      * Append the filter to the chain of filters used to decorate the {@link StreamingHttpService} used by this
      * builder.
      * <p>
@@ -210,6 +239,30 @@ public interface HttpServerBuilder {
      */
     default HttpServerBuilder appendRequestHandlerFilter(HttpRequestHandlerFilterFactory factory) {
         return appendServiceFilter(factory.asServiceFilterFactory());
+    }
+
+    /**
+     * Conditionally append the filter to the chain of filters used to decorate the {@link StreamingHttpService} used by
+     * this builder.
+     * <p>
+     * Note this method will be used to decorate the {@link StreamingHttpRequestHandler} passed to
+     * {@link #listenStreaming(StreamingHttpRequestHandler)} before it is used by the server.
+     * <p>
+     * The order of execution of these filters are in order of append. If 3 filters are added as follows:
+     * <pre>
+     *     builder.append(filter1).append(filter2).append(filter3)
+     * </pre>
+     * accepting a request by a service wrapped by this filter chain, the order of invocation of these filters will be:
+     * <pre>
+     *     filter1 =&gt; filter2 =&gt; filter3 =&gt; service
+     * </pre>
+     * @param predicate the {@link Predicate} to test if the filter must be applied.
+     * @param factory {@link HttpRequestHandlerFilterFactory} to append.
+     * @return {@code this}
+     */
+    default HttpServerBuilder appendRequestHandlerFilter(Predicate<StreamingHttpRequest> predicate,
+                                                         HttpRequestHandlerFilterFactory factory) {
+        return appendServiceFilter(predicate, factory.asServiceFilterFactory());
     }
 
     /**

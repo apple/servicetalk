@@ -13,15 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.http.utils.filter;
+package io.servicetalk.http.api;
 
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.http.api.HttpServiceContext;
-import io.servicetalk.http.api.StreamingHttpRequest;
-import io.servicetalk.http.api.StreamingHttpResponse;
-import io.servicetalk.http.api.StreamingHttpResponseFactory;
-import io.servicetalk.http.api.StreamingHttpService;
-import io.servicetalk.http.api.StreamingHttpServiceFilter;
 
 import static org.mockito.Mockito.mock;
 
@@ -36,8 +30,8 @@ public class ConditionalHttpServiceFilterTest extends AbstractConditionalHttpFil
     };
 
     private static final StreamingHttpServiceFilter FILTER =
-            new ConditionalHttpServiceFilter((__, req) -> TEST_REQ_PREDICATE.test(req),
-                    new StreamingHttpServiceFilter(TEST_SERVICE) {
+            new ConditionalHttpServiceFilter(TEST_REQ_PREDICATE,
+                    service -> new StreamingHttpServiceFilter(service) {
                         @Override
                         public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
                                                                     final StreamingHttpRequest req,

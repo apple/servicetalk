@@ -13,15 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.http.utils.filter;
+package io.servicetalk.http.api;
 
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.http.api.HttpExecutionStrategy;
-import io.servicetalk.http.api.StreamingHttpClient;
-import io.servicetalk.http.api.StreamingHttpClientFilter;
-import io.servicetalk.http.api.StreamingHttpRequest;
-import io.servicetalk.http.api.StreamingHttpResponse;
-import io.servicetalk.http.api.TestStreamingHttpClient;
+
+import static io.servicetalk.concurrent.api.Publisher.empty;
 
 public class ConditionalHttpClientFilterTest extends AbstractConditionalHttpFilterTest {
     private static final StreamingHttpClient TEST_CLIENT = new TestStreamingHttpClient(REQ_RES_FACTORY, TEST_CTX) {
@@ -34,13 +30,13 @@ public class ConditionalHttpClientFilterTest extends AbstractConditionalHttpFilt
 
     private static final StreamingHttpClientFilter FILTER =
             new ConditionalHttpClientFilter(TEST_REQ_PREDICATE,
-                    new StreamingHttpClientFilter(TEST_CLIENT) {
+                    (client, __) -> new StreamingHttpClientFilter(client) {
                         @Override
                         public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
                                                                      final StreamingHttpRequest req) {
                             return super.request(strategy, markFiltered(req));
                         }
-                    }, TEST_CLIENT);
+                    }, TEST_CLIENT, empty());
 
     @Override
     protected Single<StreamingHttpResponse> sendTestRequest(final StreamingHttpRequest req) {
