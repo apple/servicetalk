@@ -15,6 +15,8 @@
  */
 package io.servicetalk.concurrent.internal;
 
+import io.servicetalk.concurrent.Executor;
+
 /**
  * A factory to create new instances of {@link SignalOffloader}.
  */
@@ -23,7 +25,16 @@ public interface SignalOffloaderFactory {
     /**
      * Creates a new {@link SignalOffloader}.
      *
+     * @param executor {@link Executor} to be used by the returned {@link SignalOffloader}.
      * @return A new {@link SignalOffloader}.
      */
-    SignalOffloader newSignalOffloader();
+    SignalOffloader newSignalOffloader(Executor executor);
+
+    /**
+     * Returns {@code true} if and only if all {@link SignalOffloader} instances will always provide thread affinity.
+     * A {@link SignalOffloader} providing thread affinity will offload all signals using a single thread.
+     *
+     * @return {@code true} if and only if all {@link SignalOffloader} instances will always provide thread affinity.
+     */
+    boolean threadAffinity();
 }

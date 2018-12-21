@@ -24,23 +24,27 @@ import io.servicetalk.concurrent.internal.SignalOffloaderFactory;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 
-import static io.servicetalk.concurrent.internal.SignalOffloaders.newOffloaderFor;
+import static io.servicetalk.concurrent.internal.SignalOffloaders.hasThreadAffinity;
+import static io.servicetalk.concurrent.internal.SignalOffloaders.newThreadBasedOffloader;
 
 /**
  * An {@link Executor} which is also a {@link SignalOffloaderFactory} and hence can influence a specific
  * {@link SignalOffloader} used by this {@link Executor}.
  */
-public class OffloadAwareExecutor implements Executor, SignalOffloaderFactory {
+public class OffloaderAwareExecutor implements Executor, SignalOffloaderFactory {
 
     private final Executor delegate;
+    private final SignalOffloaderFactory offloaderFactory;
 
     /**
      * New instance.
      *
      * @param delegate Actual {@link Executor} to use.
+     * @param offloaderFactory {@link SignalOffloaderFactory} to use.
      */
-    public OffloadAwareExecutor(final Executor delegate) {
+    public OffloaderAwareExecutor(final Executor delegate, final SignalOffloaderFactory offloaderFactory) {
         this.delegate = delegate;
+        this.offloaderFactory = offloaderFactory;
     }
 
     @Override
@@ -65,7 +69,36 @@ public class OffloadAwareExecutor implements Executor, SignalOffloaderFactory {
     }
 
     @Override
-    public SignalOffloader newSignalOffloader() {
-        return newOffloaderFor(delegate);
+    public SignalOffloader newSignalOffloader(final io.servicetalk.concurrent.Executor executor) {
+        return offloaderFactory.newSignalOffloader(executor);
+    }
+
+    @Override
+    public boolean threadAffinity() {
+        return offloaderFactory.threadAffinity();
+    }
+
+    /**
+     * If the passed {@link Executor} does not honor thread affinity then return a new {@link Executor} that does honor
+     * thread affinity.
+     *
+     * @param executor {@link Executor} to inspect and wrap if required.
+     * @return An {@link Executor} that honors thread affinity.
+     */
+    public static Executor ensureThreadAffinity(final Executor executor) {
+        if (hasThreadAffinity(executor)) {
+            return executor;
+        }
+        return new OffloaderAwareExecutor(executor, new SignalOffloaderFactory() {
+            @Override
+            public SignalOffloader newSignalOffloader(final io.servicetalk.concurrent.Executor executor) {
+                return newThreadBasedOffloader(executor);
+            }
+
+            @Override
+            public boolean threadAffinity() {
+                return true;
+            }
+        });
     }
 }

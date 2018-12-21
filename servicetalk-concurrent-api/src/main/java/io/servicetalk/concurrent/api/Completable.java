@@ -39,8 +39,8 @@ import static io.servicetalk.concurrent.api.CompletableDoOnUtils.doOnCompleteSup
 import static io.servicetalk.concurrent.api.CompletableDoOnUtils.doOnErrorSupplier;
 import static io.servicetalk.concurrent.api.CompletableDoOnUtils.doOnSubscribeSupplier;
 import static io.servicetalk.concurrent.api.Executors.immediate;
-import static io.servicetalk.concurrent.api.Executors.newOffloaderFor;
 import static io.servicetalk.concurrent.internal.ConcurrentPlugins.getCompletablePlugin;
+import static io.servicetalk.concurrent.internal.SignalOffloaders.newOffloaderFor;
 import static java.util.Objects.requireNonNull;
 import static java.util.function.Function.identity;
 

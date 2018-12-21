@@ -61,8 +61,13 @@ public final class OffloaderAwareExecutor implements Executor, SignalOffloaderFa
     }
 
     @Override
-    public SignalOffloader newSignalOffloader() {
+    public SignalOffloader newSignalOffloader(final io.servicetalk.concurrent.Executor executor) {
         return threadBased ? newThreadBasedOffloader(delegate) : newTaskBasedOffloader(delegate);
+    }
+
+    @Override
+    public boolean threadAffinity() {
+        return threadBased;
     }
 
     @Override

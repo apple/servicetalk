@@ -48,7 +48,6 @@ import java.util.function.Supplier;
 
 import static io.servicetalk.concurrent.api.EmptyPublisher.emptyPublisher;
 import static io.servicetalk.concurrent.api.Executors.immediate;
-import static io.servicetalk.concurrent.api.Executors.newOffloaderFor;
 import static io.servicetalk.concurrent.api.NeverPublisher.neverPublisher;
 import static io.servicetalk.concurrent.api.PublisherDoOnUtils.doOnCancelSupplier;
 import static io.servicetalk.concurrent.api.PublisherDoOnUtils.doOnCompleteSupplier;
@@ -58,6 +57,7 @@ import static io.servicetalk.concurrent.api.PublisherDoOnUtils.doOnRequestSuppli
 import static io.servicetalk.concurrent.api.PublisherDoOnUtils.doOnSubscribeSupplier;
 import static io.servicetalk.concurrent.internal.ConcurrentPlugins.getPublisherPlugin;
 import static io.servicetalk.concurrent.internal.EmptySubscription.EMPTY_SUBSCRIPTION;
+import static io.servicetalk.concurrent.internal.SignalOffloaders.newOffloaderFor;
 import static java.util.Objects.requireNonNull;
 
 /**

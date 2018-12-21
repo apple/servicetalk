@@ -18,13 +18,12 @@ package io.servicetalk.redis.api;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.concurrent.api.internal.OffloadAwareExecutor;
-import io.servicetalk.concurrent.internal.SignalOffloader;
 
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.concurrent.internal.SignalOffloaders.newThreadBasedOffloader;
+import static io.servicetalk.concurrent.api.internal.OffloaderAwareExecutor.ensureThreadAffinity;
+import static java.util.Objects.requireNonNull;
 
 /**
  * Default implementation for {@link RedisExecutionStrategy}.
@@ -40,12 +39,7 @@ final class DefaultRedisExecutionStrategy implements RedisExecutionStrategy {
 
     DefaultRedisExecutionStrategy(@Nullable final Executor executor, final byte offloads,
                                   final boolean threadAffinity) {
-        this.executor = threadAffinity && executor != null ? new OffloadAwareExecutor(executor) {
-            @Override
-            public SignalOffloader newSignalOffloader() {
-                return newThreadBasedOffloader(executor);
-            }
-        } : executor;
+        this.executor = executor != null ? threadAffinity ? ensureThreadAffinity(executor) : executor : null;
         this.offloads = offloads;
         this.threadAffinity = threadAffinity;
     }
@@ -87,12 +81,8 @@ final class DefaultRedisExecutionStrategy implements RedisExecutionStrategy {
     }
 
     private Executor executor(final Executor fallback) {
-        return executor == null ? threadAffinity ? new OffloadAwareExecutor(fallback) {
-            @Override
-            public SignalOffloader newSignalOffloader() {
-                return newThreadBasedOffloader(fallback);
-            }
-        } : fallback : executor;
+        requireNonNull(fallback);
+        return executor == null ? threadAffinity ? ensureThreadAffinity(fallback) : fallback : executor;
     }
 
     // visible for tests

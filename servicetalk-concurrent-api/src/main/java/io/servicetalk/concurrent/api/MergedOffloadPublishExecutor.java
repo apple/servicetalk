@@ -22,7 +22,8 @@ import org.reactivestreams.Subscriber;
 
 import java.util.function.Consumer;
 
-import static io.servicetalk.concurrent.api.Executors.newOffloaderFor;
+import static io.servicetalk.concurrent.internal.SignalOffloaders.hasThreadAffinity;
+import static io.servicetalk.concurrent.internal.SignalOffloaders.newOffloaderFor;
 
 final class MergedOffloadPublishExecutor extends DelegatingExecutor implements SignalOffloaderFactory {
 
@@ -34,8 +35,13 @@ final class MergedOffloadPublishExecutor extends DelegatingExecutor implements S
     }
 
     @Override
-    public SignalOffloader newSignalOffloader() {
+    public SignalOffloader newSignalOffloader(final io.servicetalk.concurrent.Executor executor) {
         return new PublishOnlySignalOffloader(delegate, fallbackExecutor);
+    }
+
+    @Override
+    public boolean threadAffinity() {
+        return hasThreadAffinity(delegate) && hasThreadAffinity(fallbackExecutor);
     }
 
     private static final class PublishOnlySignalOffloader implements SignalOffloader {
@@ -45,9 +51,7 @@ final class MergedOffloadPublishExecutor extends DelegatingExecutor implements S
 
         PublishOnlySignalOffloader(final Executor publishOnExecutor, final Executor fallbackExecutor) {
             offloader = newOffloaderFor(publishOnExecutor);
-            fallback = fallbackExecutor instanceof SignalOffloaderFactory ?
-                    ((SignalOffloaderFactory) fallbackExecutor).newSignalOffloader() :
-                    newOffloaderFor(fallbackExecutor);
+            fallback = newOffloaderFor(fallbackExecutor);
         }
 
         @Override

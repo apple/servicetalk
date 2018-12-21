@@ -21,14 +21,12 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.concurrent.api.internal.OffloadAwareExecutor;
-import io.servicetalk.concurrent.internal.SignalOffloader;
 
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.concurrent.internal.SignalOffloaders.newThreadBasedOffloader;
+import static io.servicetalk.concurrent.api.internal.OffloaderAwareExecutor.ensureThreadAffinity;
 import static java.util.Objects.requireNonNull;
 import static java.util.function.Function.identity;
 
@@ -46,12 +44,7 @@ final class DefaultHttpExecutionStrategy implements HttpExecutionStrategy {
     private final boolean threadAffinity;
 
     DefaultHttpExecutionStrategy(@Nullable final Executor executor, final byte offloads, final boolean threadAffinity) {
-        this.executor = threadAffinity && executor != null ? new OffloadAwareExecutor(executor) {
-            @Override
-            public SignalOffloader newSignalOffloader() {
-                return newThreadBasedOffloader(executor);
-            }
-        } : executor;
+        this.executor = executor != null ? threadAffinity ? ensureThreadAffinity(executor) : executor : null;
         this.offloads = offloads;
         this.threadAffinity = threadAffinity;
     }
@@ -188,12 +181,7 @@ final class DefaultHttpExecutionStrategy implements HttpExecutionStrategy {
 
     private Executor executor(final Executor fallback) {
         requireNonNull(fallback);
-        return executor == null ? threadAffinity ? new OffloadAwareExecutor(fallback) {
-            @Override
-            public SignalOffloader newSignalOffloader() {
-                return newThreadBasedOffloader(fallback);
-            }
-        } : fallback : executor;
+        return executor == null ? threadAffinity ? ensureThreadAffinity(fallback) : fallback : executor;
     }
 
     // Visible for testing

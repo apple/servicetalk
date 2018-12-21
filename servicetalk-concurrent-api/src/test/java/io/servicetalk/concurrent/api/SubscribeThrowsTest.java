@@ -56,7 +56,7 @@ public class SubscribeThrowsTest {
 
     @Test
     public void publisherSubscriberWithOffloaderThrows() {
-        SignalOffloader offloader = ((AbstractOffloaderAwareExecutor) immediate()).newSignalOffloader();
+        SignalOffloader offloader = ((AbstractOffloaderAwareExecutor) immediate()).newSignalOffloader(immediate());
         @SuppressWarnings("unchecked")
         Subscriber<String> subscriber = (Subscriber<String>) mock(Subscriber.class);
         Publisher<String> p = new Publisher<String>() {
@@ -84,7 +84,7 @@ public class SubscribeThrowsTest {
 
     @Test
     public void singleSubscriberWithOffloaderThrows() {
-        SignalOffloader offloader = ((AbstractOffloaderAwareExecutor) immediate()).newSignalOffloader();
+        SignalOffloader offloader = ((AbstractOffloaderAwareExecutor) immediate()).newSignalOffloader(immediate());
         @SuppressWarnings("unchecked")
         Single.Subscriber<String> subscriber = (Single.Subscriber<String>) mock(Single.Subscriber.class);
         Single<String> s = new Single<String>() {
@@ -112,7 +112,7 @@ public class SubscribeThrowsTest {
 
     @Test
     public void completableSubscriberWithOffloaderThrows() {
-        SignalOffloader offloader = ((AbstractOffloaderAwareExecutor) immediate()).newSignalOffloader();
+        SignalOffloader offloader = ((AbstractOffloaderAwareExecutor) immediate()).newSignalOffloader(immediate());
         Completable.Subscriber subscriber = mock(Completable.Subscriber.class);
         Completable c = new Completable() {
             @Override

@@ -35,8 +35,13 @@ final class ImmediateExecutor extends AbstractOffloaderAwareExecutor {
     }
 
     @Override
-    public SignalOffloader newSignalOffloader() {
+    public SignalOffloader newSignalOffloader(final io.servicetalk.concurrent.Executor executor) {
         return NOOP_OFFLOADER;
+    }
+
+    @Override
+    public boolean threadAffinity() {
+        return false;
     }
 
     @Override
