@@ -18,6 +18,7 @@ package io.servicetalk.redis.api;
 import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.concurrent.api.Publisher;
 
+import java.util.function.Function;
 import java.util.function.UnaryOperator;
 
 import static java.util.Objects.requireNonNull;
@@ -79,8 +80,8 @@ public interface RedisClientFilterFactory {
      * @param function the function that is applied to the input {@link RedisClient}
      * @return the filtered {@link RedisClient}
      */
-    static RedisClientFilterFactory from(UnaryOperator<RedisClient> function) {
+    static RedisClientFilterFactory from(Function<RedisClient, RedisClientFilter> function) {
         requireNonNull(function);
-        return (client, subscribeLBEvents, pipelinedLBEvents) -> new RedisClientFilter(function.apply(client));
+        return (client, subscribeLBEvents, pipelinedLBEvents) -> function.apply(client);
     }
 }
