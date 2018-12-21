@@ -44,7 +44,6 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.api.Completable.completed;
-import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.concurrent.internal.FlowControlUtil.addWithOverflowProtectionIfNotNegative;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.isRequestNValid;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.newExceptionForInvalidRequestN;
@@ -100,7 +99,7 @@ public class SignalOffloaderConcurrentPublisherTest {
             results[i] = pairs[i].sendItems((i + 1) * 100);
         }
 
-        awaitIndefinitely(completed().mergeDelayError(results));
+        completed().mergeDelayError(results).toFuture().get();
         state.awaitTermination();
 
         for (int i = 0; i < entityCount; i++) {
@@ -112,7 +111,7 @@ public class SignalOffloaderConcurrentPublisherTest {
     @Test
     public void concurrentSignalsFromSubscriberAndSubscription() throws Exception {
         OffloaderHolder.SubscriberSubscriptionPair pair = state.newPair(10_000);
-        awaitIndefinitely(pair.sendItems(10_000));
+        pair.sendItems(10_000).toFuture().get();
         state.awaitTermination();
         pair.subscriber.verifyNoErrors();
         pair.subscription.verifyRequested(10_000);
@@ -132,7 +131,7 @@ public class SignalOffloaderConcurrentPublisherTest {
 
         void shutdown() {
             try {
-                Await.awaitIndefinitely(executor.closeAsync());
+                executor.closeAsync().toFuture().get();
                 emitters.shutdownNow();
             } catch (Exception e) {
                 LOGGER.warn("Failed to close the executor {}.", executor, e);

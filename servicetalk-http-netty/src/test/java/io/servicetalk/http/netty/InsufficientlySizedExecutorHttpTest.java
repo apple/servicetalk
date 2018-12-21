@@ -130,7 +130,7 @@ public class InsufficientlySizedExecutorHttpTest {
     private void initClientAndServer(boolean clientUnderProvisioned) throws Exception {
         InetSocketAddress addr;
         executor = getExecutorForCapacity(capacity, !threadBased);
-        HttpExecutionStrategies.Builder strategyBuilder = customStrategyBuilder().offloadAll().executor(executor);
+        final HttpExecutionStrategies.Builder strategyBuilder = customStrategyBuilder().offloadAll().executor(executor);
         final HttpExecutionStrategy strategy = threadBased ? strategyBuilder.offloadWithThreadAffinity().build() :
                 strategyBuilder.build();
         if (clientUnderProvisioned) {

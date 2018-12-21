@@ -42,7 +42,6 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.api.Completable.completed;
-import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.concurrent.internal.TerminalNotification.error;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
@@ -93,7 +92,7 @@ public class SignalOffloaderConcurrentCompletableTest {
             results[i] = pairs[i].sendResult();
         }
 
-        awaitIndefinitely(completed().mergeDelayError(results));
+        completed().mergeDelayError(results).toFuture().get();
         state.awaitTermination();
 
         for (int i = 0; i < entityCount; i++) {
@@ -116,7 +115,7 @@ public class SignalOffloaderConcurrentCompletableTest {
 
         void shutdown() {
             try {
-                Await.awaitIndefinitely(executor.closeAsync());
+                executor.closeAsync().toFuture().get();
                 emitters.shutdownNow();
             } catch (Exception e) {
                 LOGGER.warn("Failed to close the executor {}.", executor, e);

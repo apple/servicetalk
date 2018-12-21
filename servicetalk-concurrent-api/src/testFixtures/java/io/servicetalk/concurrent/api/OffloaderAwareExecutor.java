@@ -24,6 +24,7 @@ import java.util.concurrent.TimeUnit;
 
 import static io.servicetalk.concurrent.internal.SignalOffloaders.newTaskBasedOffloader;
 import static io.servicetalk.concurrent.internal.SignalOffloaders.newThreadBasedOffloader;
+import static java.util.Objects.requireNonNull;
 
 /**
  * An {@link Executor} which is also a {@link SignalOffloaderFactory}.
@@ -40,7 +41,7 @@ public final class OffloaderAwareExecutor implements Executor, SignalOffloaderFa
      * @param threadBased If {@link SignalOffloader} created by this {@link Executor} will have thread affinity.
      */
     public OffloaderAwareExecutor(final Executor delegate, boolean threadBased) {
-        this.delegate = delegate;
+        this.delegate = requireNonNull(delegate);
         this.threadBased = threadBased;
     }
 

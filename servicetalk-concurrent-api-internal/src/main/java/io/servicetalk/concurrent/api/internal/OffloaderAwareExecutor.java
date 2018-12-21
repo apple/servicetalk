@@ -26,12 +26,13 @@ import java.util.concurrent.TimeUnit;
 
 import static io.servicetalk.concurrent.internal.SignalOffloaders.hasThreadAffinity;
 import static io.servicetalk.concurrent.internal.SignalOffloaders.newThreadBasedOffloader;
+import static java.util.Objects.requireNonNull;
 
 /**
  * An {@link Executor} which is also a {@link SignalOffloaderFactory} and hence can influence a specific
  * {@link SignalOffloader} used by this {@link Executor}.
  */
-public class OffloaderAwareExecutor implements Executor, SignalOffloaderFactory {
+public final class OffloaderAwareExecutor implements Executor, SignalOffloaderFactory {
 
     private final Executor delegate;
     private final SignalOffloaderFactory offloaderFactory;
@@ -43,8 +44,8 @@ public class OffloaderAwareExecutor implements Executor, SignalOffloaderFactory 
      * @param offloaderFactory {@link SignalOffloaderFactory} to use.
      */
     public OffloaderAwareExecutor(final Executor delegate, final SignalOffloaderFactory offloaderFactory) {
-        this.delegate = delegate;
-        this.offloaderFactory = offloaderFactory;
+        this.delegate = requireNonNull(delegate);
+        this.offloaderFactory = requireNonNull(offloaderFactory);
     }
 
     @Override
