@@ -17,8 +17,6 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.concurrent.api.Single;
 
-import static io.servicetalk.concurrent.api.Publisher.empty;
-
 public class ConditionalHttpClientFilterTest extends AbstractConditionalHttpFilterTest {
     private static final StreamingHttpClient TEST_CLIENT = new TestStreamingHttpClient(REQ_RES_FACTORY, TEST_CTX) {
         @Override
@@ -30,13 +28,13 @@ public class ConditionalHttpClientFilterTest extends AbstractConditionalHttpFilt
 
     private static final StreamingHttpClientFilter FILTER =
             new ConditionalHttpClientFilter(TEST_REQ_PREDICATE,
-                    (client, __) -> new StreamingHttpClientFilter(client) {
+                    new StreamingHttpClientFilter(TEST_CLIENT) {
                         @Override
                         public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
                                                                      final StreamingHttpRequest req) {
                             return super.request(strategy, markFiltered(req));
                         }
-                    }, TEST_CLIENT, empty());
+                    }, TEST_CLIENT);
 
     @Override
     protected Single<StreamingHttpResponse> sendTestRequest(final StreamingHttpRequest req) {

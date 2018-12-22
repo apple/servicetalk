@@ -193,8 +193,8 @@ public interface HttpServerBuilder {
     HttpServerBuilder appendServiceFilter(HttpServiceFilterFactory factory);
 
     /**
-     * Conditionally append the filter to the chain of filters used to decorate the {@link StreamingHttpService} used by
-     * this builder.
+     * Append the filter to the chain of filters used to decorate the {@link StreamingHttpService} used by this builder,
+     * for every request that passes the provided {@link Predicate}.
      * <p>
      * Note this method will be used to decorate the {@link StreamingHttpRequestHandler} passed to
      * {@link #listenStreaming(StreamingHttpRequestHandler)} before it is used by the server.
@@ -216,7 +216,8 @@ public interface HttpServerBuilder {
         requireNonNull(predicate);
         requireNonNull(factory);
 
-        return appendServiceFilter(service -> new ConditionalHttpServiceFilter(predicate, factory, service));
+        return appendServiceFilter(service ->
+                new ConditionalHttpServiceFilter(predicate, factory.create(service), service));
     }
 
     /**

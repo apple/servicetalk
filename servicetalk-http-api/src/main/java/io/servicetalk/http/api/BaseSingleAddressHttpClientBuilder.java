@@ -17,7 +17,6 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.client.api.ConnectionFactoryFilter;
-import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.api.LoadBalancerFactory;
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
@@ -27,7 +26,6 @@ import io.servicetalk.transport.api.SslConfig;
 
 import java.io.InputStream;
 import java.net.SocketOption;
-import java.util.function.BiFunction;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
@@ -76,6 +74,14 @@ interface BaseSingleAddressHttpClientBuilder<U, R, SDE extends ServiceDiscoverer
     BaseSingleAddressHttpClientBuilder<U, R, SDE> appendConnectionFilter(HttpConnectionFilterFactory factory);
 
     @Override
+    default BaseSingleAddressHttpClientBuilder<U, R, SDE> appendConnectionFilter(
+            Predicate<StreamingHttpRequest> predicate,
+            HttpConnectionFilterFactory factory) {
+        return (BaseSingleAddressHttpClientBuilder<U, R, SDE>)
+                HttpClientBuilder.super.appendConnectionFilter(predicate, factory);
+    }
+
+    @Override
     BaseSingleAddressHttpClientBuilder<U, R, SDE> appendConnectionFactoryFilter(
             ConnectionFactoryFilter<R, StreamingHttpConnection> factory);
 
@@ -122,17 +128,13 @@ interface BaseSingleAddressHttpClientBuilder<U, R, SDE extends ServiceDiscoverer
      * </pre>
      * @param factory {@link HttpClientFilterFactory} to decorate a {@link StreamingHttpClient} for the purpose of
      * filtering.
-     * The signature of the {@link BiFunction} is as follows:
-     * <pre>
-     *     PostFilteredHttpClient func(PreFilteredHttpClient, {@link LoadBalancer#eventStream()})
-     * </pre>
      * @return {@code this}
      */
     BaseSingleAddressHttpClientBuilder<U, R, SDE> appendClientFilter(HttpClientFilterFactory factory);
 
     /**
-     * Conditionally append the filter to the chain of filters used to decorate the {@link StreamingHttpClient} created
-     * by this builder.
+     * Append the filter to the chain of filters used to decorate the {@link StreamingHttpClient} created by this
+     * builder, for every request that passes the provided {@link Predicate}.
      * <p>
      * Note this method will be used to decorate the result of {@link #buildStreaming()} before it is
      * returned to the user.
@@ -145,13 +147,9 @@ interface BaseSingleAddressHttpClientBuilder<U, R, SDE extends ServiceDiscoverer
      * <pre>
      *     filter1 =&gt; filter2 =&gt; filter3 =&gt; client
      * </pre>
+     * @param predicate the {@link Predicate} to test if the filter must be applied.
      * @param factory {@link HttpClientFilterFactory} to decorate a {@link StreamingHttpClient} for the purpose of
      * filtering.
-     * The signature of the {@link BiFunction} is as follows:
-     * <pre>
-     *     PostFilteredHttpClient func(PreFilteredHttpClient, {@link LoadBalancer#eventStream()})
-     * </pre>
-     * @param predicate the {@link Predicate} to test if the filter must be applied.
      * @return {@code this}
      */
     default BaseSingleAddressHttpClientBuilder<U, R, SDE> appendClientFilter(Predicate<StreamingHttpRequest> predicate,
@@ -160,7 +158,7 @@ interface BaseSingleAddressHttpClientBuilder<U, R, SDE extends ServiceDiscoverer
         requireNonNull(factory);
 
         return appendClientFilter((client, lbEvents) ->
-                new ConditionalHttpClientFilter(predicate, factory, client, lbEvents));
+                new ConditionalHttpClientFilter(predicate, factory.create(client, lbEvents), client));
     }
 
     /**

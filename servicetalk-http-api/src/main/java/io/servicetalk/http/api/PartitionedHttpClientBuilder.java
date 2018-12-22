@@ -29,6 +29,7 @@ import org.reactivestreams.Subscriber;
 
 import java.net.SocketOption;
 import java.util.function.BiFunction;
+import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
 /**
@@ -84,6 +85,13 @@ public interface PartitionedHttpClientBuilder<U, R>
     PartitionedHttpClientBuilder<U, R> appendConnectionFilter(HttpConnectionFilterFactory factory);
 
     @Override
+    default PartitionedHttpClientBuilder<U, R> appendConnectionFilter(Predicate<StreamingHttpRequest> predicate,
+                                                                      HttpConnectionFilterFactory factory) {
+        return (PartitionedHttpClientBuilder<U, R>)
+                BaseSingleAddressHttpClientBuilder.super.appendConnectionFilter(predicate, factory);
+    }
+
+    @Override
     PartitionedHttpClientBuilder<U, R> appendConnectionFactoryFilter(
             ConnectionFactoryFilter<R, StreamingHttpConnection> factory);
 
@@ -102,6 +110,13 @@ public interface PartitionedHttpClientBuilder<U, R>
 
     @Override
     PartitionedHttpClientBuilder<U, R> appendClientFilter(HttpClientFilterFactory function);
+
+    @Override
+    default PartitionedHttpClientBuilder<U, R> appendClientFilter(Predicate<StreamingHttpRequest> predicate,
+                                                                  HttpClientFilterFactory factory) {
+        return (PartitionedHttpClientBuilder<U, R>)
+                BaseSingleAddressHttpClientBuilder.super.appendClientFilter(predicate, factory);
+    }
 
     @Override
     PartitionedHttpClientBuilder<U, R> sslConfig(@Nullable SslConfig sslConfig);

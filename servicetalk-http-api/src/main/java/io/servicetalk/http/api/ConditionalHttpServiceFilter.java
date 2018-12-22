@@ -24,11 +24,11 @@ final class ConditionalHttpServiceFilter extends StreamingHttpServiceFilter {
     private final StreamingHttpServiceFilter predicatedFilter;
 
     ConditionalHttpServiceFilter(final Predicate<StreamingHttpRequest> predicate,
-                                 final HttpServiceFilterFactory factory,
+                                 final StreamingHttpServiceFilter predicatedFilter,
                                  final StreamingHttpService service) {
         super(service);
         this.predicate = predicate;
-        predicatedFilter = factory.create(service);
+        this.predicatedFilter = predicatedFilter;
     }
 
     @Override

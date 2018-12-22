@@ -32,7 +32,7 @@ public class ConditionalHttpConnectionFilterTest extends AbstractConditionalHttp
 
     private static final StreamingHttpConnectionFilter FILTER =
             new ConditionalHttpConnectionFilter(TEST_REQ_PREDICATE,
-                    connection -> new StreamingHttpConnectionFilter(connection) {
+                    new StreamingHttpConnectionFilter(TEST_CONNECTION) {
                         @Override
                         public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
                                                                      final StreamingHttpRequest req) {

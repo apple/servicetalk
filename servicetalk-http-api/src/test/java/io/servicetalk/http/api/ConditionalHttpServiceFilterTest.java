@@ -31,7 +31,7 @@ public class ConditionalHttpServiceFilterTest extends AbstractConditionalHttpFil
 
     private static final StreamingHttpServiceFilter FILTER =
             new ConditionalHttpServiceFilter(TEST_REQ_PREDICATE,
-                    service -> new StreamingHttpServiceFilter(service) {
+                    new StreamingHttpServiceFilter(TEST_SERVICE) {
                         @Override
                         public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
                                                                     final StreamingHttpRequest req,

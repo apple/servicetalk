@@ -169,8 +169,8 @@ interface HttpClientBuilder<U, R, SDE extends ServiceDiscovererEvent<R>> {
     HttpClientBuilder<U, R, SDE> appendConnectionFilter(HttpConnectionFilterFactory factory);
 
     /**
-     * Conditionally append the filter to the chain of filters used to decorate the {@link StreamingHttpConnection}
-     * created by this builder.
+     * Append the filter to the chain of filters used to decorate the {@link StreamingHttpConnection} created by this
+     * builder, for every request that passes the provided {@link Predicate}.
      * <p>
      * Filtering allows you to wrap a {@link StreamingHttpConnection} and modify behavior during request/response
      * processing
@@ -195,7 +195,7 @@ interface HttpClientBuilder<U, R, SDE extends ServiceDiscovererEvent<R>> {
         requireNonNull(factory);
 
         return appendConnectionFilter(connection ->
-                new ConditionalHttpConnectionFilter(predicate, factory, connection));
+                new ConditionalHttpConnectionFilter(predicate, factory.create(connection), connection));
     }
 
     /**

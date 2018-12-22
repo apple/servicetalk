@@ -24,11 +24,11 @@ final class ConditionalHttpConnectionFilter extends StreamingHttpConnectionFilte
     private final StreamingHttpConnectionFilter predicatedFilter;
 
     ConditionalHttpConnectionFilter(final Predicate<StreamingHttpRequest> predicate,
-                                    final HttpConnectionFilterFactory factory,
+                                    final StreamingHttpConnectionFilter predicatedFilter,
                                     final StreamingHttpConnection connection) {
         super(connection);
         this.predicate = predicate;
-        predicatedFilter = factory.create(connection);
+        this.predicatedFilter = predicatedFilter;
     }
 
     @Override

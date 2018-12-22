@@ -15,29 +15,27 @@
  */
 package io.servicetalk.http.api;
 
-import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 
 import java.util.function.Predicate;
 
 final class ConditionalHttpClientFilter extends StreamingHttpClientFilter {
     private final Predicate<StreamingHttpRequest> predicate;
-    private final StreamingHttpClientFilter predicatedFilter;
+    private final StreamingHttpClient predicatedClient;
 
     ConditionalHttpClientFilter(final Predicate<StreamingHttpRequest> predicate,
-                                final HttpClientFilterFactory factory,
-                                final StreamingHttpClient client,
-                                final Publisher<Object> lbEvents) {
+                                final StreamingHttpClient predicatedClient,
+                                final StreamingHttpClient client) {
         super(client);
         this.predicate = predicate;
-        predicatedFilter = factory.create(client, lbEvents);
+        this.predicatedClient = predicatedClient;
     }
 
     @Override
     public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
                                                  final StreamingHttpRequest req) {
         if (predicate.test(req)) {
-            return predicatedFilter.request(strategy, req);
+            return predicatedClient.request(strategy, req);
         }
 
         return delegate().request(strategy, req);
