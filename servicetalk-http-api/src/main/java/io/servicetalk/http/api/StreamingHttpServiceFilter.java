@@ -18,8 +18,6 @@ package io.servicetalk.http.api;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
 
-import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
-
 /**
  * An implementation of {@link StreamingHttpService} that delegates all methods to the provided
  * {@link StreamingHttpService}.
@@ -35,7 +33,7 @@ public class StreamingHttpServiceFilter extends StreamingHttpService {
      * @param delegate {@link StreamingHttpService} to delegate all calls.
      */
     public StreamingHttpServiceFilter(final StreamingHttpService delegate) {
-        this(delegate, defaultStrategy());
+        this(delegate, delegate.executionStrategy());
     }
 
     /**
