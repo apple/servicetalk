@@ -41,6 +41,7 @@ import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.Warmup;
+import org.openjdk.jmh.infra.Blackhole;
 
 import java.net.SocketAddress;
 
@@ -97,7 +98,7 @@ public class RedisDecoderBenchmark {
     private ChannelHandlerContext ctx;
 
     @Setup(Level.Iteration)
-    public void setup() {
+    public void setup(final Blackhole blackhole) {
         StringBuilder response = new StringBuilder();
         response.append("*" + valCount).append("\r\n");
         for (int i = 0; i < valCount; ++i) {
@@ -110,214 +111,210 @@ public class RedisDecoderBenchmark {
         ctx = new ChannelHandlerContext() {
             @Override
             public Channel channel() {
-                return null;
+                throw new UnsupportedOperationException();
             }
 
             @Override
             public EventExecutor executor() {
-                return null;
+                throw new UnsupportedOperationException();
             }
 
             @Override
             public String name() {
-                return null;
+                throw new UnsupportedOperationException();
             }
 
             @Override
             public ChannelHandler handler() {
-                return null;
+                throw new UnsupportedOperationException();
             }
 
             @Override
             public boolean isRemoved() {
-                return false;
+                throw new UnsupportedOperationException();
             }
 
             @Override
             public ChannelHandlerContext fireChannelRegistered() {
-                return null;
+                throw new UnsupportedOperationException();
             }
 
             @Override
             public ChannelHandlerContext fireChannelUnregistered() {
-                return null;
+                throw new UnsupportedOperationException();
             }
 
             @Override
             public ChannelHandlerContext fireChannelActive() {
-                return null;
+                throw new UnsupportedOperationException();
             }
 
             @Override
             public ChannelHandlerContext fireChannelInactive() {
-                return null;
+                throw new UnsupportedOperationException();
             }
 
             @Override
             public ChannelHandlerContext fireExceptionCaught(final Throwable cause) {
-                return null;
+                throw new UnsupportedOperationException();
             }
 
             @Override
             public ChannelHandlerContext fireUserEventTriggered(final Object evt) {
-                return null;
+                throw new UnsupportedOperationException();
             }
 
             @Override
             public ChannelHandlerContext fireChannelRead(final Object msg) {
-                return null;
+                blackhole.consume(msg);
+                return this;
             }
 
             @Override
             public ChannelHandlerContext fireChannelReadComplete() {
-                return null;
+                throw new UnsupportedOperationException();
             }
 
             @Override
             public ChannelHandlerContext fireChannelWritabilityChanged() {
-                return null;
+                throw new UnsupportedOperationException();
             }
 
             @Override
             public ChannelHandlerContext read() {
-                return null;
+                throw new UnsupportedOperationException();
             }
 
             @Override
             public ChannelHandlerContext flush() {
-                return null;
+                throw new UnsupportedOperationException();
             }
 
             @Override
             public ChannelPipeline pipeline() {
-                return null;
+                throw new UnsupportedOperationException();
             }
 
             @Override
             public ByteBufAllocator alloc() {
-                return null;
+                throw new UnsupportedOperationException();
             }
 
             @Override
             public <T> Attribute<T> attr(final AttributeKey<T> key) {
-                return null;
+                throw new UnsupportedOperationException();
             }
 
             @Override
             public <T> boolean hasAttr(final AttributeKey<T> key) {
-                return false;
+                throw new UnsupportedOperationException();
             }
 
             @Override
             public ChannelFuture bind(final SocketAddress localAddress) {
-                return null;
+                throw new UnsupportedOperationException();
             }
 
             @Override
             public ChannelFuture connect(final SocketAddress remoteAddress) {
-                return null;
+                throw new UnsupportedOperationException();
             }
 
             @Override
             public ChannelFuture connect(final SocketAddress remoteAddress, final SocketAddress localAddress) {
-                return null;
+                throw new UnsupportedOperationException();
             }
 
             @Override
             public ChannelFuture disconnect() {
-                return null;
+                throw new UnsupportedOperationException();
             }
 
             @Override
             public ChannelFuture close() {
-                return null;
+                throw new UnsupportedOperationException();
             }
 
             @Override
             public ChannelFuture deregister() {
-                return null;
+                throw new UnsupportedOperationException();
             }
 
             @Override
             public ChannelFuture bind(final SocketAddress localAddress, final ChannelPromise promise) {
-                return null;
+                throw new UnsupportedOperationException();
             }
 
             @Override
             public ChannelFuture connect(final SocketAddress remoteAddress, final ChannelPromise promise) {
-                return null;
+                throw new UnsupportedOperationException();
             }
 
             @Override
             public ChannelFuture connect(final SocketAddress remoteAddress, final SocketAddress localAddress, final ChannelPromise promise) {
-                return null;
+                throw new UnsupportedOperationException();
             }
 
             @Override
             public ChannelFuture disconnect(final ChannelPromise promise) {
-                return null;
+                throw new UnsupportedOperationException();
             }
 
             @Override
             public ChannelFuture close(final ChannelPromise promise) {
-                return null;
+                throw new UnsupportedOperationException();
             }
 
             @Override
             public ChannelFuture deregister(final ChannelPromise promise) {
-                return null;
+                throw new UnsupportedOperationException();
             }
 
             @Override
             public ChannelFuture write(final Object msg) {
-                return null;
+                throw new UnsupportedOperationException();
             }
 
             @Override
             public ChannelFuture write(final Object msg, final ChannelPromise promise) {
-                return null;
+                throw new UnsupportedOperationException();
             }
 
             @Override
             public ChannelFuture writeAndFlush(final Object msg, final ChannelPromise promise) {
-                return null;
+                throw new UnsupportedOperationException();
             }
 
             @Override
             public ChannelFuture writeAndFlush(final Object msg) {
-                return null;
+                throw new UnsupportedOperationException();
             }
 
             @Override
             public ChannelPromise newPromise() {
-                return null;
+                throw new UnsupportedOperationException();
             }
 
             @Override
             public ChannelProgressivePromise newProgressivePromise() {
-                return null;
+                throw new UnsupportedOperationException();
             }
 
             @Override
             public ChannelFuture newSucceededFuture() {
-                return null;
+                throw new UnsupportedOperationException();
             }
 
             @Override
             public ChannelFuture newFailedFuture(final Throwable cause) {
-                return null;
+                throw new UnsupportedOperationException();
             }
 
             @Override
             public ChannelPromise voidPromise() {
-                return null;
+                throw new UnsupportedOperationException();
             }
         };
-    }
-
-    @Setup(Level.Invocation)
-    public void reset() {
-        payload.readerIndex(0);
     }
 
     private String stringOfLength(final int valueLength) {
@@ -331,6 +328,7 @@ public class RedisDecoderBenchmark {
     @Benchmark
     public void write() {
         final RedisDecoder decoder = new RedisDecoder(BufferAllocators.PREFER_HEAP_ALLOCATOR);
+        payload.readerIndex(0);
         int ri = 0;
         while (ri < payloadLength) {
             payload.writerIndex(ri);

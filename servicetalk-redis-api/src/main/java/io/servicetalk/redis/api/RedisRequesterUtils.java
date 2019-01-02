@@ -314,16 +314,19 @@ final class RedisRequesterUtils {
                     } else if (redisData instanceof RedisData.BulkStringChunk) {
                         final Buffer buffer = redisData.getBufferValue();
                         if (redisData instanceof RedisData.FirstBulkStringChunk) {
+                            assert aggregator == null;
                             bulkStringSize = ((RedisData.FirstBulkStringChunk) redisData).bulkStringLength();
                             if (buffer.readableBytes() == bulkStringSize) {
                                 // All the data is available in the first chunk.
                                 addResult(coerceBuffersToCharSequences ? buffer.toString(UTF_8) : buffer);
                             } else {
-                                assert aggregator == null;
-                                // Only part of the data is available in the first chunk. Allocate a buffer for all the
-                                // data
-                                aggregator = requester.executionContext().bufferAllocator()
-                                        .newBuffer(bulkStringSize).writeBytes(buffer);
+                                // Only part of the data is available in the first chunk. Try to re-use the first
+                                // chunk's buffer, but expand it in preparation for holding the entire bulk string.
+                                aggregator = buffer;
+                                if (!aggregator.tryEnsureWritable(bulkStringSize - aggregator.readableBytes(), true)) {
+                                    aggregator = requester.executionContext().bufferAllocator()
+                                            .newBuffer(bulkStringSize).writeBytes(buffer);
+                                }
                             }
                         } else {
                             assert aggregator != null;
@@ -351,22 +354,22 @@ final class RedisRequesterUtils {
                     }
                 }
 
-                private void addResult(@Nullable final Object unwrapped) {
+                private void addResult(@Nullable final Object toAdd) {
                     assert result != null;
-                    if (depths == null) {
-                        result.add(unwrapped);
+                    if (depths == null || depths.isEmpty()) {
+                        result.add(toAdd);
                         return;
                     }
                     AggregateState current = depths.peek();
                     assert current != null;
-                    current.children.add(unwrapped);
+                    current.children.add(toAdd);
                     while (current.children.size() == current.length) {
                         depths.pollFirst(); // Remove the current.
                         final AggregateState next = depths.peek();
                         if (next == null) {
                             assert result != null;
                             result.add(current.children);
-                            break;
+                            return;
                         } else {
                             next.children.add(current.children);
                             current = next;
