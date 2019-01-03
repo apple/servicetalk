@@ -45,11 +45,6 @@ final class BlockingHttpClientToHttpClient extends HttpClient {
     }
 
     @Override
-    public Single<? extends UpgradableHttpResponse> upgradeConnection(final HttpRequest request) {
-        return blockingToSingle(() -> client.upgradeConnection(request));
-    }
-
-    @Override
     public Single<HttpResponse> request(final HttpExecutionStrategy strategy, final HttpRequest request) {
         return BlockingUtils.request(client, strategy, request);
     }

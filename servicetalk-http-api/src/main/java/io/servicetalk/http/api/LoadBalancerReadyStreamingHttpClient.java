@@ -62,11 +62,6 @@ public final class LoadBalancerReadyStreamingHttpClient extends StreamingHttpCli
     }
 
     @Override
-    public Single<? extends UpgradableStreamingHttpResponse> upgradeConnection(final StreamingHttpRequest request) {
-        return delegate().upgradeConnection(request).retryWhen(retryWhenFunction());
-    }
-
-    @Override
     public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
                                                  final StreamingHttpRequest request) {
         return delegate().request(strategy, request).retryWhen(retryWhenFunction());

@@ -45,12 +45,6 @@ public class BlockingStreamingHttpClientTest extends AbstractBlockingStreamingHt
                     final HttpExecutionStrategy strategy, final StreamingHttpRequest request) {
                 return error(new UnsupportedOperationException());
             }
-
-            @Override
-            public Single<? extends UpgradableStreamingHttpResponse> upgradeConnection(
-                    final StreamingHttpRequest request) {
-                return error(new UnsupportedOperationException());
-            }
         };
     }
 
@@ -70,12 +64,6 @@ public class BlockingStreamingHttpClientTest extends AbstractBlockingStreamingHt
             @Override
             public ReservedBlockingStreamingHttpConnection reserveConnection(
                     final HttpExecutionStrategy strategy, final BlockingStreamingHttpRequest request) {
-                throw new UnsupportedOperationException();
-            }
-
-            @Override
-            public UpgradableBlockingStreamingHttpResponse upgradeConnection(
-                    final BlockingStreamingHttpRequest request) {
                 throw new UnsupportedOperationException();
             }
         };

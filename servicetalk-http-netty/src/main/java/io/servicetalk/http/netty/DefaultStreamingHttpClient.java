@@ -27,7 +27,6 @@ import io.servicetalk.transport.api.ExecutionContext;
 
 import java.util.function.Function;
 
-import static io.servicetalk.concurrent.api.Single.error;
 import static java.util.Objects.requireNonNull;
 
 final class DefaultStreamingHttpClient extends StreamingHttpClient {
@@ -57,11 +56,6 @@ final class DefaultStreamingHttpClient extends StreamingHttpClient {
                                                                                final StreamingHttpRequest request) {
         return strategy.offloadReceive(executionContext.executor(),
                 loadBalancer.selectConnection(SELECTOR_FOR_RESERVE));
-    }
-
-    @Override
-    public Single<? extends UpgradableStreamingHttpResponse> upgradeConnection(final StreamingHttpRequest request) {
-        return error(new UnsupportedOperationException("Protocol upgrades not yet implemented"));
     }
 
     @Override

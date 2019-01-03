@@ -317,24 +317,6 @@ final class DefaultMultiAddressUrlHttpClientBuilder
         }
 
         @Override
-        public Single<? extends UpgradableStreamingHttpResponse> upgradeConnection(final StreamingHttpRequest request) {
-            return new Single<UpgradableStreamingHttpResponse>() {
-                @Override
-                protected void handleSubscribe(final Subscriber<? super UpgradableStreamingHttpResponse> subscriber) {
-                    StreamingHttpClient streamingHttpClient;
-                    try {
-                        streamingHttpClient = selectClient(request);
-                    } catch (Throwable t) {
-                        subscriber.onSubscribe(IGNORE_CANCEL);
-                        subscriber.onError(t);
-                        return;
-                    }
-                    streamingHttpClient.upgradeConnection(request).subscribe(subscriber);
-                }
-            };
-        }
-
-        @Override
         public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
                                                      final StreamingHttpRequest request) {
             return new Single<StreamingHttpResponse>() {
@@ -392,12 +374,6 @@ final class DefaultMultiAddressUrlHttpClientBuilder
         public Single<? extends ReservedStreamingHttpConnection> reserveConnection(final HttpExecutionStrategy strategy,
                                                                                    final StreamingHttpRequest request) {
             return httpClient.reserveConnection(strategy, request);
-        }
-
-        @Override
-        public Single<? extends UpgradableStreamingHttpResponse> upgradeConnection(
-                final StreamingHttpRequest request) {
-            return httpClient.upgradeConnection(request);
         }
 
         @Override

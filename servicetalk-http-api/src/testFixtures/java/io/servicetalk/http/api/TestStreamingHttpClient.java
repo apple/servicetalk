@@ -56,9 +56,4 @@ public class TestStreamingHttpClient extends StreamingHttpClient {
                                                                                final StreamingHttpRequest request) {
         return error(new UnsupportedOperationException());
     }
-
-    @Override
-    public Single<? extends UpgradableStreamingHttpResponse> upgradeConnection(final StreamingHttpRequest request) {
-        return error(new UnsupportedOperationException());
-    }
 }

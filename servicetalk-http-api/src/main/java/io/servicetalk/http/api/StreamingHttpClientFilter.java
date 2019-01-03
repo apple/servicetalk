@@ -72,11 +72,6 @@ public class StreamingHttpClientFilter extends StreamingHttpClient {
     }
 
     @Override
-    public Single<? extends UpgradableStreamingHttpResponse> upgradeConnection(final StreamingHttpRequest request) {
-        return delegate.upgradeConnection(request);
-    }
-
-    @Override
     public final Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
         return request(defaultStrategy, request);
     }

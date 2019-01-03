@@ -24,7 +24,6 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.StreamingHttpClient.ReservedStreamingHttpConnection;
-import io.servicetalk.http.api.StreamingHttpClient.UpgradableStreamingHttpResponse;
 import io.servicetalk.transport.api.ExecutionContext;
 
 import org.junit.Before;
@@ -76,18 +75,10 @@ public class LoadBalancerReadyHttpClientTest {
                 final StreamingHttpRequest request) {
             return defer(new DeferredSuccessSupplier<>(mockReservedConnection));
         }
-
-        @Override
-        public Single<? extends UpgradableStreamingHttpResponse> upgradeConnection(
-                final StreamingHttpRequest request) {
-            return defer(new DeferredSuccessSupplier<>(mockUpgradeResponse));
-        }
     };
 
     @Mock
     private ReservedStreamingHttpConnection mockReservedConnection;
-    @Mock
-    private UpgradableStreamingHttpResponse mockUpgradeResponse;
 
     @Before
     public void setup() {
@@ -105,11 +96,6 @@ public class LoadBalancerReadyHttpClientTest {
     }
 
     @Test
-    public void upgradeIsDelayed() throws InterruptedException {
-        verifyActionIsDelayedUntilAfterInitialized(filter -> filter.upgradeConnection(filter.get("/noop")));
-    }
-
-    @Test
     public void initializedFailedAlsoFailsRequest() throws InterruptedException {
         verifyOnInitializedFailedFailsAction(filter -> filter.request(filter.get("/noop")));
     }
@@ -117,11 +103,6 @@ public class LoadBalancerReadyHttpClientTest {
     @Test
     public void initializedFailedAlsoFailsReserve() throws InterruptedException {
         verifyOnInitializedFailedFailsAction(filter -> filter.reserveConnection(filter.get("/noop")));
-    }
-
-    @Test
-    public void initializedFailedAlsoFailsUpgrade() throws InterruptedException {
-        verifyOnInitializedFailedFailsAction(filter -> filter.upgradeConnection(filter.get("/noop")));
     }
 
     private void verifyOnInitializedFailedFailsAction(Function<StreamingHttpClient,

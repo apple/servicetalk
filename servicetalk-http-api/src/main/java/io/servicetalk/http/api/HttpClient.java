@@ -15,16 +15,13 @@
  */
 package io.servicetalk.http.api;
 
-import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.BlockingHttpClient.ReservedBlockingHttpConnection;
 import io.servicetalk.http.api.BlockingStreamingHttpClient.ReservedBlockingStreamingHttpConnection;
-import io.servicetalk.http.api.BlockingStreamingHttpClient.UpgradableBlockingStreamingHttpResponse;
 import io.servicetalk.http.api.HttpClientToBlockingHttpClient.ReservedHttpConnectionToReservedBlockingHttpConnection;
 import io.servicetalk.http.api.HttpClientToStreamingHttpClient.ReservedHttpConnectionToReservedStreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpClient.ReservedStreamingHttpConnection;
-import io.servicetalk.http.api.StreamingHttpClient.UpgradableStreamingHttpResponse;
 
 /**
  * Provides a means to issue requests against HTTP service. The implementation is free to maintain a collection of
@@ -62,20 +59,6 @@ public abstract class HttpClient extends HttpRequester {
      */
     public abstract Single<? extends ReservedHttpConnection> reserveConnection(HttpExecutionStrategy strategy,
                                                                                HttpRequest request);
-
-    /**
-     * Attempt a <a href="https://tools.ietf.org/html/rfc7230.html#section-6.7">protocol upgrade</a>.
-     * As part of the <a href="https://tools.ietf.org/html/rfc7230.html#section-6.7">protocol upgrade</a> process there
-     * cannot be any pipelined requests pending or any pipeline requests issued during the upgrade process. That means
-     * the {@link HttpConnection} associated with the {@link UpgradableHttpResponse} will be
-     * reserved for exclusive use. The code responsible for determining the result of the upgrade attempt is responsible
-     * for calling {@link UpgradableHttpResponse#httpConnection(boolean)}.
-     *
-     * @param request the request which initiates the upgrade.
-     * @return An object that provides the {@link UpgradableHttpResponse} for the upgrade attempt and also
-     * contains the {@link HttpConnection} used for the upgrade.
-     */
-    public abstract Single<? extends UpgradableHttpResponse> upgradeConnection(HttpRequest request);
 
     /**
      * Convert this {@link HttpClient} to the {@link StreamingHttpClient} API.
@@ -174,130 +157,6 @@ public abstract class HttpClient extends HttpRequester {
         @Override
         ReservedBlockingHttpConnection asBlockingConnectionInternal() {
             return new ReservedHttpConnectionToReservedBlockingHttpConnection(this);
-        }
-    }
-
-    /**
-     * A special type of response returned by upgrade requests {@link #upgradeConnection(HttpRequest)}. This object
-     * allows the upgrade code to inform the HTTP implementation if the {@link HttpConnection} can continue
-     * using the HTTP protocol or not.
-     * @see UpgradableStreamingHttpResponse
-     */
-    public interface UpgradableHttpResponse extends HttpResponse {
-        /**
-         * Called by the code responsible for processing the upgrade response.
-         * <p>
-         * The caller of this method is responsible for calling {@link ReservedHttpConnection#releaseAsync()}
-         * on the return value!
-         *
-         * @param releaseReturnsToClient
-         * <ul>
-         *     <li>{@code true} means the {@link HttpConnection} associated with the return value can be used by
-         *     this {@link HttpClient} when {@link ReservedHttpConnection#releaseAsync()} is called.
-         *     This typically means the upgrade attempt was unsuccessful, but you can continue talking HTTP. However
-         *     this may also be used if the upgrade was successful, but the upgrade protocol shares semantics that are
-         *     similar enough to HTTP that the same {@link HttpClient} API can still be used
-         *     (e.g. HTTP/2).</li>
-         *     <li>{@code false} means the {@link HttpConnection} associated with the return value can
-         *     <strong>not</strong> be used by this {@link HttpClient} when
-         *     {@link ReservedHttpConnection#releaseAsync()} is called. This typically means the upgrade
-         *     attempt was successful and the semantics of the upgrade protocol are sufficiently different that the
-         *     {@link HttpClient} API no longer makes sense.</li>
-         * </ul>
-         * @return A {@link ReservedHttpConnection} which contains the {@link HttpConnection} used
-         * for the upgrade attempt, and controls the lifetime of the {@link HttpConnection} relative to this
-         * {@link HttpClient}.
-         */
-        ReservedHttpConnection httpConnection(boolean releaseReturnsToClient);
-
-        @Override
-        UpgradableHttpResponse payloadBody(Buffer payloadBody);
-
-        @Override
-        <T> UpgradableHttpResponse payloadBody(T pojo, HttpSerializer<T> serializer);
-
-        @Override
-        UpgradableStreamingHttpResponse toStreamingResponse();
-
-        @Override
-        UpgradableBlockingStreamingHttpResponse toBlockingStreamingResponse();
-
-        @Override
-        UpgradableHttpResponse version(HttpProtocolVersion version);
-
-        @Override
-        UpgradableHttpResponse status(HttpResponseStatus status);
-
-        @Override
-        default UpgradableHttpResponse addHeader(final CharSequence name, final CharSequence value) {
-            HttpResponse.super.addHeader(name, value);
-            return this;
-        }
-
-        @Override
-        default UpgradableHttpResponse addHeaders(final HttpHeaders headers) {
-            HttpResponse.super.addHeaders(headers);
-            return this;
-        }
-
-        @Override
-        default UpgradableHttpResponse setHeader(final CharSequence name, final CharSequence value) {
-            HttpResponse.super.setHeader(name, value);
-            return this;
-        }
-
-        @Override
-        default UpgradableHttpResponse setHeaders(final HttpHeaders headers) {
-            HttpResponse.super.setHeaders(headers);
-            return this;
-        }
-
-        @Override
-        default UpgradableHttpResponse addCookie(final HttpCookie cookie) {
-            HttpResponse.super.addCookie(cookie);
-            return this;
-        }
-
-        @Override
-        default UpgradableHttpResponse addCookie(final CharSequence name, final CharSequence value) {
-            HttpResponse.super.addCookie(name, value);
-            return this;
-        }
-
-        @Override
-        default UpgradableHttpResponse addSetCookie(final HttpCookie cookie) {
-            HttpResponse.super.addSetCookie(cookie);
-            return this;
-        }
-
-        @Override
-        default UpgradableHttpResponse addSetCookie(final CharSequence name, final CharSequence value) {
-            HttpResponse.super.addSetCookie(name, value);
-            return this;
-        }
-
-        @Override
-        default UpgradableHttpResponse addTrailer(final CharSequence name, final CharSequence value) {
-            HttpResponse.super.addTrailer(name, value);
-            return this;
-        }
-
-        @Override
-        default UpgradableHttpResponse addTrailer(final HttpHeaders trailers) {
-            HttpResponse.super.addTrailer(trailers);
-            return this;
-        }
-
-        @Override
-        default UpgradableHttpResponse setTrailer(final CharSequence name, final CharSequence value) {
-            HttpResponse.super.setTrailer(name, value);
-            return this;
-        }
-
-        @Override
-        default UpgradableHttpResponse setTrailer(final HttpHeaders trailers) {
-            HttpResponse.super.setTrailer(trailers);
-            return this;
         }
     }
 }
