@@ -64,6 +64,7 @@ final class TaskBasedOffloader implements SignalOffloader {
      * New instance.
      *
      * @param executor A {@link Executor} to use for offloading signals.
+     * @param publisherSignalQueueInitialCapacity Initial capacity for the queue of signals to a {@link Subscriber}.
      */
     TaskBasedOffloader(final Executor executor, final int publisherSignalQueueInitialCapacity) {
         this.executor = requireNonNull(executor);

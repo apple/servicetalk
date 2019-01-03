@@ -30,7 +30,6 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
-import javax.annotation.Nonnull;
 
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
@@ -447,7 +446,6 @@ public class TaskBasedOffloaderTest {
         verifyNoMoreInteractions(pubSub);
     }
 
-    @Nonnull
     private void sendSubscriptionAndVerify(Subscriber<? super Integer> offloaded) {
         offloaded.onSubscribe(subscription);
         verify(executor.mock).execute(any());

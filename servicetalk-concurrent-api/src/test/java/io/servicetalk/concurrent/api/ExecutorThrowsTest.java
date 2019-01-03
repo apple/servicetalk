@@ -63,6 +63,7 @@ public class ExecutorThrowsTest {
                     subscriber.onSubscribe(EMPTY_SUBSCRIPTION);
                 } catch (DeliberateException de) {
                     errors.add(de);
+                    return;
                 }
                 subscriber.onError(new AssertionError("Offloading failed but onSubscribe passed."));
             }
