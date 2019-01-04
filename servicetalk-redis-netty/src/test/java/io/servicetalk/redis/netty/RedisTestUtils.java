@@ -17,19 +17,28 @@ package io.servicetalk.redis.netty;
 
 import java.util.concurrent.ThreadLocalRandom;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
-
 final class RedisTestUtils {
 
     private RedisTestUtils() {
         // No instances.
     }
 
-    static CharSequence randomStringOfLength(int lengthInBytes) {
-        byte[] b = new byte[lengthInBytes];
-        ThreadLocalRandom.current().nextBytes(b);
-        // While the bytes may not be valid UTF-8, the String constructor is lenient, and
-        // "always replaces malformed-input and unmappable-character sequences with this charset's default replacement string."
-        return new String(b, UTF_8);
+    static CharSequence randomStringOfLength(int lengthInUtf8Bytes) {
+        if (lengthInUtf8Bytes == 0) {
+            return "";
+        }
+
+        int oneByteCount = lengthInUtf8Bytes % 2;
+        int twoBytesCount = lengthInUtf8Bytes / 2;
+        char[] c = new char[oneByteCount + twoBytesCount];
+        int j = 0;
+        for (int i = 0; i < oneByteCount; i++) {
+            c[j++] = (char) ThreadLocalRandom.current().nextInt(0, 128);
+        }
+        for (int i = 0; i < twoBytesCount; i++) {
+            c[j++] = (char) ThreadLocalRandom.current().nextInt(128, 2048);
+        }
+
+        return new String(c);
     }
 }
