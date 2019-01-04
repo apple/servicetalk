@@ -79,9 +79,9 @@ class ProjectUtils {
     }
   }
 
-  static File copyResource(String resourceSourcePath, File destinationFolder, String destinationFilename) {
+  static File copyResource(String resourceSourcePath, File destinationFolder) {
     def content = ProjectUtils.class.getResource(resourceSourcePath).text
-    writeToFile(content, destinationFolder, destinationFilename)
+    writeToFile(content, destinationFolder, new File(resourceSourcePath).name)
   }
 
   static File writeToFile(String content, File folder, String fileName) {

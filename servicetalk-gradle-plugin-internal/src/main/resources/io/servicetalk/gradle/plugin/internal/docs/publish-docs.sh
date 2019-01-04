@@ -1,3 +1,4 @@
+#!/bin/sh
 #
 # Copyright © 2018 Apple Inc. and the ServiceTalk project authors
 #

@@ -15,9 +15,12 @@
  */
 package io.servicetalk.gradle.plugin.internal
 
+import com.github.spotbugs.SpotBugsTask
 import org.gradle.api.JavaVersion
 import org.gradle.api.Project
 import org.gradle.api.XmlProvider
+import org.gradle.api.plugins.quality.Checkstyle
+import org.gradle.api.plugins.quality.Pmd
 import org.gradle.api.publish.maven.MavenPublication
 import org.gradle.api.tasks.Exec
 import org.gradle.api.tasks.SourceSet
@@ -189,16 +192,25 @@ class ServiceTalkLibraryPlugin extends ServiceTalkCorePlugin {
       pluginManager.apply("com.github.spotbugs")
 
       checkstyle {
-        toolVersion = "8.12"
+        toolVersion = "8.16"
         configDir = file("$buildDir/checkstyle")
       }
 
-      project.task("checkstyleConfig") {
+      // Overwrite the default set of file for Checkstyle analysis from only java files to all files of the source set
+      // See: https://docs.gradle.org/current/dsl/org.gradle.api.plugins.quality.Checkstyle.html#org.gradle.api.plugins.quality.Checkstyle:source
+      sourceSets.all {
+        tasks.getByName(it.getTaskName("checkstyle", null)).setSource(it.getAllSource())
+      }
+
+      project.task("checkstyleResources") {
+        description = "Copy Checkstyle resources to its configuration directory"
+        group = "verification"
+
         mustRunAfter clean
 
         doLast {
-          copyResource("checkstyle/checkstyle.xml", checkstyle.configDir, "checkstyle.xml")
-          copyResource("checkstyle/global-suppressions.xml", checkstyle.configDir, "global-suppressions.xml")
+          copyResource("checkstyle/checkstyle.xml", checkstyle.configDir)
+          copyResource("checkstyle/global-suppressions.xml", checkstyle.configDir)
 
           File checkstyleLocalSuppressionsFile = file("$rootDir/gradle/checkstyle/suppressions.xml")
           if (checkstyleLocalSuppressionsFile.exists()) {
@@ -207,32 +219,40 @@ class ServiceTalkLibraryPlugin extends ServiceTalkCorePlugin {
         }
       }
 
-      project.task("checkstyle") {
-        dependsOn checkstyleMain
-        dependsOn checkstyleTest
+      project.task("checkstyleRoot", type: Checkstyle) {
+        description = "Run Checkstyle analysis for files in the root directory"
+        classpath = sourceSets.main.output
+        source = fileTree(".") {
+          includes = ["*.gradle", "*.properties", "gradle/**"]
+          excludes = ["gradle/wrapper/**"]
+        }
       }
 
-      tasks.checkstyleMain.dependsOn checkstyleConfig
-      tasks.checkstyleTest.dependsOn checkstyleConfig
-      tasks.matching { it.name == "checkstyleTestFixtures" }.all {
-        it.dependsOn checkstyleConfig
-        tasks.checkstyle.dependsOn it
+      tasks.withType(Checkstyle).all {
+        group = "verification"
+        it.dependsOn checkstyleResources
+      }
+
+      project.task("checkstyle") {
+        description = "Run Checkstyle analysis for all source sets"
+        group = "verification"
+        dependsOn tasks.withType(Checkstyle)
       }
 
       pmd {
-        toolVersion = "6.7.0"
-        sourceSets = [sourceSets.main, sourceSets.test]
+        toolVersion = "6.10.0"
         ruleSets = []
         ruleSetConfig = resources.text.fromString(getClass().getResourceAsStream("pmd/basic.xml").text)
       }
 
-      project.task("pmd") {
-        dependsOn pmdMain
-        dependsOn pmdTest
+      tasks.withType(Pmd).all {
+        group = "verification"
       }
 
-      tasks.matching { it.name == "pmdTestFixtures" }.all {
-        tasks.pmd.dependsOn it
+      project.task("pmd") {
+        description = "Run PMD analysis for all source sets"
+        group = "verification"
+        dependsOn tasks.withType(Pmd)
       }
 
       // Exclusions are configured at each project level
@@ -241,7 +261,7 @@ class ServiceTalkLibraryPlugin extends ServiceTalkCorePlugin {
       File spotbugsTestFixturesExclusionsFile = file("$rootDir/gradle/spotbugs/testFixtures-exclusions.xml")
 
       // This task defaults to XML reporting for CI, but humans like HTML
-      tasks.withType(com.github.spotbugs.SpotBugsTask) {
+      tasks.withType(SpotBugsTask) {
         reports {
           xml.enabled = "true" == System.getenv("CI")
           html.enabled = "true" != System.getenv("CI")
@@ -249,13 +269,16 @@ class ServiceTalkLibraryPlugin extends ServiceTalkCorePlugin {
       }
 
       spotbugs {
-        toolVersion = "3.1.6"
-        sourceSets = [sourceSets.main]
+        toolVersion = "3.1.10"
 
         // Apply the test exclusions to test fixtures, by making them the default.
         if (spotbugsTestFixturesExclusionsFile.exists()) {
           excludeFilter = spotbugsTestFixturesExclusionsFile
         }
+      }
+
+      tasks.withType(SpotBugsTask).all {
+        group = "verification"
       }
 
       spotbugsMain {
@@ -273,15 +296,14 @@ class ServiceTalkLibraryPlugin extends ServiceTalkCorePlugin {
       }
 
       project.task("spotbugs") {
-        dependsOn spotbugsMain
-        dependsOn spotbugsTest
-      }
-
-      tasks.matching { it.name == "spotbugsTestFixtures" }.all {
-        tasks.spotbugs.dependsOn it
+        description = "Run SpotBugs analysis for all source sets"
+        group = "verification"
+        dependsOn tasks.withType(SpotBugsTask)
       }
 
       project.task("quality") {
+        description = "Run all quality analysers for all source sets"
+        group = "verification"
         dependsOn tasks.checkstyle
         dependsOn tasks.pmd
         dependsOn tasks.spotbugs
