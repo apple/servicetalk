@@ -48,7 +48,7 @@ final class StringByteSizeUtil {
             } else if (ch <= 0x7FF) {
                 ++count;
             } else if (isHighSurrogate(ch)) {
-                count += 3;
+                count += 2;
                 ++i;
             } else {
                 count += 2;

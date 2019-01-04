@@ -18,6 +18,7 @@ package io.servicetalk.redis.api;
 import org.junit.Test;
 
 import static io.servicetalk.redis.api.StringByteSizeUtil.numberOfDigits;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.Assert.assertEquals;
 
 public class StringByteSizeUtilTest {
@@ -91,5 +92,24 @@ public class StringByteSizeUtilTest {
         assertEquals(15, numberOfDigits(100000000000000L));
         assertEquals(19, numberOfDigits(Long.MAX_VALUE));
         assertEquals(20, numberOfDigits(Long.MIN_VALUE));
+    }
+
+    @Test
+    public void testNumberOfBytesUtf8() {
+        // This character is copy-pasted from http://www.fileformat.info/info/unicode/char/10400/browsertest.htm
+        testCalculatesCorrectLength("\uD801\uDC00".getBytes(UTF_8));
+
+        // This sequence is the "replacement character" used for bad encodings.
+        testCalculatesCorrectLength(new byte[]{-17, -65, -67});
+
+        // Some 2 and 3 byte wide characters.
+        testCalculatesCorrectLength("ᕈгø⨯у".getBytes(UTF_8));
+    }
+
+    private void testCalculatesCorrectLength(final byte[] b) {
+        String foo = new String(b, UTF_8);
+        final int fooBytes = StringByteSizeUtil.numberOfBytesUtf8(foo);
+        assertEquals(b.length, fooBytes);
+        assertEquals(foo.getBytes(UTF_8).length, fooBytes);
     }
 }
