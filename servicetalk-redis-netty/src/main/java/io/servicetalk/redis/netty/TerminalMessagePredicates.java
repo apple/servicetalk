@@ -59,6 +59,9 @@ final class TerminalMessagePredicates {
                 // -1 because the header is a message itself that counts towards the expected number of messages
                 return arraySize.getLongValue() - 1;
             }
+            if (data instanceof CompleteRedisData) {
+                return -1;
+            }
             if (data instanceof FirstBulkStringChunk) {
                 bulkStringBytesRemaining = ((FirstBulkStringChunk) data).bulkStringLength();
             }
@@ -67,9 +70,6 @@ final class TerminalMessagePredicates {
                 if (bulkStringBytesRemaining == 0) {
                     return -1;
                 }
-            }
-            if (data instanceof CompleteRedisData) {
-                return -1;
             }
 
             return 0;

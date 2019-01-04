@@ -34,8 +34,8 @@ import io.netty.util.CharsetUtil;
 
 import static io.servicetalk.buffer.netty.BufferUtil.newBufferFrom;
 import static io.servicetalk.redis.api.RedisData.NULL;
-import static io.servicetalk.redis.internal.RedisUtils.EOL_LENGTH;
 import static io.servicetalk.redis.internal.RedisUtils.EOL_SHORT;
+import static io.servicetalk.redis.netty.RedisDecoder.State.SkipEol;
 import static io.servicetalk.redis.netty.RedisDecoder.State.Start;
 
 final class RedisDecoder extends ByteToMessageDecoder {
@@ -49,6 +49,7 @@ final class RedisDecoder extends ByteToMessageDecoder {
         String,
         Error,
         Bulk,
+        SkipEol,
         Array,
         Number,
         Reset,
@@ -116,57 +117,38 @@ final class RedisDecoder extends ByteToMessageDecoder {
                         }
                         final int size = readInt(in, length);
                         if (size == 0) {
+                            // An empty bulk string is sent as $0\r\n\r\n, so this is reading the 2nd \r\n, after the
+                            // absent (0 bytes long) chunk.
                             readEndOfLine(in);
                             state = Start;
                             ctx.fireChannelRead(EMPTY_BULK_STRING);
                             break;
                         }
                         if (size == -1) {
+                            // A null bulk string is sent as $-1\r\n, so there is no 2nd \r\n to read.
                             state = Start;
                             ctx.fireChannelRead(NULL);
                             break;
                         }
                         expectBulkBytes = size;
-                    } else if (expectBulkBytes < 0) {
-                        if (in.isReadable(2)) {
-                            readEndOfLine(in);
-                            expectBulkBytes = 0;
-                            state = Start;
-                            break;
-                        } else {
-                            return;
-                        }
                     } else {
                         first = false;
                     }
-                    if (in.isReadable(expectBulkBytes + EOL_LENGTH)) {
-                        // The whole/rest of the bulk string, including the EOL, is readable.
-                        state = Start;
-                        final BulkStringChunk chunk = readBulkStringChunk(ctx, in, first, expectBulkBytes);
-                        readEndOfLine(in);
-                        ctx.fireChannelRead(chunk);
-                        return;
-                    } else if (in.isReadable(expectBulkBytes)) {
-                        // All of the string data is available, but not the whole EOL.
-                        final int remainingBulkStringBytes = expectBulkBytes;
-                        final BulkStringChunk chunk = readBulkStringChunk(ctx, in, first, Math.min(remainingBulkStringBytes, in.readableBytes()));
-                        if (expectBulkBytes == 0) {
-                            if (in.isReadable(2)) {
-                                readEndOfLine(in);
-                            } else {
-                                expectBulkBytes = -2;
-                            }
-                        }
-                        ctx.fireChannelRead(chunk);
-                    } else if (in.isReadable()) {
-                        // Some string data is available, but not enough to read to the end of it.
-                        ctx.fireChannelRead(readBulkStringChunk(ctx, in, first, in.readableBytes()));
-                    } else if (first) {
-                        // There is no string data available, but we need to fire the bulk string length.
-                        ctx.fireChannelRead(new DefaultFirstBulkStringChunk(allocator.newBuffer(), expectBulkBytes));
+                    final int remainingBulkStringBytes = expectBulkBytes;
+                    final BulkStringChunk chunk = readBulkStringChunk(ctx, in, first, Math.min(remainingBulkStringBytes, in.readableBytes()));
+                    if (expectBulkBytes == 0) {
+                        state = SkipEol;
                     }
+                    ctx.fireChannelRead(chunk);
                     break;
                 }
+                case SkipEol:
+                    if (!in.isReadable(2)) {
+                        return;
+                    }
+                    readEndOfLine(in);
+                    state = Start;
+                    break;
                 case Error: {
                     final int length = bytesUntilEol(in);
                     if (length == -1) {
