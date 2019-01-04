@@ -27,6 +27,9 @@ import io.servicetalk.transport.api.IoExecutor;
 
 import java.net.SocketOption;
 import java.util.function.Function;
+import java.util.function.Predicate;
+
+import static java.util.Objects.requireNonNull;
 
 /**
  * A builder of {@link HttpClient} objects.
@@ -164,6 +167,36 @@ interface HttpClientBuilder<U, R, SDE extends ServiceDiscovererEvent<R>> {
      * @return {@code this}
      */
     HttpClientBuilder<U, R, SDE> appendConnectionFilter(HttpConnectionFilterFactory factory);
+
+    /**
+     * Append the filter to the chain of filters used to decorate the {@link StreamingHttpConnection} created by this
+     * builder, for every request that passes the provided {@link Predicate}.
+     * <p>
+     * Filtering allows you to wrap a {@link StreamingHttpConnection} and modify behavior during request/response
+     * processing
+     * Some potential candidates for filtering include logging, metrics, and decorating responses.
+     * <p>
+     * The order of execution of these filters are in order of append. If 3 filters are added as follows:
+     * <pre>
+     *     builder.append(filter1).append(filter2).append(filter3)
+     * </pre>
+     * making a request to a connection wrapped by this filter chain the order of invocation of these filters will be:
+     * <pre>
+     *     filter1 =&gt; filter2 =&gt; filter3 =&gt; connection
+     * </pre>
+     * @param predicate the {@link Predicate} to test if the filter must be applied.
+     * @param factory {@link HttpConnectionFilterFactory} to decorate a {@link StreamingHttpConnection} for the purpose
+     * of filtering.
+     * @return {@code this}
+     */
+    default HttpClientBuilder<U, R, SDE> appendConnectionFilter(Predicate<StreamingHttpRequest> predicate,
+                                                                HttpConnectionFilterFactory factory) {
+        requireNonNull(predicate);
+        requireNonNull(factory);
+
+        return appendConnectionFilter(connection ->
+                new ConditionalHttpConnectionFilter(predicate, factory.create(connection), connection));
+    }
 
     /**
      * Append the filter to the chain of filters used to decorate the {@link ConnectionFactory} used by this

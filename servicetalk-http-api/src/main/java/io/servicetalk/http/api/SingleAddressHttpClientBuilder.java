@@ -24,6 +24,7 @@ import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.SslConfig;
 
 import java.net.SocketOption;
+import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
 /**
@@ -77,6 +78,13 @@ public interface SingleAddressHttpClientBuilder<U, R>
     SingleAddressHttpClientBuilder<U, R> appendConnectionFilter(HttpConnectionFilterFactory factory);
 
     @Override
+    default SingleAddressHttpClientBuilder<U, R> appendConnectionFilter(Predicate<StreamingHttpRequest> predicate,
+                                                                        HttpConnectionFilterFactory factory) {
+        return (SingleAddressHttpClientBuilder<U, R>)
+                BaseSingleAddressHttpClientBuilder.super.appendConnectionFilter(predicate, factory);
+    }
+
+    @Override
     SingleAddressHttpClientBuilder<U, R> appendConnectionFactoryFilter(
             ConnectionFactoryFilter<R, StreamingHttpConnection> factory);
 
@@ -99,6 +107,13 @@ public interface SingleAddressHttpClientBuilder<U, R>
 
     @Override
     SingleAddressHttpClientBuilder<U, R> appendClientFilter(HttpClientFilterFactory function);
+
+    @Override
+    default SingleAddressHttpClientBuilder<U, R> appendClientFilter(Predicate<StreamingHttpRequest> predicate,
+                                                                    HttpClientFilterFactory factory) {
+        return (SingleAddressHttpClientBuilder<U, R>)
+                BaseSingleAddressHttpClientBuilder.super.appendClientFilter(predicate, factory);
+    }
 
     @Override
     SingleAddressHttpClientBuilder<U, R> sslConfig(@Nullable SslConfig sslConfig);

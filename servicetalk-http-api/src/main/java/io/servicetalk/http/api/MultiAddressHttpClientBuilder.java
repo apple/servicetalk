@@ -26,6 +26,9 @@ import io.servicetalk.transport.api.SslConfig;
 
 import java.net.SocketOption;
 import java.util.function.Function;
+import java.util.function.Predicate;
+
+import static java.util.Objects.requireNonNull;
 
 /**
  * A builder of {@link StreamingHttpClient} instances which have a capacity to call any server based on the parsed
@@ -79,6 +82,12 @@ public interface MultiAddressHttpClientBuilder<U, R> extends HttpClientBuilder<U
     MultiAddressHttpClientBuilder<U, R> appendConnectionFilter(HttpConnectionFilterFactory factory);
 
     @Override
+    default MultiAddressHttpClientBuilder<U, R> appendConnectionFilter(Predicate<StreamingHttpRequest> predicate,
+                                                                       HttpConnectionFilterFactory factory) {
+        return (MultiAddressHttpClientBuilder<U, R>) HttpClientBuilder.super.appendConnectionFilter(predicate, factory);
+    }
+
+    @Override
     MultiAddressHttpClientBuilder<U, R> appendConnectionFactoryFilter(
             ConnectionFactoryFilter<R, StreamingHttpConnection> factory);
 
@@ -123,11 +132,40 @@ public interface MultiAddressHttpClientBuilder<U, R> extends HttpClientBuilder<U
      * <pre>
      *     filter1 =&gt; filter2 =&gt; filter3 =&gt; client
      * </pre>
-     * @param function {@link MultiAddressHttpClientFilterFactory} to decorate a {@link StreamingHttpClient} for the
+     * @param factory {@link MultiAddressHttpClientFilterFactory} to decorate a {@link StreamingHttpClient} for the
      * purpose of filtering.
      * @return {@code this}
      */
-    MultiAddressHttpClientBuilder<U, R> appendClientFilter(MultiAddressHttpClientFilterFactory<U> function);
+    MultiAddressHttpClientBuilder<U, R> appendClientFilter(MultiAddressHttpClientFilterFactory<U> factory);
+
+    /**
+     * Append the filter to the chain of filters used to decorate the {@link StreamingHttpClient} created by this
+     * builder for a given {@code UnresolvedAddress}, for every request that passes the provided {@link Predicate}.
+     * <p>
+     * Note this method will be used to decorate the result of {@link #buildStreaming()} before it is
+     * returned to the user.
+     * <p>
+     * The order of execution of these filters are in order of append. If 3 filters are added as follows:
+     * <pre>
+     *     builder.append(filter1).append(filter2).append(filter3)
+     * </pre>
+     * Making a request to a client wrapped by this filter chain the order of invocation of these filters will be:
+     * <pre>
+     *     filter1 =&gt; filter2 =&gt; filter3 =&gt; client
+     * </pre>
+     * @param predicate the {@link Predicate} to test if the filter must be applied.
+     * @param factory {@link MultiAddressHttpClientFilterFactory} to decorate a {@link StreamingHttpClient} for the
+     * purpose of filtering.
+     * @return {@code this}
+     */
+    default MultiAddressHttpClientBuilder<U, R> appendClientFilter(Predicate<StreamingHttpRequest> predicate,
+                                                                   MultiAddressHttpClientFilterFactory<U> factory) {
+        requireNonNull(predicate);
+        requireNonNull(factory);
+
+        return appendClientFilter((address, client, lbEvents) ->
+                new ConditionalHttpClientFilter(predicate, factory.create(address, client, lbEvents), client));
+    }
 
     /**
      * Set a {@link SslConfigProvider} for appropriate {@link SslConfig}s.
