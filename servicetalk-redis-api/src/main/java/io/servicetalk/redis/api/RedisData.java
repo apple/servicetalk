@@ -16,7 +16,6 @@
 package io.servicetalk.redis.api;
 
 import io.servicetalk.buffer.api.Buffer;
-import io.servicetalk.buffer.api.BufferAllocator;
 
 import java.util.List;
 
@@ -110,12 +109,6 @@ public interface RedisData {
          * @param buffer the {@link Buffer} to write to
          */
         void encodeTo(Buffer buffer);
-
-        default Buffer asBuffer(BufferAllocator allocator) {
-            final Buffer buffer = allocator.newBuffer(encodedByteCount());
-            encodeTo(buffer);
-            return buffer;
-        }
     }
 
     /**
@@ -231,11 +224,6 @@ public interface RedisData {
         public void encodeTo(final Buffer buffer) {
             buffer.writeBytes(getValue());
         }
-
-        @Override
-        public Buffer asBuffer(final BufferAllocator allocator) {
-            return getValue();
-        }
     }
 
     /**
@@ -268,13 +256,6 @@ public interface RedisData {
         public void encodeTo(final Buffer buffer) {
             writeLength(buffer, bulkStringLength);
             super.encodeTo(buffer);
-        }
-
-        @Override
-        public Buffer asBuffer(BufferAllocator allocator) {
-            final Buffer buffer = allocator.newBuffer(encodedByteCount());
-            encodeTo(buffer);
-            return buffer;
         }
     }
 
@@ -309,13 +290,6 @@ public interface RedisData {
         @Override
         public int encodedByteCount() {
             return calculateRequestArgumentSize(getValue());
-        }
-
-        @Override
-        public Buffer asBuffer(BufferAllocator allocator) {
-            final Buffer buffer = allocator.newBuffer(encodedByteCount());
-            encodeTo(buffer);
-            return buffer;
         }
     }
 

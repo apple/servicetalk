@@ -88,17 +88,28 @@ final class RedisUtils {
                 if (data instanceof FirstBulkStringChunk) {
                     remainingBulkStringBytes = ((FirstBulkStringChunk) data).bulkStringLength();
                     if (remainingBulkStringBytes == buffer.readableBytes()) {
+                        // We received a FirstBulkStringChunk that contains the entire bulk string.
+                        remainingBulkStringBytes = 0;
                         return toByteBuf(writeAndAppendEol(data));
                     }
+                    // We received a FirstBulkStringChunk that does not contain the entire bulk string.
+                    // Fall back to the default behaviour of encoding to a buffer, since this includes writing the
+                    // bulk string length.
                     remainingBulkStringBytes -= buffer.readableBytes();
                 } else {
                     remainingBulkStringBytes -= buffer.readableBytes();
                     if (remainingBulkStringBytes == 0) {
+                        // We received the last chunk of the bulk string.
                         return toByteBuf(writeAndAppendEol(data));
+                    } else {
+                        // We received a "middle" chunk of the bulk string.
+                        return toByteBuf(buffer);
                     }
                 }
             }
-            return toByteBuf(data.asBuffer(allocator));
+            Buffer buffer = allocator.newBuffer(data.encodedByteCount());
+            data.encodeTo(buffer);
+            return toByteBuf(buffer);
         }
 
         private Buffer writeAndAppendEol(final RedisData.RequestRedisData data) {

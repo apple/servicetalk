@@ -406,7 +406,8 @@ public class RequestRedisDataTest {
     }
 
     private void assertWritten(final RequestRedisData data, final String expected) {
-        Buffer buffer = data.asBuffer(DEFAULT_ALLOCATOR);
+        Buffer buffer = DEFAULT_ALLOCATOR.newBuffer(data.encodedByteCount());
+        data.encodeTo(buffer);
         assertThat(buffer.toString(UTF_8), equalTo(expected));
         int expectedLength = expected.length();
         assertThat("encodedByteCount() did not calculate correct length", data.encodedByteCount(), equalTo(expectedLength));

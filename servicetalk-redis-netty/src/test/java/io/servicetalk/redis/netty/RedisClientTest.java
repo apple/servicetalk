@@ -226,8 +226,10 @@ public class RedisClientTest extends BaseRedisClientTest {
     @Test
     public void bufferRequest() throws Exception {
         Buffer reqBuf = getEnv().client.executionContext().bufferAllocator().newBuffer(33);
+        Buffer pingBuf = getEnv().client.executionContext().bufferAllocator().newBuffer(PING.encodedByteCount());
+        PING.encodeTo(pingBuf);
         reqBuf.writeAscii("*2\r\n")
-                .writeBytes(PING.asBuffer(getEnv().client.executionContext().bufferAllocator()))
+                .writeBytes(pingBuf.duplicate())
                 .writeAscii("$12\r\nbufreq-pong1\r\n");
 
         assertThat(awaitIndefinitely(getEnv().client.request(newRequest(PING, reqBuf), Buffer.class)),
@@ -235,7 +237,7 @@ public class RedisClientTest extends BaseRedisClientTest {
 
         reqBuf = getEnv().client.executionContext().bufferAllocator().newBuffer(33);
         reqBuf.writeAscii("*2\r\n")
-                .writeBytes(PING.asBuffer(getEnv().client.executionContext().bufferAllocator()))
+                .writeBytes(pingBuf.duplicate())
                 .writeAscii("$12\r\nbufreq-pong2\r\n");
 
         assertThat(awaitIndefinitely(getEnv().client.request(newRequest(PING, reqBuf), CharSequence.class)),
