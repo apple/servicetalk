@@ -45,12 +45,6 @@ final class BlockingHttpClientToStreamingHttpClient extends StreamingHttpClient 
     }
 
     @Override
-    public Single<? extends UpgradableStreamingHttpResponse> upgradeConnection(final StreamingHttpRequest request) {
-        return request.toRequest().flatMap(req -> blockingToSingle(() -> client.upgradeConnection(req))
-                .map(HttpClient.UpgradableHttpResponse::toStreamingResponse));
-    }
-
-    @Override
     public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
                                                  final StreamingHttpRequest request) {
         return BlockingUtils.request(client, strategy, request);

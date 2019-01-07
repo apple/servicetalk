@@ -17,14 +17,12 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.concurrent.BlockingIterable;
 import io.servicetalk.concurrent.api.Completable;
-import io.servicetalk.http.api.HttpClient.UpgradableHttpResponse;
 import io.servicetalk.http.api.StreamingHttpClient.ReservedStreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpConnection.SettingKey;
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ExecutionContext;
 
 import static io.servicetalk.http.api.BlockingUtils.blockingInvocation;
-import static io.servicetalk.http.api.StreamingHttpClientToHttpClient.doUpgradeConnection;
 import static java.util.Objects.requireNonNull;
 
 final class StreamingHttpClientToBlockingHttpClient extends BlockingHttpClient {
@@ -40,11 +38,6 @@ final class StreamingHttpClientToBlockingHttpClient extends BlockingHttpClient {
                                                             final HttpRequest request) throws Exception {
         return blockingInvocation(client.reserveConnection(strategy, request.toStreamingRequest())
                 .map(ReservedStreamingHttpConnectionToBlocking::new));
-    }
-
-    @Override
-    public UpgradableHttpResponse upgradeConnection(final HttpRequest request) throws Exception {
-        return blockingInvocation(doUpgradeConnection(client, request));
     }
 
     @Override

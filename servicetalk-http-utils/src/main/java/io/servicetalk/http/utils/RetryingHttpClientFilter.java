@@ -75,14 +75,6 @@ public final class RetryingHttpClientFilter extends StreamingHttpClientFilter {
         return delegate().reserveConnection(request);
     }
 
-    @Override
-    public Single<? extends UpgradableStreamingHttpResponse> upgradeConnection(final StreamingHttpRequest request) {
-        if (isRetryable.test(request)) {
-            return delegate().upgradeConnection(request).retryWhen(strategy);
-        }
-        return delegate().upgradeConnection(request);
-    }
-
     /**
      * A builder for {@link RetryingHttpClientFilter}.
      */

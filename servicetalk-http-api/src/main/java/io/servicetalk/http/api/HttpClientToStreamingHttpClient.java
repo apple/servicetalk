@@ -15,33 +15,13 @@
  */
 package io.servicetalk.http.api;
 
-import io.servicetalk.buffer.api.Buffer;
-import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.concurrent.api.internal.SingleProcessor;
-import io.servicetalk.http.api.BlockingStreamingHttpClient.UpgradableBlockingStreamingHttpResponse;
 import io.servicetalk.http.api.HttpClient.ReservedHttpConnection;
-import io.servicetalk.http.api.HttpClient.UpgradableHttpResponse;
-import io.servicetalk.http.api.HttpDataSourceTranformations.BridgeFlowControlAndDiscardOperator;
-import io.servicetalk.http.api.HttpDataSourceTranformations.HttpBufferFilterOperator;
-import io.servicetalk.http.api.HttpDataSourceTranformations.HttpPayloadAndTrailersFromSingleOperator;
-import io.servicetalk.http.api.HttpDataSourceTranformations.SerializeBridgeFlowControlAndDiscardOperator;
-import io.servicetalk.http.api.StreamingHttpClientToBlockingStreamingHttpClient.UpgradableStreamingHttpResponseToBlockingStreaming;
-import io.servicetalk.http.api.StreamingHttpClientToHttpClient.UpgradableStreamingHttpResponseToUpgradableHttpResponse;
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ExecutionContext;
 
-import java.util.function.BiFunction;
-import java.util.function.Function;
-import java.util.function.Supplier;
-import java.util.function.UnaryOperator;
-
-import static io.servicetalk.concurrent.api.Publisher.just;
-import static io.servicetalk.concurrent.api.Single.success;
-import static io.servicetalk.http.api.HttpClientToStreamingHttpClient.UpgradableHttpResponseToUpgradableStreamingHttpResponse.newUpgradeResponse;
-import static io.servicetalk.http.api.HttpDataSourceTranformations.aggregatePayloadAndTrailers;
 import static java.util.Objects.requireNonNull;
 
 final class HttpClientToStreamingHttpClient extends StreamingHttpClient {
@@ -57,12 +37,6 @@ final class HttpClientToStreamingHttpClient extends StreamingHttpClient {
                                                                                final StreamingHttpRequest request) {
         return request.toRequest().flatMap(r -> client.reserveConnection(strategy, r))
                 .map(ReservedHttpConnectionToReservedStreamingHttpConnection::new);
-    }
-
-    @Override
-    public Single<? extends UpgradableStreamingHttpResponse> upgradeConnection(final StreamingHttpRequest request) {
-        return request.toRequest().flatMap(client::upgradeConnection).map(resp ->
-                        newUpgradeResponse(resp, executionContext().bufferAllocator()));
     }
 
     @Override
@@ -150,152 +124,6 @@ final class HttpClientToStreamingHttpClient extends StreamingHttpClient {
         @Override
         ReservedHttpConnection asConnectionInternal() {
             return reservedConnection;
-        }
-    }
-
-    static final class UpgradableHttpResponseToUpgradableStreamingHttpResponse implements
-                                                                   StreamingHttpClient.UpgradableStreamingHttpResponse {
-        private final UpgradableHttpResponse upgradableResponse;
-        private final Publisher<?> payloadBody;
-        private final Single<HttpHeaders> trailersSingle;
-        private final BufferAllocator allocator;
-
-        UpgradableHttpResponseToUpgradableStreamingHttpResponse(UpgradableHttpResponse upgradableResponse,
-                                                                Publisher<?> payloadBody,
-                                                                Single<HttpHeaders> trailersSingle,
-                                                                BufferAllocator allocator) {
-            this.upgradableResponse = requireNonNull(upgradableResponse);
-            this.allocator = requireNonNull(allocator);
-            this.payloadBody = requireNonNull(payloadBody);
-            this.trailersSingle = requireNonNull(trailersSingle);
-        }
-
-        static UpgradableHttpResponseToUpgradableStreamingHttpResponse newUpgradeResponse(
-                UpgradableHttpResponse upgradableResponse, BufferAllocator allocator) {
-            return new UpgradableHttpResponseToUpgradableStreamingHttpResponse(upgradableResponse,
-                    just(upgradableResponse.payloadBody()), success(upgradableResponse.trailers()), allocator);
-        }
-
-        @Override
-        public ReservedStreamingHttpConnection httpConnection(final boolean releaseReturnsToClient) {
-            return new ReservedHttpConnectionToReservedStreamingHttpConnection(
-                    upgradableResponse.httpConnection(releaseReturnsToClient));
-        }
-
-        @Override
-        public UpgradableStreamingHttpResponse payloadBody(final Publisher<Buffer> payloadBody) {
-            return transformPayloadBody(old -> payloadBody.liftSynchronous(
-                    new BridgeFlowControlAndDiscardOperator(old)));
-        }
-
-        @Override
-        public <T> UpgradableStreamingHttpResponse payloadBody(final Publisher<T> payloadBody,
-                                                               final HttpSerializer<T> serializer) {
-            return transformPayloadBody(old -> payloadBody.liftSynchronous(
-                    new SerializeBridgeFlowControlAndDiscardOperator<>(old)), serializer);
-        }
-
-        @Override
-        public Publisher<Buffer> payloadBody() {
-            return payloadBody.liftSynchronous(HttpBufferFilterOperator.INSTANCE);
-        }
-
-        @Override
-        public Publisher<Object> payloadBodyAndTrailers() {
-            return payloadBody.map(obj -> (Object) obj) // down cast to Object
-                    .concatWith(trailersSingle);
-        }
-
-        @Override
-        public <T> UpgradableStreamingHttpResponse transformPayloadBody(
-                final Function<Publisher<Buffer>, Publisher<T>> transformer, final HttpSerializer<T> serializer) {
-            return new UpgradableHttpResponseToUpgradableStreamingHttpResponse(upgradableResponse,
-                    serializer.serialize(headers(), transformer.apply(payloadBody()), allocator),
-                    trailersSingle, allocator);
-        }
-
-        @Override
-        public UpgradableStreamingHttpResponse transformPayloadBody(
-                final UnaryOperator<Publisher<Buffer>> transformer) {
-            return new UpgradableHttpResponseToUpgradableStreamingHttpResponse(upgradableResponse,
-                    transformer.apply(payloadBody()), trailersSingle, allocator);
-        }
-
-        @Override
-        public UpgradableStreamingHttpResponse transformRawPayloadBody(final UnaryOperator<Publisher<?>> transformer) {
-            return new UpgradableHttpResponseToUpgradableStreamingHttpResponse(upgradableResponse,
-                    transformer.apply(payloadBody), trailersSingle, allocator);
-        }
-
-        @Override
-        public <T> UpgradableStreamingHttpResponse transform(
-                final Supplier<T> stateSupplier, final BiFunction<Buffer, T, Buffer> transformer,
-                final BiFunction<T, HttpHeaders, HttpHeaders> trailersTrans) {
-            final SingleProcessor<HttpHeaders> outTrailersSingle = new SingleProcessor<>();
-            return new UpgradableHttpResponseToUpgradableStreamingHttpResponse(upgradableResponse, payloadBody()
-                    .liftSynchronous(new HttpPayloadAndTrailersFromSingleOperator<>(stateSupplier, transformer,
-                            trailersTrans, trailersSingle, outTrailersSingle)),
-                    outTrailersSingle, allocator);
-        }
-
-        @Override
-        public <T> UpgradableStreamingHttpResponse transformRaw(
-                final Supplier<T> stateSupplier, final BiFunction<Object, T, ?> transformer,
-                final BiFunction<T, HttpHeaders, HttpHeaders> trailersTrans) {
-            final SingleProcessor<HttpHeaders> outTrailersSingle = new SingleProcessor<>();
-            return new UpgradableHttpResponseToUpgradableStreamingHttpResponse(upgradableResponse, payloadBody
-                    .liftSynchronous(new HttpPayloadAndTrailersFromSingleOperator<>(stateSupplier, transformer,
-                            trailersTrans, trailersSingle, outTrailersSingle)),
-                    outTrailersSingle, allocator);
-        }
-
-        @Override
-        public Single<UpgradableHttpResponse> toResponse() {
-            return aggregatePayloadAndTrailers(payloadBodyAndTrailers(), allocator).map(pair -> {
-                assert pair.trailers != null;
-                return new UpgradableStreamingHttpResponseToUpgradableHttpResponse(
-                        UpgradableHttpResponseToUpgradableStreamingHttpResponse.this, pair.compositeBuffer,
-                        pair.trailers, allocator);
-            });
-        }
-
-        @Override
-        public UpgradableBlockingStreamingHttpResponse toBlockingStreamingResponse() {
-            return new UpgradableStreamingHttpResponseToBlockingStreaming(this, payloadBody.toIterable(),
-                    trailersSingle, allocator);
-        }
-
-        @Override
-        public HttpProtocolVersion version() {
-            return upgradableResponse.version();
-        }
-
-        @Override
-        public UpgradableStreamingHttpResponse version(final HttpProtocolVersion version) {
-            upgradableResponse.version(version);
-            return this;
-        }
-
-        @Override
-        public HttpHeaders headers() {
-            return upgradableResponse.headers();
-        }
-
-        @Override
-        public String toString(
-                final BiFunction<? super CharSequence, ? super CharSequence, CharSequence> headerFilter) {
-            return upgradableResponse.toString(headerFilter);
-        }
-
-        @Override
-        public HttpResponseStatus status() {
-            return upgradableResponse.status();
-        }
-
-        @Override
-        public UpgradableStreamingHttpResponse status(final HttpResponseStatus status) {
-            upgradableResponse.status(status);
-            return this;
         }
     }
 }

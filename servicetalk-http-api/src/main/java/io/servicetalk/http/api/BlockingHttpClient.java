@@ -19,7 +19,6 @@ import io.servicetalk.http.api.BlockingHttpClientToHttpClient.ReservedBlockingHt
 import io.servicetalk.http.api.BlockingHttpClientToStreamingHttpClient.BlockingReservedStreamingHttpConnectionToReserved;
 import io.servicetalk.http.api.BlockingStreamingHttpClient.ReservedBlockingStreamingHttpConnection;
 import io.servicetalk.http.api.HttpClient.ReservedHttpConnection;
-import io.servicetalk.http.api.HttpClient.UpgradableHttpResponse;
 import io.servicetalk.http.api.StreamingHttpClient.ReservedStreamingHttpConnection;
 
 /**
@@ -63,22 +62,6 @@ public abstract class BlockingHttpClient extends BlockingHttpRequester {
      */
     public abstract ReservedBlockingHttpConnection reserveConnection(HttpExecutionStrategy strategy,
                                                                      HttpRequest request) throws Exception;
-
-    /**
-     * Attempt a <a href="https://tools.ietf.org/html/rfc7230.html#section-6.7">protocol upgrade</a>.
-     * As part of the <a href="https://tools.ietf.org/html/rfc7230.html#section-6.7">protocol upgrade</a> process there
-     * cannot be any pipelined requests pending or any pipeline requests issued during the upgrade process. That means
-     * the {@link BlockingHttpConnection} associated with the {@link UpgradableHttpResponse} will be
-     * reserved for exclusive use. The code responsible for determining the result of the upgrade attempt is responsible
-     * for calling {@link UpgradableHttpResponse#httpConnection(boolean)}.
-     *
-     * @param request the request which initiates the upgrade.
-     * @return An {@link UpgradableHttpResponse} for the upgrade attempt and also contains the
-     * {@link BlockingHttpConnection} used for the upgrade.
-     * @throws Exception if a exception occurs during the upgrade process.
-     * @see StreamingHttpClient#upgradeConnection(StreamingHttpRequest)
-     */
-    public abstract UpgradableHttpResponse upgradeConnection(HttpRequest request) throws Exception;
 
     /**
      * Convert this {@link BlockingHttpClient} to the {@link StreamingHttpClient} API.

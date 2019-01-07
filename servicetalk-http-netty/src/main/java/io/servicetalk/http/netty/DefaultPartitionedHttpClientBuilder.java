@@ -173,24 +173,6 @@ class DefaultPartitionedHttpClientBuilder<U, R> implements PartitionedHttpClient
         }
 
         @Override
-        public Single<? extends UpgradableStreamingHttpResponse> upgradeConnection(final StreamingHttpRequest request) {
-            return new Single<UpgradableStreamingHttpResponse>() {
-                @Override
-                protected void handleSubscribe(final Subscriber<? super UpgradableStreamingHttpResponse> subscriber) {
-                    StreamingHttpClient streamingHttpClient;
-                    try {
-                        streamingHttpClient = selectClient(request);
-                    } catch (Throwable t) {
-                        subscriber.onSubscribe(IGNORE_CANCEL);
-                        subscriber.onError(t);
-                        return;
-                    }
-                    streamingHttpClient.upgradeConnection(request).subscribe(subscriber);
-                }
-            };
-        }
-
-        @Override
         public Completable onClose() {
             return group.onClose();
         }
@@ -227,11 +209,6 @@ class DefaultPartitionedHttpClientBuilder<U, R> implements PartitionedHttpClient
         @Override
         public Single<? extends ReservedStreamingHttpConnection> reserveConnection(final HttpExecutionStrategy strategy,
                                                                                    final StreamingHttpRequest request) {
-            return error(ex);
-        }
-
-        @Override
-        public Single<? extends UpgradableStreamingHttpResponse> upgradeConnection(final StreamingHttpRequest request) {
             return error(ex);
         }
 

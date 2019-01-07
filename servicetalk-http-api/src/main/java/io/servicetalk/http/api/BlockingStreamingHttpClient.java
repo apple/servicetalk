@@ -15,21 +15,10 @@
  */
 package io.servicetalk.http.api;
 
-import io.servicetalk.buffer.api.Buffer;
-import io.servicetalk.concurrent.BlockingIterable;
-import io.servicetalk.concurrent.CloseableIterable;
-import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.BlockingHttpClient.ReservedBlockingHttpConnection;
 import io.servicetalk.http.api.BlockingStreamingHttpClientToStreamingHttpClient.BlockingToReservedStreamingHttpConnection;
 import io.servicetalk.http.api.HttpClient.ReservedHttpConnection;
-import io.servicetalk.http.api.HttpClient.UpgradableHttpResponse;
 import io.servicetalk.http.api.StreamingHttpClient.ReservedStreamingHttpConnection;
-import io.servicetalk.http.api.StreamingHttpClient.UpgradableStreamingHttpResponse;
-
-import java.util.function.BiFunction;
-import java.util.function.Function;
-import java.util.function.Supplier;
-import java.util.function.UnaryOperator;
 
 /**
  * The equivalent of {@link StreamingHttpClient} but with synchronous/blocking APIs instead of asynchronous APIs.
@@ -73,23 +62,6 @@ public abstract class BlockingStreamingHttpClient extends BlockingStreamingHttpR
      */
     public abstract ReservedBlockingStreamingHttpConnection reserveConnection(
             HttpExecutionStrategy strategy, BlockingStreamingHttpRequest request) throws Exception;
-
-    /**
-     * Attempt a <a href="https://tools.ietf.org/html/rfc7230.html#section-6.7">protocol upgrade</a>.
-     * As part of the <a href="https://tools.ietf.org/html/rfc7230.html#section-6.7">protocol upgrade</a> process there
-     * cannot be any pipelined requests pending or any pipeline requests issued during the upgrade process. That means
-     * the {@link BlockingStreamingHttpConnection} associated with the {@link UpgradableBlockingStreamingHttpResponse}
-     * will be reserved for exclusive use. The code responsible for determining the result of the upgrade attempt is
-     * responsible for calling {@link UpgradableBlockingStreamingHttpResponse#httpConnection(boolean)}.
-     *
-     * @param request the request which initiates the upgrade.
-     * @return An object that provides the {@link UpgradableBlockingStreamingHttpResponse} for the upgrade attempt and
-     * also contains the {@link BlockingStreamingHttpConnection} used for the upgrade.
-     * @throws Exception if a exception occurs during the upgrade process.
-     * @see StreamingHttpClient#upgradeConnection(StreamingHttpRequest)
-     */
-    public abstract UpgradableBlockingStreamingHttpResponse upgradeConnection(
-            BlockingStreamingHttpRequest request) throws Exception;
 
     /**
      * Convert this {@link BlockingStreamingHttpClient} to the {@link StreamingHttpClient} API.
@@ -200,144 +172,6 @@ public abstract class BlockingStreamingHttpClient extends BlockingStreamingHttpR
         @Override
         ReservedStreamingHttpConnection asStreamingConnectionInternal() {
             return new BlockingToReservedStreamingHttpConnection(this);
-        }
-    }
-
-    /**
-     * A special type of response returned by upgrade requests {@link #upgradeConnection(BlockingStreamingHttpRequest)}.
-     * This object allows the upgrade code to inform the HTTP implementation if the {@link HttpConnection} can
-     * continue using the HTTP protocol or not.
-     * @see UpgradableStreamingHttpResponse
-     */
-    public interface UpgradableBlockingStreamingHttpResponse extends BlockingStreamingHttpResponse {
-        /**
-         * Called by the code responsible for processing the upgrade response.
-         * <p>
-         * The caller of this method is responsible for calling
-         * {@link ReservedBlockingStreamingHttpConnection#release()} on the
-         * return value!
-         *
-         * @param releaseReturnsToClient
-         * <ul>
-         *     <li>{@code true} means the {@link BlockingStreamingHttpConnection} associated with the return value can
-         *     be used by this {@link BlockingStreamingHttpClient} when
-         *     {@link ReservedBlockingStreamingHttpConnection#release()} is called. This typically means the upgrade
-         *     attempt was unsuccessful, but you can continue talking HTTP. However this may also be used if the upgrade
-         *     was successful, but the upgrade protocol shares semantics that are similar enough to HTTP that the same
-         *     {@link BlockingStreamingHttpClient} API can still be used (e.g. HTTP/2).</li>
-         *     <li>{@code false} means the {@link BlockingStreamingHttpConnection} associated with the return value can
-         *     <strong>not</strong> be used by this {@link BlockingStreamingHttpClient} when
-         *     {@link ReservedBlockingStreamingHttpConnection#release()} is called. This typically means the upgrade
-         *     attempt was successful and the semantics of the upgrade protocol are sufficiently different that the
-         *     {@link BlockingStreamingHttpClient} API no longer makes sense.</li>
-         * </ul>
-         * @return A {@link ReservedBlockingStreamingHttpConnection} which contains the
-         * {@link BlockingStreamingHttpConnection} used for the upgrade attempt, and controls the lifetime of the
-         * {@link BlockingStreamingHttpConnection} relative to this {@link BlockingStreamingHttpClient}.
-         */
-        ReservedBlockingStreamingHttpConnection httpConnection(boolean releaseReturnsToClient);
-
-        @Override
-        UpgradableBlockingStreamingHttpResponse payloadBody(Iterable<Buffer> payloadBody);
-
-        @Override
-        UpgradableBlockingStreamingHttpResponse payloadBody(CloseableIterable<Buffer> payloadBody);
-
-        @Override
-        <T> UpgradableBlockingStreamingHttpResponse payloadBody(Iterable<T> payloadBody,
-                                                                HttpSerializer<T> serializer);
-
-        @Override
-        <T> UpgradableBlockingStreamingHttpResponse payloadBody(CloseableIterable<T> payloadBody,
-                                                                HttpSerializer<T> serializer);
-
-        @Override
-        <T> UpgradableBlockingStreamingHttpResponse transformPayloadBody(
-                Function<BlockingIterable<Buffer>, BlockingIterable<T>> transformer, HttpSerializer<T> serializer);
-
-        @Override
-        default <T, R> UpgradableBlockingStreamingHttpResponse transformPayloadBody(
-                Function<BlockingIterable<T>, BlockingIterable<R>> transformer, HttpDeserializer<T> deserializer,
-                HttpSerializer<R> serializer) {
-            return transformPayloadBody(buffers -> transformer.apply(payloadBody(deserializer)), serializer);
-        }
-
-        @Override
-        UpgradableBlockingStreamingHttpResponse transformPayloadBody(
-                UnaryOperator<BlockingIterable<Buffer>> transformer);
-
-        @Override
-        UpgradableBlockingStreamingHttpResponse transformRawPayloadBody(UnaryOperator<BlockingIterable<?>> transformer);
-
-        @Override
-        <T> UpgradableBlockingStreamingHttpResponse transform(
-                Supplier<T> stateSupplier, BiFunction<Buffer, T, Buffer> transformer,
-                BiFunction<T, HttpHeaders, HttpHeaders> trailersTransformer);
-
-        @Override
-        <T> UpgradableBlockingStreamingHttpResponse transformRaw(
-                Supplier<T> stateSupplier, BiFunction<Object, T, ?> transformer,
-                BiFunction<T, HttpHeaders, HttpHeaders> trailersTransformer);
-
-        @Override
-        Single<? extends UpgradableHttpResponse> toResponse();
-
-        @Override
-        UpgradableStreamingHttpResponse toStreamingResponse();
-
-        @Override
-        UpgradableBlockingStreamingHttpResponse version(HttpProtocolVersion version);
-
-        @Override
-        UpgradableBlockingStreamingHttpResponse status(HttpResponseStatus status);
-
-        @Override
-        default UpgradableBlockingStreamingHttpResponse addHeader(final CharSequence name, final CharSequence value) {
-            BlockingStreamingHttpResponse.super.addHeader(name, value);
-            return this;
-        }
-
-        @Override
-        default UpgradableBlockingStreamingHttpResponse addHeaders(final HttpHeaders headers) {
-            BlockingStreamingHttpResponse.super.addHeaders(headers);
-            return this;
-        }
-
-        @Override
-        default UpgradableBlockingStreamingHttpResponse setHeader(final CharSequence name, final CharSequence value) {
-            BlockingStreamingHttpResponse.super.setHeader(name, value);
-            return this;
-        }
-
-        @Override
-        default UpgradableBlockingStreamingHttpResponse setHeaders(final HttpHeaders headers) {
-            BlockingStreamingHttpResponse.super.setHeaders(headers);
-            return this;
-        }
-
-        @Override
-        default UpgradableBlockingStreamingHttpResponse addCookie(final HttpCookie cookie) {
-            BlockingStreamingHttpResponse.super.addCookie(cookie);
-            return this;
-        }
-
-        @Override
-        default UpgradableBlockingStreamingHttpResponse addCookie(final CharSequence name, final CharSequence value) {
-            BlockingStreamingHttpResponse.super.addCookie(name, value);
-            return this;
-        }
-
-        @Override
-        default UpgradableBlockingStreamingHttpResponse addSetCookie(final HttpCookie cookie) {
-            BlockingStreamingHttpResponse.super.addSetCookie(cookie);
-            return this;
-        }
-
-        @Override
-        default UpgradableBlockingStreamingHttpResponse addSetCookie(final CharSequence name,
-                                                                     final CharSequence value) {
-            BlockingStreamingHttpResponse.super.addSetCookie(name, value);
-            return this;
         }
     }
 }

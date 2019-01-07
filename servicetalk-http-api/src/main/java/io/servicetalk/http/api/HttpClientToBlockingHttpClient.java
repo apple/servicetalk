@@ -40,13 +40,6 @@ final class HttpClientToBlockingHttpClient extends BlockingHttpClient {
     }
 
     @Override
-    public HttpClient.UpgradableHttpResponse upgradeConnection(final HttpRequest request) throws Exception {
-        // It is assumed that users will always apply timeouts at the StreamingHttpService layer (e.g. via filter).
-        // So we don't apply any explicit timeout here and just wait forever.
-        return blockingInvocation(client.upgradeConnection(request));
-    }
-
-    @Override
     public HttpResponse request(final HttpExecutionStrategy strategy, final HttpRequest request) throws Exception {
         return blockingInvocation(client.request(strategy, request));
     }
