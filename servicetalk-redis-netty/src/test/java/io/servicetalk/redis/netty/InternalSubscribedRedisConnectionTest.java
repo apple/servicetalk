@@ -144,18 +144,21 @@ public class InternalSubscribedRedisConnectionTest {
                 .ioExecutor(ioExecutor).executor(immediate()).build(redisAddress));
         assert publishConnection != null;
 
-        awaitIndefinitely(publishConnection.asCommander().publish(channelToSubscribe, randomCharSequenceOfByteLength(32)));
+        awaitIndefinitely(publishConnection.asCommander().publish(channelToSubscribe,
+                randomCharSequenceOfByteLength(32)));
 
         // Await one message from subscribe response to make sure we have started reading.
         Object notification = notifications.take();
-        assertThat("Unexpected notification from subscribe response stream.", notification, not(instanceOf(TerminalNotification.class)));
+        assertThat("Unexpected notification from subscribe response stream.", notification,
+                not(instanceOf(TerminalNotification.class)));
 
         subscription.cancel();
 
         awaitIndefinitely(connection.closeAsync().merge(publishConnection.closeAsync()));
     }
 
-    private static <T> Subscription subscribeToResponse(Publisher<T> response, Queue<Object> notifications) throws InterruptedException {
+    private static <T> Subscription subscribeToResponse(Publisher<T> response, Queue<Object> notifications)
+            throws InterruptedException {
         final BlockingQueue<Subscription> subscriptionExchanger = new LinkedBlockingQueue<>(1);
         @SuppressWarnings("unchecked")
         Subscriber<T> responseSubscriber = mock(Subscriber.class);
