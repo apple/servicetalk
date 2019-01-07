@@ -63,9 +63,9 @@ import static io.servicetalk.redis.api.RedisProtocolSupport.Command.PING;
 import static io.servicetalk.redis.api.RedisProtocolSupport.Command.SUBSCRIBE;
 import static io.servicetalk.redis.netty.InternalSubscribedRedisConnection.newSubscribedConnection;
 import static io.servicetalk.redis.netty.PipelinedRedisConnection.newPipelinedConnection;
-import static io.servicetalk.redis.netty.RedisTestUtils.randomStringOfLength;
 import static io.servicetalk.transport.netty.NettyIoExecutors.createIoExecutor;
 import static io.servicetalk.transport.netty.internal.NettyIoExecutors.toNettyIoExecutor;
+import static io.servicetalk.transport.netty.internal.RandomDataUtils.randomCharSequenceOfByteLength;
 import static java.lang.Long.MAX_VALUE;
 import static java.time.Duration.ofSeconds;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -156,7 +156,7 @@ public class PingerTest {
         awaitPingDurations(2); // Await for a few ping durations to verify no pings were sent before subscribe.
         assertThat("Unexpected command written.", commandsWritten, hasSize(0));
 
-        connection.asCommander().subscribe(randomStringOfLength(32)).flatMapPublisher(PubSubRedisConnection::getMessages)
+        connection.asCommander().subscribe(randomCharSequenceOfByteLength(32)).flatMapPublisher(PubSubRedisConnection::getMessages)
                 .subscribe(new Subscriber<PubSubRedisMessage>() {
                     @Override
                     public void onSubscribe(Subscription s) {

@@ -47,9 +47,9 @@ import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.redis.api.RedisProtocolSupport.Command.SUBSCRIBE;
 import static io.servicetalk.redis.api.RedisRequests.newRequest;
 import static io.servicetalk.redis.netty.DefaultRedisConnectionBuilder.forPipeline;
-import static io.servicetalk.redis.netty.RedisTestUtils.randomStringOfLength;
 import static io.servicetalk.transport.netty.NettyIoExecutors.createIoExecutor;
 import static io.servicetalk.transport.netty.internal.NettyIoExecutors.toNettyIoExecutor;
+import static io.servicetalk.transport.netty.internal.RandomDataUtils.randomCharSequenceOfByteLength;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
@@ -83,7 +83,7 @@ public class InternalSubscribedRedisConnectionTest {
         ioExecutor = toNettyIoExecutor(createIoExecutor());
         builder = DefaultRedisConnectionBuilder.<InetSocketAddress>forSubscribe(
                 new RedisClientConfig(new TcpClientConfig(true))
-                .setDeferSubscribeTillConnect(true))
+                        .setDeferSubscribeTillConnect(true))
                 .pingPeriod(Duration.ofSeconds(1))
                 .idleConnectionTimeout(Duration.ofSeconds(2));
     }
@@ -127,7 +127,7 @@ public class InternalSubscribedRedisConnectionTest {
 
         final CountDownLatch latch = new CountDownLatch(1);
 
-        CharSequence channelToSubscribe = randomStringOfLength(32);
+        CharSequence channelToSubscribe = randomCharSequenceOfByteLength(32);
         final RedisRequest subReq = newRequest(SUBSCRIBE,
                 new CompleteBulkString(connection.executionContext().bufferAllocator()
                         .fromUtf8(channelToSubscribe)));
@@ -144,7 +144,7 @@ public class InternalSubscribedRedisConnectionTest {
                 .ioExecutor(ioExecutor).executor(immediate()).build(redisAddress));
         assert publishConnection != null;
 
-        awaitIndefinitely(publishConnection.asCommander().publish(channelToSubscribe, randomStringOfLength(32)));
+        awaitIndefinitely(publishConnection.asCommander().publish(channelToSubscribe, randomCharSequenceOfByteLength(32)));
 
         // Await one message from subscribe response to make sure we have started reading.
         Object notification = notifications.take();

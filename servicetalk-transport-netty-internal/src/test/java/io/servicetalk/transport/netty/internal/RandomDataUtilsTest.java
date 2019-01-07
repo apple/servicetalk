@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.redis.netty;
+package io.servicetalk.transport.netty.internal;
 
 import org.junit.Test;
 
@@ -21,7 +21,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 
-public class RedisTestUtilsTest {
+public class RandomDataUtilsTest {
     @Test
     public void randomStringOfLength() {
         testRandomStringOfLength(0);
@@ -33,7 +33,7 @@ public class RedisTestUtilsTest {
     }
 
     private static void testRandomStringOfLength(int lengthInUtf8Bytes) {
-        String s = RedisTestUtils.randomStringOfLength(lengthInUtf8Bytes).toString();
+        String s = RandomDataUtils.randomCharSequenceOfByteLength(lengthInUtf8Bytes).toString();
         assertThat(s, s.getBytes(UTF_8).length, is(lengthInUtf8Bytes));
     }
 }

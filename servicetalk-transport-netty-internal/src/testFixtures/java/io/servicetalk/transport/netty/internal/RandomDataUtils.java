@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,17 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.redis.netty;
+package io.servicetalk.transport.netty.internal;
 
 import java.util.concurrent.ThreadLocalRandom;
 
-final class RedisTestUtils {
+public final class RandomDataUtils {
 
-    private RedisTestUtils() {
+    private RandomDataUtils() {
         // No instances.
     }
 
-    static CharSequence randomStringOfLength(int lengthInUtf8Bytes) {
+    /**
+     * Generates a new random {@link CharSequence} whose UTF-8 encoding is of the specified size.
+     *
+     * @param lengthInUtf8Bytes the desired size
+     * @return a new {@link CharSequence}
+     */
+    public static CharSequence randomCharSequenceOfByteLength(int lengthInUtf8Bytes) {
         if (lengthInUtf8Bytes == 0) {
             return "";
         }
@@ -39,6 +45,6 @@ final class RedisTestUtils {
             c[j++] = (char) ThreadLocalRandom.current().nextInt(128, 2048);
         }
 
-        return new String(c);
+        return String.valueOf(c);
     }
 }
