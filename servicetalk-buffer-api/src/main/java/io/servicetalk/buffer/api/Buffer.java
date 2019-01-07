@@ -133,7 +133,7 @@ public interface Buffer {
 
     /**
      * Expands the buffer {@link #capacity()} to make sure the number of
-     * {@linkplain #writableBytes() the writable bytes} is equal to or greater than the
+     * {@linkplain #writableBytes() writable bytes} is equal to or greater than the
      * specified value.  If there is enough writable bytes in this buffer, this method
      * returns with no side effect.
      *
@@ -147,8 +147,8 @@ public interface Buffer {
 
     /**
      * Expands the buffer {@link #capacity()} to make sure the number of
-     * {@linkplain #writableBytes() the writable bytes} is equal to or greater than the
-     * specified value. Unlike {@link #ensureWritable(int)}, this method returns a code.
+     * {@linkplain #writableBytes() writable bytes} is equal to or greater than the
+     * specified value. Unlike {@link #ensureWritable(int)}, this method returns a status code.
      *
      * @param minWritableBytes
      *        the expected minimum number of writable bytes
@@ -167,9 +167,9 @@ public interface Buffer {
     int ensureWritable(int minWritableBytes, boolean force);
 
     /**
-     * Tries to make sure the number of {@linkplain #writableBytes() the writable bytes}
+     * Tries to make sure the number of {@linkplain #writableBytes() writable bytes}
      * is equal to or greater than the specified value. Unlike {@link #ensureWritable(int)},
-     * this method does not raise an exception but returns a code.
+     * this method does not raise an exception but returns a status code.
      *
      * @param minWritableBytes
      *        the expected minimum number of writable bytes
@@ -1470,8 +1470,7 @@ public interface Buffer {
      * @param src the buffer to write.
      * @param length the number of bytes to transfer
      * @return self.
-     * @throws IndexOutOfBoundsException
-     *         if {@code length} is greater then {@code src.readableBytes}
+     * @throws IndexOutOfBoundsException if {@code length} is greater then {@code src.readableBytes}
      */
     Buffer writeBytes(Buffer src, int length);
 
@@ -1488,8 +1487,7 @@ public interface Buffer {
      * @return self.
      * @throws IndexOutOfBoundsException
      *         if the specified {@code srcIndex} is less than {@code 0}, or
-     *         if {@code srcIndex + length} is greater than
-     *            {@code src.capacity}
+     *         if {@code srcIndex + length} is greater than {@code src.capacity}
      */
     Buffer writeBytes(Buffer src, int srcIndex, int length);
 
@@ -1518,8 +1516,7 @@ public interface Buffer {
      * @return self.
      * @throws IndexOutOfBoundsException
      *         if the specified {@code srcIndex} is less than {@code 0}, or
-     *         if {@code srcIndex + length} is greater than
-     *            {@code src.length}
+     *         if {@code srcIndex + length} is greater than {@code src.length}
      */
     Buffer writeBytes(byte[] src, int srcIndex, int length);
 
@@ -1538,35 +1535,41 @@ public interface Buffer {
     Buffer writeBytes(ByteBuffer src);
 
     /**
-     * Transfers ta fixed amount from the specified source InputStream's data to this buffer starting at
+     * Transfers ta fixed amount from the specified source {@link InputStream}'s data to this buffer starting at
      * the current {@code writerIndex} until {@code length} bytes have been read, the end of stream
      * is reached, or an exception is thrown.
      * If {@code this.writableBytes} is less than {@code length}, {@link #ensureWritable(int)}
      * will be called in an attempt to expand capacity to accommodate.
      * <p>
-     * This method will increase the {@code writerIndex} by the number of the transferred bytes if the write operation was successful.
+     * This method will increase the {@code writerIndex} by the number of the transferred bytes if the write operation
+     * was successful.
      *
-     * @param src the source InputStream to write.
-     * @param length the maximum number of bytes to transfer. The buffer may be resized to accommodate this amount of data.
+     * @param src the source {@link InputStream} to write.
+     * @param length the maximum number of bytes to transfer. The buffer may be resized to accommodate this amount of
+     *        data.
      * @return the actual number of bytes read in from {@code src}.
      *         {@code -1} if the specified channel is closed.
-     * @throws IOException if the InputStream throws an exception while being read from.
+     * @throws IOException if the {@link InputStream} throws an exception while being read from.
      */
     int writeBytes(InputStream src, int length) throws IOException;
 
     /**
-     * Transfers all the specified source InputStream's data to this buffer starting at
+     * Transfers all the specified source {@link InputStream}'s data to this buffer starting at
      * the current {@code writerIndex} until the end of stream is reached or an exception is thrown.
-     * If {@code this.writableBytes} is less than the number of bytes in the InputStream,
+     * If {@code this.writableBytes} is less than the number of bytes in the {@link InputStream},
      * {@link #ensureWritable(int)} will be called in an attempt to expand capacity to accommodate.
+     * Note that because {@link InputStream} does not provide a reliable way to get the remaining bytes,
+     * this method may over allocate by a factor of {@code chunkSize}.
      * <p>
-     * This method will increase the {@code writerIndex} by the number of the transferred bytes if the write operation was successful.
+     * This method will increase the {@code writerIndex} by the number of the transferred bytes if the write operation
+     * was successful.
      *
-     * @param src the source InputStream to write.
+     * @param src the source {@link InputStream} to write.
      * @param chunkSize the amount of data that will be read from {@code src} on each read attempt.
      * @return the actual total number of bytes read in from {@code src}.
-     *         {@code -1} if no bytes were read because the specified InputStream was closed when this method was called.
-     * @throws IOException if the InputStream throws an exception while being read from.
+     *         {@code -1} if no bytes were read because the specified {@link InputStream} was closed when this method
+     *         was called.
+     * @throws IOException if the {@link InputStream} throws an exception while being read from.
      */
     int writeBytesUntilEndStream(InputStream src, int chunkSize) throws IOException;
 
@@ -1574,7 +1577,7 @@ public interface Buffer {
      * Encode a {@link CharSequence} in <a href="http://en.wikipedia.org/wiki/ASCII">ASCII</a> and write it
      * to this buffer starting at {@code writerIndex} and increases the {@code writerIndex} by the
      * number of the transferred bytes.
-     * if {@code this.writableBytes} is not large enough to write the whole sequence,
+     * If {@code this.writableBytes} is not large enough to write the whole sequence,
      * {@link #ensureWritable(int)} will be called in an attempt to expand capacity to accommodate.
 
      * @param seq the source of the data.
@@ -1586,7 +1589,7 @@ public interface Buffer {
      * Encode a {@link CharSequence} in <a href="http://en.wikipedia.org/wiki/UTF-8">UTF-8</a> and write it
      * to this buffer starting at {@code writerIndex} and increases the {@code writerIndex} by the
      * number of the transferred bytes.
-     * if {@code this.writableBytes} is not large enough to write the whole sequence,
+     * If {@code this.writableBytes} is not large enough to write the whole sequence,
      * {@link #ensureWritable(int)} will be called in an attempt to expand capacity to accommodate.
 
      * @param seq the source of the data.
