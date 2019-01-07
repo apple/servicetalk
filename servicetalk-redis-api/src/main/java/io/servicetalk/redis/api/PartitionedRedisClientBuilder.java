@@ -32,8 +32,10 @@ import org.reactivestreams.Subscriber;
 import java.io.InputStream;
 import java.net.SocketOption;
 import java.time.Duration;
-import java.util.function.Function;
+import java.util.function.Predicate;
 import javax.annotation.Nullable;
+
+import static java.util.Objects.requireNonNull;
 
 /**
  * A builder of {@link PartitionedRedisClient} objects.
@@ -139,18 +141,38 @@ public interface PartitionedRedisClientBuilder<U, R> {
     PartitionedRedisClientBuilder<U, R> serviceDiscoveryMaxQueueSize(int serviceDiscoveryMaxQueueSize);
 
     /**
-     * Defines a filter {@link Function} to decorate {@link RedisClient} used by this builder.
+     * Defines a filter {@link RedisClientFilterFactory} to decorate {@link RedisClient} used by this builder.
      * <p>
      * Filtering allows you to wrap a {@link RedisClient} and modify behavior during request/response processing.
      * Some potential candidates for filtering include logging, metrics, and decorating responses.
      *
-     * @param factory {@link Function} to filter the used {@link RedisClient}.
+     * @param factory {@link RedisClientFilterFactory} to filter the used {@link RedisClient}.
      * @return {@code this}.
      */
     PartitionedRedisClientBuilder<U, R> appendClientFilter(RedisClientFilterFactory factory);
 
     /**
-     * Defines a filter {@link Function} to decorate {@link RedisConnection} used by this builder.
+     * Defines a filter {@link RedisClientFilterFactory} to decorate {@link RedisClient} used by this builder,
+     * for every request that passes the provided {@link Predicate}.
+     * <p>
+     * Filtering allows you to wrap a {@link RedisClient} and modify behavior during request/response processing.
+     * Some potential candidates for filtering include logging, metrics, and decorating responses.
+     *
+     * @param predicate the {@link Predicate} to test if the filter must be applied.
+     * @param factory {@link RedisClientFilterFactory} to filter the used {@link RedisClient}.
+     * @return {@code this}.
+     */
+    default PartitionedRedisClientBuilder<U, R> appendClientFilter(Predicate<RedisRequest> predicate,
+                                                                   RedisClientFilterFactory factory) {
+        requireNonNull(predicate);
+        requireNonNull(factory);
+
+        return appendClientFilter((client, slbEvents, plbEvents) ->
+                new ConditionalRedisClientFilter(predicate, factory.create(client, slbEvents, plbEvents), client));
+    }
+
+    /**
+     * Defines a filter {@link RedisConnectionFilterFactory} to decorate {@link RedisConnection} used by this builder.
      * <p>
      * Filtering allows you to wrap a {@link RedisConnection} and modify behavior during request/response processing.
      * Some potential candidates for filtering include logging, metrics, and decorating responses.
@@ -159,6 +181,26 @@ public interface PartitionedRedisClientBuilder<U, R> {
      * @return {@code this}.
      */
     PartitionedRedisClientBuilder<U, R> appendConnectionFilter(RedisConnectionFilterFactory factory);
+
+    /**
+     * Defines a filter {@link RedisConnectionFilterFactory} to decorate {@link RedisConnection} used by this builder,
+     * for every request that passes the provided {@link Predicate}.
+     * <p>
+     * Filtering allows you to wrap a {@link RedisConnection} and modify behavior during request/response processing.
+     * Some potential candidates for filtering include logging, metrics, and decorating responses.
+     *
+     * @param predicate the {@link Predicate} to test if the filter must be applied.
+     * @param factory {@link RedisConnectionFilterFactory} to filter the used {@link RedisConnection}.
+     * @return {@code this}.
+     */
+    default PartitionedRedisClientBuilder<U, R> appendConnectionFilter(Predicate<RedisRequest> predicate,
+                                                                       RedisConnectionFilterFactory factory) {
+        requireNonNull(predicate);
+        requireNonNull(factory);
+
+        return appendConnectionFilter(cnx ->
+                new ConditionalRedisConnectionFilter(predicate, factory.create(cnx), cnx));
+    }
 
     /**
      * Append the filter to the chain of filters used to decorate the {@link ConnectionFactory} used by this
@@ -192,6 +234,26 @@ public interface PartitionedRedisClientBuilder<U, R> {
      * @return {@code this}.
      */
     PartitionedRedisClientBuilder<U, R> appendPartitionedFilter(PartitionedRedisClientFilterFactory factory);
+
+    /**
+     * Set the filter factory that is used to decorate {@link PartitionedRedisClient} created by this builder,
+     * for every request that passes the provided {@link Predicate}.
+     * <p>
+     * Note this method will be used to decorate the result of {@link #build()} before it is returned to the user.
+     *
+     * @param predicate the {@link Predicate} to test if the filter must be applied.
+     * @param factory {@link PartitionedRedisClientFilterFactory} to filter the used
+     * {@link PartitionedRedisClient}.
+     * @return {@code this}.
+     */
+    default PartitionedRedisClientBuilder<U, R> appendPartitionedFilter(Predicate<RedisRequest> predicate,
+                                                                        PartitionedRedisClientFilterFactory factory) {
+        requireNonNull(predicate);
+        requireNonNull(factory);
+
+        return appendPartitionedFilter(client ->
+                new ConditionalPartitionedRedisClientFilter(predicate, factory.create(client), client));
+    }
 
     /**
      * Disables automatically delaying {@link RedisRequest}s until the {@link LoadBalancer} is ready.
