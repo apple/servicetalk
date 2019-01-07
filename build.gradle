@@ -94,6 +94,10 @@ task build {
   dependsOn findTasks('build')
 }
 
+task assemble {
+  dependsOn findTasks('assemble')
+}
+
 task checkstyle {
   dependsOn findTasks('checkstyle',
     ['servicetalk-bom', 'servicetalk-bom-internal', 'servicetalk-examples', 'servicetalk-gradle-plugin-internal'])
