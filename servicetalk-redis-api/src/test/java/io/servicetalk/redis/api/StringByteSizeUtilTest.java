@@ -17,6 +17,7 @@ package io.servicetalk.redis.api;
 
 import org.junit.Test;
 
+import static io.servicetalk.redis.api.StringByteSizeUtil.numberOfBytesUtf8;
 import static io.servicetalk.redis.api.StringByteSizeUtil.numberOfDigits;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.Assert.assertEquals;
@@ -108,7 +109,7 @@ public class StringByteSizeUtilTest {
 
     private void testCalculatesCorrectLength(final byte[] b) {
         String foo = new String(b, UTF_8);
-        final int fooBytes = StringByteSizeUtil.numberOfBytesUtf8(foo);
+        final int fooBytes = numberOfBytesUtf8(foo);
         assertEquals(b.length, fooBytes);
         assertEquals(foo.getBytes(UTF_8).length, fooBytes);
     }
