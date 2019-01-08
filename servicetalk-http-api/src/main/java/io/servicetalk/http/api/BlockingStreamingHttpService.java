@@ -15,15 +15,12 @@
  */
 package io.servicetalk.http.api;
 
-import javax.annotation.Nullable;
-
-import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
+import static io.servicetalk.http.api.HttpExecutionStrategies.OFFLOAD_RECEIVE_META_AND_SEND_STRATEGY;
 
 /**
  * The equivalent of {@link StreamingHttpService} but with synchronous/blocking APIs instead of asynchronous APIs.
  */
 public abstract class BlockingStreamingHttpService implements AutoCloseable, BlockingStreamingHttpRequestHandler {
-
     @Override
     public void close() throws Exception {
         // noop
@@ -37,8 +34,8 @@ public abstract class BlockingStreamingHttpService implements AutoCloseable, Blo
     /**
      * Convert this {@link BlockingStreamingHttpService} to the {@link StreamingHttpService} asynchronous API.
      * <p>
-     * Note that the resulting {@link StreamingHttpService} may still be subject to any blocking, in memory aggregation, and
-     * other behavior as this {@link BlockingStreamingHttpService}.
+     * Note that the resulting {@link StreamingHttpService} may still be subject to any blocking, in memory aggregation,
+     * and other behavior as this {@link BlockingStreamingHttpService}.
      *
      * @return a {@link StreamingHttpService} representation of this {@link BlockingStreamingHttpService}.
      */
@@ -75,9 +72,8 @@ public abstract class BlockingStreamingHttpService implements AutoCloseable, Blo
      *
      * @return The {@link HttpExecutionStrategy} for this {@link BlockingStreamingHttpService}.
      */
-    @Nullable
     public HttpExecutionStrategy executionStrategy() {
-        return defaultStrategy();
+        return OFFLOAD_RECEIVE_META_AND_SEND_STRATEGY;
     }
 
     /**
@@ -86,6 +82,6 @@ public abstract class BlockingStreamingHttpService implements AutoCloseable, Blo
      * @return a {@link StreamingHttpService} representation of this {@link BlockingStreamingHttpService}.
      */
     StreamingHttpService asStreamingServiceInternal() {
-        return new BlockingStreamingHttpServiceToStreamingHttpService(this);
+        return BlockingStreamingHttpServiceToStreamingHttpService.transform(this);
     }
 }

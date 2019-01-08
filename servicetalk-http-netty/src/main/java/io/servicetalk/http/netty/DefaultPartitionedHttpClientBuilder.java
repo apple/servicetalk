@@ -59,9 +59,10 @@ import javax.annotation.Nullable;
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Single.deferShareContext;
 import static io.servicetalk.concurrent.api.Single.error;
+import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static java.util.Objects.requireNonNull;
 
-class DefaultPartitionedHttpClientBuilder<U, R> implements PartitionedHttpClientBuilder<U, R> {
+class DefaultPartitionedHttpClientBuilder<U, R> extends PartitionedHttpClientBuilder<U, R> {
 
     private final U address;
     private final Function<HttpRequestMetaData, PartitionAttributesBuilder> partitionAttributesBuilderFactory;
@@ -100,7 +101,7 @@ class DefaultPartitionedHttpClientBuilder<U, R> implements PartitionedHttpClient
                 (Publisher<? extends PartitionedServiceDiscovererEvent<R>>) copy.serviceDiscoverer().discover(address);
 
         return new DefaultPartitionedStreamingHttpClient<>(psdEvents, serviceDiscoveryMaxQueueSize, clientFactory,
-                partitionAttributesBuilderFactory, reqRespFactory, exec, partitionMapFactory);
+                partitionAttributesBuilderFactory, reqRespFactory, exec, partitionMapFactory, copy.executionStrategy());
     }
 
     private static final class DefaultPartitionedStreamingHttpClient<U, R> extends StreamingHttpClient {
@@ -121,8 +122,8 @@ class DefaultPartitionedHttpClientBuilder<U, R> implements PartitionedHttpClient
                 final Function<HttpRequestMetaData, PartitionAttributesBuilder> pabf,
                 final StreamingHttpRequestResponseFactory reqRespFactory,
                 final ExecutionContext executionContext,
-                final PartitionMapFactory partitionMapFactory) {
-            super(reqRespFactory);
+                final PartitionMapFactory partitionMapFactory, final HttpExecutionStrategy strategy) {
+            super(reqRespFactory, strategy);
             this.pabf = pabf;
             this.executionContext = executionContext;
             this.group = new DefaultPartitionedClientGroup<>(PARTITION_CLOSED, PARTITION_UNKNOWN, clientFactory,
@@ -176,7 +177,7 @@ class DefaultPartitionedHttpClientBuilder<U, R> implements PartitionedHttpClient
                 public StreamingHttpRequest newRequest(final HttpRequestMethod method, final String requestTarget) {
                     throw ex;
                 }
-            });
+            }, defaultStrategy());
             this.ex = ex;
         }
 

@@ -73,7 +73,13 @@ public interface MultiAddressHttpClientFilterFactory<U> {
      */
     default HttpClientFilterFactory asClientFilter(U address) {
         requireNonNull(address);
-        return (client, lbEvents) -> new StreamingHttpClientFilter(create(address, client, lbEvents));
+        return (client, lbEvents) -> new StreamingHttpClientFilter(create(address, client, lbEvents)) {
+            @Override
+            protected HttpExecutionStrategy mergeForEffectiveStrategy(final HttpExecutionStrategy mergeWith) {
+                // Since this filter does not have any blocking code, we do not need to alter the effective strategy.
+                return mergeWith;
+            }
+        };
     }
 
     /**

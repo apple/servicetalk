@@ -48,7 +48,6 @@ import java.util.function.Function;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
-import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.netty.GlobalDnsServiceDiscoverer.globalDnsServiceDiscoverer;
 import static io.servicetalk.loadbalancer.RoundRobinLoadBalancer.newRoundRobinFactory;
 import static java.util.Objects.requireNonNull;
@@ -62,7 +61,7 @@ import static java.util.Objects.requireNonNull;
  * @param <U> the type of address before resolution (unresolved address)
  * @param <R> the type of address after resolution (resolved address)
  */
-final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddressHttpClientBuilder<U, R> {
+final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHttpClientBuilder<U, R> {
 
     private static final HttpClientFilterFactory LB_READY_FILTER =
             (client, lbEvents) -> new LoadBalancerReadyStreamingHttpClient(4, lbEvents, client);
@@ -80,7 +79,6 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
     private HttpClientFilterFactory lbReadyFilter = LB_READY_FILTER;
     private ConnectionFactoryFilter<R, StreamingHttpConnection> connectionFactoryFilter =
             ConnectionFactoryFilter.identity();
-    private HttpExecutionStrategy strategy = defaultStrategy();
 
     DefaultSingleAddressHttpClientBuilder(
             final U address, final ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>> serviceDiscoverer) {
@@ -147,6 +145,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
         // Track resources that potentially need to be closed when an exception is thrown during buildStreaming
         final CompositeCloseable closeOnException = newCompositeCloseable();
         try {
+            final HttpExecutionStrategy strategy = executionStrategy();
             final Publisher<? extends ServiceDiscovererEvent<R>> sdEvents = serviceDiscoverer.discover(address);
 
             final StreamingHttpRequestResponseFactory reqRespFactory =
@@ -156,10 +155,10 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
             // closed by the LoadBalancer
             final ConnectionFactory<R, ? extends StreamingHttpConnection> connectionFactory =
                     connectionFactoryFilter.apply(closeOnException.prepend(roConfig.getMaxPipelinedRequests() == 1 ?
-                        new NonPipelinedLBHttpConnectionFactory<>(
-                                roConfig, exec, connectionFilterFunction, reqRespFactory) :
-                        new PipelinedLBHttpConnectionFactory<>(
-                                roConfig, exec, connectionFilterFunction, reqRespFactory)));
+                        new NonPipelinedLBHttpConnectionFactory<>(roConfig, exec, connectionFilterFunction,
+                                reqRespFactory, strategy) :
+                        new PipelinedLBHttpConnectionFactory<>(roConfig, exec, connectionFilterFunction,
+                                reqRespFactory, strategy)));
 
             final LoadBalancer<? extends StreamingHttpConnection> lbfUntypedForCast = closeOnException.prepend(
                     loadBalancerFactory.newLoadBalancer(sdEvents, connectionFactory));
@@ -179,6 +178,11 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
     }
 
     ExecutionContext buildExecutionContext() {
+        final HttpExecutionStrategy strategy = executionStrategy();
+        Executor executor = strategy.executor();
+        if (executor != null) {
+            executionContextBuilder.executor(executor);
+        }
         return executionContextBuilder.build();
     }
 
@@ -195,16 +199,6 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
     @Override
     public DefaultSingleAddressHttpClientBuilder<U, R> ioExecutor(final IoExecutor ioExecutor) {
         executionContextBuilder.ioExecutor(ioExecutor);
-        return this;
-    }
-
-    @Override
-    public SingleAddressHttpClientBuilder<U, R> executionStrategy(final HttpExecutionStrategy strategy) {
-        this.strategy = strategy;
-        Executor executor = strategy.executor();
-        if (executor != null) {
-            executionContextBuilder.executor(executor);
-        }
         return this;
     }
 
@@ -323,5 +317,9 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
     public DefaultSingleAddressHttpClientBuilder<U, R> sslConfig(@Nullable final SslConfig sslConfig) {
         config.getTcpClientConfig().setSslConfig(sslConfig);
         return this;
+    }
+
+    public HttpExecutionStrategy executionStrategy() {
+        return super.executionStrategy();
     }
 }

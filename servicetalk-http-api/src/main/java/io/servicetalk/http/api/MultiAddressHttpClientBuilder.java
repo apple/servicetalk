@@ -40,69 +40,74 @@ import static java.util.Objects.requireNonNull;
  * @param <R> the type of address after resolution (resolved address)
  * @see <a href="https://tools.ietf.org/html/rfc7230#section-5.3.2">absolute-form rfc7230#section-5.3.2</a>
  */
-public interface MultiAddressHttpClientBuilder<U, R> extends HttpClientBuilder<U, R, ServiceDiscovererEvent<R>> {
+public abstract class MultiAddressHttpClientBuilder<U, R>
+        implements HttpClientBuilder<U, R, ServiceDiscovererEvent<R>> {
+    private HttpExecutionStrategy strategy = DEFAULT_BUILDER_STRATEGY;
 
     @Override
-    MultiAddressHttpClientBuilder<U, R> ioExecutor(IoExecutor ioExecutor);
+    public abstract MultiAddressHttpClientBuilder<U, R> ioExecutor(IoExecutor ioExecutor);
 
     @Override
-    MultiAddressHttpClientBuilder<U, R> executionStrategy(HttpExecutionStrategy strategy);
+    public final MultiAddressHttpClientBuilder<U, R> executionStrategy(HttpExecutionStrategy strategy) {
+        this.strategy = strategy;
+        return this;
+    }
 
     @Override
-    MultiAddressHttpClientBuilder<U, R> bufferAllocator(BufferAllocator allocator);
+    public abstract MultiAddressHttpClientBuilder<U, R> bufferAllocator(BufferAllocator allocator);
 
     @Override
-    <T> MultiAddressHttpClientBuilder<U, R> socketOption(SocketOption<T> option, T value);
+    public abstract <T> MultiAddressHttpClientBuilder<U, R> socketOption(SocketOption<T> option, T value);
 
     @Override
-    MultiAddressHttpClientBuilder<U, R> enableWireLogging(String loggerName);
+    public abstract MultiAddressHttpClientBuilder<U, R> enableWireLogging(String loggerName);
 
     @Override
-    MultiAddressHttpClientBuilder<U, R> disableWireLogging();
+    public abstract MultiAddressHttpClientBuilder<U, R> disableWireLogging();
 
     @Override
-    MultiAddressHttpClientBuilder<U, R> headersFactory(HttpHeadersFactory headersFactory);
+    public abstract MultiAddressHttpClientBuilder<U, R> headersFactory(HttpHeadersFactory headersFactory);
 
     @Override
-    MultiAddressHttpClientBuilder<U, R> maxInitialLineLength(int maxInitialLineLength);
+    public abstract MultiAddressHttpClientBuilder<U, R> maxInitialLineLength(int maxInitialLineLength);
 
     @Override
-    MultiAddressHttpClientBuilder<U, R> maxHeaderSize(int maxHeaderSize);
+    public abstract MultiAddressHttpClientBuilder<U, R> maxHeaderSize(int maxHeaderSize);
 
     @Override
-    MultiAddressHttpClientBuilder<U, R> headersEncodedSizeEstimate(int headersEncodedSizeEstimate);
+    public abstract MultiAddressHttpClientBuilder<U, R> headersEncodedSizeEstimate(int headersEncodedSizeEstimate);
 
     @Override
-    MultiAddressHttpClientBuilder<U, R> trailersEncodedSizeEstimate(int trailersEncodedSizeEstimate);
+    public abstract MultiAddressHttpClientBuilder<U, R> trailersEncodedSizeEstimate(int trailersEncodedSizeEstimate);
 
     @Override
-    MultiAddressHttpClientBuilder<U, R> maxPipelinedRequests(int maxPipelinedRequests);
+    public abstract MultiAddressHttpClientBuilder<U, R> maxPipelinedRequests(int maxPipelinedRequests);
 
     @Override
-    MultiAddressHttpClientBuilder<U, R> appendConnectionFilter(HttpConnectionFilterFactory factory);
+    public abstract MultiAddressHttpClientBuilder<U, R> appendConnectionFilter(HttpConnectionFilterFactory factory);
 
     @Override
-    default MultiAddressHttpClientBuilder<U, R> appendConnectionFilter(Predicate<StreamingHttpRequest> predicate,
-                                                                       HttpConnectionFilterFactory factory) {
+    public MultiAddressHttpClientBuilder<U, R> appendConnectionFilter(Predicate<StreamingHttpRequest> predicate,
+                                                                      HttpConnectionFilterFactory factory) {
         return (MultiAddressHttpClientBuilder<U, R>) HttpClientBuilder.super.appendConnectionFilter(predicate, factory);
     }
 
     @Override
-    MultiAddressHttpClientBuilder<U, R> appendConnectionFactoryFilter(
+    public abstract MultiAddressHttpClientBuilder<U, R> appendConnectionFactoryFilter(
             ConnectionFactoryFilter<R, StreamingHttpConnection> factory);
 
     @Override
-    MultiAddressHttpClientBuilder<U, R> disableHostHeaderFallback();
+    public abstract MultiAddressHttpClientBuilder<U, R> disableHostHeaderFallback();
 
     @Override
-    MultiAddressHttpClientBuilder<U, R> disableWaitForLoadBalancer();
+    public abstract MultiAddressHttpClientBuilder<U, R> disableWaitForLoadBalancer();
 
     @Override
-    MultiAddressHttpClientBuilder<U, R> serviceDiscoverer(
+    public abstract MultiAddressHttpClientBuilder<U, R> serviceDiscoverer(
             ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>> serviceDiscoverer);
 
     @Override
-    MultiAddressHttpClientBuilder<U, R> loadBalancerFactory(
+    public abstract MultiAddressHttpClientBuilder<U, R> loadBalancerFactory(
             LoadBalancerFactory<R, StreamingHttpConnection> loadBalancerFactory);
 
     /**
@@ -115,7 +120,8 @@ public interface MultiAddressHttpClientBuilder<U, R> extends HttpClientBuilder<U
      * @param hostHeaderTransformer transforms the {@code UnresolvedAddress} for the {@link HttpHeaderNames#HOST}
      * @return {@code this}
      */
-    MultiAddressHttpClientBuilder<U, R> enableHostHeaderFallback(Function<U, CharSequence> hostHeaderTransformer);
+    public abstract MultiAddressHttpClientBuilder<U, R> enableHostHeaderFallback(
+            Function<U, CharSequence> hostHeaderTransformer);
 
     /**
      * Append the filter to the chain of filters used to decorate the {@link StreamingHttpClient} created by this
@@ -136,7 +142,8 @@ public interface MultiAddressHttpClientBuilder<U, R> extends HttpClientBuilder<U
      * purpose of filtering.
      * @return {@code this}
      */
-    MultiAddressHttpClientBuilder<U, R> appendClientFilter(MultiAddressHttpClientFilterFactory<U> factory);
+    public abstract MultiAddressHttpClientBuilder<U, R> appendClientFilter(
+            MultiAddressHttpClientFilterFactory<U> factory);
 
     /**
      * Append the filter to the chain of filters used to decorate the {@link StreamingHttpClient} created by this
@@ -158,8 +165,8 @@ public interface MultiAddressHttpClientBuilder<U, R> extends HttpClientBuilder<U
      * purpose of filtering.
      * @return {@code this}
      */
-    default MultiAddressHttpClientBuilder<U, R> appendClientFilter(Predicate<StreamingHttpRequest> predicate,
-                                                                   MultiAddressHttpClientFilterFactory<U> factory) {
+    public MultiAddressHttpClientBuilder<U, R> appendClientFilter(Predicate<StreamingHttpRequest> predicate,
+                                                                  MultiAddressHttpClientFilterFactory<U> factory) {
         requireNonNull(predicate);
         requireNonNull(factory);
 
@@ -173,7 +180,7 @@ public interface MultiAddressHttpClientBuilder<U, R> extends HttpClientBuilder<U
      * @param sslConfigProvider A {@link SslConfigProvider} to use.
      * @return {@code this}.
      */
-    MultiAddressHttpClientBuilder<U, R> sslConfigProvider(SslConfigProvider sslConfigProvider);
+    public abstract MultiAddressHttpClientBuilder<U, R> sslConfigProvider(SslConfigProvider sslConfigProvider);
 
     /**
      * Set a maximum number of redirects to follow.
@@ -181,5 +188,14 @@ public interface MultiAddressHttpClientBuilder<U, R> extends HttpClientBuilder<U
      * @param maxRedirects A maximum number of redirects to follow. Use a nonpositive number to disable redirects.
      * @return {@code this}.
      */
-    MultiAddressHttpClientBuilder<U, R> maxRedirects(int maxRedirects);
+    public abstract MultiAddressHttpClientBuilder<U, R> maxRedirects(int maxRedirects);
+
+    /**
+     * Returns the {@link HttpExecutionStrategy} used by this {@link MultiAddressHttpClientBuilder}.
+     *
+     * @return {@link HttpExecutionStrategy} used by this {@link MultiAddressHttpClientBuilder}.
+     */
+    protected HttpExecutionStrategy executionStrategy() {
+        return strategy;
+    }
 }

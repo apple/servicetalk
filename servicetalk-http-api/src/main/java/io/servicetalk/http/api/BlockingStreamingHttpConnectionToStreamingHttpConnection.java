@@ -24,14 +24,16 @@ import io.servicetalk.transport.api.ExecutionContext;
 import static io.servicetalk.concurrent.api.Completable.error;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.http.api.BlockingUtils.blockingToCompletable;
+import static io.servicetalk.http.api.HttpExecutionStrategies.OFFLOAD_ALL_STRATEGY;
 import static java.util.Objects.requireNonNull;
 
 final class BlockingStreamingHttpConnectionToStreamingHttpConnection extends StreamingHttpConnection {
     private final BlockingStreamingHttpConnection blockingConnection;
 
-    BlockingStreamingHttpConnectionToStreamingHttpConnection(BlockingStreamingHttpConnection blockingConnection) {
+    private BlockingStreamingHttpConnectionToStreamingHttpConnection(
+            final BlockingStreamingHttpConnection blockingConnection, final HttpExecutionStrategy strategy) {
         super(new BlockingStreamingHttpRequestResponseFactoryToStreamingHttpRequestResponseFactory(
-                blockingConnection.reqRespFactory));
+                blockingConnection.reqRespFactory), strategy);
         this.blockingConnection = requireNonNull(blockingConnection);
     }
 
@@ -73,5 +75,14 @@ final class BlockingStreamingHttpConnectionToStreamingHttpConnection extends Str
     @Override
     BlockingStreamingHttpConnection asBlockingStreamingConnectionInternal() {
         return blockingConnection;
+    }
+
+    static StreamingHttpConnection transform(BlockingStreamingHttpConnection conn) {
+        // Any connection created for alternate programming models always originates from the async streaming model
+        // which contains the filters and hence the effective strategy while converting them to the different
+        // programming models. So, in this case we simply take the executionStrategy() from the passed connection
+        // instead of re-calculating the effective strategy.
+        return new BlockingStreamingHttpConnectionToStreamingHttpConnection(conn,
+                conn.executionStrategy().merge(OFFLOAD_ALL_STRATEGY));
     }
 }

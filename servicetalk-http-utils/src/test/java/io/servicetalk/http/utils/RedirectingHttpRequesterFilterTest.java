@@ -33,7 +33,6 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.concurrent.atomic.AtomicInteger;
-
 import javax.annotation.Nullable;
 
 import static io.servicetalk.buffer.api.EmptyBuffer.EMPTY_BUFFER;
@@ -41,6 +40,7 @@ import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Single.error;
 import static io.servicetalk.concurrent.api.Single.success;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
+import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpHeaderNames.HOST;
 import static io.servicetalk.http.api.HttpHeaderNames.LOCATION;
 import static io.servicetalk.http.api.HttpRequestMethods.DELETE;
@@ -91,7 +91,7 @@ public class RedirectingHttpRequesterFilterTest {
 
     @Before
     public void setUp() {
-        httpClient = mock(StreamingHttpClient.class, withSettings().useConstructor(reqRespFactory));
+        httpClient = mock(StreamingHttpClient.class, withSettings().useConstructor(reqRespFactory, defaultStrategy()));
         when(httpClient.request(any(), any())).thenAnswer(a -> {
             try {
                 StreamingHttpRequest request = a.getArgument(1);

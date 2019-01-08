@@ -70,6 +70,12 @@ public final class LoadBalancerReadyStreamingHttpClient extends StreamingHttpCli
         return delegate.reserveConnection(strategy, metaData).retryWhen(retryWhenFunction());
     }
 
+    @Override
+    protected HttpExecutionStrategy mergeForEffectiveStrategy(final HttpExecutionStrategy mergeWith) {
+        // Since this filter does not have any blocking code, we do not need to alter the effective strategy.
+        return mergeWith;
+    }
+
     private BiIntFunction<Throwable, Completable> retryWhenFunction() {
         return (count, cause) -> count <= maxRetryCount && cause instanceof NoAvailableHostException ?
                 loadBalancerReadySubscriber.onHostsAvailable() : error(cause);

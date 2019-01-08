@@ -45,8 +45,8 @@ abstract class AbstractStreamingHttpConnection<CC extends ConnectionContext> ext
 
     protected AbstractStreamingHttpConnection(
             CC conn, Completable onClosing, ReadOnlyHttpClientConfig config, ExecutionContext executionContext,
-            StreamingHttpRequestResponseFactory reqRespFactory) {
-        super(reqRespFactory);
+            StreamingHttpRequestResponseFactory reqRespFactory, HttpExecutionStrategy strategy) {
+        super(reqRespFactory, strategy);
         this.connection = requireNonNull(conn);
         this.executionContext = requireNonNull(executionContext);
         maxConcurrencySetting = just(config.getMaxPipelinedRequests()).concatWith(onClosing.concatWith(success(0)));

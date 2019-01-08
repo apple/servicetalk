@@ -22,14 +22,16 @@ import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ExecutionContext;
 
 import static io.servicetalk.http.api.BlockingUtils.blockingInvocation;
+import static io.servicetalk.http.api.HttpExecutionStrategies.OFFLOAD_SEND_STRATEGY;
 import static java.util.Objects.requireNonNull;
 
 final class StreamingHttpClientToBlockingStreamingHttpClient extends BlockingStreamingHttpClient {
     private final StreamingHttpClient client;
 
-    StreamingHttpClientToBlockingStreamingHttpClient(StreamingHttpClient client) {
+    private StreamingHttpClientToBlockingStreamingHttpClient(StreamingHttpClient client,
+                                                             HttpExecutionStrategy strategy) {
         super(new StreamingHttpRequestResponseFactoryToBlockingStreamingHttpRequestResponseFactory(
-                client.reqRespFactory));
+                client.reqRespFactory), strategy);
         this.client = requireNonNull(client);
     }
 
@@ -51,7 +53,7 @@ final class StreamingHttpClientToBlockingStreamingHttpClient extends BlockingStr
         // It is assumed that users will always apply timeouts at the StreamingHttpService layer (e.g. via filter).
         // So we don't apply any explicit timeout here and just wait forever.
         return new ReservedStreamingHttpConnectionToBlockingStreaming(
-                blockingInvocation(client.reserveConnection(strategy, metaData)));
+                blockingInvocation(client.reserveConnection(strategy, metaData)), executionStrategy());
     }
 
     @Override
@@ -68,13 +70,21 @@ final class StreamingHttpClientToBlockingStreamingHttpClient extends BlockingStr
         return client;
     }
 
+    static BlockingStreamingHttpClient transform(StreamingHttpClient client) {
+        final HttpExecutionStrategy defaultStrategy = client instanceof StreamingHttpClientFilter ?
+                ((StreamingHttpClientFilter) client).effectiveExecutionStrategy(OFFLOAD_SEND_STRATEGY) :
+                OFFLOAD_SEND_STRATEGY;
+        return new StreamingHttpClientToBlockingStreamingHttpClient(client, defaultStrategy);
+    }
+
     static final class ReservedStreamingHttpConnectionToBlockingStreaming extends
                                                                           ReservedBlockingStreamingHttpConnection {
         private final ReservedStreamingHttpConnection connection;
 
-        ReservedStreamingHttpConnectionToBlockingStreaming(ReservedStreamingHttpConnection connection) {
+        private ReservedStreamingHttpConnectionToBlockingStreaming(final ReservedStreamingHttpConnection connection,
+                                                                   final HttpExecutionStrategy strategy) {
             super(new StreamingHttpRequestResponseFactoryToBlockingStreamingHttpRequestResponseFactory(
-                    connection.reqRespFactory));
+                    connection.reqRespFactory), strategy);
             this.connection = requireNonNull(connection);
         }
 
@@ -117,6 +127,13 @@ final class StreamingHttpClientToBlockingStreamingHttpClient extends BlockingStr
         @Override
         ReservedStreamingHttpConnection asStreamingConnectionInternal() {
             return connection;
+        }
+
+        static ReservedBlockingStreamingHttpConnection transform(ReservedStreamingHttpConnection conn) {
+            final HttpExecutionStrategy defaultStrategy = conn instanceof ReservedStreamingHttpConnectionFilter ?
+                    ((ReservedStreamingHttpConnectionFilter) conn).effectiveExecutionStrategy(OFFLOAD_SEND_STRATEGY) :
+                    OFFLOAD_SEND_STRATEGY;
+            return new ReservedStreamingHttpConnectionToBlockingStreaming(conn, defaultStrategy);
         }
     }
 }

@@ -23,14 +23,17 @@ import io.servicetalk.transport.api.ConnectionContext;
  * The equivalent of {@link StreamingHttpConnection} but with synchronous/blocking APIs instead of asynchronous APIs.
  */
 public abstract class BlockingStreamingHttpConnection extends BlockingStreamingHttpRequester {
+
     /**
      * Create a new instance.
      *
      * @param reqRespFactory The {@link BlockingStreamingHttpRequestResponseFactory} used to
      * {@link #newRequest(HttpRequestMethod, String) create new requests} and {@link #httpResponseFactory()}.
+     * @param strategy Default {@link HttpExecutionStrategy} to use.
      */
-    protected BlockingStreamingHttpConnection(final BlockingStreamingHttpRequestResponseFactory reqRespFactory) {
-        super(reqRespFactory);
+    BlockingStreamingHttpConnection(final BlockingStreamingHttpRequestResponseFactory reqRespFactory,
+                                    final HttpExecutionStrategy strategy) {
+        super(reqRespFactory, strategy);
     }
 
     /**
@@ -88,6 +91,6 @@ public abstract class BlockingStreamingHttpConnection extends BlockingStreamingH
     }
 
     StreamingHttpConnection asStreamingConnectionInternal() {
-        return new BlockingStreamingHttpConnectionToStreamingHttpConnection(this);
+        return BlockingStreamingHttpConnectionToStreamingHttpConnection.transform(this);
     }
 }

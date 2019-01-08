@@ -20,7 +20,6 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.transport.api.ExecutionContext;
 
 import static io.servicetalk.concurrent.internal.FutureUtils.awaitTermination;
-import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -28,14 +27,18 @@ import static java.util.Objects.requireNonNull;
  */
 public abstract class HttpRequester implements HttpRequestFactory, ListenableAsyncCloseable, AutoCloseable {
     final HttpRequestResponseFactory reqRespFactory;
+    private final HttpExecutionStrategy strategy;
 
     /**
      * Create a new instance.
+     *
      * @param reqRespFactory The {@link HttpRequestResponseFactory} used to
      * {@link #newRequest(HttpRequestMethod, String) create new requests} and {@link #httpResponseFactory()}.
+     * @param strategy {@link HttpExecutionStrategy} to use for executing the request.
      */
-    protected HttpRequester(final HttpRequestResponseFactory reqRespFactory) {
+    HttpRequester(final HttpRequestResponseFactory reqRespFactory, final HttpExecutionStrategy strategy) {
         this.reqRespFactory = requireNonNull(reqRespFactory);
+        this.strategy = requireNonNull(strategy);
     }
 
     /**
@@ -80,33 +83,6 @@ public abstract class HttpRequester implements HttpRequestFactory, ListenableAsy
         return reqRespFactory;
     }
 
-    /**
-     * Convert this {@link HttpRequester} to the {@link StreamingHttpRequester} API.
-     *
-     * @return a {@link StreamingHttpRequester} representation of this {@link HttpRequester}.
-     */
-    public final StreamingHttpRequester asStreamingRequester() {
-        return asStreamingRequesterInternal();
-    }
-
-    /**
-     * Convert this {@link HttpRequester} to the {@link BlockingStreamingHttpRequester} API.
-     *
-     * @return a {@link BlockingStreamingHttpRequester} representation of this {@link HttpRequester}.
-     */
-    public final BlockingStreamingHttpRequester asBlockingStreamingRequester() {
-        return asStreamingRequester().asBlockingStreamingRequester();
-    }
-
-    /**
-     * Convert this {@link HttpRequester} to the {@link BlockingHttpRequester} API.
-     *
-     * @return a {@link BlockingHttpRequester} representation of this {@link HttpRequester}.
-     */
-    public final BlockingHttpRequester asBlockingRequester() {
-        return asBlockingRequesterInternal();
-    }
-
     @Override
     public final void close() {
         awaitTermination(closeAsyncGracefully().toFuture());
@@ -118,14 +94,6 @@ public abstract class HttpRequester implements HttpRequestFactory, ListenableAsy
      * @return Default {@link HttpExecutionStrategy} for this {@link HttpRequester}.
      */
     final HttpExecutionStrategy executionStrategy() {
-        return defaultStrategy();
-    }
-
-    StreamingHttpRequester asStreamingRequesterInternal() {
-        return new HttpRequesterToStreamingHttpRequester(this);
-    }
-
-    BlockingHttpRequester asBlockingRequesterInternal() {
-        return new HttpRequesterToBlockingHttpRequester(this);
+        return strategy;
     }
 }

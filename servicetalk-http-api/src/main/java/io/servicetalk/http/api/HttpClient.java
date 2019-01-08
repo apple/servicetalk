@@ -28,14 +28,16 @@ import io.servicetalk.http.api.StreamingHttpClient.ReservedStreamingHttpConnecti
  * {@link HttpConnection} instances and distribute calls to {@link #request(HttpRequest)} amongst this collection.
  */
 public abstract class HttpClient extends HttpRequester {
+
     /**
      * Create a new instance.
      *
      * @param reqRespFactory The {@link HttpRequestResponseFactory} used to
      * {@link #newRequest(HttpRequestMethod, String) create new requests} and {@link #httpResponseFactory()}.
+     * @param strategy Default {@link HttpExecutionStrategy} to use.
      */
-    protected HttpClient(final HttpRequestResponseFactory reqRespFactory) {
-        super(reqRespFactory);
+    HttpClient(final HttpRequestResponseFactory reqRespFactory, final HttpExecutionStrategy strategy) {
+        super(reqRespFactory, strategy);
     }
 
     /**
@@ -90,11 +92,11 @@ public abstract class HttpClient extends HttpRequester {
     }
 
     StreamingHttpClient asStreamingClientInternal() {
-        return new HttpClientToStreamingHttpClient(this);
+        return HttpClientToStreamingHttpClient.transform(this);
     }
 
     BlockingHttpClient asBlockingClientInternal() {
-        return new HttpClientToBlockingHttpClient(this);
+        return HttpClientToBlockingHttpClient.transform(this);
     }
 
     /**
@@ -103,14 +105,16 @@ public abstract class HttpClient extends HttpRequester {
      * {@link #reserveConnection(HttpExecutionStrategy, HttpRequestMetaData)}.
      */
     public abstract static class ReservedHttpConnection extends HttpConnection {
+
         /**
          * Create a new instance.
          *
          * @param reqRespFactory The {@link HttpRequestResponseFactory} used to
          * {@link #newRequest(HttpRequestMethod, String) create new requests} and {@link #httpResponseFactory()}.
+         * @param strategy Default {@link HttpExecutionStrategy} to use.
          */
-        protected ReservedHttpConnection(final HttpRequestResponseFactory reqRespFactory) {
-            super(reqRespFactory);
+        ReservedHttpConnection(final HttpRequestResponseFactory reqRespFactory, final HttpExecutionStrategy strategy) {
+            super(reqRespFactory, strategy);
         }
 
         /**
@@ -153,12 +157,12 @@ public abstract class HttpClient extends HttpRequester {
 
         @Override
         ReservedStreamingHttpConnection asStreamingConnectionInternal() {
-            return new ReservedHttpConnectionToReservedStreamingHttpConnection(this);
+            return ReservedHttpConnectionToReservedStreamingHttpConnection.transform(this);
         }
 
         @Override
         ReservedBlockingHttpConnection asBlockingConnectionInternal() {
-            return new ReservedHttpConnectionToReservedBlockingHttpConnection(this);
+            return ReservedHttpConnectionToReservedBlockingHttpConnection.transform(this);
         }
     }
 }

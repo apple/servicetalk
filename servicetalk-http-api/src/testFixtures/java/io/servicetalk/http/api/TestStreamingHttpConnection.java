@@ -22,6 +22,7 @@ import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ExecutionContext;
 
 import static io.servicetalk.concurrent.api.Single.error;
+import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 
 public abstract class TestStreamingHttpConnection extends StreamingHttpConnection {
     private final ExecutionContext executionContext;
@@ -30,7 +31,7 @@ public abstract class TestStreamingHttpConnection extends StreamingHttpConnectio
     public TestStreamingHttpConnection(StreamingHttpRequestResponseFactory reqRespFactory,
                                        ExecutionContext executionContext,
                                        ConnectionContext connectionContext) {
-        super(reqRespFactory);
+        super(reqRespFactory, defaultStrategy());
         this.executionContext = executionContext;
         this.connectionContext = connectionContext;
     }

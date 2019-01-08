@@ -24,9 +24,12 @@ import static java.util.Objects.requireNonNull;
 
 final class BlockingHttpServiceToStreamingHttpService extends StreamingHttpService {
     private final BlockingHttpService service;
+    private final HttpExecutionStrategy effectiveStrategy;
 
-    BlockingHttpServiceToStreamingHttpService(BlockingHttpService service) {
+    private BlockingHttpServiceToStreamingHttpService(final BlockingHttpService service,
+                                                      final HttpExecutionStrategy effectiveStrategy) {
         this.service = requireNonNull(service);
+        this.effectiveStrategy = requireNonNull(effectiveStrategy);
     }
 
     @Override
@@ -34,7 +37,7 @@ final class BlockingHttpServiceToStreamingHttpService extends StreamingHttpServi
                                                 final StreamingHttpRequest request,
                                                 final StreamingHttpResponseFactory responseFactory) {
         return request.toRequest().flatMap(req -> blockingToSingle(() -> service.handle(
-                ctx, req, ctx.responseFactory())) .map(HttpResponse::toStreamingResponse));
+                ctx, req, ctx.responseFactory())).map(HttpResponse::toStreamingResponse));
     }
 
     @Override
@@ -45,5 +48,19 @@ final class BlockingHttpServiceToStreamingHttpService extends StreamingHttpServi
     @Override
     BlockingHttpService asBlockingServiceInternal() {
         return service;
+    }
+
+    @Override
+    public HttpExecutionStrategy executionStrategy() {
+        return effectiveStrategy;
+    }
+
+    static StreamingHttpService transform(final BlockingHttpService service) {
+        // The recommended approach for filtering is using the filter factories which forces people to use the
+        // StreamingHttpServiceFilter API and use the effective strategy. When that path is used, then we will not get
+        // here as the intermediate transitions take care of returning the original StreamingHttpService.
+        // If we are here, it is for a user implemented BlockingStreamingHttpService, so we assume the strategy provided
+        // by the passed service is the effective strategy.
+        return new BlockingHttpServiceToStreamingHttpService(service, service.executionStrategy());
     }
 }

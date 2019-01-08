@@ -41,6 +41,7 @@ import static io.servicetalk.concurrent.api.Publisher.just;
 import static io.servicetalk.concurrent.api.Single.success;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitelyNonNull;
+import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpRequestMethods.HEAD;
@@ -89,8 +90,8 @@ public class HttpConnectionEmptyPayloadTest {
 
             StreamingHttpConnection connection = closeable.merge(awaitIndefinitelyNonNull(new DefaultHttpConnectionBuilder<>()
                     .ioExecutor(executionContextRule.ioExecutor())
-                    .executor(executionContextRule.executor())
                     .maxPipelinedRequests(3)
+                    .executionStrategy(defaultStrategy(executionContextRule.executor()))
                     .buildStreaming(serverContext.listenAddress())));
 
             // Request HEAD, GET, HEAD to verify that we can keep reading data despite a HEAD request providing a hint

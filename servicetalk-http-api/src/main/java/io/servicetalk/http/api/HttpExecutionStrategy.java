@@ -84,4 +84,34 @@ public interface HttpExecutionStrategy extends ExecutionStrategy {
      * @return Wrapped {@link StreamingHttpService}.
      */
     StreamingHttpService offloadService(Executor fallback, StreamingHttpRequestHandler handler);
+
+    /**
+     * Returns {@code true} if metadata receive offloading is enabled for this {@link ExecutionStrategy}.
+     *
+     * @return {@code true} if metadata receive offloading is enabled for this {@link ExecutionStrategy}.
+     */
+    boolean metadataReceiveOffloaded();
+
+    /**
+     * Returns {@code true} if data receive offloading is enabled for this {@link ExecutionStrategy}.
+     *
+     * @return {@code true} if data receive offloading is enabled for this {@link ExecutionStrategy}.
+     */
+    boolean dataReceiveOffloaded();
+
+    /**
+     * Returns {@code true} if send offloading is enabled for this {@link ExecutionStrategy}.
+     *
+     * @return {@code true} if send offloading is enabled for this {@link ExecutionStrategy}.
+     */
+    boolean sendOffloaded();
+
+    /**
+     * Merges the passed {@link HttpExecutionStrategy} with {@code this} {@link HttpExecutionStrategy} and return the
+     * merged result.
+     *
+     * @param other {@link HttpExecutionStrategy} to merge with {@code this}.
+     * @return Merged {@link HttpExecutionStrategy}.
+     */
+    HttpExecutionStrategy merge(HttpExecutionStrategy other);
 }

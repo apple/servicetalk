@@ -25,14 +25,16 @@ import org.reactivestreams.Subscriber;
  * Represents a single fixed connection to a HTTP server.
  */
 public abstract class HttpConnection extends HttpRequester {
+
     /**
      * Create a new instance.
      *
      * @param reqRespFactory The {@link HttpRequestResponseFactory} used to
      * {@link #newRequest(HttpRequestMethod, String) create new requests} and {@link #httpResponseFactory()}.
+     * @param strategy Default {@link HttpExecutionStrategy} to use.
      */
-    protected HttpConnection(final HttpRequestResponseFactory reqRespFactory) {
-        super(reqRespFactory);
+    HttpConnection(final HttpRequestResponseFactory reqRespFactory, final HttpExecutionStrategy strategy) {
+        super(reqRespFactory, strategy);
     }
 
     /**
@@ -80,10 +82,10 @@ public abstract class HttpConnection extends HttpRequester {
     }
 
     StreamingHttpConnection asStreamingConnectionInternal() {
-        return new HttpConnectionToStreamingHttpConnection(this);
+        return HttpConnectionToStreamingHttpConnection.transform(this);
     }
 
     BlockingHttpConnection asBlockingConnectionInternal() {
-        return new HttpConnectionToBlockingHttpConnection(this);
+        return HttpConnectionToBlockingHttpConnection.transform(this);
     }
 }

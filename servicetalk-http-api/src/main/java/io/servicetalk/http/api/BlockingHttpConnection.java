@@ -25,14 +25,16 @@ import org.reactivestreams.Subscriber;
  * The equivalent of {@link HttpConnection} but with synchronous/blocking APIs instead of asynchronous APIs.
  */
 public abstract class BlockingHttpConnection extends BlockingHttpRequester {
+
     /**
      * Create a new instance.
      *
      * @param reqRespFactory The {@link HttpRequestResponseFactory} used to
      * {@link #newRequest(HttpRequestMethod, String) create new requests} and {@link #httpResponseFactory()}.
+     * @param strategy Default {@link HttpExecutionStrategy} to use.
      */
-    protected BlockingHttpConnection(final HttpRequestResponseFactory reqRespFactory) {
-        super(reqRespFactory);
+    BlockingHttpConnection(final HttpRequestResponseFactory reqRespFactory, final HttpExecutionStrategy strategy) {
+        super(reqRespFactory, strategy);
     }
 
     /**
@@ -89,10 +91,10 @@ public abstract class BlockingHttpConnection extends BlockingHttpRequester {
     }
 
     StreamingHttpConnection asStreamingConnectionInternal() {
-        return new BlockingHttpConnectionToStreamingHttpConnection(this);
+        return BlockingHttpConnectionToStreamingHttpConnection.transform(this);
     }
 
     HttpConnection asConnectionInternal() {
-        return new BlockingHttpConnectionToHttpConnection(this);
+        return BlockingHttpConnectionToHttpConnection.transform(this);
     }
 }

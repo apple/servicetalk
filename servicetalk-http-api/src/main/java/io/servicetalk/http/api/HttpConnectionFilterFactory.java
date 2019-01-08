@@ -59,6 +59,12 @@ public interface HttpConnectionFilterFactory {
      * @return a function that always returns its input {@link StreamingHttpConnection}.
      */
     static HttpConnectionFilterFactory identity() {
-        return StreamingHttpConnectionFilter::new;
+        return connection -> new StreamingHttpConnectionFilter(connection) {
+            @Override
+            protected HttpExecutionStrategy mergeForEffectiveStrategy(final HttpExecutionStrategy mergeWith) {
+                // Since this filter does not have any blocking code, we do not need to alter the effective strategy.
+                return mergeWith;
+            }
+        };
     }
 }

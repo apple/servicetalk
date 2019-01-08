@@ -22,13 +22,14 @@ import io.servicetalk.http.api.HttpClient.ReservedHttpConnection;
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ExecutionContext;
 
+import static io.servicetalk.http.api.HttpExecutionStrategies.OFFLOAD_ALL_STRATEGY;
 import static java.util.Objects.requireNonNull;
 
 final class HttpClientToStreamingHttpClient extends StreamingHttpClient {
     private final HttpClient client;
 
-    HttpClientToStreamingHttpClient(HttpClient client) {
-        super(new HttpRequestResponseFactoryToStreamingHttpRequestResponseFactory(client.reqRespFactory));
+    private HttpClientToStreamingHttpClient(final HttpClient client, final HttpExecutionStrategy strategy) {
+        super(new HttpRequestResponseFactoryToStreamingHttpRequestResponseFactory(client.reqRespFactory), strategy);
         this.client = requireNonNull(client);
     }
 
@@ -36,7 +37,8 @@ final class HttpClientToStreamingHttpClient extends StreamingHttpClient {
     public Single<? extends ReservedStreamingHttpConnection> reserveConnection(final HttpExecutionStrategy strategy,
                                                                                final HttpRequestMetaData metaData) {
         return client.reserveConnection(strategy, metaData)
-                .map(ReservedHttpConnectionToReservedStreamingHttpConnection::new);
+                .map(connection ->
+                        new ReservedHttpConnectionToReservedStreamingHttpConnection(connection, executionStrategy()));
     }
 
     @Override
@@ -70,12 +72,21 @@ final class HttpClientToStreamingHttpClient extends StreamingHttpClient {
         return client;
     }
 
+    static StreamingHttpClient transform(HttpClient client) {
+        // Any client created for alternate programming models always originates from the async streaming model
+        // which contains the filters and hence the effective strategy while converting them to the different
+        // programming models. So, in this case we simply take the executionStrategy() from the passed client instead
+        // of re-calculating the effective strategy.
+        return new HttpClientToStreamingHttpClient(client, client.executionStrategy().merge(OFFLOAD_ALL_STRATEGY));
+    }
+
     static final class ReservedHttpConnectionToReservedStreamingHttpConnection extends ReservedStreamingHttpConnection {
         private final ReservedHttpConnection reservedConnection;
 
-        ReservedHttpConnectionToReservedStreamingHttpConnection(ReservedHttpConnection reservedConnection) {
+        private ReservedHttpConnectionToReservedStreamingHttpConnection(final ReservedHttpConnection reservedConnection,
+                                                                        final HttpExecutionStrategy strategy) {
             super(new HttpRequestResponseFactoryToStreamingHttpRequestResponseFactory(
-                    reservedConnection.reqRespFactory));
+                    reservedConnection.reqRespFactory), strategy);
             this.reservedConnection = requireNonNull(reservedConnection);
         }
 
@@ -124,6 +135,15 @@ final class HttpClientToStreamingHttpClient extends StreamingHttpClient {
         @Override
         ReservedHttpConnection asConnectionInternal() {
             return reservedConnection;
+        }
+
+        static ReservedStreamingHttpConnection transform(ReservedHttpConnection connection) {
+            // Any connection created for alternate programming models always originates from the async streaming model
+            // which contains the filters and hence the effective strategy while converting them to the different
+            // programming models. So, in this case we simply take the executionStrategy() from the passed connection
+            // instead of re-calculating the effective strategy.
+            return new ReservedHttpConnectionToReservedStreamingHttpConnection(connection,
+                    connection.executionStrategy().merge(OFFLOAD_ALL_STRATEGY));
         }
     }
 }

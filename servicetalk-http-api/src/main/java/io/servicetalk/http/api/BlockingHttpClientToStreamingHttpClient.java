@@ -27,13 +27,15 @@ import static io.servicetalk.concurrent.api.Completable.error;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.http.api.BlockingUtils.blockingToCompletable;
 import static io.servicetalk.http.api.BlockingUtils.blockingToSingle;
+import static io.servicetalk.http.api.HttpExecutionStrategies.OFFLOAD_ALL_STRATEGY;
 import static java.util.Objects.requireNonNull;
 
 final class BlockingHttpClientToStreamingHttpClient extends StreamingHttpClient {
     private final BlockingHttpClient client;
 
-    BlockingHttpClientToStreamingHttpClient(BlockingHttpClient client) {
-        super(new HttpRequestResponseFactoryToStreamingHttpRequestResponseFactory(client.reqRespFactory));
+    private BlockingHttpClientToStreamingHttpClient(final BlockingHttpClient client,
+                                                    final HttpExecutionStrategy strategy) {
+        super(new HttpRequestResponseFactoryToStreamingHttpRequestResponseFactory(client.reqRespFactory), strategy);
         this.client = requireNonNull(client);
     }
 
@@ -41,7 +43,7 @@ final class BlockingHttpClientToStreamingHttpClient extends StreamingHttpClient 
     public Single<? extends ReservedStreamingHttpConnection> reserveConnection(final HttpExecutionStrategy strategy,
                                                                                final HttpRequestMetaData metaData) {
         return blockingToSingle(() -> new BlockingReservedStreamingHttpConnectionToReserved(
-                client.reserveConnection(strategy, metaData)));
+                client.reserveConnection(strategy, metaData), executionStrategy()));
     }
 
     @Override
@@ -74,11 +76,22 @@ final class BlockingHttpClientToStreamingHttpClient extends StreamingHttpClient 
         return client;
     }
 
+    static StreamingHttpClient transform(BlockingHttpClient client) {
+        // Any client created for alternate programming models always originates from the async streaming model
+        // which contains the filters and hence the effective strategy while converting them to the different
+        // programming models. So, in this case we simply take the executionStrategy() from the passed client instead
+        // of re-calculating the effective strategy.
+        return new BlockingHttpClientToStreamingHttpClient(client,
+                client.executionStrategy().merge(OFFLOAD_ALL_STRATEGY));
+    }
+
     static final class BlockingReservedStreamingHttpConnectionToReserved extends ReservedStreamingHttpConnection {
         private final ReservedBlockingHttpConnection connection;
 
-        BlockingReservedStreamingHttpConnectionToReserved(ReservedBlockingHttpConnection connection) {
-            super(new HttpRequestResponseFactoryToStreamingHttpRequestResponseFactory(connection.reqRespFactory));
+        private BlockingReservedStreamingHttpConnectionToReserved(final ReservedBlockingHttpConnection connection,
+                                                                  final HttpExecutionStrategy strategy) {
+            super(new HttpRequestResponseFactoryToStreamingHttpRequestResponseFactory(connection.reqRespFactory),
+                    strategy);
             this.connection = requireNonNull(connection);
         }
 
@@ -126,6 +139,15 @@ final class BlockingHttpClientToStreamingHttpClient extends StreamingHttpClient 
         @Override
         ReservedBlockingHttpConnection asBlockingConnectionInternal() {
             return connection;
+        }
+
+        static ReservedStreamingHttpConnection transform(ReservedBlockingHttpConnection connection) {
+            // Any connection created for alternate programming models always originates from the async streaming model
+            // which contains the filters and hence the effective strategy while converting them to the different
+            // programming models. So, in this case we simply take the executionStrategy() from the passed connection
+            // instead of re-calculating the effective strategy.
+            return new BlockingReservedStreamingHttpConnectionToReserved(connection,
+                    connection.executionStrategy().merge(OFFLOAD_ALL_STRATEGY));
         }
     }
 }

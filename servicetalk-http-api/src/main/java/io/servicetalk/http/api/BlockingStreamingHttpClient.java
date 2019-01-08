@@ -24,14 +24,17 @@ import io.servicetalk.http.api.StreamingHttpClient.ReservedStreamingHttpConnecti
  * The equivalent of {@link StreamingHttpClient} but with synchronous/blocking APIs instead of asynchronous APIs.
  */
 public abstract class BlockingStreamingHttpClient extends BlockingStreamingHttpRequester {
+
     /**
      * Create a new instance.
      *
      * @param reqRespFactory The {@link BlockingStreamingHttpRequestResponseFactory} used to
      * {@link #newRequest(HttpRequestMethod, String) create new requests} and {@link #httpResponseFactory()}.
+     * @param strategy Default {@link HttpExecutionStrategy} to use.
      */
-    protected BlockingStreamingHttpClient(final BlockingStreamingHttpRequestResponseFactory reqRespFactory) {
-        super(reqRespFactory);
+    BlockingStreamingHttpClient(final BlockingStreamingHttpRequestResponseFactory reqRespFactory,
+                                final HttpExecutionStrategy strategy) {
+        super(reqRespFactory, strategy);
     }
 
     /**
@@ -97,7 +100,7 @@ public abstract class BlockingStreamingHttpClient extends BlockingStreamingHttpR
     }
 
     StreamingHttpClient asStreamingClientInternal() {
-        return new BlockingStreamingHttpClientToStreamingHttpClient(this);
+        return BlockingStreamingHttpClientToStreamingHttpClient.transform(this);
     }
 
     /**
@@ -106,15 +109,17 @@ public abstract class BlockingStreamingHttpClient extends BlockingStreamingHttpR
      * {@link #reserveConnection(HttpExecutionStrategy, HttpRequestMetaData)}.
      */
     public abstract static class ReservedBlockingStreamingHttpConnection extends BlockingStreamingHttpConnection {
+
         /**
          * Create a new instance.
          *
          * @param reqRespFactory The {@link BlockingStreamingHttpRequestResponseFactory} used to
          * {@link #newRequest(HttpRequestMethod, String) create new requests} and {@link #httpResponseFactory()}.
+         * @param strategy Default {@link HttpExecutionStrategy} to use.
          */
-        protected ReservedBlockingStreamingHttpConnection(
-                final BlockingStreamingHttpRequestResponseFactory reqRespFactory) {
-            super(reqRespFactory);
+        ReservedBlockingStreamingHttpConnection(final BlockingStreamingHttpRequestResponseFactory reqRespFactory,
+                                                final HttpExecutionStrategy strategy) {
+            super(reqRespFactory, strategy);
         }
 
         /**
@@ -168,7 +173,7 @@ public abstract class BlockingStreamingHttpClient extends BlockingStreamingHttpR
 
         @Override
         ReservedStreamingHttpConnection asStreamingConnectionInternal() {
-            return new BlockingToReservedStreamingHttpConnection(this);
+            return BlockingToReservedStreamingHttpConnection.transform(this);
         }
     }
 }
