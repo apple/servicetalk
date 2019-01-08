@@ -145,6 +145,15 @@ public interface PartitionedRedisClientBuilder<U, R> {
      * <p>
      * Filtering allows you to wrap a {@link RedisClient} and modify behavior during request/response processing.
      * Some potential candidates for filtering include logging, metrics, and decorating responses.
+     * <p>
+     * The order of execution of these filters are in order of append. If 3 filters are added as follows:
+     * <pre>
+     *     builder.append(filter1).append(filter2).append(filter3)
+     * </pre>
+     * sending a request with a client wrapped by this filter chain, the order of invocation of these filters will be:
+     * <pre>
+     *     filter1 =&gt; filter2 =&gt; filter3 =&gt; client
+     * </pre>
      *
      * @param factory {@link RedisClientFilterFactory} to filter the used {@link RedisClient}.
      * @return {@code this}.
@@ -157,6 +166,15 @@ public interface PartitionedRedisClientBuilder<U, R> {
      * <p>
      * Filtering allows you to wrap a {@link RedisClient} and modify behavior during request/response processing.
      * Some potential candidates for filtering include logging, metrics, and decorating responses.
+     * <p>
+     * The order of execution of these filters are in order of append. If 3 filters are added as follows:
+     * <pre>
+     *     builder.append(filter1).append(filter2).append(filter3)
+     * </pre>
+     * sending a request with a client wrapped by this filter chain, the order of invocation of these filters will be:
+     * <pre>
+     *     filter1 =&gt; filter2 =&gt; filter3 =&gt; client
+     * </pre>
      *
      * @param predicate the {@link Predicate} to test if the filter must be applied.
      * @param factory {@link RedisClientFilterFactory} to filter the used {@link RedisClient}.
@@ -176,6 +194,16 @@ public interface PartitionedRedisClientBuilder<U, R> {
      * <p>
      * Filtering allows you to wrap a {@link RedisConnection} and modify behavior during request/response processing.
      * Some potential candidates for filtering include logging, metrics, and decorating responses.
+     * <p>
+     * The order of execution of these filters are in order of append. If 3 filters are added as follows:
+     * <pre>
+     *     builder.append(filter1).append(filter2).append(filter3)
+     * </pre>
+     * sending a request through a connection wrapped by this filter chain, the order of invocation of these filters
+     * will be:
+     * <pre>
+     *     filter1 =&gt; filter2 =&gt; filter3 =&gt; connection
+     * </pre>
      *
      * @param factory {@link RedisConnectionFilterFactory} to filter the used {@link RedisConnection}.
      * @return {@code this}.
@@ -188,6 +216,16 @@ public interface PartitionedRedisClientBuilder<U, R> {
      * <p>
      * Filtering allows you to wrap a {@link RedisConnection} and modify behavior during request/response processing.
      * Some potential candidates for filtering include logging, metrics, and decorating responses.
+     * <p>
+     * The order of execution of these filters are in order of append. If 3 filters are added as follows:
+     * <pre>
+     *     builder.append(filter1).append(filter2).append(filter3)
+     * </pre>
+     * sending a request through a connection wrapped by this filter chain, the order of invocation of these filters
+     * will be:
+     * <pre>
+     *     filter1 =&gt; filter2 =&gt; filter3 =&gt; connection
+     * </pre>
      *
      * @param predicate the {@link Predicate} to test if the filter must be applied.
      * @param factory {@link RedisConnectionFilterFactory} to filter the used {@link RedisConnection}.
