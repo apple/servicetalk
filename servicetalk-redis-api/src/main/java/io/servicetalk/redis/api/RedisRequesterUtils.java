@@ -311,17 +311,29 @@ final class RedisRequesterUtils {
                             }
                             depths.offerFirst(new AggregateState((int) length));
                         }
-                    } else if (redisData instanceof RedisData.BulkStringSize) {
-                        bulkStringSize = redisData.getIntValue();
-                    } else if (RedisData.BulkStringChunk.class.equals(redisData.getClass())) {
+                    } else if (redisData instanceof RedisData.BulkStringChunk) {
+                        final Buffer buffer = redisData.getBufferValue();
                         if (aggregator == null) {
-                            aggregator = redisData.getBufferValue();
-                            if (!aggregator.tryEnsureWritable(bulkStringSize - aggregator.readableBytes(), false)) {
-                                aggregator = requester.executionContext().bufferAllocator()
-                                        .newBuffer(bulkStringSize).writeBytes(aggregator);
+                            bulkStringSize = ((RedisData.FirstBulkStringChunk) redisData).bulkStringLength();
+                            if (buffer.readableBytes() == bulkStringSize) {
+                                // All the data is available in the first chunk.
+                                addResult(coerceBuffersToCharSequences ? buffer.toString(UTF_8) : buffer);
+                            } else {
+                                // Only part of the data is available in the first chunk. Try to re-use the first
+                                // chunk's buffer, but expand it in preparation for holding the entire bulk string.
+                                aggregator = buffer;
+                                if (!aggregator.tryEnsureWritable(bulkStringSize - aggregator.readableBytes(), true)) {
+                                    aggregator = requester.executionContext().bufferAllocator()
+                                            .newBuffer(bulkStringSize).writeBytes(buffer);
+                                }
                             }
                         } else {
-                            aggregator.writeBytes(redisData.getBufferValue());
+                            assert !(redisData instanceof RedisData.FirstBulkStringChunk);
+                            aggregator.writeBytes(buffer);
+                            if (aggregator.readableBytes() == bulkStringSize) {
+                                addResult(coerceBuffersToCharSequences ? aggregator.toString(UTF_8) : aggregator);
+                                aggregator = null;
+                            }
                         }
                     } else {
                         if (depths == null || depths.isEmpty()) {
@@ -335,20 +347,30 @@ final class RedisRequesterUtils {
                                 result.add(unwrapData(redisData));
                             }
                         } else {
-                            AggregateState current = depths.peek();
-                            current.children.add(unwrapData(redisData));
-                            while (current.children.size() == current.length) {
-                                depths.pollFirst(); // Remove the current.
-                                final AggregateState next = depths.peek();
-                                if (next == null) {
-                                    assert result != null;
-                                    result.add(current.children);
-                                    break;
-                                } else {
-                                    next.children.add(current.children);
-                                    current = next;
-                                }
-                            }
+                            final Object unwrapped = unwrapData(redisData);
+                            addResult(unwrapped);
+                        }
+                    }
+                }
+
+                private void addResult(@Nullable final Object toAdd) {
+                    assert result != null;
+                    if (depths == null || depths.isEmpty()) {
+                        result.add(toAdd);
+                        return;
+                    }
+                    AggregateState current = depths.peek();
+                    assert current != null;
+                    current.children.add(toAdd);
+                    while (current.children.size() == current.length) {
+                        depths.pollFirst(); // Remove the current.
+                        final AggregateState next = depths.peek();
+                        if (next == null) {
+                            result.add(current.children);
+                            return;
+                        } else {
+                            next.children.add(current.children);
+                            current = next;
                         }
                     }
                 }
@@ -378,17 +400,6 @@ final class RedisRequesterUtils {
                     if (redisData instanceof RedisData.Integer) {
                         return redisData.getLongValue();
                     }
-                    if (redisData instanceof RedisData.LastBulkStringChunk) {
-                        final Buffer buffer;
-                        if (aggregator != null) {
-                            aggregator.writeBytes(redisData.getBufferValue());
-                            buffer = aggregator;
-                            aggregator = null;
-                        } else {
-                            buffer = redisData.getBufferValue();
-                        }
-                        return coerceBuffersToCharSequences ? buffer.toString(UTF_8) : buffer;
-                    }
                     if (redisData instanceof RedisData.Null) {
                         return null;
                     }
@@ -402,7 +413,7 @@ final class RedisRequesterUtils {
     }
 
     private static boolean ignoreRedisData(final RedisData redisData) {
-        return redisData instanceof RedisData.Null || redisData instanceof RedisData.BulkStringSize;
+        return redisData instanceof RedisData.Null;
     }
 
     private static final class AggregateState {

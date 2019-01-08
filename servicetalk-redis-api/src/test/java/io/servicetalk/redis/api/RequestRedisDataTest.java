@@ -17,10 +17,9 @@ package io.servicetalk.redis.api;
 
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.redis.api.RedisData.ArraySize;
-import io.servicetalk.redis.api.RedisData.BulkStringChunk;
-import io.servicetalk.redis.api.RedisData.BulkStringSize;
 import io.servicetalk.redis.api.RedisData.CompleteBulkString;
-import io.servicetalk.redis.api.RedisData.LastBulkStringChunk;
+import io.servicetalk.redis.api.RedisData.DefaultBulkStringChunk;
+import io.servicetalk.redis.api.RedisData.DefaultFirstBulkStringChunk;
 import io.servicetalk.redis.api.RedisData.RequestRedisData;
 import io.servicetalk.redis.api.RedisData.SimpleString;
 import io.servicetalk.redis.api.RedisProtocolSupport.BitfieldOperations;
@@ -79,6 +78,7 @@ import io.servicetalk.redis.api.RedisProtocolSupport.ZunionstoreAggregate;
 
 import org.junit.Test;
 
+import static io.servicetalk.buffer.api.EmptyBuffer.EMPTY_BUFFER;
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.Matchers.equalTo;
@@ -86,12 +86,12 @@ import static org.junit.Assert.assertThat;
 
 public class RequestRedisDataTest {
 
-    public static final Buffer BUFFER_ABCDE = DEFAULT_ALLOCATOR.fromUtf8("abcde");
-    public static final Buffer BUFFER_FGHIJ = DEFAULT_ALLOCATOR.fromUtf8("fghij");
+    public static final Buffer BUFFER_ABCDE = DEFAULT_ALLOCATOR.fromAscii("abcde");
+    public static final Buffer BUFFER_FGHIJ = DEFAULT_ALLOCATOR.fromAscii("fghij");
 
     @Test
     public void testSimpleString() {
-        assertWritten(new SimpleString("abcde"), "$5\r\nabcde\r\n");
+        assertWritten(new SimpleString("abcde"), "+abcde\r\n");
     }
 
     @Test
@@ -100,18 +100,18 @@ public class RequestRedisDataTest {
     }
 
     @Test
-    public void testBulkStringSize() {
-        assertWritten(new BulkStringSize(12345), "$12345\r\n");
+    public void testFirstBulkStringChunk() {
+        assertWritten(new DefaultFirstBulkStringChunk(BUFFER_ABCDE.duplicate(), 42), "$42\r\nabcde");
+    }
+
+    @Test
+    public void testEmptyFirstBulkStringChunk() {
+        assertWritten(new DefaultFirstBulkStringChunk(EMPTY_BUFFER, 42), "$42\r\n");
     }
 
     @Test
     public void testBulkStringChunk() {
-        assertWritten(new BulkStringChunk(BUFFER_ABCDE.duplicate()), "abcde");
-    }
-
-    @Test
-    public void testLastBulkStringChunk() {
-        assertWritten(new LastBulkStringChunk(BUFFER_ABCDE.duplicate()), "abcde\r\n");
+        assertWritten(new DefaultBulkStringChunk(BUFFER_ABCDE.duplicate()), "abcde");
     }
 
     @Test
@@ -406,7 +406,8 @@ public class RequestRedisDataTest {
     }
 
     private void assertWritten(final RequestRedisData data, final String expected) {
-        Buffer buffer = data.asBuffer(DEFAULT_ALLOCATOR);
+        Buffer buffer = DEFAULT_ALLOCATOR.newBuffer(data.encodedByteCount());
+        data.encodeTo(buffer);
         assertThat(buffer.toString(UTF_8), equalTo(expected));
         int expectedLength = expected.length();
         assertThat("encodedByteCount() did not calculate correct length", data.encodedByteCount(), equalTo(expectedLength));

@@ -20,6 +20,7 @@ import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.redis.api.RedisClient;
 import io.servicetalk.redis.api.RedisClient.ReservedRedisConnection;
 import io.servicetalk.redis.api.RedisData.CompleteBulkString;
+import io.servicetalk.redis.api.RedisProtocolSupport;
 import io.servicetalk.redis.api.RedisProtocolSupport.Command;
 
 import org.hamcrest.BaseMatcher;
@@ -32,6 +33,9 @@ import org.junit.rules.ExpectedException;
 import org.junit.rules.Timeout;
 
 import java.nio.channels.ClosedChannelException;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import javax.annotation.Nullable;
@@ -163,5 +167,23 @@ public abstract class BaseRedisClientTest {
         assertThat(awaitIndefinitely(getEnv().client.request(newRequest(PUBLISH, new CompleteBulkString(channel),
                 new CompleteBulkString(buf("test-message"))))),
                 contains(redisInteger(either(is(0L)).or(is(1L)))));
+    }
+
+    List<RedisProtocolSupport.FieldValue> toFieldValues(final List<String> values) {
+        final List<RedisProtocolSupport.FieldValue> result = new ArrayList<>(3);
+        final Iterator<String> iterator = values.iterator();
+        while (iterator.hasNext()) {
+            result.add(new RedisProtocolSupport.FieldValue(iterator.next(), iterator.next()));
+        }
+        return result;
+    }
+
+    List<RedisProtocolSupport.BufferFieldValue> toBufferFieldValues(final List<Buffer> values) {
+        final List<RedisProtocolSupport.BufferFieldValue> result = new ArrayList<>(3);
+        final Iterator<Buffer> iterator = values.iterator();
+        while (iterator.hasNext()) {
+            result.add(new RedisProtocolSupport.BufferFieldValue(iterator.next(), iterator.next()));
+        }
+        return result;
     }
 }

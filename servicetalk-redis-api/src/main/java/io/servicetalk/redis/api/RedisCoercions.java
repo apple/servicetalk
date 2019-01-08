@@ -42,7 +42,7 @@ final class RedisCoercions {
     }
 
     static String simpleStringToString(final RedisData data) {
-        return data.toString();
+        return data.getCharSequenceValue().toString();
     }
 
     @SuppressWarnings("unchecked")

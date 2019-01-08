@@ -16,8 +16,9 @@
 package io.servicetalk.redis.netty;
 
 import io.servicetalk.redis.api.RedisData;
+import io.servicetalk.redis.api.RedisData.BulkStringChunk;
 import io.servicetalk.redis.api.RedisData.CompleteRedisData;
-import io.servicetalk.redis.api.RedisData.LastBulkStringChunk;
+import io.servicetalk.redis.api.RedisData.FirstBulkStringChunk;
 import io.servicetalk.redis.api.RedisProtocolSupport.Command;
 
 import java.util.function.Predicate;
@@ -39,6 +40,7 @@ final class TerminalMessagePredicates {
     }
 
     private static final class StreamingResponsePredicate implements TerminalMessagePredicate {
+        private int bulkStringBytesRemaining;
         private long endCounter = 1;
 
         @Override
@@ -51,14 +53,23 @@ final class TerminalMessagePredicates {
             endCounter += endCounterDelta(data);
         }
 
-        private static long endCounterDelta(final Object data) {
+        private long endCounterDelta(final Object data) {
             if (data instanceof RedisData.ArraySize) {
                 final RedisData.ArraySize arraySize = (RedisData.ArraySize) data;
                 // -1 because the header is a message itself that counts towards the expected number of messages
                 return arraySize.getLongValue() - 1;
             }
-            if (data instanceof CompleteRedisData || data instanceof LastBulkStringChunk) {
+            if (data instanceof CompleteRedisData) {
                 return -1;
+            }
+            if (data instanceof FirstBulkStringChunk) {
+                bulkStringBytesRemaining = ((FirstBulkStringChunk) data).bulkStringLength();
+            }
+            if (data instanceof BulkStringChunk) {
+                bulkStringBytesRemaining -= ((BulkStringChunk) data).getBufferValue().readableBytes();
+                if (bulkStringBytesRemaining == 0) {
+                    return -1;
+                }
             }
 
             return 0;

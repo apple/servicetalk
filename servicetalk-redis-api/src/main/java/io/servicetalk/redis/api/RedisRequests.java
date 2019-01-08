@@ -16,7 +16,6 @@
 package io.servicetalk.redis.api;
 
 import io.servicetalk.buffer.api.Buffer;
-import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.client.api.partition.PartitionAttributes;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
@@ -499,11 +498,6 @@ public final class RedisRequests {
         @Override
         public void encodeTo(final Buffer buffer) {
             buffer.writeBytes(value);
-        }
-
-        @Override
-        public Buffer asBuffer(final BufferAllocator allocator) {
-            return value;
         }
     }
 }

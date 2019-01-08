@@ -16,16 +16,15 @@
 package io.servicetalk.redis.api;
 
 import io.servicetalk.buffer.api.Buffer;
-import io.servicetalk.buffer.api.BufferAllocator;
 
 import java.util.List;
 
 import static io.servicetalk.redis.api.RedisRequests.calculateRequestArgumentArraySize;
-import static io.servicetalk.redis.api.RedisRequests.calculateRequestArgumentLengthSize;
 import static io.servicetalk.redis.api.RedisRequests.calculateRequestArgumentSize;
 import static io.servicetalk.redis.api.RedisRequests.writeLength;
 import static io.servicetalk.redis.api.RedisRequests.writeRequestArgument;
 import static io.servicetalk.redis.api.RedisRequests.writeRequestArraySize;
+import static io.servicetalk.redis.api.StringByteSizeUtil.numberOfBytesUtf8;
 import static io.servicetalk.redis.internal.RedisUtils.EOL_LENGTH;
 import static io.servicetalk.redis.internal.RedisUtils.EOL_SHORT;
 import static java.util.Arrays.asList;
@@ -110,12 +109,6 @@ public interface RedisData {
          * @param buffer the {@link Buffer} to write to
          */
         void encodeTo(Buffer buffer);
-
-        default Buffer asBuffer(BufferAllocator allocator) {
-            final Buffer buffer = allocator.newBuffer(encodedByteCount());
-            encodeTo(buffer);
-            return buffer;
-        }
     }
 
     /**
@@ -146,12 +139,12 @@ public interface RedisData {
 
         @Override
         public int encodedByteCount() {
-            return calculateRequestArgumentSize(getValue());
+            return 1 + numberOfBytesUtf8(getValue()) + EOL_LENGTH;
         }
 
         @Override
         public void encodeTo(Buffer buf) {
-            writeRequestArgument(buf, getValue());
+            buf.writeByte('+').writeUtf8(getValue(), numberOfBytesUtf8(getValue())).writeShort(EOL_SHORT);
         }
     }
 
@@ -195,36 +188,25 @@ public interface RedisData {
     }
 
     /**
-     * Size part of <a href="https://redis.io/topics/protocol#resp-bulk-strings">Bulk String</a> representation of
-     * {@link RedisData}.
-     */
-    final class BulkStringSize extends DefaultBaseRedisData<java.lang.Integer> implements RequestRedisData {
-        public BulkStringSize(final int value) {
-            super(value);
-        }
-
-        @Override
-        public int getIntValue() {
-            return getValue();
-        }
-
-        @Override
-        public int encodedByteCount() {
-            return calculateRequestArgumentLengthSize(getValue());
-        }
-
-        @Override
-        public void encodeTo(final Buffer buffer) {
-            writeLength(buffer, getValue());
-        }
-    }
-
-    /**
      * One chunk of <a href="https://redis.io/topics/protocol#resp-bulk-strings">Bulk String</a> representation of
      * {@link RedisData}.
      */
-    class BulkStringChunk extends DefaultBaseRedisData<Buffer> implements RequestRedisData {
-        public BulkStringChunk(final Buffer value) {
+    interface BulkStringChunk extends RequestRedisData, RedisData {
+    }
+
+    /**
+     * The First chunk of <a href="https://redis.io/topics/protocol#resp-bulk-strings">Bulk String</a> representation of
+     * {@link RedisData}, which includes the length of the entire bulk string.
+     */
+    interface FirstBulkStringChunk extends BulkStringChunk {
+        int bulkStringLength();
+    }
+
+    /**
+     * Implmentation of {@link BulkStringChunk}.
+     */
+    class DefaultBulkStringChunk extends DefaultBaseRedisData<Buffer> implements BulkStringChunk {
+        public DefaultBulkStringChunk(final Buffer value) {
             super(value);
         }
 
@@ -245,12 +227,14 @@ public interface RedisData {
     }
 
     /**
-     * The last chunk of <a href="https://redis.io/topics/protocol#resp-bulk-strings">Bulk String</a> representation of
-     * {@link RedisData}.
+     * Implmentation of {@link FirstBulkStringChunk}.
      */
-    class LastBulkStringChunk extends BulkStringChunk {
-        public LastBulkStringChunk(final Buffer value) {
+    class DefaultFirstBulkStringChunk extends DefaultBulkStringChunk implements FirstBulkStringChunk {
+        private final int bulkStringLength;
+
+        public DefaultFirstBulkStringChunk(final Buffer value, final int bulkStringLength) {
             super(value);
+            this.bulkStringLength = bulkStringLength;
         }
 
         @Override
@@ -259,14 +243,19 @@ public interface RedisData {
         }
 
         @Override
+        public int bulkStringLength() {
+            return bulkStringLength;
+        }
+
+        @Override
         public int encodedByteCount() {
-            return super.encodedByteCount() + EOL_LENGTH;
+            return RedisRequests.calculateRequestArgumentLengthSize(bulkStringLength) + super.encodedByteCount();
         }
 
         @Override
         public void encodeTo(final Buffer buffer) {
-            buffer.writeBytes(getValue())
-                    .writeShort(EOL_SHORT);
+            writeLength(buffer, bulkStringLength);
+            super.encodeTo(buffer);
         }
     }
 
@@ -274,14 +263,23 @@ public interface RedisData {
      * Complete <a href="https://redis.io/topics/protocol#resp-bulk-strings">Bulk String</a> representation of
      * {@link RedisData}.
      */
-    final class CompleteBulkString extends LastBulkStringChunk implements CompleteRequestRedisData {
+    final class CompleteBulkString extends DefaultBulkStringChunk implements FirstBulkStringChunk,
+                                                                             CompleteRequestRedisData {
+        private final int bulkStringLength;
+
         public CompleteBulkString(final Buffer value) {
             super(value);
+            bulkStringLength = getBufferValue().readableBytes();
         }
 
         @Override
         public Buffer getBufferValue() {
             return getValue();
+        }
+
+        @Override
+        public int bulkStringLength() {
+            return bulkStringLength;
         }
 
         @Override

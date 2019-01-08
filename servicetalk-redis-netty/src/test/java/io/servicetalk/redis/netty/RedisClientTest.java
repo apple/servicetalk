@@ -25,10 +25,10 @@ import io.servicetalk.redis.api.RedisClient.ReservedRedisConnection;
 import io.servicetalk.redis.api.RedisCommander;
 import io.servicetalk.redis.api.RedisData;
 import io.servicetalk.redis.api.RedisData.ArraySize;
-import io.servicetalk.redis.api.RedisData.BulkStringChunk;
-import io.servicetalk.redis.api.RedisData.BulkStringSize;
 import io.servicetalk.redis.api.RedisData.CompleteBulkString;
-import io.servicetalk.redis.api.RedisData.LastBulkStringChunk;
+import io.servicetalk.redis.api.RedisData.DefaultBulkStringChunk;
+import io.servicetalk.redis.api.RedisData.DefaultFirstBulkStringChunk;
+import io.servicetalk.redis.api.RedisData.FirstBulkStringChunk;
 import io.servicetalk.redis.api.RedisData.RequestRedisData;
 import io.servicetalk.redis.api.RedisExecutionStrategy;
 import io.servicetalk.redis.api.RedisProtocolSupport.Command;
@@ -40,10 +40,13 @@ import io.servicetalk.transport.api.ExecutionContext;
 import org.junit.Test;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static io.servicetalk.buffer.api.EmptyBuffer.EMPTY_BUFFER;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitelyNonNull;
 import static io.servicetalk.redis.api.RedisProtocolSupport.Command.CLIENT;
@@ -59,10 +62,9 @@ import static io.servicetalk.redis.api.RedisProtocolSupport.SubCommand.ENCODING;
 import static io.servicetalk.redis.api.RedisProtocolSupport.SubCommand.INFO;
 import static io.servicetalk.redis.api.RedisProtocolSupport.SubCommand.LIST;
 import static io.servicetalk.redis.api.RedisRequests.newRequest;
-import static io.servicetalk.redis.netty.RedisDataMatcher.redisBulkStringSize;
-import static io.servicetalk.redis.netty.RedisDataMatcher.redisCompleteBulkString;
 import static io.servicetalk.redis.netty.RedisDataMatcher.redisError;
-import static io.servicetalk.redis.netty.RedisDataMatcher.redisLastBulkStringChunk;
+import static io.servicetalk.redis.netty.RedisDataMatcher.redisFirstBulkStringChunk;
+import static io.servicetalk.redis.netty.RedisDataMatcher.redisFirstBulkStringChunkSize;
 import static io.servicetalk.redis.netty.RedisDataMatcher.redisNull;
 import static io.servicetalk.redis.netty.RedisDataMatcher.redisSimpleString;
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -73,6 +75,7 @@ import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.startsWith;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -113,9 +116,9 @@ public class RedisClientTest extends BaseRedisClientTest {
     public void requestResponse() throws Exception {
         assertThat(awaitIndefinitely(getEnv().client.request(newRequest(PING))), contains(redisSimpleString("PONG")));
         assertThat(awaitIndefinitely(getEnv().client.request(newRequest(PING, new CompleteBulkString(buf("my-pong"))))),
-                contains(redisBulkStringSize(7), redisLastBulkStringChunk(buf("my-pong"))));
+                contains(redisFirstBulkStringChunk(buf("my-pong"))));
         assertThat(awaitIndefinitely(getEnv().client.request(newRequest(PING, new CompleteBulkString(buf(""))))),
-                contains(redisCompleteBulkString(buf(""))));
+                contains(redisFirstBulkStringChunk(buf(""))));
         assertThat(awaitIndefinitely(getEnv().client.request(newRequest(GET,
                 new CompleteBulkString(buf("missing-key"))))), contains(redisNull()));
 
@@ -131,7 +134,7 @@ public class RedisClientTest extends BaseRedisClientTest {
 
         assertThat(awaitIndefinitely(getEnv().client.request(newRequest(new RedisData.Array<>(PING,
                         new CompleteBulkString(buf("my-pong")))))),
-                contains(redisBulkStringSize(7), redisLastBulkStringChunk(buf("my-pong"))));
+                contains(redisFirstBulkStringChunk(buf("my-pong"))));
     }
 
     @Test
@@ -144,33 +147,31 @@ public class RedisClientTest extends BaseRedisClientTest {
                         new CompleteBulkString(buf("\u263A-foo")))))), contains(redisSimpleString("OK")));
 
         assertThat(awaitIndefinitely(getEnv().client.request(newRequest(GET,
-                new CompleteBulkString(buf("\u263A-rc"))))), contains(redisBulkStringSize(7),
-                redisLastBulkStringChunk(buf("\u263A-foo"))));
+                new CompleteBulkString(buf("\u263A-rc"))))), contains(redisFirstBulkStringChunk(buf("\u263A-foo"))));
     }
 
     @Test
-    public void chunkedRequest() throws Exception {
+    public void chunkedRequestPing() throws Exception {
         final RequestRedisData[] args = new RequestRedisData[103];
         args[0] = new ArraySize(2L);
         args[1] = PING;
         final StringBuilder expected = new StringBuilder(1000);
-        args[2] = new BulkStringSize(1000);
+        args[2] = new DefaultFirstBulkStringChunk(EMPTY_BUFFER, 1000);
         for (int i = 0; i < 99; i++) {
             expected.append("0123456789");
-            args[3 + i] = new BulkStringChunk(buf("0123456789"));
+            args[3 + i] = new DefaultBulkStringChunk(buf("0123456789"));
         }
         expected.append("THISISEND!");
-        args[102] = new LastBulkStringChunk(buf("THISISEND!"));
+        args[102] = new DefaultBulkStringChunk(buf("THISISEND!"));
 
         final RedisRequest request = newRequest(PING, Publisher.from(args));
 
-        final String responseData = awaitIndefinitely(getEnv().client.request(request).reduce(StringBuilder::new,
+        final String responseData = awaitIndefinitelyNonNull(getEnv().client.request(request).reduce(StringBuilder::new,
           (r, d) -> {
-            if (d instanceof BulkStringSize) {
-                assertThat(d.getIntValue(), is(1000));
-            } else {
-                r.append(d.getBufferValue().toString(UTF_8));
-            }
+              if (d instanceof FirstBulkStringChunk) {
+                  assertThat(((FirstBulkStringChunk) d).bulkStringLength(), is(1000));
+              }
+              r.append(d.getBufferValue().toString(UTF_8));
             return r;
         })).toString();
 
@@ -178,22 +179,59 @@ public class RedisClientTest extends BaseRedisClientTest {
     }
 
     @Test
+    public void chunkedRequestSet() throws Exception {
+        final RequestRedisData[] args = new RequestRedisData[104];
+        args[0] = new ArraySize(3L);
+        args[1] = SET;
+        args[2] = new CompleteBulkString(buf("key"));
+        final StringBuilder expected = new StringBuilder(1000);
+        args[3] = new DefaultFirstBulkStringChunk(EMPTY_BUFFER, 1000);
+        for (int i = 0; i < 99; i++) {
+            expected.append("0123456789");
+            args[4 + i] = new DefaultBulkStringChunk(buf("0123456789"));
+        }
+        expected.append("THISISEND!");
+        args[103] = new DefaultBulkStringChunk(buf("THISISEND!"));
+
+        final RedisRequest setRequest = newRequest(SET, Publisher.from(args));
+
+        final Collection<RedisData> setResponse = getEnv().client.request(setRequest).toFuture().get();
+        assertEquals(Collections.singletonList(new RedisData.SimpleString("OK")), setResponse);
+
+        final RedisRequest getRequest = newRequest(SET, Publisher.from(new ArraySize(2L), GET,
+                new CompleteBulkString(buf("key"))));
+        final String responseData = getEnv().client.request(getRequest).reduce(StringBuilder::new,
+                (r, d) -> {
+                    if (d instanceof FirstBulkStringChunk) {
+                        assertThat(((FirstBulkStringChunk) d).bulkStringLength(), is(1000));
+                    }
+                    r.append(d.getBufferValue().toString(UTF_8));
+                    return r;
+                }).toFuture().get().toString();
+
+        assertThat(responseData, is(expected.toString()));
+    }
+
+    @Test
     public void commandWithSubCommand() throws Exception {
-        assertThat(awaitIndefinitely(getEnv().client.request(newRequest(CLIENT, LIST)).first()),
-                is(redisBulkStringSize(greaterThan(0))));
-        assertThat(awaitIndefinitely(getEnv().client.request(newRequest(COMMAND, INFO,
+        final RedisData actual = awaitIndefinitely(getEnv().client.request(newRequest(CLIENT, LIST)).first());
+        assertThat(actual,
+                is(redisFirstBulkStringChunkSize(greaterThan(0))));
+        assertThat(awaitIndefinitelyNonNull(getEnv().client.request(newRequest(COMMAND, INFO,
                 new CompleteBulkString(buf("GET"))), List.class)).size(), is(1));
-        assertThat(awaitIndefinitely(getEnv().client.request(newRequest(COMMAND, INFO,
+        assertThat(awaitIndefinitelyNonNull(getEnv().client.request(newRequest(COMMAND, INFO,
                 new CompleteBulkString(buf("GET")), new CompleteBulkString(buf("SET"))), List.class)).size(), is(2));
-        assertThat(awaitIndefinitely(getEnv().client.request(newRequest(OBJECT, ENCODING,
+        assertThat(awaitIndefinitelyNonNull(getEnv().client.request(newRequest(OBJECT, ENCODING,
                 new CompleteBulkString(buf("missing-key")))).first()), is(redisNull()));
     }
 
     @Test
     public void bufferRequest() throws Exception {
         Buffer reqBuf = getEnv().client.executionContext().bufferAllocator().newBuffer(33);
+        Buffer pingBuf = getEnv().client.executionContext().bufferAllocator().newBuffer(PING.encodedByteCount());
+        PING.encodeTo(pingBuf);
         reqBuf.writeAscii("*2\r\n")
-                .writeBytes(PING.asBuffer(getEnv().client.executionContext().bufferAllocator()))
+                .writeBytes(pingBuf.duplicate())
                 .writeAscii("$12\r\nbufreq-pong1\r\n");
 
         assertThat(awaitIndefinitely(getEnv().client.request(newRequest(PING, reqBuf), Buffer.class)),
@@ -201,7 +239,7 @@ public class RedisClientTest extends BaseRedisClientTest {
 
         reqBuf = getEnv().client.executionContext().bufferAllocator().newBuffer(33);
         reqBuf.writeAscii("*2\r\n")
-                .writeBytes(PING.asBuffer(getEnv().client.executionContext().bufferAllocator()))
+                .writeBytes(pingBuf.duplicate())
                 .writeAscii("$12\r\nbufreq-pong2\r\n");
 
         assertThat(awaitIndefinitely(getEnv().client.request(newRequest(PING, reqBuf), CharSequence.class)),
