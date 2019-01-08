@@ -134,7 +134,7 @@ public interface Buffer {
     /**
      * Expands the buffer {@link #capacity()} to make sure the number of
      * {@linkplain #writableBytes() writable bytes} is equal to or greater than the
-     * specified value.  If there is enough writable bytes in this buffer, this method
+     * specified value.  If there are enough writable bytes in this buffer, this method
      * returns with no side effect.
      *
      * @param minWritableBytes
