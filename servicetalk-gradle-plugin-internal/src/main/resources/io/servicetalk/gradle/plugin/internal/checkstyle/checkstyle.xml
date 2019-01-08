@@ -56,6 +56,16 @@
     <property name="message" value="An empty line after the package declaration"/>
   </module>
 
+  <!-- Prohibit merge conflicts -->
+  <module name="RegexpSingleline">
+    <property name="format" value="&lt;&lt;&lt;&lt;&lt;&lt;&lt;"/>
+    <property name="message" value="Found (&lt;&lt;&lt;&lt;&lt;&lt;&lt;), which is a potential merge conflict"/>
+  </module>
+  <module name="RegexpSingleline">
+    <property name="format" value="&gt;&gt;&gt;&gt;&gt;&gt;&gt;"/>
+    <property name="message" value="Found (&gt;&gt;&gt;&gt;&gt;&gt;&gt;), which is a potential merge conflict"/>
+  </module>
+
   <!-- General formatting -->
   <module name="FileTabCharacter"/>
   <module name="JavadocPackage"/>

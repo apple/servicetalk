@@ -20,7 +20,7 @@
     <Class name="io.servicetalk.http.api.ReadOnlyHttpHeaders$ReadOnlyIterator"/>
     <Bug pattern="PZ_DONT_REUSE_ENTRY_OBJECTS_IN_ITERATORS"/>
   </Match>
-  
+
   <!-- False positive. Everything involved has a default @NonNull from the package-info.java -->
   <Match>
     <Class name="io.servicetalk.http.api.DefaultHttpCookies"/>
