@@ -51,6 +51,7 @@ dependencies {
   testImplementation "io.servicetalk:servicetalk-loadbalancer:$project.version"
   testImplementation "io.servicetalk:servicetalk-redis-utils:$project.version"
   testImplementation "io.servicetalk:servicetalk-test-resources:$project.version"
+  testImplementation "io.servicetalk:servicetalk-transport-netty-internal-testFixtures:$project.version"
   testImplementation "junit:junit"
   testImplementation "org.hamcrest:hamcrest-library"
   testImplementation "org.mockito:mockito-core"

@@ -63,9 +63,9 @@ import static io.servicetalk.redis.api.RedisProtocolSupport.Command.PING;
 import static io.servicetalk.redis.api.RedisProtocolSupport.Command.SUBSCRIBE;
 import static io.servicetalk.redis.netty.InternalSubscribedRedisConnection.newSubscribedConnection;
 import static io.servicetalk.redis.netty.PipelinedRedisConnection.newPipelinedConnection;
-import static io.servicetalk.redis.netty.RedisTestUtils.randomStringOfLength;
 import static io.servicetalk.transport.netty.NettyIoExecutors.createIoExecutor;
 import static io.servicetalk.transport.netty.internal.NettyIoExecutors.toNettyIoExecutor;
+import static io.servicetalk.transport.netty.internal.RandomDataUtils.randomCharSequenceOfByteLength;
 import static java.lang.Long.MAX_VALUE;
 import static java.time.Duration.ofSeconds;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -98,7 +98,8 @@ public class PingerTest {
         serverAddress = new InetSocketAddress(redisHost, redisPort);
 
         nettyIoExecutor = toNettyIoExecutor(createIoExecutor());
-        config = new RedisClientConfig(new TcpClientConfig(false)).setPingPeriod(PING_PERIOD).setMaxPipelinedRequests(10).asReadOnly();
+        config = new RedisClientConfig(new TcpClientConfig(false)).setPingPeriod(PING_PERIOD)
+                .setMaxPipelinedRequests(10).asReadOnly();
     }
 
     @AfterClass
@@ -132,7 +133,7 @@ public class PingerTest {
 
         awaitPingDurations(2); // Await for a few ping durations to verify no pings were sent.
 
-        assertThat("Unexpected command written.", commandsWritten, hasSize(0)); // No commands must be written after MULTI
+        assertThat("Unexpected command written.", commandsWritten, hasSize(0)); // No command must be written post MULTI
         awaitIndefinitely(commander.exec());
         Object nextCommand = commandsWritten.take();
         assertThat("Unexpected command written.", nextCommand, is(EXEC));
@@ -156,7 +157,8 @@ public class PingerTest {
         awaitPingDurations(2); // Await for a few ping durations to verify no pings were sent before subscribe.
         assertThat("Unexpected command written.", commandsWritten, hasSize(0));
 
-        connection.asCommander().subscribe(randomStringOfLength(32)).flatMapPublisher(PubSubRedisConnection::getMessages)
+        connection.asCommander().subscribe(randomCharSequenceOfByteLength(32))
+                .flatMapPublisher(PubSubRedisConnection::getMessages)
                 .subscribe(new Subscriber<PubSubRedisMessage>() {
                     @Override
                     public void onSubscribe(Subscription s) {
@@ -234,7 +236,9 @@ public class PingerTest {
                     return context;
                 });
 
-        final TcpConnector<RedisData, ByteBuf> connector = new TcpConnector<>(roTcpConfig, initializer, () -> o -> false);
+        final TcpConnector<RedisData, ByteBuf> connector =
+                new TcpConnector<>(roTcpConfig, initializer, () -> o -> false);
+
         return connector.connect(new DefaultExecutionContext(DEFAULT_ALLOCATOR, nettyIoExecutor, immediate()),
                 serverAddress);
     }
