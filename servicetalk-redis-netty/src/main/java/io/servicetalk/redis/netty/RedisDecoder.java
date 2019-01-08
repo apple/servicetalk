@@ -127,8 +127,7 @@ final class RedisDecoder extends ByteToMessageDecoder {
                         final int len = min(expectBulkBytes, in.readableBytes());
                         chunk = readBulkStringChunk(in, true, len);
                     } else {
-                        final int len = min(expectBulkBytes, in.readableBytes());
-                        chunk = readBulkStringChunk(in, false, len);
+                        chunk = readBulkStringChunk(in, false, min(expectBulkBytes, in.readableBytes()));
                     }
                     if (expectBulkBytes == 0) {
                         state = SkipEol;
