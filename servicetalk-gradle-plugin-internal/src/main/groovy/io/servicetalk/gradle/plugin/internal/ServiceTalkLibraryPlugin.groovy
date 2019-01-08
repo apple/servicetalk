@@ -270,28 +270,19 @@ class ServiceTalkLibraryPlugin extends ServiceTalkCorePlugin {
 
       spotbugs {
         toolVersion = "3.1.10"
-
-        // Apply the test exclusions to test fixtures, by making them the default.
-        if (spotbugsTestFixturesExclusionsFile.exists()) {
-          excludeFilter = spotbugsTestFixturesExclusionsFile
-        }
+        sourceSets = [sourceSets.main]
       }
 
       tasks.withType(SpotBugsTask).all {
         group = "verification"
       }
 
-      spotbugsMain {
-        // Override the exclusions for main code.
-        if (spotbugsMainExclusionsFile.exists()) {
-          excludeFilter = spotbugsMainExclusionsFile
-        }
-      }
-
-      spotbugsTest {
-        // Override the exclusions for test code.
-        if (spotbugsTestExclusionsFile.exists()) {
-          excludeFilter = spotbugsTestExclusionsFile
+      sourceSets.all {
+        def exclusionFile = file("$rootDir/gradle/spotbugs/" + it.name + "-exclusions.xml")
+        if (exclusionFile.exists()) {
+          tasks.getByName(it.getTaskName("spotbugs", null)) {
+            excludeFilter = exclusionFile
+          }
         }
       }
 
