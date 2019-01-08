@@ -98,13 +98,9 @@ final class RedisUtils {
                     remainingBulkStringBytes -= buffer.readableBytes();
                 } else {
                     remainingBulkStringBytes -= buffer.readableBytes();
-                    if (remainingBulkStringBytes == 0) {
-                        // We received the last chunk of the bulk string.
-                        return toByteBuf(writeAndAppendEol(data));
-                    } else {
-                        // We received a "middle" chunk of the bulk string.
-                        return toByteBuf(buffer);
-                    }
+                    return remainingBulkStringBytes == 0 ?
+                            toByteBuf(writeAndAppendEol(data)) : // We received the last chunk of the bulk string.
+                            toByteBuf(buffer); // We received a "middle" chunk of the bulk string.
                 }
             }
             Buffer buffer = allocator.newBuffer(data.encodedByteCount());

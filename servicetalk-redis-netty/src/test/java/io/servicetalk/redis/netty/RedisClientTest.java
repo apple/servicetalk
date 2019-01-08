@@ -40,6 +40,7 @@ import io.servicetalk.transport.api.ExecutionContext;
 import org.junit.Test;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
@@ -194,18 +195,19 @@ public class RedisClientTest extends BaseRedisClientTest {
 
         final RedisRequest setRequest = newRequest(SET, Publisher.from(args));
 
-        final List<RedisData> setResponse = awaitIndefinitelyNonNull(getEnv().client.request(setRequest));
+        final Collection<RedisData> setResponse = getEnv().client.request(setRequest).toFuture().get();
         assertEquals(Collections.singletonList(new RedisData.SimpleString("OK")), setResponse);
 
-        final RedisRequest getRequest = newRequest(SET, Publisher.from(new ArraySize(2L), GET, new CompleteBulkString(buf("key"))));
-        final String responseData = awaitIndefinitelyNonNull(getEnv().client.request(getRequest).reduce(StringBuilder::new,
+        final RedisRequest getRequest = newRequest(SET, Publisher.from(new ArraySize(2L), GET,
+                new CompleteBulkString(buf("key"))));
+        final String responseData = getEnv().client.request(getRequest).reduce(StringBuilder::new,
                 (r, d) -> {
                     if (d instanceof FirstBulkStringChunk) {
                         assertThat(((FirstBulkStringChunk) d).bulkStringLength(), is(1000));
                     }
                     r.append(d.getBufferValue().toString(UTF_8));
                     return r;
-                })).toString();
+                }).toFuture().get().toString();
 
         assertThat(responseData, is(expected.toString()));
     }

@@ -313,8 +313,7 @@ final class RedisRequesterUtils {
                         }
                     } else if (redisData instanceof RedisData.BulkStringChunk) {
                         final Buffer buffer = redisData.getBufferValue();
-                        if (redisData instanceof RedisData.FirstBulkStringChunk) {
-                            assert aggregator == null;
+                        if (aggregator == null) {
                             bulkStringSize = ((RedisData.FirstBulkStringChunk) redisData).bulkStringLength();
                             if (buffer.readableBytes() == bulkStringSize) {
                                 // All the data is available in the first chunk.
@@ -329,7 +328,7 @@ final class RedisRequesterUtils {
                                 }
                             }
                         } else {
-                            assert aggregator != null;
+                            assert !(redisData instanceof RedisData.FirstBulkStringChunk);
                             aggregator.writeBytes(buffer);
                             if (aggregator.readableBytes() == bulkStringSize) {
                                 addResult(coerceBuffersToCharSequences ? aggregator.toString(UTF_8) : aggregator);
@@ -367,7 +366,6 @@ final class RedisRequesterUtils {
                         depths.pollFirst(); // Remove the current.
                         final AggregateState next = depths.peek();
                         if (next == null) {
-                            assert result != null;
                             result.add(current.children);
                             return;
                         } else {

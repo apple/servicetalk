@@ -17,7 +17,6 @@ package io.servicetalk.redis.netty;
 
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
-import io.servicetalk.buffer.netty.BufferUtil;
 import io.servicetalk.redis.api.RedisData;
 import io.servicetalk.redis.api.RedisData.ArraySize;
 import io.servicetalk.redis.api.RedisData.BulkStringChunk;
@@ -33,10 +32,12 @@ import io.netty.util.ByteProcessor;
 import io.netty.util.CharsetUtil;
 
 import static io.servicetalk.buffer.netty.BufferUtil.newBufferFrom;
+import static io.servicetalk.buffer.netty.BufferUtil.toByteBufNoThrow;
 import static io.servicetalk.redis.api.RedisData.NULL;
 import static io.servicetalk.redis.internal.RedisUtils.EOL_SHORT;
 import static io.servicetalk.redis.netty.RedisDecoder.State.SkipEol;
 import static io.servicetalk.redis.netty.RedisDecoder.State.Start;
+import static java.lang.Math.min;
 
 final class RedisDecoder extends ByteToMessageDecoder {
 
@@ -52,7 +53,6 @@ final class RedisDecoder extends ByteToMessageDecoder {
         SkipEol,
         Array,
         Number,
-        Reset,
     }
 
     private final LongParser longParser = new LongParser();
@@ -71,11 +71,7 @@ final class RedisDecoder extends ByteToMessageDecoder {
             switch (state) {
                 case Start: {
                     final byte b = in.readByte();
-                    final State next = nextState(b);
-                    if (next == State.Reset) {
-                        throw new IllegalStateException("Can't find the start of the next block. b=" + b);
-                    }
-                    state = next;
+                    state = nextState(b);
                     break;
                 }
                 case String: {
@@ -100,17 +96,14 @@ final class RedisDecoder extends ByteToMessageDecoder {
                     if (length == -1) {
                         return;
                     }
-                    final long n = length > 9 ? // Integer.MAX_VALUE length-1
-                            readLong(in, length) :
-                            (long) readInt(in, length);
+                    final long n = readLong(in, length);
                     state = Start;
                     ctx.fireChannelRead(RedisData.Integer.newInstance(n));
                     break;
                 }
                 case Bulk: {
-                    final boolean first;
+                    final BulkStringChunk chunk;
                     if (expectBulkBytes == 0) {
-                        first = true;
                         final int length = bytesUntilEol(in);
                         if (length == -1) {
                             return;
@@ -131,11 +124,12 @@ final class RedisDecoder extends ByteToMessageDecoder {
                             break;
                         }
                         expectBulkBytes = size;
+                        final int len = min(expectBulkBytes, in.readableBytes());
+                        chunk = readBulkStringChunk(in, true, len);
                     } else {
-                        first = false;
+                        final int len = min(expectBulkBytes, in.readableBytes());
+                        chunk = readBulkStringChunk(in, false, len);
                     }
-                    final int remainingBulkStringBytes = expectBulkBytes;
-                    final BulkStringChunk chunk = readBulkStringChunk(ctx, in, first, Math.min(remainingBulkStringBytes, in.readableBytes()));
                     if (expectBulkBytes == 0) {
                         state = SkipEol;
                     }
@@ -175,17 +169,13 @@ final class RedisDecoder extends ByteToMessageDecoder {
         }
     }
 
-    private BulkStringChunk readBulkStringChunk(final ChannelHandlerContext ctx, final ByteBuf in, final boolean first,
-                                                final int len) {
+    private BulkStringChunk readBulkStringChunk(final ByteBuf in, final boolean first, final int len) {
         final Buffer bytes = allocator.newBuffer(len);
-        in.readBytes(BufferUtil.toByteBufNoThrow(bytes), len);
+        in.readBytes(toByteBufNoThrow(bytes), len);
         final int bulkStringLength = this.expectBulkBytes;
         expectBulkBytes -= len;
-        if (first) {
-            return new DefaultFirstBulkStringChunk(bytes, bulkStringLength);
-        } else {
-            return new DefaultBulkStringChunk(bytes);
-        }
+        return first ? new DefaultFirstBulkStringChunk(bytes, bulkStringLength) :
+                new DefaultBulkStringChunk(bytes);
     }
 
     private static State nextState(final byte b) {
@@ -201,7 +191,7 @@ final class RedisDecoder extends ByteToMessageDecoder {
             case ':':
                 return State.Number;
             default:
-                return State.Reset;
+                throw new IllegalStateException("Can't find the start of the next block. b=" + b);
         }
     }
 
