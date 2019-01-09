@@ -28,8 +28,10 @@ import io.servicetalk.transport.api.SslConfig;
 import java.io.InputStream;
 import java.net.SocketOption;
 import java.time.Duration;
-import java.util.function.Function;
+import java.util.function.Predicate;
 import javax.annotation.Nullable;
+
+import static java.util.Objects.requireNonNull;
 
 /**
  * A builder of {@link RedisClient} objects.
@@ -123,16 +125,58 @@ public interface RedisClientBuilder<U, R> {
     RedisClientBuilder<U, R> pingPeriod(@Nullable Duration pingPeriod);
 
     /**
-     * Set the {@link Function} which is used as a factory to filter/decorate {@link RedisConnection} created by this
-     * builder.
+     * Set the {@link RedisConnectionFilterFactory} which is used to filter/decorate {@link RedisConnection} created by
+     * this builder.
      * <p>
      * Filtering allows you to wrap a {@link RedisConnection} and modify behavior during request/response processing.
      * Some potential candidates for filtering include logging, metrics, and decorating responses.
-     * @param connectionFilterFactory {@link RedisConnectionFilterFactory} to decorate a {@link RedisConnection} for the
+     * <p>
+     * The order of execution of these filters are in order of append. If 3 filters are added as follows:
+     * <pre>
+     *     builder.append(filter1).append(filter2).append(filter3)
+     * </pre>
+     * sending a request through a connection wrapped by this filter chain, the order of invocation of these filters
+     * will be:
+     * <pre>
+     *     filter1 =&gt; filter2 =&gt; filter3 =&gt; connection
+     * </pre>
+     *
+     * @param factory {@link RedisConnectionFilterFactory} to decorate a {@link RedisConnection} for the
      * purpose of filtering.
      * @return {@code this}.
      */
-    RedisClientBuilder<U, R> appendConnectionFilter(RedisConnectionFilterFactory connectionFilterFactory);
+    RedisClientBuilder<U, R> appendConnectionFilter(RedisConnectionFilterFactory factory);
+
+    /**
+     * Set the {@link RedisConnectionFilterFactory} which is used to filter/decorate {@link RedisConnection} created by
+     * this builder, for every request that passes the provided {@link Predicate}.
+     * <p>
+     * Filtering allows you to wrap a {@link RedisConnection} and modify behavior during request/response processing.
+     * Some potential candidates for filtering include logging, metrics, and decorating responses.
+     * <p>
+     * The order of execution of these filters are in order of append. If 3 filters are added as follows:
+     * <pre>
+     *     builder.append(filter1).append(filter2).append(filter3)
+     * </pre>
+     * sending a request through a connection wrapped by this filter chain, the order of invocation of these filters
+     * will be:
+     * <pre>
+     *     filter1 =&gt; filter2 =&gt; filter3 =&gt; connection
+     * </pre>
+     *
+     * @param predicate the {@link Predicate} to test if the filter must be applied.
+     * @param factory {@link RedisConnectionFilterFactory} to decorate a {@link RedisConnection} for the
+     * purpose of filtering.
+     * @return {@code this}.
+     */
+    default RedisClientBuilder<U, R> appendConnectionFilter(Predicate<RedisRequest> predicate,
+                                                            RedisConnectionFilterFactory factory) {
+        requireNonNull(predicate);
+        requireNonNull(factory);
+
+        return appendConnectionFilter(cnx ->
+                new ConditionalRedisConnectionFilter(predicate, factory.create(cnx), cnx));
+    }
 
     /**
      * Append the filter to the chain of filters used to decorate the {@link ConnectionFactory} used by this
@@ -160,10 +204,49 @@ public interface RedisClientBuilder<U, R> {
      * <p>
      * Note this method will be used to decorate the result of {@link #build()} before it is
      * returned to the user.
-     * @param clientFilterFactory factory to decorate a {@link RedisClient} for the purpose of filtering.
+     * <p>
+     * The order of execution of these filters are in order of append. If 3 filters are added as follows:
+     * <pre>
+     *     builder.append(filter1).append(filter2).append(filter3)
+     * </pre>
+     * sending a request with a client wrapped by this filter chain, the order of invocation of these filters will be:
+     * <pre>
+     *     filter1 =&gt; filter2 =&gt; filter3 =&gt; client
+     * </pre>
+     *
+     * @param factory factory to decorate a {@link RedisClient} for the purpose of filtering.
      * @return {@code this}
      */
-    RedisClientBuilder<U, R> appendClientFilter(RedisClientFilterFactory clientFilterFactory);
+    RedisClientBuilder<U, R> appendClientFilter(RedisClientFilterFactory factory);
+
+    /**
+     * Set the filter factory that is used to decorate {@link RedisClient} created by this builder,
+     * for every request that passes the provided {@link Predicate}.
+     * <p>
+     * Note this method will be used to decorate the result of {@link #build()} before it is
+     * returned to the user.
+     * <p>
+     * The order of execution of these filters are in order of append. If 3 filters are added as follows:
+     * <pre>
+     *     builder.append(filter1).append(filter2).append(filter3)
+     * </pre>
+     * sending a request with a client wrapped by this filter chain, the order of invocation of these filters will be:
+     * <pre>
+     *     filter1 =&gt; filter2 =&gt; filter3 =&gt; client
+     * </pre>
+     *
+     * @param predicate the {@link Predicate} to test if the filter must be applied.
+     * @param factory factory to decorate a {@link RedisClient} for the purpose of filtering.
+     * @return {@code this}
+     */
+    default RedisClientBuilder<U, R> appendClientFilter(Predicate<RedisRequest> predicate,
+                                                        RedisClientFilterFactory factory) {
+        requireNonNull(predicate);
+        requireNonNull(factory);
+
+        return appendClientFilter((client, slbEvents, plbEvents) ->
+                new ConditionalRedisClientFilter(predicate, factory.create(client, slbEvents, plbEvents), client));
+    }
 
     /**
      * Disables automatically delaying {@link RedisRequest}s until the {@link LoadBalancer} is ready.
