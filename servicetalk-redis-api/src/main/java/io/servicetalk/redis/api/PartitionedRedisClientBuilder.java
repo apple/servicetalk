@@ -266,6 +266,15 @@ public interface PartitionedRedisClientBuilder<U, R> {
      * Set the filter factory that is used to decorate {@link PartitionedRedisClient} created by this builder.
      * <p>
      * Note this method will be used to decorate the result of {@link #build()} before it is returned to the user.
+     * <p>
+     * The order of execution of these filters are in order of append. If 3 filters are added as follows:
+     * <pre>
+     *     builder.append(filter1).append(filter2).append(filter3)
+     * </pre>
+     * sending a request with a client wrapped by this filter chain, the order of invocation of these filters will be:
+     * <pre>
+     *     filter1 =&gt; filter2 =&gt; filter3 =&gt; client
+     * </pre>
      *
      * @param factory {@link PartitionedRedisClientFilterFactory} to filter the used
      * {@link PartitionedRedisClient}.
@@ -278,6 +287,15 @@ public interface PartitionedRedisClientBuilder<U, R> {
      * for every request that passes the provided {@link Predicate}.
      * <p>
      * Note this method will be used to decorate the result of {@link #build()} before it is returned to the user.
+     * <p>
+     * The order of execution of these filters are in order of append. If 3 filters are added as follows:
+     * <pre>
+     *     builder.append(filter1).append(filter2).append(filter3)
+     * </pre>
+     * sending a request with a client wrapped by this filter chain, the order of invocation of these filters will be:
+     * <pre>
+     *     filter1 =&gt; filter2 =&gt; filter3 =&gt; client
+     * </pre>
      *
      * @param predicate the {@link Predicate} to test if the filter must be applied.
      * @param factory {@link PartitionedRedisClientFilterFactory} to filter the used
