@@ -78,10 +78,6 @@ task javadoc {
   dependsOn findTasks('javadoc')
 }
 
-task 'package' {
-  dependsOn findTasks('package', ['servicetalk-examples'])
-}
-
 task test {
   dependsOn findTasks('test')
 }

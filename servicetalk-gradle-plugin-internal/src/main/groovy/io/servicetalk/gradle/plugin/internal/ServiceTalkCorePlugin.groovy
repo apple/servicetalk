@@ -147,8 +147,6 @@ class ServiceTalkCorePlugin implements Plugin<Project> {
           jcenter()
         }
       }
-
-      task("package", dependsOn: assemble)
     }
   }
 
