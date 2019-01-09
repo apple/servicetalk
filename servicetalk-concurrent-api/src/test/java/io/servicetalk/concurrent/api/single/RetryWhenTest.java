@@ -53,6 +53,7 @@ public class RetryWhenTest {
     public final ExpectedException expectedException = ExpectedException.none();
     @Rule
     public MockedSingleListenerRule<Integer> subscriberRule = new MockedSingleListenerRule<>();
+
     private TestSingle<Integer> source;
     private BiIntFunction<Throwable, Completable> shouldRetry;
     private TestCompletable retrySignal;

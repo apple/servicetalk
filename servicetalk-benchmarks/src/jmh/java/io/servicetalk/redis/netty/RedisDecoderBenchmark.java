@@ -317,7 +317,7 @@ public class RedisDecoderBenchmark {
         };
     }
 
-    private String stringOfLength(final int valueLength) {
+    private static String stringOfLength(final int valueLength) {
         StringBuilder str = new StringBuilder();
         for (int i = 0; i < valueLength; ++i) {
             str.append((char) ('A' + (i % 26)));

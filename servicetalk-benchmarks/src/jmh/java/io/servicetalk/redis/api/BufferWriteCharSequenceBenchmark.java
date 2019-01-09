@@ -83,7 +83,7 @@ public class BufferWriteCharSequenceBenchmark {
         target = BufferAllocators.PREFER_HEAP_ALLOCATOR.newBuffer(stringLength);
     }
 
-    private String stringOfLength(final int len) {
+    private static String stringOfLength(final int len) {
         StringBuilder str = new StringBuilder(len);
         for (int i = 0; i < len; ++i) {
             str.append((char) ('A' + (i % 26)));

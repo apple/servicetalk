@@ -26,7 +26,7 @@ import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_
 public class ScalarResultPublisherTest {
 
     @Rule
-    public MockedSubscriberRule subscriberRule = new MockedSubscriberRule();
+    public MockedSubscriberRule<String> subscriberRule = new MockedSubscriberRule<>();
 
     @Test
     public void testJust() {

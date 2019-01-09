@@ -68,6 +68,7 @@ public class SingleToCompletionStageTest {
             newCachedThreadExecutor(new DefaultThreadFactory(ST_THREAD_PREFIX_NAME, true, NORM_PRIORITY)));
     @Rule
     public final ExpectedException thrown = ExpectedException.none();
+
     private TestSingle<String> source;
     private static ExecutorService jdkExecutor;
     private static final AtomicInteger threadCount = new AtomicInteger();
@@ -93,8 +94,7 @@ public class SingleToCompletionStageTest {
     }
 
     @Test
-    public void completableFutureFromSingleToCompletionStageToCompletableFutureFailure()
-            throws ExecutionException, InterruptedException {
+    public void completableFutureFromSingleToCompletionStageToCompletableFutureFailure() throws Exception {
         CompletableFuture<Long> input = new CompletableFuture<>();
         CompletableFuture<Long> output = Single.fromStage(input).toCompletionStage().toCompletableFuture()
                 .whenComplete((v, c) -> { })
@@ -107,8 +107,7 @@ public class SingleToCompletionStageTest {
     }
 
     @Test
-    public void completableFutureFromSingleToCompletionStageToCompletableFutureSuccess()
-            throws ExecutionException, InterruptedException {
+    public void completableFutureFromSingleToCompletionStageToCompletableFutureSuccess() throws Exception {
         CompletableFuture<Long> input = new CompletableFuture<>();
         CompletableFuture<Long> output = Single.fromStage(input).toCompletionStage().toCompletableFuture()
                 .exceptionally(cause -> 2L)
@@ -128,23 +127,23 @@ public class SingleToCompletionStageTest {
     }
 
     @Test
-    public void thenApply() throws ExecutionException, InterruptedException {
+    public void thenApply() throws Exception {
         thenApply(source.toCompletionStage().thenApply(SingleToCompletionStageTest::strLenStThread), "thenApply");
     }
 
     @Test
-    public void thenApplyNull() throws ExecutionException, InterruptedException {
+    public void thenApplyNull() throws Exception {
         thenApply(source.toCompletionStage().thenApplyAsync(SingleToCompletionStageTest::strLenStThread), null);
     }
 
     @Test
-    public void thenApplyAsync() throws ExecutionException, InterruptedException {
+    public void thenApplyAsync() throws Exception {
         thenApply(source.toCompletionStage().thenApplyAsync(SingleToCompletionStageTest::strLenStThread),
                 "thenApplyAsync");
     }
 
     @Test
-    public void thenApplyAsyncExecutor() throws ExecutionException, InterruptedException {
+    public void thenApplyAsyncExecutor() throws Exception {
         thenApply(source.toCompletionStage().thenApplyAsync(SingleToCompletionStageTest::strLenJdkThread, jdkExecutor),
                 "thenApplyAsyncExecutor");
     }
@@ -213,7 +212,7 @@ public class SingleToCompletionStageTest {
     }
 
     @Test
-    public void thenApplyMultipleTimesOnlySubscribesOnce() throws ExecutionException, InterruptedException {
+    public void thenApplyMultipleTimesOnlySubscribesOnce() throws Exception {
         String expected1 = "one";
         CompletionStage<String> stage1 = source.toCompletionStage();
 
@@ -232,25 +231,25 @@ public class SingleToCompletionStageTest {
     }
 
     @Test
-    public void thenAccept() throws ExecutionException, InterruptedException {
+    public void thenAccept() throws Exception {
         AtomicReference<String> stringRef = new AtomicReference<>();
         thenAccept(source.toCompletionStage().thenAccept(setStThread(stringRef)), stringRef, "thenAccept");
     }
 
     @Test
-    public void thenAcceptNull() throws ExecutionException, InterruptedException {
+    public void thenAcceptNull() throws Exception {
         AtomicReference<String> stringRef = new AtomicReference<>();
         thenAccept(source.toCompletionStage().thenAccept(setStThread(stringRef)), stringRef, null);
     }
 
     @Test
-    public void thenAcceptAsync() throws ExecutionException, InterruptedException {
+    public void thenAcceptAsync() throws Exception {
         AtomicReference<String> stringRef = new AtomicReference<>();
         thenAccept(source.toCompletionStage().thenAcceptAsync(setStThread(stringRef)), stringRef, "thenAcceptAsync");
     }
 
     @Test
-    public void thenAcceptAsyncExecutor() throws ExecutionException, InterruptedException {
+    public void thenAcceptAsyncExecutor() throws Exception {
         AtomicReference<String> stringRef = new AtomicReference<>();
         thenAccept(source.toCompletionStage().thenAcceptAsync(setJdkThread(stringRef), jdkExecutor), stringRef,
                 "thenAcceptAsyncExecutor");
@@ -290,19 +289,19 @@ public class SingleToCompletionStageTest {
     }
 
     @Test
-    public void thenRun() throws ExecutionException, InterruptedException {
+    public void thenRun() throws Exception {
         AtomicBoolean aBoolean = new AtomicBoolean();
         thenRun(source.toCompletionStage().thenRun(setTrueStThread(aBoolean)), aBoolean, "thenRun");
     }
 
     @Test
-    public void thenRunAsync() throws ExecutionException, InterruptedException {
+    public void thenRunAsync() throws Exception {
         AtomicBoolean aBoolean = new AtomicBoolean();
         thenRun(source.toCompletionStage().thenRunAsync(setTrueStThread(aBoolean)), aBoolean, "thenRunAsync");
     }
 
     @Test
-    public void thenRunAsyncExecutor() throws ExecutionException, InterruptedException {
+    public void thenRunAsyncExecutor() throws Exception {
         AtomicBoolean aBoolean = new AtomicBoolean();
         thenRun(source.toCompletionStage().thenRunAsync(setTrueJdkThread(aBoolean), jdkExecutor),
                 aBoolean, "thenRunAsyncExecutor");
@@ -342,25 +341,25 @@ public class SingleToCompletionStageTest {
     }
 
     @Test
-    public void thenCombine() throws ExecutionException, InterruptedException {
+    public void thenCombine() throws Exception {
         CompletableFuture<Double> other = new CompletableFuture<>();
         thenCombine(other, source.toCompletionStage().thenCombine(other, strLenDoubleStThread()), "foo", 123);
     }
 
     @Test
-    public void thenCombineNull() throws ExecutionException, InterruptedException {
+    public void thenCombineNull() throws Exception {
         CompletableFuture<Double> other = new CompletableFuture<>();
         thenCombine(other, source.toCompletionStage().thenCombine(other, strLenDoubleStThread()), null, 1236);
     }
 
     @Test
-    public void thenCombineAsync() throws ExecutionException, InterruptedException {
+    public void thenCombineAsync() throws Exception {
         CompletableFuture<Double> other = new CompletableFuture<>();
         thenCombine(other, source.toCompletionStage().thenCombineAsync(other, strLenDoubleStThread()), "foo", 123);
     }
 
     @Test
-    public void thenCombineAsyncExecutor() throws ExecutionException, InterruptedException {
+    public void thenCombineAsyncExecutor() throws Exception {
         CompletableFuture<Double> other = new CompletableFuture<>();
         thenCombine(other, source.toCompletionStage().thenCombineAsync(other, strLenDoubleJdkThread(), jdkExecutor),
                 "foo", 123);
@@ -375,7 +374,7 @@ public class SingleToCompletionStageTest {
     }
 
     @Test
-    public void thenAcceptBoth() throws ExecutionException, InterruptedException {
+    public void thenAcceptBoth() throws Exception {
         AtomicReference<String> strRef = new AtomicReference<>();
         AtomicReference<Long> lngRef = new AtomicReference<>();
         CompletableFuture<Long> other = new CompletableFuture<>();
@@ -387,7 +386,7 @@ public class SingleToCompletionStageTest {
     }
 
     @Test
-    public void thenAcceptBothNull() throws ExecutionException, InterruptedException {
+    public void thenAcceptBothNull() throws Exception {
         AtomicReference<String> strRef = new AtomicReference<>();
         AtomicReference<Long> lngRef = new AtomicReference<>();
         CompletableFuture<Long> other = new CompletableFuture<>();
@@ -399,7 +398,7 @@ public class SingleToCompletionStageTest {
     }
 
     @Test
-    public void thenAcceptBothAsync() throws ExecutionException, InterruptedException {
+    public void thenAcceptBothAsync() throws Exception {
         AtomicReference<String> strRef = new AtomicReference<>();
         AtomicReference<Long> lngRef = new AtomicReference<>();
         CompletableFuture<Long> other = new CompletableFuture<>();
@@ -411,7 +410,7 @@ public class SingleToCompletionStageTest {
     }
 
     @Test
-    public void thenAcceptBothAsyncExecutor() throws ExecutionException, InterruptedException {
+    public void thenAcceptBothAsyncExecutor() throws Exception {
         AtomicReference<String> strRef = new AtomicReference<>();
         AtomicReference<Long> lngRef = new AtomicReference<>();
         CompletableFuture<Long> other = new CompletableFuture<>();
@@ -435,7 +434,7 @@ public class SingleToCompletionStageTest {
     }
 
     @Test
-    public void runAfterBoth() throws ExecutionException, InterruptedException {
+    public void runAfterBoth() throws Exception {
         CountDownLatch latch = new CountDownLatch(1);
         CompletableFuture<Long> other = new CompletableFuture<>();
         runAfterBoth(other, source.toCompletionStage().runAfterBoth(other, countDownInStThread(latch)), "foo", 123L,
@@ -443,7 +442,7 @@ public class SingleToCompletionStageTest {
     }
 
     @Test
-    public void runAfterBothNull() throws ExecutionException, InterruptedException {
+    public void runAfterBothNull() throws Exception {
         CountDownLatch latch = new CountDownLatch(1);
         CompletableFuture<Long> other = new CompletableFuture<>();
         runAfterBoth(other, source.toCompletionStage().runAfterBoth(other, countDownInStThread(latch)), null, 1223L,
@@ -451,7 +450,7 @@ public class SingleToCompletionStageTest {
     }
 
     @Test
-    public void runAfterBothAsync() throws ExecutionException, InterruptedException {
+    public void runAfterBothAsync() throws Exception {
         CountDownLatch latch = new CountDownLatch(1);
         CompletableFuture<Long> other = new CompletableFuture<>();
         runAfterBoth(other, source.toCompletionStage().runAfterBothAsync(other, countDownInStThread(latch)), "bar",
@@ -459,7 +458,7 @@ public class SingleToCompletionStageTest {
     }
 
     @Test
-    public void runAfterBothAsyncExecutor() throws ExecutionException, InterruptedException {
+    public void runAfterBothAsyncExecutor() throws Exception {
         CountDownLatch latch = new CountDownLatch(1);
         CompletableFuture<Long> other = new CompletableFuture<>();
         runAfterBoth(other, source.toCompletionStage().runAfterBothAsync(other, countDownInJdkThread(latch),
@@ -477,28 +476,28 @@ public class SingleToCompletionStageTest {
     }
 
     @Test
-    public void applyToEither() throws ExecutionException, InterruptedException {
+    public void applyToEither() throws Exception {
         CompletableFuture<String> other = new CompletableFuture<>();
         applyToEither(other, source.toCompletionStage().applyToEither(other,
                 SingleToCompletionStageTest::strLenStThread), "foo", "bar");
     }
 
     @Test
-    public void applyToEitherNull() throws ExecutionException, InterruptedException {
+    public void applyToEitherNull() throws Exception {
         CompletableFuture<String> other = new CompletableFuture<>();
         applyToEither(other, source.toCompletionStage().applyToEither(other,
                 SingleToCompletionStageTest::strLenStThread), null, null);
     }
 
     @Test
-    public void applyToEitherAsync() throws ExecutionException, InterruptedException {
+    public void applyToEitherAsync() throws Exception {
         CompletableFuture<String> other = new CompletableFuture<>();
         applyToEither(other, source.toCompletionStage().applyToEitherAsync(other,
                 SingleToCompletionStageTest::strLenStThread), "foo", "bar");
     }
 
     @Test
-    public void applyToEitherAsyncExecutor() throws ExecutionException, InterruptedException {
+    public void applyToEitherAsyncExecutor() throws Exception {
         CompletableFuture<String> other = new CompletableFuture<>();
         applyToEither(other, source.toCompletionStage().applyToEitherAsync(other,
                 SingleToCompletionStageTest::strLenJdkThread, jdkExecutor), "foo", "bar");
@@ -514,21 +513,21 @@ public class SingleToCompletionStageTest {
     }
 
     @Test
-    public void acceptEither() throws ExecutionException, InterruptedException {
+    public void acceptEither() throws Exception {
         CompletableFuture<String> other = new CompletableFuture<>();
         AtomicReference<String> strRef = new AtomicReference<>();
         acceptEither(other, source.toCompletionStage().acceptEither(other, setStThread(strRef)), strRef, "foo", "bar");
     }
 
     @Test
-    public void acceptEitherNull() throws ExecutionException, InterruptedException {
+    public void acceptEitherNull() throws Exception {
         CompletableFuture<String> other = new CompletableFuture<>();
         AtomicReference<String> strRef = new AtomicReference<>();
         acceptEither(other, source.toCompletionStage().acceptEither(other, setStThread(strRef)), strRef, null, null);
     }
 
     @Test
-    public void acceptEitherAsync() throws ExecutionException, InterruptedException {
+    public void acceptEitherAsync() throws Exception {
         CompletableFuture<String> other = new CompletableFuture<>();
         AtomicReference<String> strRef = new AtomicReference<>();
         acceptEither(other, source.toCompletionStage().acceptEitherAsync(other, setStThread(strRef)), strRef, "what",
@@ -536,7 +535,7 @@ public class SingleToCompletionStageTest {
     }
 
     @Test
-    public void acceptEitherAsyncExecutor() throws ExecutionException, InterruptedException {
+    public void acceptEitherAsyncExecutor() throws Exception {
         CompletableFuture<String> other = new CompletableFuture<>();
         AtomicReference<String> strRef = new AtomicReference<>();
         acceptEither(other, source.toCompletionStage().acceptEitherAsync(other, setJdkThread(strRef), jdkExecutor),
@@ -555,7 +554,7 @@ public class SingleToCompletionStageTest {
     }
 
     @Test
-    public void runAfterEither() throws ExecutionException, InterruptedException {
+    public void runAfterEither() throws Exception {
         CompletableFuture<String> other = new CompletableFuture<>();
         CountDownLatch latch = new CountDownLatch(1);
         runAfterEither(other, source.toCompletionStage().runAfterEither(other, countDownInStThread(latch)), latch,
@@ -563,7 +562,7 @@ public class SingleToCompletionStageTest {
     }
 
     @Test
-    public void runAfterEitherNull() throws ExecutionException, InterruptedException {
+    public void runAfterEitherNull() throws Exception {
         CompletableFuture<String> other = new CompletableFuture<>();
         CountDownLatch latch = new CountDownLatch(1);
         runAfterEither(other, source.toCompletionStage().runAfterEither(other, countDownInStThread(latch)), latch,
@@ -571,7 +570,7 @@ public class SingleToCompletionStageTest {
     }
 
     @Test
-    public void runAfterEitherAsync() throws ExecutionException, InterruptedException {
+    public void runAfterEitherAsync() throws Exception {
         CompletableFuture<String> other = new CompletableFuture<>();
         CountDownLatch latch = new CountDownLatch(1);
         runAfterEither(other, source.toCompletionStage().runAfterEitherAsync(other, countDownInStThread(latch)), latch,
@@ -579,7 +578,7 @@ public class SingleToCompletionStageTest {
     }
 
     @Test
-    public void runAfterEitherAsyncExecutor() throws ExecutionException, InterruptedException {
+    public void runAfterEitherAsyncExecutor() throws Exception {
         CompletableFuture<String> other = new CompletableFuture<>();
         CountDownLatch latch = new CountDownLatch(1);
         runAfterEither(other, source.toCompletionStage().runAfterEitherAsync(other, countDownInJdkThread(latch),
@@ -597,7 +596,7 @@ public class SingleToCompletionStageTest {
     }
 
     @Test
-    public void thenCompose() throws ExecutionException, InterruptedException {
+    public void thenCompose() throws Exception {
         CompletableFuture<Integer> other = new CompletableFuture<>();
         AtomicReference<String> strRef = new AtomicReference<>();
         thenCompose(other, source.toCompletionStage().thenCompose(str -> {
@@ -608,7 +607,7 @@ public class SingleToCompletionStageTest {
     }
 
     @Test
-    public void thenComposeNull() throws ExecutionException, InterruptedException {
+    public void thenComposeNull() throws Exception {
         CompletableFuture<Integer> other = new CompletableFuture<>();
         AtomicReference<String> strRef = new AtomicReference<>();
         thenCompose(other, source.toCompletionStage().thenCompose(str -> {
@@ -619,7 +618,7 @@ public class SingleToCompletionStageTest {
     }
 
     @Test
-    public void thenComposeAsync() throws ExecutionException, InterruptedException {
+    public void thenComposeAsync() throws Exception {
         CompletableFuture<Integer> other = new CompletableFuture<>();
         AtomicReference<String> strRef = new AtomicReference<>();
         thenCompose(other, source.toCompletionStage().thenComposeAsync(str -> {
@@ -630,7 +629,7 @@ public class SingleToCompletionStageTest {
     }
 
     @Test
-    public void thenComposeAsyncExecutor() throws ExecutionException, InterruptedException {
+    public void thenComposeAsyncExecutor() throws Exception {
         CompletableFuture<Integer> other = new CompletableFuture<>();
         AtomicReference<String> strRef = new AtomicReference<>();
         thenCompose(other, source.toCompletionStage().thenComposeAsync(str -> {
@@ -652,13 +651,13 @@ public class SingleToCompletionStageTest {
     }
 
     @Test
-    public void exceptionally() throws ExecutionException, InterruptedException {
+    public void exceptionally() throws Exception {
         String expected = "foo";
         exceptionally(source.toCompletionStage().exceptionally(t -> expected), expected);
     }
 
     @Test
-    public void exceptionallyNull() throws ExecutionException, InterruptedException {
+    public void exceptionallyNull() throws Exception {
         exceptionally(source.toCompletionStage().exceptionally(t -> null), null);
     }
 
@@ -669,7 +668,7 @@ public class SingleToCompletionStageTest {
     }
 
     @Test
-    public void whenComplete() throws ExecutionException, InterruptedException {
+    public void whenComplete() throws Exception {
         AtomicReference<String> strRef = new AtomicReference<>();
         CountDownLatch latch = new CountDownLatch(1);
         whenComplete(source.toCompletionStage().whenComplete((s, t) -> {
@@ -680,7 +679,7 @@ public class SingleToCompletionStageTest {
     }
 
     @Test
-    public void whenCompleteNull() throws ExecutionException, InterruptedException {
+    public void whenCompleteNull() throws Exception {
         AtomicReference<String> strRef = new AtomicReference<>();
         CountDownLatch latch = new CountDownLatch(1);
         whenComplete(source.toCompletionStage().whenComplete((s, t) -> {
@@ -691,7 +690,7 @@ public class SingleToCompletionStageTest {
     }
 
     @Test
-    public void whenCompleteAsync() throws ExecutionException, InterruptedException {
+    public void whenCompleteAsync() throws Exception {
         AtomicReference<String> strRef = new AtomicReference<>();
         CountDownLatch latch = new CountDownLatch(1);
         whenComplete(source.toCompletionStage().whenCompleteAsync((s, t) -> {
@@ -702,7 +701,7 @@ public class SingleToCompletionStageTest {
     }
 
     @Test
-    public void whenCompleteAsyncExecutor() throws ExecutionException, InterruptedException {
+    public void whenCompleteAsyncExecutor() throws Exception {
         AtomicReference<String> strRef = new AtomicReference<>();
         CountDownLatch latch = new CountDownLatch(1);
         whenComplete(source.toCompletionStage().whenCompleteAsync((s, t) -> {
@@ -723,7 +722,7 @@ public class SingleToCompletionStageTest {
     }
 
     @Test
-    public void handle() throws ExecutionException, InterruptedException {
+    public void handle() throws Exception {
         AtomicReference<String> strRef = new AtomicReference<>();
         CountDownLatch latch = new CountDownLatch(1);
         handle(source.toCompletionStage().handle((s, t) -> {
@@ -735,7 +734,7 @@ public class SingleToCompletionStageTest {
     }
 
     @Test
-    public void handleNull() throws ExecutionException, InterruptedException {
+    public void handleNull() throws Exception {
         AtomicReference<String> strRef = new AtomicReference<>();
         CountDownLatch latch = new CountDownLatch(1);
         handle(source.toCompletionStage().handle((s, t) -> {
@@ -747,7 +746,7 @@ public class SingleToCompletionStageTest {
     }
 
     @Test
-    public void handleAsync() throws ExecutionException, InterruptedException {
+    public void handleAsync() throws Exception {
         AtomicReference<String> strRef = new AtomicReference<>();
         CountDownLatch latch = new CountDownLatch(1);
         handle(source.toCompletionStage().handleAsync((s, t) -> {
@@ -759,7 +758,7 @@ public class SingleToCompletionStageTest {
     }
 
     @Test
-    public void handleAsyncExecutor() throws ExecutionException, InterruptedException {
+    public void handleAsyncExecutor() throws Exception {
         AtomicReference<String> strRef = new AtomicReference<>();
         CountDownLatch latch = new CountDownLatch(1);
         handle(source.toCompletionStage().handleAsync((s, t) -> {
@@ -795,7 +794,7 @@ public class SingleToCompletionStageTest {
     }
 
     @Test
-    public void blockingCancellationBeforeListen() throws InterruptedException, ExecutionException {
+    public void blockingCancellationBeforeListen() throws Exception {
         CompletionStage<String> stage = source.toCompletionStage();
         CompletableFuture<String> future = stage.toCompletableFuture();
         AtomicReference<Throwable> causeRef = new AtomicReference<>();
@@ -830,7 +829,7 @@ public class SingleToCompletionStageTest {
     }
 
     @Test
-    public void blockingCancellationAfterListen() throws InterruptedException, ExecutionException {
+    public void blockingCancellationAfterListen() throws Exception {
         CountDownLatch cancelLatch = new CountDownLatch(1);
         CompletionStage<String> stage = source.doAfterCancel(cancelLatch::countDown).toCompletionStage();
         CompletableFuture<String> future = stage.toCompletableFuture();
@@ -871,22 +870,22 @@ public class SingleToCompletionStageTest {
     }
 
     @Test
-    public void blockingGetAsync() throws ExecutionException, InterruptedException {
+    public void blockingGetAsync() throws Exception {
         blockingGetAsync(source.toCompletionStage().toCompletableFuture(), "foo");
     }
 
     @Test
-    public void blockingGetAsyncNull() throws ExecutionException, InterruptedException {
+    public void blockingGetAsyncNull() throws Exception {
         blockingGetAsync(source.toCompletionStage().toCompletableFuture(), null);
     }
 
     @Test
-    public void futureGetAsync() throws ExecutionException, InterruptedException {
+    public void futureGetAsync() throws Exception {
         blockingGetAsync(source.toFuture(), "foo");
     }
 
     @Test
-    public void futureGetAsyncNull() throws ExecutionException, InterruptedException {
+    public void futureGetAsyncNull() throws Exception {
         blockingGetAsync(source.toFuture(), null);
     }
 
@@ -897,22 +896,22 @@ public class SingleToCompletionStageTest {
     }
 
     @Test
-    public void blockingGetSync() throws ExecutionException, InterruptedException {
+    public void blockingGetSync() throws Exception {
         blockingGetSync(source.toCompletionStage().toCompletableFuture(), "foo");
     }
 
     @Test
-    public void blockingGetSyncNull() throws ExecutionException, InterruptedException {
+    public void blockingGetSyncNull() throws Exception {
         blockingGetSync(source.toCompletionStage().toCompletableFuture(), null);
     }
 
     @Test
-    public void futureGetSync() throws ExecutionException, InterruptedException {
+    public void futureGetSync() throws Exception {
         blockingGetSync(source.toFuture(), "foo");
     }
 
     @Test
-    public void futureGetSyncNull() throws ExecutionException, InterruptedException {
+    public void futureGetSyncNull() throws Exception {
         blockingGetSync(source.toFuture(), null);
     }
 
@@ -923,12 +922,12 @@ public class SingleToCompletionStageTest {
     }
 
     @Test
-    public void blockingGetAsyncError() throws ExecutionException, InterruptedException {
+    public void blockingGetAsyncError() throws Exception {
         blockingGetAsyncError(source.toCompletionStage().toCompletableFuture());
     }
 
     @Test
-    public void futureGetAsyncError() throws ExecutionException, InterruptedException {
+    public void futureGetAsyncError() throws Exception {
         blockingGetAsyncError(source.toFuture());
     }
 
@@ -940,12 +939,12 @@ public class SingleToCompletionStageTest {
     }
 
     @Test
-    public void blockingGetSyncError() throws ExecutionException, InterruptedException {
+    public void blockingGetSyncError() throws Exception {
         blockingGetSyncError(source.toCompletionStage().toCompletableFuture());
     }
 
     @Test
-    public void futureGetSyncError() throws ExecutionException, InterruptedException {
+    public void futureGetSyncError() throws Exception {
         blockingGetSyncError(source.toFuture());
     }
 
@@ -957,12 +956,12 @@ public class SingleToCompletionStageTest {
     }
 
     @Test
-    public void blockingGetTimeoutExpire() throws InterruptedException, ExecutionException, TimeoutException {
+    public void blockingGetTimeoutExpire() throws Exception {
         blockingGetTimeoutExpire(source.toCompletionStage().toCompletableFuture());
     }
 
     @Test
-    public void futureGetTimeoutExpire() throws InterruptedException, ExecutionException, TimeoutException {
+    public void futureGetTimeoutExpire() throws Exception {
         blockingGetTimeoutExpire(source.toFuture());
     }
 
@@ -973,12 +972,12 @@ public class SingleToCompletionStageTest {
     }
 
     @Test
-    public void blockingGetTimeoutSuccess() throws InterruptedException, ExecutionException, TimeoutException {
+    public void blockingGetTimeoutSuccess() throws Exception {
         blockingGetTimeoutSuccess(source.toCompletionStage().toCompletableFuture());
     }
 
     @Test
-    public void futureGetTimeoutSuccess() throws InterruptedException, ExecutionException, TimeoutException {
+    public void futureGetTimeoutSuccess() throws Exception {
         blockingGetTimeoutSuccess(source.toFuture());
     }
 
@@ -989,12 +988,12 @@ public class SingleToCompletionStageTest {
     }
 
     @Test
-    public void blockingGetTimeoutError() throws InterruptedException, ExecutionException, TimeoutException {
+    public void blockingGetTimeoutError() throws Exception {
         blockingGetTimeoutError(source.toCompletionStage().toCompletableFuture());
     }
 
     @Test
-    public void futureGetTimeoutError() throws InterruptedException, ExecutionException, TimeoutException {
+    public void futureGetTimeoutError() throws Exception {
         blockingGetTimeoutError(source.toFuture());
     }
 

@@ -69,6 +69,7 @@ public class InsufficientlySizedExecutorHttpTest {
     public final Timeout timeout = new ServiceTalkTestTimeout();
     @Rule
     public final ExpectedException expectedException = none();
+
     private final int capacity;
     private final Executor executor;
     @Nullable

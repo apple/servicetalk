@@ -22,7 +22,6 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 
 import static io.servicetalk.concurrent.internal.ServiceTalkTestTimeout.DEFAULT_TIMEOUT_SECONDS;
@@ -77,11 +76,9 @@ public class DelayedCancellableTest {
     }
 
     @Test
-    public void setDelayedFromAnotherThreadIsVisible() throws ExecutionException, InterruptedException {
+    public void setDelayedFromAnotherThreadIsVisible() throws Exception {
         delayedCancellable.cancel();
-        executor.submit(() -> {
-            delayedCancellable.setDelayedCancellable(c1);
-        }).get();
+        executor.submit(() -> delayedCancellable.setDelayedCancellable(c1)).get();
         verify(c1).cancel();
     }
 }

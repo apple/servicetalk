@@ -75,10 +75,12 @@ import static org.mockito.MockitoAnnotations.initMocks;
 
 public class TracingHttpConnectionFilterTest {
     private static final HttpSerializationProvider httpSerializer = jsonSerializer(new JacksonSerializationProvider());
+
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
     @Rule
     public final ExpectedException expected = none();
+
     @Mock
     private Tracer mockTracer;
 
@@ -173,7 +175,7 @@ public class TracingHttpConnectionFilterTest {
         }
     }
 
-    private ServerContext buildServer() throws Exception {
+    private static ServerContext buildServer() throws Exception {
         return HttpServers.forPort(0)
                 .listenStreamingAndAwait((ctx, request, responseFactory) ->
                         success(responseFactory.ok().payloadBody(just(new TestSpanState(

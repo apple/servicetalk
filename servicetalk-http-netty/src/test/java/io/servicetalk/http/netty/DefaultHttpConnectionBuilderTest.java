@@ -39,17 +39,17 @@ import static org.junit.Assert.assertThat;
 public class DefaultHttpConnectionBuilderTest extends AbstractEchoServerBasedHttpRequesterTest {
 
     @Test
-    public void requestFromBuilderOverNonPipelinedHttpConnection() throws ExecutionException, InterruptedException {
+    public void requestFromBuilderOverNonPipelinedHttpConnection() throws Exception {
         sendRequestAndValidate(1);
     }
 
     @Test
-    public void requestFromBuilderOverPipelinedHttpConnection() throws ExecutionException, InterruptedException {
+    public void requestFromBuilderOverPipelinedHttpConnection() throws Exception {
         sendRequestAndValidate(3);
     }
 
     @Test
-    public void requestFromConnectionFactory() throws ExecutionException, InterruptedException {
+    public void requestFromConnectionFactory() throws Exception {
         ConnectionFactory<SocketAddress, StreamingHttpConnection> cf =
                 prepareBuilder(1).ioExecutor(CTX.ioExecutor()).executor(CTX.executor())
                         .asConnectionFactory();
@@ -84,7 +84,7 @@ public class DefaultHttpConnectionBuilderTest extends AbstractEchoServerBasedHtt
     }
 
     @Test
-    public void requestFromConnectionFactoryWithFilter() throws ExecutionException, InterruptedException {
+    public void requestFromConnectionFactoryWithFilter() throws Exception {
 
         Single<DummyFanoutFilter> connectionSingle = prepareBuilder(10)
                 .ioExecutor(CTX.ioExecutor())
@@ -101,7 +101,7 @@ public class DefaultHttpConnectionBuilderTest extends AbstractEchoServerBasedHtt
         makeRequestValidateResponseAndClose(connection);
     }
 
-    private void sendRequestAndValidate(int pipelinedRequests) throws ExecutionException, InterruptedException {
+    private static void sendRequestAndValidate(int pipelinedRequests) throws ExecutionException, InterruptedException {
         DefaultHttpConnectionBuilder<SocketAddress> defaultBuilder = prepareBuilder(pipelinedRequests);
 
         Single<StreamingHttpConnection> connectionSingle =
@@ -112,7 +112,7 @@ public class DefaultHttpConnectionBuilderTest extends AbstractEchoServerBasedHtt
     }
 
     @Nonnull
-    private DefaultHttpConnectionBuilder<SocketAddress> prepareBuilder(final int pipelinedRequests) {
+    private static DefaultHttpConnectionBuilder<SocketAddress> prepareBuilder(final int pipelinedRequests) {
         return new DefaultHttpConnectionBuilder<SocketAddress>()
                 .setMaxPipelinedRequests(pipelinedRequests);
     }

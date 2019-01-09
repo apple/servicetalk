@@ -21,12 +21,15 @@ import org.reactivestreams.Subscriber;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nullable;
+
 final class JustPublisher<T> extends AbstractSynchronousPublisher<T> {
     private static final Logger LOGGER = LoggerFactory.getLogger(JustPublisher.class);
 
+    @Nullable
     private final T value;
 
-    JustPublisher(T value) {
+    JustPublisher(@Nullable T value) {
         this.value = value;
     }
 

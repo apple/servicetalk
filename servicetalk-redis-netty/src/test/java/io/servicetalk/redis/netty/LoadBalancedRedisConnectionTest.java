@@ -23,8 +23,6 @@ import io.servicetalk.redis.api.RedisRequest;
 
 import org.junit.Test;
 
-import java.util.concurrent.ExecutionException;
-
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Completable.never;
 import static io.servicetalk.concurrent.api.Publisher.just;
@@ -39,7 +37,7 @@ import static org.mockito.Mockito.when;
 
 public class LoadBalancedRedisConnectionTest {
     @Test
-    public void singleRequestBringsCountBackToZero() throws ExecutionException, InterruptedException {
+    public void singleRequestBringsCountBackToZero() throws Exception {
         final Publisher<Integer> maxRequestsPublisher = just(1);
         RedisConnection delegate = mock(RedisConnection.class);
         when(delegate.onClose()).thenReturn(never());

@@ -39,6 +39,7 @@ public class RetryTest {
 
     @Rule
     public MockedSingleListenerRule<Integer> subscriberRule = new MockedSingleListenerRule<>();
+
     private TestSingle<Integer> source;
     private BiIntPredicate<Throwable> shouldRetry;
     private boolean shouldRetryValue;

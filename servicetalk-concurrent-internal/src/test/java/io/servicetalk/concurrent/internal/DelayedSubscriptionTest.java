@@ -119,7 +119,7 @@ public class DelayedSubscriptionTest {
     }
 
     @Test
-    public void setDelayedFromAnotherThreadIsVisible() throws ExecutionException, InterruptedException {
+    public void setDelayedFromAnotherThreadIsVisible() throws Exception {
         delayedSubscription.request(2);
         executor.submit(() -> delayedSubscription.setDelayedSubscription(s1)).get();
         verify(s1).request(2);
@@ -127,7 +127,7 @@ public class DelayedSubscriptionTest {
     }
 
     @Test
-    public void concurrentRequestAndSwap() throws ExecutionException, InterruptedException {
+    public void concurrentRequestAndSwap() throws Exception {
         for (int i = 0; i < 1000; i++) {
             doConcurrentRequestAndSwap();
         }

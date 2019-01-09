@@ -29,7 +29,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -252,7 +251,7 @@ public class PublisherGroupByTest {
     }
 
     @Test
-    public void testConcurrentDrain() throws ExecutionException, InterruptedException {
+    public void testConcurrentDrain() throws Exception {
         ExecutorService executorService = Executors.newFixedThreadPool(1);
         try {
             final int totalData = 10000;

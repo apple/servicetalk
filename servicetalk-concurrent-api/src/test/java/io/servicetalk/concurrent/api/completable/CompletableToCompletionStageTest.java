@@ -121,14 +121,14 @@ public class CompletableToCompletionStageTest {
     }
 
     @Test
-    public void futureComplete() throws ExecutionException, InterruptedException {
+    public void futureComplete() throws Exception {
         Future<String> f = source.toFuture();
         jdkExecutor.execute(source::onComplete);
         f.get();
     }
 
     @Test
-    public void futureFail() throws ExecutionException, InterruptedException {
+    public void futureFail() throws Exception {
         Future<String> f = source.toFuture();
         jdkExecutor.execute(() -> source.onError(DELIBERATE_EXCEPTION));
         thrown.expect(ExecutionException.class);

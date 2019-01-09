@@ -20,6 +20,8 @@ import org.reactivestreams.Subscription;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nullable;
+
 import static io.servicetalk.concurrent.internal.SubscriberUtils.isRequestNValid;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.newExceptionForInvalidRequestN;
 import static java.util.Objects.requireNonNull;
@@ -32,6 +34,7 @@ import static java.util.Objects.requireNonNull;
 public final class ScalarValueSubscription<T> implements Subscription {
     private static final Logger LOGGER = LoggerFactory.getLogger(ScalarValueSubscription.class);
 
+    @Nullable
     private final T value;
     private final Subscriber<? super T> subscriber;
 
@@ -43,7 +46,7 @@ public final class ScalarValueSubscription<T> implements Subscription {
      * @param value to be emitted by this {@link Subscription}.
      * @param subscriber to emit the value to when requested.
      */
-    public ScalarValueSubscription(T value, Subscriber<? super T> subscriber) {
+    public ScalarValueSubscription(@Nullable T value, Subscriber<? super T> subscriber) {
         this.value = value;
         this.subscriber = requireNonNull(subscriber);
     }

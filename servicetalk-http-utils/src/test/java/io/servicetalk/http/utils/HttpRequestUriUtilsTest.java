@@ -43,7 +43,7 @@ import static org.mockito.Mockito.when;
 
 public class HttpRequestUriUtilsTest {
     @Rule
-    public MockitoRule rule = MockitoJUnit.rule();
+    public final MockitoRule rule = MockitoJUnit.rule();
 
     @Mock
     private ConnectionContext ctx;

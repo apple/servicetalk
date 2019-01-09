@@ -20,8 +20,6 @@ import io.servicetalk.concurrent.api.Publisher;
 
 import org.junit.Test;
 
-import java.util.concurrent.ExecutionException;
-
 import static io.servicetalk.client.internal.ReservableRequestConcurrencyControllers.newSingleController;
 import static io.servicetalk.concurrent.api.Completable.never;
 import static io.servicetalk.concurrent.api.Publisher.just;
@@ -38,7 +36,7 @@ public class ReservableRequestConcurrencyControllerOnlySingleTest extends
     }
 
     @Test
-    public void reserveWithNoRequests() throws ExecutionException, InterruptedException {
+    public void reserveWithNoRequests() throws Exception {
         ReservableRequestConcurrencyController controller = newController(just(10), never());
         for (int i = 0; i < 10; ++i) {
             assertTrue(controller.tryReserve());

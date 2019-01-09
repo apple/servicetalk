@@ -23,7 +23,6 @@ import io.servicetalk.serialization.api.StreamingDeserializer;
 import io.servicetalk.serialization.api.TypeHolder;
 
 import com.fasterxml.jackson.core.JsonParseException;
-import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
@@ -48,12 +47,7 @@ public class JacksonSerializationProviderTest {
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
 
-    private JacksonSerializationProvider serializationProvider;
-
-    @Before
-    public void setup() {
-        serializationProvider = new JacksonSerializationProvider();
-    }
+    private final JacksonSerializationProvider serializationProvider = new JacksonSerializationProvider();
 
     @Test
     public void testFromClass() {

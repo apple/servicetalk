@@ -33,7 +33,6 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -58,6 +57,7 @@ public class TimeoutPublisherTest {
     public final PublisherRule<Integer> publisherRule = new PublisherRule<>();
     @Rule
     public final MockedSubscriberRule<Integer> subscriberRule = new MockedSubscriberRule<>();
+
     private final ScheduleQueueTestExecutor testExecutor = new ScheduleQueueTestExecutor();
     private java.util.concurrent.ExecutorService timerSimulator;
 
@@ -145,7 +145,7 @@ public class TimeoutPublisherTest {
     }
 
     @Test
-    public void noDataAndTimeout() throws ExecutionException, InterruptedException {
+    public void noDataAndTimeout() throws Exception {
         ScheduleEvent event = initSubscriber();
 
         // Sleep for at least as much time as the expiration time, because we just subscribed.
@@ -158,7 +158,7 @@ public class TimeoutPublisherTest {
     }
 
     @Test
-    public void dataAndTimeout() throws ExecutionException, InterruptedException {
+    public void dataAndTimeout() throws Exception {
         ScheduleEvent event = initSubscriber(2, MILLISECONDS);
         subscriberRule.request(10);
         subscriberRule.verifyNoEmissions();
@@ -175,7 +175,7 @@ public class TimeoutPublisherTest {
     }
 
     @Test
-    public void justSubscribeTimeout() throws ExecutionException, InterruptedException {
+    public void justSubscribeTimeout() throws Exception {
         DelayedOnSubscribePublisher<Integer> delayedPublisher = new DelayedOnSubscribePublisher<>();
 
         ScheduleEvent event = initSubscriber(1, NANOSECONDS, delayedPublisher, false);

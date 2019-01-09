@@ -64,7 +64,7 @@ import static org.junit.Assert.assertThat;
 public abstract class AbstractResourceTest extends AbstractJerseyStreamingHttpServiceTest {
     @NameBinding
     @Target({ElementType.TYPE, ElementType.METHOD})
-    @Retention(value = RetentionPolicy.RUNTIME)
+    @Retention(RetentionPolicy.RUNTIME)
     public @interface TestFiltered {
     }
 
@@ -77,7 +77,7 @@ public abstract class AbstractResourceTest extends AbstractJerseyStreamingHttpSe
         public void filter(final ContainerRequestContext requestContext) {
             final String abortStatus = requestContext.getHeaderString("X-Abort-With-Status");
             if (abortStatus != null) {
-                requestContext.abortWith(status(Integer.valueOf(abortStatus)).build());
+                requestContext.abortWith(status(Integer.parseInt(abortStatus)).build());
             }
             requestContext.setProperty("fooProp", "barProp");
         }

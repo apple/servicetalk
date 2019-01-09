@@ -16,7 +16,7 @@
 package io.servicetalk.http.router.jersey;
 
 public class TestPojo {
-    private String aString;
+    private String aString = "";
     private int anInt;
 
     public String getaString() {

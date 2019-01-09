@@ -60,7 +60,7 @@ public abstract class AbstractEchoServerBasedHttpRequesterTest {
     @ClassRule
     public static final ExecutionContextRule CTX = immediate();
 
-    protected static ServerContext serverContext;
+    static ServerContext serverContext;
 
     @BeforeClass
     public static void startServer() throws Exception {
@@ -70,7 +70,7 @@ public abstract class AbstractEchoServerBasedHttpRequesterTest {
     }
 
     @AfterClass
-    public static void stopServer() throws ExecutionException, InterruptedException {
+    public static void stopServer() throws Exception {
         awaitIndefinitely(serverContext.closeAsync());
     }
 

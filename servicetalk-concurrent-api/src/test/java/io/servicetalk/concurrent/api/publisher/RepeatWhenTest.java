@@ -44,6 +44,7 @@ public class RepeatWhenTest {
 
     @Rule
     public final MockedSubscriberRule<Integer> subscriberRule = new MockedSubscriberRule<>();
+
     private TestPublisher<Integer> source;
     private IntFunction<Completable> shouldRepeat;
     private TestCompletable repeatSignal;

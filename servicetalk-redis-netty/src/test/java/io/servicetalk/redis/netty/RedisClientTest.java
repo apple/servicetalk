@@ -275,7 +275,7 @@ public class RedisClientTest extends BaseRedisClientTest {
     }
 
     @Test
-    public void redisCommanderUsesFilters() throws ExecutionException, InterruptedException {
+    public void redisCommanderUsesFilters() throws Exception {
         final RedisClient delegate = getEnv().client;
         final AtomicBoolean requestCalled = new AtomicBoolean();
         final AtomicBoolean closeCalled = new AtomicBoolean();
@@ -326,7 +326,7 @@ public class RedisClientTest extends BaseRedisClientTest {
     }
 
     @Test
-    public void requestSingleLongIsRepeatable() throws ExecutionException, InterruptedException {
+    public void requestSingleLongIsRepeatable() throws Exception {
         RedisCommander commander = getEnv().client.asCommander();
         final String key = "foo";
         awaitIndefinitely(commander.del(key));
@@ -339,7 +339,7 @@ public class RedisClientTest extends BaseRedisClientTest {
     }
 
     @Test
-    public void requestSingleStringIsRepeatable() throws ExecutionException, InterruptedException {
+    public void requestSingleStringIsRepeatable() throws Exception {
         RedisCommander commander = getEnv().client.asCommander();
         assertThat(awaitIndefinitely(commander.set("foo", "value").repeat(times -> times < 2)
                         .reduce(() -> new ArrayList<>(2), (list, value) -> {
@@ -350,7 +350,7 @@ public class RedisClientTest extends BaseRedisClientTest {
     }
 
     @Test
-    public void requestSingleBufferIsRepeatable() throws ExecutionException, InterruptedException {
+    public void requestSingleBufferIsRepeatable() throws Exception {
         BufferRedisCommander commander = getEnv().client.asBufferCommander();
         final Buffer key =
                 getEnv().client.executionContext().bufferAllocator().newBuffer(4).writeInt(Integer.MAX_VALUE);
@@ -368,7 +368,7 @@ public class RedisClientTest extends BaseRedisClientTest {
     }
 
     @Test
-    public void requestSingleListIsRepeatable() throws ExecutionException, InterruptedException {
+    public void requestSingleListIsRepeatable() throws Exception {
         BufferRedisCommander commander = getEnv().client.asBufferCommander();
         final Buffer key1 =
                 getEnv().client.executionContext().bufferAllocator().newBuffer(4).writeInt(Integer.MAX_VALUE);

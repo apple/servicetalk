@@ -75,8 +75,10 @@ import static org.mockito.MockitoAnnotations.initMocks;
 
 public class TracingHttpServiceFilterTest {
     private static final HttpSerializationProvider httpSerializer = jsonSerializer(new JacksonSerializationProvider());
+
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
+
     @Mock
     private Tracer mockTracer;
 
@@ -85,7 +87,7 @@ public class TracingHttpServiceFilterTest {
         initMocks(this);
     }
 
-    private ServerContext buildServer(CountingInMemorySpanEventListener spanListener) throws Exception {
+    private static ServerContext buildServer(CountingInMemorySpanEventListener spanListener) throws Exception {
         DefaultInMemoryTracer tracer = new DefaultInMemoryTracer.Builder(new AsyncContextInMemoryScopeManager())
                 .addListener(spanListener).build();
         return HttpServers.forPort(0)

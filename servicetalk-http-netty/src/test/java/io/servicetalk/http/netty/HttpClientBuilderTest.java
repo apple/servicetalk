@@ -106,7 +106,7 @@ public class HttpClientBuilderTest extends AbstractEchoServerBasedHttpRequesterT
         return factory;
     }
 
-    private void sendRequestAndValidate(final Publisher<ServiceDiscovererEvent<InetSocketAddress>> sdPub)
+    private static void sendRequestAndValidate(final Publisher<ServiceDiscovererEvent<InetSocketAddress>> sdPub)
             throws ExecutionException, InterruptedException {
         @SuppressWarnings("unchecked")
         ServiceDiscoverer<HostAndPort, InetSocketAddress, ServiceDiscovererEvent<InetSocketAddress>> disco =

@@ -23,7 +23,6 @@ import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.api.TestSingle;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
@@ -47,13 +46,9 @@ public final class SingleFlatMapPublisherTest {
     public final ExecutorRule executorRule = new ExecutorRule();
     @Rule
     public final MockedSubscriberRule<String> subscriber = new MockedSubscriberRule<>();
-    private TestPublisher<String> publisher = new TestPublisher<>();
-    private TestSingle<String> single;
 
-    @Before
-    public void setUp() {
-        single = new TestSingle<>();
-    }
+    private final TestPublisher<String> publisher = new TestPublisher<>();
+    private final TestSingle<String> single = new TestSingle<>();
 
     @Test
     public void testFirstAndSecondPropagate() {

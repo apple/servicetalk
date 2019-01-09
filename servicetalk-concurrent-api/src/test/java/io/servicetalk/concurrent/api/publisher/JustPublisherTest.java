@@ -41,6 +41,6 @@ public class JustPublisherTest {
 
     @Test
     public void nullInTerminalSucceeds() {
-        subscriberRule.subscribe(Publisher.just(null)).request(1).verifySuccess();
+        subscriberRule.subscribe(Publisher.just(null)).request(1).verifyItems(new String[]{null}).verifySuccess();
     }
 }

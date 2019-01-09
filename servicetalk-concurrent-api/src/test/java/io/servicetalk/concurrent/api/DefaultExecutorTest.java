@@ -33,7 +33,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Delayed;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -182,12 +181,12 @@ public final class DefaultExecutorTest {
     }
 
     @Test
-    public void timerRaw() throws ExecutionException, InterruptedException {
+    public void timerRaw() throws Exception {
         awaitIndefinitely(executor.timer(1, NANOSECONDS));
     }
 
     @Test
-    public void timerDuration() throws ExecutionException, InterruptedException {
+    public void timerDuration() throws Exception {
         awaitIndefinitely(executor.timer(ofNanos(1)));
     }
 
@@ -232,7 +231,7 @@ public final class DefaultExecutorTest {
     }
 
     @Test
-    public void timerRawRejected() throws ExecutionException, InterruptedException {
+    public void timerRawRejected() throws Exception {
         Executor executor = from(new RejectAllScheduler());
         expected.expect(ExecutionException.class);
         expected.expectCause(instanceOf(RejectedExecutionException.class));
@@ -240,7 +239,7 @@ public final class DefaultExecutorTest {
     }
 
     @Test
-    public void timerDurationRejected() throws ExecutionException, InterruptedException {
+    public void timerDurationRejected() throws Exception {
         Executor executor = from(new RejectAllScheduler());
         expected.expect(ExecutionException.class);
         expected.expectCause(instanceOf(RejectedExecutionException.class));
@@ -477,85 +476,6 @@ public final class DefaultExecutorTest {
         public ScheduledFuture<?> scheduleWithFixedDelay(Runnable command, long initialDelay, long delay,
                                                          TimeUnit unit) {
             throw new RejectedExecutionException(DELIBERATE_EXCEPTION);
-        }
-    }
-
-    private static final class WaitForCancelScheduler extends ThreadPoolExecutor implements ScheduledExecutorService {
-        WaitForCancelScheduler() {
-            super(2, 2, 60, SECONDS, new SynchronousQueue<>());
-        }
-
-        private static final class IgnoreCancelScheduledFuture implements ScheduledFuture<Object> {
-            private final long startTime = System.nanoTime();
-            final CountDownLatch latch = new CountDownLatch(1);
-            volatile boolean done;
-
-            @Override
-            public long getDelay(TimeUnit unit) {
-                return NANOSECONDS.toMillis(System.nanoTime() - startTime);
-            }
-
-            @Override
-            public int compareTo(Delayed o) {
-                return Long.compare(getDelay(NANOSECONDS), o.getDelay(NANOSECONDS));
-            }
-
-            @Override
-            public boolean cancel(boolean mayInterruptIfRunning) {
-                latch.countDown();
-                return false;
-            }
-
-            @Override
-            public boolean isCancelled() {
-                return false;
-            }
-
-            @Override
-            public boolean isDone() {
-                return done;
-            }
-
-            @Override
-            public Object get() {
-                throw new UnsupportedOperationException();
-            }
-
-            @Override
-            public Object get(long timeout, TimeUnit unit) {
-                throw new UnsupportedOperationException();
-            }
-        }
-
-        @Override
-        public ScheduledFuture<?> schedule(Runnable command, long delay, TimeUnit unit) {
-            IgnoreCancelScheduledFuture future = new IgnoreCancelScheduledFuture();
-            super.execute(() -> {
-                try {
-                    future.latch.await();
-                } catch (InterruptedException e) {
-                    throw new RuntimeException(e);
-                }
-                command.run();
-                future.done = true;
-            });
-            return future;
-        }
-
-        @Override
-        public <V> ScheduledFuture<V> schedule(Callable<V> callable, long delay, TimeUnit unit) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public ScheduledFuture<?> scheduleAtFixedRate(Runnable command, long initialDelay, long period, TimeUnit unit) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public ScheduledFuture<?> scheduleWithFixedDelay(Runnable command, long initialDelay, long delay,
-                                                         TimeUnit unit) {
-            throw new UnsupportedOperationException();
         }
     }
 }

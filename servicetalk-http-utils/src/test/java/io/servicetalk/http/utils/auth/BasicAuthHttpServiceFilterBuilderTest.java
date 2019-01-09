@@ -38,6 +38,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
 
+import java.nio.charset.Charset;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
@@ -61,6 +62,8 @@ import static io.servicetalk.http.api.HttpResponseStatuses.PROXY_AUTHENTICATION_
 import static io.servicetalk.http.api.HttpResponseStatuses.UNAUTHORIZED;
 import static io.servicetalk.http.utils.auth.BasicAuthHttpServiceFilterBuilder.newBasicAuthBuilder;
 import static io.servicetalk.http.utils.auth.BasicAuthHttpServiceFilterBuilder.newBasicAuthBuilderForProxy;
+import static java.nio.charset.StandardCharsets.ISO_8859_1;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Base64.getEncoder;
 import static java.util.Objects.requireNonNull;
 import static org.junit.Assert.assertEquals;
@@ -318,7 +321,7 @@ public class BasicAuthHttpServiceFilterBuilderTest {
         assertFalse(response.headers().contains(USER_ID_HEADER_NAME));
 
         StreamingHttpRequest request = reqRespFactory.get("/path");
-        request.headers().set(AUTHORIZATION, "Basic " + base64("userId:пароль"));
+        request.headers().set(AUTHORIZATION, "Basic " + base64("userId:пароль", UTF_8));
         testAuthenticated(request, service);
     }
 
@@ -406,6 +409,10 @@ public class BasicAuthHttpServiceFilterBuilderTest {
     }
 
     private static String base64(String str) {
-        return getEncoder().encodeToString(str.getBytes());
+        return base64(str, ISO_8859_1);
+    }
+
+    private static String base64(String str, Charset charset) {
+        return getEncoder().encodeToString(str.getBytes(charset));
     }
 }

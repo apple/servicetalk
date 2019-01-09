@@ -52,6 +52,7 @@ public final class BlockingSubscriber<T> implements Subscriber<T> {
 
     private final BlockingQueue<Result> awaitingResults = new LinkedBlockingQueue<>();
     private final ConcurrentLinkedQueue<T> received = new ConcurrentLinkedQueue<>();
+    @Nullable
     private volatile TerminalNotification terminal;
 
     @Override

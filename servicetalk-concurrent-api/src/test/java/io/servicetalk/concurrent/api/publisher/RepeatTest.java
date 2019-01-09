@@ -36,11 +36,11 @@ public class RepeatTest {
 
     @Rule
     public final MockedSubscriberRule<Integer> subscriberRule = new MockedSubscriberRule<>();
+
     private TestPublisher<Integer> source;
     private IntPredicate shouldRepeat;
     private boolean shouldRepeatValue;
 
-    @SuppressWarnings("unchecked")
     @Before
     public void setUp() throws Exception {
         source = new TestPublisher<>(true);

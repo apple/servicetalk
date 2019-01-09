@@ -31,7 +31,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
 
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import javax.annotation.Nullable;
@@ -49,6 +48,7 @@ public class TimeoutSingleTest {
     public final Timeout timeout = new ServiceTalkTestTimeout();
     @Rule
     public final MockedSingleListenerRule<Integer> subscriberRule = new MockedSingleListenerRule<>();
+
     private TestSingle<Integer> source;
     private final ScheduleQueueTestExecutor testExecutor = new ScheduleQueueTestExecutor();
     private java.util.concurrent.ExecutorService timerSimulator;
@@ -108,7 +108,7 @@ public class TimeoutSingleTest {
     }
 
     @Test
-    public void noDataAndTimeout() throws ExecutionException, InterruptedException {
+    public void noDataAndTimeout() throws Exception {
         ScheduleEvent event = initSubscriber();
 
         // Sleep for at least as much time as the expiration time, because we just subscribed data.
@@ -121,7 +121,7 @@ public class TimeoutSingleTest {
     }
 
     @Test
-    public void justSubscribeTimeout() throws ExecutionException, InterruptedException {
+    public void justSubscribeTimeout() throws Exception {
         DelayedOnSubscribeSingle<Integer> delayedSingle = new DelayedOnSubscribeSingle<>();
 
         ScheduleEvent event = initSubscriber(delayedSingle, false);

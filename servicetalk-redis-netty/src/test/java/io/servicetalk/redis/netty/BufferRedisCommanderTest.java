@@ -203,8 +203,8 @@ public class BufferRedisCommanderTest extends BaseRedisClientTest {
     }
 
     @Test
-    public void infoWithAggregationDoesNotThrow() throws ExecutionException, InterruptedException {
-        assertThat(awaitIndefinitely(commandClient.info()).readableBytes(), is(greaterThan(0)));
+    public void infoWithAggregationDoesNotThrow() throws Exception {
+        assertThat(awaitIndefinitelyNonNull(commandClient.info()).readableBytes(), is(greaterThan(0)));
     }
 
     @SuppressWarnings("unchecked")

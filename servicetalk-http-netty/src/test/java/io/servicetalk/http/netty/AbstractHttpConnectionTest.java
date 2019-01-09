@@ -38,7 +38,6 @@ import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 
 import java.util.List;
-import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
@@ -107,7 +106,7 @@ public final class AbstractHttpConnectionTest {
     }
 
     @Test
-    public void shouldEmitMaxConcurrencyInSettingStream() throws ExecutionException, InterruptedException {
+    public void shouldEmitMaxConcurrencyInSettingStream() throws Exception {
         Integer max = awaitIndefinitely(http.settingStream(MAX_CONCURRENCY).first());
         assertThat(max, equalTo(101));
     }
@@ -115,7 +114,7 @@ public final class AbstractHttpConnectionTest {
     @SuppressWarnings("unchecked")
     @Test
     public void requestShouldWriteFlatStreamToConnectionAndReadFlatStreamSplicedIntoResponseAndPayload()
-            throws ExecutionException, InterruptedException {
+            throws Exception {
 
         Buffer chunk1 = allocator.fromAscii("test");
         Buffer chunk2 = allocator.fromAscii("payload");
@@ -148,8 +147,7 @@ public final class AbstractHttpConnectionTest {
 
     @SuppressWarnings("unchecked")
     @Test
-    public void requestShouldInsertLastPayloadChunkInRequestPayloadWhenMissing()
-            throws ExecutionException, InterruptedException {
+    public void requestShouldInsertLastPayloadChunkInRequestPayloadWhenMissing() throws Exception {
 
         Buffer chunk1 = allocator.fromAscii("test");
         Buffer chunk2 = allocator.fromAscii("payload");

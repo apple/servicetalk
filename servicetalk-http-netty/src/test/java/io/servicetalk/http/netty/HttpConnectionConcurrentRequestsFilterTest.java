@@ -73,7 +73,7 @@ public class HttpConnectionConcurrentRequestsFilterTest {
     public final PublisherRule<Buffer> response3Publisher = new PublisherRule<>();
 
     @Test
-    public void decrementWaitsUntilResponsePayloadIsComplete() throws ExecutionException, InterruptedException {
+    public void decrementWaitsUntilResponsePayloadIsComplete() throws Exception {
         StreamingHttpConnection mockConnection = new TestStreamingHttpConnection(reqRespFactory, executionContext,
                 connectionContext) {
             private final AtomicInteger reqCount = new AtomicInteger(0);
