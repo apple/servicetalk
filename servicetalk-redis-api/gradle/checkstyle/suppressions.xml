@@ -19,5 +19,6 @@
     "http://checkstyle.sourceforge.net/dtds/suppressions_1_2.dtd">
 
 <suppressions>
+  <suppress id="CopyrightHeader" files="io/servicetalk/redis/api/StringByteSizeUtil.java"/>
   <suppress checks="ModifiedControlVariable" files="io/servicetalk/redis/api/StringByteSizeUtil.java"/>
 </suppressions>

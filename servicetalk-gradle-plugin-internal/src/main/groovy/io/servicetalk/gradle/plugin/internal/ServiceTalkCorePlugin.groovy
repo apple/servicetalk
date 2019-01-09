@@ -32,56 +32,8 @@ class ServiceTalkCorePlugin implements Plugin<Project> {
   }
 
   private static void configureProject(Project project) {
-    applyLicensePlugin project
     applyJavaPlugins project
     configureTests project
-  }
-
-  public static void applyLicensePlugin(Project project) {
-    project.configure(project) {
-      pluginManager.apply("com.github.hierynomus.license")
-      license {
-        header = null
-        headerURI = getClass().getResource("license/HEADER.txt").toURI()
-        strictCheck = true
-        skipExistingHeaders = true
-        mapping {
-          java = 'SLASHSTAR_STYLE'
-          gradle = 'SLASHSTAR_STYLE'
-        }
-        headerDefinitions {
-          // Redefine XML style to align with Intellij IDEA format
-          // doc: https://github.com/hierynomus/license-gradle-plugin#creating-custom-header-definitions
-          xml_style {
-            firstLine = '<!--'
-            beforeEachLine = '  ~ '
-            endLine = '  -->'
-            skipLinePattern = '^<\\?xml.*>$'
-            firstLineDetectionPattern = '(\\\\s|\\\\t)*<!--.*$'
-            lastLineDetectionPattern = '.*-->(\\\\s|\\\\t)*$'
-            allowBlankLines = true
-            isMultiline = true
-          }
-        }
-      }
-
-      // Include some files from the root directory
-      // doc: https://github.com/hierynomus/license-gradle-plugin#running-on-a-non-java-project
-      def rootFileTree = fileTree("$rootDir") {
-        includes = ["*.gradle", "*.properties", "scripts/**", "gradle/**"]
-        excludes = ["gradle/wrapper/**"]
-      }
-
-      project.task("licenseRoot", type: com.hierynomus.gradle.license.tasks.LicenseCheck) {
-        source = rootFileTree
-      }
-      tasks.license.dependsOn licenseRoot
-
-      project.task("licenseFormatRoot", type: com.hierynomus.gradle.license.tasks.LicenseFormat) {
-        source = rootFileTree
-      }
-      tasks.licenseFormat.dependsOn licenseFormatRoot
-    }
   }
 
   private static void applyJavaPlugins(Project project) {

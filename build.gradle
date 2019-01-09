@@ -27,7 +27,8 @@ buildscript {
 
   dependencies {
     // The plugin is brought in via composite build inclusion, so no need to specify a version.
-    classpath "io.servicetalk:servicetalk-gradle-plugin-internal"  }
+    classpath "io.servicetalk:servicetalk-gradle-plugin-internal"
+  }
 }
 
 // Composite builds do not correctly substitute test fixtures dependencies
@@ -61,7 +62,7 @@ gradle.includedBuilds.each {
 project.configure(project) {
   io.servicetalk.gradle.plugin.internal.ServiceTalkLibraryPlugin.applyIdeaPlugin(gradle.rootProject)
   io.servicetalk.gradle.plugin.internal.ServiceTalkLibraryPlugin.applyEclipsePlugin(gradle.rootProject)
-  io.servicetalk.gradle.plugin.internal.ServiceTalkCorePlugin.applyLicensePlugin(gradle.rootProject)
+  io.servicetalk.gradle.plugin.internal.ServiceTalkLibraryPlugin.applyCheckstylePlugin(gradle.rootProject)
 }
 
 ext.findTasks = { taskName, excludedBuilds = [] ->
@@ -71,6 +72,9 @@ ext.findTasks = { taskName, excludedBuilds = [] ->
 // Add tasks for composite:
 
 task clean {
+  doFirst {
+    delete file("./build")
+  }
   dependsOn findTasks('clean')
 }
 
@@ -94,9 +98,9 @@ task assemble {
   dependsOn findTasks('assemble')
 }
 
-task checkstyle {
-  dependsOn findTasks('checkstyle',
-    ['servicetalk-bom', 'servicetalk-bom-internal', 'servicetalk-examples', 'servicetalk-gradle-plugin-internal'])
+task checkstyle(overwrite: true) {
+  dependsOn checkstyleRoot
+  dependsOn findTasks('checkstyle', ['servicetalk-examples'])
 }
 
 task pmd {
@@ -110,8 +114,9 @@ task spotbugs {
 }
 
 task quality {
-  dependsOn findTasks('quality',
-    ['servicetalk-bom', 'servicetalk-bom-internal', 'servicetalk-examples', 'servicetalk-gradle-plugin-internal'])
+  dependsOn tasks.checkstyle
+  dependsOn tasks.pmd
+  dependsOn tasks.spotbugs
 }
 
 task bintrayUpload {
@@ -126,14 +131,4 @@ task publish(overwrite: true) {
 
 task publishToMavenLocal(overwrite: true) {
   dependsOn findTasks('publishToMavenLocal', ['servicetalk-benchmarks', 'servicetalk-examples'])
-}
-
-task license(overwrite: true) {
-  dependsOn licenseRoot
-  dependsOn findTasks('license', ['servicetalk-examples'])
-}
-
-task licenseFormat(overwrite: true) {
-  dependsOn licenseFormatRoot
-  dependsOn findTasks('licenseFormat', ['servicetalk-examples'])
 }
