@@ -131,5 +131,3 @@ idea {
 if (!hasProperty('releaseBuild') && !version.toString().endsWith("-SNAPSHOT")) {
   version += "-SNAPSHOT"
 }
-
-task('package', dependsOn: assemble)
