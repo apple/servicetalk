@@ -79,9 +79,9 @@ public class StreamingHttpClientFilter extends StreamingHttpClient {
      * Called when the filter needs to delegate the request using the provided {@link StreamingHttpRequester} on which
      * to call {@link StreamingHttpRequester#request(HttpExecutionStrategy, StreamingHttpRequest)}.
      *
-     * @param delegate the {@link StreamingHttpRequester} to delegate requests to.
-     * @param strategy the {@link HttpExecutionStrategy} to use for executing the request.
-     * @param request the request to send.
+     * @param delegate The {@link StreamingHttpRequester} to delegate requests to.
+     * @param strategy The {@link HttpExecutionStrategy} to use for executing the request.
+     * @param request The request to delegate.
      * @return the response.
      */
     protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
@@ -97,7 +97,7 @@ public class StreamingHttpClientFilter extends StreamingHttpClient {
      *
      * @param delegate the {@link StreamingHttpClient} to delegate requests to.
      * @param strategy the {@link HttpExecutionStrategy} to use for executing the request.
-     * @param request the request to send.
+     * @param request The request for reserving the connection.
      * @return the response.
      */
     protected Single<? extends ReservedStreamingHttpConnection> reserveConnection(final StreamingHttpClient delegate,

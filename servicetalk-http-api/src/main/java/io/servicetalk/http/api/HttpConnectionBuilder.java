@@ -22,7 +22,10 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.IoExecutor;
 
+import java.util.function.Predicate;
+
 import static io.servicetalk.http.api.BlockingUtils.blockingInvocation;
+import static java.util.Objects.requireNonNull;
 
 /**
  * A builder for {@link StreamingHttpConnection} objects.
@@ -108,5 +111,45 @@ public interface HttpConnectionBuilder<ResolvedAddress> {
      */
     default ConnectionFactory<ResolvedAddress, StreamingHttpConnection> asConnectionFactory() {
         return new EmptyCloseConnectionFactory<>(this::buildStreaming);
+    }
+
+    /**
+     * Set the filter that is used to decorate {@link StreamingHttpConnection} created by this builder.
+     * <p>
+     * Note this method will be used to decorate the result of {@link #buildStreaming(Object)} before it is returned to
+     * the user.
+     *
+     * @param function decorates a {@link StreamingHttpConnection} for the purpose of filtering
+     * @return {@code this}
+     */
+    HttpConnectionBuilder<ResolvedAddress> appendConnectionFilter(HttpConnectionFilterFactory function);
+
+    /**
+     * Append the filter to the chain of filters used to decorate the {@link StreamingHttpConnection} created by this
+     * builder, for every request that passes the provided {@link Predicate}.
+     * <p>
+     * Note this method will be used to decorate the result of {@link #buildStreaming(Object)} before it is
+     * returned to the user.
+     * <p>
+     * The order of execution of these filters are in order of append. If 3 filters are added as follows:
+     * <pre>
+     *     builder.append(filter1).append(filter2).append(filter3)
+     * </pre>
+     * making a request to a connection wrapped by this filter chain the order of invocation of these filters will be:
+     * <pre>
+     *     filter1 =&gt; filter2 =&gt; filter3 =&gt; client
+     * </pre>
+     * @param predicate the {@link Predicate} to test if the filter must be applied.
+     * @param factory {@link HttpConnectionFilterFactory} to decorate a {@link StreamingHttpConnection} for the purpose
+     * of filtering.
+     * @return {@code this}
+     */
+    default HttpConnectionBuilder<ResolvedAddress> appendConnectionFilter(
+            Predicate<StreamingHttpRequest> predicate, HttpConnectionFilterFactory factory) {
+        requireNonNull(predicate);
+        requireNonNull(factory);
+
+        return appendConnectionFilter((connection) ->
+                new ConditionalHttpConnectionFilter(predicate, factory.create(connection), connection));
     }
 }

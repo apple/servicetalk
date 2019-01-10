@@ -47,18 +47,18 @@ final class ConditionalHttpClientFilter extends StreamingHttpClientFilter {
 
     private Single<StreamingHttpResponse> predicatedRequest(final StreamingHttpRequester delegate,
                                                             final HttpExecutionStrategy strategy,
-                                                            final StreamingHttpRequest req) {
+                                                            final StreamingHttpRequest request) {
         boolean b;
         try {
-            b = predicate.test(req);
+            b = predicate.test(request);
         } catch (Throwable t) {
             return error(new RuntimeException("Unexpected predicate failure", t));
         }
 
         if (b) {
-            return predicatedClient.request(strategy, req);
+            return predicatedClient.request(strategy, request);
         }
 
-        return delegate.request(strategy, req);
+        return delegate.request(strategy, request);
     }
 }

@@ -25,11 +25,13 @@ import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpConnection;
+import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.tcp.netty.internal.TcpClientChannelInitializer;
 import io.servicetalk.tcp.netty.internal.TcpClientConfig;
 import io.servicetalk.tcp.netty.internal.TcpConnector;
 import io.servicetalk.transport.api.ExecutionContext;
+import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.SslConfig;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
@@ -38,6 +40,7 @@ import io.servicetalk.transport.netty.internal.ExecutionContextBuilder;
 import io.servicetalk.transport.netty.internal.NettyConnection;
 
 import java.io.InputStream;
+import java.net.InetSocketAddress;
 import java.net.SocketOption;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -97,10 +100,20 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress> implements Http
                 new DefaultStreamingHttpRequestResponseFactory(executionContext.bufferAllocator(),
                         roConfig.getHeadersFactory());
 
+        // Make a best effort to infer HOST header for HttpConnection
+        final HttpConnectionFilterFactory filterFactory;
+        if (resolvedAddress instanceof InetSocketAddress) {
+            InetSocketAddress inetSocketAddress = (InetSocketAddress) resolvedAddress;
+            filterFactory = connectionFilterFunction.append(
+                    new HostHeaderHttpRequestFilter(HostAndPort.of(inetSocketAddress)));
+        } else {
+            filterFactory = connectionFilterFunction;
+        }
+
         return (roConfig.getMaxPipelinedRequests() == 1 ?
-                buildForNonPipelined(executionContext, resolvedAddress, roConfig, connectionFilterFunction,
+                buildForNonPipelined(executionContext, resolvedAddress, roConfig, filterFactory,
                         reqRespFactory)
-                : buildForPipelined(executionContext, resolvedAddress, roConfig, connectionFilterFunction,
+                : buildForPipelined(executionContext, resolvedAddress, roConfig, filterFactory,
                 reqRespFactory))
                     .map(filteredConnection -> new ConcurrentRequestsHttpConnectionFilter(filteredConnection,
                             roConfig.getMaxPipelinedRequests()));
@@ -270,18 +283,17 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress> implements Http
         return this;
     }
 
-    /**
-     * Set the filter that is used to decorate {@link StreamingHttpConnection} created by this builder.
-     * <p>
-     * Note this method will be used to decorate the result of {@link #buildStreaming(Object)} before it is returned to
-     * the user.
-     *
-     * @param function decorates a {@link StreamingHttpConnection} for the purpose of filtering
-     * @return {@code this}
-     */
+    @Override
     public DefaultHttpConnectionBuilder<ResolvedAddress> appendConnectionFilter(
             final HttpConnectionFilterFactory function) {
         connectionFilterFunction = connectionFilterFunction.append(requireNonNull(function));
+        return this;
+    }
+
+    @Override
+    public DefaultHttpConnectionBuilder<ResolvedAddress> appendConnectionFilter(
+            final Predicate<StreamingHttpRequest> predicate, final HttpConnectionFilterFactory factory) {
+        HttpConnectionBuilder.super.appendConnectionFilter(predicate, factory);
         return this;
     }
 }

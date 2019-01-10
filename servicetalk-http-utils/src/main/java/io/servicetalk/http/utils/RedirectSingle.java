@@ -139,9 +139,8 @@ final class RedirectSingle extends Single<StreamingHttpResponse> {
             }
             // Bail on the redirect if non-relative when that was requested
             if (redirectSingle.onlyRelative && (
-                    (request.effectiveHost() == null && newRequest.effectiveHost() != null) ||
-                    (request.effectiveHost() != null &&
-                            !request.effectiveHost().equalsIgnoreCase(newRequest.effectiveHost())) ||
+                    request.effectiveHost() == null ||
+                    !request.effectiveHost().equalsIgnoreCase(newRequest.effectiveHost()) ||
                     request.effectivePort() != newRequest.effectivePort())) {
                 if (LOGGER.isTraceEnabled()) {
                     LOGGER.trace("Ignoring non-relative redirect to '{}' for original request '{}' using onlyRelative",
