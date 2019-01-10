@@ -60,8 +60,8 @@ import static io.servicetalk.redis.api.RedisProtocolSupport.Command.PING;
 import static io.servicetalk.redis.api.RedisProtocolSupport.Command.SET;
 import static io.servicetalk.redis.api.RedisRequests.newRequest;
 import static io.servicetalk.redis.netty.RedisDataMatcher.redisArraySize;
+import static io.servicetalk.redis.netty.RedisDataMatcher.redisCompleteBulkString;
 import static io.servicetalk.redis.netty.RedisDataMatcher.redisError;
-import static io.servicetalk.redis.netty.RedisDataMatcher.redisFirstBulkStringChunk;
 import static io.servicetalk.redis.netty.RedisDataMatcher.redisNull;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.Matchers.contains;
@@ -108,7 +108,7 @@ public class RedisConnectionTest extends BaseRedisClientTest {
                         .flatMapPublisher(cnx -> cnx.request(pingRequest)
                                 // concatWith triggers an internal cancel when switching publishers
                                 .concatWith(cnx.request(newRequest(PING, new CompleteBulkString(buf("my-pong"))))))),
-                contains(is(PONG), redisFirstBulkStringChunk(buf("my-pong"))));
+                contains(is(PONG), redisCompleteBulkString(buf("my-pong"))));
     }
 
     @Test
@@ -204,7 +204,7 @@ public class RedisConnectionTest extends BaseRedisClientTest {
                         .concatWith(cnx.request(newRequest(EXEC)))));
 
         assertThat(results, contains(is(OK), is(QUEUED), is(redisNull()), redisArraySize(1L),
-                is(redisFirstBulkStringChunk(buf("foo")))));
+                is(redisCompleteBulkString(buf("foo")))));
     }
 
     @Test

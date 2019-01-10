@@ -22,7 +22,6 @@ import io.servicetalk.redis.api.RedisData.CompleteRedisData;
 
 import javax.annotation.Nullable;
 
-import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
@@ -73,33 +72,5 @@ final class RedisCoercions {
         }
 
         throw new CoercionException(data, String.class);
-    }
-
-    static byte[] toAsciiBytes(final Number n) {
-        return n.toString().getBytes(US_ASCII);
-    }
-
-    @Nullable
-    static Buffer toBuffer(final CompleteRedisData data) throws CoercionException {
-        if (data instanceof RedisData.Null) {
-            return null;
-        }
-        if (data instanceof CompleteBulkString) {
-            return data.getBufferValue();
-        }
-
-        throw new CoercionException(data, Buffer.class);
-    }
-
-    @Nullable
-    private static <V> V toValue(final CompleteRedisData data, final Class<V> valueType) throws CoercionException {
-        if (Buffer.class.equals(valueType)) {
-            return valueType.cast(toBuffer(data));
-        }
-        if (String.class.equals(valueType)) {
-            return valueType.cast(toString(data));
-        }
-
-        throw new CoercionException(data, valueType);
     }
 }

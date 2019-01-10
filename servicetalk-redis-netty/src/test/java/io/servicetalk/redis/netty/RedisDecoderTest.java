@@ -16,7 +16,6 @@
 package io.servicetalk.redis.netty;
 
 import io.servicetalk.buffer.api.Buffer;
-import io.servicetalk.buffer.netty.BufferAllocators;
 import io.servicetalk.redis.api.RedisData;
 
 import io.netty.buffer.ByteBuf;
@@ -46,8 +45,7 @@ public class RedisDecoderTest {
 
     @Before
     public void setup() {
-        channel = new EmbeddedChannel(
-                new RedisDecoder(BufferAllocators.PREFER_HEAP_ALLOCATOR));
+        channel = new EmbeddedChannel(new RedisDecoder());
     }
 
     @After

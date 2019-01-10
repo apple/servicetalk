@@ -195,11 +195,18 @@ public interface RedisData {
     }
 
     /**
-     * The First chunk of <a href="https://redis.io/topics/protocol#resp-bulk-strings">Bulk String</a> representation of
+     * The first chunk of <a href="https://redis.io/topics/protocol#resp-bulk-strings">Bulk String</a> representation of
      * {@link RedisData}, which includes the length of the entire bulk string.
      */
     interface FirstBulkStringChunk extends BulkStringChunk {
         int bulkStringLength();
+    }
+
+    /**
+     * The last chunk of <a href="https://redis.io/topics/protocol#resp-bulk-strings">Bulk String</a> representation of
+     * {@link RedisData}.
+     */
+    interface LastBulkStringChunk extends BulkStringChunk {
     }
 
     /**
@@ -229,7 +236,7 @@ public interface RedisData {
     /**
      * Implmentation of {@link FirstBulkStringChunk}.
      */
-    class DefaultFirstBulkStringChunk extends DefaultBulkStringChunk implements FirstBulkStringChunk {
+    final class DefaultFirstBulkStringChunk extends DefaultBulkStringChunk implements FirstBulkStringChunk {
         private final int bulkStringLength;
 
         public DefaultFirstBulkStringChunk(final Buffer value, final int bulkStringLength) {
@@ -260,10 +267,20 @@ public interface RedisData {
     }
 
     /**
+     * Default implementation of {@link LastBulkStringChunk}.
+     */
+    final class DefaultLastBulkStringChunk extends DefaultBulkStringChunk implements LastBulkStringChunk {
+        public DefaultLastBulkStringChunk(final Buffer value) {
+            super(value);
+        }
+    }
+
+    /**
      * Complete <a href="https://redis.io/topics/protocol#resp-bulk-strings">Bulk String</a> representation of
      * {@link RedisData}.
      */
     final class CompleteBulkString extends DefaultBulkStringChunk implements FirstBulkStringChunk,
+                                                                             LastBulkStringChunk,
                                                                              CompleteRequestRedisData {
         private final int bulkStringLength;
 

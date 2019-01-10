@@ -327,7 +327,7 @@ public class RedisDecoderBenchmark {
 
     @Benchmark
     public void write() {
-        final RedisDecoder decoder = new RedisDecoder(BufferAllocators.PREFER_HEAP_ALLOCATOR);
+        final RedisDecoder decoder = new RedisDecoder();
         payload.readerIndex(0);
         int ri = 0;
         while (ri < payloadLength) {

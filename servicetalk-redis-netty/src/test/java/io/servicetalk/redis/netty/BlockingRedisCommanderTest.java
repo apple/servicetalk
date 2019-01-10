@@ -47,6 +47,7 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.IntStream;
 
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
@@ -127,6 +128,28 @@ public class BlockingRedisCommanderTest extends BaseRedisClientTest {
         assertThat(commandClient.sadd(key("a-set-2"), "c", "d", "e"), is(greaterThanOrEqualTo(0L)));
         assertThat(commandClient.sdiff(key("a-set-1"), key("a-set-2"), "missing-key"), containsInAnyOrder("a", "b"));
         assertThat(commandClient.sdiffstore(key("diff"), key("a-set-1"), key("a-set-2"), "missing-key"), is(2L));
+    }
+
+    @Test
+    public void dataSpreadAcrossMultipleSocketReadWriteOperations() throws Exception {
+        final int numberBytes = 5 * 1024 * 1024; // 5 MB
+        StringBuilder sb = new StringBuilder(numberBytes);
+        for (int i = 0; i < numberBytes; ++i) {
+            sb.append(ThreadLocalRandom.current().nextInt(1, 127)); // ascii characters
+        }
+        String expectedValue = sb.toString();
+        String largeKey = key("a-set-large-string-1");
+        assertThat(commandClient.set(largeKey, expectedValue), is("OK"));
+        assertThat(commandClient.get(largeKey), is(expectedValue));
+        commandClient.del(largeKey);
+    }
+
+    @Test
+    public void emptyGet() throws Exception {
+        String emptyKey = key("a-empty-key");
+        assertThat(commandClient.set(emptyKey, ""), is("OK"));
+        assertThat(commandClient.get(emptyKey), is(""));
+        commandClient.del(emptyKey);
     }
 
     @Test
