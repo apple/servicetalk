@@ -34,18 +34,19 @@ final class ConditionalHttpClientFilter extends StreamingHttpClientFilter {
     }
 
     @Override
-    public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
-                                                 final StreamingHttpRequest req) {
-
+    protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
+                                                    final HttpExecutionStrategy strategy,
+                                                    final StreamingHttpRequest request) {
         return new Single<StreamingHttpResponse>() {
             @Override
             protected void handleSubscribe(final Subscriber<? super StreamingHttpResponse> subscriber) {
-                predicatedRequest(strategy, req).subscribe(subscriber);
+                predicatedRequest(delegate, strategy, request).subscribe(subscriber);
             }
         };
     }
 
-    private Single<StreamingHttpResponse> predicatedRequest(final HttpExecutionStrategy strategy,
+    private Single<StreamingHttpResponse> predicatedRequest(final StreamingHttpRequester delegate,
+                                                            final HttpExecutionStrategy strategy,
                                                             final StreamingHttpRequest req) {
         boolean b;
         try {
@@ -58,6 +59,6 @@ final class ConditionalHttpClientFilter extends StreamingHttpClientFilter {
             return predicatedClient.request(strategy, req);
         }
 
-        return delegate().request(strategy, req);
+        return delegate.request(strategy, req);
     }
 }

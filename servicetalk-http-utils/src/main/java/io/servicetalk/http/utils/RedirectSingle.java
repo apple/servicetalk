@@ -133,16 +133,21 @@ final class RedirectSingle extends Single<StreamingHttpResponse> {
             final StreamingHttpRequest newRequest;
             try {
                 newRequest = prepareRedirectRequest(request, result, redirectSingle.requester);
-                if (redirectSingle.onlyRelative && (
-                        !request.effectiveHost().equalsIgnoreCase(newRequest.effectiveHost()) ||
-                        request.effectivePort() != newRequest.effectivePort())) {
-                    // Bail on the redirect if non-relative when that was requested
-                    target.onSuccess(result);
-                    return;
-                }
-
             } catch (final Throwable cause) {
                 target.onError(cause);
+                return;
+            }
+            // Bail on the redirect if non-relative when that was requested
+            if (redirectSingle.onlyRelative && (
+                    (request.effectiveHost() == null && newRequest.effectiveHost() != null) ||
+                    (request.effectiveHost() != null &&
+                            !request.effectiveHost().equalsIgnoreCase(newRequest.effectiveHost())) ||
+                    request.effectivePort() != newRequest.effectivePort())) {
+                if (LOGGER.isTraceEnabled()) {
+                    LOGGER.trace("Ignoring non-relative redirect to '{}' for original request '{}' using onlyRelative",
+                            result.headers().get(LOCATION), redirectSingle.originalRequest);
+                }
+                target.onSuccess(result);
                 return;
             }
             if (LOGGER.isTraceEnabled()) {

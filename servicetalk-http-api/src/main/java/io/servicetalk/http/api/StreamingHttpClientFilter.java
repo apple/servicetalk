@@ -61,7 +61,7 @@ public class StreamingHttpClientFilter extends StreamingHttpClient {
     @Override
     public final Single<? extends ReservedStreamingHttpConnection> reserveConnection(
             final HttpExecutionStrategy strategy, final StreamingHttpRequest request) {
-        return reserve(delegate, strategy, request);
+        return reserveConnection(delegate, strategy, request);
     }
 
     @Override
@@ -100,9 +100,9 @@ public class StreamingHttpClientFilter extends StreamingHttpClient {
      * @param request the request to send.
      * @return the response.
      */
-    protected Single<? extends ReservedStreamingHttpConnection> reserve(final StreamingHttpClient delegate,
-                                                                        final HttpExecutionStrategy strategy,
-                                                                        final StreamingHttpRequest request) {
+    protected Single<? extends ReservedStreamingHttpConnection> reserveConnection(final StreamingHttpClient delegate,
+                                                                                  final HttpExecutionStrategy strategy,
+                                                                                  final StreamingHttpRequest request) {
         return delegate.reserveConnection(strategy, request).map(ClientFilterToReservedConnectionFilter::new);
     }
 

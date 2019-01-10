@@ -59,7 +59,6 @@ import javax.annotation.Nullable;
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.concurrent.api.AsyncCloseables.toListenableAsyncCloseable;
-import static io.servicetalk.concurrent.api.Publisher.empty;
 import static io.servicetalk.http.api.HttpHeaderNames.HOST;
 import static io.servicetalk.http.api.HttpScheme.schemeForValue;
 import static io.servicetalk.http.api.SslConfigProviders.plainByDefault;
@@ -118,7 +117,8 @@ final class DefaultMultiAddressUrlHttpClientBuilder
 
             if (maxRedirects > 0) {
                 // Needs to wrap the top level client (group) in order for non-relative redirects to work
-                client = new RedirectingHttpRequestFilter(false, maxRedirects).create(client, empty());
+                client = RedirectingHttpRequestFilter.filter(
+                        client, false, true, maxRedirects);
             }
 
             return new StreamingHttpClientWithDependencies(client, toListenableAsyncCloseable(closeables),

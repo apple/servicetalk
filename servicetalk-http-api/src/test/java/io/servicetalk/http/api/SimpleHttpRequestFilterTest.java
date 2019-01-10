@@ -73,7 +73,7 @@ public class SimpleHttpRequestFilterTest extends AbstractHttpRequestFilterTest {
                 }
 
                 @Override
-                protected Single<? extends ReservedStreamingHttpConnection> reserve(
+                protected Single<? extends ReservedStreamingHttpConnection> reserveConnection(
                         final StreamingHttpClient delegate,
                         final HttpExecutionStrategy strategy,
                         final StreamingHttpRequest request) {
@@ -150,7 +150,7 @@ public class SimpleHttpRequestFilterTest extends AbstractHttpRequestFilterTest {
                 }
 
                 @Override
-                protected Single<? extends ReservedStreamingHttpConnection> reserve(
+                protected Single<? extends ReservedStreamingHttpConnection> reserveConnection(
                         final StreamingHttpClient delegate,
                         final HttpExecutionStrategy strategy,
                         final StreamingHttpRequest request) {
@@ -213,7 +213,7 @@ public class SimpleHttpRequestFilterTest extends AbstractHttpRequestFilterTest {
         public StreamingHttpClientFilter create(final StreamingHttpClient client, final Publisher<Object> lbEvents) {
             return new StreamingHttpClientFilter(client) {
                 @Override
-                protected Single<? extends ReservedStreamingHttpConnection> reserve(
+                protected Single<? extends ReservedStreamingHttpConnection> reserveConnection(
                         final StreamingHttpClient delegate,
                         final HttpExecutionStrategy strategy,
                         final StreamingHttpRequest request) {
@@ -247,8 +247,9 @@ public class SimpleHttpRequestFilterTest extends AbstractHttpRequestFilterTest {
                                                       final HttpExecutionStrategy strategy,
                                                       final StreamingHttpRequest request) {
             try {
-                if (context.sslSession() != null && context.sslSession().getPeerPrincipal() != null
-                        && context.sslSession().getPeerPrincipal().getName().equals("unit.test.auth")) {
+                final SSLSession sslSession = context.sslSession();
+                if (sslSession != null && sslSession.getPeerPrincipal() != null
+                        && sslSession.getPeerPrincipal().getName().equals("unit.test.auth")) {
                     // proper SSL Session established, continue with delegation
                     return delegate.request(strategy, request);
                 }

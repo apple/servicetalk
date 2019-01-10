@@ -94,7 +94,7 @@ public final class RetryingHttpRequestFilter implements HttpClientFilterFactory,
             }
 
             @Override
-            protected Single<? extends ReservedStreamingHttpConnection> reserve(
+            protected Single<? extends ReservedStreamingHttpConnection> reserveConnection(
                     final StreamingHttpClient delegate,
                     final HttpExecutionStrategy executionStrategy,
                     final StreamingHttpRequest request) {

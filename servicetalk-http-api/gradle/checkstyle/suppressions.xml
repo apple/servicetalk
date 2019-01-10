@@ -20,5 +20,4 @@
 
 <suppressions>
   <suppress checks="ModifiedControlVariable" files="io/servicetalk/http/api/HttpUri.java"/>
-  <!--<suppress checks="VisibilityModifier" files="io/servicetalk/http/api/AbstractHttpRequestFilterTest.java"/>-->
 </suppressions>
