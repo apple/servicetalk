@@ -22,7 +22,7 @@ import io.servicetalk.concurrent.Executor;
  */
 public final class SignalOffloaders {
 
-    private static final SignalOffloaderFactory DEFAULT_SIGNAL_OFFLOADER_FACTORY = new SignalOffloaderFactory() {
+    private static final SignalOffloaderFactory TASK_BASED_OFFLOADER_FACTORY = new SignalOffloaderFactory() {
         @Override
         public SignalOffloader newSignalOffloader(final Executor executor) {
             return newTaskBasedOffloader(executor);
@@ -34,6 +34,20 @@ public final class SignalOffloaders {
         }
     };
 
+    private static final SignalOffloaderFactory THREAD_BASED_OFFLOADER_FACTORY = new SignalOffloaderFactory() {
+        @Override
+        public SignalOffloader newSignalOffloader(final Executor executor) {
+            return newThreadBasedOffloader(executor);
+        }
+
+        @Override
+        public boolean threadAffinity() {
+            return true;
+        }
+    };
+
+    private static final SignalOffloaderFactory DEFAULT_OFFLOADER_FACTORY = TASK_BASED_OFFLOADER_FACTORY;
+
     private SignalOffloaders() {
         // No instances
     }
@@ -41,10 +55,28 @@ public final class SignalOffloaders {
     /**
      * Return a default {@link SignalOffloaderFactory}.
      *
-     * @return The a default {@link SignalOffloaderFactory}.
+     * @return The default {@link SignalOffloaderFactory}.
      */
     public static SignalOffloaderFactory defaultOffloaderFactory() {
-        return DEFAULT_SIGNAL_OFFLOADER_FACTORY;
+        return DEFAULT_OFFLOADER_FACTORY;
+    }
+
+    /**
+     * Return a {@link SignalOffloaderFactory} with thread affinity.
+     *
+     * @return A {@link SignalOffloaderFactory} with thread affinity..
+     */
+    public static SignalOffloaderFactory threadBasedOffloaderFactory() {
+        return THREAD_BASED_OFFLOADER_FACTORY;
+    }
+
+    /**
+     * Return a {@link SignalOffloaderFactory} that uses granular tasks for sending signals.
+     *
+     * @return A {@link SignalOffloaderFactory} that uses granular tasks for sending signals.
+     */
+    public static SignalOffloaderFactory taskBasedOffloaderFactory() {
+        return TASK_BASED_OFFLOADER_FACTORY;
     }
 
     /**
@@ -56,7 +88,7 @@ public final class SignalOffloaders {
     public static SignalOffloader newOffloaderFor(final Executor executor) {
         return executor instanceof SignalOffloaderFactory ?
                 ((SignalOffloaderFactory) executor).newSignalOffloader(executor) :
-                DEFAULT_SIGNAL_OFFLOADER_FACTORY.newSignalOffloader(executor);
+                defaultOffloaderFactory().newSignalOffloader(executor);
     }
 
     /**
@@ -67,7 +99,7 @@ public final class SignalOffloaders {
      * @return Newly created {@link SignalOffloader}.
      */
     public static SignalOffloader newTaskBasedOffloader(final Executor executor) {
-        return new TaskBasedOffloader(executor);
+        return new TaskBasedSignalOffloader(executor);
     }
 
     /**

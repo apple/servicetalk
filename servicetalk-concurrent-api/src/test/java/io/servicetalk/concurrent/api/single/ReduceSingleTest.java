@@ -15,11 +15,8 @@
  */
 package io.servicetalk.concurrent.api.single;
 
-import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.ExecutorRule;
 import io.servicetalk.concurrent.api.MockedSingleListenerRule;
-import io.servicetalk.concurrent.api.OffloaderAwareExecutor;
-import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.PublisherRule;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 
@@ -32,19 +29,14 @@ import org.junit.rules.Verifier;
 import java.util.ArrayList;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 
-import static io.servicetalk.concurrent.api.Executors.from;
-import static io.servicetalk.concurrent.api.Executors.newFixedSizeExecutor;
 import static io.servicetalk.concurrent.api.Publisher.just;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static java.lang.Thread.currentThread;
 import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 
 public class ReduceSingleTest {
@@ -121,20 +113,6 @@ public class ReduceSingleTest {
         }));
 
         verifyThrows(cause -> assertSame(testException, cause));
-    }
-
-    @Test
-    public void reduceShouldOffloadOnce() throws Exception {
-        Executor executor = newFixedSizeExecutor(1);
-        AtomicInteger taskCount = new AtomicInteger();
-        Executor wrapped = new OffloaderAwareExecutor(from(task -> {
-            taskCount.incrementAndGet();
-            executor.execute(task);
-        }), true);
-        int sum = Publisher.from(1, 2, 3, 4).publishAndSubscribeOn(wrapped)
-                .reduce(() -> 0, (cumulative, integer) -> cumulative + integer).toFuture().get();
-        assertThat("Unexpected sum.", sum, is(10));
-        assertThat("Unexpected tasks submitted.", taskCount.get(), is(1));
     }
 
     @Test

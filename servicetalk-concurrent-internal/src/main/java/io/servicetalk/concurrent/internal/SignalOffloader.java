@@ -115,6 +115,10 @@ public interface SignalOffloader {
     /**
      * Offloads subscribe call for the passed {@link Subscriber}.
      *
+     * <h2>Offloading Failures</h2>
+     * Implementations are expected to handle failure to offload, e.g. If a thread pool is used to offload and it
+     * rejects task submissions. In such situations, it is expected that the passed {@link Subscriber} will be
+     * correctly terminated.
      * <h2>Caution</h2>
      * This method MUST not be called concurrently with itself or other offload methods here on the same
      * {@link SignalOffloader} instance.
@@ -128,6 +132,10 @@ public interface SignalOffloader {
     /**
      * Offloads subscribe call for the passed {@link Subscriber}.
      *
+     * <h2>Offloading Failures</h2>
+     * Implementations are expected to handle failure to offload, e.g. If a thread pool is used to offload and it
+     * rejects task submissions. In such situations, it is expected that the passed {@link Subscriber} will be
+     * correctly terminated.
      * <h2>Caution</h2>
      * This method MUST not be called concurrently with itself or other offload methods here on the same
      * {@link SignalOffloader} instance.
@@ -141,6 +149,10 @@ public interface SignalOffloader {
     /**
      * Offloads the subscribe call for the passed {@link Subscriber}.
      *
+     * <h2>Offloading Failures</h2>
+     * Implementations are expected to handle failure to offload, e.g. If a thread pool is used to offload and it
+     * rejects task submissions. In such situations, it is expected that the passed {@link Subscriber} will be
+     * correctly terminated.
      * <h2>Caution</h2>
      * This method MUST not be called concurrently with itself or other offload methods here on the same
      * {@link SignalOffloader} instance.

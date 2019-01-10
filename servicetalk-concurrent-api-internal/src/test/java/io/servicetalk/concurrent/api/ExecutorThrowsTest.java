@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
+import io.servicetalk.concurrent.api.internal.OffloaderAwareExecutor;
 import io.servicetalk.concurrent.internal.DeliberateException;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 
@@ -34,6 +35,7 @@ import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.api.Executors.from;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.concurrent.internal.EmptySubscription.EMPTY_SUBSCRIPTION;
+import static io.servicetalk.concurrent.internal.SignalOffloaders.threadBasedOffloaderFactory;
 
 @RunWith(Parameterized.class)
 public class ExecutorThrowsTest {
@@ -41,11 +43,9 @@ public class ExecutorThrowsTest {
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
 
-    private final boolean threadBased;
     private final LinkedBlockingQueue<Throwable> errors;
 
-    public ExecutorThrowsTest(final boolean threadBased) {
-        this.threadBased = threadBased;
+    public ExecutorThrowsTest(@SuppressWarnings("unused") final boolean threadBased) {
         errors = new LinkedBlockingQueue<>();
     }
 
@@ -162,7 +162,7 @@ public class ExecutorThrowsTest {
         Executor original = from(task -> {
             throw DELIBERATE_EXCEPTION;
         });
-        return new OffloaderAwareExecutor(original, threadBased);
+        return new OffloaderAwareExecutor(original, threadBasedOffloaderFactory());
     }
 
     private void verifyError() throws Throwable {

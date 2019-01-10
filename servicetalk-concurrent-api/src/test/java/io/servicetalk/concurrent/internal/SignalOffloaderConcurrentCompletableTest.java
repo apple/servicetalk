@@ -68,7 +68,7 @@ public class SignalOffloaderConcurrentCompletableTest {
         offloaders.add(new Object[]{(Supplier<OffloaderHolder>) () ->
                 new OffloaderHolder(ThreadBasedSignalOffloader::new), true});
         offloaders.add(new Object[]{(Supplier<OffloaderHolder>) () ->
-                new OffloaderHolder(TaskBasedOffloader::new), false});
+                new OffloaderHolder(TaskBasedSignalOffloader::new), false});
         return offloaders;
     }
 

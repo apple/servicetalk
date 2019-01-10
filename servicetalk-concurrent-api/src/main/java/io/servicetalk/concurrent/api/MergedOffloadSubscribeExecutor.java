@@ -38,6 +38,10 @@ final class MergedOffloadSubscribeExecutor extends DelegatingExecutor implements
 
     @Override
     public SignalOffloader newSignalOffloader(final io.servicetalk.concurrent.Executor executor) {
+        // This method is weird since we want to keep SignalOffloader internal but it has to be associated with the
+        // the Executor. In practice, the Executor passed here should always be self when the SignalOffloaderFactory is
+        // an Executor itself.
+        assert executor == this;
         return new SubscribeOnlySignalOffloader(delegate, fallbackExecutor);
     }
 

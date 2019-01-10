@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,9 +17,9 @@ package io.servicetalk.concurrent.api.publisher;
 
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.ExecutorRule;
-import io.servicetalk.concurrent.api.OffloaderAwareExecutor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.PublisherWithExecutor;
+import io.servicetalk.concurrent.api.internal.OffloaderAwareExecutor;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 
 import org.junit.Rule;
@@ -34,6 +34,7 @@ import java.util.function.BiFunction;
 import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
 import static io.servicetalk.concurrent.api.Publisher.just;
 import static io.servicetalk.concurrent.api.completable.AbstractPublishAndSubscribeOnTest.verifyCapturedThreads;
+import static io.servicetalk.concurrent.internal.SignalOffloaders.threadBasedOffloaderFactory;
 import static java.lang.Long.MAX_VALUE;
 import static java.lang.Thread.currentThread;
 
@@ -47,7 +48,8 @@ public abstract class AbstractPublishAndSubscribeOnTest {
     public final Timeout timeout = new ServiceTalkTestTimeout();
     @Rule
     public final ExecutorRule originalSourceExecutorRule =
-            new ExecutorRule(() -> new OffloaderAwareExecutor(newCachedThreadExecutor(), true));
+            new ExecutorRule(() -> new OffloaderAwareExecutor(newCachedThreadExecutor(),
+                    threadBasedOffloaderFactory()));
 
     protected AtomicReferenceArray<Thread> setupAndSubscribe(
             BiFunction<Publisher<String>, Executor, Publisher<String>> offloadingFunction, Executor executor)

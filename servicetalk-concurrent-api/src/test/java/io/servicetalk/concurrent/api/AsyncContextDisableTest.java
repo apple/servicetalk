@@ -16,8 +16,11 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.api.AsyncContextMap.Key;
+import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.Timeout;
 
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicReference;
@@ -26,6 +29,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 
 public class AsyncContextDisableTest {
+    @Rule
+    public final Timeout timeout = new ServiceTalkTestTimeout();
     private static final Key<String> K1 = Key.newKey("k1");
 
     @Test

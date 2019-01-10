@@ -46,10 +46,10 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
 
-public class TaskBasedOffloaderTest {
+public class TaskBasedSignalOffloaderTest {
 
     private MockExecutor executor;
-    private TaskBasedOffloader offloader;
+    private TaskBasedSignalOffloader offloader;
     private Cancellable cancellable;
     private Subscription subscription;
     private Single.Subscriber<Integer> singleSub;
@@ -59,7 +59,7 @@ public class TaskBasedOffloaderTest {
     @Before
     public void setUp() throws Exception {
         executor = new MockExecutor();
-        offloader = new TaskBasedOffloader(executor, 2);
+        offloader = new TaskBasedSignalOffloader(executor, 2);
         cancellable = mock(Cancellable.class);
         subscription = mock(Subscription.class);
         singleSub = uncheckedMock(Single.Subscriber.class);

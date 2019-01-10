@@ -26,7 +26,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Queue;
-import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.function.Consumer;
@@ -36,9 +35,6 @@ import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.internal.EmptySubscription.EMPTY_SUBSCRIPTION;
 import static io.servicetalk.concurrent.internal.PlatformDependent.newUnboundedSpscQueue;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.isRequestNValid;
-import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
-import static io.servicetalk.concurrent.internal.TerminalNotification.error;
-import static java.lang.Integer.MAX_VALUE;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 
@@ -48,15 +44,15 @@ import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
  * enough capacity in the {@link Consumer executor} when sending signals as compared to detecting insufficient capacity
  * earlier as with {@link ThreadBasedSignalOffloader}.
  */
-final class TaskBasedOffloader implements SignalOffloader {
+final class TaskBasedSignalOffloader implements SignalOffloader {
 
     private static final Object NULL_WRAPPER = new Object();
-    private static final Logger LOGGER = LoggerFactory.getLogger(TaskBasedOffloader.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(TaskBasedSignalOffloader.class);
 
     private final Executor executor;
     private final int publisherSignalQueueInitialCapacity;
 
-    TaskBasedOffloader(final Executor executor) {
+    TaskBasedSignalOffloader(final Executor executor) {
         this(executor, 2);
     }
 
@@ -66,7 +62,7 @@ final class TaskBasedOffloader implements SignalOffloader {
      * @param executor A {@link Executor} to use for offloading signals.
      * @param publisherSignalQueueInitialCapacity Initial capacity for the queue of signals to a {@link Subscriber}.
      */
-    TaskBasedOffloader(final Executor executor, final int publisherSignalQueueInitialCapacity) {
+    TaskBasedSignalOffloader(final Executor executor, final int publisherSignalQueueInitialCapacity) {
         this.executor = requireNonNull(executor);
         this.publisherSignalQueueInitialCapacity = publisherSignalQueueInitialCapacity;
     }
@@ -170,45 +166,39 @@ final class TaskBasedOffloader implements SignalOffloader {
                     requestedUpdater.getAndSet(this, n < TERMINATED ? n : Long.MIN_VALUE) >= 0) ||
                     requestedUpdater.accumulateAndGet(this, n,
                             FlowControlUtil::addWithOverflowProtectionIfNotNegative) > 0) {
-                int oldState = stateUpdater.getAndSet(this, STATE_ENQUEUED);
-                if (oldState == STATE_IDLE) {
-                    try {
-                        executor.execute(this);
-                    } catch (RejectedExecutionException re) {
-                        LOGGER.error("Task rejected by the executor. " +
-                                "Invoking Subscription (request-n) in the caller thread. Subscription {}. ", re);
-                        // Ideally, we should send an error to the related Subscriber but that would mean we make sure
-                        // we do not concurrently invoke the Subscriber with the original source which would mean we
-                        // add some "lock" in the data path.
-                        // This is an optimistic approach assuming executor rejections are occasional and hence adding
-                        // Subscription -> Subscriber dependency for all paths is too costly.
-                        // As we do for other cases, we simply invoke the target in the calling thread.
-                        long toRequest = requestedUpdater.getAndSet(this, 0);
-                        target.request(toRequest);
-                    }
-                }
+                enqueueTaskIfRequired();
             }
         }
 
         @Override
         public void cancel() {
             long oldVal = requestedUpdater.getAndSet(this, CANCELLED);
-            if (oldVal >= 0) {
-                int oldState = stateUpdater.getAndSet(this, STATE_ENQUEUED);
-                if (oldState == STATE_IDLE) {
-                    try {
-                        executor.execute(this);
-                    } catch (RejectedExecutionException re) {
-                        LOGGER.error("Task rejected by the executor. " +
-                                "Invoking Subscription (cancel) in the caller thread. Subscription {}. ", re);
-                        requested = TERMINATED;
-                        // As a policy, we call the target in the calling thread when the executor is inadequately
-                        // provisioned. In the future we could make this configurable.
-                        target.cancel();
-                    }
+            if (oldVal != CANCELLED) {
+                enqueueTaskIfRequired();
+            }
+            // duplicate cancel.
+        }
+
+        private void enqueueTaskIfRequired() {
+            int oldState = stateUpdater.getAndSet(this, STATE_ENQUEUED);
+            if (oldState == STATE_IDLE) {
+                try {
+                    executor.execute(this);
+                } catch (Throwable t) {
+                    LOGGER.error("Failed to execute task on the executor {}. " +
+                                    "Invoking Subscription (cancel()) in the caller thread. Subscription {}. ",
+                            executor, target, t);
+                    // Ideally, we should send an error to the related Subscriber but that would mean we make sure
+                    // we do not concurrently invoke the Subscriber with the original source which would mean we
+                    // add some "lock" in the data path.
+                    // This is an optimistic approach assuming executor rejections are occasional and hence adding
+                    // Subscription -> Subscriber dependency for all paths is too costly.
+                    // As we do for other cases, we simply invoke the target in the calling thread.
+                    requested = TERMINATED;
+                    target.cancel();
+                    throw t;
                 }
             }
-            // If oldVal is negative, it is a duplicate cancel.
         }
 
         @Override
@@ -229,9 +219,6 @@ final class TaskBasedOffloader implements SignalOffloader {
                         }
                     }
 
-                    if (r == TERMINATED || r == 0) {
-                        return;
-                    }
                     if (r == CANCELLED) {
                         // Cancelled
                         try {
@@ -242,6 +229,14 @@ final class TaskBasedOffloader implements SignalOffloader {
                             requested = TERMINATED;
                         }
                         return; // No more signals are required to be sent.
+                    }
+                    if (r == 0) {
+                        // We store a request(0) as Long.MIN_VALUE so if we see r == 0 here, it means we are re-entering
+                        // the loop because we saw the STATE_ENQUEUED but we have already read from requested.
+                        continue;
+                    }
+                    if (r == TERMINATED) {
+                        return;
                     }
                     // Invalid request-n
                     try {
@@ -264,20 +259,26 @@ final class TaskBasedOffloader implements SignalOffloader {
         private static final int STATE_IDLE = 0;
         private static final int STATE_ENQUEUED = 1;
         private static final int STATE_EXECUTING = 2;
+        private static final int STATE_TERMINATED = 3;
         private static final AtomicIntegerFieldUpdater<OffloadedSubscriber> stateUpdater =
                 newUpdater(OffloadedSubscriber.class, "state");
 
         private volatile int state = STATE_IDLE;
 
-        private final ErrorIgnoringSubscriber<? super T> target;
+        private final Subscriber<? super T> target;
         private final Executor executor;
         private final Queue<Object> signals;
         // Only accessed from the Subscriber thread and hence no additional thread-safety is required.
-        protected boolean executorRejected;
+        private boolean earlyTerminated;
+        // Set in onSubscribe before we enqueue the task which provides memory visibility inside the task.
+        // Since any further action happens after onSubscribe, we always guarantee visibility of this field inside
+        // run()
+        @Nullable
+        private Subscription subscription;
 
         private OffloadedSubscriber(final Subscriber<? super T> target, final Executor executor,
                                     final int publisherSignalQueueInitialCapacity) {
-            this.target = new ErrorIgnoringSubscriber<>(target);
+            this.target = target;
             this.executor = executor;
             // Queue is bounded by request-n
             signals = newUnboundedSpscQueue(publisherSignalQueueInitialCapacity);
@@ -285,6 +286,7 @@ final class TaskBasedOffloader implements SignalOffloader {
 
         @Override
         public void onSubscribe(final Subscription s) {
+            subscription = s;
             offerSignal(s);
         }
 
@@ -309,64 +311,139 @@ final class TaskBasedOffloader implements SignalOffloader {
             do {
                 stateUpdater.getAndSet(this, STATE_EXECUTING);
                 try {
-                    for (;;) {
-                        Object signal = signals.poll();
-                        if (signal == null) {
-                            break;
+                    boolean terminatedPrematurely = false;
+                    Object signal;
+                    while ((signal = signals.poll()) != null) {
+                        if (terminatedPrematurely) {
+                            // drain the queue if we terminated prematurely
+                            continue;
                         }
                         if (signal instanceof Subscription) {
                             Subscription subscription = (Subscription) signal;
-                            target.onSubscribe(subscription);
+                            try {
+                                target.onSubscribe(subscription);
+                            } catch (Throwable t) {
+                                terminatedPrematurely = true;
+                                state = STATE_TERMINATED;
+                                LOGGER.error("Ignored unexpected exception from onSubscribe. Subscriber: {}, " +
+                                        "Subscription: {}.", target, subscription, t);
+                                subscription.cancel();
+                                // continue draining the queue; since we set terminatedPrematurely to true, we will
+                                // ignore other signals.
+                            }
                         } else if (signal instanceof TerminalNotification) {
-                            ((TerminalNotification) signal).terminate(target);
-                            // Assume terminal is the last signal
+                            state = STATE_TERMINATED;
+                            try {
+                                ((TerminalNotification) signal).terminate(target);
+                            } catch (Throwable t) {
+                                LOGGER.error("Ignored unexpected exception from {}. Subscriber: {}",
+                                        ((TerminalNotification) signal).getCause() == null ? "onComplete()" :
+                                                "onError()", target, t);
+                            }
+                            // Terminal notification, assume we will not have any more data unless spec is violated.
                             return;
                         } else {
                             @SuppressWarnings("unchecked")
                             T t = signal == NULL_WRAPPER ? null : (T) signal;
-                            target.onNext(t);
+                            try {
+                                target.onNext(t);
+                            } catch (Throwable th) {
+                                terminatedPrematurely = true;
+                                state = STATE_TERMINATED;
+                                assert subscription != null;
+                                subscription.cancel();
+                                try {
+                                    target.onError(th);
+                                } catch (Throwable throwable) {
+                                    LOGGER.error("Ignored unexpected exception from onError(). Subscriber: {}",
+                                            target, t);
+                                }
+                                // continue draining the queue; since we set terminatedPrematurely to true, we will
+                                // ignore other signals.
+                            }
                         }
                     }
                 } finally {
-                    isDone = stateUpdater.getAndSet(this, STATE_IDLE) != STATE_ENQUEUED;
+                    for (;;) {
+                        int cState = state;
+                        if (cState == STATE_TERMINATED) {
+                            isDone = true;
+                            break;
+                        }
+                        if (stateUpdater.compareAndSet(this, cState, STATE_IDLE)) {
+                            isDone = cState != STATE_ENQUEUED;
+                            break;
+                        }
+                    }
                 }
             } while (!isDone);
         }
 
         private void offerSignal(Object signal) {
-            if (executorRejected) {
-                // Ignore signals if executor has rejected once as we will not attempt to deliver any more signals.
+            if (earlyTerminated) {
                 return;
             }
-            if (!signals.offer(signal)) {
-                throw new QueueFullException("offloader-" + target.getClass().getName(), MAX_VALUE);
-            }
-            int oldState = stateUpdater.getAndSet(this, STATE_ENQUEUED);
-            if (oldState == STATE_IDLE) {
-                try {
-                    executor.execute(this);
-                } catch (RejectedExecutionException re) {
-                    executorRejected = true;
-                    // We are terminating the Subscriber and will not send any more signals.
-                    signals.clear();
-                    if (signal instanceof Subscription) {
-                        ((Subscription) signal).cancel();
+            boolean offered = signals.offer(signal);
+            assert offered : "Unbounded queue rejected.";
+
+            for (;;) {
+                int cState = state;
+                if (cState == STATE_TERMINATED) {
+                    earlyTerminated = true;
+                    // It could be that we prematurely terminated and set the state to STATE_TERMINATED after we added
+                    // to the signal queue and the task exited. This means that we will leave the item in the queue
+                    // which will be cleared by GC.
+                    // We can not guarantee here whether we are the only consumer for the spsc queue, hence, for this
+                    // corner case, delaying queue cleanup till GC is an appropriate trade-off.
+                    return;
+                }
+                if (stateUpdater.compareAndSet(this, cState, STATE_ENQUEUED)) {
+                    if (cState == STATE_IDLE) {
+                        break;
+                    } else {
+                        return;
                     }
-                    // As a policy, we call the target in the calling thread when the executor is inadequately
-                    // provisioned. In the future we could make this configurable.
-                    target.terminateOnEnqueueFailure(re);
+                }
+            }
+
+            try {
+                executor.execute(this);
+            } catch (Throwable t) {
+                state = STATE_TERMINATED;
+                earlyTerminated = true;
+                // This is an SPSC queue; at this point we are sure that there is no other consumer of the queue
+                // because:
+                //  - We were in STATE_IDLE and hence the task isn't running.
+                //  - The Executor threw from execute(), so we assume it will not run the task.
+                signals.clear();
+                assert subscription != null;
+                subscription.cancel();
+                // As a policy, we call the target in the calling thread when the executor is inadequately
+                // provisioned. In the future we could make this configurable.
+                if (signal instanceof Subscription) {
+                    // Offloading of onSubscribe was rejected.
+                    // If target throws here, we do not attempt to do anything else as spec has been violated.
+                    target.onSubscribe(EMPTY_SUBSCRIPTION);
+                }
+                try {
+                    target.onError(t);
+                } catch (Throwable throwable) {
+                    LOGGER.error("Ignored unexpected exception from onError. Subscriber: {}", target, throwable);
                 }
             }
         }
     }
 
     private abstract static class AbstractOffloadedSingleValueSubscriber implements Runnable {
+        private static final int ON_SUBSCRIBE_RECEIVED_MASK = 8;
+        private static final int EXECUTING_MASK = 16;
+        private static final int RECEIVED_TERMINAL_MASK = 32;
+
         private static final int STATE_INIT = 0;
-        private static final int STATE_ON_SUBSCRIBE_RECEIVED = 1;
-        private static final int STATE_EXECUTING = 2;
-        private static final int STATE_AWAITING_TERMINAL = 4;
-        private static final int STATE_RECEIVED_TERMINAL = 8;
-        private static final int STATE_TERMINATED = 16;
+        private static final int STATE_AWAITING_TERMINAL = 1;
+        private static final int STATE_TERMINATED = 2;
+        private static final int STATE_ON_SUBSCRIBE_RECEIVED = STATE_INIT | ON_SUBSCRIBE_RECEIVED_MASK;
+        private static final int STATE_RECEIVED_TERMINAL = STATE_INIT | RECEIVED_TERMINAL_MASK;
         private static final AtomicIntegerFieldUpdater<AbstractOffloadedSingleValueSubscriber> stateUpdater =
                 newUpdater(AbstractOffloadedSingleValueSubscriber.class, "state");
 
@@ -387,12 +464,12 @@ final class TaskBasedOffloader implements SignalOffloader {
             state = STATE_ON_SUBSCRIBE_RECEIVED;
             try {
                 executor.execute(this);
-            } catch (RejectedExecutionException re) {
+            } catch (Throwable t) {
                 // As a policy, we call the target in the calling thread when the executor is inadequately
                 // provisioned. In the future we could make this configurable.
                 state = STATE_TERMINATED;
                 sendOnSubscribe(IGNORE_CANCEL);
-                terminateOnEnqueueFailure(re);
+                terminateOnEnqueueFailure(t);
             }
         }
 
@@ -400,25 +477,26 @@ final class TaskBasedOffloader implements SignalOffloader {
         public final void run() {
             for (;;) {
                 int cState = state;
-                if (cState == STATE_TERMINATED || cState == STATE_AWAITING_TERMINAL || cState == STATE_INIT) {
+                if (cState == STATE_TERMINATED) {
                     return;
                 }
-                if (!append(cState, STATE_EXECUTING)) {
+                if (!append(cState, EXECUTING_MASK)) {
                     continue;
                 }
-                cState |= STATE_EXECUTING;
-                if (has(cState, STATE_ON_SUBSCRIBE_RECEIVED)) {
+                cState |= EXECUTING_MASK;
+                if (has(cState, ON_SUBSCRIBE_RECEIVED_MASK)) {
+                    while (!stateUpdater.compareAndSet(this, cState, (cState & ~ON_SUBSCRIBE_RECEIVED_MASK))) {
+                        cState = state;
+                    }
                     assert cancellable != null;
                     sendOnSubscribe(cancellable);
                     // Re-read state to see if we terminated from onSubscribe
                     cState = state;
                 }
-                if (has(cState, STATE_RECEIVED_TERMINAL)) {
+                if (has(cState, RECEIVED_TERMINAL_MASK)) {
                     if (stateUpdater.compareAndSet(this, cState, STATE_TERMINATED)) {
                         assert terminal != null;
-                        sendTerminal(terminal);
-                        return;
-                    } else if (stateUpdater.compareAndSet(this, cState, STATE_AWAITING_TERMINAL)) {
+                        deliverTerminalToSubscriber(terminal);
                         return;
                     }
                 } else if (stateUpdater.compareAndSet(this, cState, STATE_AWAITING_TERMINAL)) {
@@ -431,28 +509,23 @@ final class TaskBasedOffloader implements SignalOffloader {
             this.terminal = terminal;
             for (;;) {
                 int cState = state;
-                if (has(cState, STATE_RECEIVED_TERMINAL) || state == STATE_TERMINATED) {
-                    // Duplicate terminal event.
-                    return;
-                }
-                if (has(cState, STATE_EXECUTING) && append(cState, STATE_RECEIVED_TERMINAL)) {
-                    // We are in the execution loop, the terminal would be picked up.
+                if (/* Duplicate terminal event */
+                        has(cState, RECEIVED_TERMINAL_MASK) || cState == STATE_TERMINATED ||
+                                // Already executing or enqueued for executing, append the state.
+                                ((has(cState, EXECUTING_MASK) || has(cState, ON_SUBSCRIBE_RECEIVED_MASK)) &&
+                                        append(cState, RECEIVED_TERMINAL_MASK))) {
                     return;
                 } else if (cState == STATE_AWAITING_TERMINAL &&
                         stateUpdater.compareAndSet(this, STATE_AWAITING_TERMINAL, STATE_RECEIVED_TERMINAL)) {
                     // We are not executing hence need to enqueue the task to deliver terminal.
                     try {
                         executor.execute(this);
-                    } catch (RejectedExecutionException re) {
+                    } catch (Throwable t) {
                         state = STATE_TERMINATED;
                         // As a policy, we call the target in the calling thread when the executor is inadequately
                         // provisioned. In the future we could make this configurable.
-                        terminateOnEnqueueFailure(re);
+                        terminateOnEnqueueFailure(t);
                     }
-                    return;
-                } else if (has(cState, STATE_ON_SUBSCRIBE_RECEIVED) && append(cState, STATE_RECEIVED_TERMINAL)) {
-                    // We have already scheduled the task from onSubscribe, so both onSubscribe and terminal will be
-                    // delivered.
                     return;
                 }
             }
@@ -462,13 +535,13 @@ final class TaskBasedOffloader implements SignalOffloader {
             stateUpdater.getAndSet(this, STATE_TERMINATED);
         }
 
-        abstract void terminateOnEnqueueFailure(RejectedExecutionException cause);
+        abstract void terminateOnEnqueueFailure(Throwable cause);
 
-        abstract void sendTerminal(Object terminal);
+        abstract void deliverTerminalToSubscriber(Object terminal);
 
         abstract void sendOnSubscribe(Cancellable cancellable);
 
-        private boolean has(int state, int flag) {
+        private static boolean has(int state, int flag) {
             return (state & flag) == flag;
         }
 
@@ -497,12 +570,12 @@ final class TaskBasedOffloader implements SignalOffloader {
         }
 
         @Override
-        void terminateOnEnqueueFailure(final RejectedExecutionException cause) {
+        void terminateOnEnqueueFailure(final Throwable cause) {
             target.onError(cause);
         }
 
         @Override
-        void sendTerminal(final Object terminal) {
+        void deliverTerminalToSubscriber(final Object terminal) {
             if (terminal instanceof Throwable) {
                 try {
                     target.onError((Throwable) terminal);
@@ -539,6 +612,7 @@ final class TaskBasedOffloader implements SignalOffloader {
 
     private static final class OffloadedCompletableSubscriber extends AbstractOffloadedSingleValueSubscriber
             implements Completable.Subscriber {
+        private static final Object COMPLETED = new Object();
         private final Completable.Subscriber target;
 
         OffloadedCompletableSubscriber(final Executor executor, final Completable.Subscriber target) {
@@ -548,26 +622,30 @@ final class TaskBasedOffloader implements SignalOffloader {
 
         @Override
         public void onComplete() {
-            setTerminal(complete());
+            setTerminal(COMPLETED);
         }
 
         @Override
         public void onError(final Throwable t) {
-            setTerminal(error(t));
+            setTerminal(t);
         }
 
         @Override
-        void terminateOnEnqueueFailure(final RejectedExecutionException cause) {
+        void terminateOnEnqueueFailure(final Throwable cause) {
             target.onError(cause);
         }
 
         @Override
-        void sendTerminal(final Object terminal) {
+        void deliverTerminalToSubscriber(final Object terminal) {
             try {
-                ((TerminalNotification) terminal).terminate(target);
+                if (terminal instanceof Throwable) {
+                    target.onError((Throwable) terminal);
+                } else {
+                    target.onComplete();
+                }
             } catch (Throwable t) {
                 LOGGER.error("Ignored unexpected exception from {}. Subscriber: {}",
-                        ((TerminalNotification) terminal).getCause() == null ? "onComplete" : "onError", target, t);
+                        terminal instanceof Throwable ? "onError" : "onComplete", target, t);
             }
         }
 
@@ -578,8 +656,8 @@ final class TaskBasedOffloader implements SignalOffloader {
             } catch (Throwable t) {
                 LOGGER.error("Ignored unexpected exception from onSubscribe. Subscriber: {}, Cancellable: {}.",
                         target, cancellable, t);
-                cancellable.cancel();
                 onSubscribeFailed();
+                cancellable.cancel();
             }
         }
     }
@@ -603,8 +681,10 @@ final class TaskBasedOffloader implements SignalOffloader {
                         LOGGER.error("Ignored unexpected exception from cancel(). Cancellable: {}", cancellable, t);
                     }
                 });
-            } catch (RejectedExecutionException re) {
-                LOGGER.error("Failed to enqueue for cancel(). Cancellable: {}", cancellable, re);
+            } catch (Throwable t) {
+                LOGGER.error("Failed to execute task on the executor {}. " +
+                                "Invoking Cancellable (cancel()) in the caller thread. Cancellable {}. ",
+                        executor, cancellable, t);
                 // As a policy, we call the target in the calling thread when the executor is inadequately
                 // provisioned. In the future we could make this configurable.
                 cancellable.cancel();
@@ -691,93 +771,6 @@ final class TaskBasedOffloader implements SignalOffloader {
         @Override
         public void onComplete() {
             subscriber.onComplete();
-        }
-    }
-
-    private static final class ErrorIgnoringSubscriber<T> implements Subscriber<T> {
-        private final Subscriber<? super T> original;
-
-        private boolean earlyTermination;
-        @Nullable
-        private Subscription subscription;
-
-        ErrorIgnoringSubscriber(final Subscriber<? super T> original) {
-            this.original = requireNonNull(original);
-        }
-
-        @Override
-        public void onSubscribe(final Subscription s) {
-            if (earlyTermination) {
-                return;
-            }
-            this.subscription = s;
-            try {
-                original.onSubscribe(s);
-            } catch (Throwable t) {
-                earlyTermination = true;
-                LOGGER.error("Ignored unexpected exception from onSubscribe. Subscriber: {}, Subscription: {}.",
-                        original, s, t);
-                s.cancel();
-            }
-        }
-
-        @Override
-        public void onNext(final T t) {
-            if (earlyTermination) {
-                return;
-            }
-            try {
-                original.onNext(t);
-            } catch (Throwable throwable) {
-                earlyTermination = true;
-                LOGGER.error("Unexpected exception from onNext. Subscriber: {}", original, throwable);
-                assert subscription != null;
-                subscription.cancel();
-                original.onError(throwable);
-            }
-        }
-
-        @Override
-        public void onError(final Throwable t) {
-            if (earlyTermination) {
-                return;
-            }
-            try {
-                original.onError(t);
-            } catch (Throwable throwable) {
-                earlyTermination = true;
-                LOGGER.error("Ignored unexpected exception from onError. Subscriber: {}", original, throwable);
-            }
-        }
-
-        @Override
-        public void onComplete() {
-            if (earlyTermination) {
-                return;
-            }
-            try {
-                original.onComplete();
-            } catch (Throwable throwable) {
-                earlyTermination = true;
-                LOGGER.error("Ignored unexpected exception from onComplete. Subscriber: {}", original, throwable);
-            }
-        }
-
-        void terminateOnEnqueueFailure(RejectedExecutionException re) {
-            if (earlyTermination) {
-                return;
-            }
-            earlyTermination = true;
-            if (subscription == null) {
-                original.onSubscribe(EMPTY_SUBSCRIPTION);
-            } else {
-                subscription.cancel();
-            }
-            try {
-                original.onError(re);
-            } catch (Throwable throwable) {
-                LOGGER.error("Ignored unexpected exception from onError. Subscriber: {}", original, throwable);
-            }
         }
     }
 }
