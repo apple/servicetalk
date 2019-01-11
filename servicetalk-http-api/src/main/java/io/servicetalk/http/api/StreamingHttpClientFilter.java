@@ -142,10 +142,5 @@ public class StreamingHttpClientFilter extends StreamingHttpClient {
                                                      final StreamingHttpRequest request) {
             return StreamingHttpClientFilter.this.request(delegate(), strategy, request);
         }
-
-        @Override
-        public Completable releaseAsync() {
-            return delegate().releaseAsync();
-        }
     }
 }

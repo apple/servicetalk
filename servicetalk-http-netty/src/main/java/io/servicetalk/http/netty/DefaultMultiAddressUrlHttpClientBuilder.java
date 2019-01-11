@@ -115,10 +115,8 @@ final class DefaultMultiAddressUrlHttpClientBuilder
             StreamingHttpClient client = closeables.prepend(new StreamingUrlHttpClient(reqRespFactory, clientFactory,
                     keyFactory, executionContext));
 
-            if (maxRedirects > 0) {
-                // Needs to wrap the top level client (group) in order for non-relative redirects to work
-                client = new RedirectingHttpRequestFilter(false, maxRedirects).create(client);
-            }
+            // Need to wrap the top level client (group) in order for non-relative redirects to work
+            client = maxRedirects <= 0 ? client : new RedirectingHttpRequestFilter(false, maxRedirects).create(client);
 
             return new StreamingHttpClientWithDependencies(client, toListenableAsyncCloseable(closeables),
                     reqRespFactory);

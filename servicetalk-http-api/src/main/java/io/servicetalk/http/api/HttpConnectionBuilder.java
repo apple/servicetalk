@@ -114,15 +114,26 @@ public interface HttpConnectionBuilder<ResolvedAddress> {
     }
 
     /**
-     * Set the filter that is used to decorate {@link StreamingHttpConnection} created by this builder.
+     * Append the filter to the chain of filters used to decorate the {@link StreamingHttpConnection} created by this
+     * builder.
      * <p>
-     * Note this method will be used to decorate the result of {@link #buildStreaming(Object)} before it is returned to
-     * the user.
-     *
-     * @param function decorates a {@link StreamingHttpConnection} for the purpose of filtering
+     * Filtering allows you to wrap a {@link StreamingHttpConnection} and modify behavior during request/response
+     * processing
+     * Some potential candidates for filtering include logging, metrics, and decorating responses.
+     * <p>
+     * The order of execution of these filters are in order of append. If 3 filters are added as follows:
+     * <pre>
+     *     builder.append(filter1).append(filter2).append(filter3)
+     * </pre>
+     * making a request to a connection wrapped by this filter chain the order of invocation of these filters will be:
+     * <pre>
+     *     filter1 =&gt; filter2 =&gt; filter3 =&gt; connection
+     * </pre>
+     * @param factory {@link HttpConnectionFilterFactory} to decorate a {@link StreamingHttpConnection} for the purpose
+     * of filtering.
      * @return {@code this}
      */
-    HttpConnectionBuilder<ResolvedAddress> appendConnectionFilter(HttpConnectionFilterFactory function);
+    HttpConnectionBuilder<ResolvedAddress> appendConnectionFilter(HttpConnectionFilterFactory factory);
 
     /**
      * Append the filter to the chain of filters used to decorate the {@link StreamingHttpConnection} created by this
