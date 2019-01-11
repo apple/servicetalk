@@ -130,10 +130,10 @@ task publishToMavenLocal(overwrite: true) {
 
 task license(overwrite: true) {
   dependsOn licenseRoot
-  dependsOn gradle.includedBuilds*.task(':license')
+  dependsOn findTasks('license', ['servicetalk-examples'])
 }
 
 task licenseFormat(overwrite: true) {
   dependsOn licenseFormatRoot
-  dependsOn gradle.includedBuilds*.task(':licenseFormat')
+  dependsOn findTasks('licenseFormat', ['servicetalk-examples'])
 }
