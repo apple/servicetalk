@@ -15,10 +15,14 @@
  */
 package io.servicetalk.http.router.jersey;
 
+import javax.annotation.Nullable;
+
 public class TestPojo {
-    private String aString = "";
+    @Nullable
+    private String aString;
     private int anInt;
 
+    @Nullable
     public String getaString() {
         return aString;
     }
