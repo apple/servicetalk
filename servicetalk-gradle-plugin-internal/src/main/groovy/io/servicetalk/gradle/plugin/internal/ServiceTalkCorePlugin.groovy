@@ -44,6 +44,7 @@ class ServiceTalkCorePlugin implements Plugin<Project> {
         header = null
         headerURI = getClass().getResource("license/HEADER.txt").toURI()
         strictCheck = true
+        skipExistingHeaders = true
         mapping {
           java = 'SLASHSTAR_STYLE'
           gradle = 'SLASHSTAR_STYLE'
