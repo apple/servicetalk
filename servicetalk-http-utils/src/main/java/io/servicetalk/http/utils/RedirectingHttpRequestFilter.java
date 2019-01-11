@@ -32,6 +32,8 @@ import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequester;
 import io.servicetalk.http.api.StreamingHttpResponse;
 
+import static io.servicetalk.concurrent.api.Publisher.empty;
+
 /**
  * A HTTP request filter that performs automatic redirects if {@link
  * StreamingHttpRequester#request(StreamingHttpRequest)} method receives 3XX status code in the {@link
@@ -121,42 +123,6 @@ public final class RedirectingHttpRequestFilter implements HttpClientFilterFacto
         this.maxRedirects = maxRedirects;
     }
 
-    /**
-     * Filters an existing {@link StreamingHttpClient} with HTTP redirect behavior.
-     *
-     * @param client the {@link StreamingHttpClient} to filter with redirect behavior.
-     * @param onlyRelativeClient Limits the redirects to relative paths for {@link HttpClient} filters.
-     * @param onlyRelativeConnection Limits the redirects to relative paths for {@link HttpConnection} filters.
-     * @param maxRedirects The maximum number of follow up redirects.
-     * @return the filtered {@link StreamingHttpClient}.
-     */
-    public static StreamingHttpClient filter(
-            final StreamingHttpClient client,
-            final boolean onlyRelativeClient,
-            final boolean onlyRelativeConnection,
-            final int maxRedirects) {
-        return new RedirectingHttpRequestFilter(onlyRelativeClient, onlyRelativeConnection, maxRedirects)
-                .create(client, Publisher.empty());
-    }
-
-    /**
-     * Filters an existing {@link StreamingHttpConnection} with HTTP redirect behavior.
-     *
-     * @param connection the {@link StreamingHttpConnection} to filter with redirect behavior.
-     * @param onlyRelativeClient Limits the redirects to relative paths for {@link HttpClient} filters.
-     * @param onlyRelativeConnection Limits the redirects to relative paths for {@link HttpConnection} filters.
-     * @param maxRedirects The maximum number of follow up redirects.
-     * @return the filtered {@link StreamingHttpConnection}.
-    */
-    public static StreamingHttpConnection filter(
-            final StreamingHttpConnection connection,
-            final boolean onlyRelativeClient,
-            final boolean onlyRelativeConnection,
-            final int maxRedirects) {
-        return new RedirectingHttpRequestFilter(onlyRelativeClient, onlyRelativeConnection, maxRedirects)
-                .create(connection);
-    }
-
     @Override
     public StreamingHttpClientFilter create(final StreamingHttpClient client, final Publisher<Object> lbEvents) {
         return new StreamingHttpClientFilter(client) {
@@ -183,6 +149,16 @@ public final class RedirectingHttpRequestFilter implements HttpClientFilterFacto
                         });
             }
         };
+    }
+
+    /**
+     * Create a {@link StreamingHttpClientFilter} using the provided {@link StreamingHttpClient}.
+     *
+     * @param client {@link StreamingHttpClient} to filter
+     * @return {@link StreamingHttpClientFilter} using the provided {@link StreamingHttpClient}.
+     */
+    public StreamingHttpClientFilter create(final StreamingHttpClient client) {
+        return create(client, empty());
     }
 
     @Override
