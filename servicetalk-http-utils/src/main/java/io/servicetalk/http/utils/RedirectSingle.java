@@ -137,11 +137,12 @@ final class RedirectSingle extends Single<StreamingHttpResponse> {
                 target.onError(cause);
                 return;
             }
-            // Bail on the redirect if non-relative when that was requested
-            if (redirectSingle.onlyRelative && (
-                    request.effectiveHost() == null ||
-                    !request.effectiveHost().equalsIgnoreCase(newRequest.effectiveHost()) ||
-                    request.effectivePort() != newRequest.effectivePort())) {
+            // Bail on the redirect if non-relative when that was requested or a redirect request is impossible to infer
+            if (newRequest == null ||
+                    redirectSingle.onlyRelative && (
+                            request.effectiveHost() == null ||
+                            !request.effectiveHost().equalsIgnoreCase(newRequest.effectiveHost()) ||
+                            request.effectivePort() != newRequest.effectivePort())) {
                 if (LOGGER.isTraceEnabled()) {
                     LOGGER.trace("Ignoring non-relative redirect to '{}' for original request '{}' using onlyRelative",
                             result.headers().get(LOCATION), redirectSingle.originalRequest);
@@ -216,7 +217,7 @@ final class RedirectSingle extends Single<StreamingHttpResponse> {
             }
         }
 
-        private static StreamingHttpRequest prepareRedirectRequest(
+        private static @Nullable StreamingHttpRequest prepareRedirectRequest(
                 final StreamingHttpRequest request, final StreamingHttpResponse response,
                 final StreamingHttpRequestFactory requestFactory) {
             final HttpRequestMethod method = defineRedirectMethod(request.method());
@@ -235,8 +236,8 @@ final class RedirectSingle extends Single<StreamingHttpResponse> {
                 // origin-form request-target in Location header, extract host & port info from original request
                 redirectHost = request.effectiveHost();
                 if (redirectHost == null) {
-                    // Should never happen, otherwise the original request had to fail
-                    throw new InvalidRedirectException("No host information for redirect");
+                    // abort, no HOST header found on the original request, this is typical for HTTP/1.0
+                    return null;
                 }
                 final int redirectPort = request.effectivePort();
                 headers.set(HOST, redirectPort < 0 ? redirectHost : redirectHost + ':' + redirectPort);

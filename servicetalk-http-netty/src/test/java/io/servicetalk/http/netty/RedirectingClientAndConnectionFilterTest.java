@@ -20,6 +20,9 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.BlockingHttpRequester;
+import io.servicetalk.http.api.HttpClient;
+import io.servicetalk.http.api.HttpConnection;
+import io.servicetalk.http.api.HttpProtocolVersions;
 import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.ReservedStreamingHttpConnectionFilter;
@@ -47,6 +50,10 @@ import static io.servicetalk.http.netty.RedirectingClientAndConnectionFilterTest
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertThat;
 
+/**
+ * This test-case is for integration testing the {@link RedirectingHttpRequestFilter} with the various types of {@link
+ * HttpClient} and {@link HttpConnection} builders.
+ */
 @RunWith(Parameterized.class)
 public final class RedirectingClientAndConnectionFilterTest {
 
@@ -129,6 +136,41 @@ public final class RedirectingClientAndConnectionFilterTest {
 
             response = client.request(request.addHeader("X-REDIRECT", "TRUE"));
             assertThat(response.status(), equalTo(OK));
+
+            // HTTP/1.0 doesn't support HOST, ensure that we don't get any errors and fallback to redirect
+            response = client.request(
+                    client.get("/")
+                            .version(HttpProtocolVersions.HTTP_1_0)
+                            .addHeader("X-REDIRECT", "TRUE"));
+            assertThat(response.status(), equalTo(PERMANENT_REDIRECT));
+        }
+    }
+
+    @Test
+    public void redirectFilterNoHostHeaderAbsoluteLocation() throws Exception {
+        try (ServerContext serverContext = HttpServers.forPort(0)
+                .listenBlockingAndAwait((ctx, request, responseFactory) -> {
+                    if (request.requestTarget().equals("/")) {
+                        int port = ((InetSocketAddress) ctx.localAddress()).getPort();
+                        return responseFactory.permanentRedirect()
+                                .addHeader(LOCATION, "http://localhost:" + port + "/next");
+                    }
+                    return responseFactory.ok();
+                }); BlockingHttpRequester client = newRequester(serverContext)) {
+
+            HttpRequest request = client.get("/");
+            HttpResponse response = client.request(request);
+            assertThat(response.status(), equalTo(PERMANENT_REDIRECT));
+
+            response = client.request(request.addHeader("X-REDIRECT", "TRUE"));
+            assertThat(response.status(), equalTo(OK));
+
+            // HTTP/1.0 doesn't support HOST, ensure that we don't get any errors and fallback to redirect
+            response = client.request(
+                    client.get("/")
+                            .version(HttpProtocolVersions.HTTP_1_0)
+                            .addHeader("X-REDIRECT", "TRUE"));
+            assertThat(response.status(), equalTo(PERMANENT_REDIRECT));
         }
     }
 
@@ -164,27 +206,6 @@ public final class RedirectingClientAndConnectionFilterTest {
                 }); BlockingHttpRequester client = newRequester(serverContext)) {
 
             HttpRequest request = client.get("/").addHeader(HOST, "servicetalk.io");
-            HttpResponse response = client.request(request);
-            assertThat(response.status(), equalTo(PERMANENT_REDIRECT));
-
-            response = client.request(request.addHeader("X-REDIRECT", "TRUE"));
-            assertThat(response.status(), equalTo(OK));
-        }
-    }
-
-    @Test
-    public void redirectFilterNoHostHeaderAbsoluteLocation() throws Exception {
-        try (ServerContext serverContext = HttpServers.forPort(0)
-                .listenBlockingAndAwait((ctx, request, responseFactory) -> {
-                    if (request.requestTarget().equals("/")) {
-                        int port = ((InetSocketAddress) ctx.localAddress()).getPort();
-                        return responseFactory.permanentRedirect()
-                                .addHeader(LOCATION, "http://localhost:" + port + "/next");
-                    }
-                    return responseFactory.ok();
-                }); BlockingHttpRequester client = newRequester(serverContext)) {
-
-            HttpRequest request = client.get("/");
             HttpResponse response = client.request(request);
             assertThat(response.status(), equalTo(PERMANENT_REDIRECT));
 
