@@ -30,7 +30,6 @@ import org.junit.Test;
 import org.junit.rules.Timeout;
 
 import java.util.List;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
 import static io.servicetalk.concurrent.api.Publisher.from;
@@ -55,15 +54,15 @@ import static org.mockito.Mockito.when;
 
 public class DefaultSerializerDeserializationTest {
 
-    private static final TypeHolder<List<String>> typeForList = new TypeHolder<List<String>>() { };
+    private static final TypeHolder<List<String>> TYPE_FOR_LIST = new TypeHolder<List<String>>() { };
+
+    @Rule
+    public final Timeout timeout = new ServiceTalkTestTimeout();
 
     private StreamingDeserializer<String> deSerializer;
     private StreamingDeserializer<List<String>> listDeSerializer;
     private SerializationProvider provider;
     private DefaultSerializer factory;
-
-    @Rule
-    public Timeout timeout = new ServiceTalkTestTimeout();
 
     @SuppressWarnings("unchecked")
     @Before
@@ -72,12 +71,12 @@ public class DefaultSerializerDeserializationTest {
         listDeSerializer = mock(StreamingDeserializer.class);
         provider = mock(SerializationProvider.class);
         when(provider.getDeserializer(String.class)).thenReturn(deSerializer);
-        when(provider.getDeserializer(typeForList)).thenReturn(listDeSerializer);
+        when(provider.getDeserializer(TYPE_FOR_LIST)).thenReturn(listDeSerializer);
         factory = new DefaultSerializer(provider);
     }
 
     @Test
-    public void applyDeserializerForPublisherWithType() throws ExecutionException, InterruptedException {
+    public void applyDeserializerForPublisherWithType() throws Exception {
         Buffer first = mock(Buffer.class);
         Buffer second = mock(Buffer.class);
         when(deSerializer.deserialize(first)).thenReturn(singletonList("Hello1"));
@@ -92,7 +91,7 @@ public class DefaultSerializerDeserializationTest {
     }
 
     @Test
-    public void applyDeserializerForPublisherWithTypeHolder() throws ExecutionException, InterruptedException {
+    public void applyDeserializerForPublisherWithTypeHolder() throws Exception {
         final List<String> firstList = singletonList("Hello1");
         final List<String> secondList = singletonList("Hello2");
         List<List<String>> expected = asList(firstList, secondList);
@@ -103,8 +102,8 @@ public class DefaultSerializerDeserializationTest {
         when(listDeSerializer.deserialize(secondBuf)).thenReturn(singletonList(secondList));
 
         final List<List<String>> deserialized = awaitIndefinitely(factory.deserialize(from(firstBuf, secondBuf),
-                typeForList));
-        verify(provider).getDeserializer(typeForList);
+                TYPE_FOR_LIST));
+        verify(provider).getDeserializer(TYPE_FOR_LIST);
         verify(listDeSerializer).deserialize(firstBuf);
         verify(listDeSerializer).deserialize(secondBuf);
         assertThat("Unexpected deserialized result.", deserialized, equalTo(expected));
@@ -136,8 +135,8 @@ public class DefaultSerializerDeserializationTest {
         Buffer secondBuf = mock(Buffer.class);
         final List<Buffer> source = asList(firstBuf, secondBuf);
         when(listDeSerializer.deserialize(source)).thenReturn(asList(firstList, secondList));
-        final CloseableIterable<List<String>> deserialized = factory.deserialize(source, typeForList);
-        verify(provider).getDeserializer(typeForList);
+        final CloseableIterable<List<String>> deserialized = factory.deserialize(source, TYPE_FOR_LIST);
+        verify(provider).getDeserializer(TYPE_FOR_LIST);
         verify(listDeSerializer).deserialize(source);
         verify(listDeSerializer, times(0)).close();
         assertThat("Unexpected deserialized result.", stream(deserialized.spliterator(), false).collect(toList()),
@@ -179,8 +178,8 @@ public class DefaultSerializerDeserializationTest {
         BlockingIterable<List<String>> expected =
                 new BlockingIterableFromIterable<>(asList(singletonList("Hello1"), singletonList("Hello2")));
 
-        final BlockingIterable<List<String>> deserialized = factory.deserialize(source.getIterable(), typeForList);
-        verify(provider).getDeserializer(typeForList);
+        final BlockingIterable<List<String>> deserialized = factory.deserialize(source.getIterable(), TYPE_FOR_LIST);
+        verify(provider).getDeserializer(TYPE_FOR_LIST);
         verify(listDeSerializer).deserialize(source.getIterable());
 
         drainBlockingIteratorAndVerify(deserialized, source.getIterator(), expected);
@@ -275,8 +274,8 @@ public class DefaultSerializerDeserializationTest {
         Buffer buffer = mock(Buffer.class);
         when(listDeSerializer.deserialize(buffer)).thenReturn(expected);
 
-        final CloseableIterable<List<String>> deserialized = factory.deserializeAggregated(buffer, typeForList);
-        verify(provider).getDeserializer(typeForList);
+        final CloseableIterable<List<String>> deserialized = factory.deserializeAggregated(buffer, TYPE_FOR_LIST);
+        verify(provider).getDeserializer(TYPE_FOR_LIST);
         verify(listDeSerializer).deserialize(buffer);
         verify(listDeSerializer, times(0)).close();
         assertThat("Unexpected deserialized data.", stream(deserialized.spliterator(), false).collect(toList()),
@@ -316,8 +315,8 @@ public class DefaultSerializerDeserializationTest {
         final SerializationException e = new SerializationException(DELIBERATE_EXCEPTION);
         doThrow(e).when(listDeSerializer).close();
 
-        final Iterable<List<String>> deserialized = factory.deserializeAggregated(buffer, typeForList);
-        verify(provider).getDeserializer(typeForList);
+        final Iterable<List<String>> deserialized = factory.deserializeAggregated(buffer, TYPE_FOR_LIST);
+        verify(provider).getDeserializer(TYPE_FOR_LIST);
         verify(listDeSerializer).deserialize(buffer);
         verify(listDeSerializer, times(0)).close();
 

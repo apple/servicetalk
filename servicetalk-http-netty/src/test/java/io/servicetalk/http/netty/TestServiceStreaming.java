@@ -116,8 +116,8 @@ final class TestServiceStreaming extends StreamingHttpService {
         return strategy;
     }
 
-    private StreamingHttpResponse newEchoResponse(final StreamingHttpRequest req,
-                                                  final StreamingHttpResponseFactory factory) {
+    private static StreamingHttpResponse newEchoResponse(final StreamingHttpRequest req,
+                                                         final StreamingHttpResponseFactory factory) {
         final StreamingHttpResponse response = factory.ok().version(req.version())
                 .payloadBody(req.payloadBody());
         final CharSequence contentLength = req.headers().get(CONTENT_LENGTH);
@@ -143,7 +143,7 @@ final class TestServiceStreaming extends StreamingHttpService {
         return factory.ok().version(req.version()).payloadBody(just(responseContent));
     }
 
-    private StreamingHttpResponse newLargeLastChunkResponse(
+    private static StreamingHttpResponse newLargeLastChunkResponse(
             final ConnectionContext context, final StreamingHttpRequest req,
             final StreamingHttpResponseFactory factory) {
         final byte[] content = new byte[1024];
@@ -162,13 +162,13 @@ final class TestServiceStreaming extends StreamingHttpService {
         return factory.ok().version(req.version()).payloadBody(publisherSupplier.apply(req));
     }
 
-    private StreamingHttpResponse newNoContentResponse(final StreamingHttpRequest req,
-                                                       final StreamingHttpResponseFactory factory) {
+    private static StreamingHttpResponse newNoContentResponse(final StreamingHttpRequest req,
+                                                              final StreamingHttpResponseFactory factory) {
         return factory.newResponse(NO_CONTENT).version(req.version());
     }
 
-    private StreamingHttpResponse newRot13Response(final StreamingHttpRequest req,
-                                                   final StreamingHttpResponseFactory factory) {
+    private static StreamingHttpResponse newRot13Response(final StreamingHttpRequest req,
+                                                          final StreamingHttpResponseFactory factory) {
         final Publisher<Buffer> responseBody = req.payloadBody().map(buffer -> {
             // Do an ASCII-only ROT13
             for (int i = buffer.readerIndex(); i < buffer.writerIndex(); i++) {
@@ -184,23 +184,23 @@ final class TestServiceStreaming extends StreamingHttpService {
         return factory.ok().version(req.version()).payloadBody(responseBody);
     }
 
-    private StreamingHttpResponse newNotFoundResponse(final StreamingHttpRequest req,
-                                                      final StreamingHttpResponseFactory factory) {
+    private static StreamingHttpResponse newNotFoundResponse(final StreamingHttpRequest req,
+                                                             final StreamingHttpResponseFactory factory) {
         return factory.newResponse(NOT_FOUND).version(req.version());
     }
 
-    private StreamingHttpResponse throwErrorSynchronously() {
+    private static StreamingHttpResponse throwErrorSynchronously() {
         throw DELIBERATE_EXCEPTION;
     }
 
-    private StreamingHttpResponse throwErrorBeforeRead(final StreamingHttpRequest req,
-                                                       final StreamingHttpResponseFactory factory) {
+    private static StreamingHttpResponse throwErrorBeforeRead(final StreamingHttpRequest req,
+                                                              final StreamingHttpResponseFactory factory) {
         return factory.ok().version(req.version()).payloadBody(Publisher.error(
                 DELIBERATE_EXCEPTION));
     }
 
-    private StreamingHttpResponse throwErrorDuringRead(final StreamingHttpRequest req,
-                                                       final StreamingHttpResponseFactory factory) {
+    private static StreamingHttpResponse throwErrorDuringRead(final StreamingHttpRequest req,
+                                                              final StreamingHttpResponseFactory factory) {
         return factory.ok().version(req.version()).payloadBody(
                 req.payloadBody().concatWith(Completable.error(DELIBERATE_EXCEPTION)));
     }

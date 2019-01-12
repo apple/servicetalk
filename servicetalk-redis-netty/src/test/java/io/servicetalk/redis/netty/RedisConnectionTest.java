@@ -260,7 +260,7 @@ public class RedisConnectionTest extends BaseRedisClientTest {
     }
 
     @Test
-    public void redisCommanderUsesFilters() throws ExecutionException, InterruptedException {
+    public void redisCommanderUsesFilters() throws Exception {
         final RedisConnection delegate = awaitIndefinitely(getEnv().client.reserveConnection(PING));
         final AtomicBoolean requestCalled = new AtomicBoolean();
         final AtomicBoolean closeCalled = new AtomicBoolean();
@@ -277,14 +277,12 @@ public class RedisConnectionTest extends BaseRedisClientTest {
     }
 
     @Test
-    public void rawConnectionToCommanderWithFilterAndMonitorDoesNotThrowClassCast()
-            throws ExecutionException, InterruptedException {
+    public void rawConnectionToCommanderWithFilterAndMonitorDoesNotThrowClassCast() throws Exception {
         rawConnectionToCommanderWithFilterDoesNotThrowClassCast(true);
     }
 
     @Test
-    public void rawConnectionToCommanderWithFilterAndMultiDoesNotThrowClassCast()
-            throws ExecutionException, InterruptedException {
+    public void rawConnectionToCommanderWithFilterAndMultiDoesNotThrowClassCast() throws Exception {
         rawConnectionToCommanderWithFilterDoesNotThrowClassCast(false);
     }
 

@@ -21,8 +21,6 @@ import io.servicetalk.concurrent.api.Publisher;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 
-import java.util.concurrent.ExecutionException;
-
 import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 
@@ -37,7 +35,7 @@ abstract class PublisherAbstractOffloaderTckTest extends AbstractPublisherOperat
     }
 
     @AfterMethod
-    public void tearDown() throws ExecutionException, InterruptedException {
+    public void tearDown() throws Exception {
         awaitIndefinitely(executor.closeAsync());
     }
 

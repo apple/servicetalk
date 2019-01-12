@@ -33,6 +33,7 @@ public final class SingleFlatMapCompletableTest {
 
     @Rule
     public final MockedCompletableListenerRule listener = new MockedCompletableListenerRule();
+
     private TestSingle<String> single;
     private TestCompletable completable;
 

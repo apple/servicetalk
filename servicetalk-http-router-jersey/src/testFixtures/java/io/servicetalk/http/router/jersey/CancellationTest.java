@@ -91,7 +91,8 @@ public class CancellationTest {
     public static final ExecutorRule EXEC = new ExecutorRule();
 
     @Rule
-    public MockitoRule rule = MockitoJUnit.rule();
+    public final MockitoRule rule = MockitoJUnit.rule();
+
     @Rule
     public final ServiceTalkTestTimeout timeout = new ServiceTalkTestTimeout();
 
@@ -102,7 +103,6 @@ public class CancellationTest {
     private Executor exec;
 
     private CancellableResources cancellableResources;
-
     private StreamingHttpService jerseyRouter;
 
     @Before

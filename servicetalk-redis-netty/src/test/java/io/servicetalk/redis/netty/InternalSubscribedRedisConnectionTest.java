@@ -38,7 +38,6 @@ import java.util.Queue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.LinkedBlockingQueue;
 import javax.annotation.Nullable;
 
@@ -89,14 +88,14 @@ public class InternalSubscribedRedisConnectionTest {
     }
 
     @AfterClass
-    public static void tearDown() throws ExecutionException, InterruptedException {
+    public static void tearDown() throws Exception {
         if (ioExecutor != null) {
             awaitIndefinitely(ioExecutor.closeAsync());
         }
     }
 
     @Test
-    public void testWriteCancelAndClose() throws ExecutionException, InterruptedException {
+    public void testWriteCancelAndClose() throws Exception {
         assert builder != null && redisAddress != null && ioExecutor != null;
         CountDownLatch requestStreamCancelled = new CountDownLatch(1);
 
@@ -118,7 +117,7 @@ public class InternalSubscribedRedisConnectionTest {
     }
 
     @Test
-    public void testReadCancelAndClose() throws ExecutionException, InterruptedException {
+    public void testReadCancelAndClose() throws Exception {
         assert builder != null && redisAddress != null && ioExecutor != null;
 
         RedisConnection connection = awaitIndefinitely(

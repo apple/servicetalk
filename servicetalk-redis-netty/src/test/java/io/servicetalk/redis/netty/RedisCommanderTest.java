@@ -202,8 +202,8 @@ public class RedisCommanderTest extends BaseRedisClientTest {
     }
 
     @Test
-    public void infoWithAggregationDoesNotThrow() throws ExecutionException, InterruptedException {
-        assertThat(awaitIndefinitely(commandClient.info()).isEmpty(), is(false));
+    public void infoWithAggregationDoesNotThrow() throws Exception {
+        assertThat(awaitIndefinitelyNonNull(commandClient.info()).isEmpty(), is(false));
     }
 
     @SuppressWarnings("unchecked")

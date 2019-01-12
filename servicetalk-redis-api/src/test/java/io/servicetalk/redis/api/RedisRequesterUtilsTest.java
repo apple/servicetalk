@@ -65,24 +65,24 @@ public class RedisRequesterUtilsTest {
     @Rule
     public PublisherRule<RedisData> publisher = new PublisherRule<>();
 
-    private RedisRequester requestor;
+    private RedisRequester requester;
     private RedisRequest request;
     private BufferAllocator allocator;
 
     @Before
     public void setup() {
         ExecutionContext executionContext = mock(ExecutionContext.class);
-        requestor = mock(RedisRequester.class);
+        requester = mock(RedisRequester.class);
         request = mock(RedisRequest.class);
         allocator = DEFAULT_ALLOCATOR;
-        when(requestor.executionContext()).thenReturn(executionContext);
-        when(requestor.executionContext().bufferAllocator()).thenReturn(allocator);
-        when(requestor.request(any(RedisExecutionStrategy.class), any())).thenReturn(publisher.getPublisher());
+        when(requester.executionContext()).thenReturn(executionContext);
+        when(requester.executionContext().bufferAllocator()).thenReturn(allocator);
+        when(requester.request(any(RedisExecutionStrategy.class), any())).thenReturn(publisher.getPublisher());
     }
 
     @Test
     public void bufferAggregationDoesResize() {
-        ToBufferSingle<Buffer> aggregator = new ToBufferSingle<>(noOffloadsStrategy(), requestor, request);
+        ToBufferSingle<Buffer> aggregator = new ToBufferSingle<>(noOffloadsStrategy(), requester, request);
         bufferSubscriber.listen(aggregator);
 
         Buffer buffer = allocator.newBuffer(1).writeByte(1).asReadOnly();
@@ -100,7 +100,7 @@ public class RedisRequesterUtilsTest {
 
     @Test
     public void charAggregationDoesResize() {
-        ToBufferSingle<Buffer> aggregator = new ToBufferSingle<>(noOffloadsStrategy(), requestor, request);
+        ToBufferSingle<Buffer> aggregator = new ToBufferSingle<>(noOffloadsStrategy(), requester, request);
         bufferSubscriber.listen(aggregator);
 
         SimpleString stringChunk = new SimpleString("1");
@@ -128,7 +128,7 @@ public class RedisRequesterUtilsTest {
     private void testToListForCompleteBulkStrings(final Object expectedObject, final CharSequence chunk,
                                                   final boolean coerceBuffersToCharSequences, final boolean resizableBuffer) {
 
-        ToListSingle<List<Object>> aggregator = new ToListSingle<>(noOffloadsStrategy(), requestor, request,
+        ToListSingle<List<Object>> aggregator = new ToListSingle<>(noOffloadsStrategy(), requester, request,
                 coerceBuffersToCharSequences);
         listSubscriber.listen(aggregator);
 
@@ -187,7 +187,7 @@ public class RedisRequesterUtilsTest {
 
         final List<Object> expectedResult = new ArrayList<>(chunkedItems.size());
 
-        final ToListSingle<List<Object>> aggregator = new ToListSingle<>(noOffloadsStrategy(), requestor, request,
+        final ToListSingle<List<Object>> aggregator = new ToListSingle<>(noOffloadsStrategy(), requester, request,
                 coerceBuffersToCharSequences);
         listSubscriber.listen(aggregator);
 

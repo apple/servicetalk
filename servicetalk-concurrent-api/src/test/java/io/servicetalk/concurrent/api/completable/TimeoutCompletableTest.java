@@ -28,7 +28,6 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import javax.annotation.Nullable;
@@ -104,7 +103,7 @@ public class TimeoutCompletableTest {
     }
 
     @Test
-    public void noDataAndTimeout() throws ExecutionException, InterruptedException {
+    public void noDataAndTimeout() throws Exception {
         ScheduleEvent event = initSubscriber();
 
         // Sleep for at least as much time as the expiration time, because we just subscribed data.
@@ -117,7 +116,7 @@ public class TimeoutCompletableTest {
     }
 
     @Test
-    public void justSubscribeTimeout() throws ExecutionException, InterruptedException {
+    public void justSubscribeTimeout() throws Exception {
         DelayedOnSubscribeCompletable delayedCompletable = new DelayedOnSubscribeCompletable();
 
         ScheduleEvent event = initSubscriber(delayedCompletable, false);

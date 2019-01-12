@@ -110,7 +110,7 @@ public class ConcurrencyControlSingleOperatorTest {
     }
 
     @Test
-    public void cancelBeforeOnSuccess() throws ExecutionException, InterruptedException {
+    public void cancelBeforeOnSuccess() throws Exception {
         TestSingle<StreamingHttpResponse> responseSingle = new TestSingle<>(true);
         final RequestConcurrencyController controller = mock(RequestConcurrencyController.class);
         ConcurrencyControlSingleOperator operator = new ConcurrencyControlSingleOperator(controller);

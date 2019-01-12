@@ -34,6 +34,8 @@ import org.junit.Test;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
+import javax.annotation.Nullable;
+
 import static io.servicetalk.buffer.api.EmptyBuffer.EMPTY_BUFFER;
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Single.error;
@@ -83,7 +85,6 @@ public class RedirectingHttpClientFilterTest {
     @Rule
     public final ServiceTalkTestTimeout timeout = new ServiceTalkTestTimeout();
 
-    @SuppressWarnings("unchecked")
     private StreamingHttpClient httpClient;
 
     @Before
@@ -185,14 +186,16 @@ public class RedirectingHttpClientFilterTest {
     private void testNoRedirectWasDone(final int maxRedirects,
                                        final HttpRequestMethod method,
                                        final HttpResponseStatus requestedStatus,
-                                       final CharSequence requestedLocation) throws Exception {
+                                       @Nullable final CharSequence requestedLocation) throws Exception {
 
         StreamingHttpRequester redirectingRequester = new RedirectingHttpClientFilter(httpClient, maxRedirects);
 
         StreamingHttpRequest request = redirectingRequester.newRequest(method, "/path");
         request.headers().set(HOST, "servicetalk.io");
         request.headers().set(REQUESTED_STATUS, String.valueOf(requestedStatus.code()));
-        request.headers().set(REQUESTED_LOCATION, requestedLocation);
+        if (requestedLocation != null) {
+            request.headers().set(REQUESTED_LOCATION, requestedLocation);
+        }
 
         StreamingHttpResponse response = awaitIndefinitely(redirectingRequester.request(request));
         assertNotNull(response);

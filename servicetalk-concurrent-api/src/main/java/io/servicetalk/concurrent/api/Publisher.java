@@ -46,6 +46,8 @@ import java.util.function.LongSupplier;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
+import javax.annotation.Nullable;
+
 import static io.servicetalk.concurrent.api.EmptyPublisher.emptyPublisher;
 import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.Executors.newOffloaderFor;
@@ -2203,7 +2205,7 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
      *
      * @see <a href="http://reactivex.io/documentation/operators/just.html">ReactiveX just operator.</a>
      */
-    public static <T> Publisher<T> just(T value) {
+    public static <T> Publisher<T> just(@Nullable T value) {
         return new JustPublisher<>(value);
     }
 

@@ -53,20 +53,20 @@ import static org.mockito.Mockito.when;
 @SuppressWarnings("unchecked")
 public class FromInputStreamPublisherTest {
 
-    private InputStream is;
-    private Publisher<byte[]> pub;
+    @Rule
+    public final Timeout timeout = new ServiceTalkTestTimeout();
 
     @Rule
-    public Timeout timeout = new ServiceTalkTestTimeout();
+    public final MockedSubscriberRule<byte[]> sub1 = new MockedSubscriberRule();
 
     @Rule
-    public MockedSubscriberRule<byte[]> sub1 = new MockedSubscriberRule();
-
-    @Rule
-    public MockedSubscriberRule<byte[]> sub2 = new MockedSubscriberRule();
+    public final MockedSubscriberRule<byte[]> sub2 = new MockedSubscriberRule();
 
     private final byte[] smallBuff = init0toN(10);
     private final byte[] bigBuff = init0toN(37);
+
+    private InputStream is;
+    private Publisher<byte[]> pub;
 
     @Before
     public void setup() {

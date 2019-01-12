@@ -147,14 +147,14 @@ public class PublisherToCompletionStageTest {
     }
 
     @Test
-    public void futureEmptyComplete() throws ExecutionException, InterruptedException {
+    public void futureEmptyComplete() throws Exception {
         Future<? extends Collection<String>> f = publisher.getPublisher().toFuture();
         jdkExecutor.execute(publisher::complete);
         assertThat(f.get(), is(empty()));
     }
 
     @Test
-    public void futureComplete() throws ExecutionException, InterruptedException {
+    public void futureComplete() throws Exception {
         Future<? extends Collection<String>> f = publisher.getPublisher().toFuture();
         jdkExecutor.execute(() -> {
             publisher.sendItems("Hello", "World");
@@ -164,7 +164,7 @@ public class PublisherToCompletionStageTest {
     }
 
     @Test
-    public void futureReduceComplete() throws ExecutionException, InterruptedException {
+    public void futureReduceComplete() throws Exception {
         Future<StringBuilder> f = publisher.getPublisher().toFuture(StringBuilder::new, (sb, next) -> {
             sb.append(next);
             return sb;
@@ -177,7 +177,7 @@ public class PublisherToCompletionStageTest {
     }
 
     @Test
-    public void futureFail() throws ExecutionException, InterruptedException {
+    public void futureFail() throws Exception {
         Future<? extends Collection<String>> f = publisher.getPublisher().toFuture();
         jdkExecutor.execute(() -> {
             publisher.sendItems("Hello", "World");

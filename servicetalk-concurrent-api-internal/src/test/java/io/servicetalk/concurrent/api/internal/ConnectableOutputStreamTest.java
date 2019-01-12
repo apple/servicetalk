@@ -35,6 +35,8 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.IntBinaryOperator;
 
+import javax.annotation.Nullable;
+
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static java.lang.Math.max;
 import static java.lang.Math.min;
@@ -523,6 +525,7 @@ public class ConnectableOutputStreamTest {
             try {
                 final CountDownLatch consumerDone = new CountDownLatch(1);
                 pub.subscribe(new Subscriber<byte[]>() {
+                    @Nullable
                     private Subscription sub;
                     private int writeIndex;
 
@@ -537,6 +540,7 @@ public class ConnectableOutputStreamTest {
                         LOGGER.debug("Reading {} bytes - writeIndex = {}", bytes.length, writeIndex);
                         arraycopy(bytes, 0, received, writeIndex, bytes.length);
                         writeIndex += bytes.length;
+                        assert sub != null : "Subscription can not be null in onNext.";
                         sub.request(1);
                     }
 

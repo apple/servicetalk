@@ -64,6 +64,7 @@ public class HttpServiceAsyncContextTest {
     private static final Key<CharSequence> K1 = Key.newKey("k1");
     private static final CharSequence REQUEST_ID_HEADER = newAsciiString("request-id");
     private static final InetSocketAddress LOCAL_0 = new InetSocketAddress(getLoopbackAddress(), 0);
+
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
     @Rule

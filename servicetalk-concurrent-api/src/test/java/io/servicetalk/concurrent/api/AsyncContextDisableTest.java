@@ -19,7 +19,6 @@ import io.servicetalk.concurrent.api.AsyncContextMap.Key;
 
 import org.junit.Test;
 
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.Assert.assertEquals;
@@ -29,7 +28,7 @@ public class AsyncContextDisableTest {
     private static final Key<String> K1 = Key.newKey("k1");
 
     @Test
-    public void testDisableAsyncContext() throws ExecutionException, InterruptedException {
+    public void testDisableAsyncContext() throws Exception {
         synchronized (K1) { // prevent parallel execution because these tests rely upon static state
             Executor executor = Executors.newCachedThreadExecutor();
             Executor executor2 = null;
@@ -39,8 +38,7 @@ public class AsyncContextDisableTest {
                 AsyncContext.put(K1, expectedValue);
                 assertEquals(expectedValue, executor.submit(() -> AsyncContext.get(K1)).toFuture().get());
                 AtomicReference<String> actualValue = new AtomicReference<>();
-                int[] intArray = new int[]{1, 2};
-                Publisher.from(intArray).publishOn(executor).doBeforeComplete(() -> actualValue.set(AsyncContext.get(K1)))
+                Publisher.from(1, 2).publishOn(executor).doBeforeComplete(() -> actualValue.set(AsyncContext.get(K1)))
                         .toFuture().get();
                 assertEquals(expectedValue, actualValue.get());
                 actualValue.set(null);
@@ -73,7 +71,7 @@ public class AsyncContextDisableTest {
     }
 
     @Test
-    public void testAutoEnableDoesNotOverrideDisable() throws ExecutionException, InterruptedException {
+    public void testAutoEnableDoesNotOverrideDisable() throws Exception {
         synchronized (K1) { // prevent parallel execution because these tests rely upon static state
             AsyncContext.disable();
             try {
@@ -83,8 +81,7 @@ public class AsyncContextDisableTest {
                     assertNull(executor.submit(() -> AsyncContext.get(K1)).toFuture().get());
 
                     AtomicReference<String> actualValue = new AtomicReference<>();
-                    int[] intArray = new int[]{1, 2};
-                    Publisher.from(intArray).publishOn(executor).doBeforeComplete(() -> actualValue.set(AsyncContext.get(K1)))
+                    Publisher.from(1, 2).publishOn(executor).doBeforeComplete(() -> actualValue.set(AsyncContext.get(K1)))
                             .toFuture().get();
                     assertNull(actualValue.get());
                     actualValue.set(null);

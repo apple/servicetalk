@@ -64,6 +64,7 @@ public class DefaultHttpExecutionStrategyTest {
     public final Timeout timeout = new ServiceTalkTestTimeout();
     @Rule
     public final ExecutionContextRule contextRule = ExecutionContextRule.immediate();
+
     private final boolean offloadReceiveMeta;
     private final boolean offloadReceiveData;
     private final boolean offloadSend;

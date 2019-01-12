@@ -42,7 +42,7 @@ import static org.mockito.Mockito.when;
 
 public class ConnectionAcceptorTest {
     @Rule
-    public MockitoRule rule = MockitoJUnit.rule();
+    public final MockitoRule rule = MockitoJUnit.rule();
     @Rule
     public final MockedSingleListenerRule<Boolean> listener = new MockedSingleListenerRule<>();
 

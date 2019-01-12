@@ -31,7 +31,6 @@ import org.junit.rules.Timeout;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.function.IntUnaryOperator;
 
@@ -51,7 +50,10 @@ import static org.mockito.Mockito.when;
 
 public class DefaultSerializerSerializationTest {
 
-    private static final TypeHolder<List<String>> typeForList = new TypeHolder<List<String>>() { };
+    private static final TypeHolder<List<String>> TYPE_FOR_LIST = new TypeHolder<List<String>>() { };
+
+    @Rule
+    public final Timeout timeout = new ServiceTalkTestTimeout();
 
     private IntUnaryOperator sizeEstimator;
     private List<Buffer> createdBuffers;
@@ -59,9 +61,6 @@ public class DefaultSerializerSerializationTest {
     private BufferAllocator allocator;
     private SerializationProvider provider;
     private DefaultSerializer factory;
-
-    @Rule
-    public Timeout timeout = new ServiceTalkTestTimeout();
 
     @SuppressWarnings("unchecked")
     @Before
@@ -78,12 +77,12 @@ public class DefaultSerializerSerializationTest {
         serializer = mock(StreamingSerializer.class);
         provider = mock(SerializationProvider.class);
         when(provider.getSerializer(String.class)).thenReturn(serializer);
-        when(provider.getSerializer(typeForList)).thenReturn(serializer);
+        when(provider.getSerializer(TYPE_FOR_LIST)).thenReturn(serializer);
         factory = new DefaultSerializer(provider);
     }
 
     @Test
-    public void applySerializationForPublisherWithType() throws ExecutionException, InterruptedException {
+    public void applySerializationForPublisherWithType() throws Exception {
         final Publisher<Buffer> serialized = factory.serialize(from("Hello1", "Hello2"), allocator, String.class);
         final List<Buffer> buffers = awaitIndefinitelyNonNull(serialized);
         verify(provider).getSerializer(String.class);
@@ -94,12 +93,12 @@ public class DefaultSerializerSerializationTest {
     }
 
     @Test
-    public void applySerializationForPublisherWithTypeHolder() throws ExecutionException, InterruptedException {
+    public void applySerializationForPublisherWithTypeHolder() throws Exception {
         final List<String> first = singletonList("Hello1");
         final List<String> second = singletonList("Hello2");
-        final Publisher<Buffer> serialized = factory.serialize(from(first, second), allocator, typeForList);
+        final Publisher<Buffer> serialized = factory.serialize(from(first, second), allocator, TYPE_FOR_LIST);
         final List<Buffer> buffers = awaitIndefinitelyNonNull(serialized);
-        verify(provider).getSerializer(typeForList);
+        verify(provider).getSerializer(TYPE_FOR_LIST);
         assertThat("Unexpected created buffers.", createdBuffers, hasSize(2));
         verify(serializer).serialize(first, createdBuffers.get(0));
         verify(serializer).serialize(second, createdBuffers.get(1));
@@ -129,11 +128,11 @@ public class DefaultSerializerSerializationTest {
         TestPublisher<List<String>> source = new TestPublisher<>();
         source.sendOnSubscribe();
 
-        final Publisher<Buffer> serialized = factory.serialize(source, allocator, typeForList, sizeEstimator);
+        final Publisher<Buffer> serialized = factory.serialize(source, allocator, TYPE_FOR_LIST, sizeEstimator);
         MockedSubscriberRule<Buffer> subscriber = new MockedSubscriberRule<>();
         subscriber.subscribe(serialized).request(2);
 
-        verify(provider).getSerializer(typeForList);
+        verify(provider).getSerializer(TYPE_FOR_LIST);
 
         subscriber.verifyItems(verifySerializedBufferWithSizes(source, singletonList("Hello"), 1));
         subscriber.verifyItems(verifySerializedBufferWithSizes(source, singletonList("Hello"), 2));
@@ -156,8 +155,8 @@ public class DefaultSerializerSerializationTest {
     public void applySerializationForIterableWithTypeHolder() {
         final List<String> first = singletonList("Hello1");
         final List<String> second = singletonList("Hello2");
-        final Iterable<Buffer> buffers = factory.serialize(asList(first, second), allocator, typeForList);
-        verify(provider).getSerializer(typeForList);
+        final Iterable<Buffer> buffers = factory.serialize(asList(first, second), allocator, TYPE_FOR_LIST);
+        verify(provider).getSerializer(TYPE_FOR_LIST);
         assertThat("Unexpected created buffers.", createdBuffers, hasSize(2));
         verify(serializer).serialize(first, createdBuffers.get(0));
         verify(serializer).serialize(second, createdBuffers.get(1));
@@ -179,9 +178,9 @@ public class DefaultSerializerSerializationTest {
     public void applySerializationForIterableWithTypeHolderAndEstimator() {
         final List<String> first = singletonList("Hello1");
         final List<String> second = singletonList("Hello2");
-        final Iterable<Buffer> buffers = factory.serialize(asList(first, second), allocator, typeForList,
+        final Iterable<Buffer> buffers = factory.serialize(asList(first, second), allocator, TYPE_FOR_LIST,
                 sizeEstimator);
-        verify(provider).getSerializer(typeForList);
+        verify(provider).getSerializer(TYPE_FOR_LIST);
         assertThat("Unexpected created buffers.", createdBuffers, hasSize(2));
         verify(serializer).serialize(first, createdBuffers.get(0));
         verify(serializer).serialize(second, createdBuffers.get(1));
@@ -202,8 +201,8 @@ public class DefaultSerializerSerializationTest {
     public void applySerializationForBlockingIterableWithTypeHolder() throws Exception {
         final List<List<String>> data = asList(singletonList("Hello1"), singletonList("Hello2"));
         BlockingIterableMock<List<String>> source = new BlockingIterableMock<>(data);
-        final BlockingIterable<Buffer> buffers = factory.serialize(source.getIterable(), allocator, typeForList);
-        verify(provider).getSerializer(typeForList);
+        final BlockingIterable<Buffer> buffers = factory.serialize(source.getIterable(), allocator, TYPE_FOR_LIST);
+        verify(provider).getSerializer(TYPE_FOR_LIST);
 
         drainBlockingIteratorAndVerify(data, source.getIterator(), buffers);
     }
@@ -223,9 +222,9 @@ public class DefaultSerializerSerializationTest {
     public void applySerializationForBlockingIterableWithTypeHolderAndEstimator() throws Exception {
         final List<List<String>> data = asList(singletonList("Hello1"), singletonList("Hello2"));
         BlockingIterableMock<List<String>> source = new BlockingIterableMock<>(data);
-        final BlockingIterable<Buffer> buffers = factory.serialize(source.getIterable(), allocator, typeForList,
+        final BlockingIterable<Buffer> buffers = factory.serialize(source.getIterable(), allocator, TYPE_FOR_LIST,
                 sizeEstimator);
-        verify(provider).getSerializer(typeForList);
+        verify(provider).getSerializer(TYPE_FOR_LIST);
 
         drainBlockingIteratorAndVerify(data, source.getIterator(), buffers);
     }

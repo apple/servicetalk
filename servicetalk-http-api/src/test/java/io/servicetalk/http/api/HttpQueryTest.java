@@ -45,14 +45,14 @@ import static org.junit.Assert.assertTrue;
 public class HttpQueryTest {
 
     @Rule
-    public MockitoRule rule = MockitoJUnit.rule();
+    public final MockitoRule rule = MockitoJUnit.rule();
     @Rule
     public final ExpectedException expected = ExpectedException.none();
 
     @Mock
     private Consumer<Map<String, List<String>>> queryParamsUpdater;
 
-    final Map<String, List<String>> params = new LinkedHashMap<>();
+    private final Map<String, List<String>> params = new LinkedHashMap<>();
 
     @Test
     public void testGetFirstValue() {

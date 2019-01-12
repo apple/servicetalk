@@ -25,7 +25,6 @@ import org.junit.runners.Parameterized;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
 
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
@@ -58,7 +57,7 @@ public class FlushWithExecutorTest extends AbstractFlushTest {
     }
 
     @Test
-    public void testFlushBeforeEnd() throws ExecutionException, InterruptedException {
+    public void testFlushBeforeEnd() throws Exception {
         Publisher<String> source = from(data).map(String::valueOf).publishAndSubscribeOn(contextRule.executor());
         Publisher<String> flushSource = setup(source, flushStrategyAndVerifier.getFlushStrategy());
         awaitIndefinitely(flushSource);

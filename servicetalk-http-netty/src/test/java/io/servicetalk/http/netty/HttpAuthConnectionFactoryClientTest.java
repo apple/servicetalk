@@ -38,7 +38,8 @@ import org.junit.Test;
 import org.junit.rules.Timeout;
 
 import java.net.InetSocketAddress;
-import java.util.concurrent.ExecutionException;
+
+import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Single.error;
 import static io.servicetalk.concurrent.api.Single.success;
@@ -57,11 +58,13 @@ public class HttpAuthConnectionFactoryClientTest {
     @ClassRule
     public static final ExecutionContextRule CTX = ExecutionContextRule.immediate();
 
+    @Nullable
     private StreamingHttpClient client;
+    @Nullable
     private ServerContext serverContext;
 
     @After
-    public void teardown() throws ExecutionException, InterruptedException {
+    public void teardown() throws Exception {
         if (client != null) {
             awaitIndefinitely(client.closeAsync());
         }

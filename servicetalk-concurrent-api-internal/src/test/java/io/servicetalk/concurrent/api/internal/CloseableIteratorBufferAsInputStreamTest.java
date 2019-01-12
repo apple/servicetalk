@@ -16,6 +16,7 @@
 package io.servicetalk.concurrent.api.internal;
 
 import io.servicetalk.buffer.api.Buffer;
+import io.servicetalk.concurrent.CloseableIterator;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -42,66 +43,73 @@ public class CloseableIteratorBufferAsInputStreamTest {
     @Test
     public void streamEmitsAllDataInSingleRead() throws IOException {
         Buffer src = DEFAULT_RO_ALLOCATOR.fromAscii("1234");
-        InputStream stream = new CloseableIteratorBufferAsInputStream(from(singletonList(src.duplicate())).iterator());
-        byte[] data = new byte[4];
-        int read = stream.read(data, 0, 4);
-        assertThat("Unexpected number of bytes read.", read, is(4));
-        assertThat("Unexpected bytes read.", bytesToBuffer(data, read), equalTo(src));
-        assertThat("Bytes read after complete.", stream.read(), is(-1));
+        try (InputStream stream = new CloseableIteratorBufferAsInputStream(createIterator(src))) {
+            byte[] data = new byte[4];
+            int read = stream.read(data, 0, 4);
+            assertThat("Unexpected number of bytes read.", read, is(4));
+            assertThat("Unexpected bytes read.", bytesToBuffer(data, read), equalTo(src));
+            assertThat("Bytes read after complete.", stream.read(), is(-1));
+        }
     }
 
     @Test
     public void streamEmitsAllDataInMultipleReads() throws IOException {
         Buffer src = DEFAULT_RO_ALLOCATOR.fromAscii("1234");
-        InputStream stream = new CloseableIteratorBufferAsInputStream(from(singletonList(src.duplicate())).iterator());
-        byte[] data = new byte[2];
+        try (InputStream stream = new CloseableIteratorBufferAsInputStream(createIterator(src))) {
+            byte[] data = new byte[2];
 
-        int read = stream.read(data, 0, 2);
-        assertThat("Unexpected number of bytes read.", read, is(2));
-        assertThat("Unexpected bytes read.", bytesToBuffer(data, 2),
-                equalTo(src.slice(src.readerIndex(), 2)));
-        read = stream.read(data, 0, 2);
-        assertThat("Unexpected number of bytes read.", read, is(2));
-        assertThat("Unexpected bytes read.", bytesToBuffer(data, 2),
-                equalTo(src.slice(src.readerIndex() + 2, 2)));
+            int read = stream.read(data, 0, 2);
+            assertThat("Unexpected number of bytes read.", read, is(2));
+            assertThat("Unexpected bytes read.", bytesToBuffer(data, 2),
+                    equalTo(src.slice(src.readerIndex(), 2)));
+            read = stream.read(data, 0, 2);
+            assertThat("Unexpected number of bytes read.", read, is(2));
+            assertThat("Unexpected bytes read.", bytesToBuffer(data, 2),
+                    equalTo(src.slice(src.readerIndex() + 2, 2)));
 
-        assertThat("Bytes read after complete.", stream.read(), is(-1));
+            assertThat("Bytes read after complete.", stream.read(), is(-1));
+        }
     }
 
     @Test
     public void incrementallyFillAnArray() throws IOException {
         Buffer src = DEFAULT_RO_ALLOCATOR.fromAscii("1234");
-        InputStream stream = new CloseableIteratorBufferAsInputStream(from(singletonList(src.duplicate())).iterator());
-        byte[] data = new byte[4];
+        try (InputStream stream = new CloseableIteratorBufferAsInputStream(createIterator(src))) {
+            byte[] data = new byte[4];
 
-        int read = stream.read(data, 0, 2);
-        assertThat("Unexpected number of bytes read.", read, is(2));
-        assertThat("Unexpected bytes read.", bytesToBuffer(data, 2),
-                equalTo(src.slice(src.readerIndex(), 2)));
-        read = stream.read(data, 2, 2);
-        assertThat("Unexpected number of bytes read.", read, is(2));
-        assertThat("Unexpected bytes read.", bytesToBuffer(data, 4), equalTo(src));
+            int read = stream.read(data, 0, 2);
+            assertThat("Unexpected number of bytes read.", read, is(2));
+            assertThat("Unexpected bytes read.", bytesToBuffer(data, 2),
+                    equalTo(src.slice(src.readerIndex(), 2)));
+            read = stream.read(data, 2, 2);
+            assertThat("Unexpected number of bytes read.", read, is(2));
+            assertThat("Unexpected bytes read.", bytesToBuffer(data, 4), equalTo(src));
 
-        assertThat("Bytes read after complete.", stream.read(), is(-1));
+            assertThat("Bytes read after complete.", stream.read(), is(-1));
+        }
     }
 
     @Test
     public void readRequestMoreThanDataBuffer() throws IOException {
         Buffer src = DEFAULT_RO_ALLOCATOR.fromAscii("1234");
-        InputStream stream = new CloseableIteratorBufferAsInputStream(from(singletonList(src.duplicate())).iterator());
-        byte[] data = new byte[16];
-        int read = stream.read(data, 0, 16);
-        assertThat("Unexpected number of bytes read.", read, is(4));
-        assertThat("Unexpected bytes read.", bytesToBuffer(data, read), equalTo(src));
-        assertThat("Bytes read after complete.", stream.read(), is(-1));
+        try (InputStream stream = new CloseableIteratorBufferAsInputStream(createIterator(src))) {
+            byte[] data = new byte[16];
+            int read = stream.read(data, 0, 16);
+            assertThat("Unexpected number of bytes read.", read, is(4));
+            assertThat("Unexpected bytes read.", bytesToBuffer(data, read), equalTo(src));
+            assertThat("Bytes read after complete.", stream.read(), is(-1));
+        }
     }
 
     @Test
     public void readRequestLessThanDataBuffer() throws IOException {
         Buffer src = DEFAULT_RO_ALLOCATOR.fromAscii("1234");
-        InputStream stream = new CloseableIteratorBufferAsInputStream(from(singletonList(src.duplicate())).iterator());
-        byte[] data = new byte[2];
-        int read = stream.read(data, 0, 2);
+        byte[] data;
+        int read;
+        try (InputStream stream = new CloseableIteratorBufferAsInputStream(createIterator(src))) {
+            data = new byte[2];
+            read = stream.read(data, 0, 2);
+        }
         assertThat("Unexpected number of bytes read.", read, is(2));
         assertThat("Unexpected bytes read.", bytesToBuffer(data, read), equalTo(src.slice(src.readerIndex(), 2)));
     }
@@ -110,11 +118,14 @@ public class CloseableIteratorBufferAsInputStreamTest {
     public void largerSizeItems() throws IOException {
         Buffer src1 = DEFAULT_RO_ALLOCATOR.fromAscii("1234");
         Buffer src2 = DEFAULT_RO_ALLOCATOR.fromAscii("45678");
-        InputStream stream = new CloseableIteratorBufferAsInputStream(
-                from(asList(src1.duplicate(), src2.duplicate())).iterator());
+        byte[] data;
+        int read;
+        try (InputStream stream = new CloseableIteratorBufferAsInputStream(
+                from(asList(src1.duplicate(), src2.duplicate())).iterator())) {
 
-        byte[] data = new byte[4];
-        int read = stream.read(data, 0, 4);
+            data = new byte[4];
+            read = stream.read(data, 0, 4);
+        }
         assertThat("Unexpected number of bytes read.", read, is(4));
         assertThat("Unexpected bytes read.", bytesToBuffer(data, read), equalTo(src1));
     }
@@ -122,70 +133,80 @@ public class CloseableIteratorBufferAsInputStreamTest {
     @Test
     public void closeThenReadShouldBeInvalid() throws IOException {
         Buffer src = DEFAULT_RO_ALLOCATOR.fromAscii("1234");
-        InputStream stream = new CloseableIteratorBufferAsInputStream(from(singletonList(src.duplicate())).iterator());
-        stream.close();
-        expected.expect(instanceOf(IOException.class));
-        stream.read();
+        try (InputStream stream = new CloseableIteratorBufferAsInputStream(createIterator(src))) {
+            stream.close();
+            expected.expect(instanceOf(IOException.class));
+            stream.read();
+        }
     }
 
     @Test
     public void singleByteRead() throws IOException {
         Buffer src = DEFAULT_RO_ALLOCATOR.fromAscii("1");
-        InputStream stream = new CloseableIteratorBufferAsInputStream(from(singletonList(src.duplicate())).iterator());
-        int read = stream.read();
-        assertThat("Unexpected bytes read.", (char) read, equalTo('1'));
-        assertThat("Bytes read after complete.", stream.read(), is(-1));
+        try (InputStream stream = new CloseableIteratorBufferAsInputStream(createIterator(src))) {
+            int read = stream.read();
+            assertThat("Unexpected bytes read.", (char) read, equalTo('1'));
+            assertThat("Bytes read after complete.", stream.read(), is(-1));
+        }
     }
 
     @Test
     public void singleByteReadWithEmptyIterable() throws IOException {
         Buffer src = DEFAULT_RO_ALLOCATOR.fromAscii("");
-        InputStream stream = new CloseableIteratorBufferAsInputStream(from(singletonList(src.duplicate())).iterator());
-        assertThat("Unexpected bytes read.", stream.read(), is(-1));
-        // We have left over state across reads, do a second read to make sure we do not have such state.
-        // Since, we only ever emit 1 item from the source, we are sure that no other state will change after this read.
-        assertThat("Unexpected bytes from second read.", stream.read(), is(-1));
+        try (InputStream stream = new CloseableIteratorBufferAsInputStream(createIterator(src))) {
+            assertThat("Unexpected bytes read.", stream.read(), is(-1));
+            // We have left over state across reads, do a second read to make sure we do not have such state.
+            // Since, we only ever emit 1 item from the source,
+            // we are sure that no other state will change after this read.
+            assertThat("Unexpected bytes from second read.", stream.read(), is(-1));
+        }
     }
 
     @Test
     public void readWithEmptyIterable() throws IOException {
         Buffer src = DEFAULT_RO_ALLOCATOR.fromAscii("");
-        InputStream stream = new CloseableIteratorBufferAsInputStream(from(singletonList(src.duplicate())).iterator());
-        byte[] r = new byte[1];
-        assertThat("Unexpected bytes read.", stream.read(r, 0, 1), is(-1));
-        // We have left over state across reads, do a second read to make sure we do not have such state.
-        // Since, we only ever emit 1 item from the source, we are sure that no other state will change after this read.
-        assertThat("Unexpected bytes from second read.", stream.read(r), is(-1));
+        try (InputStream stream = new CloseableIteratorBufferAsInputStream(createIterator(src))) {
+            byte[] r = new byte[1];
+            assertThat("Unexpected bytes read.", stream.read(r, 0, 1), is(-1));
+            // We have left over state across reads, do a second read to make sure we do not have such state.
+            // Since, we only ever emit 1 item from the source,
+            // we are sure that no other state will change after this read.
+            assertThat("Unexpected bytes from second read.", stream.read(r), is(-1));
+        }
     }
 
     @Test
     public void zeroLengthReadShouldBeValid() throws IOException {
         Buffer src = DEFAULT_RO_ALLOCATOR.fromAscii("1");
-        InputStream stream = new CloseableIteratorBufferAsInputStream(from(singletonList(src.duplicate())).iterator());
-        byte[] data = new byte[0];
-        int read = stream.read(data, 0, 0);
-        assertThat("Unexpected bytes read.", read, equalTo(0));
-        assertThat("Bytes read after complete.", (char) stream.read(), equalTo('1'));
+        try (InputStream stream = new CloseableIteratorBufferAsInputStream(createIterator(src))) {
+            byte[] data = new byte[0];
+            int read = stream.read(data, 0, 0);
+            assertThat("Unexpected bytes read.", read, equalTo(0));
+            assertThat("Bytes read after complete.", (char) stream.read(), equalTo('1'));
+        }
     }
 
     @Test
     public void checkAvailableReturnsCorrectlyWithPrefetch() throws IOException {
         Buffer src = DEFAULT_RO_ALLOCATOR.fromAscii("1234");
-        InputStream stream = new CloseableIteratorBufferAsInputStream(from(singletonList(src.duplicate())).iterator());
-        assertThat("Unexpected available return type.", stream.available(), is(0));
-        byte[] data = new byte[2];
-        int read = stream.read(data, 0, 2);
-        assertThat("Unexpected number of bytes read.", read, is(2));
-        assertThat("Unexpected bytes read.", bytesToBuffer(data, read), equalTo(src.slice(src.readerIndex(), 2)));
-        assertThat("Unexpected available return type.", stream.available(), is(2));
+        try (InputStream stream = new CloseableIteratorBufferAsInputStream(createIterator(src))) {
+            assertThat("Unexpected available return type.", stream.available(), is(0));
+            byte[] data = new byte[2];
+            int read = stream.read(data, 0, 2);
+            assertThat("Unexpected number of bytes read.", read, is(2));
+            assertThat("Unexpected bytes read.", bytesToBuffer(data, read), equalTo(src.slice(src.readerIndex(), 2)));
+            assertThat("Unexpected available return type.", stream.available(), is(2));
+        }
     }
 
     @Test
     public void completionAndEmptyReadShouldIndicateEOF() throws IOException {
         Buffer src = DEFAULT_RO_ALLOCATOR.fromAscii("");
-        InputStream stream = new CloseableIteratorBufferAsInputStream(from(singletonList(src.duplicate())).iterator());
-        byte[] data = new byte[32];
-        int read = stream.read(data, 0, 32);
+        int read;
+        try (InputStream stream = new CloseableIteratorBufferAsInputStream(createIterator(src))) {
+            byte[] data = new byte[32];
+            read = stream.read(data, 0, 32);
+        }
         assertThat("Unexpected bytes read.", read, equalTo(-1));
     }
 
@@ -194,20 +215,28 @@ public class CloseableIteratorBufferAsInputStreamTest {
         Buffer src1 = DEFAULT_RO_ALLOCATOR.fromAscii("hel");
         Buffer src2 = DEFAULT_RO_ALLOCATOR.fromAscii("");
         Buffer src3 = DEFAULT_RO_ALLOCATOR.fromAscii("lo!");
-        InputStream stream = new CloseableIteratorBufferAsInputStream(
-                from(asList(src1.duplicate(), null, src2, null, src3)).iterator());
-        String realStringData = "hello!";
-        final int midWayPoint = 3;
-        byte[] data = new byte[realStringData.length()];
+        String realStringData;
+        byte[] data;
+        try (InputStream stream = new CloseableIteratorBufferAsInputStream(
+                from(asList(src1.duplicate(), null, src2, null, src3)).iterator())) {
 
-        // Split the real data up into 2 chunks and send null/empty in between
-        assertThat(stream.read(data, 0, midWayPoint), is(midWayPoint));
+            realStringData = "hello!";
+            final int midWayPoint = 3;
+            data = new byte[realStringData.length()];
 
-        // send the second chunk
-        final int len = realStringData.length() - midWayPoint;
-        assertThat(stream.read(data, midWayPoint, len), is(len));
+            // Split the real data up into 2 chunks and send null/empty in between
+            assertThat(stream.read(data, 0, midWayPoint), is(midWayPoint));
 
-        assertThat(data, is(realStringData.getBytes(US_ASCII)));
+            // send the second chunk
+            final int len = realStringData.length() - midWayPoint;
+            assertThat(stream.read(data, midWayPoint, len), is(len));
+
+            assertThat(data, is(realStringData.getBytes(US_ASCII)));
+        }
+    }
+
+    private static CloseableIterator<Buffer> createIterator(Buffer src) {
+        return from(singletonList(src.duplicate())).iterator();
     }
 
     private static Buffer bytesToBuffer(final byte[] data, final int length) {

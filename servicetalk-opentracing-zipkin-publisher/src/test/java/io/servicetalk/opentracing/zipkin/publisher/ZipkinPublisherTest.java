@@ -64,6 +64,7 @@ public class ZipkinPublisherTest {
 
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
+
     private EventLoopGroup group;
     private InMemoryTracer tracer;
 

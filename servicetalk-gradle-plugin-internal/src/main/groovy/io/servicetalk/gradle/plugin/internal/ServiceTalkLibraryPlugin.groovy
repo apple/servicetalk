@@ -270,7 +270,6 @@ class ServiceTalkLibraryPlugin extends ServiceTalkCorePlugin {
 
       spotbugs {
         toolVersion = "3.1.10"
-        sourceSets = [sourceSets.main]
       }
 
       tasks.withType(SpotBugsTask).all {

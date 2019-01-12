@@ -51,6 +51,7 @@ public abstract class AbstractFutureToSingleTest {
     public final Timeout timeout = new ServiceTalkTestTimeout();
     @Rule
     public final ExpectedException thrown = ExpectedException.none();
+
     private static ExecutorService jdkExecutor;
 
     @BeforeClass
@@ -68,7 +69,7 @@ public abstract class AbstractFutureToSingleTest {
     abstract Single<String> from(CompletableFuture<String> future);
 
     @Test
-    public void completion() throws ExecutionException, InterruptedException {
+    public void completion() throws Exception {
         CompletableFuture<String> future = new CompletableFuture<>();
         Single<String> single = from(future);
         jdkExecutor.execute(() -> future.complete("foo"));
@@ -76,7 +77,7 @@ public abstract class AbstractFutureToSingleTest {
     }
 
     @Test
-    public void failure() throws ExecutionException, InterruptedException {
+    public void failure() throws Exception {
         CompletableFuture<String> future = new CompletableFuture<>();
         Single<String> single = from(future);
         jdkExecutor.execute(() -> future.completeExceptionally(DELIBERATE_EXCEPTION));
@@ -86,7 +87,7 @@ public abstract class AbstractFutureToSingleTest {
     }
 
     @Test
-    public void timeout() throws ExecutionException, InterruptedException {
+    public void timeout() throws Exception {
         CompletableFuture<String> future = new CompletableFuture<>();
         Single<String> single = from(future).timeout(1, MILLISECONDS);
         thrown.expect(ExecutionException.class);

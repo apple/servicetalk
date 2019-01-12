@@ -30,6 +30,7 @@ public final class SingleFlatMapSingleTest {
 
     @Rule
     public final MockedSingleListenerRule<String> listener = new MockedSingleListenerRule<>();
+
     private TestSingle<String> first;
     private TestSingle<String> second;
 

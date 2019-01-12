@@ -57,6 +57,7 @@ import static java.util.stream.Collectors.toMap;
 import static javax.ws.rs.Priorities.ENTITY_CODER;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.Assert.assertThat;
 
 public abstract class AbstractFilterInterceptorTest extends AbstractJerseyStreamingHttpServiceTest {
@@ -97,6 +98,7 @@ public abstract class AbstractFilterInterceptorTest extends AbstractJerseyStream
                 });
             } else if (responseCtx.getEntity() instanceof TestPojo) {
                 final TestPojo contentWith0 = (TestPojo) responseCtx.getEntity();
+                assertThat(contentWith0.getaString(), is(notNullValue()));
                 contentWith0.setaString(oTo0(contentWith0.getaString()));
                 responseCtx.setEntity(contentWith0);
             } else {
@@ -167,6 +169,7 @@ public abstract class AbstractFilterInterceptorTest extends AbstractJerseyStream
                 writerInterceptorCtx.proceed();
             } else if (writerInterceptorCtx.getEntity() instanceof TestPojo) {
                 final TestPojo contentWith0 = (TestPojo) writerInterceptorCtx.getEntity();
+                assertThat(contentWith0.getaString(), is(notNullValue()));
                 contentWith0.setaString(oTo0(contentWith0.getaString()));
                 writerInterceptorCtx.setEntity(contentWith0);
                 writerInterceptorCtx.proceed();

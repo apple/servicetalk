@@ -26,7 +26,6 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.concurrent.CancellationException;
-import java.util.concurrent.ExecutionException;
 
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Publisher.just;
@@ -77,7 +76,7 @@ public class SpliceFlatStreamToMetaSingleTest {
 
     @Test
     public void streamWithHeaderAndEmptyPayloadShouldCompleteOnPublisherOnSubscribe()
-            throws ExecutionException, InterruptedException {
+            throws Exception {
         Publisher<Object> stream = upstream.getPublisher();
         SpliceFlatStreamToMetaSingle<Data, MetaData, Payload> op = new SpliceFlatStreamToMetaSingle<>(
                 stream, Data::new);

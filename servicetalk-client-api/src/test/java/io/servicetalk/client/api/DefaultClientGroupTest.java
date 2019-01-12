@@ -28,7 +28,7 @@ import static org.junit.Assert.fail;
 public class DefaultClientGroupTest {
 
     @Rule
-    public Timeout timeout = new ServiceTalkTestTimeout();
+    public final Timeout timeout = new ServiceTalkTestTimeout();
 
     @Test
     public void requestingClientFromClosedClientGroupShouldNotHang() throws Exception {

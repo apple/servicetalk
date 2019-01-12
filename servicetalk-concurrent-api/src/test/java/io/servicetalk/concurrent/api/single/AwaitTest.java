@@ -15,8 +15,6 @@
  */
 package io.servicetalk.concurrent.api.single;
 
-import io.servicetalk.concurrent.api.MockedSingleListenerRule;
-
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -39,8 +37,6 @@ public class AwaitTest {
 
     @Rule
     public final ExpectedException thrown = ExpectedException.none();
-    @Rule
-    public final MockedSingleListenerRule rule = new MockedSingleListenerRule();
 
     @Test
     public void testFailure() throws Throwable {
