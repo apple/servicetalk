@@ -83,7 +83,7 @@ public abstract class AbstractChannelReadHandler<T> extends ChannelInboundHandle
 
     @Override
     public final void channelInactive(ChannelHandlerContext ctx) {
-        disposePublisher();
+        notifyPublisherOfChannelInboundClosed();
         ctx.fireChannelInactive();
     }
 
@@ -94,8 +94,8 @@ public abstract class AbstractChannelReadHandler<T> extends ChannelInboundHandle
         // the current netty version) gets triggered reliably at the appropriate time.
         if (evt == ChannelInputShutdownReadComplete.INSTANCE) {
             // Since we are only reading data, if the inbound is shutdown, it is equivalent to channel closure, so we
-            // dispose the publisher.
-            disposePublisher();
+            // notify the publisher the inbound has closed.
+            notifyPublisherOfChannelInboundClosed();
             closeHandler.channelClosedInbound(ctx);
         }
         ctx.fireUserEventTriggered(evt);
@@ -136,10 +136,9 @@ public abstract class AbstractChannelReadHandler<T> extends ChannelInboundHandle
      */
     protected abstract void onPublisherCreation(ChannelHandlerContext ctx, Publisher<T> newPublisher);
 
-    private void disposePublisher() {
+    private void notifyPublisherOfChannelInboundClosed() {
         if (publisher != null) {
-            publisher.dispose();
-            publisher = null;
+            publisher.channelInboundClosed();
         }
     }
 }
