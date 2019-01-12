@@ -69,8 +69,8 @@ public final class RedirectingClientAndConnectionFilterTest {
     }
 
     @Parameters(name = "{0}")
-    public static Object getParameters() {
-        return new Object[][]{{Client}, {Connection}, {Reserved}};
+    public static Object[] getParameters() {
+        return new Object[]{Client, Connection, Reserved};
     }
 
     private BlockingHttpRequester newRequester(ServerContext serverContext) throws Exception {

@@ -217,7 +217,8 @@ final class RedirectSingle extends Single<StreamingHttpResponse> {
             }
         }
 
-        private static @Nullable StreamingHttpRequest prepareRedirectRequest(
+        @Nullable
+        private static StreamingHttpRequest prepareRedirectRequest(
                 final StreamingHttpRequest request, final StreamingHttpResponse response,
                 final StreamingHttpRequestFactory requestFactory) {
             final HttpRequestMethod method = defineRedirectMethod(request.method());
