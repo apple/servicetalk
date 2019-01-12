@@ -47,7 +47,6 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.IntStream;
 
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
@@ -63,6 +62,7 @@ import static io.servicetalk.redis.api.RedisProtocolSupport.IntegerType.U04;
 import static io.servicetalk.redis.api.RedisProtocolSupport.IntegerType.U08;
 import static io.servicetalk.redis.api.RedisProtocolSupport.SetCondition.NX;
 import static io.servicetalk.redis.api.RedisProtocolSupport.SetExpire.EX;
+import static io.servicetalk.transport.netty.internal.RandomDataUtils.randomCharSequenceOfByteLength;
 import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.parseBoolean;
 import static java.util.Arrays.asList;
@@ -132,12 +132,7 @@ public class BlockingRedisCommanderTest extends BaseRedisClientTest {
 
     @Test
     public void dataSpreadAcrossMultipleSocketReadWriteOperations() throws Exception {
-        final int numberBytes = 5 * 1024 * 1024; // 5 MB
-        StringBuilder sb = new StringBuilder(numberBytes);
-        for (int i = 0; i < numberBytes; ++i) {
-            sb.append(ThreadLocalRandom.current().nextInt(1, 127)); // ascii characters
-        }
-        String expectedValue = sb.toString();
+        CharSequence expectedValue = randomCharSequenceOfByteLength(5 * 1024 * 1024); // 5 MB
         String largeKey = key("a-set-large-string-1");
         assertThat(commandClient.set(largeKey, expectedValue), is("OK"));
         assertThat(commandClient.get(largeKey), is(expectedValue));
