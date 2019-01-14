@@ -50,7 +50,7 @@ import static java.util.Objects.requireNonNull;
 /**
  * An HTTP filter that supports open tracing.
  */
-public class TracingHttpRequestFilter implements HttpClientFilterFactory, HttpConnectionFilterFactory {
+public class TracingHttpRequesterFilter implements HttpClientFilterFactory, HttpConnectionFilterFactory {
 
     private final Tracer tracer;
     private final String componentName;
@@ -62,8 +62,8 @@ public class TracingHttpRequestFilter implements HttpClientFilterFactory, HttpCo
      * @param tracer The {@link Tracer}.
      * @param componentName The component name used during building new spans.
      */
-    public TracingHttpRequestFilter(Tracer tracer,
-                                    String componentName) {
+    public TracingHttpRequesterFilter(Tracer tracer,
+                                      String componentName) {
         this(tracer, componentName, true);
     }
 
@@ -74,9 +74,9 @@ public class TracingHttpRequestFilter implements HttpClientFilterFactory, HttpCo
      * @param componentName The component name used during building new spans.
      * @param validateTraceKeyFormat {@code true} to validate the contents of the trace ids.
      */
-    public TracingHttpRequestFilter(Tracer tracer,
-                                    String componentName,
-                                    boolean validateTraceKeyFormat) {
+    public TracingHttpRequesterFilter(Tracer tracer,
+                                      String componentName,
+                                      boolean validateTraceKeyFormat) {
         this.tracer = requireNonNull(tracer);
         this.componentName = requireNonNull(componentName);
         this.formatter = traceStateFormatter(validateTraceKeyFormat);
@@ -89,7 +89,7 @@ public class TracingHttpRequestFilter implements HttpClientFilterFactory, HttpCo
             protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
                                                             final HttpExecutionStrategy strategy,
                                                             final StreamingHttpRequest request) {
-                return TracingHttpRequestFilter.this.request(delegate, strategy, request);
+                return TracingHttpRequesterFilter.this.request(delegate, strategy, request);
             }
         };
     }
@@ -100,7 +100,7 @@ public class TracingHttpRequestFilter implements HttpClientFilterFactory, HttpCo
             @Override
             public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
                                                          final StreamingHttpRequest request) {
-                return TracingHttpRequestFilter.this.request(delegate(), strategy, request);
+                return TracingHttpRequesterFilter.this.request(delegate(), strategy, request);
             }
         };
     }
@@ -137,7 +137,7 @@ public class TracingHttpRequestFilter implements HttpClientFilterFactory, HttpCo
                 }
                 final Scope childScope = tempChildScope;
                 final AtomicBoolean scopeClosed = tempScopeClosed;
-                responseSingle.map(tracingMapper(childScope, scopeClosed, TracingHttpRequestFilter.this::isError))
+                responseSingle.map(tracingMapper(childScope, scopeClosed, TracingHttpRequesterFilter.this::isError))
                  .doOnError(cause -> tagErrorAndClose(childScope, scopeClosed))
                  .doOnCancel(() -> tagErrorAndClose(childScope, scopeClosed))
                  .subscribe(subscriber);

@@ -43,11 +43,11 @@ import javax.net.ssl.SSLSession;
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Single.error;
 import static io.servicetalk.concurrent.api.Single.success;
-import static io.servicetalk.http.api.AbstractHttpRequestFilterTest.RequesterType.Client;
-import static io.servicetalk.http.api.AbstractHttpRequestFilterTest.RequesterType.Connection;
-import static io.servicetalk.http.api.AbstractHttpRequestFilterTest.RequesterType.ReservedConnection;
-import static io.servicetalk.http.api.AbstractHttpRequestFilterTest.SecurityType.Insecure;
-import static io.servicetalk.http.api.AbstractHttpRequestFilterTest.SecurityType.Secure;
+import static io.servicetalk.http.api.AbstractHttpRequesterFilterTest.RequesterType.Client;
+import static io.servicetalk.http.api.AbstractHttpRequesterFilterTest.RequesterType.Connection;
+import static io.servicetalk.http.api.AbstractHttpRequesterFilterTest.RequesterType.ReservedConnection;
+import static io.servicetalk.http.api.AbstractHttpRequesterFilterTest.SecurityType.Insecure;
+import static io.servicetalk.http.api.AbstractHttpRequesterFilterTest.SecurityType.Secure;
 import static java.util.Arrays.asList;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -57,7 +57,7 @@ import static org.mockito.Mockito.when;
  * connection, reserved connection, with and without SSL context.
  */
 @RunWith(Parameterized.class)
-public abstract class AbstractHttpRequestFilterTest {
+public abstract class AbstractHttpRequesterFilterTest {
 
     private static final StreamingHttpRequestResponseFactory REQ_RES_FACTORY =
             new DefaultStreamingHttpRequestResponseFactory(DEFAULT_ALLOCATOR, DefaultHttpHeadersFactory.INSTANCE);
@@ -84,7 +84,7 @@ public abstract class AbstractHttpRequestFilterTest {
     @Mock
     private ConnectionContext mockConnectionContext;
 
-    public AbstractHttpRequestFilterTest(final RequesterType type, final SecurityType security) {
+    public AbstractHttpRequesterFilterTest(final RequesterType type, final SecurityType security) {
         this.type = type;
         this.security = security;
     }
@@ -258,7 +258,7 @@ public abstract class AbstractHttpRequestFilterTest {
             @Override
             public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
                                                          final StreamingHttpRequest request) {
-                return rwch.request(AbstractHttpRequestFilterTest.REQ_RES_FACTORY, connectionContext(), request);
+                return rwch.request(AbstractHttpRequesterFilterTest.REQ_RES_FACTORY, connectionContext(), request);
             }
         };
     }
@@ -311,7 +311,7 @@ public abstract class AbstractHttpRequestFilterTest {
             protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
                                                             final HttpExecutionStrategy strategy,
                                                             final StreamingHttpRequest request) {
-                return rh.request(AbstractHttpRequestFilterTest.REQ_RES_FACTORY, request);
+                return rh.request(AbstractHttpRequesterFilterTest.REQ_RES_FACTORY, request);
             }
 
             @Override
@@ -319,16 +319,16 @@ public abstract class AbstractHttpRequestFilterTest {
                     final StreamingHttpClient delegate,
                     final HttpExecutionStrategy strategy,
                     final StreamingHttpRequest request) {
-                return success(AbstractHttpRequestFilterTest.this.newReservedConnection(rwch));
+                return success(AbstractHttpRequesterFilterTest.this.newReservedConnection(rwch));
             }
         };
     }
 
     private final class NoopConnection extends TestStreamingHttpConnection {
         NoopConnection() {
-            super(AbstractHttpRequestFilterTest.REQ_RES_FACTORY,
-                    AbstractHttpRequestFilterTest.this.mockExecutionContext,
-                    AbstractHttpRequestFilterTest.this.mockConnectionContext);
+            super(AbstractHttpRequesterFilterTest.REQ_RES_FACTORY,
+                    AbstractHttpRequesterFilterTest.this.mockExecutionContext,
+                    AbstractHttpRequesterFilterTest.this.mockConnectionContext);
         }
 
         @Override
@@ -340,8 +340,8 @@ public abstract class AbstractHttpRequestFilterTest {
 
     private final class NoopClient extends TestStreamingHttpClient {
         NoopClient() {
-            super(AbstractHttpRequestFilterTest.REQ_RES_FACTORY,
-                    AbstractHttpRequestFilterTest.this.mockExecutionContext);
+            super(AbstractHttpRequesterFilterTest.REQ_RES_FACTORY,
+                    AbstractHttpRequesterFilterTest.this.mockExecutionContext);
         }
     }
 }

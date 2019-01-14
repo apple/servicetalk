@@ -105,7 +105,7 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress> implements Http
         if (resolvedAddress instanceof InetSocketAddress) {
             InetSocketAddress inetSocketAddress = (InetSocketAddress) resolvedAddress;
             filterFactory = connectionFilterFunction.append(
-                    new HostHeaderHttpRequestFilter(HostAndPort.of(inetSocketAddress)));
+                    new HostHeaderHttpRequesterFilter(HostAndPort.of(inetSocketAddress)));
         } else {
             filterFactory = connectionFilterFunction;
         }

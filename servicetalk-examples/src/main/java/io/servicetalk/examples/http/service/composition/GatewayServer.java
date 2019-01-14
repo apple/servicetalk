@@ -30,7 +30,7 @@ import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.http.netty.HttpClients;
 import io.servicetalk.http.netty.HttpServers;
 import io.servicetalk.http.router.predicate.HttpPredicateRouterBuilder;
-import io.servicetalk.http.utils.RetryingHttpRequestFilter;
+import io.servicetalk.http.utils.RetryingHttpRequesterFilter;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.ServerContext;
@@ -121,7 +121,7 @@ public final class GatewayServer {
                 HttpClients.forSingleAddress(serviceAddress)
                         // Set retry and timeout filters for all clients.
                         .appendClientFilter(
-                                new RetryingHttpRequestFilter.Builder()
+                                new RetryingHttpRequesterFilter.Builder()
                                         .exponentialBackoff(ofMillis(100))
                                         .addJitter()
                                         .retryCount(3)

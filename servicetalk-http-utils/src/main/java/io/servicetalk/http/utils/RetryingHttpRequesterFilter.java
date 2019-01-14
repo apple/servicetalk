@@ -34,7 +34,7 @@ import io.servicetalk.http.api.StreamingHttpConnectionFilter;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequester;
 import io.servicetalk.http.api.StreamingHttpResponse;
-import io.servicetalk.http.utils.RetryingHttpRequestFilter.Builder.ReadOnlyRetryableSettings;
+import io.servicetalk.http.utils.RetryingHttpRequesterFilter.Builder.ReadOnlyRetryableSettings;
 
 import java.time.Duration;
 import java.util.function.Predicate;
@@ -50,11 +50,11 @@ import static io.servicetalk.concurrent.api.RetryStrategies.retryWithExponential
 /**
  * A filter to enable retries for HTTP requests.
  */
-public final class RetryingHttpRequestFilter implements HttpClientFilterFactory, HttpConnectionFilterFactory {
+public final class RetryingHttpRequesterFilter implements HttpClientFilterFactory, HttpConnectionFilterFactory {
 
     private final ReadOnlyRetryableSettings settings;
 
-    RetryingHttpRequestFilter(final ReadOnlyRetryableSettings settings) {
+    RetryingHttpRequesterFilter(final ReadOnlyRetryableSettings settings) {
         this.settings = settings;
     }
 
@@ -90,7 +90,7 @@ public final class RetryingHttpRequestFilter implements HttpClientFilterFactory,
             protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
                                                             final HttpExecutionStrategy executionStrategy,
                                                             final StreamingHttpRequest request) {
-                return RetryingHttpRequestFilter.this.request(retryStrategy, delegate, executionStrategy, request);
+                return RetryingHttpRequesterFilter.this.request(retryStrategy, delegate, executionStrategy, request);
             }
 
             @Override
@@ -98,7 +98,7 @@ public final class RetryingHttpRequestFilter implements HttpClientFilterFactory,
                     final StreamingHttpClient delegate,
                     final HttpExecutionStrategy executionStrategy,
                     final StreamingHttpRequest request) {
-                return RetryingHttpRequestFilter.this.reserve(retryStrategy, delegate, executionStrategy, request);
+                return RetryingHttpRequesterFilter.this.reserve(retryStrategy, delegate, executionStrategy, request);
             }
         };
     }
@@ -113,13 +113,13 @@ public final class RetryingHttpRequestFilter implements HttpClientFilterFactory,
             @Override
             public Single<StreamingHttpResponse> request(final HttpExecutionStrategy executionStrategy,
                                                          final StreamingHttpRequest request) {
-                return RetryingHttpRequestFilter.this.request(retryStrategy, delegate(), executionStrategy, request);
+                return RetryingHttpRequesterFilter.this.request(retryStrategy, delegate(), executionStrategy, request);
             }
         };
     }
 
     /**
-     * A builder for {@link RetryingHttpRequestFilter}.
+     * A builder for {@link RetryingHttpRequesterFilter}.
      */
     public static final class Builder {
 
@@ -172,7 +172,7 @@ public final class RetryingHttpRequestFilter implements HttpClientFilterFactory,
          * Adds a delay between retries. For first retry, the delay is {@code initialDelay} which is increased
          * exponentially for subsequent retries.
          * <p>
-         * The resulting {@link RetryingHttpRequestFilter} from {@link #build()} may not attempt to check for
+         * The resulting {@link RetryingHttpRequesterFilter} from {@link #build()} may not attempt to check for
          * overflow if the retry count is high enough that an exponential delay causes {@link Long} overflow.
          *
          * @param initialDelay Delay {@link Duration} for the first retry and increased exponentially with each retry.
@@ -232,12 +232,12 @@ public final class RetryingHttpRequestFilter implements HttpClientFilterFactory,
         }
 
         /**
-         * Builds a {@link RetryingHttpRequestFilter}.
+         * Builds a {@link RetryingHttpRequesterFilter}.
          *
-         * @return A new {@link RetryingHttpRequestFilter}.
+         * @return A new {@link RetryingHttpRequesterFilter}.
          */
-        public RetryingHttpRequestFilter build() {
-            return new RetryingHttpRequestFilter(new ReadOnlyRetryableSettings(executor, retryCount, jitter,
+        public RetryingHttpRequesterFilter build() {
+            return new RetryingHttpRequesterFilter(new ReadOnlyRetryableSettings(executor, retryCount, jitter,
                     exponential, initialDelay, causeFilter, retryablePredicate));
         }
 

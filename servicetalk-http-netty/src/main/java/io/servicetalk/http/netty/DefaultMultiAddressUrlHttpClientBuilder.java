@@ -40,7 +40,7 @@ import io.servicetalk.http.api.StreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.StreamingHttpResponse;
-import io.servicetalk.http.utils.RedirectingHttpRequestFilter;
+import io.servicetalk.http.utils.RedirectingHttpRequesterFilter;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.IoExecutor;
@@ -116,7 +116,7 @@ final class DefaultMultiAddressUrlHttpClientBuilder
                     keyFactory, executionContext));
 
             // Need to wrap the top level client (group) in order for non-relative redirects to work
-            client = maxRedirects <= 0 ? client : new RedirectingHttpRequestFilter(false, maxRedirects).create(client);
+            client = maxRedirects <= 0 ? client : new RedirectingHttpRequesterFilter(false, maxRedirects).create(client);
 
             return new StreamingHttpClientWithDependencies(client, toListenableAsyncCloseable(closeables),
                     reqRespFactory);

@@ -30,9 +30,9 @@ import javax.net.ssl.SSLSession;
 
 import static io.servicetalk.concurrent.api.Single.error;
 import static io.servicetalk.concurrent.api.Single.success;
-import static io.servicetalk.http.api.AbstractHttpRequestFilterTest.RequesterType.Client;
-import static io.servicetalk.http.api.AbstractHttpRequestFilterTest.SecurityType.Insecure;
-import static io.servicetalk.http.api.AbstractHttpRequestFilterTest.SecurityType.Secure;
+import static io.servicetalk.http.api.AbstractHttpRequesterFilterTest.RequesterType.Client;
+import static io.servicetalk.http.api.AbstractHttpRequesterFilterTest.SecurityType.Insecure;
+import static io.servicetalk.http.api.AbstractHttpRequesterFilterTest.SecurityType.Secure;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasToString;
 import static org.junit.Assert.assertThat;
@@ -41,13 +41,13 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 /**
- * This is a test-case for the {@link AbstractHttpRequestFilterTest} HTTP request filter test utilities.
+ * This is a test-case for the {@link AbstractHttpRequesterFilterTest} HTTP request filter test utilities.
  */
-public class SimpleHttpRequestFilterTest extends AbstractHttpRequestFilterTest {
+public class SimpleHttpRequesterFilterTest extends AbstractHttpRequesterFilterTest {
 
     private SSLSession session;
 
-    public SimpleHttpRequestFilterTest(final RequesterType type, final SecurityType security) {
+    public SimpleHttpRequesterFilterTest(final RequesterType type, final SecurityType security) {
         super(type, security);
     }
 

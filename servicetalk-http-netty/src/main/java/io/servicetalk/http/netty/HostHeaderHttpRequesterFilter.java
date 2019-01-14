@@ -40,15 +40,15 @@ import static java.util.Objects.requireNonNull;
 /**
  * A filter which will apply a fallback value for the {@link HttpHeaderNames#HOST} header if one is not present.
  */
-final class HostHeaderHttpRequestFilter implements HttpClientFilterFactory,
-                                                   HttpConnectionFilterFactory {
+final class HostHeaderHttpRequesterFilter implements HttpClientFilterFactory,
+                                                     HttpConnectionFilterFactory {
     private final CharSequence fallbackHost;
 
     /**
      * Create a new instance.
      * @param fallbackHost The address to use as a fallback if a {@link HttpHeaderNames#HOST} header is not present.
      */
-    HostHeaderHttpRequestFilter(HostAndPort fallbackHost) {
+    HostHeaderHttpRequesterFilter(HostAndPort fallbackHost) {
         this(fallbackHost.getHostName(), fallbackHost.getPort());
     }
 
@@ -58,7 +58,7 @@ final class HostHeaderHttpRequestFilter implements HttpClientFilterFactory,
      * present.
      * @param fallbackPort The port to use as a fallback if a {@link HttpHeaderNames#HOST} header is not present.
      */
-    HostHeaderHttpRequestFilter(String fallbackHostName, int fallbackPort) {
+    HostHeaderHttpRequesterFilter(String fallbackHostName, int fallbackPort) {
         this.fallbackHost = requireNonNull(newAsciiString(toSocketAddressString(fallbackHostName, fallbackPort)));
     }
 
@@ -66,7 +66,7 @@ final class HostHeaderHttpRequestFilter implements HttpClientFilterFactory,
      * Create a new instance.
      * @param fallbackHost The address to use as a fallback if a {@link HttpHeaderNames#HOST} header is not present.
      */
-    HostHeaderHttpRequestFilter(CharSequence fallbackHost) {
+    HostHeaderHttpRequesterFilter(CharSequence fallbackHost) {
         this.fallbackHost = newAsciiString(isValidIpV6Address(fallbackHost) && fallbackHost.charAt(0) != '[' ?
                 "[" + fallbackHost + "]" : fallbackHost.toString());
     }
@@ -78,7 +78,7 @@ final class HostHeaderHttpRequestFilter implements HttpClientFilterFactory,
             protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
                                                             final HttpExecutionStrategy strategy,
                                                             final StreamingHttpRequest request) {
-                return HostHeaderHttpRequestFilter.this.request(delegate, strategy, request);
+                return HostHeaderHttpRequesterFilter.this.request(delegate, strategy, request);
             }
         };
     }
@@ -89,7 +89,7 @@ final class HostHeaderHttpRequestFilter implements HttpClientFilterFactory,
             @Override
             public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
                                                          final StreamingHttpRequest request) {
-                return HostHeaderHttpRequestFilter.this.request(delegate(), strategy, request);
+                return HostHeaderHttpRequesterFilter.this.request(delegate(), strategy, request);
             }
         };
     }

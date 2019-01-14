@@ -75,7 +75,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.withSettings;
 
-public class RedirectingHttpRequestFilterTest {
+public class RedirectingHttpRequesterFilterTest {
 
     private static final String REQUESTED_STATUS = "Requested-Status";
     private static final String REQUESTED_LOCATION = "Requested-Location";
@@ -185,7 +185,7 @@ public class RedirectingHttpRequestFilterTest {
                                        final HttpResponseStatus requestedStatus,
                                        @Nullable final CharSequence requestedLocation) throws Exception {
 
-        StreamingHttpRequester redirectingRequester = new RedirectingHttpRequestFilter(false, maxRedirects)
+        StreamingHttpRequester redirectingRequester = new RedirectingHttpRequesterFilter(false, maxRedirects)
                 .create(httpClient);
 
         StreamingHttpRequest request = redirectingRequester.newRequest(method, "/path");
@@ -209,7 +209,7 @@ public class RedirectingHttpRequestFilterTest {
         when(httpClient.request(any(), any())).thenAnswer(a -> createRedirectResponse(counter.incrementAndGet()));
 
         final int maxRedirects = MAX_REDIRECTS;
-        StreamingHttpRequester redirectingRequester = new RedirectingHttpRequestFilter(false, maxRedirects)
+        StreamingHttpRequester redirectingRequester = new RedirectingHttpRequesterFilter(false, maxRedirects)
                 .create(httpClient);
 
         StreamingHttpRequest request = redirectingRequester.get("/path");
@@ -226,7 +226,7 @@ public class RedirectingHttpRequestFilterTest {
     public void requestWithNullResponse() throws Exception {
         when(httpClient.request(any(), any())).thenReturn(success(null));
 
-        StreamingHttpRequester redirectingRequester = new RedirectingHttpRequestFilter(false)
+        StreamingHttpRequester redirectingRequester = new RedirectingHttpRequesterFilter(false)
                 .create(httpClient);
 
         StreamingHttpRequest request = redirectingRequester.get("/path");
@@ -277,7 +277,7 @@ public class RedirectingHttpRequestFilterTest {
     private void testRequestForRedirect(final HttpRequestMethod method,
                                         final HttpResponseStatus requestedStatus) throws Exception {
 
-        StreamingHttpRequester redirectingRequester = new RedirectingHttpRequestFilter(false)
+        StreamingHttpRequester redirectingRequester = new RedirectingHttpRequesterFilter(false)
                 .create(httpClient);
 
         StreamingHttpRequest request = redirectingRequester.newRequest(method, "/path");
@@ -301,7 +301,7 @@ public class RedirectingHttpRequestFilterTest {
                 createRedirectResponse(3),
                 success(reqRespFactory.ok()));
 
-        StreamingHttpRequester redirectingRequester = new RedirectingHttpRequestFilter(false)
+        StreamingHttpRequester redirectingRequester = new RedirectingHttpRequesterFilter(false)
                 .create(httpClient);
 
         StreamingHttpRequest request = redirectingRequester.get("/path");
@@ -322,7 +322,7 @@ public class RedirectingHttpRequestFilterTest {
 
     @Test
     public void getRequestForRedirectWithAbsoluteFormRequestTarget() throws Exception {
-        StreamingHttpRequester redirectingRequester = new RedirectingHttpRequestFilter(false)
+        StreamingHttpRequester redirectingRequester = new RedirectingHttpRequesterFilter(false)
                 .create(httpClient);
 
         StreamingHttpRequest request = redirectingRequester.get("http://servicetalk.io/path");
@@ -338,7 +338,7 @@ public class RedirectingHttpRequestFilterTest {
 
     @Test
     public void redirectForOnlyRelativeWithAbsoluteRelativeLocation() throws Exception {
-        StreamingHttpRequester redirectingRequester = new RedirectingHttpRequestFilter(true)
+        StreamingHttpRequester redirectingRequester = new RedirectingHttpRequesterFilter(true)
                 .create(httpClient);
 
         StreamingHttpRequest request = redirectingRequester.get("/path");
@@ -355,7 +355,7 @@ public class RedirectingHttpRequestFilterTest {
 
     @Test
     public void redirectForOnlyRelativeWithAbsoluteRelativeLocationWithPortDoesntRedirect() throws Exception {
-        StreamingHttpRequester redirectingRequester = new RedirectingHttpRequestFilter(true)
+        StreamingHttpRequester redirectingRequester = new RedirectingHttpRequesterFilter(true)
                 .create(httpClient);
 
         StreamingHttpRequest request = redirectingRequester.get("/path");
@@ -372,7 +372,7 @@ public class RedirectingHttpRequestFilterTest {
 
     @Test
     public void redirectForOnlyRelativeWithRelativeLocation() throws Exception {
-        StreamingHttpRequester redirectingRequester = new RedirectingHttpRequestFilter(true)
+        StreamingHttpRequester redirectingRequester = new RedirectingHttpRequesterFilter(true)
                 .create(httpClient);
 
         StreamingHttpRequest request = redirectingRequester.get("/path");
@@ -389,7 +389,7 @@ public class RedirectingHttpRequestFilterTest {
 
     @Test
     public void redirectForOnlyRelativeWithAbsoluteNonRelativeLocationDoesntRedirect() throws Exception {
-        StreamingHttpRequester redirectingRequester = new RedirectingHttpRequestFilter(true)
+        StreamingHttpRequester redirectingRequester = new RedirectingHttpRequesterFilter(true)
                 .create(httpClient);
 
         StreamingHttpRequest request = redirectingRequester.get("/path");
@@ -406,7 +406,7 @@ public class RedirectingHttpRequestFilterTest {
 
     @Test
     public void absoluteTargetRedirectForOnlyRelativeWithAbsoluteRelativeLocation() throws Exception {
-        StreamingHttpRequester redirectingRequester = new RedirectingHttpRequestFilter(true)
+        StreamingHttpRequester redirectingRequester = new RedirectingHttpRequesterFilter(true)
                 .create(httpClient);
 
         StreamingHttpRequest request = redirectingRequester.get("http://servicetalk.io/path");
@@ -422,7 +422,7 @@ public class RedirectingHttpRequestFilterTest {
 
     @Test
     public void absoluteTargetRedirectForOnlyRelativeWithNonRelativeLocationDoesntRedirect() throws Exception {
-        StreamingHttpRequester redirectingRequester = new RedirectingHttpRequestFilter(true)
+        StreamingHttpRequester redirectingRequester = new RedirectingHttpRequesterFilter(true)
                 .create(httpClient);
 
         StreamingHttpRequest request = redirectingRequester.get("http://servicetalk.io/path");

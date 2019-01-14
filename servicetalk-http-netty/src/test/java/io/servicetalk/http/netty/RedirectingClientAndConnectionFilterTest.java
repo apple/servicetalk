@@ -27,7 +27,7 @@ import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.ReservedStreamingHttpConnectionFilter;
 import io.servicetalk.http.api.StreamingHttpClient;
-import io.servicetalk.http.utils.RedirectingHttpRequestFilter;
+import io.servicetalk.http.utils.RedirectingHttpRequesterFilter;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.ServerContext;
 
@@ -51,7 +51,7 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertThat;
 
 /**
- * This test-case is for integration testing the {@link RedirectingHttpRequestFilter} with the various types of {@link
+ * This test-case is for integration testing the {@link RedirectingHttpRequesterFilter} with the various types of {@link
  * HttpClient} and {@link HttpConnection} builders.
  */
 @RunWith(Parameterized.class)
@@ -79,7 +79,7 @@ public final class RedirectingClientAndConnectionFilterTest {
                 return HttpClients.forSingleAddress(HostAndPort.of("localhost",
                         ((InetSocketAddress) serverContext.listenAddress()).getPort()))
                         .appendClientFilter(r -> r.headers().contains("X-REDIRECT"),
-                                new RedirectingHttpRequestFilter())
+                                new RedirectingHttpRequesterFilter())
                         .buildBlocking();
             case Reserved:
                 CompositeCloseable closeables = AsyncCloseables.newCompositeCloseable();
@@ -88,7 +88,7 @@ public final class RedirectingClientAndConnectionFilterTest {
                             HttpClients.forSingleAddress(HostAndPort.of("localhost",
                         ((InetSocketAddress) serverContext.listenAddress()).getPort()))
                         .appendClientFilter(r -> r.headers().contains("X-REDIRECT"),
-                                new RedirectingHttpRequestFilter())
+                                new RedirectingHttpRequesterFilter())
                         .buildStreaming());
                     return localhost.reserveConnection(localhost.get("")).map(r ->
                             new ReservedStreamingHttpConnectionFilter(closeables.prepend(r)) {
@@ -110,7 +110,7 @@ public final class RedirectingClientAndConnectionFilterTest {
             case Connection:
                 return new DefaultHttpConnectionBuilder<>()
                         .appendConnectionFilter(r -> r.headers().contains("X-REDIRECT"),
-                                new RedirectingHttpRequestFilter())
+                                new RedirectingHttpRequesterFilter())
                         .buildBlocking(new InetSocketAddress("localhost",
                                 ((InetSocketAddress) serverContext.listenAddress()).getPort()));
 

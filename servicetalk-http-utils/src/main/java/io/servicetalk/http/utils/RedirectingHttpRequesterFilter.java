@@ -51,7 +51,7 @@ import static io.servicetalk.concurrent.api.Publisher.empty;
  *     limited to automatically following relative redirects only.</li>
  * </ul>
  */
-public final class RedirectingHttpRequestFilter implements HttpClientFilterFactory, HttpConnectionFilterFactory {
+public final class RedirectingHttpRequesterFilter implements HttpClientFilterFactory, HttpConnectionFilterFactory {
 
     // https://tools.ietf.org/html/rfc2068#section-10.3 says:
     // A user agent SHOULD NOT automatically redirect a request more than 5 times,
@@ -65,7 +65,7 @@ public final class RedirectingHttpRequestFilter implements HttpClientFilterFacto
     /**
      * Create a new instance, only performing relative redirects.
      */
-    public RedirectingHttpRequestFilter() {
+    public RedirectingHttpRequesterFilter() {
         this(true, true);
     }
 
@@ -74,7 +74,7 @@ public final class RedirectingHttpRequestFilter implements HttpClientFilterFacto
      *
      * @param maxRedirects The maximum number of follow up redirects.
      */
-    public RedirectingHttpRequestFilter(final int maxRedirects) {
+    public RedirectingHttpRequesterFilter(final int maxRedirects) {
         this(true, true, maxRedirects);
     }
 
@@ -83,7 +83,7 @@ public final class RedirectingHttpRequestFilter implements HttpClientFilterFacto
      *
      * @param onlyRelativeClient Limits the redirects to relative paths for {@link HttpClient} filters.
      */
-    public RedirectingHttpRequestFilter(final boolean onlyRelativeClient) {
+    public RedirectingHttpRequesterFilter(final boolean onlyRelativeClient) {
         this(onlyRelativeClient, true, DEFAULT_MAX_REDIRECTS);
     }
 
@@ -93,8 +93,8 @@ public final class RedirectingHttpRequestFilter implements HttpClientFilterFacto
      * @param onlyRelativeClient Limits the redirects to relative paths for {@link HttpClient} filters.
      * @param maxRedirects The maximum number of follow up redirects.
      */
-    public RedirectingHttpRequestFilter(final boolean onlyRelativeClient,
-                                        final int maxRedirects) {
+    public RedirectingHttpRequesterFilter(final boolean onlyRelativeClient,
+                                          final int maxRedirects) {
         this(onlyRelativeClient, true, maxRedirects);
     }
 
@@ -104,7 +104,7 @@ public final class RedirectingHttpRequestFilter implements HttpClientFilterFacto
      * @param onlyRelativeClient Limits the redirects to relative paths for {@link HttpClient} filters.
      * @param onlyRelativeConnection Limits the redirects to relative paths for {@link HttpConnection} filters.
      */
-    public RedirectingHttpRequestFilter(final boolean onlyRelativeClient, final boolean onlyRelativeConnection) {
+    public RedirectingHttpRequesterFilter(final boolean onlyRelativeClient, final boolean onlyRelativeConnection) {
         this(onlyRelativeClient, onlyRelativeConnection, DEFAULT_MAX_REDIRECTS);
     }
 
@@ -115,9 +115,9 @@ public final class RedirectingHttpRequestFilter implements HttpClientFilterFacto
      * @param onlyRelativeConnection Limits the redirects to relative paths for {@link HttpConnection} filters.
      * @param maxRedirects The maximum number of follow up redirects.
      */
-    public RedirectingHttpRequestFilter(final boolean onlyRelativeClient,
-                                        final boolean onlyRelativeConnection,
-                                        final int maxRedirects) {
+    public RedirectingHttpRequesterFilter(final boolean onlyRelativeClient,
+                                          final boolean onlyRelativeConnection,
+                                          final int maxRedirects) {
         this.onlyRelativeClient = onlyRelativeClient;
         this.onlyRelativeConnection = onlyRelativeConnection;
         this.maxRedirects = maxRedirects;
@@ -130,7 +130,7 @@ public final class RedirectingHttpRequestFilter implements HttpClientFilterFacto
             protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
                                                             final HttpExecutionStrategy strategy,
                                                             final StreamingHttpRequest request) {
-                return RedirectingHttpRequestFilter.this.request(delegate, strategy, request, onlyRelativeClient);
+                return RedirectingHttpRequesterFilter.this.request(delegate, strategy, request, onlyRelativeClient);
             }
 
             @Override
@@ -143,7 +143,7 @@ public final class RedirectingHttpRequestFilter implements HttpClientFilterFacto
                             @Override
                             public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
                                                                          final StreamingHttpRequest request) {
-                                return RedirectingHttpRequestFilter.this.request(delegate, strategy, request,
+                                return RedirectingHttpRequesterFilter.this.request(delegate, strategy, request,
                                         onlyRelativeConnection);
                             }
                         });
@@ -167,7 +167,7 @@ public final class RedirectingHttpRequestFilter implements HttpClientFilterFacto
             @Override
             public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
                                                          final StreamingHttpRequest request) {
-                return RedirectingHttpRequestFilter.this.request(delegate(), strategy, request, onlyRelativeConnection);
+                return RedirectingHttpRequesterFilter.this.request(delegate(), strategy, request, onlyRelativeConnection);
             }
         };
     }

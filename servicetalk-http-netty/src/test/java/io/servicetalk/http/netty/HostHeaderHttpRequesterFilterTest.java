@@ -35,7 +35,7 @@ import static java.util.Objects.requireNonNull;
 import static org.junit.Assert.assertEquals;
 
 @SuppressWarnings("PMD.AvoidUsingHardCodedIP")
-public class HostHeaderHttpRequestFilterTest {
+public class HostHeaderHttpRequesterFilterTest {
     @Test
     public void ipv4NotEscaped() throws Exception {
         doHostHeaderTest("1.2.3.4", "1.2.3.4");
@@ -68,7 +68,7 @@ public class HostHeaderHttpRequestFilterTest {
         try (ServerContext context = buildServer();
              BlockingHttpClient client = forSingleAddress(of((InetSocketAddress) context.listenAddress()))
                     .disableHostHeaderFallback() // turn off the default
-                    .appendClientFilter(new HostHeaderHttpRequestFilter(HostAndPort.of("foo.bar", -1)))
+                    .appendClientFilter(new HostHeaderHttpRequesterFilter(HostAndPort.of("foo.bar", -1)))
                     .buildBlocking()) {
                 assertEquals("foo.bar:-1",
                         client.request(client.get("/")).payloadBody(textDeserializer()));
@@ -80,7 +80,7 @@ public class HostHeaderHttpRequestFilterTest {
         try (ServerContext context = buildServer();
              BlockingHttpClient client = forSingleAddress(of((InetSocketAddress) context.listenAddress()))
                     .disableHostHeaderFallback() // turn off the default
-                    .appendConnectionFilter(new HostHeaderHttpRequestFilter(HostAndPort.of("foo.bar", -1)))
+                    .appendConnectionFilter(new HostHeaderHttpRequesterFilter(HostAndPort.of("foo.bar", -1)))
                     .buildBlocking()) {
                 assertEquals("foo.bar:-1",
                         client.request(client.get("/")).payloadBody(textDeserializer()));
@@ -91,7 +91,7 @@ public class HostHeaderHttpRequestFilterTest {
     public void connectionBuilderAppendConnectionFilter() throws Exception {
         try (ServerContext context = buildServer();
              BlockingHttpConnection conn = new DefaultHttpConnectionBuilder<>()
-                    .appendConnectionFilter(new HostHeaderHttpRequestFilter(HostAndPort.of("foo.bar", -1)))
+                    .appendConnectionFilter(new HostHeaderHttpRequesterFilter(HostAndPort.of("foo.bar", -1)))
                     .buildBlocking(context.listenAddress())) {
                 assertEquals("foo.bar:-1",
                         conn.request(conn.get("/")).payloadBody(textDeserializer()));
