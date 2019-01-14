@@ -15,13 +15,19 @@
  */
 package io.servicetalk.opentracing.http;
 
+import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.http.api.HttpClientFilterFactory;
+import io.servicetalk.http.api.HttpConnectionFilterFactory;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpResponseMetaData;
+import io.servicetalk.http.api.StreamingHttpClient;
+import io.servicetalk.http.api.StreamingHttpClientFilter;
 import io.servicetalk.http.api.StreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpConnectionFilter;
 import io.servicetalk.http.api.StreamingHttpRequest;
+import io.servicetalk.http.api.StreamingHttpRequester;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.opentracing.inmemory.api.InMemoryTraceStateFormat;
 
@@ -42,44 +48,65 @@ import static io.servicetalk.opentracing.http.TracingUtils.tracingMapper;
 import static java.util.Objects.requireNonNull;
 
 /**
- * A {@link StreamingHttpConnection} that supports open tracing.
+ * An HTTP filter that supports open tracing.
  */
-public class TracingHttpConnectionFilter extends StreamingHttpConnectionFilter {
+public class TracingHttpRequesterFilter implements HttpClientFilterFactory, HttpConnectionFilterFactory {
+
     private final Tracer tracer;
     private final String componentName;
     private final InMemoryTraceStateFormat<HttpHeaders> formatter;
 
     /**
      * Create a new instance.
+     *
      * @param tracer The {@link Tracer}.
      * @param componentName The component name used during building new spans.
-     * @param next The next {@link StreamingHttpConnection} in the filter chain.
      */
-    public TracingHttpConnectionFilter(Tracer tracer,
-                                       String componentName,
-                                       StreamingHttpConnection next) {
-        this(tracer, componentName, next, true);
+    public TracingHttpRequesterFilter(Tracer tracer,
+                                      String componentName) {
+        this(tracer, componentName, true);
     }
 
     /**
      * Create a new instance.
+     *
      * @param tracer The {@link Tracer}.
      * @param componentName The component name used during building new spans.
      * @param validateTraceKeyFormat {@code true} to validate the contents of the trace ids.
-     * @param next The next {@link StreamingHttpConnection} in the filter chain.
      */
-    public TracingHttpConnectionFilter(Tracer tracer,
-                                       String componentName,
-                                       StreamingHttpConnection next,
-                                       boolean validateTraceKeyFormat) {
-        super(next);
+    public TracingHttpRequesterFilter(Tracer tracer,
+                                      String componentName,
+                                      boolean validateTraceKeyFormat) {
         this.tracer = requireNonNull(tracer);
         this.componentName = requireNonNull(componentName);
         this.formatter = traceStateFormatter(validateTraceKeyFormat);
     }
 
     @Override
-    public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
+    public StreamingHttpClientFilter create(final StreamingHttpClient client, final Publisher<Object> lbEvents) {
+        return new StreamingHttpClientFilter(client) {
+            @Override
+            protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
+                                                            final HttpExecutionStrategy strategy,
+                                                            final StreamingHttpRequest request) {
+                return TracingHttpRequesterFilter.this.request(delegate, strategy, request);
+            }
+        };
+    }
+
+    @Override
+    public StreamingHttpConnectionFilter create(final StreamingHttpConnection connection) {
+        return new StreamingHttpConnectionFilter(connection) {
+            @Override
+            public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
+                                                         final StreamingHttpRequest request) {
+                return TracingHttpRequesterFilter.this.request(delegate(), strategy, request);
+            }
+        };
+    }
+
+    private Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
+                                                 final HttpExecutionStrategy strategy,
                                                  final StreamingHttpRequest request) {
         return new Single<StreamingHttpResponse>() {
             @Override
@@ -103,14 +130,14 @@ public class TracingHttpConnectionFilter extends StreamingHttpConnectionFilter {
                     tempChildScope = spanBuilder.startActive(true);
                     tempScopeClosed = new AtomicBoolean();
                     tracer.inject(tempChildScope.span().context(), formatter, request.headers());
-                    responseSingle = requireNonNull(delegate().request(strategy, request));
+                    responseSingle = requireNonNull(delegate.request(strategy, request));
                 } catch (Throwable cause) {
                     handlePrematureException(tempChildScope, tempScopeClosed, subscriber, cause);
                     return;
                 }
                 final Scope childScope = tempChildScope;
                 final AtomicBoolean scopeClosed = tempScopeClosed;
-                responseSingle.map(tracingMapper(childScope, scopeClosed, TracingHttpConnectionFilter.this::isError))
+                responseSingle.map(tracingMapper(childScope, scopeClosed, TracingHttpRequesterFilter.this::isError))
                  .doOnError(cause -> tagErrorAndClose(childScope, scopeClosed))
                  .doOnCancel(() -> tagErrorAndClose(childScope, scopeClosed))
                  .subscribe(subscriber);

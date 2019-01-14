@@ -53,7 +53,7 @@ final class BlockingStreamingHttpConnectionToStreamingHttpConnection extends Str
 
     @Override
     public ExecutionContext executionContext() {
-        return blockingConnection.getExecutionContext();
+        return blockingConnection.executionContext();
     }
 
     @Override

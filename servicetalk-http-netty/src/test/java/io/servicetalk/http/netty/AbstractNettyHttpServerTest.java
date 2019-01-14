@@ -159,7 +159,7 @@ public abstract class AbstractNettyHttpServerTest {
         if (sslEnabled) {
             final SslConfig sslConfig = SslConfigBuilder.forClientWithoutServerIdentity()
                     .trustManager(DefaultTestCerts::loadMutualAuthCaPem).build();
-            httpConnectionBuilder.setSslConfig(sslConfig);
+            httpConnectionBuilder.sslConfig(sslConfig);
         }
         httpConnection = awaitIndefinitelyNonNull(httpConnectionBuilder.ioExecutor(clientIoExecutor)
                 .executor(clientExecutor)

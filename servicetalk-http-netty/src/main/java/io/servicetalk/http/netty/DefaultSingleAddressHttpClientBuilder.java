@@ -73,8 +73,8 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
     private final ExecutionContextBuilder executionContextBuilder = new ExecutionContextBuilder();
     private LoadBalancerFactory<R, StreamingHttpConnection> loadBalancerFactory;
     private ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>> serviceDiscoverer;
-    private Function<U, HttpConnectionFilterFactory> hostHeaderFilterFunction =
-            DefaultSingleAddressHttpClientBuilder::defaultHostClientFilterFactory;
+    private Function<U, HttpClientFilterFactory> hostHeaderFilterFactory =
+            DefaultSingleAddressHttpClientBuilder::defaultHostHeaderFilterFactory;
     private HttpConnectionFilterFactory connectionFilterFunction = HttpConnectionFilterFactory.identity();
     private HttpClientFilterFactory clientFilterFunction = HttpClientFilterFactory.identity();
     private HttpClientFilterFactory lbReadyFilter = LB_READY_FILTER;
@@ -106,7 +106,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
         this.serviceDiscoverer = from.serviceDiscoverer;
         clientFilterFunction = from.clientFilterFunction;
         connectionFilterFunction = from.connectionFilterFunction;
-        hostHeaderFilterFunction = from.hostHeaderFilterFunction;
+        hostHeaderFilterFactory = from.hostHeaderFilterFactory;
         lbReadyFilter = from.lbReadyFilter;
         connectionFactoryFilter = from.connectionFactoryFilter;
     }
@@ -147,28 +147,31 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
         // Track resources that potentially need to be closed when an exception is thrown during buildStreaming
         final CompositeCloseable closeOnException = newCompositeCloseable();
         try {
-            Publisher<? extends ServiceDiscovererEvent<R>> sdEvents = serviceDiscoverer.discover(address);
+            final Publisher<? extends ServiceDiscovererEvent<R>> sdEvents = serviceDiscoverer.discover(address);
 
             final StreamingHttpRequestResponseFactory reqRespFactory =
                     new DefaultStreamingHttpRequestResponseFactory(exec.bufferAllocator(),
                             roConfig.getHeadersFactory());
-            final HttpConnectionFilterFactory connectionFilters = connectionFilterFunction.append(
-                    hostHeaderFilterFunction.apply(address));
 
             // closed by the LoadBalancer
-            ConnectionFactory<R, ? extends StreamingHttpConnection> connectionFactory =
+            final ConnectionFactory<R, ? extends StreamingHttpConnection> connectionFactory =
                     connectionFactoryFilter.apply(closeOnException.prepend(roConfig.getMaxPipelinedRequests() == 1 ?
-                        new NonPipelinedLBHttpConnectionFactory<>(roConfig, exec, connectionFilters, reqRespFactory) :
-                        new PipelinedLBHttpConnectionFactory<>(roConfig, exec, connectionFilters, reqRespFactory)));
+                        new NonPipelinedLBHttpConnectionFactory<>(
+                                roConfig, exec, connectionFilterFunction, reqRespFactory) :
+                        new PipelinedLBHttpConnectionFactory<>(
+                                roConfig, exec, connectionFilterFunction, reqRespFactory)));
 
-            LoadBalancer<? extends StreamingHttpConnection> lbfUntypedForCast = closeOnException.prepend(
+            final LoadBalancer<? extends StreamingHttpConnection> lbfUntypedForCast = closeOnException.prepend(
                     loadBalancerFactory.newLoadBalancer(sdEvents, connectionFactory));
             @SuppressWarnings("unchecked")
-            LoadBalancer<LoadBalancedStreamingHttpConnection> lb =
+            final LoadBalancer<LoadBalancedStreamingHttpConnection> lb =
                     (LoadBalancer<LoadBalancedStreamingHttpConnection>) lbfUntypedForCast;
 
-            return clientFilterFunction.append(lbReadyFilter).create(closeOnException.prepend(
-                    new DefaultStreamingHttpClient(exec, strategy, lb, reqRespFactory)), lb.eventStream());
+            return clientFilterFunction
+                    .append(lbReadyFilter)
+                    .append(hostHeaderFilterFactory.apply(address))
+                    .create(closeOnException.prepend(new DefaultStreamingHttpClient(
+                            exec, strategy, lb, reqRespFactory)), lb.eventStream());
         } catch (final Throwable t) {
             closeOnException.closeAsync().subscribe();
             throw t;
@@ -179,12 +182,12 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
         return executionContextBuilder.build();
     }
 
-    private static <U> HttpConnectionFilterFactory defaultHostClientFilterFactory(final U address) {
+    private static <U> HostHeaderHttpRequesterFilter defaultHostHeaderFilterFactory(final U address) {
         if (address instanceof CharSequence) {
-            return c -> new HostHeaderHttpConnectionFilter((CharSequence) address, c);
+            return new HostHeaderHttpRequesterFilter((CharSequence) address);
         }
         if (address instanceof HostAndPort) {
-            return c -> new HostHeaderHttpConnectionFilter((HostAndPort) address, c);
+            return new HostHeaderHttpRequesterFilter((HostAndPort) address);
         }
         throw new IllegalArgumentException("Unsupported host header address type, provide an override");
     }
@@ -280,7 +283,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
 
     @Override
     public DefaultSingleAddressHttpClientBuilder<U, R> disableHostHeaderFallback() {
-        hostHeaderFilterFunction = address -> HttpConnectionFilterFactory.identity();
+        hostHeaderFilterFactory = address -> HttpClientFilterFactory.identity();
         return this;
     }
 
@@ -292,8 +295,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
 
     @Override
     public DefaultSingleAddressHttpClientBuilder<U, R> enableHostHeaderFallback(final CharSequence hostHeader) {
-        hostHeaderFilterFunction = address -> connection ->
-                new HostHeaderHttpConnectionFilter(hostHeader, connection);
+        hostHeaderFilterFactory = address -> new HostHeaderHttpRequesterFilter(hostHeader);
         return this;
     }
 

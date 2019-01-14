@@ -52,34 +52,58 @@ public class StreamingHttpClientFilter extends StreamingHttpClient {
         this.defaultStrategy = requireNonNull(defaultStrategy);
     }
 
-    /**
-     * Get the {@link StreamingHttpClient} that this class delegates to.
-     * @return the {@link StreamingHttpClient} that this class delegates to.
-     */
-    protected final StreamingHttpClient delegate() {
-        return delegate;
-    }
-
     @Override
-    public final Single<? extends ReservedStreamingHttpConnection> reserveConnection(final StreamingHttpRequest request) {
+    public final Single<? extends ReservedStreamingHttpConnection> reserveConnection(
+            final StreamingHttpRequest request) {
         return reserveConnection(defaultStrategy, request);
     }
 
     @Override
-    public Single<? extends ReservedStreamingHttpConnection> reserveConnection(final HttpExecutionStrategy strategy,
-                                                                               final StreamingHttpRequest request) {
-        return delegate.reserveConnection(strategy, request);
+    public final Single<? extends ReservedStreamingHttpConnection> reserveConnection(
+            final HttpExecutionStrategy strategy, final StreamingHttpRequest request) {
+        return reserveConnection(delegate, strategy, request);
     }
 
     @Override
     public final Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
-        return request(defaultStrategy, request);
+        return request(delegate, defaultStrategy, request);
     }
 
     @Override
-    public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
-                                                 final StreamingHttpRequest request) {
+    public final Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
+                                                       final StreamingHttpRequest request) {
+        return request(delegate, strategy, request);
+    }
+
+    /**
+     * Called when the filter needs to delegate the request using the provided {@link StreamingHttpRequester} on which
+     * to call {@link StreamingHttpRequester#request(HttpExecutionStrategy, StreamingHttpRequest)}.
+     *
+     * @param delegate The {@link StreamingHttpRequester} to delegate requests to.
+     * @param strategy The {@link HttpExecutionStrategy} to use for executing the request.
+     * @param request The request to delegate.
+     * @return the response.
+     */
+    protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
+                                                    final HttpExecutionStrategy strategy,
+                                                    final StreamingHttpRequest request) {
         return delegate.request(strategy, request);
+    }
+
+    /**
+     * Called when the filter needs to delegate the reserve connection request using the provided {@link
+     * StreamingHttpClient} on which to call {@link StreamingHttpClient#reserveConnection(HttpExecutionStrategy,
+     * StreamingHttpRequest)}.
+     *
+     * @param delegate the {@link StreamingHttpClient} to delegate requests to.
+     * @param strategy the {@link HttpExecutionStrategy} to use for executing the request.
+     * @param request The request for reserving the connection.
+     * @return the response.
+     */
+    protected Single<? extends ReservedStreamingHttpConnection> reserveConnection(final StreamingHttpClient delegate,
+                                                                                  final HttpExecutionStrategy strategy,
+                                                                                  final StreamingHttpRequest request) {
+        return delegate.reserveConnection(strategy, request).map(ClientFilterToReservedConnectionFilter::new);
     }
 
     @Override
@@ -105,5 +129,18 @@ public class StreamingHttpClientFilter extends StreamingHttpClient {
     @Override
     public String toString() {
         return StreamingHttpClientFilter.class.getSimpleName() + "(" + delegate + ")";
+    }
+
+    private final class ClientFilterToReservedConnectionFilter extends ReservedStreamingHttpConnectionFilter {
+
+        ClientFilterToReservedConnectionFilter(final ReservedStreamingHttpConnection reserved) {
+            super(reserved);
+        }
+
+        @Override
+        public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
+                                                     final StreamingHttpRequest request) {
+            return StreamingHttpClientFilter.this.request(delegate(), strategy, request);
+        }
     }
 }

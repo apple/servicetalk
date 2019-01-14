@@ -55,6 +55,7 @@ final class RedirectSingle extends Single<StreamingHttpResponse> {
     private final StreamingHttpRequest originalRequest;
     private final int maxRedirects;
     private final StreamingHttpRequester requester;
+    private final boolean onlyRelative;
 
     /**
      * Create a new {@link Single}<{@link StreamingHttpResponse}> which will be able to handle redirects.
@@ -66,16 +67,21 @@ final class RedirectSingle extends Single<StreamingHttpResponse> {
      * @param maxRedirects The maximum number of follow up redirects.
      * @param requester The {@link StreamingHttpRequester} to send redirected requests, must be backed by
      * {@link StreamingHttpClient}.
+     * @param onlyRelative Limits the automated redirects to relative paths on the same host and port as the {@code
+     * originalRequest}, non-relative redirect responses will be returned as-is.
      */
-    RedirectSingle(final HttpExecutionStrategy strategy, final Single<StreamingHttpResponse> originalResponse,
+    RedirectSingle(final HttpExecutionStrategy strategy,
+                   final Single<StreamingHttpResponse> originalResponse,
                    final StreamingHttpRequest originalRequest,
                    final int maxRedirects,
-                   final StreamingHttpRequester requester) {
+                   final StreamingHttpRequester requester,
+                   final boolean onlyRelative) {
         this.strategy = strategy;
         this.originalResponse = requireNonNull(originalResponse);
         this.originalRequest = requireNonNull(originalRequest);
         this.maxRedirects = maxRedirects;
         this.requester = requireNonNull(requester);
+        this.onlyRelative = onlyRelative;
     }
 
     @Override
@@ -131,14 +137,28 @@ final class RedirectSingle extends Single<StreamingHttpResponse> {
                 target.onError(cause);
                 return;
             }
+            // Bail on the redirect if non-relative when that was requested or a redirect request is impossible to infer
+            if (newRequest == null ||
+                    redirectSingle.onlyRelative && (
+                            request.effectiveHost() == null ||
+                            !request.effectiveHost().equalsIgnoreCase(newRequest.effectiveHost()) ||
+                            request.effectivePort() != newRequest.effectivePort())) {
+                if (LOGGER.isTraceEnabled()) {
+                    LOGGER.trace("Ignoring non-relative redirect to '{}' for original request '{}' using onlyRelative",
+                            result.headers().get(LOCATION), redirectSingle.originalRequest);
+                }
+                target.onSuccess(result);
+                return;
+            }
             if (LOGGER.isTraceEnabled()) {
                 LOGGER.trace("Execute redirect to '{}' for original request '{}'",
                         result.headers().get(LOCATION), redirectSingle.originalRequest);
             }
             // Consume any payload of the redirect response
             result.payloadBody().ignoreElements().subscribe();
-            redirectSingle.requester.request(redirectSingle.strategy, newRequest).subscribe(new RedirectSubscriber(
-                    target, redirectSingle, newRequest, redirectCount + 1, sequentialCancellable));
+            redirectSingle.requester.request(redirectSingle.strategy, newRequest)
+                    .subscribe(new RedirectSubscriber(
+                            target, redirectSingle, newRequest, redirectCount + 1, sequentialCancellable));
         }
 
         @Override
@@ -197,6 +217,7 @@ final class RedirectSingle extends Single<StreamingHttpResponse> {
             }
         }
 
+        @Nullable
         private static StreamingHttpRequest prepareRedirectRequest(
                 final StreamingHttpRequest request, final StreamingHttpResponse response,
                 final StreamingHttpRequestFactory requestFactory) {
@@ -216,8 +237,8 @@ final class RedirectSingle extends Single<StreamingHttpResponse> {
                 // origin-form request-target in Location header, extract host & port info from original request
                 redirectHost = request.effectiveHost();
                 if (redirectHost == null) {
-                    // Should never happen, otherwise the original request had to fail
-                    throw new InvalidRedirectException("No host information for redirect");
+                    // abort, no HOST header found on the original request, this is typical for HTTP/1.0
+                    return null;
                 }
                 final int redirectPort = request.effectivePort();
                 headers.set(HOST, redirectPort < 0 ? redirectHost : redirectHost + ':' + redirectPort);

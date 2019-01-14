@@ -30,9 +30,10 @@ public class ConditionalHttpClientFilterTest extends AbstractConditionalHttpFilt
             new ConditionalHttpClientFilter(TEST_REQ_PREDICATE,
                     new StreamingHttpClientFilter(TEST_CLIENT) {
                         @Override
-                        public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
-                                                                     final StreamingHttpRequest req) {
-                            return super.request(strategy, markFiltered(req));
+                        protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
+                                                                        final HttpExecutionStrategy strategy,
+                                                                        final StreamingHttpRequest request) {
+                            return delegate.request(strategy, markFiltered(request));
                         }
                     }, TEST_CLIENT);
 

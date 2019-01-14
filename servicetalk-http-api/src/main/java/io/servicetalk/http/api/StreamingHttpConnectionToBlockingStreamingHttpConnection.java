@@ -50,7 +50,7 @@ final class StreamingHttpConnectionToBlockingStreamingHttpConnection extends Blo
     }
 
     @Override
-    public ExecutionContext getExecutionContext() {
+    public ExecutionContext executionContext() {
         return connection.executionContext();
     }
 

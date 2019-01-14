@@ -73,7 +73,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.mockito.MockitoAnnotations.initMocks;
 
-public class TracingHttpConnectionFilterTest {
+public class TracingHttpRequesterFilterTest {
     private static final HttpSerializationProvider httpSerializer = jsonSerializer(new JacksonSerializationProvider());
 
     @Rule
@@ -97,8 +97,7 @@ public class TracingHttpConnectionFilterTest {
                 new AsyncContextInMemoryScopeManager()).addListener(spanListener).build();
         try (ServerContext context = buildServer()) {
             try (HttpClient client = forSingleAddress(of((InetSocketAddress) context.listenAddress()))
-                    .appendConnectionFilter(conn -> new TracingHttpConnectionFilter(
-                            tracer, "testClient", conn)).build()) {
+                    .appendConnectionFilter(new TracingHttpRequesterFilter(tracer, "testClient")).build()) {
                 HttpResponse response = client.request(client.get(requestUrl)).toFuture().get();
                 TestSpanState serverSpanState = response.payloadBody(httpSerializer.deserializerFor(
                         TestSpanState.class));
@@ -130,8 +129,7 @@ public class TracingHttpConnectionFilterTest {
                 new AsyncContextInMemoryScopeManager()).addListener(spanListener).build();
         try (ServerContext context = buildServer()) {
             try (HttpClient client = forSingleAddress(of((InetSocketAddress) context.listenAddress()))
-                    .appendConnectionFilter(conn -> new TracingHttpConnectionFilter(
-                            tracer, "testClient", conn)).build()) {
+                    .appendConnectionFilter(new TracingHttpRequesterFilter(tracer, "testClient")).build()) {
                 try (InMemoryScope clientScope = tracer.buildSpan("test").startActive(true)) {
                     HttpResponse response = client.request(client.get(requestUrl)).toFuture().get();
                     TestSpanState serverSpanState = response.payloadBody(httpSerializer.deserializerFor(
@@ -165,8 +163,7 @@ public class TracingHttpConnectionFilterTest {
         when(mockTracer.buildSpan(any())).thenThrow(DELIBERATE_EXCEPTION);
         try (ServerContext context = buildServer()) {
             try (HttpClient client = forSingleAddress(of((InetSocketAddress) context.listenAddress()))
-                    .appendConnectionFilter(conn -> new TracingHttpConnectionFilter(
-                            mockTracer, "testClient", conn)).build()) {
+                    .appendConnectionFilter(new TracingHttpRequesterFilter(mockTracer, "testClient")).build()) {
                 HttpRequest request = client.get("/");
                 expected.expect(ExecutionException.class);
                 expected.expectCause(is(DELIBERATE_EXCEPTION));

@@ -56,15 +56,17 @@ public final class LoadBalancerReadyStreamingHttpClient extends StreamingHttpCli
     }
 
     @Override
-    public Single<? extends ReservedStreamingHttpConnection> reserveConnection(final HttpExecutionStrategy strategy,
-                                                                               final StreamingHttpRequest request) {
-        return delegate().reserveConnection(strategy, request).retryWhen(retryWhenFunction());
+    protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
+                                                    final HttpExecutionStrategy strategy,
+                                                    final StreamingHttpRequest request) {
+        return delegate.request(strategy, request).retryWhen(retryWhenFunction());
     }
 
     @Override
-    public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
-                                                 final StreamingHttpRequest request) {
-        return delegate().request(strategy, request).retryWhen(retryWhenFunction());
+    protected Single<? extends ReservedStreamingHttpConnection> reserveConnection(final StreamingHttpClient delegate,
+                                                                                  final HttpExecutionStrategy strategy,
+                                                                                  final StreamingHttpRequest request) {
+        return delegate.reserveConnection(strategy, request).retryWhen(retryWhenFunction());
     }
 
     private BiIntFunction<Throwable, Completable> retryWhenFunction() {

@@ -18,6 +18,7 @@ package io.servicetalk.http.api;
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.client.api.ConnectionFactoryFilter;
 import io.servicetalk.client.api.LoadBalancerFactory;
+import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.client.api.partition.PartitionAttributes;
 import io.servicetalk.client.api.partition.PartitionMapFactory;
@@ -100,6 +101,10 @@ public interface PartitionedHttpClientBuilder<U, R>
 
     @Override
     PartitionedHttpClientBuilder<U, R> disableWaitForLoadBalancer();
+
+    @Override
+    PartitionedHttpClientBuilder<U, R> serviceDiscoverer(
+            ServiceDiscoverer<U, R, ? extends PartitionedServiceDiscovererEvent<R>> serviceDiscoverer);
 
     @Override
     PartitionedHttpClientBuilder<U, R> loadBalancerFactory(

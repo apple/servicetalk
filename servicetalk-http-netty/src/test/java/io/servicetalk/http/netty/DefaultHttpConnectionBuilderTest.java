@@ -114,6 +114,6 @@ public class DefaultHttpConnectionBuilderTest extends AbstractEchoServerBasedHtt
     @Nonnull
     private static DefaultHttpConnectionBuilder<SocketAddress> prepareBuilder(final int pipelinedRequests) {
         return new DefaultHttpConnectionBuilder<SocketAddress>()
-                .setMaxPipelinedRequests(pipelinedRequests);
+                .maxPipelinedRequests(pipelinedRequests);
     }
 }

@@ -134,7 +134,7 @@ public class BlockingStreamingHttpConnectionTest extends AbstractBlockingStreami
         }
 
         @Override
-        public ExecutionContext getExecutionContext() {
+        public ExecutionContext executionContext() {
             return executionContext;
         }
 

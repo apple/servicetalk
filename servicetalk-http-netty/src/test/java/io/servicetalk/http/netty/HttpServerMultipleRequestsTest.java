@@ -112,7 +112,7 @@ public class HttpServerMultipleRequestsTest {
                     try {
                         StreamingHttpConnection connection = compositeCloseable.append(
                                 new DefaultHttpConnectionBuilder<SocketAddress>()
-                                        .setMaxPipelinedRequests(numRequests)
+                                        .maxPipelinedRequests(numRequests)
                                         .ioExecutor(clientExecution.ioExecutor())
                                         .executor(clientExecution.executor())
                                         .buildStreaming(ctx.listenAddress()).toFuture().get());

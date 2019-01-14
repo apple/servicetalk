@@ -65,7 +65,7 @@ public abstract class BlockingStreamingHttpRequester implements BlockingStreamin
      *
      * @return the {@link ExecutionContext} used during construction of this object.
      */
-    public abstract ExecutionContext getExecutionContext();
+    public abstract ExecutionContext executionContext();
 
     @Override
     public final BlockingStreamingHttpRequest newRequest(HttpRequestMethod method, String requestTarget) {
