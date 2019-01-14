@@ -89,6 +89,7 @@ final class RedisRequesterUtils {
                         if (aggregator == null) {
                             aggregator = redisData.getBufferValue();
                             if (!(redisData instanceof LastBulkStringChunk)) {
+                                assert redisData instanceof FirstBulkStringChunk;
                                 // FirstBulkStringChunk includes the number of bytes we expect to read, so proactively
                                 // ensure the buffer is large enough to accumulate all the data.
                                 final int expectedBytes = ((FirstBulkStringChunk) redisData).bulkStringLength();
@@ -156,6 +157,7 @@ final class RedisRequesterUtils {
                         if (aggregator == null) {
                             aggregator = redisData.getBufferValue();
                             if (!(redisData instanceof LastBulkStringChunk)) {
+                                assert redisData instanceof FirstBulkStringChunk;
                                 // FirstBulkStringChunk includes the number of bytes we expect to read, so proactively
                                 // ensure the buffer is large enough to accumulate all the data.
                                 final int expectedBytes = ((FirstBulkStringChunk) redisData).bulkStringLength();
@@ -287,6 +289,7 @@ final class RedisRequesterUtils {
                                         redisData.getBufferValue());
                             } else {
                                 aggregator = redisData.getBufferValue();
+                                assert redisData instanceof FirstBulkStringChunk;
                                 // FirstBulkStringChunk includes the number of bytes we expect to read, so proactively
                                 // ensure the buffer is large enough to accumulate all the data.
                                 final int expectedBytes = ((FirstBulkStringChunk) redisData).bulkStringLength();
