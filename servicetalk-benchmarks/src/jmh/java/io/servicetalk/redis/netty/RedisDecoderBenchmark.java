@@ -45,37 +45,10 @@ import org.openjdk.jmh.infra.Blackhole;
 
 import java.net.SocketAddress;
 
+import static java.lang.String.valueOf;
+
 /*
  * Benchmark of RedisDecoder for various lengths and numbers of string args, and various receive buffer sizes.
- *
- * Benchmark                    (bufLength)  (valCount)  (valLen)   Mode  Cnt         Score         Error  Units
- * RedisDecoderBenchmark.write           10          10        10  thrpt    5    717506.942 ±   51346.128  ops/s
- * RedisDecoderBenchmark.write           10          10       100  thrpt    5    149759.038 ±    7258.237  ops/s
- * RedisDecoderBenchmark.write           10          10      1000  thrpt    5     18103.662 ±    1331.100  ops/s
- * RedisDecoderBenchmark.write           10         100        10  thrpt    5     70332.828 ±    4294.236  ops/s
- * RedisDecoderBenchmark.write           10         100       100  thrpt    5     15114.616 ±     578.767  ops/s
- * RedisDecoderBenchmark.write           10         100      1000  thrpt    5      2110.848 ±     119.576  ops/s
- * RedisDecoderBenchmark.write           10        1000        10  thrpt    5      7389.984 ±     800.250  ops/s
- * RedisDecoderBenchmark.write           10        1000       100  thrpt    5      1449.701 ±     108.337  ops/s
- * RedisDecoderBenchmark.write           10        1000      1000  thrpt    5       211.382 ±       8.863  ops/s
- * RedisDecoderBenchmark.write          100          10        10  thrpt    5   6394861.716 ±  444354.498  ops/s
- * RedisDecoderBenchmark.write          100          10       100  thrpt    5   1104276.800 ±   79815.991  ops/s
- * RedisDecoderBenchmark.write          100          10      1000  thrpt    5    142003.195 ±    4447.347  ops/s
- * RedisDecoderBenchmark.write          100         100        10  thrpt    5    675582.367 ±   45863.689  ops/s
- * RedisDecoderBenchmark.write          100         100       100  thrpt    5     90368.796 ±    5131.327  ops/s
- * RedisDecoderBenchmark.write          100         100      1000  thrpt    5     14229.505 ±     641.035  ops/s
- * RedisDecoderBenchmark.write          100        1000        10  thrpt    5     71320.281 ±    4251.774  ops/s
- * RedisDecoderBenchmark.write          100        1000       100  thrpt    5     11232.072 ±     390.909  ops/s
- * RedisDecoderBenchmark.write          100        1000      1000  thrpt    5      1428.908 ±      57.517  ops/s
- * RedisDecoderBenchmark.write         1000          10        10  thrpt    5  20953834.916 ± 1476915.538  ops/s
- * RedisDecoderBenchmark.write         1000          10       100  thrpt    5   6102221.241 ±  443218.739  ops/s
- * RedisDecoderBenchmark.write         1000          10      1000  thrpt    5    334638.490 ±   15575.734  ops/s
- * RedisDecoderBenchmark.write         1000         100        10  thrpt    5   6277949.075 ±  396739.025  ops/s
- * RedisDecoderBenchmark.write         1000         100       100  thrpt    5   1087285.766 ±   80665.243  ops/s
- * RedisDecoderBenchmark.write         1000         100      1000  thrpt    5     31320.376 ±    1152.215  ops/s
- * RedisDecoderBenchmark.write         1000        1000        10  thrpt    5    680465.530 ±   64658.052  ops/s
- * RedisDecoderBenchmark.write         1000        1000       100  thrpt    5    111253.832 ±    4570.156  ops/s
- * RedisDecoderBenchmark.write         1000        1000      1000  thrpt    5      3031.522 ±     117.617  ops/s
  */
 @Fork(value = 1)
 @State(Scope.Benchmark)
@@ -87,7 +60,7 @@ public class RedisDecoderBenchmark {
     @Param({"10", "100", "1000"})
     public int valCount;
 
-    @Param({"10", "100", "1000"})
+    @Param({"10", "1000", "1000000"})
     public int valLen;
 
     @Param({"10", "100", "1000"})
@@ -99,11 +72,14 @@ public class RedisDecoderBenchmark {
 
     @Setup(Level.Iteration)
     public void setup(final Blackhole blackhole) {
-        StringBuilder response = new StringBuilder();
-        response.append("*" + valCount).append("\r\n");
+        StringBuilder response = new StringBuilder(3 // "*\r\n"
+                + (3 * valCount) // "$\r\n" for each valCount
+                + valCount * valueOf(valLen).length()
+                + valCount * (2 + valLen) // string length + "\r\n"
+        ).append("*").append(valCount).append("\r\n");
         for (int i = 0; i < valCount; ++i) {
-            response.append("$" + valLen).append("\r\n");
-            response.append(stringOfLength(valLen)).append("\r\n");
+            response.append("$").append(valLen).append("\r\n")
+                    .append(stringOfLength(valLen)).append("\r\n");
         }
         payload = BufferAllocators.PREFER_HEAP_ALLOCATOR.fromAscii(response.toString());
         payloadLength = payload.readableBytes();
@@ -251,7 +227,8 @@ public class RedisDecoderBenchmark {
             }
 
             @Override
-            public ChannelFuture connect(final SocketAddress remoteAddress, final SocketAddress localAddress, final ChannelPromise promise) {
+            public ChannelFuture connect(final SocketAddress remoteAddress, final SocketAddress localAddress,
+                                         final ChannelPromise promise) {
                 throw new UnsupportedOperationException();
             }
 
@@ -327,7 +304,7 @@ public class RedisDecoderBenchmark {
 
     @Benchmark
     public void write() {
-        final RedisDecoder decoder = new RedisDecoder(BufferAllocators.PREFER_HEAP_ALLOCATOR);
+        final RedisDecoder decoder = new RedisDecoder();
         payload.readerIndex(0);
         int ri = 0;
         while (ri < payloadLength) {

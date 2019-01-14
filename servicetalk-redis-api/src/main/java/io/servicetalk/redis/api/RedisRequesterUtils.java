@@ -18,10 +18,13 @@ package io.servicetalk.redis.api;
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.ConcurrentSubscription;
+import io.servicetalk.redis.api.RedisData.BulkStringChunk;
+import io.servicetalk.redis.api.RedisData.FirstBulkStringChunk;
+import io.servicetalk.redis.api.RedisData.LastBulkStringChunk;
+import io.servicetalk.redis.api.RedisData.Null;
+import io.servicetalk.redis.api.RedisData.SimpleString;
 
 import org.reactivestreams.Subscription;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -29,13 +32,10 @@ import java.util.Deque;
 import java.util.List;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.buffer.netty.BufferUtil.maxUtf8Bytes;
 import static io.servicetalk.concurrent.internal.ConcurrentSubscription.wrap;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 final class RedisRequesterUtils {
-    private static final Logger LOGGER = LoggerFactory.getLogger(RedisRequesterUtils.class);
-
     private RedisRequesterUtils() {
     }
 
@@ -70,34 +70,43 @@ final class RedisRequesterUtils {
         protected void handleSubscribe(final Subscriber<? super R> subscriber) {
             requester.request(strategy, request).subscribe(new AggregatingSubscriber<R>(subscriber) {
                 @Nullable
-                private CharSequence lastMessage;
+                private CharSequence simpleString;
                 @Nullable
-                private StringBuilder totalMessages;
+                private Buffer aggregator;
                 @Nullable
                 private RedisData.Error error;
 
                 @Override
                 public void onNext(final RedisData redisData) {
-                    if (error != null) {
-                        LOGGER.debug("discarding string {} because error received {}", redisData, error);
-                        return;
-                    }
-                    if (redisData instanceof RedisData.Error) {
+                    if (redisData instanceof SimpleString) {
+                        assert simpleString == null; // a single SimpleString is the only chunk of data expected.
+                        // Either BulkString, SimpleString, or Error is expected, but not multiple.
+                        assert aggregator == null && error == null;
+                        simpleString = redisData.getCharSequenceValue();
+                    } else if (redisData instanceof BulkStringChunk) {
+                        // Either BulkString, SimpleString, or Error is expected, but not multiple.
+                        assert simpleString == null && error == null;
+                        if (aggregator == null) {
+                            aggregator = redisData.getBufferValue();
+                            if (!(redisData instanceof LastBulkStringChunk)) {
+                                assert redisData instanceof FirstBulkStringChunk;
+                                // FirstBulkStringChunk includes the number of bytes we expect to read, so proactively
+                                // ensure the buffer is large enough to accumulate all the data.
+                                final int expectedBytes = ((FirstBulkStringChunk) redisData).bulkStringLength();
+                                if (!aggregator.tryEnsureWritable(expectedBytes, true)) {
+                                    aggregator = requester.executionContext().bufferAllocator().newBuffer(
+                                            expectedBytes + aggregator.readableBytes()).writeBytes(aggregator);
+                                }
+                            }
+                        } else {
+                            aggregator.writeBytes(redisData.getBufferValue());
+                        }
+                    } else if (redisData instanceof RedisData.Error) {
                         error = (RedisData.Error) redisData;
-                        lastMessage = totalMessages = null;
-                    } else if (totalMessages == null && lastMessage == null) {
-                        if (!ignoreRedisData(redisData)) {
-                            lastMessage = toCharSequence(redisData);
-                        }
-                    } else {
-                        final CharSequence currentMessage = toCharSequence(redisData);
-                        if (totalMessages == null) {
-                            assert lastMessage != null;
-                            totalMessages = new StringBuilder(lastMessage.length() + currentMessage.length());
-                            totalMessages.append(lastMessage);
-                            lastMessage = null;
-                        }
-                        totalMessages.append(currentMessage);
+                        simpleString = null;
+                        aggregator = null;
+                    } else if (!(redisData instanceof Null)) {
+                        throw new IllegalArgumentException("unsupported data:" + redisData);
                     }
                 }
 
@@ -109,23 +118,13 @@ final class RedisRequesterUtils {
                 @SuppressWarnings("unchecked")
                 @Override
                 public void onComplete() {
-                    if (error != null) {
-                        singleSubscriber.onError(new RedisServerException(error));
-                    } else if (totalMessages != null) {
-                        singleSubscriber.onSuccess((R) totalMessages.toString());
+                    if (aggregator != null) {
+                        singleSubscriber.onSuccess((R) aggregator.toString(UTF_8));
+                    } else if (simpleString != null || error == null) {
+                        singleSubscriber.onSuccess((R) simpleString);
                     } else {
-                        singleSubscriber.onSuccess((R) lastMessage);
+                        singleSubscriber.onError(new RedisServerException(error));
                     }
-                }
-
-                private CharSequence toCharSequence(final RedisData redisData) {
-                    if (redisData instanceof RedisData.SimpleString) {
-                        return redisData.getCharSequenceValue();
-                    }
-                    if (redisData instanceof RedisData.BulkStringChunk) {
-                        return redisData.getBufferValue().toString(UTF_8);
-                    }
-                    throw new IllegalArgumentException("unsupported data:" + redisData);
                 }
             });
         }
@@ -153,36 +152,32 @@ final class RedisRequesterUtils {
 
                 @Override
                 public void onNext(final RedisData redisData) {
-                    if (error != null) {
-                        LOGGER.debug("discarding buffer data {} because error received {}", redisData, error);
-                        return;
-                    }
-                    if (redisData instanceof RedisData.Error) {
+                    if (redisData instanceof BulkStringChunk) {
+                        assert error == null;
+                        if (aggregator == null) {
+                            aggregator = redisData.getBufferValue();
+                            if (!(redisData instanceof LastBulkStringChunk)) {
+                                assert redisData instanceof FirstBulkStringChunk;
+                                // FirstBulkStringChunk includes the number of bytes we expect to read, so proactively
+                                // ensure the buffer is large enough to accumulate all the data.
+                                final int expectedBytes = ((FirstBulkStringChunk) redisData).bulkStringLength();
+                                if (!aggregator.tryEnsureWritable(expectedBytes, true)) {
+                                    aggregator = requester.executionContext().bufferAllocator().newBuffer(
+                                            expectedBytes + aggregator.readableBytes()).writeBytes(aggregator);
+                                }
+                            }
+                        } else {
+                            aggregator.writeBytes(redisData.getBufferValue());
+                        }
+                    } else if (redisData instanceof SimpleString) {
+                        // Either BulkString, SimpleString, or Error is expected, but not multiple.
+                        assert aggregator == null && error == null;
+                        aggregator = requester.executionContext().bufferAllocator()
+                                .fromUtf8(redisData.getCharSequenceValue());
+                    } else if (redisData instanceof RedisData.Error) {
                         error = (RedisData.Error) redisData;
                         aggregator = null;
-                    } else if (aggregator == null) {
-                        if (redisData instanceof RedisData.SimpleString) {
-                            aggregator = requester.executionContext().bufferAllocator()
-                                    .fromUtf8(redisData.getCharSequenceValue());
-                        } else if (redisData instanceof RedisData.BulkStringChunk) {
-                            aggregator = redisData.getBufferValue();
-                        } else if (!ignoreRedisData(redisData)) {
-                            throw new IllegalArgumentException("unsupported data:" + redisData);
-                        }
-                    } else if (redisData instanceof RedisData.SimpleString) {
-                        CharSequence cs = redisData.getCharSequenceValue();
-                        int maxBytes = maxUtf8Bytes(cs);
-                        if (!aggregator.tryEnsureWritable(maxBytes, false)) {
-                            reallocateAggregator(maxBytes);
-                        }
-                        aggregator.writeUtf8(redisData.getCharSequenceValue());
-                    } else if (redisData instanceof RedisData.BulkStringChunk) {
-                        int redisDataBytes = redisData.getBufferValue().readableBytes();
-                        if (!aggregator.tryEnsureWritable(redisDataBytes, false)) {
-                            reallocateAggregator(redisDataBytes);
-                        }
-                        aggregator.writeBytes(redisData.getBufferValue());
-                    } else {
+                    } else if (!(redisData instanceof Null)) {
                         throw new IllegalArgumentException("unsupported data:" + redisData);
                     }
                 }
@@ -200,12 +195,6 @@ final class RedisRequesterUtils {
                     } else {
                         singleSubscriber.onError(new RedisServerException(error));
                     }
-                }
-
-                private void reallocateAggregator(int extraBytes) {
-                    assert aggregator != null;
-                    aggregator = requester.executionContext().bufferAllocator()
-                            .newBuffer(extraBytes + aggregator.readableBytes()).writeBytes(aggregator);
                 }
             });
         }
@@ -233,11 +222,7 @@ final class RedisRequesterUtils {
 
                 @Override
                 public void onNext(final RedisData redisData) {
-                    // We only expect a single value
-                    if (answer != null) {
-                        throw new IllegalStateException("answer is not null: " + answer + " redisData: " + redisData);
-                    }
-
+                    assert answer == null; // We only expect a single value
                     if (redisData instanceof RedisData.Error) {
                         if (error == null) {
                             error = (RedisData.Error) redisData;
@@ -246,7 +231,7 @@ final class RedisRequesterUtils {
                         }
                     } else if (redisData instanceof RedisData.Integer) {
                         answer = redisData.getLongValue();
-                    } else if (!(redisData instanceof RedisData.Null)) {
+                    } else if (!(redisData instanceof Null)) {
                         throw new IllegalArgumentException("unsupported data:" + redisData);
                     }
                 }
@@ -294,14 +279,37 @@ final class RedisRequesterUtils {
                 private List<Object> result;
                 @Nullable
                 private Buffer aggregator;  // to aggregate BulkStringChunks
-                private int bulkStringSize;
 
                 @Override
                 public void onNext(final RedisData redisData) {
-                    if (redisData instanceof RedisData.ArraySize) {
+                    if (redisData instanceof BulkStringChunk) {
+                        if (aggregator == null) {
+                            if (redisData instanceof LastBulkStringChunk) {
+                                addResult(coerceBuffersToCharSequences ? redisData.getBufferValue().toString(UTF_8) :
+                                        redisData.getBufferValue());
+                            } else {
+                                aggregator = redisData.getBufferValue();
+                                assert redisData instanceof FirstBulkStringChunk;
+                                // FirstBulkStringChunk includes the number of bytes we expect to read, so proactively
+                                // ensure the buffer is large enough to accumulate all the data.
+                                final int expectedBytes = ((FirstBulkStringChunk) redisData).bulkStringLength();
+                                if (!aggregator.tryEnsureWritable(expectedBytes, true)) {
+                                    aggregator = requester.executionContext().bufferAllocator().newBuffer(
+                                            expectedBytes + aggregator.readableBytes()).writeBytes(aggregator);
+                                }
+                            }
+                        } else {
+                            aggregator.writeBytes(redisData.getBufferValue());
+                            if (redisData instanceof LastBulkStringChunk) {
+                                addResult(coerceBuffersToCharSequences ? aggregator.toString(UTF_8) : aggregator);
+                                aggregator = null;
+                            }
+                        }
+                    } else if (redisData instanceof RedisData.ArraySize) {
                         final long length = redisData.getLongValue();
                         if (length > Integer.MAX_VALUE) {
-                            throw new IllegalArgumentException("length " + length + "(expected <=" + Integer.MAX_VALUE + ")");
+                            throw new IllegalArgumentException("length " + length + "(expected <=" +
+                                    Integer.MAX_VALUE + ")");
                         }
                         if (result == null) {
                             result = new ArrayList<>((int) length);
@@ -311,44 +319,19 @@ final class RedisRequesterUtils {
                             }
                             depths.offerFirst(new AggregateState((int) length));
                         }
-                    } else if (redisData instanceof RedisData.BulkStringChunk) {
-                        final Buffer buffer = redisData.getBufferValue();
-                        if (aggregator == null) {
-                            bulkStringSize = ((RedisData.FirstBulkStringChunk) redisData).bulkStringLength();
-                            if (buffer.readableBytes() == bulkStringSize) {
-                                // All the data is available in the first chunk.
-                                addResult(coerceBuffersToCharSequences ? buffer.toString(UTF_8) : buffer);
-                            } else {
-                                // Only part of the data is available in the first chunk. Try to re-use the first
-                                // chunk's buffer, but expand it in preparation for holding the entire bulk string.
-                                aggregator = buffer;
-                                if (!aggregator.tryEnsureWritable(bulkStringSize - aggregator.readableBytes(), true)) {
-                                    aggregator = requester.executionContext().bufferAllocator()
-                                            .newBuffer(bulkStringSize).writeBytes(buffer);
-                                }
-                            }
-                        } else {
-                            assert !(redisData instanceof RedisData.FirstBulkStringChunk);
-                            aggregator.writeBytes(buffer);
-                            if (aggregator.readableBytes() == bulkStringSize) {
-                                addResult(coerceBuffersToCharSequences ? aggregator.toString(UTF_8) : aggregator);
-                                aggregator = null;
-                            }
-                        }
                     } else {
                         if (depths == null || depths.isEmpty()) {
                             if (result == null) {
                                 if (redisData instanceof RedisData.Error) {
                                     redisError = new RedisServerException((RedisData.Error) redisData);
-                                } else if (!(redisData instanceof RedisData.Null)) {
+                                } else if (!(redisData instanceof Null)) {
                                     throw new IllegalArgumentException("unexpected data: " + redisData);
                                 }
                             } else {
                                 result.add(unwrapData(redisData));
                             }
                         } else {
-                            final Object unwrapped = unwrapData(redisData);
-                            addResult(unwrapped);
+                            addDepths(unwrapData(redisData));
                         }
                     }
                 }
@@ -357,8 +340,13 @@ final class RedisRequesterUtils {
                     assert result != null;
                     if (depths == null || depths.isEmpty()) {
                         result.add(toAdd);
-                        return;
+                    } else {
+                        addDepths(toAdd);
                     }
+                }
+
+                private void addDepths(@Nullable final Object toAdd) {
+                    assert depths != null && result != null;
                     AggregateState current = depths.peek();
                     assert current != null;
                     current.children.add(toAdd);
@@ -385,35 +373,32 @@ final class RedisRequesterUtils {
                 public void onComplete() {
                     if (redisError != null) {
                         singleSubscriber.onError(redisError);
-                    } else if (depths != null && !depths.isEmpty()) {
-                        singleSubscriber.onError(new IllegalStateException("aggregation didn't finish. result: " + result + " depths: " + depths));
-                    } else {
+                    } else if (depths == null || depths.isEmpty()) {
                         singleSubscriber.onSuccess((R) result);
+                    } else {
+                        singleSubscriber.onError(new IllegalStateException("aggregation didn't finish. result: " +
+                                result + " depths: " + depths));
                     }
-                }
-
-                @Nullable
-                private Object unwrapData(final RedisData redisData) {
-                    if (redisData instanceof RedisData.SimpleString) {
-                        return redisData.getCharSequenceValue();
-                    }
-                    if (redisData instanceof RedisData.Integer) {
-                        return redisData.getLongValue();
-                    }
-                    if (redisData instanceof RedisData.Null) {
-                        return null;
-                    }
-                    if (redisData instanceof RedisData.Error) {
-                        return new RedisServerException((RedisData.Error) redisData);
-                    }
-                    throw new IllegalArgumentException("unsupported type: " + redisData);
                 }
             });
         }
     }
 
-    private static boolean ignoreRedisData(final RedisData redisData) {
-        return redisData instanceof RedisData.Null;
+    @Nullable
+    private static Object unwrapData(final RedisData redisData) {
+        if (redisData instanceof SimpleString) {
+            return redisData.getCharSequenceValue();
+        }
+        if (redisData instanceof RedisData.Integer) {
+            return redisData.getLongValue();
+        }
+        if (redisData instanceof Null) {
+            return null;
+        }
+        if (redisData instanceof RedisData.Error) {
+            return new RedisServerException((RedisData.Error) redisData);
+        }
+        throw new IllegalArgumentException("unsupported type: " + redisData);
     }
 
     private static final class AggregateState {

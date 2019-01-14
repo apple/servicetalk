@@ -24,6 +24,7 @@ import io.servicetalk.redis.api.RedisData.BulkStringChunk;
 import io.servicetalk.redis.api.RedisData.CompleteBulkString;
 import io.servicetalk.redis.api.RedisData.DefaultBulkStringChunk;
 import io.servicetalk.redis.api.RedisData.DefaultFirstBulkStringChunk;
+import io.servicetalk.redis.api.RedisData.DefaultLastBulkStringChunk;
 import io.servicetalk.redis.api.RedisData.SimpleString;
 import io.servicetalk.redis.api.RedisRequesterUtils.ToBufferSingle;
 import io.servicetalk.redis.api.RedisRequesterUtils.ToListSingle;
@@ -86,11 +87,11 @@ public class RedisRequesterUtilsTest {
         bufferSubscriber.listen(aggregator);
 
         Buffer buffer = allocator.newBuffer(1).writeByte(1).asReadOnly();
-        BulkStringChunk bufferChunk = new DefaultBulkStringChunk(buffer);
+        BulkStringChunk bufferChunk = new DefaultFirstBulkStringChunk(buffer, 2);
         publisher.sendItems(bufferChunk);
 
         buffer = allocator.newBuffer(1).writeByte(2).asReadOnly();
-        bufferChunk = new DefaultBulkStringChunk(buffer);
+        bufferChunk = new DefaultLastBulkStringChunk(buffer);
         publisher.sendItems(bufferChunk);
 
         publisher.complete();
@@ -99,14 +100,11 @@ public class RedisRequesterUtilsTest {
     }
 
     @Test
-    public void charAggregationDoesResize() {
+    public void bufferSingleHandleSingleSimpleString() {
         ToBufferSingle<Buffer> aggregator = new ToBufferSingle<>(noOffloadsStrategy(), requester, request);
         bufferSubscriber.listen(aggregator);
 
-        SimpleString stringChunk = new SimpleString("1");
-        publisher.sendItems(stringChunk);
-
-        stringChunk = new SimpleString("2");
+        SimpleString stringChunk = new SimpleString("12");
         publisher.sendItems(stringChunk);
 
         publisher.complete();
@@ -223,6 +221,8 @@ public class RedisRequesterUtilsTest {
                 redisData = new CompleteBulkString(buffer);
             } else if (i == 0) {
                 redisData = new DefaultFirstBulkStringChunk(buffer, lengthOfAllChunks);
+            } else if (i == chunks.size() - 1) {
+                redisData = new DefaultLastBulkStringChunk(buffer);
             } else {
                 redisData = new DefaultBulkStringChunk(buffer);
             }

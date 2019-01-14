@@ -16,23 +16,24 @@
 package io.servicetalk.redis.netty;
 
 import io.servicetalk.buffer.api.Buffer;
-import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.redis.api.RedisData;
 import io.servicetalk.redis.api.RedisData.ArraySize;
 import io.servicetalk.redis.api.RedisData.BulkStringChunk;
+import io.servicetalk.redis.api.RedisData.CompleteBulkString;
 import io.servicetalk.redis.api.RedisData.DefaultBulkStringChunk;
 import io.servicetalk.redis.api.RedisData.DefaultFirstBulkStringChunk;
+import io.servicetalk.redis.api.RedisData.DefaultLastBulkStringChunk;
+import io.servicetalk.redis.api.RedisData.LastBulkStringChunk;
 import io.servicetalk.redis.api.RedisData.SimpleString;
 import io.servicetalk.transport.netty.internal.ByteToMessageDecoder;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.ByteProcessor;
 import io.netty.util.CharsetUtil;
 
+import static io.netty.buffer.Unpooled.EMPTY_BUFFER;
 import static io.servicetalk.buffer.netty.BufferUtil.newBufferFrom;
-import static io.servicetalk.buffer.netty.BufferUtil.toByteBufNoThrow;
 import static io.servicetalk.redis.api.RedisData.NULL;
 import static io.servicetalk.redis.internal.RedisUtils.EOL_SHORT;
 import static io.servicetalk.redis.netty.RedisDecoder.State.SkipEol;
@@ -41,8 +42,7 @@ import static java.lang.Math.min;
 
 final class RedisDecoder extends ByteToMessageDecoder {
 
-    private static final DefaultFirstBulkStringChunk EMPTY_BULK_STRING = new DefaultFirstBulkStringChunk(
-            newBufferFrom(Unpooled.EMPTY_BUFFER), 0);
+    private static final LastBulkStringChunk EMPTY_BULK_STRING = new CompleteBulkString(newBufferFrom(EMPTY_BUFFER));
     private static final SimpleString EMPTY_SIMPLE_STRING = new SimpleString("");
 
     enum State {
@@ -57,21 +57,15 @@ final class RedisDecoder extends ByteToMessageDecoder {
 
     private final LongParser longParser = new LongParser();
     private final IntParser intParser = new IntParser();
-    private final BufferAllocator allocator;
     private State state = Start;
     private int expectBulkBytes;
-
-    RedisDecoder(final BufferAllocator allocator) {
-        this.allocator = allocator;
-    }
 
     @Override
     protected void decode(final ChannelHandlerContext ctx, final ByteBuf in) {
         while (in.isReadable()) {
             switch (state) {
                 case Start: {
-                    final byte b = in.readByte();
-                    state = nextState(b);
+                    state = nextState(in.readByte());
                     break;
                 }
                 case String: {
@@ -108,30 +102,38 @@ final class RedisDecoder extends ByteToMessageDecoder {
                         if (length == -1) {
                             return;
                         }
-                        final int size = readInt(in, length);
-                        if (size == 0) {
+                        final int totalBytesToRead = readInt(in, length);
+                        if (totalBytesToRead == 0) {
                             // An empty bulk string is sent as $0\r\n\r\n, so this is reading the 2nd \r\n, after the
                             // absent (0 bytes long) chunk.
                             readEndOfLine(in);
                             state = Start;
                             ctx.fireChannelRead(EMPTY_BULK_STRING);
                             break;
-                        }
-                        if (size == -1) {
+                        } else if (totalBytesToRead == -1) {
                             // A null bulk string is sent as $-1\r\n, so there is no 2nd \r\n to read.
                             state = Start;
                             ctx.fireChannelRead(NULL);
                             break;
                         }
-                        expectBulkBytes = size;
-                        final int len = min(expectBulkBytes, in.readableBytes());
-                        chunk = readBulkStringChunk(in, true, len);
+                        final int bytesToRead = min(totalBytesToRead, in.readableBytes());
+                        final Buffer bytes = newBufferFrom(in.readRetainedSlice(bytesToRead));
+                        expectBulkBytes = totalBytesToRead - bytesToRead;
+                        if (expectBulkBytes == 0) {
+                            chunk = new CompleteBulkString(bytes);
+                            state = SkipEol;
+                        } else {
+                            chunk = new DefaultFirstBulkStringChunk(bytes, totalBytesToRead);
+                        }
+                    } else if (expectBulkBytes > in.readableBytes()) {
+                        expectBulkBytes -= in.readableBytes();
+                        chunk = new DefaultBulkStringChunk(newBufferFrom(in.readRetainedSlice(in.readableBytes())));
                     } else {
-                        chunk = readBulkStringChunk(in, false, min(expectBulkBytes, in.readableBytes()));
-                    }
-                    if (expectBulkBytes == 0) {
+                        chunk = new DefaultLastBulkStringChunk(newBufferFrom(in.readRetainedSlice(expectBulkBytes)));
+                        expectBulkBytes = 0;
                         state = SkipEol;
                     }
+
                     ctx.fireChannelRead(chunk);
                     break;
                 }
@@ -166,15 +168,6 @@ final class RedisDecoder extends ByteToMessageDecoder {
                     throw new IllegalStateException("Unexpected state: " + state);
             }
         }
-    }
-
-    private BulkStringChunk readBulkStringChunk(final ByteBuf in, final boolean first, final int len) {
-        final Buffer bytes = allocator.newBuffer(len);
-        in.readBytes(toByteBufNoThrow(bytes), len);
-        final int bulkStringLength = this.expectBulkBytes;
-        expectBulkBytes -= len;
-        return first ? new DefaultFirstBulkStringChunk(bytes, bulkStringLength) :
-                new DefaultBulkStringChunk(bytes);
     }
 
     private static State nextState(final byte b) {

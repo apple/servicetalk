@@ -62,6 +62,7 @@ import static io.servicetalk.redis.api.RedisProtocolSupport.IntegerType.U04;
 import static io.servicetalk.redis.api.RedisProtocolSupport.IntegerType.U08;
 import static io.servicetalk.redis.api.RedisProtocolSupport.SetCondition.NX;
 import static io.servicetalk.redis.api.RedisProtocolSupport.SetExpire.EX;
+import static io.servicetalk.transport.netty.internal.RandomDataUtils.randomCharSequenceOfByteLength;
 import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.parseBoolean;
 import static java.util.Arrays.asList;
@@ -129,6 +130,23 @@ public class RedisCommanderTest extends BaseRedisClientTest {
                 contains(greaterThanOrEqualTo(0L), greaterThanOrEqualTo(0L)));
         assertThat(awaitIndefinitely(commandClient.sdiff(key("a-set-1"), key("a-set-2"), "missing-key")), containsInAnyOrder("a", "b"));
         assertThat(awaitIndefinitely(commandClient.sdiffstore(key("diff"), key("a-set-1"), key("a-set-2"), "missing-key")), is(2L));
+    }
+
+    @Test
+    public void dataSpreadAcrossMultipleSocketReadWriteOperations() throws Exception {
+        String expectedValue = randomCharSequenceOfByteLength(5 * 1024 * 1024).toString(); // 5 MB
+        String largeKey = key("a-set-large-string-1");
+        assertThat(commandClient.set(largeKey, expectedValue).toFuture().get(), is("OK"));
+        assertThat(commandClient.get(largeKey).toFuture().get(), is(expectedValue));
+        commandClient.del(largeKey).toFuture().get();
+    }
+
+    @Test
+    public void emptyGet() throws Exception {
+        String emptyKey = key("a-empty-key");
+        assertThat(commandClient.set(emptyKey, "").toFuture().get(), is("OK"));
+        assertThat(commandClient.get(emptyKey).toFuture().get(), is(""));
+        commandClient.del(emptyKey).toFuture().get();
     }
 
     @Test

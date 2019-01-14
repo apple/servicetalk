@@ -63,6 +63,7 @@ import static io.servicetalk.redis.api.RedisProtocolSupport.IntegerType.U04;
 import static io.servicetalk.redis.api.RedisProtocolSupport.IntegerType.U08;
 import static io.servicetalk.redis.api.RedisProtocolSupport.SetCondition.NX;
 import static io.servicetalk.redis.api.RedisProtocolSupport.SetExpire.EX;
+import static io.servicetalk.transport.netty.internal.RandomDataUtils.randomCharSequenceOfByteLength;
 import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.parseBoolean;
 import static java.util.Arrays.asList;
@@ -130,6 +131,23 @@ public class BufferRedisCommanderTest extends BaseRedisClientTest {
                 contains(greaterThanOrEqualTo(0L), greaterThanOrEqualTo(0L)));
         assertThat(awaitIndefinitely(commandClient.sdiff(key("a-set-1"), key("a-set-2"), buf("missing-key"))), containsInAnyOrder(buf("a"), buf("b")));
         assertThat(awaitIndefinitely(commandClient.sdiffstore(key("diff"), key("a-set-1"), key("a-set-2"), buf("missing-key"))), is(2L));
+    }
+
+    @Test
+    public void dataSpreadAcrossMultipleSocketReadWriteOperations() throws Exception {
+        Buffer expectedValue = buf(randomCharSequenceOfByteLength(5 * 1024 * 1024)); // 5 MB
+        Buffer largeKey = key("a-set-large-buffer-1");
+        assertThat(commandClient.set(largeKey, expectedValue).toFuture().get(), is("OK"));
+        assertThat(commandClient.get(largeKey).toFuture().get(), is(expectedValue));
+        commandClient.del(largeKey).toFuture().get();
+    }
+
+    @Test
+    public void emptyGet() throws Exception {
+        Buffer emptyKey = key("a-empty-key");
+        assertThat(commandClient.set(emptyKey, buf("")).toFuture().get(), is("OK"));
+        assertThat(commandClient.get(emptyKey).toFuture().get(), is(EMPTY_BUFFER));
+        commandClient.del(emptyKey).toFuture().get();
     }
 
     @Test
