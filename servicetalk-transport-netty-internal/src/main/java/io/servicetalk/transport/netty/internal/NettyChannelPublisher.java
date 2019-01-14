@@ -40,9 +40,8 @@ import static io.servicetalk.concurrent.internal.ThrowableUtil.unknownStackTrace
 import static java.util.Objects.requireNonNull;
 
 final class NettyChannelPublisher<T> extends Publisher<T> {
-
     private static final ClosedChannelException CLOSED_CHANNEL_EXCEPTION =
-            unknownStackTrace(new ClosedChannelException(), NettyChannelPublisher.class, "dispose");
+            unknownStackTrace(new ClosedChannelException(), NettyChannelPublisher.class, "channelInboundClosed");
 
     // All state is only touched from eventloop.
     private long requestCount;
@@ -121,7 +120,7 @@ final class NettyChannelPublisher<T> extends Publisher<T> {
         }
     }
 
-    void dispose() {
+    void channelInboundClosed() {
         assertInEventloop();
         fatalError = CLOSED_CHANNEL_EXCEPTION;
         exceptionCaught(CLOSED_CHANNEL_EXCEPTION);
@@ -275,7 +274,7 @@ final class NettyChannelPublisher<T> extends Publisher<T> {
             subscriber.onSubscribe(EMPTY_SUBSCRIPTION);
             subscriber.onError(new DuplicateSubscribeException(subscription.associatedSub, subscriber));
         } else {
-            requestCount = 0; /*Don't pollute requested count between subscribers */
+            requestCount = 0; // Don't pollute requested count between subscribers
             subscription = new SubscriptionImpl(subscriber);
             this.subscription = subscription;
             subscriber.onSubscribe(subscription);
