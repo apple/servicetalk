@@ -28,115 +28,92 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
 final class TestRecordStore implements RecordStore {
 
-    private final Map<String, Map<RecordType, List<List<ResourceRecord>>>> recordsToReturnByDomain = new HashMap<>();
-    private final Map<String, Map<RecordType, List<ResourceRecord>>> defaultRecordsByDomain = new HashMap<>();
+    public static final int DEFAULT_TTL = 1;
 
-    private int defaultTtl = 1;
+    private final Map<String, Map<RecordType, List<Supplier<List<ResourceRecord>>>>> recordsToReturnByDomain =
+            new HashMap<>();
+    private final Map<String, Map<RecordType, Supplier<List<ResourceRecord>>>> defaultRecordsByDomain =
+            new HashMap<>();
 
-    public TestRecordStore defaultTtl(final int defaultTtl) {
-        this.defaultTtl = defaultTtl;
-        return this;
+    public TestRecordStore setDefaultResponse(final String domain, final RecordType recordType,
+                                              final String... ipAddresses) {
+        return setDefaultResponse(domain, recordType, DEFAULT_TTL, ipAddresses);
     }
 
-    public TestRecordStore setDefaultResponse(String domain, RecordType recordType, String... ipAddresses) {
-        return setDefaultResponse(domain, recordType, defaultTtl, ipAddresses);
-    }
-
-    public TestRecordStore setDefaultResponse(String domain, RecordType recordType, int ttl, String... ipAddresses) {
-        List<ResourceRecord> records = new ArrayList<>();
-
-        for (String ipAddress : ipAddresses) {
-            final Map<String, Object> attributes = new HashMap<>();
-            attributes.put(DnsAttribute.IP_ADDRESS, ipAddress);
-            records.add(new TestResourceRecord(
-                    domain, recordType, RecordClass.IN, ttl, attributes));
+    public TestRecordStore setDefaultResponse(final String domain, final RecordType recordType, final int ttl,
+                                              final String... ipAddresses) {
+        final List<ResourceRecord> records = new ArrayList<>();
+        for (final String ipAddress : ipAddresses) {
+            records.add(createRecord(domain, recordType, ttl, ipAddress));
         }
-        return setDefaultResponse(domain, records);
+        return setDefaultResponse(domain, recordType, () -> records);
     }
 
-    private TestRecordStore setDefaultResponse(final String domain, final List<ResourceRecord> records) {
-        Map<RecordType, List<ResourceRecord>> recordsByType = new HashMap<>();
-
-        for (ResourceRecord record : records) {
-            List<ResourceRecord> records2 = recordsByType.computeIfAbsent(record.getRecordType(),
-                    k -> new ArrayList<>());
-            records2.add(record);
-        }
-
-        final Map<RecordType, List<ResourceRecord>> recordsToReturnForDomain =
+    public TestRecordStore setDefaultResponse(final String domain, final RecordType recordType,
+                                              final Supplier<List<ResourceRecord>> records) {
+        final Map<RecordType, Supplier<List<ResourceRecord>>> defaultRecords =
                 defaultRecordsByDomain.computeIfAbsent(domain, k -> new HashMap<>());
-        for (Map.Entry<RecordType, List<ResourceRecord>> entry : recordsByType.entrySet()) {
-            final RecordType recordType = entry.getKey();
-            recordsToReturnForDomain.put(recordType, entry.getValue());
-        }
-
+        defaultRecords.put(recordType, records);
         return this;
     }
 
-    public TestRecordStore addResponse(String domain, RecordType recordType, String... ipAddresses) {
-        return addResponse(domain, recordType, defaultTtl, ipAddresses);
+    public TestRecordStore addResponse(final String domain, final RecordType recordType,
+                                       final String... ipAddresses) {
+        return addResponse(domain, recordType, DEFAULT_TTL, ipAddresses);
     }
 
-    public TestRecordStore addResponse(String domain, RecordType recordType, int ttl, String... ipAddresses) {
-        List<ResourceRecord> records = new ArrayList<>();
-
-        for (String ipAddress : ipAddresses) {
-            final Map<String, Object> attributes = new HashMap<>();
-            attributes.put(DnsAttribute.IP_ADDRESS, ipAddress);
-            records.add(new TestResourceRecord(
-                    domain, recordType, RecordClass.IN, ttl, attributes));
+    public TestRecordStore addResponse(final String domain, final RecordType recordType, final int ttl,
+                                       final String... ipAddresses) {
+        final List<ResourceRecord> records = new ArrayList<>();
+        for (final String ipAddress : ipAddresses) {
+            records.add(createRecord(domain, recordType, ttl, ipAddress));
         }
-
-        return addResponse(domain, records);
+        return addResponse(domain, recordType, () -> records);
     }
 
-    private TestRecordStore addResponse(String domain, List<ResourceRecord> records) {
-        Map<RecordType, List<ResourceRecord>> recordsByType = new HashMap<>();
-
-        for (ResourceRecord record : records) {
-            List<ResourceRecord> records2 = recordsByType.computeIfAbsent(record.getRecordType(),
-                    k -> new ArrayList<>());
-            records2.add(record);
-        }
-
-        final Map<RecordType, List<List<ResourceRecord>>> recordsToReturnForDomain =
+    public TestRecordStore addResponse(final String domain, final RecordType recordType,
+                                       final Supplier<List<ResourceRecord>> records) {
+        final Map<RecordType, List<Supplier<List<ResourceRecord>>>> recordsToReturn =
                 recordsToReturnByDomain.computeIfAbsent(domain, k -> new HashMap<>());
-        for (Map.Entry<RecordType, List<ResourceRecord>> entry : recordsByType.entrySet()) {
-            final RecordType recordType = entry.getKey();
-            final List<List<ResourceRecord>> records2 = recordsToReturnForDomain.computeIfAbsent(
-                    recordType, k -> new ArrayList<>());
-            records2.add(entry.getValue());
-        }
-
+        final List<Supplier<List<ResourceRecord>>> records2 = recordsToReturn.computeIfAbsent(
+                recordType, k -> new ArrayList<>());
+        records2.add(records);
         return this;
     }
 
     @Nullable
     @Override
-    public Set<ResourceRecord> getRecords(QuestionRecord questionRecord) {
-        String domain = questionRecord.getDomainName();
-        final Map<RecordType, List<List<ResourceRecord>>> recordsToReturnForDomain =
+    public Set<ResourceRecord> getRecords(final QuestionRecord questionRecord) {
+        final String domain = questionRecord.getDomainName();
+        final Map<RecordType, List<Supplier<List<ResourceRecord>>>> recordsToReturn =
                 recordsToReturnByDomain.get(domain);
-        if (recordsToReturnForDomain != null) {
-            final List<List<ResourceRecord>> recordsToReturn = recordsToReturnForDomain.get(
+        if (recordsToReturn != null) {
+            final List<Supplier<List<ResourceRecord>>> records = recordsToReturn.get(
                     questionRecord.getRecordType());
-            if (recordsToReturn != null && !recordsToReturn.isEmpty()) {
-                return new HashSet<>(recordsToReturn.remove(0));
+            if (records != null && records.size() > 0) {
+                return new HashSet<>(records.remove(0).get());
             }
         }
-        final Map<RecordType, List<ResourceRecord>> defaultRecords = defaultRecordsByDomain.get(domain);
+        final Map<RecordType, Supplier<List<ResourceRecord>>> defaultRecords = defaultRecordsByDomain.get(domain);
         if (defaultRecords != null) {
-            final List<ResourceRecord> recordsToReturn = defaultRecords.get(questionRecord.getRecordType());
-            if (recordsToReturn != null) {
-                return new HashSet<>(recordsToReturn);
+            final Supplier<List<ResourceRecord>> records = defaultRecords.get(questionRecord.getRecordType());
+            if (records != null) {
+                return new HashSet<>(records.get());
             }
         }
-
         return null;
+    }
+
+    static ResourceRecord createRecord(final String domain, final RecordType recordType, final int ttl,
+                                       final String ipAddress) {
+        final Map<String, Object> attributes = new HashMap<>();
+        attributes.put(DnsAttribute.IP_ADDRESS, ipAddress);
+        return new TestResourceRecord(domain, recordType, RecordClass.IN, ttl, attributes);
     }
 
     // `ResourceRecordImpl`'s hashCode/equals don't include `attributes`, so it's impossible to include multiple
@@ -156,7 +133,7 @@ final class TestRecordStore implements RecordStore {
             this.recordClass = recordClass;
             this.timeToLive = timeToLive;
             this.attributes = new HashMap<>();
-            for (Map.Entry<String, Object> entry : attributes.entrySet()) {
+            for (final Map.Entry<String, Object> entry : attributes.entrySet()) {
                 this.attributes.put(entry.getKey().toLowerCase(), entry.getValue());
             }
         }
@@ -183,7 +160,7 @@ final class TestRecordStore implements RecordStore {
 
         @Nullable
         @Override
-        public String get(String id) {
+        public String get(final String id) {
             final Object value = attributes.get(id.toLowerCase());
             return value == null ? null : value.toString();
         }
