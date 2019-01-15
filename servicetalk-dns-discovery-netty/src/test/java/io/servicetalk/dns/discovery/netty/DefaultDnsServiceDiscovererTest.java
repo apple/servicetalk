@@ -239,11 +239,11 @@ public class DefaultDnsServiceDiscovererTest {
                 new DefaultDnsServiceDiscovererBuilder()
                         .ioExecutor(nettyIoExecutor)
                         .executor(immediate())
-                        .setDnsResolverAddressTypes(DnsResolverAddressTypes.IPV4_ONLY)
-                        .setOptResourceEnabled(false)
-                        .setDnsServerAddressStreamProvider(new SingletonDnsServerAddressStreamProvider(
+                        .dnsResolverAddressTypes(DnsResolverAddressTypes.IPV4_ONLY)
+                        .optResourceEnabled(false)
+                        .dnsServerAddressStreamProvider(new SingletonDnsServerAddressStreamProvider(
                                 new SingletonDnsServerAddresses(dnsServer.localAddress())))
-                        .setNdots(1);
+                        .ndots(1);
 
         if (retryStrategy != null) {
             builder.retryDnsFailures(retryStrategy);
