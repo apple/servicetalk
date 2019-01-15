@@ -50,17 +50,13 @@ import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.transport.netty.NettyIoExecutors.createIoExecutor;
 import static io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutors.toEventLoopAwareNettyIoExecutor;
-import static java.lang.Boolean.FALSE;
-import static java.lang.Boolean.parseBoolean;
 import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
-import static org.junit.Assume.assumeThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
@@ -70,6 +66,8 @@ public class DefaultDnsServiceDiscovererTest {
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
 
+    private static final HashSet<String> DOMAINS = new HashSet<>(asList("apple.com", "servicetalk.io"));
+
     private static EventLoopAwareNettyIoExecutor nettyIoExecutor;
     private static TestDnsServer dnsServer;
     private ServiceDiscoverer<String, InetAddress, ServiceDiscovererEvent<InetAddress>> discoverer;
@@ -77,7 +75,7 @@ public class DefaultDnsServiceDiscovererTest {
     @BeforeClass
     public static void beforeClass() throws Exception {
         nettyIoExecutor = toEventLoopAwareNettyIoExecutor(createIoExecutor());
-        dnsServer = new TestDnsServer(new HashSet<>(asList("apple.com", "servicetalk.io")));
+        dnsServer = new TestDnsServer(DOMAINS);
         dnsServer.start();
     }
 
@@ -90,6 +88,7 @@ public class DefaultDnsServiceDiscovererTest {
     @Before
     public void setup() {
         discoverer = buildServiceDiscoverer(null);
+        dnsServer.setStore(new TestRecordStore(DOMAINS));
     }
 
     @After
@@ -163,12 +162,55 @@ public class DefaultDnsServiceDiscovererTest {
         latch.await();
         assertNull(throwableRef.get());
         assertThat(subscriber.getActiveCount(), greaterThanOrEqualTo(1));
-        assertThat(subscriber.getInActiveCount(), greaterThanOrEqualTo(0));
+        assertThat(subscriber.getInactiveCount(), greaterThanOrEqualTo(0));
+    }
+
+    @Test
+    public void singleDiscoverMultipleRecords() throws InterruptedException {
+        dnsServer.setStore(new TestRecordStore(DOMAINS, 2, 2));
+
+        CountDownLatch latch = new CountDownLatch(2);
+        AtomicReference<Throwable> throwableRef = new AtomicReference<>();
+        Publisher<ServiceDiscovererEvent<InetAddress>> publisher = discoverer.discover("apple.com");
+        ServiceDiscovererTestSubscriber<InetAddress> subscriber =
+                new ServiceDiscovererTestSubscriber<>(latch, throwableRef, 2);
+        publisher.subscribe(subscriber);
+
+        latch.await();
+        assertNull(throwableRef.get());
+        assertThat(subscriber.getActiveCount(), equalTo(2));
+        assertThat(subscriber.getInactiveCount(), equalTo(0));
+    }
+
+    @Test
+    public void repeatDiscoverMultipleRecords() throws InterruptedException {
+        dnsServer.setStore(new TestRecordStore(DOMAINS, 2, 2));
+
+        ServiceDiscoverer<String, InetAddress, ServiceDiscovererEvent<InetAddress>> discoverer =
+                buildServiceDiscoverer(null);
+
+        CountDownLatch latch = new CountDownLatch(6);
+        AtomicReference<Throwable> throwableRef = new AtomicReference<>();
+        Publisher<ServiceDiscovererEvent<InetAddress>> publisher = discoverer.discover("apple.com");
+        ServiceDiscovererTestSubscriber<InetAddress> subscriber =
+                new ServiceDiscovererTestSubscriber<>(latch, throwableRef, Long.MAX_VALUE);
+        publisher.subscribe(subscriber);
+
+        latch.await();
+        assertNull(throwableRef.get());
+        assertThat(subscriber.getActiveCount(), equalTo(4));
+        assertThat(subscriber.getInactiveCount(), equalTo(2));
     }
 
     @Test
     public void repeatDiscover() throws InterruptedException {
-        CountDownLatch latch = new CountDownLatch(2);
+        // Don't allow multiple records, as it makes it impossible to count the active/inactive below.
+        dnsServer.setStore(new TestRecordStore(DOMAINS, 1, 1));
+
+        ServiceDiscoverer<String, InetAddress, ServiceDiscovererEvent<InetAddress>> discoverer =
+                buildServiceDiscoverer(null);
+
+        CountDownLatch latch = new CountDownLatch(3);
         AtomicReference<Throwable> throwableRef = new AtomicReference<>();
         Publisher<ServiceDiscovererEvent<InetAddress>> publisher = discoverer.discover("apple.com");
         ServiceDiscovererTestSubscriber<InetAddress> subscriber =
@@ -178,17 +220,19 @@ public class DefaultDnsServiceDiscovererTest {
         latch.await();
         assertNull(throwableRef.get());
         assertThat(subscriber.getActiveCount(), greaterThanOrEqualTo(2));
-        assertThat(subscriber.getInActiveCount(), greaterThanOrEqualTo(1));
+        assertThat(subscriber.getInactiveCount(), greaterThanOrEqualTo(1));
     }
 
     @Test
     public void repeatDiscoverMultipleHosts() throws InterruptedException {
-        assumeThat("Ignored flaky test", parseBoolean(System.getenv("CI")), is(FALSE));
+        // Don't allow multiple records, as it makes it impossible to count the active/inactive below.
+        dnsServer.setStore(new TestRecordStore(DOMAINS, 1, 1));
+
         ServiceDiscoverer<String, InetAddress, ServiceDiscovererEvent<InetAddress>> discoverer =
                 buildServiceDiscoverer(null);
 
-        CountDownLatch appleLatch = new CountDownLatch(2);
-        CountDownLatch stLatch = new CountDownLatch(2);
+        CountDownLatch appleLatch = new CountDownLatch(3);
+        CountDownLatch stLatch = new CountDownLatch(3);
         AtomicReference<Throwable> throwableRef = new AtomicReference<>();
         Publisher<ServiceDiscovererEvent<InetAddress>> applePublisher = discoverer.discover("apple.com");
         Publisher<ServiceDiscovererEvent<InetAddress>> stPublisher = discoverer.discover("servicetalk.io");
@@ -202,10 +246,10 @@ public class DefaultDnsServiceDiscovererTest {
         appleLatch.await();
         stLatch.await();
         assertNull(throwableRef.get());
-        assertThat(appleSubscriber.getActiveCount(), greaterThanOrEqualTo(2));
-        assertThat(appleSubscriber.getInActiveCount(), greaterThanOrEqualTo(1));
-        assertThat(stSubscriber.getActiveCount(), greaterThanOrEqualTo(2));
-        assertThat(stSubscriber.getInActiveCount(), greaterThanOrEqualTo(1));
+        assertThat(appleSubscriber.getActiveCount(), equalTo(2));
+        assertThat(appleSubscriber.getInactiveCount(), equalTo(1));
+        assertThat(stSubscriber.getActiveCount(), equalTo(2));
+        assertThat(stSubscriber.getInactiveCount(), equalTo(1));
     }
 
     @SuppressWarnings("unchecked")
