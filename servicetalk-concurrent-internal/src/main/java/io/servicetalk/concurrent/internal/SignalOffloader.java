@@ -115,6 +115,10 @@ public interface SignalOffloader {
     /**
      * Offloads subscribe call for the passed {@link Subscriber}.
      *
+     * <h2>Offloading Failures</h2>
+     * Implementations are expected to handle failure to offload, e.g. If a thread pool is used to offload and it
+     * rejects task submissions. In such situations, it is expected that the passed {@link Subscriber} will be
+     * correctly terminated.
      * <h2>Caution</h2>
      * This method MUST not be called concurrently with itself or other offload methods here on the same
      * {@link SignalOffloader} instance.
@@ -128,6 +132,10 @@ public interface SignalOffloader {
     /**
      * Offloads subscribe call for the passed {@link Subscriber}.
      *
+     * <h2>Offloading Failures</h2>
+     * Implementations are expected to handle failure to offload, e.g. If a thread pool is used to offload and it
+     * rejects task submissions. In such situations, it is expected that the passed {@link Subscriber} will be
+     * correctly terminated.
      * <h2>Caution</h2>
      * This method MUST not be called concurrently with itself or other offload methods here on the same
      * {@link SignalOffloader} instance.
@@ -141,6 +149,10 @@ public interface SignalOffloader {
     /**
      * Offloads the subscribe call for the passed {@link Subscriber}.
      *
+     * <h2>Offloading Failures</h2>
+     * Implementations are expected to handle failure to offload, e.g. If a thread pool is used to offload and it
+     * rejects task submissions. In such situations, it is expected that the passed {@link Subscriber} will be
+     * correctly terminated.
      * <h2>Caution</h2>
      * This method MUST not be called concurrently with itself or other offload methods here on the same
      * {@link SignalOffloader} instance.
@@ -162,28 +174,4 @@ public interface SignalOffloader {
      * @param <T> Type of signal.
      */
     <T> void offloadSignal(T signal, Consumer<T> signalConsumer);
-
-    /**
-     * Determine if we are currently on the thread responsible for offloading publish signals. Publish signals are
-     * offloaded when using operators like {@code publishOn}.
-     * <p>
-     * If this method is used to conditionally avoid offloading it may impact ordering. If your events are sensitive to
-     * ordering you should use an alternative mechanism.
-     *
-     * @return {@code true} if we are currently on the thread responsible for offloading signals for subscribers.
-     * @see #isInOffloadThreadForSubscribe()
-     */
-    boolean isInOffloadThreadForPublish();
-
-    /**
-     * Determine if we are currently on the thread responsible for offloading subscribe signals. Subscribe signals are
-     * offloaded when using operators like {@code subscribeOn}.
-     * <p>
-     * If this method is used to conditionally avoid offloading it may impact ordering. If your events are sensitive to
-     * ordering you should use an alternative mechanism.
-     *
-     * @return {@code true} if we are currently on the thread responsible for offloading subscribe signals.
-     * @see #isInOffloadThreadForPublish()
-     */
-    boolean isInOffloadThreadForSubscribe();
 }

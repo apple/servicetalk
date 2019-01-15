@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,21 +16,23 @@
 package io.servicetalk.concurrent.api;
 
 /**
- * A {@link Completable} that could be created with an {@link Executor}.
+ * A {@link Single} that could be created with an {@link Executor}.
+ *
+ * @param <T> Type of items emitted.
  */
-public final class CompletableWithExecutor extends AbstractSynchronousCompletableOperator {
+public final class SingleWithExecutor<T> extends AbstractSynchronousSingleOperator<T, T> {
 
     /**
      * New instance.
-     * @param executor {@link Executor} for this {@link Completable}.
-     * @param delegate {@link Completable} to use.
+     * @param executor {@link Executor} for this {@link Single}.
+     * @param delegate {@link Single} to use.
      */
-    public CompletableWithExecutor(final Executor executor, Completable delegate) {
+    public SingleWithExecutor(final Executor executor, Single<T> delegate) {
         super(delegate, executor);
     }
 
     @Override
-    public Subscriber apply(final Subscriber subscriber) {
+    public Subscriber<? super T> apply(final Subscriber<? super T> subscriber) {
         return subscriber;
     }
 }

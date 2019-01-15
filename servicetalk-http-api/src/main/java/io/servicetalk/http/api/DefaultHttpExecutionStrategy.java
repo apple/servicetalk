@@ -26,6 +26,7 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.api.internal.OffloaderAwareExecutor.ensureThreadAffinity;
 import static java.util.Objects.requireNonNull;
 import static java.util.function.Function.identity;
 
@@ -40,10 +41,12 @@ final class DefaultHttpExecutionStrategy implements HttpExecutionStrategy {
     @Nullable
     private final Executor executor;
     private final byte offloads;
+    private final boolean threadAffinity;
 
-    DefaultHttpExecutionStrategy(@Nullable final Executor executor, final byte offloads) {
-        this.executor = executor;
+    DefaultHttpExecutionStrategy(@Nullable final Executor executor, final byte offloads, final boolean threadAffinity) {
+        this.executor = executor != null ? threadAffinity ? ensureThreadAffinity(executor) : executor : null;
         this.offloads = offloads;
+        this.threadAffinity = threadAffinity;
     }
 
     @Nullable
@@ -178,7 +181,7 @@ final class DefaultHttpExecutionStrategy implements HttpExecutionStrategy {
 
     private Executor executor(final Executor fallback) {
         requireNonNull(fallback);
-        return executor == null ? fallback : executor;
+        return executor == null ? threadAffinity ? ensureThreadAffinity(fallback) : fallback : executor;
     }
 
     // Visible for testing

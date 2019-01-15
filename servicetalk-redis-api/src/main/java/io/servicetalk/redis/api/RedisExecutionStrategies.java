@@ -80,6 +80,7 @@ public final class RedisExecutionStrategies {
         @Nullable
         private Executor executor;
         private byte offloads;
+        private boolean threadAffinity;
 
         private Builder() {
         }
@@ -123,12 +124,23 @@ public final class RedisExecutionStrategies {
         }
 
         /**
+         * Enable thread affinity while offloading. When enabled, offloading implementation will favor using a
+         * single thread per subscribe of a source.
+         *
+         * @return {@code this}.
+         */
+        public Builder offloadWithThreadAffinity() {
+            threadAffinity = true;
+            return this;
+        }
+
+        /**
          * Builds a new {@link RedisExecutionStrategy}.
          *
          * @return New {@link RedisExecutionStrategy}.
          */
         public RedisExecutionStrategy build() {
-            return offloads == 0 ? NO_OFFLOADS : new DefaultRedisExecutionStrategy(executor, offloads);
+            return offloads == 0 ? NO_OFFLOADS : new DefaultRedisExecutionStrategy(executor, offloads, threadAffinity);
         }
 
         @Nonnull

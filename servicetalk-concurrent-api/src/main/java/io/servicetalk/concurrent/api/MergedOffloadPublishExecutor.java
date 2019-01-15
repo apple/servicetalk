@@ -22,7 +22,8 @@ import org.reactivestreams.Subscriber;
 
 import java.util.function.Consumer;
 
-import static io.servicetalk.concurrent.api.Executors.newOffloaderFor;
+import static io.servicetalk.concurrent.internal.SignalOffloaders.hasThreadAffinity;
+import static io.servicetalk.concurrent.internal.SignalOffloaders.newOffloaderFor;
 
 final class MergedOffloadPublishExecutor extends DelegatingExecutor implements SignalOffloaderFactory {
 
@@ -34,8 +35,17 @@ final class MergedOffloadPublishExecutor extends DelegatingExecutor implements S
     }
 
     @Override
-    public SignalOffloader newSignalOffloader() {
+    public SignalOffloader newSignalOffloader(final io.servicetalk.concurrent.Executor executor) {
+        // This method is weird since we want to keep SignalOffloader internal but it has to be associated with the
+        // the Executor. In practice, the Executor passed here should always be self when the SignalOffloaderFactory is
+        // an Executor itself.
+        assert executor == this;
         return new PublishOnlySignalOffloader(delegate, fallbackExecutor);
+    }
+
+    @Override
+    public boolean threadAffinity() {
+        return hasThreadAffinity(delegate) && hasThreadAffinity(fallbackExecutor);
     }
 
     private static final class PublishOnlySignalOffloader implements SignalOffloader {
@@ -45,9 +55,7 @@ final class MergedOffloadPublishExecutor extends DelegatingExecutor implements S
 
         PublishOnlySignalOffloader(final Executor publishOnExecutor, final Executor fallbackExecutor) {
             offloader = newOffloaderFor(publishOnExecutor);
-            fallback = fallbackExecutor instanceof SignalOffloaderFactory ?
-                    ((SignalOffloaderFactory) fallbackExecutor).newSignalOffloader() :
-                    newOffloaderFor(fallbackExecutor);
+            fallback = newOffloaderFor(fallbackExecutor);
         }
 
         @Override
@@ -100,16 +108,6 @@ final class MergedOffloadPublishExecutor extends DelegatingExecutor implements S
         @Override
         public <T> void offloadSignal(final T signal, final Consumer<T> signalConsumer) {
             fallback.offloadSignal(signal, signalConsumer);
-        }
-
-        @Override
-        public boolean isInOffloadThreadForPublish() {
-            return offloader.isInOffloadThreadForPublish();
-        }
-
-        @Override
-        public boolean isInOffloadThreadForSubscribe() {
-            return fallback.isInOffloadThreadForSubscribe();
         }
     }
 }

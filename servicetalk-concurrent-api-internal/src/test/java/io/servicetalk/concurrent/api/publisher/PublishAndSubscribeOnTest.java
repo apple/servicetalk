@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,12 +17,15 @@ package io.servicetalk.concurrent.api.publisher;
 
 import io.servicetalk.concurrent.api.ExecutorRule;
 import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.concurrent.api.internal.OffloaderAwareExecutor;
 
 import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.concurrent.atomic.AtomicReferenceArray;
 
+import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
+import static io.servicetalk.concurrent.internal.SignalOffloaders.threadBasedOffloaderFactory;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
@@ -30,7 +33,9 @@ import static org.hamcrest.Matchers.not;
 public class PublishAndSubscribeOnTest extends AbstractPublishAndSubscribeOnTest {
 
     @Rule
-    public final ExecutorRule executorRule = new ExecutorRule();
+    public final ExecutorRule executorRule =
+            new ExecutorRule(() -> new OffloaderAwareExecutor(newCachedThreadExecutor(),
+                    threadBasedOffloaderFactory()));
 
     @Test
     public void testPublishOnNoOverride() throws InterruptedException {

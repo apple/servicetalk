@@ -37,7 +37,6 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.api.Executors.immediate;
-import static io.servicetalk.concurrent.api.Executors.newOffloaderFor;
 import static io.servicetalk.concurrent.api.NeverSingle.neverSingle;
 import static io.servicetalk.concurrent.api.Publisher.empty;
 import static io.servicetalk.concurrent.api.SingleDoOnUtils.doOnErrorSupplier;
@@ -45,6 +44,7 @@ import static io.servicetalk.concurrent.api.SingleDoOnUtils.doOnSubscribeSupplie
 import static io.servicetalk.concurrent.api.SingleDoOnUtils.doOnSuccessSupplier;
 import static io.servicetalk.concurrent.api.SingleToCompletionStage.createAndSubscribe;
 import static io.servicetalk.concurrent.internal.ConcurrentPlugins.getSinglePlugin;
+import static io.servicetalk.concurrent.internal.SignalOffloaders.newOffloaderFor;
 import static java.util.Objects.requireNonNull;
 import static java.util.function.Function.identity;
 

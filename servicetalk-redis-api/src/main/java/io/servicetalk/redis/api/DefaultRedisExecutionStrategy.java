@@ -22,6 +22,9 @@ import io.servicetalk.concurrent.api.Single;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.api.internal.OffloaderAwareExecutor.ensureThreadAffinity;
+import static java.util.Objects.requireNonNull;
+
 /**
  * Default implementation for {@link RedisExecutionStrategy}.
  */
@@ -32,10 +35,13 @@ final class DefaultRedisExecutionStrategy implements RedisExecutionStrategy {
     @Nullable
     private final Executor executor;
     private final byte offloads;
+    private final boolean threadAffinity;
 
-    DefaultRedisExecutionStrategy(@Nullable final Executor executor, final byte offloads) {
-        this.executor = executor;
+    DefaultRedisExecutionStrategy(@Nullable final Executor executor, final byte offloads,
+                                  final boolean threadAffinity) {
+        this.executor = executor != null ? threadAffinity ? ensureThreadAffinity(executor) : executor : null;
         this.offloads = offloads;
+        this.threadAffinity = threadAffinity;
     }
 
     @Nullable
@@ -75,7 +81,8 @@ final class DefaultRedisExecutionStrategy implements RedisExecutionStrategy {
     }
 
     private Executor executor(final Executor fallback) {
-        return executor == null ? fallback : executor;
+        requireNonNull(fallback);
+        return executor == null ? threadAffinity ? ensureThreadAffinity(fallback) : fallback : executor;
     }
 
     // visible for tests

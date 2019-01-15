@@ -80,6 +80,7 @@ public final class HttpExecutionStrategies {
         @Nullable
         private Executor executor;
         private byte offloads;
+        private boolean threadAffinity;
 
         private Builder() {
         }
@@ -132,12 +133,23 @@ public final class HttpExecutionStrategies {
         }
 
         /**
+         * Enable thread affinity while offloading. When enabled, offloading implementation will favor using a
+         * single thread per subscribe of a source.
+         *
+         * @return {@code this}.
+         */
+        public Builder offloadWithThreadAffinity() {
+            threadAffinity = true;
+            return this;
+        }
+
+        /**
          * Builds a new {@link HttpExecutionStrategy}.
          *
          * @return New {@link HttpExecutionStrategy}.
          */
         public HttpExecutionStrategy build() {
-            return offloads == 0 ? NO_OFFLOADS : new DefaultHttpExecutionStrategy(executor, offloads);
+            return offloads == 0 ? NO_OFFLOADS : new DefaultHttpExecutionStrategy(executor, offloads, threadAffinity);
         }
 
         private Builder addOffload(byte flag) {

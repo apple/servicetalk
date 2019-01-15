@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.concurrent.api.single;
+package io.servicetalk.concurrent.api.completable;
 
+import io.servicetalk.concurrent.api.Completable;
+import io.servicetalk.concurrent.api.CompletableWithExecutor;
 import io.servicetalk.concurrent.api.ExecutorRule;
-import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.concurrent.api.SingleWithExecutor;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 
 import org.junit.Rule;
@@ -27,12 +27,13 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.function.Function;
 
-import static io.servicetalk.concurrent.api.Single.success;
-import static io.servicetalk.concurrent.api.completable.AbstractPublishAndSubscribeOnTest.verifyCapturedThreads;
+import static io.servicetalk.concurrent.api.Completable.completed;
+import static io.servicetalk.concurrent.api.Completable.never;
 import static java.lang.Thread.currentThread;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.notNullValue;
 
 public abstract class AbstractPublishAndSubscribeOnTest {
-
     static final int ORIGINAL_SUBSCRIBER_THREAD = 0;
     static final int OFFLOADED_SUBSCRIBER_THREAD = 1;
 
@@ -41,19 +42,19 @@ public abstract class AbstractPublishAndSubscribeOnTest {
     @Rule
     public final ExecutorRule originalSourceExecutorRule = new ExecutorRule();
 
-    protected AtomicReferenceArray<Thread> setupAndSubscribe(
-            Function<Single<String>, Single<String>> offloadingFunction) throws InterruptedException {
+    protected AtomicReferenceArray<Thread> setupAndSubscribe(Function<Completable, Completable> offloadingFunction)
+            throws InterruptedException {
         CountDownLatch allDone = new CountDownLatch(1);
         AtomicReferenceArray<Thread> capturedThreads = new AtomicReferenceArray<>(2);
 
-        Single<String> original = new SingleWithExecutor<>(originalSourceExecutorRule.getExecutor(), success("Hello"))
-                .doBeforeSuccess(__ -> capturedThreads.set(ORIGINAL_SUBSCRIBER_THREAD, currentThread()));
+        Completable original = new CompletableWithExecutor(originalSourceExecutorRule.getExecutor(), completed())
+                .doAfterComplete(() -> capturedThreads.set(0, currentThread()));
 
-        Single<String> offloaded = offloadingFunction.apply(original);
+        Completable offloaded = offloadingFunction.apply(original);
 
         offloaded.doAfterFinally(allDone::countDown)
-                .doBeforeSuccess(__ -> capturedThreads.set(OFFLOADED_SUBSCRIBER_THREAD, currentThread()))
-                .subscribe(val -> { });
+                .doBeforeComplete(() -> capturedThreads.set(1, currentThread()))
+                .subscribe();
         allDone.await();
 
         verifyCapturedThreads(capturedThreads);
@@ -61,24 +62,30 @@ public abstract class AbstractPublishAndSubscribeOnTest {
     }
 
     protected AtomicReferenceArray<Thread> setupForCancelAndSubscribe(
-            Function<Single<String>, Single<String>> offloadingFunction) throws InterruptedException {
+            Function<Completable, Completable> offloadingFunction) throws InterruptedException {
         CountDownLatch allDone = new CountDownLatch(1);
         AtomicReferenceArray<Thread> capturedThreads = new AtomicReferenceArray<>(2);
 
-        Single<String> original = new SingleWithExecutor<>(originalSourceExecutorRule.getExecutor(),
-                Single.<String>never())
+        Completable original = new CompletableWithExecutor(originalSourceExecutorRule.getExecutor(), never())
                 .doAfterCancel(() -> {
-                    capturedThreads.set(ORIGINAL_SUBSCRIBER_THREAD, currentThread());
+                    capturedThreads.set(0, currentThread());
                     allDone.countDown();
                 });
 
-        Single<String> offloaded = offloadingFunction.apply(original);
+        Completable offloaded = offloadingFunction.apply(original);
 
-        offloaded.doBeforeCancel(() -> capturedThreads.set(OFFLOADED_SUBSCRIBER_THREAD, currentThread()))
-                .subscribe(val -> { }).cancel();
+        offloaded.doBeforeCancel(() -> capturedThreads.set(1, currentThread()))
+                .subscribe().cancel();
         allDone.await();
 
         verifyCapturedThreads(capturedThreads);
         return capturedThreads;
+    }
+
+    public static void verifyCapturedThreads(final AtomicReferenceArray<Thread> capturedThreads) {
+        for (int i = 0; i < capturedThreads.length(); i++) {
+            final Thread capturedThread = capturedThreads.get(i);
+            assertThat("Unexpected captured thread at index: " + i, capturedThread, notNullValue());
+        }
     }
 }

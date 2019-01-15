@@ -18,6 +18,7 @@ package io.servicetalk.concurrent.api;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.internal.DefaultThreadFactory;
 import io.servicetalk.concurrent.internal.SignalOffloader;
+import io.servicetalk.concurrent.internal.SignalOffloaderFactory;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
@@ -34,7 +35,7 @@ import java.util.function.Function;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
-import static io.servicetalk.concurrent.internal.SignalOffloaders.newOffloaderFor;
+import static io.servicetalk.concurrent.internal.SignalOffloaders.defaultOffloaderFactory;
 import static java.lang.Thread.NORM_PRIORITY;
 import static java.util.concurrent.Executors.newSingleThreadScheduledExecutor;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -74,6 +75,7 @@ final class DefaultExecutor extends AbstractOffloaderAwareExecutor implements Co
 
     private final InternalExecutor executor;
     private final InternalScheduler scheduler;
+    private final SignalOffloaderFactory offloaderFactory;
 
     DefaultExecutor(int coreSize, int maxSize, ThreadFactory threadFactory) {
         this(new ThreadPoolExecutor(coreSize, maxSize, DEFAULT_KEEP_ALIVE_TIME_SECONDS, SECONDS,
@@ -114,6 +116,7 @@ final class DefaultExecutor extends AbstractOffloaderAwareExecutor implements Co
 
         executor = newInternalExecutor(jdkExecutor, interruptOnCancel);
         this.scheduler = scheduler;
+        offloaderFactory = defaultOffloaderFactory();
     }
 
     @Override
@@ -136,8 +139,13 @@ final class DefaultExecutor extends AbstractOffloaderAwareExecutor implements Co
     }
 
     @Override
-    public SignalOffloader newSignalOffloader() {
-        return newOffloaderFor(this);
+    public SignalOffloader newSignalOffloader(final io.servicetalk.concurrent.Executor executor) {
+        return offloaderFactory.newSignalOffloader(executor);
+    }
+
+    @Override
+    public boolean threadAffinity() {
+        return offloaderFactory.threadAffinity();
     }
 
     @Override
