@@ -155,7 +155,7 @@ final class TaskBasedSignalOffloader implements SignalOffloader {
         private volatile int state = STATE_IDLE;
         private volatile long requested;
 
-        private OffloadedSubscription(final Executor executor, final Subscription target) {
+        OffloadedSubscription(final Executor executor, final Subscription target) {
             this.executor = executor;
             this.target = requireNonNull(target);
         }
@@ -185,9 +185,6 @@ final class TaskBasedSignalOffloader implements SignalOffloader {
                 try {
                     executor.execute(this);
                 } catch (Throwable t) {
-                    LOGGER.error("Failed to execute task on the executor {}. " +
-                                    "Invoking Subscription (cancel()) in the caller thread. Subscription {}. ",
-                            executor, target, t);
                     // Ideally, we should send an error to the related Subscriber but that would mean we make sure
                     // we do not concurrently invoke the Subscriber with the original source which would mean we
                     // add some "lock" in the data path.
@@ -195,6 +192,9 @@ final class TaskBasedSignalOffloader implements SignalOffloader {
                     // Subscription -> Subscriber dependency for all paths is too costly.
                     // As we do for other cases, we simply invoke the target in the calling thread.
                     requested = TERMINATED;
+                    LOGGER.error("Failed to execute task on the executor {}. " +
+                                    "Invoking Subscription (cancel()) in the caller thread. Subscription {}. ",
+                            executor, target, t);
                     target.cancel();
                     throw t;
                 }
@@ -213,20 +213,19 @@ final class TaskBasedSignalOffloader implements SignalOffloader {
                             target.request(r);
                             continue;
                         } catch (Throwable t) {
-                            LOGGER.error("Unexpected exception from request(). Subscription {}.", target, t);
                             // Cancel since request-n threw.
                             requested = r = CANCELLED;
+                            LOGGER.error("Unexpected exception from request(). Subscription {}.", target, t);
                         }
                     }
 
                     if (r == CANCELLED) {
                         // Cancelled
+                        requested = TERMINATED;
                         try {
                             target.cancel();
                         } catch (Throwable t) {
                             LOGGER.error("Ignoring unexpected exception from cancel(). Subscription {}.", target, t);
-                        } finally {
-                            requested = TERMINATED;
                         }
                         return; // No more signals are required to be sent.
                     }
@@ -239,14 +238,18 @@ final class TaskBasedSignalOffloader implements SignalOffloader {
                         return;
                     }
                     // Invalid request-n
+                    //
+                    // As per spec (Rule 3.9) a request-n with n <= 0 MUST signal an onError hence terminating the
+                    // Subscription. Since, we can not store negative values in requested and keep going without
+                    // requesting more invalid values, we assume spec compliance (no more data can be requested) and
+                    // terminate.
+                    requested = TERMINATED;
                     try {
                         target.request(r);
                     } catch (IllegalArgumentException iae) {
                         // Expected
                     } catch (Throwable t) {
                         LOGGER.error("Ignoring unexpected exception from request(). Subscription {}.", target, t);
-                    } finally {
-                        requested = TERMINATED;
                     }
                 } finally {
                     isDone = stateUpdater.getAndSet(this, STATE_IDLE) != STATE_ENQUEUED;
@@ -276,7 +279,7 @@ final class TaskBasedSignalOffloader implements SignalOffloader {
         @Nullable
         private Subscription subscription;
 
-        private OffloadedSubscriber(final Subscriber<? super T> target, final Executor executor,
+        OffloadedSubscriber(final Subscriber<? super T> target, final Executor executor,
                                     final int publisherSignalQueueInitialCapacity) {
             this.target = target;
             this.executor = executor;
@@ -311,19 +314,14 @@ final class TaskBasedSignalOffloader implements SignalOffloader {
             do {
                 stateUpdater.getAndSet(this, STATE_EXECUTING);
                 try {
-                    boolean terminatedPrematurely = false;
                     Object signal;
                     while ((signal = signals.poll()) != null) {
-                        if (terminatedPrematurely) {
-                            // drain the queue if we terminated prematurely
-                            continue;
-                        }
                         if (signal instanceof Subscription) {
                             Subscription subscription = (Subscription) signal;
                             try {
                                 target.onSubscribe(subscription);
                             } catch (Throwable t) {
-                                terminatedPrematurely = true;
+                                discardAllSignals();
                                 state = STATE_TERMINATED;
                                 LOGGER.error("Ignored unexpected exception from onSubscribe. Subscriber: {}, " +
                                         "Subscription: {}.", target, subscription, t);
@@ -348,7 +346,7 @@ final class TaskBasedSignalOffloader implements SignalOffloader {
                             try {
                                 target.onNext(t);
                             } catch (Throwable th) {
-                                terminatedPrematurely = true;
+                                discardAllSignals();
                                 state = STATE_TERMINATED;
                                 assert subscription != null;
                                 subscription.cancel();
@@ -377,6 +375,13 @@ final class TaskBasedSignalOffloader implements SignalOffloader {
                     }
                 }
             } while (!isDone);
+        }
+
+        @SuppressWarnings("StatementWithEmptyBody")
+        protected void discardAllSignals() {
+            while (signals.poll() != null) {
+                // Drain all elements before exiting.
+            }
         }
 
         private void offerSignal(Object signal) {
@@ -438,12 +443,11 @@ final class TaskBasedSignalOffloader implements SignalOffloader {
         private static final int ON_SUBSCRIBE_RECEIVED_MASK = 8;
         private static final int EXECUTING_MASK = 16;
         private static final int RECEIVED_TERMINAL_MASK = 32;
+        private static final int EXECUTING_SUBSCRIBED_RECEIVED_MASK = EXECUTING_MASK | ON_SUBSCRIBE_RECEIVED_MASK;
 
         private static final int STATE_INIT = 0;
         private static final int STATE_AWAITING_TERMINAL = 1;
         private static final int STATE_TERMINATED = 2;
-        private static final int STATE_ON_SUBSCRIBE_RECEIVED = STATE_INIT | ON_SUBSCRIBE_RECEIVED_MASK;
-        private static final int STATE_RECEIVED_TERMINAL = STATE_INIT | RECEIVED_TERMINAL_MASK;
         private static final AtomicIntegerFieldUpdater<AbstractOffloadedSingleValueSubscriber> stateUpdater =
                 newUpdater(AbstractOffloadedSingleValueSubscriber.class, "state");
 
@@ -461,7 +465,7 @@ final class TaskBasedSignalOffloader implements SignalOffloader {
 
         public final void onSubscribe(final Cancellable cancellable) {
             this.cancellable = cancellable;
-            state = STATE_ON_SUBSCRIBE_RECEIVED;
+            state = ON_SUBSCRIBE_RECEIVED_MASK;
             try {
                 executor.execute(this);
             } catch (Throwable t) {
@@ -480,7 +484,7 @@ final class TaskBasedSignalOffloader implements SignalOffloader {
                 if (cState == STATE_TERMINATED) {
                     return;
                 }
-                if (!append(cState, EXECUTING_MASK)) {
+                if (!casAppend(cState, EXECUTING_MASK)) {
                     continue;
                 }
                 cState |= EXECUTING_MASK;
@@ -512,11 +516,11 @@ final class TaskBasedSignalOffloader implements SignalOffloader {
                 if (/* Duplicate terminal event */
                         has(cState, RECEIVED_TERMINAL_MASK) || cState == STATE_TERMINATED ||
                                 // Already executing or enqueued for executing, append the state.
-                                ((has(cState, EXECUTING_MASK) || has(cState, ON_SUBSCRIBE_RECEIVED_MASK)) &&
-                                        append(cState, RECEIVED_TERMINAL_MASK))) {
+                                (hasAny(cState, EXECUTING_SUBSCRIBED_RECEIVED_MASK) &&
+                                        casAppend(cState, RECEIVED_TERMINAL_MASK))) {
                     return;
                 } else if (cState == STATE_AWAITING_TERMINAL &&
-                        stateUpdater.compareAndSet(this, STATE_AWAITING_TERMINAL, STATE_RECEIVED_TERMINAL)) {
+                        stateUpdater.compareAndSet(this, STATE_AWAITING_TERMINAL, RECEIVED_TERMINAL_MASK)) {
                     // We are not executing hence need to enqueue the task to deliver terminal.
                     try {
                         executor.execute(this);
@@ -532,7 +536,7 @@ final class TaskBasedSignalOffloader implements SignalOffloader {
         }
 
         final void onSubscribeFailed() {
-            stateUpdater.getAndSet(this, STATE_TERMINATED);
+            state = STATE_TERMINATED;
         }
 
         abstract void terminateOnEnqueueFailure(Throwable cause);
@@ -545,7 +549,11 @@ final class TaskBasedSignalOffloader implements SignalOffloader {
             return (state & flag) == flag;
         }
 
-        private boolean append(int cState, int toAppend) {
+        private static boolean hasAny(int state, int flag) {
+            return (state & flag) != 0;
+        }
+
+        private boolean casAppend(int cState, int toAppend) {
             return stateUpdater.compareAndSet(this, cState, (cState | toAppend));
         }
     }
@@ -596,10 +604,10 @@ final class TaskBasedSignalOffloader implements SignalOffloader {
             try {
                 target.onSubscribe(cancellable);
             } catch (Throwable t) {
+                onSubscribeFailed();
                 LOGGER.error("Ignored unexpected exception from onSubscribe. Subscriber: {}, Cancellable: {}.",
                         target, cancellable, t);
                 cancellable.cancel();
-                onSubscribeFailed();
             }
         }
 
@@ -654,9 +662,9 @@ final class TaskBasedSignalOffloader implements SignalOffloader {
             try {
                 target.onSubscribe(cancellable);
             } catch (Throwable t) {
+                onSubscribeFailed();
                 LOGGER.error("Ignored unexpected exception from onSubscribe. Subscriber: {}, Cancellable: {}.",
                         target, cancellable, t);
-                onSubscribeFailed();
                 cancellable.cancel();
             }
         }
