@@ -36,7 +36,7 @@ public class RetryableConnectException extends ConnectException implements Retry
      * Create a new instance.
      * @param cause the original cause.
      */
-    public RetryableConnectException(ConnectException cause) {
+    public RetryableConnectException(final ConnectException cause) {
         super(cause.getMessage());
         initCause(cause);
     }
