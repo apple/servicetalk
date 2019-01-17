@@ -18,7 +18,6 @@ package io.servicetalk.concurrent.api;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
@@ -104,11 +103,11 @@ final class DefaultCompositeCloseable implements CompositeCloseable {
     }
 
     @Override
-    public void close() throws IOException {
+    public void close() throws Exception {
         try {
             awaitIndefinitely(closeAsync());
         } catch (ExecutionException | InterruptedException e) {
-            throw new IOException(e);
+            throw new Exception(e);
         }
     }
 
