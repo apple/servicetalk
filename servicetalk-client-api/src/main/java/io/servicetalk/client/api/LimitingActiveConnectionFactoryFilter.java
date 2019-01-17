@@ -145,7 +145,7 @@ public final class LimitingActiveConnectionFactoryFilter<ResolvedAddress, C exte
          * @return {@link Throwable} representing a connection attempt was refused.
          */
         default Throwable newConnectionRefusedException(ResolvedAddress target) {
-            return new ConnectException("No more connections allowed for the host: " + target);
+            return new RetryableConnectException("No more connections allowed for the host: " + target);
         }
     }
 
@@ -217,7 +217,7 @@ public final class LimitingActiveConnectionFactoryFilter<ResolvedAddress, C exte
                 try {
                     sendCloseCallback();
                 } finally {
-                    original.onError(new ConnectException("Null connection received."));
+                    original.onError(new RetryableConnectException("Null connection received"));
                 }
             } else {
                 result.onClose().doFinally(this::sendCloseCallback).subscribe();

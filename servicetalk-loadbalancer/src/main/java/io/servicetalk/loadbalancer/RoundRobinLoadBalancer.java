@@ -20,7 +20,6 @@ import io.servicetalk.client.api.ConnectionRejectedException;
 import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.api.LoadBalancerFactory;
 import io.servicetalk.client.api.NoAvailableHostException;
-import io.servicetalk.client.api.RetryableException;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.concurrent.api.AsyncCloseable;
 import io.servicetalk.concurrent.api.Completable;
@@ -29,6 +28,7 @@ import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.DuplicateSubscribeException;
+import io.servicetalk.concurrent.internal.QueueFullException;
 import io.servicetalk.concurrent.internal.SequentialCancellable;
 
 import org.reactivestreams.Subscriber;
@@ -289,8 +289,9 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends ListenableA
                         }
                         return success(selection);
                     }
-                    return error(new RetryableException("Failed to add newly created connection for host: " +
-                            host.address + ", host inactive? " + host.removed));
+                    return error(host.removed ? new InactiveHostException(
+                                    "Failed to add newly created connection for inactive host: " + host.address) :
+                            new QueueFullException(host.address.toString(), Integer.MAX_VALUE));
                 });
     }
 

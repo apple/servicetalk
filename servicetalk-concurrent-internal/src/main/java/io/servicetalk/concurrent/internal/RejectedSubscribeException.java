@@ -20,11 +20,23 @@ package io.servicetalk.concurrent.internal;
  * established. In other words the subscribe operation was rejected.
  */
 public class RejectedSubscribeException extends RuntimeException implements RejectedSubscribeError {
+    private static final long serialVersionUID = 8816644436486094573L;
+
     /**
      * Create a new instance.
-     * @param message Description of the error.
+     *
+     * @param message The exception message.
      */
-    public RejectedSubscribeException(String message) {
+    public RejectedSubscribeException(final String message) {
         super(message);
+    }
+
+    /**
+     * Create a new instance.
+     *
+     * @param cause The cause of the exception.
+     */
+    public RejectedSubscribeException(final Throwable cause) {
+        super(cause);
     }
 }

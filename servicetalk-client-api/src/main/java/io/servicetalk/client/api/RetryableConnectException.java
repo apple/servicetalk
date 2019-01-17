@@ -15,10 +15,12 @@
  */
 package io.servicetalk.client.api;
 
+import java.net.ConnectException;
+
 /**
  * Throws when a connect operations failed.
  */
-public class ConnectException extends RetryableException {
+public class RetryableConnectException extends ConnectException implements RetryableException {
     private static final long serialVersionUID = -1023700497112242644L;
 
     /**
@@ -26,7 +28,7 @@ public class ConnectException extends RetryableException {
      *
      * @param message for the exception.
      */
-    public ConnectException(final String message) {
+    public RetryableConnectException(final String message) {
         super(message);
     }
 
@@ -34,7 +36,7 @@ public class ConnectException extends RetryableException {
      * Create a new instance.
      * @param cause the original cause.
      */
-    public ConnectException(java.net.ConnectException cause) {
+    public RetryableConnectException(ConnectException cause) {
         super(cause.getMessage());
         initCause(cause);
     }

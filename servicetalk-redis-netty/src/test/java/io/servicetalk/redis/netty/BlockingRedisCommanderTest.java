@@ -15,7 +15,6 @@
  */
 package io.servicetalk.redis.netty;
 
-import io.servicetalk.client.api.RetryableException;
 import io.servicetalk.concurrent.BlockingIterable;
 import io.servicetalk.concurrent.BlockingIterator;
 import io.servicetalk.concurrent.api.Executor;
@@ -476,7 +475,7 @@ public class BlockingRedisCommanderTest extends BaseRedisClientTest {
         try {
             pubSubClient1.ping();
             fail("Should have failed");
-        } catch (final RetryableException expected) {
+        } catch (RejectedSubscribeException e) {
             // Expected
         }
     }

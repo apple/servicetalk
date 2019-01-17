@@ -17,6 +17,7 @@ package io.servicetalk.tcp.netty.internal;
 
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.buffer.netty.BufferUtil;
+import io.servicetalk.client.api.RetryableConnectException;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.DelayedCancellable;
@@ -324,7 +325,7 @@ public final class TcpConnector<Read, Write> {
                             resolvedAddress : "Failed to connect: " + resolvedAddress + " (local: " + local + ")";
                     cause = new io.servicetalk.client.api.ConnectTimeoutException(msg, cause);
                 } else if (cause instanceof ConnectException) {
-                    cause = new io.servicetalk.client.api.ConnectException((ConnectException) cause);
+                    cause = new RetryableConnectException((ConnectException) cause);
                 }
                 subscriber.onError(cause);
             }

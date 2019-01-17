@@ -26,6 +26,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.LinkedBlockingQueue;
 
@@ -48,7 +49,7 @@ public class LimitingActiveConnectionFactoryFilterTest {
     public final MockedSingleListenerRule<ListenableAsyncCloseable> connectlistener = new MockedSingleListenerRule<>();
 
     private ConnectionFactory<String, ListenableAsyncCloseable> original;
-    private LinkedBlockingQueue<CompletableProcessor> connectionOnClose;
+    private BlockingQueue<CompletableProcessor> connectionOnClose;
 
     @Before
     public void setUp() {
@@ -68,7 +69,7 @@ public class LimitingActiveConnectionFactoryFilterTest {
         ConnectionFactory<String, ListenableAsyncCloseable> cf = withMaxConnections(original, 1);
         cf.newConnection("c1").toFuture().get();
         expectedException.expect(ExecutionException.class);
-        expectedException.expectCause(instanceOf(ConnectException.class));
+        expectedException.expectCause(instanceOf(RetryableConnectException.class));
         cf.newConnection("c2").toFuture().get();
     }
 
@@ -96,18 +97,18 @@ public class LimitingActiveConnectionFactoryFilterTest {
         cf.newConnection("c2").toFuture().get();
     }
 
-    private void connectAndVerifyFailed(final ConnectionFactory<String, ListenableAsyncCloseable> cf)
+    private static void connectAndVerifyFailed(final ConnectionFactory<String, ListenableAsyncCloseable> cf)
             throws Exception {
         try {
             cf.newConnection("c-fail").toFuture().get();
             fail("Connect expected to fail.");
         } catch (ExecutionException e) {
-            assertThat("Unexpected exception.", e.getCause(), instanceOf(ConnectException.class));
+            assertThat("Unexpected exception.", e.getCause(), instanceOf(RetryableConnectException.class));
         }
     }
 
     @SuppressWarnings("unchecked")
-    private ConnectionFactory<String, ListenableAsyncCloseable> newMockConnectionFactory() {
+    private static ConnectionFactory<String, ListenableAsyncCloseable> newMockConnectionFactory() {
         return (ConnectionFactory<String, ListenableAsyncCloseable>) mock(ConnectionFactory.class);
     }
 }

@@ -18,7 +18,7 @@ package io.servicetalk.client.api;
 /**
  * Exception raised when more concurrent requests have been issued on a connection than is allowed.
  */
-public class MaxRequestLimitExceededException extends RetryableException {
+public class MaxRequestLimitExceededException extends RuntimeException implements RetryableException {
     private static final long serialVersionUID = 9114515334374632438L;
 
     /**

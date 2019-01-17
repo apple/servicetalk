@@ -18,7 +18,7 @@ package io.servicetalk.client.api;
 /**
  * Thrown when a newly created connection was rejected.
  */
-public final class ConnectionRejectedException extends RetryableException {
+public final class ConnectionRejectedException extends RuntimeException implements RetryableException {
     private static final long serialVersionUID = -2573006397795678870L;
 
     /**
