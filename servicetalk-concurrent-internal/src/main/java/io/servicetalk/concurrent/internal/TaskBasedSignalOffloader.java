@@ -388,8 +388,10 @@ final class TaskBasedSignalOffloader implements SignalOffloader {
             if (earlyTerminated) {
                 return;
             }
-            boolean offered = signals.offer(signal);
-            assert offered : "Unbounded queue rejected.";
+
+            if (!signals.offer(signal)) {
+                throw new UnboundQueueFullError("signals");
+            }
 
             for (;;) {
                 int cState = state;

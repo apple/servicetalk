@@ -18,16 +18,25 @@ package io.servicetalk.concurrent.internal;
 /**
  * Exception indicating a bounded queue is full.
  */
-public class QueueFullException extends RuntimeException {
+public class QueueFullException extends IllegalStateException {
     private static final long serialVersionUID = 7206036429195573500L;
 
     /**
-     * New instance.
+     * Create a new instance.
+     *
+     * @param message The exception message.
+     */
+    public QueueFullException(final String message) {
+        super(message);
+    }
+
+    /**
+     * Create a new instance.
      *
      * @param queueIdentifier Identifier for the queue that is full.
      * @param capacity Capacity for queue.
      */
-    public QueueFullException(String queueIdentifier, int capacity) {
+    public QueueFullException(final String queueIdentifier, final int capacity) {
         super("Queue " + queueIdentifier + " exceeded maximum capacity " + capacity);
     }
 }

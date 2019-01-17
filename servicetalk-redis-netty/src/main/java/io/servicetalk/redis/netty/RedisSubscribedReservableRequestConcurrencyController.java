@@ -50,8 +50,8 @@ final class RedisSubscribedReservableRequestConcurrencyController implements Res
                         STATE_RESERVED, STATE_QUIT)) {
                     subscriber.onComplete();
                 } else {
-                    subscriber.onError(new IllegalStateException(new IllegalStateException("Resource " + this +
-                            (requestState == STATE_QUIT ? " is closed." : " was not reserved."))));
+                    subscriber.onError(new IllegalStateException("Resource " + this +
+                            (requestState == STATE_QUIT ? " is closed." : " was not reserved.")));
                 }
             }
         };

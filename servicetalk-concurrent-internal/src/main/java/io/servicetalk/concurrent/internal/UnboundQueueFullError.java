@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,18 +16,17 @@
 package io.servicetalk.concurrent.internal;
 
 /**
- * Exception indicating a bounded queue is full, which also resulted in a rejected subscribe.
+ * Error indicating an unbounded queue is unexpectedly full.
  */
-public final class QueueFullAndRejectedSubscribeException extends QueueFullException implements RejectedSubscribeError {
-    private static final long serialVersionUID = 2132623149199945728L;
+public class UnboundQueueFullError extends AssertionError {
+    private static final long serialVersionUID = -8660385639316480149L;
 
     /**
-     * Create a new instance.
+     * New instance.
      *
      * @param queueIdentifier Identifier for the queue that is full.
-     * @param capacity Capacity for queue.
      */
-    public QueueFullAndRejectedSubscribeException(final String queueIdentifier, final int capacity) {
-        super(queueIdentifier, capacity);
+    public UnboundQueueFullError(final String queueIdentifier) {
+        super("Unexpected reject from an unbounded " + queueIdentifier + " queue");
     }
 }

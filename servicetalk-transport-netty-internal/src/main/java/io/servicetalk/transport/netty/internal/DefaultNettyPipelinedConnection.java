@@ -20,6 +20,8 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.SequentialCancellable;
+import io.servicetalk.concurrent.internal.UnboundQueueFullAndRejectedSubscribeError;
+import io.servicetalk.concurrent.internal.UnboundQueueFullError;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.netty.internal.NettyConnection.RequestNSupplier;
 
@@ -151,8 +153,7 @@ public final class DefaultNettyPipelinedConnection<Req, Resp> implements NettyPi
                 subscriber.onSubscribe(task);
                 if (!writeQueue.offerAndTryExecute(task)) {
                     task.cancel();
-                    subscriber.onError(new IllegalStateException(
-                            "Unexpected reject from an unbounded pending requests queue."));
+                    subscriber.onError(new UnboundQueueFullAndRejectedSubscribeError("pending requests"));
                 }
             }
         }.concatWith(
@@ -307,7 +308,7 @@ public final class DefaultNettyPipelinedConnection<Req, Resp> implements NettyPi
             }
 
             if (!offered) {
-                onError0(new IllegalStateException("Unexpected reject from an unbounded response listener queue."));
+                onError0(new UnboundQueueFullError("response listener"));
             }
         }
 

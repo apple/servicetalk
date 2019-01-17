@@ -39,7 +39,6 @@ import static io.servicetalk.concurrent.internal.PlatformDependent.newUnboundedS
 import static io.servicetalk.concurrent.internal.SubscriberUtils.isRequestNValid;
 import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
 import static io.servicetalk.concurrent.internal.TerminalNotification.error;
-import static java.lang.Integer.MAX_VALUE;
 import static java.lang.System.arraycopy;
 import static java.lang.Thread.currentThread;
 import static java.util.Objects.requireNonNull;
@@ -549,8 +548,8 @@ final class ThreadBasedSignalOffloader implements SignalOffloader, Runnable {
 
         private void offerSignal(Object signal) {
             if (!signals.offer(signal)) {
-                throw new QueueFullException(offloader.getExecutorThreadName() + "-" + original.getClass().getName(),
-                        MAX_VALUE);
+                throw new UnboundQueueFullError(
+                        offloader.getExecutorThreadName() + "-" + original.getClass().getName());
             }
             notifyExecutor();
         }
@@ -1002,6 +1001,8 @@ final class ThreadBasedSignalOffloader implements SignalOffloader, Runnable {
     }
 
     private static final class EnqueueForOffloadingFailed extends RuntimeException {
+        private static final long serialVersionUID = 7000860459929007810L;
+
         EnqueueForOffloadingFailed(final Exception cause) {
             super(cause);
         }

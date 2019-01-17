@@ -18,6 +18,7 @@ package io.servicetalk.concurrent.api;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.Completable.Processor;
 import io.servicetalk.concurrent.internal.TerminalNotification;
+import io.servicetalk.concurrent.internal.UnboundQueueFullAndRejectedSubscribeError;
 
 import java.util.Queue;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
@@ -78,7 +79,7 @@ public final class CompletableProcessor extends Completable implements Processor
                 notifyListeners(terminalSignal);
             }
         } else {
-            TerminalNotification.error(new RuntimeException("queue " + subscribers + " unexpectedly rejected offer."))
+            TerminalNotification.error(new UnboundQueueFullAndRejectedSubscribeError("subscribers"))
                     .terminate(subscriber);
         }
     }
