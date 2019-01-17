@@ -340,12 +340,17 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends ListenableA
         }
 
         boolean addConnection(C connection) {
+            if (removed) {
+                connection.closeAsync().subscribe();
+                return false;
+            }
+
             assert connections != null;
             final boolean added = connections.offer(connection);
             if (!added || removed) {
                 // It could be that this host was removed concurrently and was not closed by markInactive().
                 // So, we check removed again and remove from the queue + close.
-                if (added && connections.remove(connection)) {
+                if (!added || connections.remove(connection)) {
                     connection.closeAsync().subscribe();
                 }
                 return false;
