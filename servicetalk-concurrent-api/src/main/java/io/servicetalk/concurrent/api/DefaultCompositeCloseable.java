@@ -19,7 +19,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
-import java.util.concurrent.ExecutionException;
 
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
@@ -104,11 +103,7 @@ final class DefaultCompositeCloseable implements CompositeCloseable {
 
     @Override
     public void close() throws Exception {
-        try {
-            awaitIndefinitely(closeAsync());
-        } catch (ExecutionException | InterruptedException e) {
-            throw new Exception(e);
-        }
+        awaitIndefinitely(closeAsync());
     }
 
     private void mergeCloseableDelayError(final AsyncCloseable closeable) {
