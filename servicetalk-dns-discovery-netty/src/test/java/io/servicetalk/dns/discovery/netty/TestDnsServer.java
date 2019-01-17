@@ -50,10 +50,6 @@ import static java.net.InetAddress.getLoopbackAddress;
 class TestDnsServer extends DnsServer {
     private final DelegateRecordStore store;
 
-    TestDnsServer(Set<String> domains) {
-        this(new TestRecordStore(domains));
-    }
-
     TestDnsServer(RecordStore store) {
         this.store = new DelegateRecordStore(store);
     }
@@ -151,7 +147,7 @@ class TestDnsServer extends DnsServer {
     }
 
     private static final class DelegateRecordStore implements RecordStore {
-        private RecordStore store;
+        private volatile RecordStore store;
 
         DelegateRecordStore(final RecordStore store) {
             this.store = store;

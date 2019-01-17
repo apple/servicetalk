@@ -20,9 +20,8 @@ import io.netty.util.internal.PlatformDependent;
 final class DnsTestUtils {
 
     private static final int[] NUMBERS = new int[254];
-    private static final char[] CHARS = new char[26];
     @SuppressWarnings("PMD.AvoidUsingHardCodedIP")
-    private static final String[] IPV6_ADDRESSES = new String[]{
+    private static final String[] IPV6_ADDRESSES = {
             "::1",
             "0:0:0:0:0:0:1:1",
             "0:0:0:0:0:1:1:1",
@@ -37,18 +36,10 @@ final class DnsTestUtils {
         for (int i = 0; i < NUMBERS.length; i++) {
             NUMBERS[i] = i + 1;
         }
-
-        for (int i = 0; i < CHARS.length; i++) {
-            CHARS[i] = (char) ('a' + i);
-        }
     }
 
     private DnsTestUtils() {
         // No instances
-    }
-
-    static String nextDomain() {
-        return CHARS[index(CHARS.length)] + ".netty.io";
     }
 
     static String nextIp() {
