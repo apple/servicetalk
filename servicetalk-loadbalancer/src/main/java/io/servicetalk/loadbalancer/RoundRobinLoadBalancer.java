@@ -340,11 +340,6 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends ListenableA
         }
 
         boolean addConnection(C connection) {
-            if (removed) {
-                connection.closeAsync().subscribe();
-                return false;
-            }
-
             assert connections != null;
             final boolean added = connections.offer(connection);
             if (!added || removed) {
