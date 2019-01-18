@@ -105,4 +105,9 @@ public class RedisConnectionFilter extends RedisConnection {
     protected final RedisConnection delegate() {
         return delegate;
     }
+
+    @Override
+    public String toString() {
+        return RedisConnectionFilter.class.getSimpleName() + "(" + delegate + ")";
+    }
 }

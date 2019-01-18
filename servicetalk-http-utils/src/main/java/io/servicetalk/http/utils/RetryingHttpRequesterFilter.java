@@ -15,105 +15,106 @@
  */
 package io.servicetalk.http.utils;
 
+import io.servicetalk.client.api.AbstractRetryingFilterBuilder;
+import io.servicetalk.client.api.AbstractRetryingFilterBuilder.ReadOnlyRetryableSettings;
 import io.servicetalk.client.api.RetryableException;
 import io.servicetalk.concurrent.api.BiIntFunction;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.concurrent.api.RetryStrategies;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpClientFilterFactory;
 import io.servicetalk.http.api.HttpConnectionFilterFactory;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpRequestMetaData;
-import io.servicetalk.http.api.HttpResponseMetaData;
+import io.servicetalk.http.api.ReservedStreamingHttpConnectionFilter;
 import io.servicetalk.http.api.StreamingHttpClient;
-import io.servicetalk.http.api.StreamingHttpClient.ReservedStreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpClientFilter;
 import io.servicetalk.http.api.StreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpConnectionFilter;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequester;
 import io.servicetalk.http.api.StreamingHttpResponse;
-import io.servicetalk.http.utils.RetryingHttpRequesterFilter.Builder.ReadOnlyRetryableSettings;
 
 import java.time.Duration;
-import java.util.function.Predicate;
+import java.util.function.BiPredicate;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Completable.error;
-import static io.servicetalk.concurrent.api.RetryStrategies.retryWithConstantBackoff;
-import static io.servicetalk.concurrent.api.RetryStrategies.retryWithConstantBackoffAndJitter;
-import static io.servicetalk.concurrent.api.RetryStrategies.retryWithExponentialBackoff;
-import static io.servicetalk.concurrent.api.RetryStrategies.retryWithExponentialBackoffAndJitter;
 
 /**
  * A filter to enable retries for HTTP requests.
+ *
+ * @see RetryStrategies
  */
 public final class RetryingHttpRequesterFilter implements HttpClientFilterFactory, HttpConnectionFilterFactory {
 
-    private final ReadOnlyRetryableSettings settings;
+    private final ReadOnlyRetryableSettings<HttpRequestMetaData> settings;
 
-    RetryingHttpRequesterFilter(final ReadOnlyRetryableSettings settings) {
+    private RetryingHttpRequesterFilter(final ReadOnlyRetryableSettings<HttpRequestMetaData> settings) {
         this.settings = settings;
     }
 
-    private Single<StreamingHttpResponse> request(final BiIntFunction<Throwable, Completable> retryStrategy,
-                                                  final StreamingHttpRequester delegate,
-                                                  final HttpExecutionStrategy executionStrategy,
-                                                  final StreamingHttpRequest request) {
-        if (settings.isRetryable(request)) {
-            return delegate.request(executionStrategy, request).retryWhen(retryStrategy);
-        }
-        return delegate.request(executionStrategy, request);
-    }
-
-    private Single<? extends ReservedStreamingHttpConnection> reserve(
-            final BiIntFunction<Throwable, Completable> retryStrategy,
-            final StreamingHttpClient delegate,
-            final HttpExecutionStrategy executionStrategy,
-            final StreamingHttpRequest request) {
-        if (settings.isRetryable(request)) {
-            return delegate.reserveConnection(executionStrategy, request).retryWhen(retryStrategy);
-        }
-        return delegate.reserveConnection(executionStrategy, request);
+    private Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
+                                                  final HttpExecutionStrategy strategy,
+                                                  final StreamingHttpRequest request,
+                                                  final BiIntFunction<Throwable, Completable> retryStrategy) {
+        return delegate.request(strategy, request).retryWhen((count, t) -> {
+            if (settings.isRetryable(request, t)) {
+                return retryStrategy.apply(count, t);
+            }
+            return error(t);
+        });
     }
 
     @Override
     public StreamingHttpClientFilter create(final StreamingHttpClient client, final Publisher<Object> lbEvents) {
         return new StreamingHttpClientFilter(client) {
 
-            final BiIntFunction<Throwable, Completable> retryStrategy =
+            private final BiIntFunction<Throwable, Completable> retryStrategy =
                     settings.newStrategy(client.executionContext().executor());
 
             @Override
             protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
-                                                            final HttpExecutionStrategy executionStrategy,
+                                                            final HttpExecutionStrategy strategy,
                                                             final StreamingHttpRequest request) {
-                return RetryingHttpRequesterFilter.this.request(retryStrategy, delegate, executionStrategy, request);
+                return RetryingHttpRequesterFilter.this.request(delegate, strategy, request, retryStrategy);
             }
 
             @Override
             protected Single<? extends ReservedStreamingHttpConnection> reserveConnection(
                     final StreamingHttpClient delegate,
-                    final HttpExecutionStrategy executionStrategy,
+                    final HttpExecutionStrategy strategy,
                     final StreamingHttpRequest request) {
-                return RetryingHttpRequesterFilter.this.reserve(retryStrategy, delegate, executionStrategy, request);
+
+                return delegate.reserveConnection(strategy, request).retryWhen((count, t) -> {
+                    if (settings.isRetryable(request, t)) {
+                        return retryStrategy.apply(count, t);
+                    }
+                    return error(t);
+                }).map(r -> new ReservedStreamingHttpConnectionFilter(r) {
+                    @Override
+                    public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
+                                                                 final StreamingHttpRequest request) {
+                        return RetryingHttpRequesterFilter.this.request(delegate(), strategy, request, retryStrategy);
+                    }
+                });
             }
         };
     }
 
     @Override
     public StreamingHttpConnectionFilter create(final StreamingHttpConnection connection) {
-
-        final BiIntFunction<Throwable, Completable> retryStrategy =
-                settings.newStrategy(connection.executionContext().executor());
-
         return new StreamingHttpConnectionFilter(connection) {
+
+            private final BiIntFunction<Throwable, Completable> retryStrategy =
+                    settings.newStrategy(connection.executionContext().executor());
+
             @Override
-            public Single<StreamingHttpResponse> request(final HttpExecutionStrategy executionStrategy,
+            public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
                                                          final StreamingHttpRequest request) {
-                return RetryingHttpRequesterFilter.this.request(retryStrategy, delegate(), executionStrategy, request);
+                return RetryingHttpRequesterFilter.this.request(delegate(), strategy, request, retryStrategy);
             }
         };
     }
@@ -121,182 +122,74 @@ public final class RetryingHttpRequesterFilter implements HttpClientFilterFactor
     /**
      * A builder for {@link RetryingHttpRequesterFilter}.
      */
-    public static final class Builder {
-
-        @Nullable
-        private Executor executor;
-        private int retryCount = 1;
-        private boolean jitter;
-        private boolean exponential;
-        @Nullable
-        private Duration initialDelay;
-        private Predicate<Throwable> causeFilter = throwable -> throwable instanceof RetryableException;
-        private Predicate<HttpRequestMetaData> retryablePredicate =
-                meta -> meta.method().methodProperties().idempotent();
+    public static final class Builder
+            extends AbstractRetryingFilterBuilder<RetryingHttpRequesterFilter, HttpRequestMetaData> {
 
         /**
          * New instance.
          * <p>
-         * By default this builder will not infinitely retry. To configure the number of retry attempts see
-         * {@link #retryCount(int)}.
+         * By default this builder will not infinitely retry. To configure the maximum number of retry attempts see
+         * {@link #maxRetries(int)}.
          */
         public Builder() {
         }
 
-        /**
-         * Set the number of retry operations before giving up.
-         *
-         * @param retryCount the number of retry operations before giving up.
-         * @return {@code this}.
-         */
-        public Builder retryCount(int retryCount) {
-            if (retryCount <= 0) {
-                throw new IllegalArgumentException("retryCount: " + retryCount + " (expected: >0)");
-            }
-            this.retryCount = retryCount;
+        @Override
+        public Builder maxRetries(final int maxRetries) {
+            super.maxRetries(maxRetries);
             return this;
         }
 
-        /**
-         * Adds a delay of {@code delay} between retries.
-         *
-         * @param delay Delay {@link Duration} for the retries.
-         * @return {@code this}.
-         */
-        public Builder backoff(Duration delay) {
-            this.initialDelay = delay;
+        @Override
+        public Builder backoff(@Nullable final Duration delay) {
+            super.backoff(delay);
             return this;
         }
 
-        /**
-         * Adds a delay between retries. For first retry, the delay is {@code initialDelay} which is increased
-         * exponentially for subsequent retries.
-         * <p>
-         * The resulting {@link RetryingHttpRequesterFilter} from {@link #build()} may not attempt to check for
-         * overflow if the retry count is high enough that an exponential delay causes {@link Long} overflow.
-         *
-         * @param initialDelay Delay {@link Duration} for the first retry and increased exponentially with each retry.
-         * @return {@code this}.
-         */
-        public Builder exponentialBackoff(Duration initialDelay) {
-            this.initialDelay = initialDelay;
-            this.exponential = true;
+        @Override
+        public Builder exponentialBackoff(@Nullable final Duration initialDelay) {
+            super.exponentialBackoff(initialDelay);
             return this;
         }
 
-        /**
-         * Uses the passed {@link Executor} for scheduling timers if {@link #backoff(Duration)} or
-         * {@link #exponentialBackoff(Duration)} is used.
-         *
-         * @param executor {@link Executor} for scheduling timers.
-         * @return {@code this}.
-         */
-        public Builder timerExecutor(Executor executor) {
-            this.executor = executor;
+        @Override
+        public Builder timerExecutor(@Nullable final Executor timerExecutor) {
+            super.timerExecutor(timerExecutor);
             return this;
         }
 
-        /**
-         * When {@link #exponentialBackoff(Duration)} or {@link #backoff(Duration)} is used, adding jitter will
-         * randomize the delays between the retries.
-         *
-         * @return {@code this}
-         */
+        @Override
         public Builder addJitter() {
-            this.jitter = true;
+            super.addJitter();
             return this;
         }
 
-        /**
-         * Overrides the default criterion for determining which errors should be retried.
-         *
-         * @param causeFilter {@link Predicate} that checks whether a given {@link Throwable cause} of the failure
-         * should be retried.
-         * @return {@code this}.
-         */
-        public Builder retryForCause(Predicate<Throwable> causeFilter) {
-            this.causeFilter = causeFilter;
+        @Override
+        public Builder removeJitter() {
+            super.removeJitter();
             return this;
         }
 
-        /**
-         * Overrides the default criterion for determining which requests should be retried.
-         *
-         * @param retryablePredicate {@link Predicate} that checks whether a given {@link HttpResponseMetaData request}
-         * should be retried.
-         * @return {@code this}.
-         */
-        public Builder retryForRequest(Predicate<HttpRequestMetaData> retryablePredicate) {
-            this.retryablePredicate = retryablePredicate;
+        @Override
+        public Builder retryFor(final BiPredicate<HttpRequestMetaData, Throwable> retryForPredicate) {
+            super.retryFor(retryForPredicate);
             return this;
+        }
+
+        @Override
+        public BiPredicate<HttpRequestMetaData, Throwable> defaultRetryForPredicate() {
+            return (meta, throwable) ->
+                    throwable instanceof RetryableException || meta.method().methodProperties().idempotent();
         }
 
         /**
          * Builds a {@link RetryingHttpRequesterFilter}.
          *
-         * @return A new {@link RetryingHttpRequesterFilter}.
+         * @return A new {@link RetryingHttpRequesterFilter}
          */
+        @Override
         public RetryingHttpRequesterFilter build() {
-            return new RetryingHttpRequesterFilter(new ReadOnlyRetryableSettings(executor, retryCount, jitter,
-                    exponential, initialDelay, causeFilter, retryablePredicate));
-        }
-
-        static final class ReadOnlyRetryableSettings {
-
-            @Nullable
-            private final Executor executor;
-            private final int retryCount;
-            private final boolean jitter;
-            private final boolean exponential;
-            @Nullable
-            private final Duration initialDelay;
-            private final Predicate<Throwable> causeFilter;
-            private final Predicate<HttpRequestMetaData> retryablePredicate;
-
-            ReadOnlyRetryableSettings(@Nullable final Executor executor,
-                                      int retryCount,
-                                      final boolean jitter,
-                                      final boolean exponential,
-                                      @Nullable final Duration initialDelay,
-                                      final Predicate<Throwable> causeFilter,
-                                      final Predicate<HttpRequestMetaData> retryablePredicate) {
-                this.executor = executor;
-                this.retryCount = retryCount;
-                this.jitter = jitter;
-                this.exponential = exponential;
-                this.initialDelay = initialDelay;
-                this.causeFilter = causeFilter;
-                this.retryablePredicate = retryablePredicate;
-            }
-
-            boolean isRetryable(HttpRequestMetaData meta) {
-                return retryablePredicate.test(meta);
-            }
-
-            BiIntFunction<Throwable, Completable> newStrategy(Executor requesterExecutor) {
-                if (initialDelay == null) {
-                    return (count, throwable) ->
-                            causeFilter.test(throwable) && count <= retryCount ? completed() : error(throwable);
-                } else {
-                    Executor effectiveExecutor = executor == null ? requesterExecutor : executor;
-                    if (exponential) {
-                        if (jitter) {
-                            return retryWithExponentialBackoffAndJitter(
-                                    retryCount, causeFilter, initialDelay, effectiveExecutor);
-                        } else {
-                            return retryWithExponentialBackoff(
-                                    retryCount, causeFilter, initialDelay, effectiveExecutor);
-                        }
-                    } else {
-                        if (jitter) {
-                            return retryWithConstantBackoffAndJitter(
-                                    retryCount, causeFilter, initialDelay, effectiveExecutor);
-                        } else {
-                            return retryWithConstantBackoff(retryCount, causeFilter, initialDelay, effectiveExecutor);
-                        }
-                    }
-                }
-            }
+            return new RetryingHttpRequesterFilter(readOnlySettings());
         }
     }
 }

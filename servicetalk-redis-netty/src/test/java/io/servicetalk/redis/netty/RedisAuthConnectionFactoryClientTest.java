@@ -22,6 +22,7 @@ import io.servicetalk.redis.api.RedisCommander;
 import io.servicetalk.redis.api.RedisServerException;
 import io.servicetalk.redis.utils.RedisAuthConnectionFactory;
 import io.servicetalk.redis.utils.RedisAuthorizationException;
+import io.servicetalk.redis.utils.RetryingRedisRequesterFilter;
 import io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutor;
 
 import org.junit.After;
@@ -32,9 +33,9 @@ import org.junit.rules.Timeout;
 import java.util.function.Consumer;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.api.Publisher.empty;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.redis.api.RedisExecutionStrategies.noOffloadsStrategy;
-import static io.servicetalk.redis.utils.RetryingRedisClient.newBuilder;
 import static io.servicetalk.transport.netty.NettyIoExecutors.createIoExecutor;
 import static io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutors.toEventLoopAwareNettyIoExecutor;
 import static java.time.Duration.ofMillis;
@@ -149,7 +150,8 @@ public class RedisAuthConnectionFactoryClientTest {
                 .executionStrategy(noOffloadsStrategy())
                 .idleConnectionTimeout(ofSeconds(2))
                 .build();
-        client = newBuilder(rawClient).exponentialBackoff(ofMillis(10)).build(10);
+        client = new RetryingRedisRequesterFilter.Builder().maxRetries(10).exponentialBackoff(ofMillis(10)).build()
+                .create(rawClient, empty(), empty());
         clientConsumer.accept(client);
     }
 }

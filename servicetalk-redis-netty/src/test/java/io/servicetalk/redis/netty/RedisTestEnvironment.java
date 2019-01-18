@@ -19,6 +19,7 @@ import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.internal.DefaultThreadFactory;
 import io.servicetalk.redis.api.RedisClient;
 import io.servicetalk.redis.api.RedisData;
+import io.servicetalk.redis.utils.RetryingRedisRequesterFilter;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.IoExecutor;
 
@@ -29,13 +30,13 @@ import java.util.regex.Pattern;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
+import static io.servicetalk.concurrent.api.Publisher.empty;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitelyNonNull;
 import static io.servicetalk.redis.api.RedisExecutionStrategies.defaultStrategy;
 import static io.servicetalk.redis.api.RedisProtocolSupport.Command.INFO;
 import static io.servicetalk.redis.api.RedisRequests.newRequest;
 import static io.servicetalk.redis.netty.RedisClients.forAddress;
-import static io.servicetalk.redis.utils.RetryingRedisClient.newBuilder;
 import static io.servicetalk.transport.netty.NettyIoExecutors.createIoExecutor;
 import static java.lang.Thread.NORM_PRIORITY;
 import static java.net.InetAddress.getLoopbackAddress;
@@ -78,7 +79,8 @@ final class RedisTestEnvironment implements AutoCloseable {
                 .maxPipelinedRequests(10)
                 .pingPeriod(ofSeconds(PING_PERIOD_SECONDS))
                 .build();
-        client = newBuilder(rawClient).exponentialBackoff(ofMillis(10)).build(10);
+        client = new RetryingRedisRequesterFilter.Builder().maxRetries(10).exponentialBackoff(ofMillis(10)).build()
+                .create(rawClient, empty(), empty());
 
         final String serverInfo = awaitIndefinitelyNonNull(
                 client.request(newRequest(INFO, new RedisData.CompleteBulkString(DEFAULT_ALLOCATOR.fromUtf8("SERVER"))))
