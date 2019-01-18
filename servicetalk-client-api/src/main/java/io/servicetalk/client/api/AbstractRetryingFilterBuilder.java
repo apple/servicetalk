@@ -219,7 +219,7 @@ public abstract class AbstractRetryingFilterBuilder<F, M> {
          * was provided via {@link #timerExecutor(Executor)} builder method.
          * @return a new retry strategy {@link BiIntFunction}
          */
-        public BiIntFunction<Throwable, Completable> newStrategy(final Executor alternativeTimerExecutor) {
+        public BiIntFunction<Throwable, Completable> newStrategy(@Nullable final Executor alternativeTimerExecutor) {
             if (initialDelay == null) {
                 return (count, throwable) -> count <= maxRetries ? completed() : error(throwable);
             } else {
