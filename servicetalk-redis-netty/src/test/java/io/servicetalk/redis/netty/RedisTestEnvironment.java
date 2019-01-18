@@ -41,7 +41,6 @@ import static io.servicetalk.transport.netty.NettyIoExecutors.createIoExecutor;
 import static java.lang.Thread.NORM_PRIORITY;
 import static java.net.InetAddress.getLoopbackAddress;
 import static java.nio.charset.StandardCharsets.US_ASCII;
-import static java.time.Duration.ofMillis;
 import static java.time.Duration.ofSeconds;
 import static java.util.stream.IntStream.rangeClosed;
 import static org.hamcrest.Matchers.is;
@@ -79,8 +78,7 @@ final class RedisTestEnvironment implements AutoCloseable {
                 .maxPipelinedRequests(10)
                 .pingPeriod(ofSeconds(PING_PERIOD_SECONDS))
                 .build();
-        client = new RetryingRedisRequesterFilter.Builder().maxRetries(10).exponentialBackoff(ofMillis(10)).build()
-                .create(rawClient, empty(), empty());
+        client = new RetryingRedisRequesterFilter.Builder().maxRetries(10).build().create(rawClient, empty(), empty());
 
         final String serverInfo = awaitIndefinitelyNonNull(
                 client.request(newRequest(INFO, new RedisData.CompleteBulkString(DEFAULT_ALLOCATOR.fromUtf8("SERVER"))))

@@ -38,7 +38,6 @@ import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.redis.api.RedisExecutionStrategies.noOffloadsStrategy;
 import static io.servicetalk.transport.netty.NettyIoExecutors.createIoExecutor;
 import static io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutors.toEventLoopAwareNettyIoExecutor;
-import static java.time.Duration.ofMillis;
 import static java.time.Duration.ofSeconds;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.Matchers.is;
@@ -150,8 +149,7 @@ public class RedisAuthConnectionFactoryClientTest {
                 .executionStrategy(noOffloadsStrategy())
                 .idleConnectionTimeout(ofSeconds(2))
                 .build();
-        client = new RetryingRedisRequesterFilter.Builder().maxRetries(10).exponentialBackoff(ofMillis(10)).build()
-                .create(rawClient, empty(), empty());
+        client = new RetryingRedisRequesterFilter.Builder().maxRetries(10).build().create(rawClient, empty(), empty());
         clientConsumer.accept(client);
     }
 }
