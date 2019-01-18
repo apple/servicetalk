@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -164,15 +164,9 @@ public class CompletionStageAsyncContextTest {
         AtomicReference<Integer> actualK1Value = new AtomicReference<>();
         CountDownLatch latch = new CountDownLatch(1);
 
-        // source.map(v -> {
-        //     AsyncContext.put(K1, 100);
-        //     return v;
-        // });
         AsyncContext.put(K1, expectedK1Value);
-
         CompletableFuture<String> future = source.toCompletionStage().toCompletableFuture();
 
-        // AsyncContext.put(K1, expectedK1Value);
         future.thenAccept(v -> {
             actualK1Value.compareAndSet(null, AsyncContext.get(K1));
             latch.countDown();
