@@ -28,7 +28,6 @@ import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.DuplicateSubscribeException;
-import io.servicetalk.concurrent.internal.QueueFullException;
 import io.servicetalk.concurrent.internal.SequentialCancellable;
 
 import org.reactivestreams.Subscriber;
@@ -289,9 +288,8 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends ListenableA
                         }
                         return success(selection);
                     }
-                    return error(host.removed ? new InactiveHostException(
-                                    "Failed to add newly created connection for inactive host: " + host.address) :
-                            new QueueFullException(host.address.toString(), Integer.MAX_VALUE));
+                    return error(new ConnectionRejectedException("Failed to add newly created connection for host: " +
+                            host.address + ", host inactive? " + host.removed));
                 });
     }
 
