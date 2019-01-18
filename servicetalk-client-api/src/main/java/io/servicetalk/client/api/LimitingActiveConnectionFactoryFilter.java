@@ -20,6 +20,7 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Single;
 
+import java.net.ConnectException;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import javax.annotation.Nullable;
 
@@ -217,7 +218,7 @@ public final class LimitingActiveConnectionFactoryFilter<ResolvedAddress, C exte
                 try {
                     sendCloseCallback();
                 } finally {
-                    original.onError(new RetryableConnectException("Null connection received"));
+                    original.onError(new ConnectException("Null connection received"));
                 }
             } else {
                 result.onClose().doFinally(this::sendCloseCallback).subscribe();
