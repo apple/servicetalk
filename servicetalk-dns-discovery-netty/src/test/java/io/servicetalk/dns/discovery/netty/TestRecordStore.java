@@ -37,8 +37,9 @@ final class TestRecordStore implements RecordStore {
 
     private int defaultTtl = 1;
 
-    public void setDefaultTtl(final int defaultTtl) {
+    public TestRecordStore defaultTtl(final int defaultTtl) {
         this.defaultTtl = defaultTtl;
+        return this;
     }
 
     public TestRecordStore setDefaultResponse(String domain, RecordType recordType, String... ipAddresses) {
