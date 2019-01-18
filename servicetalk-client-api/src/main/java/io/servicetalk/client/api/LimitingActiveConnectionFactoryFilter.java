@@ -150,7 +150,8 @@ public final class LimitingActiveConnectionFactoryFilter<ResolvedAddress, C exte
         }
     }
 
-    private static final class ConnectionLimitExceededException extends ConnectException {
+    // visible for tests
+    static final class ConnectionLimitExceededException extends ConnectException {
         private static final long serialVersionUID = -750567284938958897L;
 
         private ConnectionLimitExceededException(final String host) {
