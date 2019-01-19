@@ -145,8 +145,8 @@ public final class RetryingHttpRequesterFilter implements HttpClientFilterFactor
         }
 
         @Override
-        public Builder timerExecutor(@Nullable final Executor timerExecutor) {
-            super.timerExecutor(timerExecutor);
+        public Builder noBackoff() {
+            super.noBackoff();
             return this;
         }
 
@@ -157,8 +157,14 @@ public final class RetryingHttpRequesterFilter implements HttpClientFilterFactor
         }
 
         @Override
-        public Builder removeJitter() {
-            super.removeJitter();
+        public Builder noJitter() {
+            super.noJitter();
+            return this;
+        }
+
+        @Override
+        public Builder timerExecutor(@Nullable final Executor timerExecutor) {
+            super.timerExecutor(timerExecutor);
             return this;
         }
 

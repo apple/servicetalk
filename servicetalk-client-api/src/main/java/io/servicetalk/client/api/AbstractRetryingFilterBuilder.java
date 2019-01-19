@@ -45,13 +45,13 @@ import static java.util.Objects.requireNonNull;
  */
 public abstract class AbstractRetryingFilterBuilder<F, M> {
 
-    @Nullable
-    private Executor timerExecutor;
     private int maxRetries = 3;
-    private boolean jitter = true;
-    private boolean exponential = true;
     @Nullable
     private Duration initialDelay = ofMillis(10);
+    private boolean exponential = true;
+    private boolean jitter = true;
+    @Nullable
+    private Executor timerExecutor;
     @Nullable
     private BiPredicate<M, Throwable> retryForPredicate;
 
@@ -72,12 +72,11 @@ public abstract class AbstractRetryingFilterBuilder<F, M> {
     /**
      * Adds a {@code delay} between retries.
      *
-     * @param delay Constant {@link Duration} of delay between retries. {@code null} value eliminates a delay
-     * between retries
+     * @param delay Constant {@link Duration} of delay between retries
      * @return {@code this}
      */
-    public AbstractRetryingFilterBuilder<F, M> backoff(@Nullable final Duration delay) {
-        this.initialDelay = delay;
+    public AbstractRetryingFilterBuilder<F, M> backoff(final Duration delay) {
+        this.initialDelay = requireNonNull(delay);
         this.exponential = false;
         return this;
     }
@@ -90,24 +89,22 @@ public abstract class AbstractRetryingFilterBuilder<F, M> {
      * overflow if the retry count is high enough that an exponential delay causes {@link Long} overflow.
      *
      * @param initialDelay Delay {@link Duration} for the first retry and increased exponentially with each retry.
-     * {@code null} value eliminates a delay between retries
      * @return {@code this}
      */
-    public AbstractRetryingFilterBuilder<F, M> exponentialBackoff(@Nullable final Duration initialDelay) {
-        this.initialDelay = initialDelay;
+    public AbstractRetryingFilterBuilder<F, M> exponentialBackoff(final Duration initialDelay) {
+        this.initialDelay = requireNonNull(initialDelay);
         this.exponential = true;
         return this;
     }
 
     /**
-     * Uses the passed {@link Executor} for scheduling timers if {@link #backoff(Duration)} or
-     * {@link #exponentialBackoff(Duration)} is used.
+     * Disables any delay between retries, if {@link #exponentialBackoff(Duration)} or {@link #backoff(Duration)} was
+     * used.
      *
-     * @param timerExecutor {@link Executor} to be used to schedule timers for backoff
      * @return {@code this}
      */
-    public AbstractRetryingFilterBuilder<F, M> timerExecutor(@Nullable final Executor timerExecutor) {
-        this.timerExecutor = timerExecutor;
+    public AbstractRetryingFilterBuilder<F, M> noBackoff() {
+        this.initialDelay = null;
         return this;
     }
 
@@ -128,8 +125,23 @@ public abstract class AbstractRetryingFilterBuilder<F, M> {
      *
      * @return {@code this}
      */
-    public AbstractRetryingFilterBuilder<F, M> removeJitter() {
+    public AbstractRetryingFilterBuilder<F, M> noJitter() {
         this.jitter = false;
+        return this;
+    }
+
+    /**
+     * Uses the passed {@link Executor} for scheduling timers if {@link #backoff(Duration)} or
+     * {@link #exponentialBackoff(Duration)} is used. It takes precedence over an alternative timer {@link Executor}
+     * from {@link ReadOnlyRetryableSettings#newStrategy(Executor)} argument.
+     *
+     * @param timerExecutor {@link Executor} to be used to schedule timers for backoff. If {@code null}, a passed
+     * alternative timer {@link Executor} from {@link ReadOnlyRetryableSettings#newStrategy(Executor)} argument will be
+     * used
+     * @return {@code this}
+     */
+    public AbstractRetryingFilterBuilder<F, M> timerExecutor(@Nullable final Executor timerExecutor) {
+        this.timerExecutor = timerExecutor;
         return this;
     }
 
