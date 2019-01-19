@@ -24,6 +24,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.api.PublishAndSubscribeOnSingles.deliverOnSubscribeAndOnError;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater;
@@ -55,8 +56,8 @@ final class TimeoutSingle<T> extends AbstractNoHandleSubscribeSingle<T> {
     @Override
     protected void handleSubscribe(final Subscriber<? super T> subscriber, final SignalOffloader offloader,
                                    final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
-        original.subscribeWithContext(TimeoutSubscriber.newInstance(this, subscriber, contextMap, contextProvider),
-                contextMap, contextProvider);
+        original.subscribeWithContext(TimeoutSubscriber.newInstance(this, subscriber, offloader, contextMap,
+                contextProvider), contextMap, contextProvider);
     }
 
     private static final class TimeoutSubscriber<X> implements Subscriber<X>, Cancellable, Runnable {
@@ -79,7 +80,8 @@ final class TimeoutSingle<T> extends AbstractNoHandleSubscribeSingle<T> {
         }
 
         static <X> TimeoutSubscriber<X> newInstance(TimeoutSingle<X> parent, Subscriber<? super X> target,
-                                                    AsyncContextMap contextMap, AsyncContextProvider contextProvider) {
+                                                    SignalOffloader offloader, AsyncContextMap contextMap,
+                                                    AsyncContextProvider contextProvider) {
             TimeoutSubscriber<X> s = new TimeoutSubscriber<>(parent, target);
             Cancellable localTimerCancellable;
             try {
@@ -95,9 +97,7 @@ final class TimeoutSingle<T> extends AbstractNoHandleSubscribeSingle<T> {
                 localTimerCancellable = IGNORE_CANCEL;
                 // We must set this to ignore so there are no further interactions with Subscriber in the future.
                 s.cancellable = LOCAL_IGNORE_CANCEL;
-                target = contextProvider.wrap(target, contextMap);
-                target.onSubscribe(IGNORE_CANCEL);
-                target.onError(cause);
+                deliverOnSubscribeAndOnError(target, offloader, contextMap, contextProvider, cause);
             }
             s.timerCancellable = localTimerCancellable;
             return s;

@@ -2340,16 +2340,15 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
      * @see <a href="http://reactivex.io/documentation/operators/defer.html">ReactiveX defer operator.</a>
      */
     public static <T> Publisher<T> defer(Supplier<Publisher<T>> publisherSupplier) {
-        return defer(false, publisherSupplier);
+        return new PublisherDefer<>(publisherSupplier, false);
     }
 
     /**
-     * Defers creation of a {@link Publisher} till it is subscribed.
-     *
-     * @param inheritThreading If {@code true} the {@link Publisher}s returned from {@code singleSupplier} will share
-     * the same threading characteristics as the {@link Publisher} return from this method. A typical use case for this
-     * is if the {@link Publisher}s returned from {@code singleSupplier} only modify existing behavior with additional
-     * state, but not if the {@link Publisher}s may come from an unrelated independent source.
+     * Defers creation of a {@link Publisher} till it is subscribed. The {@link Publisher}s returned from
+     * {@code singleSupplier} will share the same {@link AsyncContextMap} as the {@link Publisher} return from this
+     * method. A typical use case for this is if the {@link Publisher}s returned from {@code singleSupplier} only modify
+     * existing behavior with additional state, but not if the {@link Publisher}s may come from an unrelated independent
+     * source.
      * @param publisherSupplier {@link Supplier} to create a new {@link Publisher} for every call to
      * {@link #subscribe(Subscriber)} to the returned {@link Publisher}.
      * @param <T> Type of items emitted by the returned {@link Publisher}.
@@ -2359,8 +2358,8 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
      *
      * @see <a href="http://reactivex.io/documentation/operators/defer.html">ReactiveX defer operator.</a>
      */
-    public static <T> Publisher<T> defer(boolean inheritThreading, Supplier<Publisher<T>> publisherSupplier) {
-        return new PublisherDefer<>(publisherSupplier, inheritThreading);
+    public static <T> Publisher<T> deferShareContext(Supplier<Publisher<T>> publisherSupplier) {
+        return new PublisherDefer<>(publisherSupplier, true);
     }
 
     /**

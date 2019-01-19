@@ -41,7 +41,6 @@ public final class AsyncContextFriendlyExecutor implements ExecutorService {
 
     public AsyncContextFriendlyExecutor(int maxThread, String prefix) {
         executor = Executors.newCachedThreadPool(new DefaultThreadFactory(prefix, false, NORM_PRIORITY));
-        // throw new IllegalStateException("foo");
     }
 
     @Override

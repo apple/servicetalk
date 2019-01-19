@@ -26,8 +26,6 @@ final class ContextPreservingSubscriber<T> implements Subscriber<T> {
     private final Subscriber<? super T> subscriber;
 
     ContextPreservingSubscriber(Subscriber<? super T> subscriber, AsyncContextMap current) {
-        // Wrapping is used internally and the wrapped subscriber would not escape to user code,
-        // so we don't have to unwrap it.
         this.subscriber = requireNonNull(subscriber);
         this.saved = requireNonNull(current);
     }
@@ -37,7 +35,7 @@ final class ContextPreservingSubscriber<T> implements Subscriber<T> {
         AsyncContextMap prev = INSTANCE.contextMap();
         try {
             INSTANCE.contextMap(saved);
-            subscriber.onSubscribe(new ContextPreservingSubscription(s, saved));
+            subscriber.onSubscribe(s);
         } finally {
             INSTANCE.contextMap(prev);
         }

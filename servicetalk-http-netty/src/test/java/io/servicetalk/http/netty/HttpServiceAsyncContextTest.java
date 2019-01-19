@@ -34,6 +34,7 @@ import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.transport.api.ConnectionAcceptorFilter;
 import io.servicetalk.transport.api.ServerContext;
+import io.servicetalk.transport.netty.IoThreadFactory;
 import io.servicetalk.transport.netty.internal.ExecutionContextRule;
 
 import org.junit.Rule;
@@ -59,6 +60,7 @@ import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
 import static io.servicetalk.http.api.HttpResponseStatuses.BAD_REQUEST;
 import static io.servicetalk.http.api.HttpResponseStatuses.OK;
+import static java.lang.Thread.currentThread;
 import static java.net.InetAddress.getLoopbackAddress;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
@@ -69,12 +71,14 @@ import static org.junit.Assert.assertTrue;
 public class HttpServiceAsyncContextTest {
     private static final Key<CharSequence> K1 = Key.newKey("k1");
     private static final CharSequence REQUEST_ID_HEADER = newAsciiString("request-id");
+    private static final String IO_THREAD_PREFIX = "iothread-";
     private static final InetSocketAddress LOCAL_0 = new InetSocketAddress(getLoopbackAddress(), 0);
 
-    // @Rule
+    @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
     @Rule
-    public final ExecutionContextRule immediateExecutor = ExecutionContextRule.immediate();
+    public final ExecutionContextRule immediateExecutor = ExecutionContextRule.immediate(
+            new IoThreadFactory(IO_THREAD_PREFIX));
 
     @Test
     public void newRequestsGetFreshContext() throws Exception {
@@ -153,6 +157,10 @@ public class HttpServiceAsyncContextTest {
                 // AsyncContext is as expected while processing the request data in the filter below.
                 return request.payloadBody().ignoreElements()
                         .concatWith(Single.defer(() -> {
+                            if (useImmediate && !currentThread().getName().startsWith(IO_THREAD_PREFIX)) {
+                                // verify that if we expect to be offloaded, that we actually are
+                                return success(factory.internalServerError());
+                            }
                             CharSequence requestId2 = AsyncContext.get(K1);
                             if (requestId2 == requestId && requestId2 != null) {
                                 StreamingHttpResponse response = factory.ok();
@@ -178,6 +186,10 @@ public class HttpServiceAsyncContextTest {
             public Single<StreamingHttpResponse> handle(
                     final HttpServiceContext ctx, StreamingHttpRequest request,
                     final StreamingHttpResponseFactory factory) {
+                if (useImmediate && !currentThread().getName().startsWith(IO_THREAD_PREFIX)) {
+                    // verify that if we expect to be offloaded, that we actually are
+                    return success(factory.internalServerError());
+                }
                 CharSequence requestId = request.headers().getAndRemove(REQUEST_ID_HEADER);
                 if (requestId != null) {
                     AsyncContext.put(K1, requestId);
@@ -204,28 +216,31 @@ public class HttpServiceAsyncContextTest {
                         assertAsyncContext(requestId, errorQueue);
                     }
                 }));
-                return service.handle(ctx, request, factory).map(resp -> resp.transformRawPayloadBody(pub ->
-                        pub.doAfterSubscriber(() -> new org.reactivestreams.Subscriber<Object>() {
-                            @Override
-                            public void onSubscribe(final Subscription subscription) {
-                                assertAsyncContext(requestId, errorQueue);
-                            }
+                return service.handle(ctx, request, factory).map(resp -> {
+                    assertAsyncContext(requestId, errorQueue);
+                    return resp.transformRawPayloadBody(pub ->
+                            pub.doAfterSubscriber(() -> new org.reactivestreams.Subscriber<Object>() {
+                                @Override
+                                public void onSubscribe(final Subscription subscription) {
+                                    assertAsyncContext(requestId, errorQueue);
+                                }
 
-                            @Override
-                            public void onNext(final Object o) {
-                                assertAsyncContext(requestId, errorQueue);
-                            }
+                                @Override
+                                public void onNext(final Object o) {
+                                    assertAsyncContext(requestId, errorQueue);
+                                }
 
-                            @Override
-                            public void onError(final Throwable throwable) {
-                                assertAsyncContext(requestId, errorQueue);
-                            }
+                                @Override
+                                public void onError(final Throwable throwable) {
+                                    assertAsyncContext(requestId, errorQueue);
+                                }
 
-                            @Override
-                            public void onComplete() {
-                                assertAsyncContext(requestId, errorQueue);
-                            }
-                        }))
+                                @Override
+                                public void onComplete() {
+                                    assertAsyncContext(requestId, errorQueue);
+                                }
+                            }));
+                        }
                 );
             }
 
@@ -237,7 +252,9 @@ public class HttpServiceAsyncContextTest {
         };
         CompositeCloseable compositeCloseable = AsyncCloseables.newCompositeCloseable();
         HttpServerBuilder serverBuilder = HttpServers.forAddress(LOCAL_0);
-        ServerContext ctx = compositeCloseable.append(serverBuilder.listenStreamingAndAwait(filter));
+        ServerContext ctx = compositeCloseable.append(serverBuilder
+                .ioExecutor(immediateExecutor.ioExecutor())
+                .listenStreamingAndAwait(filter));
         try {
             StreamingHttpConnection connection = compositeCloseable.append(
                     new DefaultHttpConnectionBuilder<SocketAddress>()

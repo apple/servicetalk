@@ -252,7 +252,7 @@ final class DefaultPartitionedRedisClientBuilder<U, R> implements PartitionedRed
         @Override
         public Publisher<RedisData> request(final RedisExecutionStrategy strategy,
                                             final PartitionAttributes partitionSelector, final RedisRequest request) {
-            return Publisher.defer(true, () -> group.get(partitionSelector).request(strategy, request));
+            return Publisher.deferShareContext(() -> group.get(partitionSelector).request(strategy, request));
         }
 
         @Override

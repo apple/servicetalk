@@ -24,10 +24,17 @@ final class ContextPreservingCancellable implements Cancellable {
     private final AsyncContextMap saved;
     private final Cancellable delegate;
 
-    ContextPreservingCancellable(Cancellable delegate, AsyncContextMap current) {
-        this.saved = current;
-        this.delegate = delegate instanceof ContextPreservingCancellable ?
-                ((ContextPreservingCancellable) delegate).delegate : requireNonNull(delegate);
+    private ContextPreservingCancellable(Cancellable delegate, AsyncContextMap current) {
+        this.saved = requireNonNull(current);
+        this.delegate = requireNonNull(delegate);
+    }
+
+    static Cancellable wrap(Cancellable delegate, AsyncContextMap current) {
+        // The double wrapping can be observed when folks manually create a Single/Completable and directly call the
+        // onSubscribe method.
+        return delegate instanceof ContextPreservingCancellable &&
+                ((ContextPreservingCancellable) delegate).saved == current ? delegate :
+                new ContextPreservingCancellable(delegate, current);
     }
 
     @Override

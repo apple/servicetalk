@@ -900,13 +900,13 @@ public class DefaultAsyncContextProviderTest {
 
     private static <T> void assertContains(Key<T> key, Object value) {
         assertEquals(value, AsyncContext.get(key));
-        assertTrue(AsyncContext.contains(key));
+        assertTrue(AsyncContext.containsKey(key));
         assertFalse(AsyncContext.current().isEmpty());
     }
 
     private static void assertNotContains(Key<?> key) {
         assertNull(AsyncContext.get(key));
-        assertFalse(AsyncContext.contains(key));
+        assertFalse(AsyncContext.containsKey(key));
     }
 
     private static void assertContextSize(int size) {

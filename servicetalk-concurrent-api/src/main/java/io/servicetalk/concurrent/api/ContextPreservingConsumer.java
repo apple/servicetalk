@@ -26,8 +26,7 @@ final class ContextPreservingConsumer<T> implements Consumer<T> {
 
     ContextPreservingConsumer(Consumer<T> delegate, AsyncContextMap current) {
         this.saved = requireNonNull(current);
-        this.delegate = delegate instanceof ContextPreservingConsumer ?
-                ((ContextPreservingConsumer<T>) delegate).delegate : requireNonNull(delegate);
+        this.delegate = requireNonNull(delegate);
     }
 
     @Override

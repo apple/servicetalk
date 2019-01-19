@@ -15,39 +15,33 @@
  */
 package io.servicetalk.concurrent.api;
 
-import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
+import io.servicetalk.concurrent.Cancellable;
+
+import javax.annotation.Nullable;
 
 import static java.util.Objects.requireNonNull;
 
-final class ContextPreservingPublisherSubscription<T> implements Subscriber<T> {
+final class ContextPreservingCancellableSingleSubscriber<T> implements Single.Subscriber<T> {
     private final AsyncContextMap saved;
-    private final Subscriber<? super T> subscriber;
+    private final Single.Subscriber<? super T> subscriber;
 
-    ContextPreservingPublisherSubscription(Subscriber<? super T> subscriber, AsyncContextMap current) {
-        // Wrapping is used internally and the wrapped subscriber would not escape to user code,
-        // so we don't have to unwrap it.
+    ContextPreservingCancellableSingleSubscriber(Single.Subscriber<? super T> subscriber, AsyncContextMap current) {
         this.subscriber = requireNonNull(subscriber);
         this.saved = requireNonNull(current);
     }
 
     @Override
-    public void onSubscribe(final Subscription subscription) {
-        subscriber.onSubscribe(new ContextPreservingSubscription(subscription, saved));
+    public void onSubscribe(final Cancellable cancellable) {
+        subscriber.onSubscribe(ContextPreservingCancellable.wrap(cancellable, saved));
     }
 
     @Override
-    public void onNext(final T t) {
-        subscriber.onNext(t);
+    public void onSuccess(@Nullable final T result) {
+        subscriber.onSuccess(result);
     }
 
     @Override
-    public void onError(final Throwable throwable) {
-        subscriber.onError(throwable);
-    }
-
-    @Override
-    public void onComplete() {
-        subscriber.onComplete();
+    public void onError(final Throwable t) {
+        subscriber.onError(t);
     }
 }

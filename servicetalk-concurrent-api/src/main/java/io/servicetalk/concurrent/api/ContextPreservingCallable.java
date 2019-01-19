@@ -30,8 +30,7 @@ final class ContextPreservingCallable<V> implements Callable<V> {
 
     ContextPreservingCallable(Callable<V> delegate, AsyncContextMap current) {
         this.saved = requireNonNull(current);
-        this.delegate = delegate instanceof ContextPreservingCallable ?
-                ((ContextPreservingCallable<V>) delegate).delegate : requireNonNull(delegate);
+        this.delegate = requireNonNull(delegate);
     }
 
     @Override

@@ -28,8 +28,7 @@ final class ContextPreservingRunnable implements Runnable {
 
     ContextPreservingRunnable(Runnable delegate, AsyncContextMap current) {
         this.saved = requireNonNull(current);
-        this.delegate = delegate instanceof ContextPreservingRunnable ?
-                ((ContextPreservingRunnable) delegate).delegate : requireNonNull(delegate);
+        this.delegate = requireNonNull(delegate);
     }
 
     @Override

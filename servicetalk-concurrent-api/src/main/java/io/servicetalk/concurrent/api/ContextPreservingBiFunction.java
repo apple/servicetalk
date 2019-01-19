@@ -26,8 +26,7 @@ final class ContextPreservingBiFunction<T, U, V> implements BiFunction<T, U, V> 
 
     ContextPreservingBiFunction(BiFunction<T, U, V> delegate, AsyncContextMap contextMap) {
         this.saved = requireNonNull(contextMap);
-        this.delegate = delegate instanceof ContextPreservingBiFunction ?
-                ((ContextPreservingBiFunction<T, U, V>) delegate).delegate : requireNonNull(delegate);
+        this.delegate = requireNonNull(delegate);
     }
 
     @Override

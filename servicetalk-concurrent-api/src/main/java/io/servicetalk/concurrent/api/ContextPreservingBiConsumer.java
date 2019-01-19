@@ -26,8 +26,7 @@ final class ContextPreservingBiConsumer<T, U> implements BiConsumer<T, U> {
 
     ContextPreservingBiConsumer(BiConsumer<T, U> delegate, AsyncContextMap contextMap) {
         this.saved = requireNonNull(contextMap);
-        this.delegate = delegate instanceof ContextPreservingBiConsumer ?
-                ((ContextPreservingBiConsumer<T, U>) delegate).delegate : requireNonNull(delegate);
+        this.delegate = requireNonNull(delegate);
     }
 
     @Override

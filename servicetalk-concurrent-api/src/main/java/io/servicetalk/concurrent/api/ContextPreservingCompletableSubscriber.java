@@ -25,8 +25,6 @@ final class ContextPreservingCompletableSubscriber implements Completable.Subscr
     private final Completable.Subscriber subscriber;
 
     ContextPreservingCompletableSubscriber(Completable.Subscriber subscriber, AsyncContextMap current) {
-        // Wrapping is used internally and the wrapped subscriber would not escape to user code,
-        // so we don't have to unwrap it.
         this.subscriber = requireNonNull(subscriber);
         this.saved = requireNonNull(current);
     }

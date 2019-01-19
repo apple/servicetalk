@@ -17,29 +17,26 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
 
-import javax.annotation.Nullable;
-
+import static io.servicetalk.concurrent.Completable.Subscriber;
 import static java.util.Objects.requireNonNull;
 
-final class ContextPreservingSingleCancellable<T> implements Single.Subscriber<T> {
+final class ContextPreservingCancellableCompletableSubscriber implements Subscriber {
     private final AsyncContextMap saved;
-    private final Single.Subscriber<? super T> subscriber;
+    private final Completable.Subscriber subscriber;
 
-    ContextPreservingSingleCancellable(Single.Subscriber<? super T> subscriber, AsyncContextMap current) {
-        // Wrapping is used internally and the wrapped subscriber would not escape to user code,
-        // so we don't have to unwrap it.
+    ContextPreservingCancellableCompletableSubscriber(Completable.Subscriber subscriber, AsyncContextMap current) {
         this.subscriber = requireNonNull(subscriber);
         this.saved = requireNonNull(current);
     }
 
     @Override
     public void onSubscribe(final Cancellable cancellable) {
-        subscriber.onSubscribe(new ContextPreservingCancellable(cancellable, saved));
+        subscriber.onSubscribe(ContextPreservingCancellable.wrap(cancellable, saved));
     }
 
     @Override
-    public void onSuccess(@Nullable final T result) {
-        subscriber.onSuccess(result);
+    public void onComplete() {
+        subscriber.onComplete();
     }
 
     @Override

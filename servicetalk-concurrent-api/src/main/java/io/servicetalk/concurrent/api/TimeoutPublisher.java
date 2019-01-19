@@ -29,6 +29,7 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.api.PublishAndSubscribeOnPublishers.deliverOnSubscribeAndOnError;
 import static io.servicetalk.concurrent.internal.EmptySubscription.EMPTY_SUBSCRIPTION;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.SUBSCRIBER_STATE_TERMINATED;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.checkTerminationValidWithConcurrentOnNextCheck;
@@ -165,7 +166,7 @@ final class TimeoutPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
                 timerCancellableUpdater.compareAndSet(s, null, requireNonNull(
                         parent.timeoutExecutor.schedule(s, parent.durationNs, NANOSECONDS)));
             } catch (Throwable cause) {
-                handleConstructorException(s, contextMap, contextProvider, cause);
+                handleConstructorException(s, signalOffloader, contextMap, contextProvider, cause);
             }
             return s;
         }
@@ -327,15 +328,14 @@ final class TimeoutPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
          * This is unlikely to occur, so we extract the code into a private method.
          * @param cause The exception.
          */
-        private static <X> void handleConstructorException(TimeoutSubscriber<X> s, AsyncContextMap contextMap,
+        private static <X> void handleConstructorException(TimeoutSubscriber<X> s, SignalOffloader offloader,
+                                                           AsyncContextMap contextMap,
                                                            AsyncContextProvider contextProvider, Throwable cause) {
             // We must set local state so there are no further interactions with Subscriber in the future.
             s.timerCancellable = LOCAL_IGNORE_CANCEL;
             s.subscriberState = SUBSCRIBER_STATE_TERMINATED;
             s.subscription = EMPTY_SUBSCRIPTION;
-            final Subscriber<? super X> target = contextProvider.wrap(s.target, contextMap);
-            target.onSubscribe(EMPTY_SUBSCRIPTION);
-            target.onError(cause);
+            deliverOnSubscribeAndOnError(s.target, offloader, contextMap, contextProvider, cause);
         }
     }
 }

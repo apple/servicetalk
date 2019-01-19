@@ -22,7 +22,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
 
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.Assert.assertEquals;
@@ -58,15 +57,7 @@ public class AsyncContextDisableTest {
                 assertEquals(expectedValue, actualValue.get());
                 actualValue.set(null);
 
-                ExecutorService es1 = java.util.concurrent.Executors.newCachedThreadPool();
-                es1.execute(() -> {
-                    System.err.println("provider1: " + AsyncContext.provider());
-                });
                 AsyncContext.disable();
-                ExecutorService es2 = java.util.concurrent.Executors.newCachedThreadPool();
-                es2.execute(() -> {
-                    System.err.println("provider2: " + AsyncContext.provider());
-                });
                 try {
                     // Create a new Executor after we have disabled AsyncContext so we can be sure that AsyncContext
                     // won't be captured.

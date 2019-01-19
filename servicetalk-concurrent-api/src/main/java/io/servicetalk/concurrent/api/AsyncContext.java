@@ -164,7 +164,7 @@ public final class AsyncContext {
      * {@code false} otherwise.
      * @see AsyncContextMap#containsKey(AsyncContextMap.Key)
      */
-    public static boolean contains(AsyncContextMap.Key<?> key) {
+    public static boolean containsKey(AsyncContextMap.Key<?> key) {
         return current().containsKey(key);
     }
 

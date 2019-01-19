@@ -53,7 +53,7 @@ final class DefaultAsyncContextProvider implements AsyncContextProvider {
     @Override
     public Completable.Subscriber wrapCancellable(final Completable.Subscriber subscriber,
                                                   final AsyncContextMap current) {
-        return new ContextPreservingCompletableCancellable(subscriber, current);
+        return new ContextPreservingCancellableCompletableSubscriber(subscriber, current);
     }
 
     @Override
@@ -64,7 +64,7 @@ final class DefaultAsyncContextProvider implements AsyncContextProvider {
     @Override
     public <T> io.servicetalk.concurrent.Single.Subscriber<T> wrapCancellable(final Single.Subscriber<T> subscriber,
                                                                               final AsyncContextMap current) {
-        return new ContextPreservingSingleCancellable<>(subscriber, current);
+        return new ContextPreservingCancellableSingleSubscriber<>(subscriber, current);
     }
 
     @Override
@@ -74,7 +74,7 @@ final class DefaultAsyncContextProvider implements AsyncContextProvider {
 
     @Override
     public <T> Subscriber<T> wrapSubscription(final Subscriber<T> subscriber, final AsyncContextMap current) {
-        return new ContextPreservingPublisherSubscription<>(subscriber, current);
+        return ContextPreservingSubscriptionSubscriber.wrap(subscriber, current);
     }
 
     @Override

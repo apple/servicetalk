@@ -19,13 +19,15 @@ import io.servicetalk.concurrent.Cancellable;
 
 import org.reactivestreams.Subscription;
 
+import static java.util.Objects.requireNonNull;
+
 final class MergedCancellableWithSubscription implements Subscription {
     private final Subscription subscription;
     private final Cancellable cancellable;
 
     MergedCancellableWithSubscription(Subscription subscription, Cancellable cancellable) {
-        this.subscription = subscription;
-        this.cancellable = cancellable;
+        this.subscription = requireNonNull(subscription);
+        this.cancellable = requireNonNull(cancellable);
     }
 
     @Override

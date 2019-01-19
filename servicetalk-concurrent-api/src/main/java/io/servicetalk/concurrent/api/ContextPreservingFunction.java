@@ -26,8 +26,7 @@ final class ContextPreservingFunction<T, U> implements Function<T, U> {
 
     ContextPreservingFunction(Function<T, U> delegate, AsyncContextMap contextMap) {
         this.saved = requireNonNull(contextMap);
-        this.delegate = delegate instanceof ContextPreservingFunction ?
-                ((ContextPreservingFunction<T, U>) delegate).delegate : requireNonNull(delegate);
+        this.delegate = requireNonNull(delegate);
     }
 
     @Override

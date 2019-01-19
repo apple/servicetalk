@@ -26,7 +26,7 @@ final class AsyncContextMapUtils {
         final String simpleName = map.getClass().getSimpleName();
         // 13 is 2 characters for () + 11 hash code integer
         // assume size of 25 (5 overhead characters for formatting) for each key/value pair
-        StringBuilder sb = new StringBuilder(simpleName.length() + 13 + map.size() * 24);
+        StringBuilder sb = new StringBuilder(simpleName.length() + 13 + map.size() * 25);
         sb.append(simpleName)
           .append('(')
           // there are many copies of these maps around, the content maybe equal but a differentiating factor is the

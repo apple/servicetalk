@@ -130,7 +130,7 @@ public final class DefaultNettyPipelinedConnection<Req, Resp> implements NettyPi
 
     private Publisher<Resp> writeOrQueue(Completable completable,
                                          @Nullable Supplier<Predicate<Resp>> terminalMsgPredicateSupplier) {
-        return Publisher.defer(true, () -> writeOrQueueRequest(completable, terminalMsgPredicateSupplier == null ?
+        return Publisher.deferShareContext(() -> writeOrQueueRequest(completable, terminalMsgPredicateSupplier == null ?
                 null : terminalMsgPredicateSupplier.get()));
     }
 

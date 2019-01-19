@@ -27,8 +27,6 @@ final class ContextPreservingSingleSubscriber<T> implements Single.Subscriber<T>
     private final Single.Subscriber<? super T> subscriber;
 
     ContextPreservingSingleSubscriber(Single.Subscriber<? super T> subscriber, AsyncContextMap current) {
-        // Wrapping is used internally and the wrapped subscriber would not escape to user code,
-        // so we don't have to unwrap it.
         this.subscriber = requireNonNull(subscriber);
         this.saved = requireNonNull(current);
     }
