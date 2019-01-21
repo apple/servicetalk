@@ -131,13 +131,13 @@ public final class RetryingRedisRequesterFilter implements RedisClientFilterFact
         }
 
         @Override
-        public Builder backoff(@Nullable final Duration delay) {
+        public Builder backoff(final Duration delay) {
             super.backoff(delay);
             return this;
         }
 
         @Override
-        public Builder exponentialBackoff(@Nullable final Duration initialDelay) {
+        public Builder exponentialBackoff(final Duration initialDelay) {
             super.exponentialBackoff(initialDelay);
             return this;
         }

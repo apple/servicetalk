@@ -121,7 +121,7 @@ public final class RetryingHttpRequesterFilter implements HttpClientFilterFactor
 
     /**
      * A builder for {@link RetryingHttpRequesterFilter}, which will not infinitely retry. To configure the maximum
-     *      * number of retry attempts see {@link #maxRetries(int)}.
+     * number of retry attempts see {@link #maxRetries(int)}.
      */
     public static final class Builder
             extends AbstractRetryingFilterBuilder<RetryingHttpRequesterFilter, HttpRequestMetaData> {
@@ -133,13 +133,13 @@ public final class RetryingHttpRequesterFilter implements HttpClientFilterFactor
         }
 
         @Override
-        public Builder backoff(@Nullable final Duration delay) {
+        public Builder backoff(final Duration delay) {
             super.backoff(delay);
             return this;
         }
 
         @Override
-        public Builder exponentialBackoff(@Nullable final Duration initialDelay) {
+        public Builder exponentialBackoff(final Duration initialDelay) {
             super.exponentialBackoff(initialDelay);
             return this;
         }
