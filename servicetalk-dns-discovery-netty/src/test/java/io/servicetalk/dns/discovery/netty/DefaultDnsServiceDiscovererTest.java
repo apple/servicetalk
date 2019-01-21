@@ -274,6 +274,7 @@ public class DefaultDnsServiceDiscovererTest {
         } finally {
             try {
                 awaitIndefinitely(discoverer.closeAsync());
+                fail("Expected exception");
             } catch (ExecutionException e) {
                 assertThat(e.getCause().getCause(), equalTo(DELIBERATE_EXCEPTION));
             }
