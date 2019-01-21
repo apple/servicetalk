@@ -30,7 +30,6 @@ import java.util.regex.Pattern;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
-import static io.servicetalk.concurrent.api.Publisher.empty;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitelyNonNull;
 import static io.servicetalk.redis.api.RedisExecutionStrategies.defaultStrategy;
@@ -71,14 +70,14 @@ final class RedisTestEnvironment implements AutoCloseable {
         DefaultRedisClientBuilder<HostAndPort, InetSocketAddress> builder =
                 (DefaultRedisClientBuilder<HostAndPort, InetSocketAddress>) forAddress(redisHost, redisPort);
         ioExecutor = newIoExecutor();
-        RedisClient rawClient = builder
+        client = builder
                 .deferSubscribeTillConnect(true)
                 .ioExecutor(ioExecutor)
                 .executionStrategy(defaultStrategy(executor))
                 .maxPipelinedRequests(10)
                 .pingPeriod(ofSeconds(PING_PERIOD_SECONDS))
+                .appendClientFilter(new RetryingRedisRequesterFilter.Builder().maxRetries(10).build())
                 .build();
-        client = new RetryingRedisRequesterFilter.Builder().maxRetries(10).build().create(rawClient, empty(), empty());
 
         final String serverInfo = awaitIndefinitelyNonNull(
                 client.request(newRequest(INFO, new RedisData.CompleteBulkString(DEFAULT_ALLOCATOR.fromUtf8("SERVER"))))

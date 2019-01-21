@@ -33,7 +33,6 @@ import org.junit.rules.Timeout;
 import java.util.function.Consumer;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.concurrent.api.Publisher.empty;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.redis.api.RedisExecutionStrategies.noOffloadsStrategy;
 import static io.servicetalk.transport.netty.NettyIoExecutors.createIoExecutor;
@@ -140,7 +139,7 @@ public class RedisAuthConnectionFactoryClientTest {
         redisHost = System.getenv().getOrDefault("REDIS_HOST", "127.0.0.1");
 
         ioExecutor = toEventLoopAwareNettyIoExecutor(createIoExecutor());
-        RedisClient rawClient = RedisClients.forAddress(redisHost, redisPort)
+        client = RedisClients.forAddress(redisHost, redisPort)
                 .appendConnectionFactoryFilter(f ->
                         new RedisAuthConnectionFactory<>(f, ctx -> ctx.executionContext().bufferAllocator()
                                 .fromAscii(password)))
@@ -148,8 +147,8 @@ public class RedisAuthConnectionFactoryClientTest {
                 .ioExecutor(ioExecutor)
                 .executionStrategy(noOffloadsStrategy())
                 .idleConnectionTimeout(ofSeconds(2))
+                .appendClientFilter(new RetryingRedisRequesterFilter.Builder().maxRetries(10).build())
                 .build();
-        client = new RetryingRedisRequesterFilter.Builder().maxRetries(10).build().create(rawClient, empty(), empty());
         clientConsumer.accept(client);
     }
 }
