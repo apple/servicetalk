@@ -15,28 +15,53 @@
  */
 package io.servicetalk.concurrent.api;
 
+import org.hamcrest.Matcher;
+
+import javax.annotation.Nullable;
+
+import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
-final class VerificationTestUtils {
+public final class VerificationTestUtils {
     private VerificationTestUtils() {
     }
 
-    static void verifyOriginalAndSuppressedCauses(Throwable actualCause, Throwable expectedOriginalCause, Throwable expectedSuppressedCause) {
+    public static void verifyOriginalAndSuppressedCauses(@Nullable Throwable actualCause,
+                                                         Throwable expectedOriginalCause,
+                                                         Throwable expectedSuppressedCause) {
         assertNotNull(actualCause);
         assertSame(expectedOriginalCause, actualCause.getCause());
         verifySuppressed(actualCause, expectedSuppressedCause);
     }
 
-    static void verifySuppressed(Throwable holder, Throwable expectedSuppressedCause) {
+    public static void verifySuppressed(@Nullable Throwable holder, Throwable expectedSuppressedCause) {
         boolean found = false;
-        for (Throwable actualSuppressed : holder.getSuppressed()) {
-            if (actualSuppressed == expectedSuppressedCause) {
-                found = true;
-                break;
+        if (holder != null) {
+            for (Throwable actualSuppressed : holder.getSuppressed()) {
+                if (actualSuppressed == expectedSuppressedCause) {
+                    found = true;
+                    break;
+                }
             }
         }
         assertTrue("couldn't find suppressed cause " + expectedSuppressedCause, found);
+    }
+
+    public static void expectThrowable(final Runnable runnable, final Class<? extends Throwable> expected) {
+        expectThrowable(runnable, instanceOf(expected));
+    }
+
+    public static void expectThrowable(final Runnable runnable, final Matcher<Throwable> matcher) {
+        try {
+            runnable.run();
+        } catch (Throwable t) {
+            assertThat(t, matcher);
+            return;
+        }
+        fail("Expected AssertionError");
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,242 +17,207 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
-import io.servicetalk.concurrent.internal.FlowControlUtil;
 
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import static io.servicetalk.concurrent.api.Executors.immediate;
-import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.Matchers.nullValue;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.function.Function;
+import javax.annotation.Nullable;
 
-public class TestPublisher<T> extends Publisher<T> implements Subscriber<T> {
+import static java.util.Objects.requireNonNull;
 
-    private final AtomicReference<Subscriber<? super T>> subscriber = new AtomicReference<>();
-    private final AtomicReference<Subscription> usedSubscription = new AtomicReference<>();
-    private final AtomicLong requested = new AtomicLong();
-    private final AtomicLong sent = new AtomicLong();
-    private final AtomicBoolean cancelled = new AtomicBoolean();
-    private final Subscription subscription = new Subscription() {
-        @Override
-        public void request(long n) {
-            requested.accumulateAndGet(n, FlowControlUtil::addWithOverflowProtection);
-        }
+public final class TestPublisher<T> extends Publisher<T> {
+    private static final Logger LOGGER = LoggerFactory.getLogger(TestPublisher.class);
 
-        @Override
-        public void cancel() {
-            if (!preserveSubscriber) {
-                subscriber.set(null);
-            }
-            cancelled.set(true);
-        }
-    };
-    private final boolean preserveSubscriber;
-    private final boolean ignoreMultipleSubscriptions;
+    private final Function<Subscriber<? super T>, Subscriber<T>> subscriberFunction;
+    private final List<Throwable> exceptions = new CopyOnWriteArrayList<>();
 
-    public TestPublisher() {
-        this(false);
+    @Nullable
+    private volatile Subscriber<T> subscriber;
+
+    private TestPublisher(final Function<Subscriber<? super T>, Subscriber<T>> subscriberFunction) {
+        this.subscriberFunction = subscriberFunction;
     }
 
-    public TestPublisher(boolean preserveSubscriber) {
-        this(preserveSubscriber, false);
-    }
-
-    public TestPublisher(boolean preserveSubscriber, boolean ignoreMultipleSubscriptions) {
-        this(immediate(), preserveSubscriber, ignoreMultipleSubscriptions);
-    }
-
-    public TestPublisher(Executor executor, boolean preserveSubscriber, boolean ignoreMultipleSubscriptions) {
-        super(executor);
-        this.preserveSubscriber = preserveSubscriber;
-        this.ignoreMultipleSubscriptions = ignoreMultipleSubscriptions;
+    public boolean subscribed() {
+        return subscriber != null;
     }
 
     @Override
-    public void handleSubscribe(Subscriber<? super T> s) {
-        if (preserveSubscriber) {
-            subscriber.set(s);
-        } else if (!subscriber.compareAndSet(null, s)) {
-            if (ignoreMultipleSubscriptions) {
-                return;
-            }
-            throw new IllegalStateException("Only one active subscriber allowed.");
-        }
-        requested.set(0);
-        sent.set(0);
-        Subscription subscription = this.usedSubscription.get();
-        if (subscription != null) {
-            s.onSubscribe(subscription);
+    protected void handleSubscribe(final Subscriber<? super T> subscriber) {
+        try {
+            this.subscriber = requireNonNull(subscriberFunction.apply(subscriber));
+        } catch (final Throwable t) {
+            record(t);
+            LOGGER.warn("Unexpected exception", t);
         }
     }
 
-    public TestPublisher<T> sendOnSubscribe() {
-        onSubscribe0(subscription);
-        return this;
+    public void onSubscribe(final Subscription subscription) {
+        rethrow();
+        final Subscriber<T> subscriber = this.subscriber;
+        if (subscriber == null) {
+            recordAndThrow(new IllegalStateException("onSubscribe without subscriber"));
+            return;
+        }
+        subscriber.onSubscribe(subscription);
     }
 
     @SafeVarargs
-    public final TestPublisher<T> sendItems(T... items) {
-        Subscriber<? super T> subscriber = verifySubscriberAndStart();
-        long req = outstandingRequested();
-        if (req < items.length) {
-            throw new IllegalStateException("Subscriber has not requested enough. Requested: " + req + ", Expected: " + items.length);
+    public final void onNext(@Nullable final T... items) {
+        rethrow();
+        final Subscriber<T> subscriber = this.subscriber;
+        if (subscriber == null) {
+            throw new IllegalStateException("onNext without subscriber");
         }
-        for (T item : items) {
-            sent.incrementAndGet();
-            subscriber.onNext(item);
-        }
-        return this;
-    }
-
-    @SafeVarargs
-    public final TestPublisher<T> sendItemsNoDemandCheck(T... items) {
-        Subscriber<? super T> subscriber = verifySubscriberAndStart();
-        for (T item : items) {
-            sent.incrementAndGet();
-            subscriber.onNext(item);
-        }
-        return this;
-    }
-
-    public TestPublisher<T> fail() {
-        fail(DELIBERATE_EXCEPTION);
-        return this;
-    }
-
-    public TestPublisher<T> fail(Throwable cause) {
-        onError(cause);
-        return this;
-    }
-
-    public TestPublisher<T> failIfSubscriberActive() {
-        Subscriber<? super T> subscriber = this.subscriber.get();
-        if (subscriber != null) {
-            subscriber.onError(DELIBERATE_EXCEPTION);
-        }
-        return this;
-    }
-
-    public TestPublisher<T> completeIfSubscriberActive() {
-        Subscriber<? super T> subscriber = this.subscriber.get();
-        if (subscriber != null) {
-            subscriber.onComplete();
-        }
-        return this;
-    }
-
-    @Override
-    public void onSubscribe(Subscription s) {
-        onSubscribe0(s);
-    }
-
-    @Override
-    public void onNext(T t) {
-        Subscriber<? super T> subscriber = verifySubscriberAndStart();
-        if (requested.get() == 0) {
-            throw new IllegalStateException("Subscriber has not requested enough.");
-        }
-        sent.incrementAndGet();
-        subscriber.onNext(t);
-    }
-
-    @Override
-    public void onError(Throwable t) {
-        Subscriber<? super T> sub = preserveSubscriber ? getSubscriberOrFail() : getSubscriberAndReset();
-        sub.onError(t);
-    }
-
-    @Override
-    public void onComplete() {
-        Subscriber<? super T> sub = preserveSubscriber ? getSubscriberOrFail() : getSubscriberAndReset();
-        sub.onComplete();
-    }
-
-    public long requested() {
-        return requested.get();
-    }
-
-    public long outstandingRequested() {
-        return requested.get() - sent.get();
-    }
-
-    public long sent() {
-        return sent.get();
-    }
-
-    public boolean isCancelled() {
-        return cancelled.get();
-    }
-
-    public TestPublisher<T> verifyRequested(long expected) {
-        assertThat("Unexpected items requested.", requested.get(), is(expected));
-        return this;
-    }
-
-    public TestPublisher<T> verifyOutstanding(long expected) {
-        assertThat("Unexpected outstanding requested.", outstandingRequested(), is(expected));
-        return this;
-    }
-
-    public TestPublisher<T> verifyCancelled() {
-        assertTrue("Subscriber did not cancel.", isCancelled());
-        return this;
-    }
-
-    public TestPublisher<T> verifyNotCancelled() {
-        assertFalse("Subscriber cancelled.", isCancelled());
-        return this;
-    }
-
-    public TestPublisher<T> verifySubscribed() {
-        assertThat("No subscriber found.", subscriber.get(), is(notNullValue()));
-        return this;
-    }
-
-    public TestPublisher<T> verifyNotSubscribed() {
-        final Subscriber<? super T> sub = this.subscriber.get();
-        assertThat("Subscriber found: " + sub, sub, is(nullValue()));
-        return this;
-    }
-
-    private Subscriber<? super T> verifySubscriberAndStart() {
-        Subscriber<? super T> sub = getSubscriberOrFail();
-        if (usedSubscription.compareAndSet(null, subscription)) {
-            sendOnSubscribe();
-        }
-        return sub;
-    }
-
-    private void onSubscribe0(Subscription s) {
-        if (usedSubscription.compareAndSet(null, s)) {
-            Subscriber<? super T> sub = subscriber.get();
-            if (sub != null) {
-                sub.onSubscribe(s);
-            }
+        if (items == null) {
+            subscriber.onNext(null);
         } else {
-            throw new IllegalStateException("OnSubscribe already sent.");
+            for (final T item : items) {
+                subscriber.onNext(item);
+            }
         }
     }
 
-    private Subscriber<? super T> getSubscriberAndReset() {
-        Subscriber<? super T> sub = subscriber.getAndSet(null);
-        if (sub == null) {
-            throw new IllegalStateException("No Subscriber present.");
+    public void onComplete() {
+        rethrow();
+        final Subscriber<T> subscriber = this.subscriber;
+        if (subscriber == null) {
+            throw new IllegalStateException("onComplete without subscriber");
         }
-        return sub;
+        subscriber.onComplete();
     }
 
-    private Subscriber<? super T> getSubscriberOrFail() {
-        Subscriber<? super T> sub = subscriber.get();
-        if (sub == null) {
-            throw new IllegalStateException("No Subscriber present.");
+    public void onError(final Throwable t) {
+        rethrow();
+        final Subscriber<T> subscriber = this.subscriber;
+        if (subscriber == null) {
+            throw new IllegalStateException("onError without subscriber");
         }
-        return sub;
+        subscriber.onError(t);
+    }
+
+    private <TT extends Throwable> void recordAndThrow(final TT t) throws TT {
+        record(t);
+        throw t;
+    }
+
+    private void record(final Throwable t) {
+        requireNonNull(t);
+        exceptions.add(t);
+    }
+
+    private void rethrow() {
+        if (!exceptions.isEmpty()) {
+            final RuntimeException exception = new RuntimeException("Unexpected exception(s) encountered",
+                    exceptions.get(0));
+            for (int i = 1; i < exceptions.size(); i++) {
+                exception.addSuppressed(exceptions.get(i));
+            }
+            throw exception;
+        }
+    }
+
+    public static class Builder<T> {
+
+        @Nullable
+        private Function<Subscriber<? super T>, Subscriber<T>> demandCheckingSubscriberFunction;
+        @Nullable
+        private Function<Subscriber<? super T>, Subscriber<T>> autoOnSubscribeSubscriberFunction =
+                new AutoOnSubscribeSubscriberFunction<>();
+
+        private Function<Subscriber<? super T>, Subscriber<T>> subscriberCardinalityFunction =
+                new SequentialPublisherSubscriberFunction<>();
+
+        public Builder<T> concurrentSubscribers() {
+            subscriberCardinalityFunction = new ConcurrentPublisherSubscriberFunction<>();
+            return this;
+        }
+
+        public Builder<T> concurrentSubscribers(final ConcurrentPublisherSubscriberFunction<T> function) {
+            subscriberCardinalityFunction = requireNonNull(function);
+            return this;
+        }
+
+        public Builder<T> sequentialSubscribers() {
+            subscriberCardinalityFunction = new SequentialPublisherSubscriberFunction<>();
+            return this;
+        }
+
+        public Builder<T> sequentialSubscribers(final SequentialPublisherSubscriberFunction<T> function) {
+            subscriberCardinalityFunction = requireNonNull(function);
+            return this;
+        }
+
+        public Builder<T> singleSubscriber() {
+            subscriberCardinalityFunction = new NonResubscribeablePublisherSubscriberFunction<>();
+            return this;
+        }
+
+        public Builder<T> singleSubscriber(final NonResubscribeablePublisherSubscriberFunction<T> function) {
+            subscriberCardinalityFunction = requireNonNull(function);
+            return this;
+        }
+
+        public Builder<T> enableDemandCheck() {
+            demandCheckingSubscriberFunction = new DemandCheckingSubscriberFunction<>();
+            return this;
+        }
+
+        public Builder<T> enableDemandCheck(final DemandCheckingSubscriberFunction<T> function) {
+            demandCheckingSubscriberFunction = requireNonNull(function);
+            return this;
+        }
+
+        public Builder<T> disableDemandCheck() {
+            demandCheckingSubscriberFunction = null;
+            return this;
+        }
+
+        public Builder<T> autoOnSubscribe() {
+            autoOnSubscribeSubscriberFunction = new AutoOnSubscribeSubscriberFunction<>();
+            return this;
+        }
+
+        public Builder<T> autoOnSubscribe(final AutoOnSubscribeSubscriberFunction<T> function) {
+            autoOnSubscribeSubscriberFunction = requireNonNull(function);
+            return this;
+        }
+
+        public Builder<T> disableAutoOnSubscribe() {
+            autoOnSubscribeSubscriberFunction = null;
+            return this;
+        }
+
+        public TestPublisher<T> custom(final Function<Subscriber<? super T>, Subscriber<T>> function) {
+            return new TestPublisher<>(requireNonNull(function));
+        }
+
+        private Function<Subscriber<? super T>, Subscriber<T>> buildSubscriberFunction() {
+            Function<Subscriber<? super T>, Subscriber<T>> subscriberFunction = demandCheckingSubscriberFunction;
+            subscriberFunction = andThen(subscriberFunction, autoOnSubscribeSubscriberFunction);
+            subscriberFunction = andThen(subscriberFunction, subscriberCardinalityFunction);
+            assert subscriberFunction != null;
+            return subscriberFunction;
+        }
+
+        public TestPublisher<T> build() {
+            return new TestPublisher<>(buildSubscriberFunction());
+        }
+
+        @Nullable
+        private static <T> Function<Subscriber<? super T>,
+                Subscriber<T>> andThen(@Nullable final Function<Subscriber<? super T>, Subscriber<T>> first,
+                                       @Nullable final Function<Subscriber<? super T>, Subscriber<T>> second) {
+            if (first == null) {
+                return second;
+            }
+            if (second == null) {
+                return null;
+            }
+            return first.andThen(second);
+        }
     }
 }
