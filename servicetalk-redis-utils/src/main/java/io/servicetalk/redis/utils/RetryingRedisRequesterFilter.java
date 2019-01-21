@@ -76,7 +76,7 @@ public final class RetryingRedisRequesterFilter implements RedisClientFilterFact
         return new RedisClientFilter(client) {
 
             private final BiIntFunction<Throwable, Completable> retryStrategy =
-                    settings.newStrategy(client.executionContext().executor());
+                    settings.newStrategy(delegate().executionContext().executor());
 
             @Override
             public Publisher<RedisData> request(final RedisExecutionStrategy strategy, final RedisRequest request) {
@@ -109,7 +109,7 @@ public final class RetryingRedisRequesterFilter implements RedisClientFilterFact
         return new RedisConnectionFilter(connection) {
 
             private final BiIntFunction<Throwable, Completable> retryStrategy =
-                    settings.newStrategy(connection.executionContext().executor());
+                    settings.newStrategy(delegate().executionContext().executor());
 
             @Override
             public Publisher<RedisData> request(final RedisExecutionStrategy strategy, final RedisRequest request) {

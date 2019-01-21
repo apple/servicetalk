@@ -73,7 +73,7 @@ public final class RetryingHttpRequesterFilter implements HttpClientFilterFactor
         return new StreamingHttpClientFilter(client) {
 
             private final BiIntFunction<Throwable, Completable> retryStrategy =
-                    settings.newStrategy(client.executionContext().executor());
+                    settings.newStrategy(delegate().executionContext().executor());
 
             @Override
             protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
@@ -109,7 +109,7 @@ public final class RetryingHttpRequesterFilter implements HttpClientFilterFactor
         return new StreamingHttpConnectionFilter(connection) {
 
             private final BiIntFunction<Throwable, Completable> retryStrategy =
-                    settings.newStrategy(connection.executionContext().executor());
+                    settings.newStrategy(delegate().executionContext().executor());
 
             @Override
             public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
