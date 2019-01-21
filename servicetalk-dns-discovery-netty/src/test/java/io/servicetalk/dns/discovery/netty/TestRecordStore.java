@@ -62,11 +62,13 @@ final class TestRecordStore implements RecordStore {
         Map<RecordType, List<ResourceRecord>> recordsByType = new HashMap<>();
 
         for (ResourceRecord record : records) {
-            List<ResourceRecord> records2 = recordsByType.computeIfAbsent(record.getRecordType(), k -> new ArrayList<>());
+            List<ResourceRecord> records2 = recordsByType.computeIfAbsent(record.getRecordType(),
+                    k -> new ArrayList<>());
             records2.add(record);
         }
 
-        final Map<RecordType, List<ResourceRecord>> recordsToReturnForDomain = defaultRecordsByDomain.computeIfAbsent(domain, k -> new HashMap<>());
+        final Map<RecordType, List<ResourceRecord>> recordsToReturnForDomain =
+                defaultRecordsByDomain.computeIfAbsent(domain, k -> new HashMap<>());
         for (Map.Entry<RecordType, List<ResourceRecord>> entry : recordsByType.entrySet()) {
             final RecordType recordType = entry.getKey();
             recordsToReturnForDomain.put(recordType, entry.getValue());
@@ -96,14 +98,17 @@ final class TestRecordStore implements RecordStore {
         Map<RecordType, List<ResourceRecord>> recordsByType = new HashMap<>();
 
         for (ResourceRecord record : records) {
-            List<ResourceRecord> records2 = recordsByType.computeIfAbsent(record.getRecordType(), k -> new ArrayList<>());
+            List<ResourceRecord> records2 = recordsByType.computeIfAbsent(record.getRecordType(),
+                    k -> new ArrayList<>());
             records2.add(record);
         }
 
-        final Map<RecordType, List<List<ResourceRecord>>> recordsToReturnForDomain = recordsToReturnByDomain.computeIfAbsent(domain, k -> new HashMap<>());
+        final Map<RecordType, List<List<ResourceRecord>>> recordsToReturnForDomain =
+                recordsToReturnByDomain.computeIfAbsent(domain, k -> new HashMap<>());
         for (Map.Entry<RecordType, List<ResourceRecord>> entry : recordsByType.entrySet()) {
             final RecordType recordType = entry.getKey();
-            final List<List<ResourceRecord>> records2 = recordsToReturnForDomain.computeIfAbsent(recordType, k -> new ArrayList<>());
+            final List<List<ResourceRecord>> records2 = recordsToReturnForDomain.computeIfAbsent(
+                    recordType, k -> new ArrayList<>());
             records2.add(entry.getValue());
         }
 
@@ -114,10 +119,12 @@ final class TestRecordStore implements RecordStore {
     @Override
     public Set<ResourceRecord> getRecords(QuestionRecord questionRecord) {
         String domain = questionRecord.getDomainName();
-        final Map<RecordType, List<List<ResourceRecord>>> recordsToReturnForDomain = recordsToReturnByDomain.get(domain);
+        final Map<RecordType, List<List<ResourceRecord>>> recordsToReturnForDomain =
+                recordsToReturnByDomain.get(domain);
         if (recordsToReturnForDomain != null) {
-            final List<List<ResourceRecord>> recordsToReturn = recordsToReturnForDomain.get(questionRecord.getRecordType());
-            if (recordsToReturn != null && recordsToReturn.size() > 0) {
+            final List<List<ResourceRecord>> recordsToReturn = recordsToReturnForDomain.get(
+                    questionRecord.getRecordType());
+            if (recordsToReturn != null && !recordsToReturn.isEmpty()) {
                 return new HashSet<>(recordsToReturn.remove(0));
             }
         }

@@ -17,6 +17,8 @@ package io.servicetalk.dns.discovery.netty;
 
 import io.netty.util.internal.PlatformDependent;
 
+import static java.util.Arrays.setAll;
+
 final class DnsTestUtils {
 
     private static final int[] NUMBERS = new int[254];
@@ -33,9 +35,7 @@ final class DnsTestUtils {
     };
 
     static {
-        for (int i = 0; i < NUMBERS.length; i++) {
-            NUMBERS[i] = i + 1;
-        }
+        setAll(NUMBERS, i -> i + 1);
     }
 
     private DnsTestUtils() {
