@@ -49,6 +49,7 @@ public final class RetryStrategies {
                                                                                  final Predicate<Throwable> causeFilter,
                                                                                  final Duration delay,
                                                                                  final Executor timerExecutor) {
+        checkMaxRetries(maxRetries);
         requireNonNull(timerExecutor);
         requireNonNull(causeFilter);
         final long delayNanos = delay.toNanos();
@@ -80,6 +81,7 @@ public final class RetryStrategies {
             final Duration delay,
             final Executor timerExecutor) {
 
+        checkMaxRetries(maxRetries);
         requireNonNull(timerExecutor);
         requireNonNull(causeFilter);
         final long delayNanos = delay.toNanos();
@@ -94,9 +96,6 @@ public final class RetryStrategies {
     /**
      * Creates a new retry function that adds a delay between retries. For first retry, the delay is
      * {@code initialDelay} which is increased exponentially for subsequent retries.
-     * <p>
-     * This method may not attempt to check for overflow if the retry count is high enough that an exponential delay
-     * causes {@link Long} overflow.
      *
      * @param maxRetries Maximum number of allowed retries, after which the returned {@link BiIntFunction} will return
      * a failed {@link Completable} with the passed {@link Throwable} as the cause
@@ -113,9 +112,11 @@ public final class RetryStrategies {
             final Duration initialDelay,
             final Executor timerExecutor) {
 
+        checkMaxRetries(maxRetries);
         requireNonNull(timerExecutor);
         requireNonNull(causeFilter);
         final long initialDelayNanos = initialDelay.toNanos();
+        preventLongOverflow(initialDelayNanos, maxRetries);
         return (retryCount, cause) -> {
             if (retryCount > maxRetries || !causeFilter.test(cause)) {
                 return error(cause);
@@ -129,9 +130,6 @@ public final class RetryStrategies {
      * {@code initialDelay} which is increased exponentially for subsequent retries.
      * This additionally adds a "Full Jitter" for the backoff as described
      * <a href="https://aws.amazon.com/blogs/architecture/exponential-backoff-and-jitter/">here</a>.
-     * <p>
-     * This method may not attempt to check for overflow if the retry count is high enough that an exponential delay
-     * causes {@link Long} overflow.
      *
      * @param maxRetries Maximum number of allowed retries, after which the returned {@link BiIntFunction} will return
      * a failed {@link Completable} with the passed {@link Throwable} as the cause
@@ -148,9 +146,11 @@ public final class RetryStrategies {
             final Duration initialDelay,
             final Executor timerExecutor) {
 
+        checkMaxRetries(maxRetries);
         requireNonNull(timerExecutor);
         requireNonNull(causeFilter);
         final long initialDelayNanos = initialDelay.toNanos();
+        preventLongOverflow(initialDelayNanos, maxRetries);
         return (retryCount, cause) -> {
             if (retryCount > maxRetries || !causeFilter.test(cause)) {
                 return error(cause);
@@ -158,5 +158,24 @@ public final class RetryStrategies {
             return timerExecutor.timer(ThreadLocalRandom.current().nextLong(0, initialDelayNanos << (retryCount - 1)),
                     NANOSECONDS);
         };
+    }
+
+    private static void checkMaxRetries(final int maxRetries) {
+        if (maxRetries <= 0) {
+            throw new IllegalArgumentException("maxRetries: " + maxRetries + " (expected: >0)");
+        }
+    }
+
+    private static void preventLongOverflow(final long initialDelayNanos, final int maxRetries) {
+        if (maxRetries <= 1) {
+            return;
+        }
+        for (int i = 1; i < maxRetries; i++) {
+            final long delay = initialDelayNanos << i;
+            if (delay < 0) {
+                throw new IllegalArgumentException("maxRetries (" + maxRetries + ") and initialDelay (" +
+                        initialDelayNanos + " ns) may cause long overflow");
+            }
+        }
     }
 }
