@@ -52,6 +52,15 @@ public class StreamingHttpClientFilter extends StreamingHttpClient {
         this.defaultStrategy = requireNonNull(defaultStrategy);
     }
 
+    /**
+     * Get the {@link StreamingHttpClient} that this class delegates to.
+     *
+     * @return the {@link StreamingHttpClient} that this class delegates to.
+     */
+    protected final StreamingHttpClient delegate() {
+        return delegate;
+    }
+
     @Override
     public final Single<? extends ReservedStreamingHttpConnection> reserveConnection(
             final StreamingHttpRequest request) {
