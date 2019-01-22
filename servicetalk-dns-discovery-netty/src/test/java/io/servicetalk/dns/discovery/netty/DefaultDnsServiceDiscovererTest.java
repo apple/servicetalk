@@ -157,35 +157,40 @@ public class DefaultDnsServiceDiscovererTest {
     @Test
     public void singleDiscover() throws InterruptedException {
         recordStore.addResponse("apple.com", A, nextIp());
+        final int expectedActiveCount = 1;
+        final int expectedInactiveCount = 0;
 
-        CountDownLatch latch = new CountDownLatch(1);
+        CountDownLatch latch = new CountDownLatch(expectedActiveCount + expectedInactiveCount);
         AtomicReference<Throwable> throwableRef = new AtomicReference<>();
         Publisher<ServiceDiscovererEvent<InetAddress>> publisher = discoverer.discover("apple.com");
         ServiceDiscovererTestSubscriber<InetAddress> subscriber =
-                new ServiceDiscovererTestSubscriber<>(latch, throwableRef, 1);
+                new ServiceDiscovererTestSubscriber<>(latch, throwableRef, expectedActiveCount);
         publisher.subscribe(subscriber);
 
         latch.await();
         assertNull(throwableRef.get());
-        assertThat(subscriber.getActiveCount(), equalTo(1));
-        assertThat(subscriber.getInactiveCount(), equalTo(0));
+        assertThat(subscriber.getActiveCount(), equalTo(expectedActiveCount));
+        assertThat(subscriber.getInactiveCount(), equalTo(expectedInactiveCount));
     }
 
     @Test
     public void singleDiscoverMultipleRecords() throws InterruptedException {
         recordStore.addResponse("apple.com", A, nextIp(), nextIp(), nextIp(), nextIp(), nextIp());
 
-        CountDownLatch latch = new CountDownLatch(5);
+        final int expectedActiveCount = 5;
+        final int expectedInactiveCount = 0;
+
+        CountDownLatch latch = new CountDownLatch(expectedActiveCount + expectedInactiveCount);
         AtomicReference<Throwable> throwableRef = new AtomicReference<>();
         Publisher<ServiceDiscovererEvent<InetAddress>> publisher = discoverer.discover("apple.com");
         ServiceDiscovererTestSubscriber<InetAddress> subscriber =
-                new ServiceDiscovererTestSubscriber<>(latch, throwableRef, 5);
+                new ServiceDiscovererTestSubscriber<>(latch, throwableRef, expectedActiveCount);
         publisher.subscribe(subscriber);
 
         latch.await();
         assertNull(throwableRef.get());
-        assertThat(subscriber.getActiveCount(), equalTo(5));
-        assertThat(subscriber.getInactiveCount(), equalTo(0));
+        assertThat(subscriber.getActiveCount(), equalTo(expectedActiveCount));
+        assertThat(subscriber.getInactiveCount(), equalTo(expectedInactiveCount));
     }
 
     @Test
@@ -193,7 +198,10 @@ public class DefaultDnsServiceDiscovererTest {
         recordStore.addResponse("apple.com", A, nextIp(), nextIp(), nextIp(), nextIp(), nextIp())
                 .setDefaultResponse("apple.com", A, nextIp(), nextIp(), nextIp(), nextIp(), nextIp());
 
-        CountDownLatch latch = new CountDownLatch(15);
+        final int expectedActiveCount = 10;
+        final int expectedInactiveCount = 5;
+
+        CountDownLatch latch = new CountDownLatch(expectedActiveCount + expectedInactiveCount);
         AtomicReference<Throwable> throwableRef = new AtomicReference<>();
         Publisher<ServiceDiscovererEvent<InetAddress>> publisher = discoverer.discover("apple.com");
         ServiceDiscovererTestSubscriber<InetAddress> subscriber =
@@ -202,8 +210,8 @@ public class DefaultDnsServiceDiscovererTest {
 
         latch.await();
         assertNull(throwableRef.get());
-        assertThat(subscriber.getActiveCount(), equalTo(10));
-        assertThat(subscriber.getInactiveCount(), equalTo(5));
+        assertThat(subscriber.getActiveCount(), equalTo(expectedActiveCount));
+        assertThat(subscriber.getInactiveCount(), equalTo(expectedInactiveCount));
     }
 
     @Test
@@ -211,7 +219,10 @@ public class DefaultDnsServiceDiscovererTest {
         recordStore.addResponse("apple.com", A, nextIp())
                 .setDefaultResponse("apple.com", A, nextIp());
 
-        CountDownLatch latch = new CountDownLatch(3);
+        final int expectedActiveCount = 2;
+        final int expectedInactiveCount = 1;
+
+        CountDownLatch latch = new CountDownLatch(expectedActiveCount + expectedInactiveCount);
         AtomicReference<Throwable> throwableRef = new AtomicReference<>();
         Publisher<ServiceDiscovererEvent<InetAddress>> publisher = discoverer.discover("apple.com");
         ServiceDiscovererTestSubscriber<InetAddress> subscriber =
@@ -219,9 +230,9 @@ public class DefaultDnsServiceDiscovererTest {
         publisher.subscribe(subscriber);
 
         latch.await();
-        assertThat(subscriber.getActiveCount(), equalTo(2));
-        assertThat(subscriber.getInactiveCount(), equalTo(1));
         assertNull(throwableRef.get());
+        assertThat(subscriber.getActiveCount(), equalTo(expectedActiveCount));
+        assertThat(subscriber.getInactiveCount(), equalTo(expectedInactiveCount));
     }
 
     @Test
@@ -231,8 +242,14 @@ public class DefaultDnsServiceDiscovererTest {
                 .addResponse("servicetalk.io", A, nextIp())
                 .setDefaultResponse("servicetalk.io", A, nextIp());
 
-        CountDownLatch appleLatch = new CountDownLatch(3);
-        CountDownLatch stLatch = new CountDownLatch(3);
+        final int expectedAppleActiveCount = 2;
+        final int expectedAppleInactiveCount = 1;
+        final int expectedStActiveCount = 2;
+        final int expectedStInactiveCount = 1;
+
+        CountDownLatch appleLatch = new CountDownLatch(expectedAppleActiveCount + expectedAppleInactiveCount);
+        CountDownLatch stLatch = new CountDownLatch(expectedStActiveCount + expectedStInactiveCount);
+
         AtomicReference<Throwable> throwableRef = new AtomicReference<>();
         Publisher<ServiceDiscovererEvent<InetAddress>> applePublisher = discoverer.discover("apple.com");
         Publisher<ServiceDiscovererEvent<InetAddress>> stPublisher = discoverer.discover("servicetalk.io");
@@ -246,10 +263,10 @@ public class DefaultDnsServiceDiscovererTest {
         appleLatch.await();
         stLatch.await();
         assertNull(throwableRef.get());
-        assertThat(appleSubscriber.getActiveCount(), equalTo(2));
-        assertThat(appleSubscriber.getInactiveCount(), equalTo(1));
-        assertThat(stSubscriber.getActiveCount(), equalTo(2));
-        assertThat(stSubscriber.getInactiveCount(), equalTo(1));
+        assertThat(appleSubscriber.getActiveCount(), equalTo(expectedAppleActiveCount));
+        assertThat(appleSubscriber.getInactiveCount(), equalTo(expectedAppleInactiveCount));
+        assertThat(stSubscriber.getActiveCount(), equalTo(expectedStActiveCount));
+        assertThat(stSubscriber.getInactiveCount(), equalTo(expectedStInactiveCount));
     }
 
     @SuppressWarnings("unchecked")
