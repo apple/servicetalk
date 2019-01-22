@@ -146,16 +146,7 @@ public final class LimitingActiveConnectionFactoryFilter<ResolvedAddress, C exte
          * @return {@link Throwable} representing a connection attempt was refused.
          */
         default Throwable newConnectionRefusedException(ResolvedAddress target) {
-            return new ConnectionLimitExceededException(target.toString());
-        }
-    }
-
-    // visible for tests
-    static final class ConnectionLimitExceededException extends ConnectException {
-        private static final long serialVersionUID = -750567284938958897L;
-
-        private ConnectionLimitExceededException(final String host) {
-            super("No more connections allowed for the host: " + host);
+            return new ConnectException("No more connections allowed for the host: " + target);
         }
     }
 
