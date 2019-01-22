@@ -272,6 +272,7 @@ public class DefaultDnsServiceDiscovererTest {
     @SuppressWarnings("unchecked")
     @Test
     public void exceptionInSubscriberOnErrorWhileClose() throws Exception {
+        recordStore.setDefaultResponse("apple.com", A, nextIp());
         CountDownLatch latchOnSubscribe = new CountDownLatch(1);
         ServiceDiscoverer<String, InetAddress, ServiceDiscovererEvent<InetAddress>> discoverer =
                 buildServiceDiscoverer(null);
