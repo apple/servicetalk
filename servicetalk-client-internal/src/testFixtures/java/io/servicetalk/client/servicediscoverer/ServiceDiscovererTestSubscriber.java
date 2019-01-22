@@ -34,7 +34,7 @@ public final class ServiceDiscovererTestSubscriber<T> implements Subscriber<Serv
     private final long initialRequestN;
     private final Set<T> activeAddresses;
     private int activeCount;
-    private int inActiveCount;
+    private int inactiveCount;
 
     public ServiceDiscovererTestSubscriber(CountDownLatch latch, AtomicReference<Throwable> throwableRef,
                                            long initialRequestN) {
@@ -54,13 +54,13 @@ public final class ServiceDiscovererTestSubscriber<T> implements Subscriber<Serv
         if (event.available()) {
             processActiveEvent(event);
         } else {
-            processInActiveEvent(event);
+            processInactiveEvent(event);
         }
         latch.countDown();
     }
 
-    private void processInActiveEvent(ServiceDiscovererEvent<T> event) {
-        ++inActiveCount;
+    private void processInactiveEvent(ServiceDiscovererEvent<T> event) {
+        ++inactiveCount;
         if (!activeAddresses.remove(event.address())) {
             throwableRef.set(new IllegalStateException("address: " + event.address() + " removed but not active"));
             countDownLatchToZero();
@@ -79,8 +79,8 @@ public final class ServiceDiscovererTestSubscriber<T> implements Subscriber<Serv
         return activeCount;
     }
 
-    public int getInActiveCount() {
-        return inActiveCount;
+    public int getInactiveCount() {
+        return inactiveCount;
     }
 
     @Override
