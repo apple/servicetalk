@@ -345,7 +345,7 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends ListenableA
             if (!added || removed) {
                 // It could be that this host was removed concurrently and was not closed by markInactive().
                 // So, we check removed again and remove from the queue + close.
-                if (added && connections.remove(connection)) {
+                if (!added || connections.remove(connection)) {
                     connection.closeAsync().subscribe();
                 }
                 return false;
