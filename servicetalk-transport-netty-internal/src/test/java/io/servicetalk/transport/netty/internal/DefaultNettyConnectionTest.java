@@ -18,6 +18,7 @@ package io.servicetalk.transport.netty.internal;
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.Cancellable;
+import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.MockedCompletableListenerRule;
 import io.servicetalk.concurrent.api.MockedSubscriberRule;
 import io.servicetalk.concurrent.api.Publisher;
@@ -35,9 +36,12 @@ import org.mockito.ArgumentCaptor;
 
 import java.nio.channels.ClosedChannelException;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
+import static io.servicetalk.concurrent.api.Executors.from;
 import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Publisher.just;
@@ -47,6 +51,7 @@ import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_
 import static io.servicetalk.transport.netty.internal.CloseHandler.CloseEvent.CHANNEL_CLOSED_INBOUND;
 import static io.servicetalk.transport.netty.internal.CloseHandler.CloseEvent.CHANNEL_CLOSED_OUTBOUND;
 import static io.servicetalk.transport.netty.internal.CloseHandler.UNSUPPORTED_PROTOCOL_CLOSE_HANDLER;
+import static io.servicetalk.transport.netty.internal.CloseHandler.forPipelinedRequestResponse;
 import static io.servicetalk.transport.netty.internal.FlushStrategies.batchFlush;
 import static io.servicetalk.transport.netty.internal.FlushStrategies.defaultFlushStrategy;
 import static io.servicetalk.transport.netty.internal.FlushStrategies.flushOnEnd;
@@ -93,12 +98,16 @@ public class DefaultNettyConnectionTest {
     }
 
     private void setupWithCloseHandler(final CloseHandler closeHandler) {
+        setupWithCloseHandler(closeHandler, immediate());
+    }
+
+    private void setupWithCloseHandler(final CloseHandler closeHandler, Executor executor) {
         ExecutionContext executionContext = mock(ExecutionContext.class);
-        when(executionContext.executor()).thenReturn(immediate());
+        when(executionContext.executor()).thenReturn(executor);
         allocator = DEFAULT_ALLOCATOR;
         channel = new EmbeddedChannel();
         context = mock(ConnectionContext.class);
-        when(context.onClose()).thenReturn(new NettyFutureCompletable(channel::closeFuture));
+        when(context.onClose()).thenReturn(new NettyFutureCompletable(channel::closeFuture).publishOn(executor));
         when(context.closeAsync()).thenReturn(new NettyFutureCompletable(channel::close));
         when(context.executionContext()).thenReturn(executionContext);
         requestNSupplier = mock(NettyConnection.RequestNSupplier.class);
@@ -346,7 +355,7 @@ public class DefaultNettyConnectionTest {
 
     @Test
     public void testOnClosingWithGracefulClose() throws Exception {
-        CloseHandler closeHandler = CloseHandler.forPipelinedRequestResponse(true);
+        CloseHandler closeHandler = forPipelinedRequestResponse(true);
         setupWithCloseHandler(closeHandler);
         closeListener.listen(conn.onClosing());
         awaitIndefinitely(conn.closeAsyncGracefully());
@@ -355,7 +364,7 @@ public class DefaultNettyConnectionTest {
 
     @Test
     public void testOnClosingWithHardClose() throws Exception {
-        CloseHandler closeHandler = CloseHandler.forPipelinedRequestResponse(true);
+        CloseHandler closeHandler = forPipelinedRequestResponse(true);
         setupWithCloseHandler(closeHandler);
         closeListener.listen(conn.onClosing());
         awaitIndefinitely(conn.closeAsync());
@@ -364,7 +373,7 @@ public class DefaultNettyConnectionTest {
 
     @Test
     public void testOnClosingWithoutUserInitiatedClose() throws Exception {
-        CloseHandler closeHandler = CloseHandler.forPipelinedRequestResponse(true);
+        CloseHandler closeHandler = forPipelinedRequestResponse(true);
         setupWithCloseHandler(closeHandler);
         closeListener.listen(conn.onClosing());
         channel.close().get(); // Close and await closure.
@@ -423,7 +432,7 @@ public class DefaultNettyConnectionTest {
 
     @Test
     public void testErrorEnrichmentWithCloseHandlerOnWriteError() {
-        CloseHandler closeHandler = CloseHandler.forPipelinedRequestResponse(true);
+        CloseHandler closeHandler = forPipelinedRequestResponse(true);
         setupWithCloseHandler(closeHandler);
         closeHandler.channelClosedOutbound(channel.pipeline().firstContext());
         assertThat(channel.isActive(), is(false));
@@ -441,7 +450,7 @@ public class DefaultNettyConnectionTest {
 
     @Test
     public void testErrorEnrichmentWithCloseHandlerOnReadError() {
-        CloseHandler closeHandler = CloseHandler.forPipelinedRequestResponse(true);
+        CloseHandler closeHandler = forPipelinedRequestResponse(true);
         setupWithCloseHandler(closeHandler);
         closeHandler.channelClosedInbound(channel.pipeline().firstContext());
         assertThat(channel.isActive(), is(false));
@@ -469,5 +478,20 @@ public class DefaultNettyConnectionTest {
         assertThat(exCaptor.getValue(), instanceOf(ClosedChannelException.class));
         assertThat(exCaptor.getValue().getCause(), nullValue());
         assertThat(exCaptor.getValue().getStackTrace()[0].getClassName(), equalTo(DefaultNettyConnection.class.getName()));
+    }
+
+    @Test
+    public void testConnectionDoesNotHoldAThread() {
+        AtomicInteger taskSubmitted = new AtomicInteger();
+        ExecutorService executor = java.util.concurrent.Executors.newCachedThreadPool();
+        try {
+            setupWithCloseHandler(forPipelinedRequestResponse(true), from(task -> {
+                taskSubmitted.incrementAndGet();
+                executor.submit(task);
+            }));
+            assertThat("Unexpected tasks submitted.", taskSubmitted.get(), is(0));
+        } finally {
+            executor.shutdownNow();
+        }
     }
 }
