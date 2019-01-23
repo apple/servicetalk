@@ -238,6 +238,7 @@ final class CommanderUtils {
     }
 
     private static final class ConnectionClosedException extends ClosedChannelException {
+        private static final long serialVersionUID = 1620818457019576699L;
 
         private final String message;
 

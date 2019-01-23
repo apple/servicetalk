@@ -19,7 +19,7 @@ import io.servicetalk.client.api.RetryableException;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.concurrent.internal.QueueFullException;
+import io.servicetalk.concurrent.internal.QueueFullAndRejectedSubscribeException;
 import io.servicetalk.concurrent.internal.RejectedSubscribeException;
 import io.servicetalk.redis.api.RedisConnection;
 import io.servicetalk.redis.api.RedisData;
@@ -77,7 +77,7 @@ final class InternalSubscribedRedisConnection extends AbstractRedisConnection {
                 executionContext, roConfig);
         this.connection = connection;
         this.deferSubscribeTillConnect = roConfig.isDeferSubscribeTillConnect();
-        writeQueue = new WriteQueue(maxPendingRequests, initialQueueCapacity);
+        writeQueue = new WriteQueue(initialQueueCapacity, maxPendingRequests);
         this.readStreamSplitter = new ReadStreamSplitter(connection, maxPendingRequests, maxBufferPerGroup,
                 redisRequest -> request0(redisRequest).ignoreElements());
     }
@@ -231,7 +231,7 @@ final class InternalSubscribedRedisConnection extends AbstractRedisConnection {
         @SuppressWarnings("unused")
         private volatile int closed;
 
-        WriteQueue(int maxPendingWrites, int initialQueueCapacity) {
+        WriteQueue(int initialQueueCapacity, int maxPendingWrites) {
             super(initialQueueCapacity, maxPendingWrites);
             this.maxPendingWrites = maxPendingWrites;
         }
@@ -248,7 +248,7 @@ final class InternalSubscribedRedisConnection extends AbstractRedisConnection {
                     }
                     WriteTask task = new WriteTask(command, toWrite, subscriber);
                     if (!offerAndTryExecute(task)) {
-                        task.fail(new QueueFullException("write-queue", maxPendingWrites));
+                        task.fail(new QueueFullAndRejectedSubscribeException("write-queue", maxPendingWrites));
                     }
                 }
             };
@@ -266,7 +266,7 @@ final class InternalSubscribedRedisConnection extends AbstractRedisConnection {
                     if (closedUpdater.compareAndSet(WriteQueue.this, 0, 1)) {
                         WriteTask task = new WriteTask(QUIT, quitRequestWrite, subscriber);
                         if (!offerAndTryExecute(task)) {
-                            task.fail(new QueueFullException("write-queue", maxPendingWrites));
+                            task.fail(new QueueFullAndRejectedSubscribeException("write-queue", maxPendingWrites));
                         }
                         return;
                     }

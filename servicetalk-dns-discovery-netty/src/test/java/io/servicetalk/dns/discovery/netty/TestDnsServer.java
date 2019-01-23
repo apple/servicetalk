@@ -15,16 +15,14 @@
  */
 package io.servicetalk.dns.discovery.netty;
 
-import io.netty.util.internal.PlatformDependent;
+import org.apache.directory.server.dns.DnsException;
 import org.apache.directory.server.dns.DnsServer;
 import org.apache.directory.server.dns.io.encoder.DnsMessageEncoder;
 import org.apache.directory.server.dns.io.encoder.ResourceRecordEncoder;
 import org.apache.directory.server.dns.messages.DnsMessage;
 import org.apache.directory.server.dns.messages.QuestionRecord;
-import org.apache.directory.server.dns.messages.RecordClass;
 import org.apache.directory.server.dns.messages.RecordType;
 import org.apache.directory.server.dns.messages.ResourceRecord;
-import org.apache.directory.server.dns.messages.ResourceRecordModifier;
 import org.apache.directory.server.dns.protocol.DnsProtocolHandler;
 import org.apache.directory.server.dns.protocol.DnsUdpDecoder;
 import org.apache.directory.server.dns.protocol.DnsUdpEncoder;
@@ -42,40 +40,22 @@ import org.apache.mina.transport.socket.DatagramAcceptor;
 import org.apache.mina.transport.socket.DatagramSessionConfig;
 
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
+import java.net.UnknownHostException;
 import java.util.Set;
 
 import static java.net.InetAddress.getLoopbackAddress;
 
 class TestDnsServer extends DnsServer {
-    private static final Map<String, byte[]> BYTES = new HashMap<>();
-    private static final String[] IPV6_ADDRESSES = initializeIPs();
-
-    private final RecordStore store;
-
-    TestDnsServer(Set<String> domains) {
-        this(new TestRecordStore(domains));
-    }
+    private final DelegateRecordStore store;
 
     TestDnsServer(RecordStore store) {
-        this.store = store;
+        this.store = new DelegateRecordStore(store);
     }
 
-    @SuppressWarnings("PMD.AvoidUsingHardCodedIP")
-    static String[] initializeIPs() {
-        BYTES.put("::1", new byte[]{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1});
-        BYTES.put("0:0:0:0:0:0:1:1", new byte[]{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1});
-        BYTES.put("0:0:0:0:0:1:1:1", new byte[]{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1});
-        BYTES.put("0:0:0:0:1:1:1:1", new byte[]{0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1});
-        BYTES.put("0:0:0:1:1:1:1:1", new byte[]{0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1});
-        BYTES.put("0:0:1:1:1:1:1:1", new byte[]{0, 0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1});
-        BYTES.put("0:1:1:1:1:1:1:1", new byte[]{0, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1});
-        BYTES.put("1:1:1:1:1:1:1:1", new byte[]{0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1});
-
-        return BYTES.keySet().toArray(new String[BYTES.size()]);
+    void setStore(final RecordStore store) {
+        this.store.setStore(store);
     }
 
     @Override
@@ -89,7 +69,7 @@ class TestDnsServer extends DnsServer {
         acceptor.setHandler(new DnsProtocolHandler(this, store) {
             @Override
             public void sessionCreated(IoSession session) {
-                // USe our own codec to support AAAA testing
+                // Use our own codec to support AAAA testing
                 session.getFilterChain()
                         .addFirst("codec", new ProtocolCodecFilter(new TestDnsProtocolUdpCodecFactory()));
             }
@@ -155,90 +135,31 @@ class TestDnsServer extends DnsServer {
 
             @Override
             protected void putResourceRecordData(IoBuffer ioBuffer, ResourceRecord resourceRecord) {
-                byte[] bytes = BYTES.get(resourceRecord.get(DnsAttribute.IP_ADDRESS));
-                if (bytes == null) {
-                    throw new IllegalStateException();
+                byte[] bytes;
+                try {
+                    bytes = InetAddress.getByName(resourceRecord.get(DnsAttribute.IP_ADDRESS)).getAddress();
+                } catch (UnknownHostException e) {
+                    throw new RuntimeException(e);
                 }
-                // encode the ::1
                 ioBuffer.put(bytes);
             }
         }
     }
 
-    private static final class TestRecordStore implements RecordStore {
-        private static final int[] NUMBERS = new int[254];
-        private static final char[] CHARS = new char[26];
+    private static final class DelegateRecordStore implements RecordStore {
+        private volatile RecordStore store;
 
-        static {
-            for (int i = 0; i < NUMBERS.length; i++) {
-                NUMBERS[i] = i + 1;
-            }
-
-            for (int i = 0; i < CHARS.length; i++) {
-                CHARS[i] = (char) ('a' + i);
-            }
+        DelegateRecordStore(final RecordStore store) {
+            this.store = store;
         }
 
-        private final Set<String> domains;
-
-        TestRecordStore(Set<String> domains) {
-            this.domains = domains;
-        }
-
-        private static int index(int arrayLength) {
-            return PlatformDependent.threadLocalRandom().nextInt(arrayLength);
-        }
-
-        private static String nextDomain() {
-            return CHARS[index(CHARS.length)] + ".netty.io";
-        }
-
-        private static String nextIp() {
-            return ipPart() + "." + ipPart() + '.' + ipPart() + '.' + ipPart();
-        }
-
-        private static int ipPart() {
-            return NUMBERS[index(NUMBERS.length)];
-        }
-
-        private static String nextIp6() {
-            return IPV6_ADDRESSES[index(IPV6_ADDRESSES.length)];
+        void setStore(final RecordStore store) {
+            this.store = store;
         }
 
         @Override
-        public Set<ResourceRecord> getRecords(QuestionRecord questionRecord) {
-            String name = questionRecord.getDomainName();
-            if (domains.contains(name)) {
-                ResourceRecordModifier rm = new ResourceRecordModifier();
-                rm.setDnsClass(RecordClass.IN);
-                rm.setDnsName(name);
-                rm.setDnsTtl(1);
-                rm.setDnsType(questionRecord.getRecordType());
-
-                switch (questionRecord.getRecordType()) {
-                    case A:
-                        do {
-                            rm.put(DnsAttribute.IP_ADDRESS, nextIp());
-                        } while (PlatformDependent.threadLocalRandom().nextBoolean());
-                        break;
-                    case AAAA:
-                        do {
-                            rm.put(DnsAttribute.IP_ADDRESS, nextIp6());
-                        } while (PlatformDependent.threadLocalRandom().nextBoolean());
-                        break;
-                    case MX:
-                        int priority = 0;
-                        do {
-                            rm.put(DnsAttribute.DOMAIN_NAME, nextDomain());
-                            rm.put(DnsAttribute.MX_PREFERENCE, String.valueOf(++priority));
-                        } while (PlatformDependent.threadLocalRandom().nextBoolean());
-                        break;
-                    default:
-                        return null;
-                }
-                return Collections.singleton(rm.getEntry());
-            }
-            return null;
+        public Set<ResourceRecord> getRecords(final QuestionRecord question) throws DnsException {
+            return store.getRecords(question);
         }
     }
 }

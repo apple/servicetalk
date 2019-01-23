@@ -19,8 +19,19 @@ package io.servicetalk.concurrent.internal;
  * Exception indicating a bounded queue is full, which also resulted in a rejected subscribe.
  */
 public final class QueueFullAndRejectedSubscribeException extends QueueFullException implements RejectedSubscribeError {
+    private static final long serialVersionUID = 2132623149199945728L;
+
     /**
-     * New instance.
+     * Create a new instance.
+     *
+     * @param queueIdentifier Identifier for the queue that is full.
+     */
+    public QueueFullAndRejectedSubscribeException(final String queueIdentifier) {
+        super(queueIdentifier);
+    }
+
+    /**
+     * Create a new instance.
      *
      * @param queueIdentifier Identifier for the queue that is full.
      * @param capacity Capacity for queue.

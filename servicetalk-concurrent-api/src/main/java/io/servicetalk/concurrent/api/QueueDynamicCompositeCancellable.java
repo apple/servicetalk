@@ -16,6 +16,7 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
+import io.servicetalk.concurrent.internal.QueueFullException;
 
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -52,13 +53,15 @@ final class QueueDynamicCompositeCancellable implements DynamicCompositeCancella
         if (isCancelled()) {
             toAdd.cancel();
             return false;
-        } else {
-            boolean offered = cancellables.offer(toAdd);
-            assert offered : "queue shouldn't reject offer because it should be unbounded!";
-            if (isCancelled()) {
-                cancelAll();
-                return false;
-            }
+        }
+
+        if (!cancellables.offer(toAdd)) {
+            throw new QueueFullException("cancellables");
+        }
+
+        if (isCancelled()) {
+            cancelAll();
+            return false;
         }
         return true;
     }

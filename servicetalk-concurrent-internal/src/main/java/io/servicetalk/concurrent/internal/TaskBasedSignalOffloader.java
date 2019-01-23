@@ -378,7 +378,7 @@ final class TaskBasedSignalOffloader implements SignalOffloader {
         }
 
         @SuppressWarnings("StatementWithEmptyBody")
-        protected void discardAllSignals() {
+        private void discardAllSignals() {
             while (signals.poll() != null) {
                 // Drain all elements before exiting.
             }
@@ -388,8 +388,10 @@ final class TaskBasedSignalOffloader implements SignalOffloader {
             if (earlyTerminated) {
                 return;
             }
-            boolean offered = signals.offer(signal);
-            assert offered : "Unbounded queue rejected.";
+
+            if (!signals.offer(signal)) {
+                throw new QueueFullException("signals");
+            }
 
             for (;;) {
                 int cState = state;
