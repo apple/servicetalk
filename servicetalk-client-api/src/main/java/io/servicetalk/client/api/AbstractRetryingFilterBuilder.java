@@ -46,7 +46,7 @@ import static java.util.Objects.requireNonNull;
  */
 public abstract class AbstractRetryingFilterBuilder<B, F, M> {
 
-    private int maxRetries = 3;
+    private int maxRetries = 1;
     @Nullable
     private Duration initialDelay = ofMillis(10);
     private boolean exponential = true;
