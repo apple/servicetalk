@@ -80,19 +80,13 @@ public final class RetryingRedisRequesterFilter implements RedisClientFilterFact
                 return RetryingRedisRequesterFilter.this.request(delegate(), strategy, request, retryStrategy);
             }
 
+            // TODO: remove this override when RedisClientFilter will apply a mapping function for a reserved connection
             @Override
             public Single<? extends RedisClient.ReservedRedisConnection> reserveConnection(
                     final RedisExecutionStrategy strategy,
                     final Command command) {
 
-                // TODO: use super.reserveConnection(delegate(), strategy, command) when RedisClientFilter will have it
-                return delegate().reserveConnection(strategy, command).retryWhen((count, t) -> {
-                    if (settings.isRetryable(command, t)) {
-                        return retryStrategy.apply(count, t);
-                    }
-                    return error(t);
-                }).map(r -> new ReservedRedisConnectionFilter(r) {
-                    // TODO: remove this map when RedisClientFilter will do the same internally
+                return delegate().reserveConnection(strategy, command).map(r -> new ReservedRedisConnectionFilter(r) {
                     @Override
                     public Publisher<RedisData> request(final RedisExecutionStrategy strategy,
                                                         final RedisRequest request) {
