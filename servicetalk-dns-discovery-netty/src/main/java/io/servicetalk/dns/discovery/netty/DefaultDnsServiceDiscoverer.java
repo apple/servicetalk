@@ -19,14 +19,12 @@ import io.servicetalk.client.api.DefaultServiceDiscovererEvent;
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.concurrent.Cancellable;
-import io.servicetalk.concurrent.api.BiIntFunction;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.CompletableProcessor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.internal.DuplicateSubscribeException;
 import io.servicetalk.concurrent.internal.FlowControlUtil;
 import io.servicetalk.concurrent.internal.RejectedSubscribeError;
-import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutor;
 
@@ -46,6 +44,7 @@ import org.slf4j.LoggerFactory;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -82,25 +81,25 @@ final class DefaultDnsServiceDiscoverer
     private final CompletableProcessor closeCompletable = new CompletableProcessor();
     private final Map<String, List<DiscoverEntry>> registerMap = new HashMap<>(8);
     private final EventLoopAwareNettyIoExecutor nettyIoExecutor;
-    @Nullable
-    private final BiIntFunction<Throwable, Completable> retryStrategy;
     private final DnsNameResolver resolver;
     private final MinTtlCache ttlCache;
     private boolean closed;
 
-    DefaultDnsServiceDiscoverer(IoExecutor ioExecutor,
-                                @Nullable BiIntFunction<Throwable, Completable> retryStrategy, int minTTL,
+    DefaultDnsServiceDiscoverer(IoExecutor ioExecutor, int minTTL,
                                 @Nullable Integer ndots, @Nullable Boolean optResourceEnabled,
+                                @Nullable Duration queryTimeout,
                                 @Nullable DnsResolverAddressTypes dnsResolverAddressTypes,
                                 @Nullable DnsServerAddressStreamProvider dnsServerAddressStreamProvider) {
         // Implementation of this class expects to use only single EventLoop from IoExecutor
         this.nettyIoExecutor = toEventLoopAwareNettyIoExecutor(ioExecutor).next();
-        this.retryStrategy = retryStrategy;
         this.ttlCache = new MinTtlCache(new DefaultDnsCache(minTTL, Integer.MAX_VALUE, minTTL), minTTL);
         EventLoop eventLoop = this.nettyIoExecutor.getEventLoopGroup().next();
         DnsNameResolverBuilder builder = new DnsNameResolverBuilder(eventLoop)
                 .resolveCache(ttlCache)
                 .channelType(datagramChannel(eventLoop));
+        if (queryTimeout != null) {
+            builder.queryTimeoutMillis(queryTimeout.toMillis());
+        }
         if (ndots != null) {
             builder.ndots(ndots);
         }
@@ -216,41 +215,6 @@ final class DefaultDnsServiceDiscoverer
         }
     }
 
-    /**
-     * Convert this object from {@link String} host names and {@link InetAddress} resolved address to
-     * {@link HostAndPort} to {@link InetSocketAddress}.
-     *
-     * @return a resolver which will convert from {@link String} host names and {@link InetAddress} resolved address to
-     * {@link HostAndPort} to {@link InetSocketAddress}.
-     */
-    ServiceDiscoverer<HostAndPort, InetSocketAddress,
-            ServiceDiscovererEvent<InetSocketAddress>> toHostAndPortDiscoverer() {
-        return new ServiceDiscoverer<HostAndPort, InetSocketAddress, ServiceDiscovererEvent<InetSocketAddress>>() {
-            @Override
-            public Completable closeAsync() {
-                return DefaultDnsServiceDiscoverer.this.closeAsync();
-            }
-
-            @Override
-            public Completable closeAsyncGracefully() {
-                return DefaultDnsServiceDiscoverer.this.closeAsyncGracefully();
-            }
-
-            @Override
-            public Completable onClose() {
-                return DefaultDnsServiceDiscoverer.this.onClose();
-            }
-
-            @Override
-            public Publisher<ServiceDiscovererEvent<InetSocketAddress>> discover(HostAndPort hostAndPort) {
-                return DefaultDnsServiceDiscoverer.this.discover(hostAndPort.getHostName()).map(originalEvent ->
-                        new DefaultServiceDiscovererEvent<>(new InetSocketAddress(originalEvent.address(),
-                                hostAndPort.getPort()), originalEvent.available())
-                );
-            }
-        };
-    }
-
     private void assertInEventloop() {
         assert nettyIoExecutor.isCurrentThreadEventLoop() : "Must be called from the associated eventloop.";
     }
@@ -262,8 +226,7 @@ final class DefaultDnsServiceDiscoverer
 
         DiscoverEntry(String inetHost) {
             this.inetHost = inetHost;
-            Publisher<ServiceDiscovererEvent<InetAddress>> publisher = entriesPublisher.flatMapIterable(identity());
-            this.publisher = retryStrategy == null ? publisher : publisher.retryWhen(retryStrategy);
+            publisher = new EntriesPublisher().flatMapIterable(identity());
         }
 
         void close0() {
