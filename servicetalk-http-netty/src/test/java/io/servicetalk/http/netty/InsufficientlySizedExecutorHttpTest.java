@@ -117,7 +117,7 @@ public class InsufficientlySizedExecutorHttpTest {
         assert client != null;
         // For task based, we use a queue for the executor
         int expectedResponseCode = !threadBased && capacity > 0 ? OK.code() : SERVICE_UNAVAILABLE.code();
-        if (threadBased && capacity <= 1 || !threadBased && capacity == 0) {
+        if (capacity == 0) {
             // If there are no threads, we can not start processing.
             // If there is a single thread, it is used by the connection to listen for close events.
             expectedException.expect(instanceOf(ExecutionException.class));

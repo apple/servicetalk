@@ -33,6 +33,7 @@ public final class RepeatStrategies {
      * An {@link Exception} instance used to indicate termination of repeats.
      */
     public static final class TerminateRepeatException extends Exception {
+        private static final long serialVersionUID = -1725458427890873886L;
 
         static final TerminateRepeatException INSTANCE = new TerminateRepeatException();
 

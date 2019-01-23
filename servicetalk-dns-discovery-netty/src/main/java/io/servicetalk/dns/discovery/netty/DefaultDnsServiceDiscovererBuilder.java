@@ -52,7 +52,7 @@ public final class DefaultDnsServiceDiscovererBuilder {
      * @param minTTLSeconds The minimum amount of time a cache entry will be considered valid (in seconds).
      * @return {@code this}.
      */
-    public DefaultDnsServiceDiscovererBuilder setMinTTL(int minTTLSeconds) {
+    public DefaultDnsServiceDiscovererBuilder minTTL(int minTTLSeconds) {
         if (minTTLSeconds < 1) {
             throw new IllegalArgumentException("minTTLSeconds: " + minTTLSeconds + " (expected > 1)");
         }
@@ -67,7 +67,7 @@ public final class DefaultDnsServiceDiscovererBuilder {
      * server should be used per query.
      * @return {@code this}.
      */
-    public DefaultDnsServiceDiscovererBuilder setDnsServerAddressStreamProvider(
+    public DefaultDnsServiceDiscovererBuilder dnsServerAddressStreamProvider(
             @Nullable DnsServerAddressStreamProvider dnsServerAddressStreamProvider) {
         this.dnsServerAddressStreamProvider = dnsServerAddressStreamProvider;
         return this;
@@ -81,7 +81,7 @@ public final class DefaultDnsServiceDiscovererBuilder {
      * @param optResourceEnabled if optional records inclusion is enabled.
      * @return {@code this}.
      */
-    public DefaultDnsServiceDiscovererBuilder setOptResourceEnabled(boolean optResourceEnabled) {
+    public DefaultDnsServiceDiscovererBuilder optResourceEnabled(boolean optResourceEnabled) {
         this.optResourceEnabled = optResourceEnabled;
         return this;
     }
@@ -92,7 +92,7 @@ public final class DefaultDnsServiceDiscovererBuilder {
      * @param ndots the ndots value.
      * @return {@code this}.
      */
-    public DefaultDnsServiceDiscovererBuilder setNdots(int ndots) {
+    public DefaultDnsServiceDiscovererBuilder ndots(int ndots) {
         this.ndots = ndots;
         return this;
     }
@@ -103,7 +103,7 @@ public final class DefaultDnsServiceDiscovererBuilder {
      * @param dnsResolverAddressTypes the address types.
      * @return {@code this}.
      */
-    public DefaultDnsServiceDiscovererBuilder setDnsResolverAddressTypes(
+    public DefaultDnsServiceDiscovererBuilder dnsResolverAddressTypes(
             @Nullable DnsResolverAddressTypes dnsResolverAddressTypes) {
         this.dnsResolverAddressTypes = dnsResolverAddressTypes;
         return this;
@@ -118,15 +118,6 @@ public final class DefaultDnsServiceDiscovererBuilder {
     public DefaultDnsServiceDiscovererBuilder retryDnsFailures(BiIntFunction<Throwable, Completable> retryStrategy) {
         this.retryStrategy = retryStrategy;
         return this;
-    }
-
-    /**
-     * Build a new instance of {@link ServiceDiscoverer ServiceDiscoverer&lt;String, InetAddress&gt;}.
-     *
-     * @return a new instance of {@link ServiceDiscoverer ServiceDiscoverer&lt;String, InetAddress&gt;}.
-     */
-    public ServiceDiscoverer<String, InetAddress, ServiceDiscovererEvent<InetAddress>> buildInetDiscoverer() {
-        return newDefaultDnsServiceDiscoverer();
     }
 
     /**
@@ -160,6 +151,15 @@ public final class DefaultDnsServiceDiscovererBuilder {
     DefaultDnsServiceDiscovererBuilder bufferAllocator(BufferAllocator allocator) {
         executionContextBuilder.bufferAllocator(allocator);
         return this;
+    }
+
+    /**
+     * Build a new instance of {@link ServiceDiscoverer ServiceDiscoverer&lt;String, InetAddress&gt;}.
+     *
+     * @return a new instance of {@link ServiceDiscoverer ServiceDiscoverer&lt;String, InetAddress&gt;}.
+     */
+    public ServiceDiscoverer<String, InetAddress, ServiceDiscovererEvent<InetAddress>> buildInetDiscoverer() {
+        return newDefaultDnsServiceDiscoverer();
     }
 
     /**
