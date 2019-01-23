@@ -106,6 +106,6 @@ abstract class AbstractStreamingHttpConnection<CC extends ConnectionContext> ext
 
     @Override
     public String toString() {
-        return getClass().getSimpleName() + "(" + connection + ")";
+        return getClass().getName() + '(' + connection + ')';
     }
 }

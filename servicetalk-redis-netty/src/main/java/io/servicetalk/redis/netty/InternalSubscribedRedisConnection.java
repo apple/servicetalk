@@ -161,7 +161,7 @@ final class InternalSubscribedRedisConnection extends AbstractRedisConnection {
 
     @Override
     public String toString() {
-        return InternalSubscribedRedisConnection.class.getSimpleName() + "(" + connection + ")";
+        return getClass().getName() + '(' + connection + ')';
     }
 
     @Override

@@ -87,6 +87,6 @@ final class StandAloneReservedRedisConnection extends RedisClient.ReservedRedisC
 
     @Override
     public String toString() {
-        return StandAloneReservedRedisConnection.class.getSimpleName() + "(" + delegate + ")";
+        return getClass().getName() + '(' + delegate + ')';
     }
 }

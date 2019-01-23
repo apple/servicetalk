@@ -115,6 +115,6 @@ public abstract class ReservedRedisConnectionFilter extends ReservedRedisConnect
 
     @Override
     public String toString() {
-        return ReservedRedisConnectionFilter.class.getSimpleName() + "(" + delegate + ")";
+        return getClass().getName() + '(' + delegate + ')';
     }
 }

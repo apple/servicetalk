@@ -96,6 +96,6 @@ final class LoadBalancedRedisConnection extends ReservedRedisConnection
 
     @Override
     public String toString() {
-        return LoadBalancedRedisConnection.class.getSimpleName() + "(" + delegate + ")";
+        return getClass().getName() + '(' + delegate + ')';
     }
 }

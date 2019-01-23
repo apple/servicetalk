@@ -109,6 +109,6 @@ public class RedisClientFilter extends RedisClient {
 
     @Override
     public String toString() {
-        return RedisClientFilter.class.getSimpleName() + "(" + delegate + ")";
+        return getClass().getName() + '(' + delegate + ')';
     }
 }

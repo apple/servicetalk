@@ -113,6 +113,6 @@ public abstract class ReservedStreamingHttpConnectionFilter extends ReservedStre
 
     @Override
     public String toString() {
-        return ReservedStreamingHttpConnectionFilter.class.getSimpleName() + "(" + delegate + ")";
+        return getClass().getName() + '(' + delegate + ')';
     }
 }

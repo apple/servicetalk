@@ -106,6 +106,6 @@ public class StreamingHttpConnectionFilter extends StreamingHttpConnection {
 
     @Override
     public String toString() {
-        return StreamingHttpConnectionFilter.class.getSimpleName() + "(" + delegate + ")";
+        return getClass().getName() + '(' + delegate + ')';
     }
 }

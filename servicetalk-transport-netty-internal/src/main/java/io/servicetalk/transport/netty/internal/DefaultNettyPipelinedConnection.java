@@ -209,7 +209,7 @@ public final class DefaultNettyPipelinedConnection<Req, Resp> implements NettyPi
 
     @Override
     public String toString() {
-        return DefaultNettyPipelinedConnection.class.getSimpleName() + "(" + connection + ")";
+        return getClass().getName() + '(' + connection + ')';
     }
 
     @Override
