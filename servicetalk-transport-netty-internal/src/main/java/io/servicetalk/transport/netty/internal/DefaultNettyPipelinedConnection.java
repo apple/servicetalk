@@ -19,9 +19,9 @@ import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.concurrent.internal.QueueFullAndRejectedSubscribeException;
+import io.servicetalk.concurrent.internal.QueueFullException;
 import io.servicetalk.concurrent.internal.SequentialCancellable;
-import io.servicetalk.concurrent.internal.UnboundQueueFullAndRejectedSubscribeError;
-import io.servicetalk.concurrent.internal.UnboundQueueFullError;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.netty.internal.NettyConnection.RequestNSupplier;
 
@@ -153,7 +153,7 @@ public final class DefaultNettyPipelinedConnection<Req, Resp> implements NettyPi
                 subscriber.onSubscribe(task);
                 if (!writeQueue.offerAndTryExecute(task)) {
                     task.cancel();
-                    subscriber.onError(new UnboundQueueFullAndRejectedSubscribeError("pending requests"));
+                    subscriber.onError(new QueueFullAndRejectedSubscribeException("pending requests"));
                 }
             }
         }.concatWith(
@@ -308,7 +308,7 @@ public final class DefaultNettyPipelinedConnection<Req, Resp> implements NettyPi
             }
 
             if (!offered) {
-                onError0(new UnboundQueueFullError("response listener"));
+                onError0(new QueueFullException("response listener"));
             }
         }
 

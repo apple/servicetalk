@@ -24,17 +24,17 @@ public class QueueFullException extends IllegalStateException {
     /**
      * Create a new instance.
      *
-     * @param message The exception message.
+     * @param queueIdentifier Identifier for the queue that is full.
      */
-    public QueueFullException(final String message) {
-        super(message);
+    public QueueFullException(final String queueIdentifier) {
+        super("Queue " + queueIdentifier + " exceeded maximum capacity");
     }
 
     /**
      * Create a new instance.
      *
      * @param queueIdentifier Identifier for the queue that is full.
-     * @param capacity Capacity for queue.
+     * @param capacity Capacity for the queue.
      */
     public QueueFullException(final String queueIdentifier, final int capacity) {
         super("Queue " + queueIdentifier + " exceeded maximum capacity " + capacity);

@@ -18,8 +18,8 @@ package io.servicetalk.concurrent.api;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.internal.ConcurrentSubscription;
 import io.servicetalk.concurrent.internal.FlowControlUtil;
+import io.servicetalk.concurrent.internal.QueueFullException;
 import io.servicetalk.concurrent.internal.TerminalNotification;
-import io.servicetalk.concurrent.internal.UnboundQueueFullError;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
@@ -223,7 +223,7 @@ final class PublisherFlatMapSingle<T, R> extends AbstractAsynchronousPublisherOp
             assert s != null;
 
             if (!pending.offer(item)) {
-                UnboundQueueFullError exception = new UnboundQueueFullError("pending");
+                QueueFullException exception = new QueueFullException("pending");
                 if (item instanceof TerminalNotification) {
                     LOGGER.error("Queue should be unbounded, but an offer failed!", exception);
                     throw exception;

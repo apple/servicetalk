@@ -378,7 +378,7 @@ final class TaskBasedSignalOffloader implements SignalOffloader {
         }
 
         @SuppressWarnings("StatementWithEmptyBody")
-        protected void discardAllSignals() {
+        private void discardAllSignals() {
             while (signals.poll() != null) {
                 // Drain all elements before exiting.
             }
@@ -390,7 +390,7 @@ final class TaskBasedSignalOffloader implements SignalOffloader {
             }
 
             if (!signals.offer(signal)) {
-                throw new UnboundQueueFullError("signals");
+                throw new QueueFullException("signals");
             }
 
             for (;;) {

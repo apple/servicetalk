@@ -122,8 +122,9 @@ final class PublisherAsBlockingIterable<T> implements BlockingIterable<T> {
         public void close() {
             subscription.cancel();
             if (!terminated && !data.offer(CANCELLED_SIGNAL)) {
-                throw new QueueFullException("Unexpected reject from queue while offering cancel. Queue size: " +
-                        data.size() + ", capacity: " + queueCapacity);
+                LOGGER.error("Unexpected reject from queue while offering terminal event. Queue size: {}, capacity: {}",
+                        data.size(), queueCapacity);
+                throw new QueueFullException("publisher-iterator", queueCapacity);
             }
         }
 

@@ -548,8 +548,7 @@ final class ThreadBasedSignalOffloader implements SignalOffloader, Runnable {
 
         private void offerSignal(Object signal) {
             if (!signals.offer(signal)) {
-                throw new UnboundQueueFullError(
-                        offloader.getExecutorThreadName() + "-" + original.getClass().getName());
+                throw new QueueFullException(offloader.getExecutorThreadName() + "-" + original.getClass().getName());
             }
             notifyExecutor();
         }

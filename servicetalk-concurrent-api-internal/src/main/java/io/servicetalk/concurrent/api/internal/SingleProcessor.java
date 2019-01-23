@@ -17,7 +17,7 @@ package io.servicetalk.concurrent.api.internal;
 
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.concurrent.internal.UnboundQueueFullAndRejectedSubscribeError;
+import io.servicetalk.concurrent.internal.QueueFullAndRejectedSubscribeException;
 
 import java.util.Queue;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
@@ -78,7 +78,7 @@ public final class SingleProcessor<T> extends Single<T> implements Single.Proces
                 notifyListeners(terminalSignal);
             }
         } else {
-            subscriber.onError(new UnboundQueueFullAndRejectedSubscribeError("subscribers"));
+            subscriber.onError(new QueueFullAndRejectedSubscribeException("subscribers"));
         }
     }
 

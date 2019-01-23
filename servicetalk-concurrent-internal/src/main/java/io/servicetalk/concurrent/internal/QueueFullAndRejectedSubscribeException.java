@@ -25,6 +25,15 @@ public final class QueueFullAndRejectedSubscribeException extends QueueFullExcep
      * Create a new instance.
      *
      * @param queueIdentifier Identifier for the queue that is full.
+     */
+    public QueueFullAndRejectedSubscribeException(final String queueIdentifier) {
+        super(queueIdentifier);
+    }
+
+    /**
+     * Create a new instance.
+     *
+     * @param queueIdentifier Identifier for the queue that is full.
      * @param capacity Capacity for queue.
      */
     public QueueFullAndRejectedSubscribeException(final String queueIdentifier, final int capacity) {
