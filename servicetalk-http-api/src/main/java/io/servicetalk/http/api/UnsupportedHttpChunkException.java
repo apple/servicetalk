@@ -18,6 +18,8 @@ package io.servicetalk.http.api;
 import javax.annotation.Nullable;
 
 final class UnsupportedHttpChunkException extends IllegalArgumentException {
+    private static final long serialVersionUID = -4336685587984151152L;
+
     UnsupportedHttpChunkException(@Nullable Object o) {
         super("unsupported payload chunk type: " + o);
     }

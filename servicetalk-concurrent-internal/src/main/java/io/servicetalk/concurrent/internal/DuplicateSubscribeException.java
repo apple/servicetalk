@@ -22,6 +22,8 @@ import javax.annotation.Nullable;
  * and the source doesn't support multiple subscribers.
  */
 public final class DuplicateSubscribeException extends RejectedSubscribeException {
+    private static final long serialVersionUID = 8437101886051361471L;
+
     /**
      * Create a new instance.
      * @param existingSubscriber The existing subscriber, or state that prevented the subscribe from completing.

@@ -64,7 +64,6 @@ import static io.servicetalk.redis.netty.SubscribedChannelReadStream.PubSubChann
 import static io.servicetalk.redis.netty.SubscribedChannelReadStream.PubSubChannelMessage.MessageType.SUBSCRIBE_ACK;
 import static io.servicetalk.redis.netty.TerminalMessagePredicates.ZERO;
 import static io.servicetalk.redis.netty.TerminalMessagePredicates.forCommand;
-import static java.lang.Integer.MAX_VALUE;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 
@@ -149,7 +148,7 @@ final class ReadStreamSplitter {
                         predicate.remove(cmdPredicate);
                     }
                     subscriber.onSubscribe(EMPTY_SUBSCRIPTION);
-                    subscriber.onError(new QueueFullAndRejectedSubscribeException("subscribers-queue", MAX_VALUE));
+                    subscriber.onError(new QueueFullAndRejectedSubscribeException("subscribers-queue"));
                     return;
                 }
                 if (state == STATE_TERMINATED) {

@@ -18,6 +18,7 @@ package io.servicetalk.concurrent.api;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.internal.ConcurrentSubscription;
 import io.servicetalk.concurrent.internal.FlowControlUtil;
+import io.servicetalk.concurrent.internal.QueueFullException;
 import io.servicetalk.concurrent.internal.TerminalNotification;
 
 import org.reactivestreams.Subscriber;
@@ -222,8 +223,7 @@ final class PublisherFlatMapSingle<T, R> extends AbstractAsynchronousPublisherOp
             assert s != null;
 
             if (!pending.offer(item)) {
-                IllegalStateException exception =
-                        new IllegalStateException("Unexpected reject from pending queue while enqueuing item: " + item);
+                QueueFullException exception = new QueueFullException("pending");
                 if (item instanceof TerminalNotification) {
                     LOGGER.error("Queue should be unbounded, but an offer failed!", exception);
                     throw exception;
