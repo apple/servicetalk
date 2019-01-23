@@ -44,7 +44,7 @@ import static java.util.Objects.requireNonNull;
  *
  * @see RetryStrategies
  */
-public abstract class AbstractRetryingFilterBuilder<B, F, M> {
+public abstract class AbstractRetryingFilterBuilder<B extends AbstractRetryingFilterBuilder<B, F, M>, F, M> {
 
     private int maxRetries = 1;
     @Nullable
