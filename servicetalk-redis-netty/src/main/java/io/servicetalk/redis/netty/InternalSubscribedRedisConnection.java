@@ -15,6 +15,7 @@
  */
 package io.servicetalk.redis.netty;
 
+import io.servicetalk.client.api.RetryableException;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
@@ -202,10 +203,20 @@ final class InternalSubscribedRedisConnection extends AbstractRedisConnection {
         return toReturn;
     }
 
+    private static final class RetryableRejectedSubscribeException extends RejectedSubscribeException
+            implements RetryableException {
+
+        private static final long serialVersionUID = 8756529388154241838L;
+
+        RetryableRejectedSubscribeException(Throwable cause) {
+            super(cause);
+        }
+    }
+
     private static final class WriteQueue extends SequentialTaskQueue<WriteQueue.WriteTask> {
 
-        private static final RejectedSubscribeException CONNECTION_IS_CLOSED_WRITE =
-                unknownStackTrace(new RejectedSubscribeException(new ClosedChannelException()),
+        private static final RetryableRejectedSubscribeException CONNECTION_IS_CLOSED_WRITE =
+                unknownStackTrace(new RetryableRejectedSubscribeException(new ClosedChannelException()),
                         WriteQueue.class, "write(..)");
         private static final RejectedSubscribeException CONNECTION_IS_CLOSED_QUIT =
                 unknownStackTrace(new RejectedSubscribeException(new ClosedChannelException()),
