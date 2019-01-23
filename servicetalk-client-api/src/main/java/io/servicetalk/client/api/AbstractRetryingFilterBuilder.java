@@ -38,12 +38,13 @@ import static java.util.Objects.requireNonNull;
 /**
  * An abstract builder for retrying filters.
  *
+ * @param <B> the type of builder for retrying filter
  * @param <F> the type of retrying filter to build
  * @param <M> the type of meta-data for {@link #retryFor(BiPredicate)}
  *
  * @see RetryStrategies
  */
-public abstract class AbstractRetryingFilterBuilder<F, M> {
+public abstract class AbstractRetryingFilterBuilder<B, F, M> {
 
     private int maxRetries = 3;
     @Nullable
@@ -55,18 +56,23 @@ public abstract class AbstractRetryingFilterBuilder<F, M> {
     @Nullable
     private BiPredicate<M, Throwable> retryForPredicate;
 
+    @SuppressWarnings("unchecked")
+    private B castThis() {
+        return (B) this;
+    }
+
     /**
      * Set the maximum number of allowed retry operations before giving up.
      *
      * @param maxRetries Maximum number of allowed retries before giving up
      * @return {@code this}
      */
-    public AbstractRetryingFilterBuilder<F, M> maxRetries(final int maxRetries) {
+    public final B maxRetries(final int maxRetries) {
         if (maxRetries <= 0) {
             throw new IllegalArgumentException("maxRetries: " + maxRetries + " (expected: >0)");
         }
         this.maxRetries = maxRetries;
-        return this;
+        return castThis();
     }
 
     /**
@@ -75,10 +81,10 @@ public abstract class AbstractRetryingFilterBuilder<F, M> {
      * @param delay Constant {@link Duration} of delay between retries
      * @return {@code this}
      */
-    public AbstractRetryingFilterBuilder<F, M> backoff(final Duration delay) {
+    public final B backoff(final Duration delay) {
         this.initialDelay = requireNonNull(delay);
         this.exponential = false;
-        return this;
+        return castThis();
     }
 
     /**
@@ -91,10 +97,10 @@ public abstract class AbstractRetryingFilterBuilder<F, M> {
      * @param initialDelay Delay {@link Duration} for the first retry and increased exponentially with each retry.
      * @return {@code this}
      */
-    public AbstractRetryingFilterBuilder<F, M> exponentialBackoff(final Duration initialDelay) {
+    public final B exponentialBackoff(final Duration initialDelay) {
         this.initialDelay = requireNonNull(initialDelay);
         this.exponential = true;
-        return this;
+        return castThis();
     }
 
     /**
@@ -103,9 +109,9 @@ public abstract class AbstractRetryingFilterBuilder<F, M> {
      *
      * @return {@code this}
      */
-    public AbstractRetryingFilterBuilder<F, M> noBackoff() {
+    public final B noBackoff() {
         this.initialDelay = null;
-        return this;
+        return castThis();
     }
 
     /**
@@ -114,9 +120,9 @@ public abstract class AbstractRetryingFilterBuilder<F, M> {
      *
      * @return {@code this}
      */
-    public AbstractRetryingFilterBuilder<F, M> addJitter() {
+    public final B addJitter() {
         this.jitter = true;
-        return this;
+        return castThis();
     }
 
     /**
@@ -125,9 +131,9 @@ public abstract class AbstractRetryingFilterBuilder<F, M> {
      *
      * @return {@code this}
      */
-    public AbstractRetryingFilterBuilder<F, M> noJitter() {
+    public final B noJitter() {
         this.jitter = false;
-        return this;
+        return castThis();
     }
 
     /**
@@ -140,9 +146,9 @@ public abstract class AbstractRetryingFilterBuilder<F, M> {
      * used
      * @return {@code this}
      */
-    public AbstractRetryingFilterBuilder<F, M> timerExecutor(@Nullable final Executor timerExecutor) {
+    public final B timerExecutor(@Nullable final Executor timerExecutor) {
         this.timerExecutor = timerExecutor;
-        return this;
+        return castThis();
     }
 
     /**
@@ -152,9 +158,9 @@ public abstract class AbstractRetryingFilterBuilder<F, M> {
      * {@link M meta-data} and {@link Throwable cause} should be retried
      * @return {@code this}
      */
-    public AbstractRetryingFilterBuilder<F, M> retryFor(final BiPredicate<M, Throwable> retryForPredicate) {
+    public final B retryFor(final BiPredicate<M, Throwable> retryForPredicate) {
         this.retryForPredicate = requireNonNull(retryForPredicate);
-        return this;
+        return castThis();
     }
 
     /**

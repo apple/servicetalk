@@ -20,7 +20,6 @@ import io.servicetalk.client.api.AbstractRetryingFilterBuilder.ReadOnlyRetryable
 import io.servicetalk.client.api.RetryableException;
 import io.servicetalk.concurrent.api.BiIntFunction;
 import io.servicetalk.concurrent.api.Completable;
-import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.RetryStrategies;
 import io.servicetalk.concurrent.api.Single;
@@ -37,9 +36,7 @@ import io.servicetalk.redis.api.RedisRequest;
 import io.servicetalk.redis.api.RedisRequester;
 import io.servicetalk.redis.api.ReservedRedisConnectionFilter;
 
-import java.time.Duration;
 import java.util.function.BiPredicate;
-import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Completable.error;
 import static io.servicetalk.redis.api.RedisProtocolSupport.CommandFlag.READONLY;
@@ -122,55 +119,8 @@ public final class RetryingRedisRequesterFilter implements RedisClientFilterFact
      * A builder for {@link RetryingRedisRequesterFilter}, which will not infinitely retry. To configure the maximum
      * number of retry attempts see {@link #maxRetries(int)}.
      */
-    public static final class Builder extends AbstractRetryingFilterBuilder<RetryingRedisRequesterFilter, Command> {
-
-        @Override
-        public Builder maxRetries(final int maxRetries) {
-            super.maxRetries(maxRetries);
-            return this;
-        }
-
-        @Override
-        public Builder backoff(final Duration delay) {
-            super.backoff(delay);
-            return this;
-        }
-
-        @Override
-        public Builder exponentialBackoff(final Duration initialDelay) {
-            super.exponentialBackoff(initialDelay);
-            return this;
-        }
-
-        @Override
-        public Builder noBackoff() {
-            super.noBackoff();
-            return this;
-        }
-
-        @Override
-        public Builder addJitter() {
-            super.addJitter();
-            return this;
-        }
-
-        @Override
-        public Builder noJitter() {
-            super.noJitter();
-            return this;
-        }
-
-        @Override
-        public Builder timerExecutor(@Nullable final Executor timerExecutor) {
-            super.timerExecutor(timerExecutor);
-            return this;
-        }
-
-        @Override
-        public Builder retryFor(final BiPredicate<Command, Throwable> retryForPredicate) {
-            super.retryFor(retryForPredicate);
-            return this;
-        }
+    public static final class Builder
+            extends AbstractRetryingFilterBuilder<Builder, RetryingRedisRequesterFilter, Command> {
 
         @Override
         public BiPredicate<Command, Throwable> defaultRetryForPredicate() {
