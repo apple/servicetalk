@@ -27,7 +27,6 @@ import io.servicetalk.http.api.HttpClientFilterFactory;
 import io.servicetalk.http.api.HttpConnectionFilterFactory;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpRequestMetaData;
-import io.servicetalk.http.api.ReservedStreamingHttpConnectionFilter;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpClientFilter;
 import io.servicetalk.http.api.StreamingHttpConnection;
@@ -90,12 +89,6 @@ public final class RetryingHttpRequesterFilter implements HttpClientFilterFactor
                         return retryStrategy.apply(count, t);
                     }
                     return error(t);
-                }).map(r -> new ReservedStreamingHttpConnectionFilter(r) {
-                    @Override
-                    public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
-                                                                 final StreamingHttpRequest request) {
-                        return RetryingHttpRequesterFilter.this.request(delegate(), strategy, request, retryStrategy);
-                    }
                 });
             }
         };
