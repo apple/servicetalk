@@ -15,7 +15,6 @@
  */
 package io.servicetalk.client.api;
 
-import io.servicetalk.client.api.LimitingActiveConnectionFactoryFilter.ConnectionLimitExceededException;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.CompletableProcessor;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
@@ -27,6 +26,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import java.net.ConnectException;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -70,7 +70,7 @@ public class LimitingActiveConnectionFactoryFilterTest {
         ConnectionFactory<String, ListenableAsyncCloseable> cf = withMaxConnections(original, 1);
         cf.newConnection("c1").toFuture().get();
         expectedException.expect(ExecutionException.class);
-        expectedException.expectCause(instanceOf(ConnectionLimitExceededException.class));
+        expectedException.expectCause(instanceOf(ConnectException.class));
         cf.newConnection("c2").toFuture().get();
     }
 
@@ -104,7 +104,7 @@ public class LimitingActiveConnectionFactoryFilterTest {
             cf.newConnection("c-fail").toFuture().get();
             fail("Connect expected to fail.");
         } catch (ExecutionException e) {
-            assertThat("Unexpected exception.", e.getCause(), instanceOf(ConnectionLimitExceededException.class));
+            assertThat("Unexpected exception.", e.getCause(), instanceOf(ConnectException.class));
         }
     }
 
