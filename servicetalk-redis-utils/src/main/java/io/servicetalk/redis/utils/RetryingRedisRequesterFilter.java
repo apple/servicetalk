@@ -34,6 +34,7 @@ import io.servicetalk.redis.api.RedisExecutionStrategy;
 import io.servicetalk.redis.api.RedisProtocolSupport.Command;
 import io.servicetalk.redis.api.RedisRequest;
 import io.servicetalk.redis.api.RedisRequester;
+import io.servicetalk.redis.api.ReservedRedisConnectionFilter;
 
 import java.util.function.BiPredicate;
 
@@ -84,11 +85,19 @@ public final class RetryingRedisRequesterFilter implements RedisClientFilterFact
                     final RedisExecutionStrategy strategy,
                     final Command command) {
 
+                // TODO: use super.reserveConnection(delegate(), strategy, command) when RedisClientFilter will have it
                 return delegate().reserveConnection(strategy, command).retryWhen((count, t) -> {
                     if (settings.isRetryable(command, t)) {
                         return retryStrategy.apply(count, t);
                     }
                     return error(t);
+                }).map(r -> new ReservedRedisConnectionFilter(r) {
+                    // TODO: remove this map when RedisClientFilter will do the same internally
+                    @Override
+                    public Publisher<RedisData> request(final RedisExecutionStrategy strategy,
+                                                        final RedisRequest request) {
+                        return RetryingRedisRequesterFilter.this.request(delegate(), strategy, request, retryStrategy);
+                    }
                 });
             }
         };

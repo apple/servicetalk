@@ -84,7 +84,7 @@ public final class RetryingHttpRequesterFilter implements HttpClientFilterFactor
                     final HttpExecutionStrategy strategy,
                     final StreamingHttpRequest request) {
 
-                return delegate.reserveConnection(strategy, request).retryWhen((count, t) -> {
+                return super.reserveConnection(delegate, strategy, request).retryWhen((count, t) -> {
                     if (settings.isRetryable(request, t)) {
                         return retryStrategy.apply(count, t);
                     }
