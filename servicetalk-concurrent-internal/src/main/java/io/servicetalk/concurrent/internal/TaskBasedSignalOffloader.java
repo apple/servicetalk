@@ -259,9 +259,9 @@ final class TaskBasedSignalOffloader implements SignalOffloader {
         private static final int STATE_IDLE = 0;
         private static final int STATE_ENQUEUED = 1;
         private static final int STATE_EXECUTING = 2;
-        private static final int STATE_TERMINATED = 3;
-        private static final int STATE_TERMINATED_DRAINING = 4;
-        private static final int STATE_TERMINATED_INTERRUPTED = 5;
+        private static final int STATE_TERMINATING = 3;
+        private static final int STATE_TERMINATING_INTERRUPTED = 4;
+        private static final int STATE_TERMINATED = 5;
         private static final AtomicIntegerFieldUpdater<OffloadedSubscriber> stateUpdater =
                 newUpdater(OffloadedSubscriber.class, "state");
 
@@ -370,11 +370,11 @@ final class TaskBasedSignalOffloader implements SignalOffloader {
 
         private void clearSignalsFromExecutorThread() {
             do {
-                state = STATE_TERMINATED_DRAINING;
+                state = STATE_TERMINATING;
                 signals.clear();
                 // if we fail to go from draining to terminated, that means the state was set to interrupted by the
                 // producer thread, and we need to try to drain from the queue again.
-            } while (!stateUpdater.compareAndSet(this, STATE_TERMINATED_DRAINING, STATE_TERMINATED));
+            } while (!stateUpdater.compareAndSet(this, STATE_TERMINATING, STATE_TERMINATED));
         }
 
         private void offerSignal(Object signal) {
@@ -392,8 +392,8 @@ final class TaskBasedSignalOffloader implements SignalOffloader {
                     // consumer constraint.
                     signals.clear();
                     return;
-                } else if (cState == STATE_TERMINATED_DRAINING) {
-                    if (!stateUpdater.compareAndSet(this, STATE_TERMINATED_DRAINING, STATE_TERMINATED_INTERRUPTED)) {
+                } else if (cState == STATE_TERMINATING) {
+                    if (!stateUpdater.compareAndSet(this, STATE_TERMINATING, STATE_TERMINATING_INTERRUPTED)) {
                         // If another thread was draining the queue, and is no longer training the queue then the only
                         // state we can be in is STATE_TERMINATED. This means no other thread is consuming from the
                         // queue and we are safe to consume/clear it.
