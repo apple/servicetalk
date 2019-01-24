@@ -35,6 +35,7 @@ import io.netty.resolver.ResolvedAddressTypes;
 import io.netty.resolver.dns.DefaultDnsCache;
 import io.netty.resolver.dns.DnsNameResolver;
 import io.netty.resolver.dns.DnsNameResolverBuilder;
+import io.netty.resolver.dns.DnsNameResolverTimeoutException;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
 import org.reactivestreams.Subscriber;
@@ -44,6 +45,7 @@ import org.slf4j.LoggerFactory;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -480,13 +482,15 @@ final class DefaultDnsServiceDiscoverer
                             subscriberStateUpdater, terminalNotificationUpdater, DiscoverEntry.this)) {
                         final List<InetAddress> addresses = activeAddresses;
                         List<ServiceDiscovererEvent<InetAddress>> events = new ArrayList<>(addresses.size());
-                        if (addresses instanceof RandomAccess) {
-                            for (int i = 0; i < addresses.size(); ++i) {
-                                events.add(new DefaultServiceDiscovererEvent<>(addresses.get(i), false));
-                            }
-                        } else {
-                            for (final InetAddress address : addresses) {
-                                events.add(new DefaultServiceDiscovererEvent<>(address, false));
+                        if (cause instanceof UnknownHostException && !(cause.getCause() instanceof DnsNameResolverTimeoutException)) {
+                            if (addresses instanceof RandomAccess) {
+                                for (int i = 0; i < addresses.size(); ++i) {
+                                    events.add(new DefaultServiceDiscovererEvent<>(addresses.get(i), false));
+                                }
+                            } else {
+                                for (final InetAddress address : addresses) {
+                                    events.add(new DefaultServiceDiscovererEvent<>(address, false));
+                                }
                             }
                         }
                         subscriber.onNext(events);
