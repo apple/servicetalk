@@ -54,6 +54,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.api.Single.deferShareContext;
 import static io.servicetalk.concurrent.api.Single.success;
 import static io.servicetalk.http.api.CharSequences.newAsciiString;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
@@ -136,19 +137,39 @@ public class HttpServiceAsyncContextTest {
 
     @Test
     public void contextPreservedOverFilterBoundariesOffloaded() throws Exception {
-        contextPreservedOverFilterBoundaries(false);
+        contextPreservedOverFilterBoundaries(false, false, false);
+        contextPreservedOverFilterBoundaries(false, false, true);
+        contextPreservedOverFilterBoundaries(false, true, false);
+        contextPreservedOverFilterBoundaries(false, true, true);
     }
 
     @Test
     public void contextPreservedOverFilterBoundariesNoOffload() throws Exception {
-        contextPreservedOverFilterBoundaries(true);
+        contextPreservedOverFilterBoundaries(true, false, false);
+        contextPreservedOverFilterBoundaries(true, false, true);
+        contextPreservedOverFilterBoundaries(true, true, false);
+        contextPreservedOverFilterBoundaries(true, true, true);
     }
 
-    private void contextPreservedOverFilterBoundaries(boolean useImmediate) throws Exception {
+    private void contextPreservedOverFilterBoundaries(boolean useImmediate,
+                                                      boolean asyncFilter, boolean asyncService) throws Exception {
         Queue<Throwable> errorQueue = new ConcurrentLinkedQueue<>();
         StreamingHttpService service = new StreamingHttpService() {
             @Override
-            public Single<StreamingHttpResponse> handle(
+            public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
+                                                        final StreamingHttpRequest request,
+                                                        final StreamingHttpResponseFactory responseFactory) {
+                return asyncService ? deferShareContext(() -> doHandle(ctx, request, responseFactory)) :
+                        doHandle(ctx, request, responseFactory);
+            }
+
+            // TODO(scott): should only have to specify this once! On the filter or the service.
+            @Override
+            public HttpExecutionStrategy executionStrategy() {
+                return useImmediate ? HttpExecutionStrategies.noOffloadsStrategy() : super.executionStrategy();
+            }
+
+            private Single<StreamingHttpResponse> doHandle(
                     final HttpServiceContext ctx, final StreamingHttpRequest request,
                     final StreamingHttpResponseFactory factory) {
                 CharSequence requestId = AsyncContext.get(K1);
@@ -174,18 +195,25 @@ public class HttpServiceAsyncContextTest {
                             }
                         }));
             }
+        };
+        StreamingHttpService filter = new StreamingHttpService() {
+            @Override
+            public Single<StreamingHttpResponse> handle(
+                    final HttpServiceContext ctx, final StreamingHttpRequest request,
+                    final StreamingHttpResponseFactory factory) {
+                return asyncFilter ? deferShareContext(() -> doHandle(ctx, request, factory)) :
+                        doHandle(ctx, request, factory);
+            }
 
             // TODO(scott): should only have to specify this once! On the filter or the service.
             @Override
             public HttpExecutionStrategy executionStrategy() {
                 return useImmediate ? HttpExecutionStrategies.noOffloadsStrategy() : super.executionStrategy();
             }
-        };
-        StreamingHttpService filter = new StreamingHttpService() {
-            @Override
-            public Single<StreamingHttpResponse> handle(
-                    final HttpServiceContext ctx, StreamingHttpRequest request,
-                    final StreamingHttpResponseFactory factory) {
+
+            private Single<StreamingHttpResponse> doHandle(final HttpServiceContext ctx,
+                                                           final StreamingHttpRequest request,
+                                                           final StreamingHttpResponseFactory factory) {
                 if (useImmediate && !currentThread().getName().startsWith(IO_THREAD_PREFIX)) {
                     // verify that if we expect to be offloaded, that we actually are
                     return success(factory.internalServerError());
@@ -194,60 +222,54 @@ public class HttpServiceAsyncContextTest {
                 if (requestId != null) {
                     AsyncContext.put(K1, requestId);
                 }
-                request = request.transformRawPayloadBody(pub ->
+                final StreamingHttpRequest filteredRequest = request.transformRawPayloadBody(pub ->
                         pub.doAfterSubscriber(() -> new org.reactivestreams.Subscriber<Object>() {
-                    @Override
-                    public void onSubscribe(final Subscription subscription) {
-                        assertAsyncContext(requestId, errorQueue);
-                    }
+                            @Override
+                            public void onSubscribe(final Subscription subscription) {
+                                assertAsyncContext(requestId, errorQueue);
+                            }
 
-                    @Override
-                    public void onNext(final Object o) {
-                        assertAsyncContext(requestId, errorQueue);
-                    }
+                            @Override
+                            public void onNext(final Object o) {
+                                assertAsyncContext(requestId, errorQueue);
+                            }
 
-                    @Override
-                    public void onError(final Throwable throwable) {
-                        assertAsyncContext(requestId, errorQueue);
-                    }
+                            @Override
+                            public void onError(final Throwable throwable) {
+                                assertAsyncContext(requestId, errorQueue);
+                            }
 
-                    @Override
-                    public void onComplete() {
-                        assertAsyncContext(requestId, errorQueue);
-                    }
-                }));
-                return service.handle(ctx, request, factory).map(resp -> {
-                    assertAsyncContext(requestId, errorQueue);
-                    return resp.transformRawPayloadBody(pub ->
-                            pub.doAfterSubscriber(() -> new org.reactivestreams.Subscriber<Object>() {
-                                @Override
-                                public void onSubscribe(final Subscription subscription) {
-                                    assertAsyncContext(requestId, errorQueue);
-                                }
+                            @Override
+                            public void onComplete() {
+                                assertAsyncContext(requestId, errorQueue);
+                            }
+                        }));
+                return service.handle(ctx, filteredRequest, factory).map(resp -> {
+                            assertAsyncContext(requestId, errorQueue);
+                            return resp.transformRawPayloadBody(pub ->
+                                    pub.doAfterSubscriber(() -> new org.reactivestreams.Subscriber<Object>() {
+                                        @Override
+                                        public void onSubscribe(final Subscription subscription) {
+                                            assertAsyncContext(requestId, errorQueue);
+                                        }
 
-                                @Override
-                                public void onNext(final Object o) {
-                                    assertAsyncContext(requestId, errorQueue);
-                                }
+                                        @Override
+                                        public void onNext(final Object o) {
+                                            assertAsyncContext(requestId, errorQueue);
+                                        }
 
-                                @Override
-                                public void onError(final Throwable throwable) {
-                                    assertAsyncContext(requestId, errorQueue);
-                                }
+                                        @Override
+                                        public void onError(final Throwable throwable) {
+                                            assertAsyncContext(requestId, errorQueue);
+                                        }
 
-                                @Override
-                                public void onComplete() {
-                                    assertAsyncContext(requestId, errorQueue);
-                                }
-                            }));
+                                        @Override
+                                        public void onComplete() {
+                                            assertAsyncContext(requestId, errorQueue);
+                                        }
+                                    }));
                         }
                 );
-            }
-
-            // TODO(scott): should only have to specify this once! On the filter or the service.
-            @Override
-            public HttpExecutionStrategy executionStrategy() {
-                return useImmediate ? HttpExecutionStrategies.noOffloadsStrategy() : super.executionStrategy();
             }
         };
         CompositeCloseable compositeCloseable = AsyncCloseables.newCompositeCloseable();

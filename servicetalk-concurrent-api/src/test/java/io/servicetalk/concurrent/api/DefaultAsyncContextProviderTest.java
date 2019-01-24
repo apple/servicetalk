@@ -162,9 +162,7 @@ public class DefaultAsyncContextProviderTest {
         awaitIndefinitely(completable);
 
         assertEquals("v1.2", f1.get().get(K1));
-        // The merge operator eagerly subscribes to all async sources, so it will not see the modifications from the
-        // original source.
-        assertEquals("v1.1", f2.get().get(K1));
+        assertEquals("v1.2", f2.get().get(K1));
         assertEquals("v1.2", f3.get().get(K1));
         assertEquals("v1.1", AsyncContext.get(K1));
 
@@ -280,9 +278,7 @@ public class DefaultAsyncContextProviderTest {
         awaitIndefinitely(completable);
 
         assertEquals("v1.2", f1.get().get(K1));
-        // The merge operator eagerly subscribes to all async sources, so it will not see the modifications from the
-        // original source.
-        assertEquals("v1.1", f2.get().get(K1));
+        assertEquals("v1.2", f2.get().get(K1));
         assertEquals("v1.2", f3.get().get(K1));
 
         assertEquals("v2.1", f1.get().get(K2));

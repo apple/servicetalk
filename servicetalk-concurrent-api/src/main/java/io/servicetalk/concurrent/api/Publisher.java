@@ -1840,6 +1840,17 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
     }
 
     /**
+     * Signifies that when {@link #subscribe(Subscriber)} is invoked on the returned {@link Publisher} that the
+     * {@link AsyncContext} will be shared instead of making a {@link AsyncContextMap#copy() copy}.
+     *
+     * @return A {@link Publisher} that will share the {@link AsyncContext} instead of making a
+     * {@link AsyncContextMap#copy() copy} when {@link #subscribe(Subscriber)} is called.
+     */
+    public final Publisher<T> subscribeShareContext() {
+        return new PublisherSubscribeShareContext<>(this);
+    }
+
+    /**
      * <strong>This method requires advanced knowledge of building operators. Before using this method please attempt
      * to compose existing operator(s) to satisfy your use case.</strong>
      * <p>
@@ -2163,10 +2174,7 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
 
     @Override
     public final void subscribe(Subscriber<? super T> subscriber) {
-        // Each Subscriber chain should have an isolated AsyncContext due to a new asynchronous scope starting. This is
-        // why we copy the AsyncContext upon external user facing subscribe operations.
-        AsyncContextProvider provider = AsyncContext.provider();
-        subscribeWithContext(subscriber, provider.contextMap().copy(), provider);
+        subscribeCaptureContext(subscriber, AsyncContext.provider());
     }
 
     /**
@@ -2386,6 +2394,18 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
     //
 
     /**
+     * Replicating a call to {@link #subscribe(Subscriber)} but allows an override of the {@link AsyncContextMap}.
+     * @param subscriber the subscriber.
+     * @param provider the {@link AsyncContextProvider} used to wrap any objects to preserve
+     * {@link AsyncContextMap}.
+     */
+    void subscribeCaptureContext(Subscriber<? super T> subscriber, AsyncContextProvider provider) {
+        // Each Subscriber chain should have an isolated AsyncContext due to a new asynchronous scope starting. This is
+        // why we copy the AsyncContext upon external user facing subscribe operations.
+        subscribeWithContext(subscriber, provider.contextMap().copy(), provider);
+    }
+
+    /**
      * Replicating a call to {@link #subscribe(Subscriber)} but with a materialized {@link AsyncContextMap}.
      * @param subscriber the subscriber.
      * @param contextMap the {@link AsyncContextMap} to use for this {@link Subscriber}.
@@ -2424,9 +2444,15 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
      */
     final void subscribeWithOffloaderAndContext(Subscriber<? super T> subscriber, SignalOffloader signalOffloader,
                                                 AsyncContextMap contextMap, AsyncContextProvider contextProvider) {
-        // this method doesn't currently do anything other than providing a way to differentiate between internal
-        // subscribe calls and handleSubscribe propagation.
-        handleSubscribe(subscriber, signalOffloader, contextMap, contextProvider);
+        // In the event that user code is called synchronously from handleSubscribe (e.g. in overriden method for an
+        // operator implementation) we need to make sure the static AsyncContext is set correctly.
+        AsyncContextMap currentContext = contextProvider.contextMap();
+        try {
+            contextProvider.contextMap(contextMap);
+            handleSubscribe(subscriber, signalOffloader, contextMap, contextProvider);
+        } finally {
+            contextProvider.contextMap(currentContext);
+        }
     }
 
     /**
@@ -2448,6 +2474,9 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
                          AsyncContextProvider contextProvider) {
         Subscriber<? super T> offloaded = signalOffloader.offloadSubscriber(
                 contextProvider.wrap(subscriber, contextMap));
+        // TODO(scott): we have to wrap this method to preserve AsyncContext, and we also have to wrap the
+        // safeHandleSubscribe method in the event the offloader calls the safeHandleSubscribe method on another thread.
+        // However if the offloader executes the method synchronously the safeHandleSubscribe wrapping is unnecessary.
         signalOffloader.offloadSubscribe(offloaded, contextProvider.wrap(this::safeHandleSubscribe, contextMap));
     }
 

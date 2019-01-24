@@ -55,6 +55,11 @@ public final class AsyncContextInMemoryScopeManager implements InMemoryScopeMana
             public InMemorySpan span() {
                 return span;
             }
+
+            @Override
+            public String toString() {
+                return span.toString();
+            }
         };
         AsyncContext.put(SCOPE_KEY, scope);
         return scope;
