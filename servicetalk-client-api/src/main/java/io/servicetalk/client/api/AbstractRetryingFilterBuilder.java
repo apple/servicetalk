@@ -32,33 +32,27 @@ import static io.servicetalk.concurrent.api.RetryStrategies.retryWithConstantBac
 import static io.servicetalk.concurrent.api.RetryStrategies.retryWithConstantBackoffAndJitter;
 import static io.servicetalk.concurrent.api.RetryStrategies.retryWithExponentialBackoff;
 import static io.servicetalk.concurrent.api.RetryStrategies.retryWithExponentialBackoffAndJitter;
-import static java.time.Duration.ofMillis;
 import static java.util.Objects.requireNonNull;
 
 /**
  * An abstract builder for retrying filters.
  *
- * @param <B> the type of builder for retrying filter
- * @param <F> the type of retrying filter to build
- * @param <M> the type of meta-data for {@link #retryFor(BiPredicate)}
+ * @param <Builder> the type of builder for retrying filter
+ * @param <Filter> the type of retrying filter to build
+ * @param <Meta> the type of meta-data for {@link #retryFor(BiPredicate)}
  *
  * @see RetryStrategies
  */
-public abstract class AbstractRetryingFilterBuilder<B extends AbstractRetryingFilterBuilder<B, F, M>, F, M> {
+public abstract class AbstractRetryingFilterBuilder<Builder
+        extends AbstractRetryingFilterBuilder<Builder, Filter, Meta>, Filter, Meta> {
 
-    private int maxRetries = 1;
+    private int maxRetries = 2;
     @Nullable
-    private Duration initialDelay = ofMillis(10);
-    private boolean exponential = true;
-    private boolean jitter = true;
-    @Nullable
-    private Executor timerExecutor;
-    @Nullable
-    private BiPredicate<M, Throwable> retryForPredicate;
+    private BiPredicate<Meta, Throwable> retryForPredicate;
 
     @SuppressWarnings("unchecked")
-    private B castThis() {
-        return (B) this;
+    private Builder castThis() {
+        return (Builder) this;
     }
 
     /**
@@ -67,7 +61,7 @@ public abstract class AbstractRetryingFilterBuilder<B extends AbstractRetryingFi
      * @param maxRetries Maximum number of allowed retries before giving up
      * @return {@code this}
      */
-    public final B maxRetries(final int maxRetries) {
+    public final Builder maxRetries(final int maxRetries) {
         if (maxRetries <= 0) {
             throw new IllegalArgumentException("maxRetries: " + maxRetries + " (expected: >0)");
         }
@@ -76,123 +70,114 @@ public abstract class AbstractRetryingFilterBuilder<B extends AbstractRetryingFi
     }
 
     /**
-     * Adds a {@code delay} between retries.
-     *
-     * @param delay Constant {@link Duration} of delay between retries
-     * @return {@code this}
-     */
-    public final B backoff(final Duration delay) {
-        this.initialDelay = requireNonNull(delay);
-        this.exponential = false;
-        return castThis();
-    }
-
-    /**
-     * Adds a delay between retries. For first retry, the delay is {@code initialDelay} which is increased
-     * exponentially for subsequent retries.
-     * <p>
-     * The resulting {@link F} from {@link #build()} may not attempt to check for
-     * overflow if the retry count is high enough that an exponential delay causes {@link Long} overflow.
-     *
-     * @param initialDelay Delay {@link Duration} for the first retry and increased exponentially with each retry.
-     * @return {@code this}
-     */
-    public final B exponentialBackoff(final Duration initialDelay) {
-        this.initialDelay = requireNonNull(initialDelay);
-        this.exponential = true;
-        return castThis();
-    }
-
-    /**
-     * Disables any delay between retries, if {@link #exponentialBackoff(Duration)} or {@link #backoff(Duration)} was
-     * used.
-     *
-     * @return {@code this}
-     */
-    public final B noBackoff() {
-        this.initialDelay = null;
-        return castThis();
-    }
-
-    /**
-     * When {@link #exponentialBackoff(Duration)} or {@link #backoff(Duration)} is used, adding jitter will
-     * randomize the delays between the retries.
-     *
-     * @return {@code this}
-     */
-    public final B addJitter() {
-        this.jitter = true;
-        return castThis();
-    }
-
-    /**
-     * Disables randomization of delays between the retries when {@link #exponentialBackoff(Duration)} or
-     * {@link #backoff(Duration)} is used.
-     *
-     * @return {@code this}
-     */
-    public final B noJitter() {
-        this.jitter = false;
-        return castThis();
-    }
-
-    /**
-     * Uses the passed {@link Executor} for scheduling timers if {@link #backoff(Duration)} or
-     * {@link #exponentialBackoff(Duration)} is used. It takes precedence over an alternative timer {@link Executor}
-     * from {@link ReadOnlyRetryableSettings#newStrategy(Executor)} argument.
-     *
-     * @param timerExecutor {@link Executor} to be used to schedule timers for backoff. If {@code null}, a passed
-     * alternative timer {@link Executor} from {@link ReadOnlyRetryableSettings#newStrategy(Executor)} argument will be
-     * used
-     * @return {@code this}
-     */
-    public final B timerExecutor(@Nullable final Executor timerExecutor) {
-        this.timerExecutor = timerExecutor;
-        return castThis();
-    }
-
-    /**
      * Overrides the default criterion for determining which requests or errors should be retried.
      *
      * @param retryForPredicate {@link BiPredicate} that checks whether a given combination of
-     * {@link M meta-data} and {@link Throwable cause} should be retried
+     * {@link Meta meta-data} and {@link Throwable cause} should be retried
      * @return {@code this}
      */
-    public final B retryFor(final BiPredicate<M, Throwable> retryForPredicate) {
+    public final Builder retryFor(final BiPredicate<Meta, Throwable> retryForPredicate) {
         this.retryForPredicate = requireNonNull(retryForPredicate);
         return castThis();
     }
+
+    /**
+     * Creates a new retrying {@link Filter} which retries without delay.
+     *
+     * @return a new retrying {@link Filter} which retries without delay
+     */
+    public final Filter forImmediateRetries() {
+        return build(new ReadOnlyRetryableSettings<>(maxRetries, predicate(), null, null, false, false));
+    }
+
+    /**
+     * Creates a new retrying {@link Filter} which adds the passed constant {@link Duration} as a delay between retries.
+     *
+     * @param delay Constant {@link Duration} of delay between retries
+     * @param timerExecutor {@link Executor} to be used to schedule timers for backoff. It takes precedence over an
+     * alternative timer {@link Executor} from {@link ReadOnlyRetryableSettings#newStrategy(Executor)} argument
+     * @return A new retrying {@link Filter} which adds a constant delay between retries
+     */
+    public final Filter forConstantBackoff(final Duration delay, @Nullable final Executor timerExecutor) {
+        return build(new ReadOnlyRetryableSettings<>(maxRetries, predicate(), delay, timerExecutor, false, false));
+    }
+
+    /**
+     * Creates a new retrying {@link Filter} which adds a randomized delay between retries and uses the passed
+     * {@link Duration} as a maximum delay possible.
+     *
+     * @param maxDelay Maximum {@link Duration} of delay between retries
+     * @param timerExecutor {@link Executor} to be used to schedule timers for backoff. It takes precedence over an
+     * alternative timer {@link Executor} from {@link ReadOnlyRetryableSettings#newStrategy(Executor)} argument
+     * @return A new retrying {@link Filter} which adds a randomized delay between retries
+     */
+    public final Filter forConstantBackoffAndJitter(final Duration maxDelay, @Nullable final Executor timerExecutor) {
+        return build(new ReadOnlyRetryableSettings<>(maxRetries, predicate(), maxDelay, timerExecutor, false, true));
+    }
+
+    /**
+     * Creates a new retrying {@link Filter} which adds a delay between retries. For first retry, the delay is
+     * {@code initialDelay} which is increased exponentially for subsequent retries.
+     * <p>
+     * Returned {@link Filter} may not attempt to check for overflow if the retry count is high enough that an
+     * exponential delay causes {@link Long} overflow.
+     *
+     * @param initialDelay Delay {@link Duration} for the first retry and increased exponentially with each retry
+     * @param timerExecutor {@link Executor} to be used to schedule timers for backoff. It takes precedence over an
+     * alternative timer {@link Executor} from {@link ReadOnlyRetryableSettings#newStrategy(Executor)} argument
+     * @return A new retrying {@link Filter} which adds an exponentially increasing delay between retries
+     */
+    public final Filter forExponentialBackoff(final Duration initialDelay, @Nullable final Executor timerExecutor) {
+        return build(
+                new ReadOnlyRetryableSettings<>(maxRetries, predicate(), initialDelay, timerExecutor, true, false));
+    }
+
+    /**
+     * Creates a new retrying {@link Filter} which adds a delay between retries. For first retry, the delay is
+     * {@code initialDelay} which is increased exponentially for subsequent retries. This additionally adds a
+     * "Full Jitter" for the backoff as described
+     * <a href="https://aws.amazon.com/blogs/architecture/exponential-backoff-and-jitter/">here</a>.
+     * <p>
+     * Returned {@link Filter} may not attempt to check for overflow if the retry count is high enough that an
+     * exponential delay causes {@link Long} overflow.
+     *
+     * @param initialDelay Delay {@link Duration} for the first retry and increased exponentially with each retry
+     * @param timerExecutor {@link Executor} to be used to schedule timers for backoff. It takes precedence over an
+     * alternative timer {@link Executor} from {@link ReadOnlyRetryableSettings#newStrategy(Executor)} argument
+     * @return A new retrying {@link Filter} which adds an exponentially increasing delay between retries with jitter
+     */
+    public final Filter forExponentialBackoffAndJitter(final Duration initialDelay,
+                                                       @Nullable final Executor timerExecutor) {
+        return build(
+                new ReadOnlyRetryableSettings<>(maxRetries, predicate(), initialDelay, timerExecutor, true, true));
+    }
+
+    /**
+     * Builds a retrying {@link Filter} for provided
+     * {@link ReadOnlyRetryableSettings ReadOnlyRetryableSettings&lt;Meta&gt;}.
+     *
+     * @param readOnlySettings a read-only settings for retryable filters
+     * @return A new retrying {@link Filter}
+     */
+    protected abstract Filter build(final ReadOnlyRetryableSettings<Meta> readOnlySettings);
 
     /**
      * Returns a default value for {@link #retryFor(BiPredicate)}.
      *
      * @return a default value for {@link #retryFor(BiPredicate)}
      */
-    public abstract BiPredicate<M, Throwable> defaultRetryForPredicate();
+    public abstract BiPredicate<Meta, Throwable> defaultRetryForPredicate();
 
-    /**
-     * Builds a retrying filter of type {@link F}.
-     *
-     * @return A new retrying filter of type {@link F}
-     */
-    public abstract F build();
-
-    /**
-     * Returns a {@link ReadOnlyRetryableSettings read-only} representation of retrying settings.
-     *
-     * @return a {@link ReadOnlyRetryableSettings read-only} representation of retrying settings
-     */
-    protected final ReadOnlyRetryableSettings<M> readOnlySettings() {
-        return new ReadOnlyRetryableSettings<>(timerExecutor, maxRetries, jitter, exponential, initialDelay,
-                retryForPredicate != null ? retryForPredicate : defaultRetryForPredicate());
+    private BiPredicate<Meta, Throwable> predicate() {
+        return retryForPredicate != null ? retryForPredicate : defaultRetryForPredicate();
     }
 
     /**
      * A read-only settings for retryable filters.
      *
-     * @param <M> the type of meta-data for {@link #retryFor(BiPredicate)}
+     * @param <Meta> the type of meta-data for {@link #retryFor(BiPredicate)}
      */
-    public static final class ReadOnlyRetryableSettings<M> {
+    public static final class ReadOnlyRetryableSettings<Meta> {
 
         @Nullable
         private final Executor timerExecutor;
@@ -201,14 +186,14 @@ public abstract class AbstractRetryingFilterBuilder<B extends AbstractRetryingFi
         private final boolean exponential;
         @Nullable
         private final Duration initialDelay;
-        private final BiPredicate<M, Throwable> retryForPredicate;
+        private final BiPredicate<Meta, Throwable> retryForPredicate;
 
-        private ReadOnlyRetryableSettings(@Nullable final Executor timerExecutor,
-                                          final int maxRetries,
-                                          final boolean jitter,
-                                          final boolean exponential,
+        private ReadOnlyRetryableSettings(final int maxRetries,
+                                          final BiPredicate<Meta, Throwable> retryForPredicate,
                                           @Nullable final Duration initialDelay,
-                                          final BiPredicate<M, Throwable> retryForPredicate) {
+                                          @Nullable final Executor timerExecutor,
+                                          final boolean exponential,
+                                          final boolean jitter) {
             this.timerExecutor = timerExecutor;
             this.maxRetries = maxRetries;
             this.jitter = jitter;
@@ -218,13 +203,13 @@ public abstract class AbstractRetryingFilterBuilder<B extends AbstractRetryingFi
         }
 
         /**
-         * Checks the provided pair of meta-data of a type {@link M} and {@link Throwable} that the case is retryable.
+         * Checks the provided pair of {@link Meta} and {@link Throwable} that the case is retryable.
          *
-         * @param meta a meta-data of a type {@link M} to check
+         * @param meta a meta-data of a type {@link Meta} to check
          * @param throwable an exception occurred
          * @return {@code true} if it is desirable to retry, {@code false} otherwise
          */
-        public boolean isRetryable(final M meta, final Throwable throwable) {
+        public boolean isRetryable(final Meta meta, final Throwable throwable) {
             return retryForPredicate.test(meta, throwable);
         }
 
@@ -234,7 +219,7 @@ public abstract class AbstractRetryingFilterBuilder<B extends AbstractRetryingFi
          * {@link Completable#retryWhen(BiIntFunction)} or in general with an alternative timer {@link Executor}.
          *
          * @param alternativeTimerExecutor {@link Executor} to be used to schedule timers for backoff if no executor
-         * was provided via {@link #timerExecutor(Executor)} builder method.
+         * was provided at the build time
          * @return a new retry strategy {@link BiIntFunction}
          */
         public BiIntFunction<Throwable, Completable> newStrategy(@Nullable final Executor alternativeTimerExecutor) {

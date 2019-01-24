@@ -34,7 +34,7 @@ public final class RetryStrategies {
     }
 
     /**
-     * Creates a new retry function that adds the passed constant {@link Duration} as delay between retries.
+     * Creates a new retry function that adds the passed constant {@link Duration} as a delay between retries.
      *
      * @param maxRetries Maximum number of allowed retries, after which the returned {@link BiIntFunction} will return
      * a failed {@link Completable} with the passed {@link Throwable} as the cause
@@ -62,7 +62,7 @@ public final class RetryStrategies {
     }
 
     /**
-     * Creates a new retry function that adds the passed constant {@link Duration} as delay between retries.
+     * Creates a new retry function that adds the passed constant {@link Duration} as a delay between retries.
      * This additionally adds a "Full Jitter" for the backoff as described
      * <a href="https://aws.amazon.com/blogs/architecture/exponential-backoff-and-jitter/">here</a>.
      *

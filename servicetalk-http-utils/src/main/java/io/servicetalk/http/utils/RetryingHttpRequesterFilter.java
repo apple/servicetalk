@@ -103,19 +103,15 @@ public final class RetryingHttpRequesterFilter implements HttpClientFilterFactor
             extends AbstractRetryingFilterBuilder<Builder, RetryingHttpRequesterFilter, HttpRequestMetaData> {
 
         @Override
+        protected RetryingHttpRequesterFilter build(
+                final ReadOnlyRetryableSettings<HttpRequestMetaData> readOnlySettings) {
+            return new RetryingHttpRequesterFilter(readOnlySettings);
+        }
+
+        @Override
         public BiPredicate<HttpRequestMetaData, Throwable> defaultRetryForPredicate() {
             return (meta, throwable) ->
                     throwable instanceof RetryableException || meta.method().methodProperties().idempotent();
-        }
-
-        /**
-         * Builds a {@link RetryingHttpRequesterFilter}.
-         *
-         * @return A new {@link RetryingHttpRequesterFilter}
-         */
-        @Override
-        public RetryingHttpRequesterFilter build() {
-            return new RetryingHttpRequesterFilter(readOnlySettings());
         }
     }
 }

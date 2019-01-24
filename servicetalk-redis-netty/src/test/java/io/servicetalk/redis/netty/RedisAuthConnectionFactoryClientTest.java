@@ -147,7 +147,7 @@ public class RedisAuthConnectionFactoryClientTest {
                 .ioExecutor(ioExecutor)
                 .executionStrategy(noOffloadsStrategy())
                 .idleConnectionTimeout(ofSeconds(2))
-                .appendClientFilter(new RetryingRedisRequesterFilter.Builder().maxRetries(10).build())
+                .appendClientFilter(new RetryingRedisRequesterFilter.Builder().maxRetries(10).forImmediateRetries())
                 .build();
         clientConsumer.accept(client);
     }

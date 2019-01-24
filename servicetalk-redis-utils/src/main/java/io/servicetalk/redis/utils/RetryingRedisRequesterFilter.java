@@ -119,18 +119,13 @@ public final class RetryingRedisRequesterFilter implements RedisClientFilterFact
             extends AbstractRetryingFilterBuilder<Builder, RetryingRedisRequesterFilter, Command> {
 
         @Override
-        public BiPredicate<Command, Throwable> defaultRetryForPredicate() {
-            return (command, throwable) -> throwable instanceof RetryableException || command.hasFlag(READONLY);
+        protected RetryingRedisRequesterFilter build(final ReadOnlyRetryableSettings<Command> readOnlySettings) {
+            return new RetryingRedisRequesterFilter(readOnlySettings);
         }
 
-        /**
-         * Builds a {@link RetryingRedisRequesterFilter}.
-         *
-         * @return A new {@link RetryingRedisRequesterFilter}
-         */
         @Override
-        public RetryingRedisRequesterFilter build() {
-            return new RetryingRedisRequesterFilter(readOnlySettings());
+        public BiPredicate<Command, Throwable> defaultRetryForPredicate() {
+            return (command, throwable) -> throwable instanceof RetryableException || command.hasFlag(READONLY);
         }
     }
 }
