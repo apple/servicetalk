@@ -20,7 +20,6 @@ import io.servicetalk.client.api.ConnectionRejectedException;
 import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.api.LoadBalancerFactory;
 import io.servicetalk.client.api.NoAvailableHostException;
-import io.servicetalk.client.api.RetryableException;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.concurrent.api.AsyncCloseable;
 import io.servicetalk.concurrent.api.Completable;
@@ -289,7 +288,7 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends ListenableA
                         }
                         return success(selection);
                     }
-                    return error(new RetryableException("Failed to add newly created connection for host: " +
+                    return error(new ConnectionRejectedException("Failed to add newly created connection for host: " +
                             host.address + ", host inactive? " + host.removed));
                 });
     }

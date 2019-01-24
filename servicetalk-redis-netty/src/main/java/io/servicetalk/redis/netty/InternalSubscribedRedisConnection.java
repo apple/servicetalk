@@ -20,7 +20,7 @@ import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.internal.QueueFullAndRejectedSubscribeException;
-import io.servicetalk.concurrent.internal.RejectedSubscribeError;
+import io.servicetalk.concurrent.internal.RejectedSubscribeException;
 import io.servicetalk.redis.api.RedisConnection;
 import io.servicetalk.redis.api.RedisData;
 import io.servicetalk.redis.api.RedisProtocolSupport;
@@ -63,7 +63,7 @@ import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 final class InternalSubscribedRedisConnection extends AbstractRedisConnection {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(InternalSubscribedRedisConnection.class);
-    protected final NettyConnection<RedisData, ByteBuf> connection;
+    private final NettyConnection<RedisData, ByteBuf> connection;
 
     private final ReadStreamSplitter readStreamSplitter;
     private final WriteQueue writeQueue;
@@ -203,8 +203,11 @@ final class InternalSubscribedRedisConnection extends AbstractRedisConnection {
         return toReturn;
     }
 
-    private static final class RetryableRejectedSubscribeException extends RetryableException
-            implements RejectedSubscribeError {
+    private static final class RetryableRejectedSubscribeException extends RejectedSubscribeException
+            implements RetryableException {
+
+        private static final long serialVersionUID = 8756529388154241838L;
+
         RetryableRejectedSubscribeException(Throwable cause) {
             super(cause);
         }
@@ -212,11 +215,11 @@ final class InternalSubscribedRedisConnection extends AbstractRedisConnection {
 
     private static final class WriteQueue extends SequentialTaskQueue<WriteQueue.WriteTask> {
 
-        private static final RetryableException CONNECTION_IS_CLOSED_WRITE =
+        private static final RetryableRejectedSubscribeException CONNECTION_IS_CLOSED_WRITE =
                 unknownStackTrace(new RetryableRejectedSubscribeException(new ClosedChannelException()),
                         WriteQueue.class, "write(..)");
-        private static final RetryableException CONNECTION_IS_CLOSED_QUIT =
-                unknownStackTrace(new RetryableRejectedSubscribeException(new ClosedChannelException()),
+        private static final RejectedSubscribeException CONNECTION_IS_CLOSED_QUIT =
+                unknownStackTrace(new RejectedSubscribeException(new ClosedChannelException()),
                         WriteQueue.class, "quit(..)");
 
         private static final AtomicIntegerFieldUpdater<WriteTask> taskCalledPostTermUpdater = newUpdater(WriteTask.class, "taskCalledPostTerm");

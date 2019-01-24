@@ -26,6 +26,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import java.net.ConnectException;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.LinkedBlockingQueue;
 
@@ -48,7 +50,7 @@ public class LimitingActiveConnectionFactoryFilterTest {
     public final MockedSingleListenerRule<ListenableAsyncCloseable> connectlistener = new MockedSingleListenerRule<>();
 
     private ConnectionFactory<String, ListenableAsyncCloseable> original;
-    private LinkedBlockingQueue<CompletableProcessor> connectionOnClose;
+    private BlockingQueue<CompletableProcessor> connectionOnClose;
 
     @Before
     public void setUp() {
@@ -96,7 +98,7 @@ public class LimitingActiveConnectionFactoryFilterTest {
         cf.newConnection("c2").toFuture().get();
     }
 
-    private void connectAndVerifyFailed(final ConnectionFactory<String, ListenableAsyncCloseable> cf)
+    private static void connectAndVerifyFailed(final ConnectionFactory<String, ListenableAsyncCloseable> cf)
             throws Exception {
         try {
             cf.newConnection("c-fail").toFuture().get();
@@ -107,7 +109,7 @@ public class LimitingActiveConnectionFactoryFilterTest {
     }
 
     @SuppressWarnings("unchecked")
-    private ConnectionFactory<String, ListenableAsyncCloseable> newMockConnectionFactory() {
+    private static ConnectionFactory<String, ListenableAsyncCloseable> newMockConnectionFactory() {
         return (ConnectionFactory<String, ListenableAsyncCloseable>) mock(ConnectionFactory.class);
     }
 }

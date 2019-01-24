@@ -16,7 +16,7 @@
 package io.servicetalk.tcp.netty.internal;
 
 import io.servicetalk.buffer.api.Buffer;
-import io.servicetalk.client.api.ConnectException;
+import io.servicetalk.client.api.RetryableConnectException;
 import io.servicetalk.transport.netty.internal.NettyConnection;
 
 import io.netty.channel.ChannelHandlerContext;
@@ -68,7 +68,8 @@ public final class TcpConnectorTest extends AbstractTcpServerTest {
 
     @Test
     public void testConnectToUnknownPort() throws Exception {
-        thrown.expectCause(anyOf(instanceOf(ConnectException.class), instanceOf(ClosedChannelException.class)));
+        thrown.expectCause(anyOf(instanceOf(RetryableConnectException.class),
+                instanceOf(ClosedChannelException.class)));
         awaitIndefinitely(serverContext.closeAsync());
         // Closing the server to increase probability of finding a port on which no one is listening.
         client.connectBlocking(CLIENT_CTX, serverPort);
