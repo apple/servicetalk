@@ -45,6 +45,7 @@ dependencies {
 
   testImplementation "junit:junit"
   testImplementation "org.hamcrest:hamcrest-library"
-  testImplementation "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
-  testImplementation "org.apache.logging.log4j:log4j-core:$log4jVersion"
+  testImplementation "org.apache.logging.log4j:log4j-slf4j-impl"
+  testImplementation "org.apache.logging.log4j:log4j-core"
+  testImplementation "io.servicetalk:servicetalk-log4j2-mdc-internal-testFixtures:$project.version"
 }

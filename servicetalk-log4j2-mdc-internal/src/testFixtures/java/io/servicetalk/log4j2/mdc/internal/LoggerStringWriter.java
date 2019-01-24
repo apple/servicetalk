@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.opentracing.log4j;
+package io.servicetalk.log4j2.mdc.internal;
 
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
@@ -28,8 +28,11 @@ import java.util.Map;
 import javax.annotation.Nullable;
 
 import static org.apache.logging.log4j.Level.DEBUG;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 
-final class LoggerStringWriter {
+public final class LoggerStringWriter {
     @Nullable
     private static StringWriter logStringWriter;
 
@@ -45,6 +48,13 @@ final class LoggerStringWriter {
         return getStringWriter().toString();
     }
 
+    public static void assertContainsMdcPair(String value, String expectedLabel, String expectedValue) {
+        int x = value.indexOf(expectedLabel);
+        assertThat("couldn't find expectedLabel: " + expectedLabel, x, is(greaterThanOrEqualTo(0)));
+        int beginIndex = x + expectedLabel.length();
+        assertThat(value.substring(beginIndex, beginIndex + expectedValue.length()), is(expectedValue));
+    }
+
     private static synchronized StringWriter getStringWriter() {
         if (logStringWriter == null) {
             final LoggerContext context = (LoggerContext) LogManager.getContext(false);
@@ -53,7 +63,7 @@ final class LoggerStringWriter {
         return logStringWriter;
     }
 
-    public static StringWriter addWriterAppender(final LoggerContext context, Level level) {
+    private static StringWriter addWriterAppender(final LoggerContext context, Level level) {
         final Configuration config = context.getConfiguration();
         final StringWriter writer = new StringWriter();
 
