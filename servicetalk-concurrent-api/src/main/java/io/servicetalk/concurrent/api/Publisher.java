@@ -1842,6 +1842,9 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
     /**
      * Signifies that when {@link #subscribe(Subscriber)} is invoked on the returned {@link Publisher} that the
      * {@link AsyncContext} will be shared instead of making a {@link AsyncContextMap#copy() copy}.
+     * <p>
+     * This operator only impacts behavior if {@link #subscribe(Subscriber)} is directly called on the return value,
+     * that means this must be the "last operator" in the chain for this to have an impact.
      *
      * @return A {@link Publisher} that will share the {@link AsyncContext} instead of making a
      * {@link AsyncContextMap#copy() copy} when {@link #subscribe(Subscriber)} is called.

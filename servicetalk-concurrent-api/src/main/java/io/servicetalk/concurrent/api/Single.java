@@ -886,6 +886,9 @@ public abstract class Single<T> implements io.servicetalk.concurrent.Single<T> {
     /**
      * Signifies that when {@link #subscribe(Subscriber)} is invoked on the returned {@link Single} that the
      * {@link AsyncContext} will be shared instead of making a {@link AsyncContextMap#copy() copy}.
+     * <p>
+     * This operator only impacts behavior if {@link #subscribe(Subscriber)} is directly called on the return value,
+     * that means this must be the "last operator" in the chain for this to have an impact.
      *
      * @return A {@link Single} that will share the {@link AsyncContext} instead of making a
      * {@link AsyncContextMap#copy() copy} when {@link #subscribe(Subscriber)} is called.
