@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,36 +20,40 @@ import org.reactivestreams.Subscription;
 import static io.servicetalk.concurrent.api.DefaultAsyncContextProvider.INSTANCE;
 import static java.util.Objects.requireNonNull;
 
-class ContextPreservingSubscription implements Subscription {
+final class ContextPreservingSubscription implements Subscription {
     private final AsyncContextMap saved;
     private final Subscription subscription;
 
-    ContextPreservingSubscription(Subscription subscription, AsyncContextMap current) {
-        // Users cannot pass the wrapped subscription back in since subscriptions are created by operators,
-        // so we don't have to unwrap it.
+    private ContextPreservingSubscription(Subscription subscription, AsyncContextMap current) {
         this.subscription = requireNonNull(subscription);
         this.saved = requireNonNull(current);
     }
 
+    static Subscription wrap(Subscription subscription, AsyncContextMap current) {
+        return subscription instanceof ContextPreservingSubscription &&
+                ((ContextPreservingSubscription) subscription).saved == current ? subscription :
+                new ContextPreservingSubscription(subscription, current);
+    }
+
     @Override
     public void request(long l) {
-        AsyncContextMap prev = INSTANCE.getContextMap();
+        AsyncContextMap prev = INSTANCE.contextMap();
         try {
-            INSTANCE.setContextMap(saved);
+            INSTANCE.contextMap(saved);
             subscription.request(l);
         } finally {
-            INSTANCE.setContextMap(prev);
+            INSTANCE.contextMap(prev);
         }
     }
 
     @Override
     public void cancel() {
-        AsyncContextMap prev = INSTANCE.getContextMap();
+        AsyncContextMap prev = INSTANCE.contextMap();
         try {
-            INSTANCE.setContextMap(saved);
+            INSTANCE.contextMap(saved);
             subscription.cancel();
         } finally {
-            INSTANCE.setContextMap(prev);
+            INSTANCE.contextMap(prev);
         }
     }
 }

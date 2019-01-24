@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,22 +41,29 @@ final class SingleFlatMapPublisher<T, R> extends AbstractNoHandleSubscribePublis
     }
 
     @Override
-    void handleSubscribe(final Subscriber<? super R> subscriber, final SignalOffloader signalOffloader) {
-        original.subscribe(new SubscriberImpl<>(subscriber, nextFactory, signalOffloader), signalOffloader);
+    void handleSubscribe(final Subscriber<? super R> subscriber, final SignalOffloader signalOffloader,
+                         final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
+        original.subscribeWithOffloaderAndContext(new SubscriberImpl<>(subscriber, nextFactory, signalOffloader,
+                        contextMap, contextProvider), signalOffloader, contextMap, contextProvider);
     }
 
     private static final class SubscriberImpl<T, R> implements Single.Subscriber<T>, org.reactivestreams.Subscriber<R> {
         private final Subscriber<? super R> subscriber;
         private final Function<? super T, Publisher<? extends R>> nextFactory;
         private final SignalOffloader signalOffloader;
+        private final AsyncContextMap contextMap;
+        private final AsyncContextProvider contextProvider;
         @Nullable
         private volatile SequentialSubscription sequentialSubscription;
 
         SubscriberImpl(Subscriber<? super R> subscriber, Function<? super T, Publisher<? extends R>> nextFactory,
-                       final SignalOffloader signalOffloader) {
+                       final SignalOffloader signalOffloader, final AsyncContextMap contextMap,
+                       final AsyncContextProvider contextProvider) {
             this.subscriber = subscriber;
             this.nextFactory = requireNonNull(nextFactory);
             this.signalOffloader = signalOffloader;
+            this.contextMap = contextMap;
+            this.contextProvider = contextProvider;
         }
 
         @Override
@@ -101,7 +108,13 @@ final class SingleFlatMapPublisher<T, R> extends AbstractNoHandleSubscribePublis
             // a new source which may have different threading semantics, we explicitly offload signals going down to
             // the original subscriber. If we do not do this and next source does not support blocking operations,
             // whereas original subscriber does, we will violate threading assumptions.
-            next.subscribe((Subscriber<? super R>) signalOffloader.offloadSubscriber((Subscriber<R>) this));
+            //
+            // The static AsyncContext should be the same as the original contextMap at this point because we are
+            // being notified in the Subscriber path, but we make sure that it is restored after the asynchronous
+            // boundary and explicitly use it to subscribe.
+            next.subscribeWithContext((Subscriber<? super R>) signalOffloader.offloadSubscriber(
+                    contextProvider.wrap((Subscriber<R>) this, contextMap)),
+                    contextMap.copy(), contextProvider);
         }
 
         @Override

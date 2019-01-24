@@ -220,7 +220,6 @@ final class TaskBasedSignalOffloader implements SignalOffloader {
                     }
 
                     if (r == CANCELLED) {
-                        // Cancelled
                         requested = TERMINATED;
                         try {
                             target.cancel();
@@ -228,31 +227,29 @@ final class TaskBasedSignalOffloader implements SignalOffloader {
                             LOGGER.error("Ignoring unexpected exception from cancel(). Subscription {}.", target, t);
                         }
                         return; // No more signals are required to be sent.
+                    } else if (r == TERMINATED) {
+                        return; // we want to hard return to avoid resetting state in the finally block.
+                    } else if (r != 0) {
+                        // Invalid request-n
+                        //
+                        // As per spec (Rule 3.9) a request-n with n <= 0 MUST signal an onError hence terminating the
+                        // Subscription. Since, we can not store negative values in requested and keep going without
+                        // requesting more invalid values, we assume spec compliance (no more data can be requested) and
+                        // terminate.
+                        requested = TERMINATED;
+                        try {
+                            target.request(r);
+                        } catch (IllegalArgumentException iae) {
+                            // Expected
+                        } catch (Throwable t) {
+                            LOGGER.error("Ignoring unexpected exception from request(). Subscription {}.", target, t);
+                        }
                     }
-                    if (r == 0) {
-                        // We store a request(0) as Long.MIN_VALUE so if we see r == 0 here, it means we are re-entering
-                        // the loop because we saw the STATE_ENQUEUED but we have already read from requested.
-                        continue;
-                    }
-                    if (r == TERMINATED) {
-                        return;
-                    }
-                    // Invalid request-n
-                    //
-                    // As per spec (Rule 3.9) a request-n with n <= 0 MUST signal an onError hence terminating the
-                    // Subscription. Since, we can not store negative values in requested and keep going without
-                    // requesting more invalid values, we assume spec compliance (no more data can be requested) and
-                    // terminate.
-                    requested = TERMINATED;
-                    try {
-                        target.request(r);
-                    } catch (IllegalArgumentException iae) {
-                        // Expected
-                    } catch (Throwable t) {
-                        LOGGER.error("Ignoring unexpected exception from request(). Subscription {}.", target, t);
-                    }
+                    // We store a request(0) as Long.MIN_VALUE so if we see r == 0 here, it means we are re-entering
+                    // the loop because we saw the STATE_ENQUEUED but we have already read from requested.
                 } finally {
-                    isDone = stateUpdater.getAndSet(this, STATE_IDLE) != STATE_ENQUEUED;
+                    // r < 0 is used to avoid resetting the state if we have terminated above.
+                    isDone = r < 0 || stateUpdater.getAndSet(this, STATE_IDLE) != STATE_ENQUEUED;
                 }
             } while (!isDone);
         }
@@ -262,7 +259,9 @@ final class TaskBasedSignalOffloader implements SignalOffloader {
         private static final int STATE_IDLE = 0;
         private static final int STATE_ENQUEUED = 1;
         private static final int STATE_EXECUTING = 2;
-        private static final int STATE_TERMINATED = 3;
+        private static final int STATE_TERMINATING = 3;
+        private static final int STATE_TERMINATING_INTERRUPTED = 4;
+        private static final int STATE_TERMINATED = 5;
         private static final AtomicIntegerFieldUpdater<OffloadedSubscriber> stateUpdater =
                 newUpdater(OffloadedSubscriber.class, "state");
 
@@ -271,8 +270,6 @@ final class TaskBasedSignalOffloader implements SignalOffloader {
         private final Subscriber<? super T> target;
         private final Executor executor;
         private final Queue<Object> signals;
-        // Only accessed from the Subscriber thread and hence no additional thread-safety is required.
-        private boolean earlyTerminated;
         // Set in onSubscribe before we enqueue the task which provides memory visibility inside the task.
         // Since any further action happens after onSubscribe, we always guarantee visibility of this field inside
         // run()
@@ -321,13 +318,11 @@ final class TaskBasedSignalOffloader implements SignalOffloader {
                             try {
                                 target.onSubscribe(subscription);
                             } catch (Throwable t) {
-                                discardAllSignals();
-                                state = STATE_TERMINATED;
+                                clearSignalsFromExecutorThread();
                                 LOGGER.error("Ignored unexpected exception from onSubscribe. Subscriber: {}, " +
                                         "Subscription: {}.", target, subscription, t);
                                 subscription.cancel();
-                                // continue draining the queue; since we set terminatedPrematurely to true, we will
-                                // ignore other signals.
+                                return; // We can't interact with the queue any more because we terminated, so bail.
                             }
                         } else if (signal instanceof TerminalNotification) {
                             state = STATE_TERMINATED;
@@ -338,16 +333,14 @@ final class TaskBasedSignalOffloader implements SignalOffloader {
                                         ((TerminalNotification) signal).getCause() == null ? "onComplete()" :
                                                 "onError()", target, t);
                             }
-                            // Terminal notification, assume we will not have any more data unless spec is violated.
-                            return;
+                            return; // We can't interact with the queue any more because we terminated, so bail.
                         } else {
                             @SuppressWarnings("unchecked")
                             T t = signal == NULL_WRAPPER ? null : (T) signal;
                             try {
                                 target.onNext(t);
                             } catch (Throwable th) {
-                                discardAllSignals();
-                                state = STATE_TERMINATED;
+                                clearSignalsFromExecutorThread();
                                 assert subscription != null;
                                 subscription.cancel();
                                 try {
@@ -356,19 +349,17 @@ final class TaskBasedSignalOffloader implements SignalOffloader {
                                     LOGGER.error("Ignored unexpected exception from onError(). Subscriber: {}",
                                             target, t);
                                 }
-                                // continue draining the queue; since we set terminatedPrematurely to true, we will
-                                // ignore other signals.
+                                return; // We can't interact with the queue any more because we terminated, so bail.
                             }
                         }
                     }
                 } finally {
                     for (;;) {
-                        int cState = state;
+                        final int cState = state;
                         if (cState == STATE_TERMINATED) {
                             isDone = true;
                             break;
-                        }
-                        if (stateUpdater.compareAndSet(this, cState, STATE_IDLE)) {
+                        } else if (stateUpdater.compareAndSet(this, cState, STATE_IDLE)) {
                             isDone = cState != STATE_ENQUEUED;
                             break;
                         }
@@ -377,34 +368,40 @@ final class TaskBasedSignalOffloader implements SignalOffloader {
             } while (!isDone);
         }
 
-        @SuppressWarnings("StatementWithEmptyBody")
-        private void discardAllSignals() {
-            while (signals.poll() != null) {
-                // Drain all elements before exiting.
-            }
+        private void clearSignalsFromExecutorThread() {
+            do {
+                state = STATE_TERMINATING;
+                signals.clear();
+                // if we fail to go from draining to terminated, that means the state was set to interrupted by the
+                // producer thread, and we need to try to drain from the queue again.
+            } while (!stateUpdater.compareAndSet(this, STATE_TERMINATING, STATE_TERMINATED));
         }
 
         private void offerSignal(Object signal) {
-            if (earlyTerminated) {
-                return;
-            }
-
+            // We optimistically insert into the queue, and then clear elements from the queue later if there is an
+            // error detected in the consumer thread.
             if (!signals.offer(signal)) {
                 throw new QueueFullException("signals");
             }
 
             for (;;) {
-                int cState = state;
+                final int cState = state;
                 if (cState == STATE_TERMINATED) {
-                    earlyTerminated = true;
-                    // It could be that we prematurely terminated and set the state to STATE_TERMINATED after we added
-                    // to the signal queue and the task exited. This means that we will leave the item in the queue
-                    // which will be cleared by GC.
-                    // We can not guarantee here whether we are the only consumer for the spsc queue, hence, for this
-                    // corner case, delaying queue cleanup till GC is an appropriate trade-off.
+                    // Once we have terminated, we are sure no other thread will be consuming from the queue and
+                    // therefore we can consume (aka clear) the queue in this thread without violating the single
+                    // consumer constraint.
+                    signals.clear();
                     return;
-                }
-                if (stateUpdater.compareAndSet(this, cState, STATE_ENQUEUED)) {
+                } else if (cState == STATE_TERMINATING) {
+                    if (!stateUpdater.compareAndSet(this, STATE_TERMINATING, STATE_TERMINATING_INTERRUPTED)) {
+                        // If another thread was draining the queue, and is no longer training the queue then the only
+                        // state we can be in is STATE_TERMINATED. This means no other thread is consuming from the
+                        // queue and we are safe to consume/clear it.
+                        // assert state == STATE_TERMINATED;
+                        signals.clear();
+                    }
+                    return;
+                } else if (stateUpdater.compareAndSet(this, cState, STATE_ENQUEUED)) {
                     if (cState == STATE_IDLE) {
                         break;
                     } else {
@@ -417,7 +414,6 @@ final class TaskBasedSignalOffloader implements SignalOffloader {
                 executor.execute(this);
             } catch (Throwable t) {
                 state = STATE_TERMINATED;
-                earlyTerminated = true;
                 // This is an SPSC queue; at this point we are sure that there is no other consumer of the queue
                 // because:
                 //  - We were in STATE_IDLE and hence the task isn't running.
@@ -515,11 +511,10 @@ final class TaskBasedSignalOffloader implements SignalOffloader {
             this.terminal = terminal;
             for (;;) {
                 int cState = state;
-                if (/* Duplicate terminal event */
-                        has(cState, RECEIVED_TERMINAL_MASK) || cState == STATE_TERMINATED ||
-                                // Already executing or enqueued for executing, append the state.
-                                (hasAny(cState, EXECUTING_SUBSCRIBED_RECEIVED_MASK) &&
-                                        casAppend(cState, RECEIVED_TERMINAL_MASK))) {
+                if (// Duplicate terminal event
+                    has(cState, RECEIVED_TERMINAL_MASK) || cState == STATE_TERMINATED ||
+                    // Already executing or enqueued for executing, append the state.
+                    hasAny(cState, EXECUTING_SUBSCRIBED_RECEIVED_MASK) && casAppend(cState, RECEIVED_TERMINAL_MASK)) {
                     return;
                 } else if (cState == STATE_AWAITING_TERMINAL &&
                         stateUpdater.compareAndSet(this, STATE_AWAITING_TERMINAL, RECEIVED_TERMINAL_MASK)) {

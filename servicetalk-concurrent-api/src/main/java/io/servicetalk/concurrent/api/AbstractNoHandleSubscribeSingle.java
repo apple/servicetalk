@@ -21,7 +21,7 @@ import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 
 /**
  * A {@link Single} that does not expect to receive a call to {@link #handleSubscribe(Subscriber)} since it overrides
- * {@link #handleSubscribe(Subscriber, SignalOffloader)}.
+ * {@link #handleSubscribe(Subscriber, SignalOffloader, AsyncContextMap, AsyncContextProvider)}.
  *
  * @param <T> Type of the result of the single.
  */

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,16 +41,17 @@ final class PubToCompletable<T> extends AbstractNoHandleSubscribeCompletable {
     }
 
     @Override
-    void handleSubscribe(final Subscriber subscriber, final SignalOffloader signalOffloader) {
+    void handleSubscribe(final Subscriber subscriber, final SignalOffloader signalOffloader,
+                         final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
         // We are now subscribing to the original Publisher chain for the first time, re-using the SignalOffloader.
         // Using the special subscribe() method means it will not offload the Subscription (done in the public
         // subscribe() method). So, we use the SignalOffloader to offload subscription if required.
-        org.reactivestreams.Subscriber<? super T> offloadedSubscription =
-                signalOffloader.offloadSubscription(new PubToCompletableSubscriber<>(subscriber));
+        org.reactivestreams.Subscriber<? super T> offloadedSubscription = signalOffloader.offloadSubscription(
+                        contextProvider.wrapSubscription(new PubToCompletableSubscriber<>(subscriber), contextMap));
         // Since this is converting a Publisher to a Completable, we should try to use the same SignalOffloader for
         // subscribing to the original Publisher to avoid thread hop. Since, it is the same source, just viewed as a
         // Completable, there is no additional risk of deadlock.
-        source.subscribe(offloadedSubscription, signalOffloader);
+        source.subscribeWithOffloaderAndContext(offloadedSubscription, signalOffloader, contextMap, contextProvider);
     }
 
     private static final class PubToCompletableSubscriber<T> implements org.reactivestreams.Subscriber<T> {

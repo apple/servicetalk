@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,22 +38,29 @@ final class CompletableToPublisher<T> extends AbstractNoHandleSubscribePublisher
     }
 
     @Override
-    void handleSubscribe(final Subscriber<? super T> subscriber, final SignalOffloader signalOffloader) {
-        subscriber.onSubscribe(new ConversionSubscriber<>(this, subscriber, signalOffloader));
+    void handleSubscribe(final Subscriber<? super T> subscriber, final SignalOffloader signalOffloader,
+                         final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
+        subscriber.onSubscribe(new ConversionSubscriber<>(this, subscriber, signalOffloader, contextMap,
+                contextProvider));
     }
 
     private static final class ConversionSubscriber<T> implements Completable.Subscriber, Subscription {
         private final SequentialCancellable sequentialCancellable;
         private final Subscriber<? super T> subscriber;
         private final SignalOffloader signalOffloader;
+        private final AsyncContextMap contextMap;
+        private final AsyncContextProvider contextProvider;
         private final CompletableToPublisher<T> parent;
         private boolean subscribedToParent;
 
-        private ConversionSubscriber(CompletableToPublisher<T> parent,
-                                     Subscriber<? super T> subscriber, final SignalOffloader signalOffloader) {
+        private ConversionSubscriber(CompletableToPublisher<T> parent, Subscriber<? super T> subscriber,
+                                     SignalOffloader signalOffloader, AsyncContextMap contextMap,
+                                     AsyncContextProvider contextProvider) {
             this.parent = parent;
             this.subscriber = subscriber;
             this.signalOffloader = signalOffloader;
+            this.contextMap = contextMap;
+            this.contextProvider = contextProvider;
             sequentialCancellable = new SequentialCancellable();
         }
 
@@ -84,7 +91,8 @@ final class CompletableToPublisher<T> extends AbstractNoHandleSubscribePublisher
                     // parent is a Completable but we always drive the Cancellable from this Subscription.
                     // So, even though we are using the subscribe method that does not offload Cancellable, we do not
                     // need to explicitly add the offload here.
-                    parent.original.subscribe(this, signalOffloader);
+                    parent.original.subscribeWithOffloaderAndContext(this, signalOffloader, contextMap,
+                            contextProvider);
                 } else {
                     subscriber.onError(newExceptionForInvalidRequestN(n));
                 }

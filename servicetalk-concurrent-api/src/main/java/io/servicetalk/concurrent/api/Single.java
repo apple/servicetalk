@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,7 +43,6 @@ import static io.servicetalk.concurrent.api.SingleDoOnUtils.doOnErrorSupplier;
 import static io.servicetalk.concurrent.api.SingleDoOnUtils.doOnSubscribeSupplier;
 import static io.servicetalk.concurrent.api.SingleDoOnUtils.doOnSuccessSupplier;
 import static io.servicetalk.concurrent.api.SingleToCompletionStage.createAndSubscribe;
-import static io.servicetalk.concurrent.internal.ConcurrentPlugins.getSinglePlugin;
 import static io.servicetalk.concurrent.internal.SignalOffloaders.newOffloaderFor;
 import static java.util.Objects.requireNonNull;
 import static java.util.function.Function.identity;
@@ -885,6 +884,20 @@ public abstract class Single<T> implements io.servicetalk.concurrent.Single<T> {
     }
 
     /**
+     * Signifies that when {@link #subscribe(Subscriber)} is invoked on the returned {@link Single} that the
+     * {@link AsyncContext} will be shared instead of making a {@link AsyncContextMap#copy() copy}.
+     * <p>
+     * This operator only impacts behavior if {@link #subscribe(Subscriber)} is directly called on the return value,
+     * that means this must be the "last operator" in the chain for this to have an impact.
+     *
+     * @return A {@link Single} that will share the {@link AsyncContext} instead of making a
+     * {@link AsyncContextMap#copy() copy} when {@link #subscribe(Subscriber)} is called.
+     */
+    public final Single<T> subscribeShareContext() {
+        return new SingleSubscribeShareContext<>(this);
+    }
+
+    /**
      * <strong>This method requires advanced knowledge of building operators. Before using this method please attempt
      * to compose existing operator(s) to satisfy your use case.</strong>
      * <p>
@@ -991,8 +1004,11 @@ public abstract class Single<T> implements io.servicetalk.concurrent.Single<T> {
      * @return A {@link CompletionStage} that mirrors the terminal signal from this {@link Single}.
      */
     public final CompletionStage<T> toCompletionStage() {
-        return getSinglePlugin().toCompletionStage(this, executor,
-                SingleToCompletionStage::createAndSubscribe);
+        AsyncContextProvider provider = AsyncContext.provider();
+        AsyncContextMap contextMap = provider.contextMap().copy();
+        return provider.wrap(
+                (CompletionStage<T>) createAndSubscribe(this, provider.unwrap(executor), provider, contextMap),
+                contextMap);
     }
 
     /**
@@ -1001,7 +1017,9 @@ public abstract class Single<T> implements io.servicetalk.concurrent.Single<T> {
      * @return A {@link Future} that mirrors the terminal signal from this {@link Single}.
      */
     public final Future<T> toFuture() {
-        return createAndSubscribe(this, executor);
+        AsyncContextProvider provider = AsyncContext.provider();
+        AsyncContextMap contextMap = provider.contextMap().copy();
+        return createAndSubscribe(this, executor, provider, contextMap);
     }
 
     //
@@ -1010,21 +1028,7 @@ public abstract class Single<T> implements io.servicetalk.concurrent.Single<T> {
 
     @Override
     public final void subscribe(Subscriber<? super T> subscriber) {
-        requireNonNull(subscriber);
-        final SignalOffloader signalOffloader;
-        final Subscriber<? super T> offloadedSubscriber;
-        try {
-            // This is a user-driven subscribe i.e. there is no SignalOffloader override, so create a new SignalOffloader
-            // to use.
-            signalOffloader = newOffloaderFor(executor);
-            // Since this is a user-driven subscribe (end of the execution chain), offload Cancellable
-            offloadedSubscriber = signalOffloader.offloadCancellable(subscriber);
-        } catch (Throwable t) {
-            subscriber.onSubscribe(IGNORE_CANCEL);
-            subscriber.onError(t);
-            return;
-        }
-        subscribe(offloadedSubscriber, signalOffloader);
+        subscribeCaptureContext(subscriber, AsyncContext.provider());
     }
 
     /**
@@ -1097,8 +1101,24 @@ public abstract class Single<T> implements io.servicetalk.concurrent.Single<T> {
      * {@link #subscribe(Subscriber)} and forwards the result or error from the newly created {@link Single} to its
      * {@link Subscriber}.
      */
-    public static <T> Single<T> defer(Supplier<Single<T>> singleSupplier) {
-        return new SingleDefer<>(singleSupplier);
+    public static <T> Single<T> defer(Supplier<? extends Single<T>> singleSupplier) {
+        return new SingleDefer<>(singleSupplier, false);
+    }
+
+    /**
+     * Defer creation of a {@link Single} till it is subscribed to. The {@link Single}s returned from
+     * {@code singleSupplier} will share the same {@link AsyncContextMap} as the {@link Single} return from this method.
+     * A typical use case for this is if the {@link Single}s returned from {@code singleSupplier} only modify existing
+     * behavior with additional state, but not if the {@link Single}s may come from an unrelated independent source.
+     * @param singleSupplier {@link Supplier} to create a new {@link Single} for every call to
+     * {@link #subscribe(Subscriber)} to the returned {@link Single}.
+     * @param <T> Type of the {@link Single}.
+     * @return A new {@link Single} that creates a new {@link Single} using {@code singleFactory} for every call to
+     * {@link #subscribe(Subscriber)} and forwards the result or error from the newly created {@link Single} to its
+     * {@link Subscriber}.
+     */
+    public static <T> Single<T> deferShareContext(Supplier<? extends Single<T>> singleSupplier) {
+        return new SingleDefer<>(singleSupplier, true);
     }
 
     /**
@@ -1420,7 +1440,7 @@ public abstract class Single<T> implements io.servicetalk.concurrent.Single<T> {
      * @return A {@link Single} that derives results from {@link CompletionStage}.
      */
     public static <T> Single<T> fromStage(CompletionStage<T> stage) {
-        return new CompletionStageToSingle<>(getSinglePlugin().fromCompletionStage(stage));
+        return new CompletionStageToSingle<>(stage);
     }
 
     //
@@ -1432,50 +1452,89 @@ public abstract class Single<T> implements io.servicetalk.concurrent.Single<T> {
     //
 
     /**
-     * Returns the {@link Executor} used for this {@link Single}.
-     *
-     * @return {@link Executor} used for this {@link Single} via {@link #Single(Executor)}.
+     * Replicating a call to {@link #subscribe(Subscriber)} but allows an override of the {@link AsyncContextMap}.
+     * @param subscriber the subscriber.
+     * @param provider the {@link AsyncContextProvider} used to wrap any objects to preserve
+     * {@link AsyncContextMap}.
      */
-    final Executor getExecutor() {
-        return executor;
+    void subscribeCaptureContext(Subscriber<? super T> subscriber, AsyncContextProvider provider) {
+        // Each Subscriber chain should have an isolated AsyncContext due to a new asynchronous scope starting. This is
+        // why we copy the AsyncContext upon external user facing subscribe operations.
+        subscribeWithContext(subscriber, provider.contextMap().copy(), provider);
     }
 
     /**
-     * A special subscribe mode that uses the passed {@link SignalOffloader} instead of creating a new
-     * {@link SignalOffloader} like {@link #subscribe(Subscriber)}. This will call
-     * {@link #handleSubscribe(Subscriber, SignalOffloader)} to handle this subscribe instead of
-     * {@link #handleSubscribe(Subscriber)}.<p>
-     *
-     *     This method is used by operator implementations to inherit a chosen {@link SignalOffloader} per
-     *     {@link Subscriber} where possible.
-     *     This method does not wrap the passed {@link Subscriber} or {@link Cancellable} to offload processing to
-     *     {@link SignalOffloader}.
-     *     That is done by {@link #handleSubscribe(Subscriber, SignalOffloader)} and hence can be overridden by
-     *     operators that do not require this wrapping.
-     *
-     * @param subscriber {@link Subscriber} to this {@link Single}.
-     * @param signalOffloader {@link SignalOffloader} to use for this {@link Subscriber}.
+     * Replicating a call to {@link #subscribe(Subscriber)} but with a materialized {@link AsyncContextMap}.
+     * @param subscriber the subscriber.
+     * @param contextMap the {@link AsyncContextMap} to use for this {@link Subscriber}.
+     * @param contextProvider the {@link AsyncContextProvider} used to wrap any objects to preserve
+     * {@link AsyncContextMap}.
      */
-    final void subscribe(Subscriber<? super T> subscriber, SignalOffloader signalOffloader) {
-        getSinglePlugin().handleSubscribe(requireNonNull(subscriber), signalOffloader, this::handleSubscribe);
+    final void subscribeWithContext(Subscriber<? super T> subscriber, AsyncContextMap contextMap,
+                                    AsyncContextProvider contextProvider) {
+        requireNonNull(subscriber);
+        final SignalOffloader signalOffloader;
+        final Subscriber<? super T> offloadedSubscriber;
+        try {
+            // This is a user-driven subscribe i.e. there is no SignalOffloader override, so create a new SignalOffloader
+            // to use.
+            signalOffloader = newOffloaderFor(executor);
+            // Since this is a user-driven subscribe (end of the execution chain), offload Cancellable
+            offloadedSubscriber = signalOffloader.offloadCancellable(
+                    contextProvider.wrapCancellable(subscriber, contextMap));
+        } catch (Throwable t) {
+            subscriber.onSubscribe(IGNORE_CANCEL);
+            subscriber.onError(t);
+            return;
+        }
+        subscribeWithOffloaderAndContext(offloadedSubscriber, signalOffloader, contextMap, contextProvider);
+    }
+
+    /**
+     * Replicating a call to {@link #subscribe(Subscriber)} but with a materialized {@link SignalOffloader} and
+     * {@link AsyncContextMap}.
+     * @param subscriber the subscriber.
+     * @param signalOffloader {@link SignalOffloader} to use for this {@link org.reactivestreams.Subscriber}.
+     * @param contextMap the {@link AsyncContextMap} to use for this {@link org.reactivestreams.Subscriber}.
+     * @param contextProvider the {@link AsyncContextProvider} used to wrap any objects to preserve
+     * {@link AsyncContextMap}.
+     */
+    final void subscribeWithOffloaderAndContext(Subscriber<? super T> subscriber, SignalOffloader signalOffloader,
+                                                AsyncContextMap contextMap, AsyncContextProvider contextProvider) {
+        // In the event that user code is called synchronously from handleSubscribe (e.g. in overriden method for an
+        // operator implementation) we need to make sure the static AsyncContext is set correctly.
+        AsyncContextMap currentContext = contextProvider.contextMap();
+        try {
+            contextProvider.contextMap(contextMap);
+            handleSubscribe(subscriber, signalOffloader, contextMap, contextProvider);
+        } finally {
+            contextProvider.contextMap(currentContext);
+        }
     }
 
     /**
      * Override for {@link #handleSubscribe(Subscriber)} to offload the {@link #handleSubscribe(Subscriber)} call to the
-     * passed {@link SignalOffloader}. <p>
-     *
-     *     This method wraps the passed {@link Subscriber} using {@link SignalOffloader#offloadSubscriber(Subscriber)}
-     *     and then calls {@link #handleSubscribe(Subscriber)} using
-     *     {@link SignalOffloader#offloadSubscribe(Subscriber, Consumer)}.
-     *     Operators that do not wish to wrap the passed {@link Subscriber} can override this method and omit the
-     *     wrapping.
+     * passed {@link SignalOffloader}.
+     * <p>
+     * This method wraps the passed {@link Subscriber} using {@link SignalOffloader#offloadSubscriber(Subscriber)} and
+     * then calls {@link #handleSubscribe(Subscriber)} using
+     * {@link SignalOffloader#offloadSubscribe(Subscriber, Consumer)}. Operators that do not wish to wrap the passed
+     * {@link Subscriber} can override this method and omit the wrapping.
      *
      * @param subscriber the subscriber.
      * @param signalOffloader {@link SignalOffloader} to use for this {@link Subscriber}.
+     * @param contextMap the {@link AsyncContextMap} to use for this {@link org.reactivestreams.Subscriber}.
+     * @param contextProvider the {@link AsyncContextProvider} used to wrap any objects to preserve
+     * {@link AsyncContextMap}.
      */
-    void handleSubscribe(Subscriber<? super T> subscriber, SignalOffloader signalOffloader) {
-        Subscriber<? super T> offloaded = signalOffloader.offloadSubscriber(subscriber);
-        signalOffloader.offloadSubscribe(offloaded, this::safeHandleSubscribe);
+    void handleSubscribe(Subscriber<? super T> subscriber, SignalOffloader signalOffloader, AsyncContextMap contextMap,
+                         AsyncContextProvider contextProvider) {
+        Subscriber<? super T> offloaded = signalOffloader.offloadSubscriber(
+                contextProvider.wrap(subscriber, contextMap));
+        // TODO(scott): we have to wrap this method to preserve AsyncContext, and we also have to wrap the
+        // safeHandleSubscribe method in the event the offloader calls the safeHandleSubscribe method on another thread.
+        // However if the offloader executes the method synchronously the safeHandleSubscribe wrapping is unnecessary.
+        signalOffloader.offloadSubscribe(offloaded, contextProvider.wrap(this::safeHandleSubscribe, contextMap));
     }
 
     private void safeHandleSubscribe(Subscriber<? super T> subscriber) {
@@ -1496,6 +1555,15 @@ public abstract class Single<T> implements io.servicetalk.concurrent.Single<T> {
             subscriber.onSubscribe(IGNORE_CANCEL);
             subscriber.onError(t);
         }
+    }
+
+    /**
+     * Returns the {@link Executor} used for this {@link Single}.
+     *
+     * @return {@link Executor} used for this {@link Single} via {@link #Single(Executor)}.
+     */
+    final Executor getExecutor() {
+        return executor;
     }
 
     //

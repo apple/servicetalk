@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
+import io.servicetalk.concurrent.internal.SignalOffloader;
 
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
@@ -23,11 +24,12 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.api.PublishAndSubscribeOnCompletables.deliverOnSubscribeAndOnError;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater;
 
-final class TimeoutCompletable extends Completable {
+final class TimeoutCompletable extends AbstractNoHandleSubscribeCompletable {
     private final Completable original;
     private final Executor timeoutExecutor;
     private final long durationNs;
@@ -52,8 +54,10 @@ final class TimeoutCompletable extends Completable {
     }
 
     @Override
-    protected void handleSubscribe(final Subscriber subscriber) {
-        original.subscribe(TimeoutSubscriber.newInstance(this, subscriber));
+    protected void handleSubscribe(final Subscriber subscriber, final SignalOffloader offloader,
+                                   final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
+        original.subscribeWithContext(TimeoutSubscriber.newInstance(this, subscriber, offloader, contextMap,
+                contextProvider), contextMap, contextProvider);
     }
 
     private static final class TimeoutSubscriber implements Subscriber, Cancellable, Runnable {
@@ -75,18 +79,24 @@ final class TimeoutCompletable extends Completable {
             this.target = target;
         }
 
-        static TimeoutSubscriber newInstance(TimeoutCompletable parent, Subscriber target) {
+        static TimeoutSubscriber newInstance(TimeoutCompletable parent, Subscriber target, SignalOffloader offloader,
+                                             AsyncContextMap contextMap, AsyncContextProvider contextProvider) {
             TimeoutSubscriber s = new TimeoutSubscriber(parent, target);
             Cancellable localTimerCancellable;
             try {
+                // We rely upon the timeoutExecutor to save/restore the current context when notifying when the timer
+                // fires. An alternative would be to also wrap the Subscriber to preserve the AsyncContext but that
+                // would result in duplicate wrapping.
+                // The only time this may cause issues if someone disables AsyncContext for the Executor and wants
+                // it enabled for the Subscriber, however the user explicitly specifies the Executor with this operator
+                // so they can wrap the Executor in this case.
                 localTimerCancellable = requireNonNull(
                         parent.timeoutExecutor.schedule(s, parent.durationNs, NANOSECONDS));
             } catch (Throwable cause) {
                 localTimerCancellable = IGNORE_CANCEL;
                 // We must set this to ignore so there are no further interactions with Subscriber in the future.
                 s.cancellable = LOCAL_IGNORE_CANCEL;
-                target.onSubscribe(IGNORE_CANCEL);
-                target.onError(cause);
+                deliverOnSubscribeAndOnError(target, offloader, contextMap, contextProvider, cause);
             }
             s.timerCancellable = localTimerCancellable;
             return s;

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,21 +24,23 @@ final class ContextPreservingCallable<V> implements Callable<V> {
     private final AsyncContextMap saved;
     private final Callable<V> delegate;
 
-    @SuppressWarnings("unchecked")
     ContextPreservingCallable(Callable<V> delegate) {
-        this.saved = INSTANCE.getContextMap();
-        this.delegate = delegate instanceof ContextPreservingCallable ?
-                ((ContextPreservingCallable<V>) delegate).delegate : requireNonNull(delegate);
+        this(delegate, INSTANCE.contextMap());
+    }
+
+    ContextPreservingCallable(Callable<V> delegate, AsyncContextMap current) {
+        this.saved = requireNonNull(current);
+        this.delegate = requireNonNull(delegate);
     }
 
     @Override
     public V call() throws Exception {
-        AsyncContextMap prev = INSTANCE.getContextMap();
+        AsyncContextMap prev = INSTANCE.contextMap();
         try {
-            INSTANCE.setContextMap(saved);
+            INSTANCE.contextMap(saved);
             return delegate.call();
         } finally {
-            INSTANCE.setContextMap(prev);
+            INSTANCE.contextMap(prev);
         }
     }
 }

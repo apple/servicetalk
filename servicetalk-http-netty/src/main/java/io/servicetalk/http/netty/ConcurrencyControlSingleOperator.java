@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,6 @@
  */
 package io.servicetalk.http.netty;
 
-import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.client.internal.RequestConcurrencyController;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.Single.Subscriber;
@@ -90,10 +89,10 @@ final class ConcurrencyControlSingleOperator
             if (response == null) {
                 sendNullResponse();
             } else if (stateUpdater.compareAndSet(ConcurrencyControlSingleOperator.this, IDLE, TERMINATED)) {
-                subscriber.onSuccess(response.transformPayloadBody(payload ->
+                subscriber.onSuccess(response.transformRawPayloadBody(payload ->
                         payload.doBeforeFinally(limiter::requestFinished)));
             } else if (state == CANCELLED) {
-                subscriber.onSuccess(response.transformPayloadBody(payload -> {
+                subscriber.onSuccess(response.transformRawPayloadBody(payload -> {
                     // We have been cancelled. Subscribe and cancel the content so that we do not hold up the
                     // connection and indicate that there is no one else that will subscribe.
                     payload.subscribe(CancelImmediatelySubscriber.INSTANCE);
@@ -119,7 +118,7 @@ final class ConcurrencyControlSingleOperator
         }
     }
 
-    private static final class CancelImmediatelySubscriber implements org.reactivestreams.Subscriber<Buffer> {
+    private static final class CancelImmediatelySubscriber implements org.reactivestreams.Subscriber<Object> {
 
         static final CancelImmediatelySubscriber INSTANCE = new CancelImmediatelySubscriber();
 
@@ -134,7 +133,7 @@ final class ConcurrencyControlSingleOperator
         }
 
         @Override
-        public void onNext(final Buffer buffer) {
+        public void onNext(final Object obj) {
             // Can not be here since we never request.
         }
 

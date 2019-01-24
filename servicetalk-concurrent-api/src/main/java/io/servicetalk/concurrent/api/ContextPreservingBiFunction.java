@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,20 +24,19 @@ final class ContextPreservingBiFunction<T, U, V> implements BiFunction<T, U, V> 
     private final AsyncContextMap saved;
     private final BiFunction<T, U, V> delegate;
 
-    ContextPreservingBiFunction(BiFunction<T, U, V> delegate) {
-        this.saved = INSTANCE.getContextMap();
-        this.delegate = delegate instanceof ContextPreservingBiFunction ?
-                ((ContextPreservingBiFunction<T, U, V>) delegate).delegate : requireNonNull(delegate);
+    ContextPreservingBiFunction(BiFunction<T, U, V> delegate, AsyncContextMap contextMap) {
+        this.saved = requireNonNull(contextMap);
+        this.delegate = requireNonNull(delegate);
     }
 
     @Override
     public V apply(T t, U u) {
-        AsyncContextMap prev = INSTANCE.getContextMap();
+        AsyncContextMap prev = INSTANCE.contextMap();
         try {
-            INSTANCE.setContextMap(saved);
+            INSTANCE.contextMap(saved);
             return delegate.apply(t, u);
         } finally {
-            INSTANCE.setContextMap(prev);
+            INSTANCE.contextMap(prev);
         }
     }
 }

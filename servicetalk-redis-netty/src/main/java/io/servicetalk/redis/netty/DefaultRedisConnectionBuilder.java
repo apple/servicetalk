@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,6 +42,7 @@ import java.util.function.Function;
 import java.util.function.UnaryOperator;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.api.Single.deferShareContext;
 import static io.servicetalk.redis.api.RedisConnectionFilterFactory.identity;
 import static io.servicetalk.redis.netty.InternalSubscribedRedisConnection.newSubscribedConnection;
 import static io.servicetalk.redis.netty.PipelinedRedisConnection.newPipelinedConnection;
@@ -263,17 +264,14 @@ public final class DefaultRedisConnectionBuilder<ResolvedAddress> implements Red
                                                  ResolvedAddress resolvedAddress,
                                                  ReadOnlyRedisClientConfig roConfig,
                                    Function<NettyConnection<RedisData, ByteBuf>, RedisConnection> mapper) {
-        return new Single<RedisConnection>() {
-            @Override
-            protected void handleSubscribe(final Subscriber<? super RedisConnection> subscriber) {
-                final ReadOnlyTcpClientConfig roTcpConfig = roConfig.getTcpClientConfig();
-                final ChannelInitializer initializer = new TcpClientChannelInitializer(roTcpConfig)
-                        .andThen(new RedisClientChannelInitializer());
+        return deferShareContext(() -> {
+            final ReadOnlyTcpClientConfig roTcpConfig = roConfig.getTcpClientConfig();
+            final ChannelInitializer initializer = new TcpClientChannelInitializer(roTcpConfig)
+                    .andThen(new RedisClientChannelInitializer());
 
-                final TcpConnector<RedisData, ByteBuf> connector =
-                        new TcpConnector<>(roTcpConfig, initializer, () -> o -> false);
-                connector.connect(executionContext, resolvedAddress).map(mapper).subscribe(subscriber);
-            }
-        };
+            final TcpConnector<RedisData, ByteBuf> connector =
+                    new TcpConnector<>(roTcpConfig, initializer, () -> o -> false);
+            return connector.connect(executionContext, resolvedAddress).map(mapper);
+        });
     }
 }

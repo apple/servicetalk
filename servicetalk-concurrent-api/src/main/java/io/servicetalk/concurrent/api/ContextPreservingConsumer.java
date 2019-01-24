@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,20 +24,19 @@ final class ContextPreservingConsumer<T> implements Consumer<T> {
     private final AsyncContextMap saved;
     private final Consumer<T> delegate;
 
-    ContextPreservingConsumer(Consumer<T> delegate) {
-        this.saved = INSTANCE.getContextMap();
-        this.delegate = delegate instanceof ContextPreservingConsumer ?
-                ((ContextPreservingConsumer<T>) delegate).delegate : requireNonNull(delegate);
+    ContextPreservingConsumer(Consumer<T> delegate, AsyncContextMap current) {
+        this.saved = requireNonNull(current);
+        this.delegate = requireNonNull(delegate);
     }
 
     @Override
     public void accept(T t) {
-        AsyncContextMap prev = INSTANCE.getContextMap();
+        AsyncContextMap prev = INSTANCE.contextMap();
         try {
-            INSTANCE.setContextMap(saved);
+            INSTANCE.contextMap(saved);
             delegate.accept(t);
         } finally {
-            INSTANCE.setContextMap(prev);
+            INSTANCE.contextMap(prev);
         }
     }
 }

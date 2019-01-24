@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,8 +48,10 @@ final class CompletableMergeWithPublisher<T> extends AbstractNoHandleSubscribePu
     }
 
     @Override
-    void handleSubscribe(final Subscriber<? super T> subscriber, final SignalOffloader signalOffloader) {
-        new Merger<>(subscriber, signalOffloader).merge(original, mergeWith, signalOffloader);
+    void handleSubscribe(final Subscriber<? super T> subscriber, final SignalOffloader signalOffloader,
+                         final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
+        new Merger<>(subscriber, signalOffloader, contextMap, contextProvider)
+                .merge(original, mergeWith, signalOffloader, contextMap, contextProvider);
     }
 
     private static final class Merger<T> implements Subscriber<T> {
@@ -73,35 +75,31 @@ final class CompletableMergeWithPublisher<T> extends AbstractNoHandleSubscribePu
         private final Subscriber<? super T> offloadedSubscriber;
         private final DelayedSubscription subscription = new DelayedSubscription();
 
-        Merger(Subscriber<? super T> subscriber, SignalOffloader signalOffloader) {
+        Merger(Subscriber<? super T> subscriber, SignalOffloader signalOffloader, AsyncContextMap contextMap,
+               AsyncContextProvider contextProvider) {
+            // The CompletableSubscriber and offloadedSubscriber may interact with the subscriber, so we need to wrap it
+            // and make sure the expected context is restored.
+            subscriber = contextProvider.wrap(subscriber, contextMap);
+
             completableSubscriber = new CompletableSubscriber(subscriber);
-            // This is used only to deliver signals that original from the mergeWith Publisher. Since, we need to
+            // This is used only to deliver signals that originate from the mergeWith Publisher. Since, we need to
             // preserve the threading semantics of the original Completable, we offload the subscriber so that we do not
             // invoke it from the mergeWith Publisher Executor thread.
             this.offloadedSubscriber = signalOffloader.offloadSubscriber(subscriber);
         }
 
-        void merge(Completable original, Publisher<? extends T> mergeWith, SignalOffloader signalOffloader) {
-            offloadedSubscriber.onSubscribe(new Subscription() {
-                @Override
-                public void request(long n) {
-                    subscription.request(n);
-                }
-
-                @Override
-                public void cancel() {
-                    subscription.cancel();
-                    completableSubscriber.cancel();
-                }
-            });
-            original.subscribe(completableSubscriber, signalOffloader);
+        void merge(Completable original, Publisher<? extends T> mergeWith, SignalOffloader signalOffloader,
+                   AsyncContextMap contextMap, AsyncContextProvider contextProvider) {
+            offloadedSubscriber.onSubscribe(new MergedCancellableWithSubscription(subscription, completableSubscriber));
+            original.subscribeWithOffloaderAndContext(completableSubscriber, signalOffloader, contextMap,
+                    contextProvider);
             // SignalOffloader is associated with the original Completable. Since mergeWith Publisher is provided by
             // the user, it will have its own Executor, hence we should not pass this signalOffloader to subscribe to
             // mergeWith.
             // Any signal originating from mergeWith Publisher should be offloaded before they are sent to the
             // Subscriber of the resulting Publisher of CompletableMergeWithPublisher as the Executor associated with
             // the original Completable defines the threading semantics for that Subscriber.
-            mergeWith.subscribe(this);
+            mergeWith.subscribeWithContext(this, contextMap.copy(), contextProvider);
         }
 
         @Override

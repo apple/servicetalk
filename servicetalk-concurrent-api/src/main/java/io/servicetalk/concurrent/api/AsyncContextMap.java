@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -94,7 +94,7 @@ public interface AsyncContextMap {
      * @return {@code true} if this context contains a key/value entry corresponding to {@code key}.
      * {@code false} otherwise.
      */
-    boolean contains(AsyncContextMap.Key<?> key);
+    boolean containsKey(AsyncContextMap.Key<?> key);
 
     /**
      * Determine if there are no key/value pairs in this {@link AsyncContextMap}.
@@ -110,88 +110,58 @@ public interface AsyncContextMap {
     int size();
 
     /**
-     * Return a new context with {@code key=value} added.
+     * Put a new key/value pair into this {@link AsyncContextMap}.
      *
      * @param key   the key used to index {@code value}. Cannot be {@code null}.
      * @param value the value to put.
      * @param <T>   The type of object associated with {@code key}.
-     * @return A {@link AsyncContextMap} object which contains the new key/value entry.
-     * If the {@link AsyncContextMap} implementation is immutable this may be a new object.
-     * @throws NullPointerException if {@code key} is {@code null}, or {@code value} is {@code null} and the
-     * implementation doesn't support {@code null} values.
+     * @return The previous value associated with the {@code key}, or {@code null} if there was none. A {@code null}
+     * value may also indicate there was a previous value which was {@code null}.
+     * @throws NullPointerException if {@code key} is {@code null}, or {@code value} is {@code null}.
      * @throws UnsupportedOperationException if this method is not supported.
      */
-    <T> AsyncContextMap put(AsyncContextMap.Key<T> key, @Nullable T value);
+    @Nullable
+    <T> T put(AsyncContextMap.Key<T> key, T value);
 
     /**
-     * Return a new context with key/value pairs from another context added.
-     * <p>
-     * Multiple iterations over {@code context} may be done, and so this object must be unmodified until this method
-     * completes.
-     *
-     * @param context All of the key/value pairs from {@code context} will be insert into this {@link AsyncContextMap}.
-     * @return A {@link AsyncContextMap} object which contains all the key/value pairs in {@code context}.
-     * If the {@link AsyncContextMap} implementation is immutable this may be a new object.
-     * @throws ConcurrentModificationException Done on a best effort basis if {@code context} is detected to be modified
-     * while attempting to put all entries.
-     */
-    AsyncContextMap putAll(AsyncContextMap context);
-
-    /**
-     * Return a new context with key/value pairs added.
-     * <p>
-     * Multiple iterations over {@code entries} may be done, and so the object must be unmodified until this method
-     * completes.
+     * Put all the key/value pairs into this {@link AsyncContextMap}.
      *
      * @param map The entries to insert into this {@link AsyncContextMap}.
-     * @return A {@link AsyncContextMap} object which contains all the key/value pairs in {@code entries}.
-     * If the {@link AsyncContextMap} implementation is immutable this may be a new object.
      * @throws ConcurrentModificationException Done on a best effort basis if {@code entries} is detected to be modified
      * while attempting to put all entries.
+     * @throws UnsupportedOperationException if this method is not supported.
      */
-    AsyncContextMap putAll(Map<AsyncContextMap.Key<?>, Object> map);
+    void putAll(Map<AsyncContextMap.Key<?>, Object> map);
 
     /**
-     * Return a new context with a key removed.
+     * Remove a key/value pair from this {@link AsyncContextMap}, and get the previous value (if one exists).
      *
      * @param key The key which identifies the key/value to remove.
-     * @return this If this object did not contain an entry corresponding to {@code key}.
-     * Otherwise a {@link AsyncContextMap} object which does not contain an entry corresponding to {@code key}.
+     * @param <T> The type of object associated with {@code key}.
+     * @return the previous value associated with {@code key}, or {@code null} if there was none. A {@code null}
+     * value may also indicate there was a previous value which was {@code null}.
      * If the {@link AsyncContextMap} implementation is immutable this may be a new object.
+     * @throws UnsupportedOperationException if this method is not supported.
      */
-    AsyncContextMap remove(AsyncContextMap.Key<?> key);
+    @Nullable
+     <T> T remove(AsyncContextMap.Key<T> key);
 
     /**
-     * Return a new context with key/value pairs from another context removed.
-     * <p>The {@code context} object must be unmodified until this method completes.
-     *
-     * @param context All of the keys from {@code context} will be removed from this {@link AsyncContextMap}.
-     * @return A {@link AsyncContextMap} object which contains all the key/value pairs in {@code entries}.
-     * If the {@link AsyncContextMap} implementation is immutable this may be a new object.
-     * @throws ConcurrentModificationException Done on a best effort basis if {@code entries} is detected to be modified
-     * while attempting to remove all entries.
-     */
-    AsyncContextMap removeAll(AsyncContextMap context);
-
-    /**
-     * Return a new context with key/value pairs removed.
-     * <p>The {@code entries} object must be unmodified until this method completes.
+     * Remove all key/value pairs from this {@link AsyncContextMap} associated with the keys from the {@link Iterable}.
      *
      * @param entries The entries to remove from this {@link AsyncContextMap}.
-     * @return A {@link AsyncContextMap} object which contains all the key/value pairs in {@code entries}.
-     * If the {@link AsyncContextMap} implementation is immutable this may be a new object.
+     * @return {@code true} if this map has changed as a result of this operation.
      * @throws ConcurrentModificationException Done on a best effort basis if {@code entries} is detected to be modified
      * while attempting to remove all entries.
+     * @throws UnsupportedOperationException if this method is not supported.
      */
-    AsyncContextMap removeAll(Iterable<AsyncContextMap.Key<?>> entries);
+    boolean removeAll(Iterable<AsyncContextMap.Key<?>> entries);
 
     /**
-     * Return an empty context.
-     *
-     * @return A {@link AsyncContextMap} with no key/value entries.
-     * If the {@link AsyncContextMap} implementation is immutable this may be a new object.
+     * Clear the contents of this {@link AsyncContextMap}.
+     * @throws UnsupportedOperationException if this method is not supported.
      */
-    AsyncContextMap clear();
+    void clear();
 
     /**
      * Iterate over the key/value pairs contained in this request context.
@@ -203,4 +173,14 @@ public interface AsyncContextMap {
      */
     @Nullable
     AsyncContextMap.Key<?> forEach(BiPredicate<Key<?>, Object> consumer);
+
+    /**
+     * Create an isolated copy of the current map. The return value contents are the same as this
+     * {@link AsyncContextMap} but modifications to this {@link AsyncContextMap} are not visible in the return value,
+     * and visa-versa.
+     *
+     * @return an isolated copy of the current map. Tcontents are the same as this {@link AsyncContextMap} but
+     * modifications to this {@link AsyncContextMap} are not visible in the return value, and visa-versa.
+     */
+    AsyncContextMap copy();
 }

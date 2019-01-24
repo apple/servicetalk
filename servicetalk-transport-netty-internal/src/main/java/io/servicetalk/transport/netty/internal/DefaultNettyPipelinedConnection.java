@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +25,6 @@ import io.servicetalk.concurrent.internal.SequentialCancellable;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.netty.internal.NettyConnection.RequestNSupplier;
 
-import org.reactivestreams.Subscriber;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -126,26 +125,19 @@ public final class DefaultNettyPipelinedConnection<Req, Resp> implements NettyPi
         return writeOrQueue(connection.write(request, requestNSupplierFactory), terminalMsgPredicateSupplier);
     }
 
-    private Publisher<Resp> requestWithWriter(Writer writer, @Nullable Supplier<Predicate<Resp>> terminalMsgPredicateSupplier) {
-        return writeOrQueue(new Completable() {
-            @Override
-            protected void handleSubscribe(Subscriber subscriber) {
-                writer.write().subscribe(subscriber);
-            }
-        }, terminalMsgPredicateSupplier);
+    private Publisher<Resp> requestWithWriter(Writer writer,
+                                              @Nullable Supplier<Predicate<Resp>> terminalMsgPredicateSupplier) {
+        return writeOrQueue(Completable.deferShareContext(() -> writer.write()), terminalMsgPredicateSupplier);
     }
 
-    private Publisher<Resp> writeOrQueue(Completable completable, @Nullable Supplier<Predicate<Resp>> terminalMsgPredicateSupplier) {
-        return new Publisher<Resp>() {
-            @Override
-            protected void handleSubscribe(Subscriber<? super Resp> subscriber) {
-                writeOrQueueRequest(completable, terminalMsgPredicateSupplier == null ? null : terminalMsgPredicateSupplier.get())
-                        .subscribe(subscriber);
-            }
-        };
+    private Publisher<Resp> writeOrQueue(Completable completable,
+                                         @Nullable Supplier<Predicate<Resp>> terminalMsgPredicateSupplier) {
+        return Publisher.deferShareContext(() -> writeOrQueueRequest(completable, terminalMsgPredicateSupplier == null ?
+                null : terminalMsgPredicateSupplier.get()));
     }
 
-    private Publisher<Resp> writeOrQueueRequest(Completable completable, @Nullable Predicate<Resp> terminalMsgPredicate) {
+    private Publisher<Resp> writeOrQueueRequest(Completable completable,
+                                                @Nullable Predicate<Resp> terminalMsgPredicate) {
         return new Completable() {
             @Override
             protected void handleSubscribe(Subscriber subscriber) {
@@ -251,7 +243,8 @@ public final class DefaultNettyPipelinedConnection<Req, Resp> implements NettyPi
             if (predicate != null) {
                 terminalMsgPredicate.replaceCurrent(predicate);
             }
-            // Trigger subscription to the read Publisher. postTaskTermination will be called when response stream completes.
+            // Trigger subscription to the read Publisher. postTaskTermination will be called when response stream
+            // completes.
             toExecute.readReadyListener.onComplete();
         }
     }
@@ -263,7 +256,8 @@ public final class DefaultNettyPipelinedConnection<Req, Resp> implements NettyPi
         @Nullable
         final Predicate<Resp> terminalMsgPredicate;
 
-        Task(Completable write, Completable.Subscriber readReadyListener, @Nullable Predicate<Resp> terminalMsgPredicate) {
+        Task(Completable write, Completable.Subscriber readReadyListener,
+             @Nullable Predicate<Resp> terminalMsgPredicate) {
             this.write = requireNonNull(write);
             this.readReadyListener = requireNonNull(readReadyListener);
             this.terminalMsgPredicate = terminalMsgPredicate;

@@ -20,11 +20,12 @@ import java.net.ConnectException;
 /**
  * Throws when a connect operations failed because of a timeout.
  */
-public class ConnectTimeoutException extends ConnectException {
+public class ConnectTimeoutException extends ConnectException implements RetryableException {
     private static final long serialVersionUID = 2317065249988317463L;
 
     /**
      * Create a new instance.
+     *
      * @param message the message.
      * @param cause the original cause.
      */

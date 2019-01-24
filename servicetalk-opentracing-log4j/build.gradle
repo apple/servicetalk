@@ -31,10 +31,21 @@ apply plugin: "servicetalk-library"
 dependencies {
   implementation "io.servicetalk:servicetalk-bom-internal:$project.version"
 
-  api "io.servicetalk:servicetalk-opentracing-inmemory-api:$project.version"
-  implementation "org.apache.logging.log4j:log4j-api:$log4jVersion"
+  api "io.servicetalk:servicetalk-log4j2-mdc-internal:$project.version"
 
   implementation "com.google.code.findbugs:jsr305"
+  implementation "org.apache.logging.log4j:log4j-api:$log4jVersion"
   implementation "io.servicetalk:servicetalk-annotations:$project.version"
+  implementation "io.servicetalk:servicetalk-opentracing-inmemory-api:$project.version"
+  implementation "io.servicetalk:servicetalk-opentracing-asynccontext:$project.version"
   implementation "org.slf4j:slf4j-api"
+
+  // Just for javadocs
+  implementation "io.servicetalk:servicetalk-concurrent-api:$project.version"
+
+  testImplementation "junit:junit"
+  testImplementation "org.hamcrest:hamcrest-library"
+  testImplementation "org.apache.logging.log4j:log4j-slf4j-impl"
+  testImplementation "org.apache.logging.log4j:log4j-core"
+  testImplementation "io.servicetalk:servicetalk-log4j2-mdc-internal-testFixtures:$project.version"
 }

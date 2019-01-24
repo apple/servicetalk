@@ -15,8 +15,8 @@
  */
 package io.servicetalk.redis.netty;
 
+import io.servicetalk.concurrent.api.DefaultThreadFactory;
 import io.servicetalk.concurrent.api.Executor;
-import io.servicetalk.concurrent.internal.DefaultThreadFactory;
 import io.servicetalk.redis.api.RedisClient;
 import io.servicetalk.redis.api.RedisData;
 import io.servicetalk.redis.utils.RetryingRedisRequesterFilter;

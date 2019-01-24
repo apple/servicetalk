@@ -41,6 +41,10 @@ dependencies {
   testImplementation "io.servicetalk:servicetalk-test-resources:$project.version"
   testImplementation "junit:junit"
   testImplementation "org.slf4j:slf4j-api"
+
+  testFixturesImplementation "org.apache.logging.log4j:log4j-slf4j-impl"
+  testFixturesImplementation "org.apache.logging.log4j:log4j-core"
+  testFixturesImplementation "org.hamcrest:hamcrest-library"
 }
 
 test {

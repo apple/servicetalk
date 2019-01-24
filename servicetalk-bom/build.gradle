@@ -74,7 +74,6 @@ dependencyManagement {
     dependency "io.servicetalk:servicetalk-redis-internal:$project.version"
     dependency "io.servicetalk:servicetalk-redis-netty:$project.version"
     dependency "io.servicetalk:servicetalk-redis-utils:$project.version"
-    dependency "io.servicetalk:servicetalk-rxjava-context:$project.version"
     dependency "io.servicetalk:servicetalk-serialization-api:$project.version"
     dependency "io.servicetalk:servicetalk-tcp-netty-internal:$project.version"
     dependency "io.servicetalk:servicetalk-tcp-netty-internal-testFixtures:$project.version"

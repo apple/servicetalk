@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -217,12 +217,11 @@ final class NettyHttpServerConnection extends HttpServiceContext implements Nett
         if (cause instanceof RejectedExecutionException) {
             LOGGER.error("Task rejected by Executor {} for service={}, connection={}", executor, service, this, cause);
             response = streamingResponseFactory().serviceUnavailable().version(version);
-            response.setHeader(CONTENT_LENGTH, ZERO);
         } else {
             LOGGER.error("Internal server error service={} connection={}", service, this, cause);
             response = streamingResponseFactory().internalServerError().version(version);
-            response.setHeader(CONTENT_LENGTH, ZERO);
         }
+        response.setHeader(CONTENT_LENGTH, ZERO);
         addResponseTransferEncodingIfNecessary(response, requestMethod);
         keepAlive.addConnectionHeaderIfNecessary(response);
         return success(response);
