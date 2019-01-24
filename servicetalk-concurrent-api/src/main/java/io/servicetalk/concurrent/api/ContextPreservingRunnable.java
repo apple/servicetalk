@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,19 +23,22 @@ final class ContextPreservingRunnable implements Runnable {
     private final Runnable delegate;
 
     ContextPreservingRunnable(Runnable delegate) {
-        this.saved = INSTANCE.getContextMap();
-        this.delegate = delegate instanceof ContextPreservingRunnable ?
-                ((ContextPreservingRunnable) delegate).delegate : requireNonNull(delegate);
+        this(delegate, INSTANCE.contextMap());
+    }
+
+    ContextPreservingRunnable(Runnable delegate, AsyncContextMap current) {
+        this.saved = requireNonNull(current);
+        this.delegate = requireNonNull(delegate);
     }
 
     @Override
     public void run() {
-        AsyncContextMap prev = INSTANCE.getContextMap();
+        AsyncContextMap prev = INSTANCE.contextMap();
         try {
-            INSTANCE.setContextMap(saved);
+            INSTANCE.contextMap(saved);
             delegate.run();
         } finally {
-            INSTANCE.setContextMap(prev);
+            INSTANCE.contextMap(prev);
         }
     }
 }

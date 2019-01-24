@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -225,12 +225,7 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends ListenableA
 
     @Override
     public <CC extends C> Single<CC> selectConnection(Function<C, CC> selector) {
-        return new Single<CC>() {
-            @Override
-            protected void handleSubscribe(Subscriber<? super CC> subscriber) {
-                selectConnection0(selector).subscribe(subscriber);
-            }
-        };
+        return Single.deferShareContext(() -> selectConnection0(selector));
     }
 
     @Override

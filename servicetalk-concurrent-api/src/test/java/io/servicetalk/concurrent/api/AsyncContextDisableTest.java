@@ -26,6 +26,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.fail;
 
 public class AsyncContextDisableTest {
     @Rule
@@ -51,17 +52,17 @@ public class AsyncContextDisableTest {
                         .toFuture().get();
                 assertEquals(expectedValue, actualValue.get());
                 actualValue.set(null);
-                Completable.completed().publishOn(executor).doBeforeComplete(() -> actualValue.set(AsyncContext.get(K1)))
-                        .toFuture().get();
+                Completable.completed().publishOn(executor)
+                        .doBeforeComplete(() -> actualValue.set(AsyncContext.get(K1))).toFuture().get();
                 assertEquals(expectedValue, actualValue.get());
                 actualValue.set(null);
 
                 AsyncContext.disable();
                 try {
-                    // Create a new Executor after we have disabled AsyncContext so we can be sure that AsyncContext won't
-                    // be captured.
+                    // Create a new Executor after we have disabled AsyncContext so we can be sure that AsyncContext
+                    // won't be captured.
                     executor2 = Executors.newCachedThreadExecutor();
-                    AsyncContext.put(K1, expectedValue);
+                    asyncContextPutIgnoreUnsupported(K1, expectedValue);
                     assertNull(executor2.submit(() -> AsyncContext.get(K1)).toFuture().get());
                 } finally {
                     AsyncContext.enable();
@@ -82,20 +83,20 @@ public class AsyncContextDisableTest {
             try {
                 Executor executor = Executors.newCachedThreadExecutor();
                 try {
-                    AsyncContext.put(K1, "foo");
+                    asyncContextPutIgnoreUnsupported(K1, "foo");
                     assertNull(executor.submit(() -> AsyncContext.get(K1)).toFuture().get());
 
                     AtomicReference<String> actualValue = new AtomicReference<>();
-                    Publisher.from(1, 2).publishOn(executor).doBeforeComplete(() -> actualValue.set(AsyncContext.get(K1)))
-                            .toFuture().get();
+                    Publisher.from(1, 2).publishOn(executor)
+                            .doBeforeComplete(() -> actualValue.set(AsyncContext.get(K1))).toFuture().get();
                     assertNull(actualValue.get());
                     actualValue.set(null);
                     Single.success(1).publishOn(executor).doBeforeSuccess(i -> actualValue.set(AsyncContext.get(K1)))
                             .toFuture().get();
                     assertNull(actualValue.get());
                     actualValue.set(null);
-                    Completable.completed().publishOn(executor).doBeforeComplete(() -> actualValue.set(AsyncContext.get(K1)))
-                            .toFuture().get();
+                    Completable.completed().publishOn(executor)
+                            .doBeforeComplete(() -> actualValue.set(AsyncContext.get(K1))).toFuture().get();
                     assertNull(actualValue.get());
                     actualValue.set(null);
                 } finally {
@@ -104,6 +105,15 @@ public class AsyncContextDisableTest {
             } finally {
                 AsyncContext.enable();
             }
+        }
+    }
+
+    private static <T> void asyncContextPutIgnoreUnsupported(Key<T> key, T value) {
+        try {
+            AsyncContext.put(key, value);
+            fail(UnsupportedOperationException.class + " exception expected but not seen");
+        } catch (UnsupportedOperationException ignored) {
+            // expected
         }
     }
 }

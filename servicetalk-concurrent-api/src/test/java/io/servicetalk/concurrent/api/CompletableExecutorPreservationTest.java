@@ -15,8 +15,6 @@
  */
 package io.servicetalk.concurrent.api;
 
-import io.servicetalk.concurrent.internal.DefaultThreadFactory;
-
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,6 +29,7 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.api.PublishAndSubscribeOnPublishers.deliverOnSubscribeAndOnError;
 import static io.servicetalk.concurrent.internal.EmptySubscription.EMPTY_SUBSCRIPTION;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.SUBSCRIBER_STATE_TERMINATED;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.checkTerminationValidWithConcurrentOnNextCheck;
@@ -85,8 +86,10 @@ final class TimeoutPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
     }
 
     @Override
-    void handleSubscribe(Subscriber<? super T> subscriber, SignalOffloader signalOffloader) {
-        original.subscribe(TimeoutSubscriber.newInstance(this, subscriber, signalOffloader), signalOffloader);
+    void handleSubscribe(Subscriber<? super T> subscriber, SignalOffloader signalOffloader,
+                         AsyncContextMap contextMap, AsyncContextProvider contextProvider) {
+        original.subscribeWithOffloaderAndContext(TimeoutSubscriber.newInstance(this, subscriber, signalOffloader,
+                contextMap, contextProvider), signalOffloader, contextMap, contextProvider);
     }
 
     private static final class TimeoutSubscriber<X> implements Subscriber<X>, Subscription, Runnable {
@@ -114,6 +117,7 @@ final class TimeoutPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
         private final TimeoutPublisher<X> parent;
         private final Subscriber<? super X> target;
         private final SignalOffloader signalOffloader;
+        private final AsyncContextProvider contextProvider;
         @Nullable
         private volatile Subscription subscription;
         private volatile int subscriberState;
@@ -134,24 +138,35 @@ final class TimeoutPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
 
         private TimeoutSubscriber(TimeoutPublisher<X> parent,
                                   Subscriber<? super X> target,
-                                  SignalOffloader signalOffloader) {
+                                  SignalOffloader signalOffloader,
+                                  AsyncContextProvider contextProvider) {
             this.parent = parent;
             this.target = target;
             this.signalOffloader = signalOffloader;
+            this.contextProvider = contextProvider;
         }
 
         static <X> TimeoutSubscriber<X> newInstance(TimeoutPublisher<X> parent,
                                                     Subscriber<? super X> target,
-                                                    SignalOffloader signalOffloader) {
-            TimeoutSubscriber<X> s = new TimeoutSubscriber<>(parent, target, signalOffloader);
+                                                    SignalOffloader signalOffloader,
+                                                    AsyncContextMap contextMap,
+                                                    AsyncContextProvider contextProvider) {
+            TimeoutSubscriber<X> s = new TimeoutSubscriber<>(parent, target, signalOffloader, contextProvider);
             try {
                 s.lastOnNextNs = nanoTime();
                 // CAS is just in case the timer fired, the run method schedule a new timer before this thread is able
                 // to set the initial timer value. in this case we don't want to overwrite the active timer.
+                //
+                // We rely upon the timeoutExecutor to save/restore the current context when notifying when the timer
+                // fires. An alternative would be to also wrap the Subscriber to preserve the AsyncContext but that
+                // would result in duplicate wrapping.
+                // The only time this may cause issues if someone disables AsyncContext for the Executor and wants
+                // it enabled for the Subscriber, however the user explicitly specifies the Executor with this operator
+                // so they can wrap the Executor in this case.
                 timerCancellableUpdater.compareAndSet(s, null, requireNonNull(
                         parent.timeoutExecutor.schedule(s, parent.durationNs, NANOSECONDS)));
             } catch (Throwable cause) {
-                handleConstructorException(s, cause);
+                handleConstructorException(s, signalOffloader, contextMap, contextProvider, cause);
             }
             return s;
         }
@@ -278,7 +293,7 @@ final class TimeoutPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
         }
 
         private void offloadTimeout(Throwable cause) {
-            signalOffloader.offloadSignal(cause, this::processTimeout);
+            signalOffloader.offloadSignal(cause, contextProvider.wrap(this::processTimeout));
         }
 
         private void processTimeout(Throwable cause) {
@@ -313,13 +328,14 @@ final class TimeoutPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
          * This is unlikely to occur, so we extract the code into a private method.
          * @param cause The exception.
          */
-        private static <X> void handleConstructorException(TimeoutSubscriber<X> s, Throwable cause) {
+        private static <X> void handleConstructorException(TimeoutSubscriber<X> s, SignalOffloader offloader,
+                                                           AsyncContextMap contextMap,
+                                                           AsyncContextProvider contextProvider, Throwable cause) {
             // We must set local state so there are no further interactions with Subscriber in the future.
             s.timerCancellable = LOCAL_IGNORE_CANCEL;
             s.subscriberState = SUBSCRIBER_STATE_TERMINATED;
             s.subscription = EMPTY_SUBSCRIPTION;
-            s.target.onSubscribe(EMPTY_SUBSCRIPTION);
-            s.target.onError(cause);
+            deliverOnSubscribeAndOnError(s.target, offloader, contextMap, contextProvider, cause);
         }
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,24 +15,35 @@
  */
 package io.servicetalk.transport.netty;
 
-import io.netty.util.concurrent.DefaultThreadFactory;
+import io.servicetalk.concurrent.api.AsyncContextMap;
+import io.servicetalk.concurrent.api.AsyncContextMapHolder;
+
+import io.netty.util.concurrent.FastThreadLocalThread;
 
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.atomic.AtomicInteger;
+import javax.annotation.Nullable;
+
+import static java.lang.Thread.NORM_PRIORITY;
+import static java.util.Objects.requireNonNull;
 
 /**
  * Default {@link ThreadFactory} to create IO {@link Thread}s.
  */
 public final class IoThreadFactory implements ThreadFactory {
-
-    // Just delegate to the Netty ThreadFactory and not extend it so we do not leak netty types in our public api.
-    private final ThreadFactory factory;
+    private static final AtomicInteger factoryCount = new AtomicInteger();
+    private final AtomicInteger threadCount = new AtomicInteger();
+    private final String namePrefix;
+    private final boolean daemon;
+    private final int priority;
+    private final ThreadGroup threadGroup;
 
     /**
      * Create a new instance.
      * @param threadNamePrefix the name prefix used for the created {@link Thread}s.
      */
     public IoThreadFactory(String threadNamePrefix) {
-        factory = new DefaultThreadFactory(threadNamePrefix, false, Thread.NORM_PRIORITY);
+        this(threadNamePrefix, false);
     }
 
     /**
@@ -40,12 +51,45 @@ public final class IoThreadFactory implements ThreadFactory {
      * @param threadNamePrefix the name prefix used for the created {@link Thread}s.
      * @param daemon {@code true} if the created {@link Thread} should be a daemon thread.
      */
+    @SuppressWarnings("PMD.AvoidThreadGroup")
     public IoThreadFactory(String threadNamePrefix, boolean daemon) {
-        factory = new DefaultThreadFactory(threadNamePrefix, daemon, Thread.NORM_PRIORITY);
+        this.namePrefix = requireNonNull(threadNamePrefix) + '-' + factoryCount.incrementAndGet() + '-';
+        this.daemon = daemon;
+        this.threadGroup = System.getSecurityManager() == null ?
+                Thread.currentThread().getThreadGroup() : System.getSecurityManager().getThreadGroup();
+        this.priority = NORM_PRIORITY;
     }
 
     @Override
     public Thread newThread(Runnable r) {
-        return factory.newThread(r);
+        Thread t = new AsyncContextHolderNettyThread(threadGroup, r, namePrefix + threadCount.incrementAndGet());
+        if (t.isDaemon() != daemon) {
+            t.setDaemon(daemon);
+        }
+        if (t.getPriority() != priority) {
+            t.setPriority(priority);
+        }
+        return t;
+    }
+
+    private static final class AsyncContextHolderNettyThread extends FastThreadLocalThread
+            implements AsyncContextMapHolder {
+        @Nullable
+        private AsyncContextMap asyncContextMap;
+
+        AsyncContextHolderNettyThread(ThreadGroup group, Runnable target, String name) {
+            super(group, target, name);
+        }
+
+        @Override
+        public void asyncContextMap(@Nullable final AsyncContextMap asyncContextMap) {
+            this.asyncContextMap = asyncContextMap;
+        }
+
+        @Nullable
+        @Override
+        public AsyncContextMap asyncContextMap() {
+            return asyncContextMap;
+        }
     }
 }

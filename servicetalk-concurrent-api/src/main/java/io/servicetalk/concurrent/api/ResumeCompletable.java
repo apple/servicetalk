@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,8 +39,10 @@ final class ResumeCompletable extends AbstractNoHandleSubscribeCompletable {
     }
 
     @Override
-    void handleSubscribe(final Subscriber subscriber, final SignalOffloader signalOffloader) {
-        original.subscribe(new ResumeSubscriber(subscriber, nextFactory, signalOffloader), signalOffloader);
+    void handleSubscribe(final Subscriber subscriber, final SignalOffloader signalOffloader,
+                         final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
+        original.subscribeWithOffloaderAndContext(new ResumeSubscriber(subscriber, nextFactory, signalOffloader,
+                        contextMap, contextProvider), signalOffloader, contextMap, contextProvider);
     }
 
     private static final class ResumeSubscriber implements Subscriber {
@@ -48,14 +50,19 @@ final class ResumeCompletable extends AbstractNoHandleSubscribeCompletable {
         @Nullable
         private volatile Function<? super Throwable, Completable> nextFactory;
         private final SignalOffloader signalOffloader;
+        private final AsyncContextMap contextMap;
+        private final AsyncContextProvider contextProvider;
         @Nullable
         private volatile SequentialCancellable sequentialCancellable;
 
         ResumeSubscriber(Subscriber subscriber, Function<? super Throwable, Completable> nextFactory,
-                         final SignalOffloader signalOffloader) {
+                         SignalOffloader signalOffloader, AsyncContextMap contextMap,
+                         AsyncContextProvider contextProvider) {
             this.subscriber = subscriber;
             this.nextFactory = nextFactory;
             this.signalOffloader = signalOffloader;
+            this.contextMap = contextMap;
+            this.contextProvider = contextProvider;
         }
 
         @Override
@@ -96,7 +103,8 @@ final class ResumeCompletable extends AbstractNoHandleSubscribeCompletable {
             // that the threading semantics may differ with respect to the original Subscriber when we emit signals from
             // the new Completable. This is the reason we use the original offloader now to offload signals which
             // originate from this new Completable.
-            final Subscriber offloadedSubscriber = signalOffloader.offloadSubscriber(this);
+            final Subscriber offloadedSubscriber = signalOffloader.offloadSubscriber(
+                    contextProvider.wrap(this, contextMap));
             next.subscribe(offloadedSubscriber);
         }
     }
