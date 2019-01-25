@@ -22,6 +22,7 @@ import io.servicetalk.redis.api.RedisCommander;
 import io.servicetalk.redis.api.RedisServerException;
 import io.servicetalk.redis.utils.RedisAuthConnectionFactory;
 import io.servicetalk.redis.utils.RedisAuthorizationException;
+import io.servicetalk.redis.utils.RetryingRedisRequesterFilter;
 import io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutor;
 
 import org.junit.After;
@@ -34,10 +35,8 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.redis.api.RedisExecutionStrategies.noOffloadsStrategy;
-import static io.servicetalk.redis.utils.RetryingRedisClient.newBuilder;
 import static io.servicetalk.transport.netty.NettyIoExecutors.createIoExecutor;
 import static io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutors.toEventLoopAwareNettyIoExecutor;
-import static java.time.Duration.ofMillis;
 import static java.time.Duration.ofSeconds;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.Matchers.is;
@@ -140,7 +139,7 @@ public class RedisAuthConnectionFactoryClientTest {
         redisHost = System.getenv().getOrDefault("REDIS_HOST", "127.0.0.1");
 
         ioExecutor = toEventLoopAwareNettyIoExecutor(createIoExecutor());
-        RedisClient rawClient = RedisClients.forAddress(redisHost, redisPort)
+        client = RedisClients.forAddress(redisHost, redisPort)
                 .appendConnectionFactoryFilter(f ->
                         new RedisAuthConnectionFactory<>(f, ctx -> ctx.executionContext().bufferAllocator()
                                 .fromAscii(password)))
@@ -148,8 +147,8 @@ public class RedisAuthConnectionFactoryClientTest {
                 .ioExecutor(ioExecutor)
                 .executionStrategy(noOffloadsStrategy())
                 .idleConnectionTimeout(ofSeconds(2))
+                .appendClientFilter(new RetryingRedisRequesterFilter.Builder().maxRetries(10).buildWithImmediateRetries())
                 .build();
-        client = newBuilder(rawClient).exponentialBackoff(ofMillis(10)).build(10);
         clientConsumer.accept(client);
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,38 +18,54 @@ package io.servicetalk.redis.api;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.redis.api.RedisClient.ReservedRedisConnection;
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ExecutionContext;
 
 import static java.util.Objects.requireNonNull;
 
 /**
- * A {@link RedisConnection} that delegates all calls to another {@link RedisConnection}.
+ * A {@link ReservedRedisConnection} that delegates all methods to a different {@link RedisConnection}.
  */
-public class RedisConnectionFilter extends RedisConnection {
+public abstract class ReservedRedisConnectionFilter extends ReservedRedisConnection {
 
-    private final RedisConnection delegate;
+    private final ReservedRedisConnection delegate;
     private final RedisExecutionStrategy defaultStrategy;
 
     /**
-     * New instance.
+     * Create a new instance.
      *
-     * @param delegate {@link RedisConnection} to delegate.
+     * @param delegate The {@link ReservedRedisConnection} to delegate all calls to
      */
-    public RedisConnectionFilter(final RedisConnection delegate) {
+    protected ReservedRedisConnectionFilter(final ReservedRedisConnection delegate) {
         this.delegate = requireNonNull(delegate);
-        defaultStrategy = executionStrategy();
+        this.defaultStrategy = executionStrategy();
     }
 
     /**
-     * New instance.
+     * Create a new instance.
      *
-     * @param delegate {@link RedisConnection} to delegate.
+     * @param delegate The {@link ReservedRedisConnection} to delegate all calls to
      * @param defaultStrategy Default {@link RedisExecutionStrategy} to use.
      */
-    public RedisConnectionFilter(final RedisConnection delegate, final RedisExecutionStrategy defaultStrategy) {
+    protected ReservedRedisConnectionFilter(final ReservedRedisConnection delegate,
+                                            final RedisExecutionStrategy defaultStrategy) {
         this.delegate = requireNonNull(delegate);
         this.defaultStrategy = requireNonNull(defaultStrategy);
+    }
+
+    /**
+     * Get the {@link ReservedRedisConnection} that this class delegates to.
+     *
+     * @return the {@link ReservedRedisConnection} that this class delegates to
+     */
+    protected final ReservedRedisConnection delegate() {
+        return delegate;
+    }
+
+    @Override
+    public Completable releaseAsync() {
+        return delegate.releaseAsync();
     }
 
     @Override
@@ -95,15 +111,6 @@ public class RedisConnectionFilter extends RedisConnection {
     @Override
     public Completable closeAsyncGracefully() {
         return delegate.closeAsyncGracefully();
-    }
-
-    /**
-     * The {@link RedisConnection} to which all calls are delegated to.
-     *
-     * @return {@link RedisConnection} to which all calls are delegated.
-     */
-    protected final RedisConnection delegate() {
-        return delegate;
     }
 
     @Override

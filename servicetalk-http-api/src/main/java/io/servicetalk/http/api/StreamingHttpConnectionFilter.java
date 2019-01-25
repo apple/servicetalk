@@ -56,6 +56,7 @@ public class StreamingHttpConnectionFilter extends StreamingHttpConnection {
 
     /**
      * Get the {@link StreamingHttpConnection} that this class delegates to.
+     *
      * @return the {@link StreamingHttpConnection} that this class delegates to.
      */
     protected final StreamingHttpConnection delegate() {
@@ -105,6 +106,6 @@ public class StreamingHttpConnectionFilter extends StreamingHttpConnection {
 
     @Override
     public String toString() {
-        return StreamingHttpConnectionFilter.class.getSimpleName() + "(" + delegate + ")";
+        return getClass().getName() + '(' + delegate + ')';
     }
 }

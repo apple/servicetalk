@@ -25,7 +25,8 @@ import io.servicetalk.transport.api.ExecutionContext;
 import static java.util.Objects.requireNonNull;
 
 /**
- * A {@link ReservedStreamingHttpConnection} that delegates all methods to a different {@link StreamingHttpConnection}.
+ * A {@link ReservedStreamingHttpConnection} that delegates all methods to a different
+ * {@link ReservedStreamingHttpConnection}.
  */
 public abstract class ReservedStreamingHttpConnectionFilter extends ReservedStreamingHttpConnection {
     private final ReservedStreamingHttpConnection delegate;
@@ -34,33 +35,39 @@ public abstract class ReservedStreamingHttpConnectionFilter extends ReservedStre
     /**
      * Create a new instance.
      *
-     * @param delegate The {@link StreamingHttpConnection} to delegate all calls to.
+     * @param delegate The {@link ReservedStreamingHttpConnection} to delegate all calls to
      */
     protected ReservedStreamingHttpConnectionFilter(final ReservedStreamingHttpConnection delegate) {
         super(delegate.reqRespFactory);
-        this.delegate = delegate;
+        this.delegate = requireNonNull(delegate);
         defaultStrategy = executionStrategy();
     }
 
     /**
      * Create a new instance.
      *
-     * @param delegate The {@link StreamingHttpConnection} to delegate all calls to.
-     * @param defaultStrategy Default {@link HttpExecutionStrategy} to use.
+     * @param delegate The {@link ReservedStreamingHttpConnection} to delegate all calls to
+     * @param defaultStrategy Default {@link HttpExecutionStrategy} to use
      */
     protected ReservedStreamingHttpConnectionFilter(final ReservedStreamingHttpConnection delegate,
                                                     final HttpExecutionStrategy defaultStrategy) {
         super(delegate.reqRespFactory);
-        this.delegate = delegate;
+        this.delegate = requireNonNull(delegate);
         this.defaultStrategy = requireNonNull(defaultStrategy);
     }
 
     /**
      * Get the {@link ReservedStreamingHttpConnection} that this class delegates to.
-     * @return the {@link ReservedStreamingHttpConnection} that this class delegates to.
+     *
+     * @return the {@link ReservedStreamingHttpConnection} that this class delegates to
      */
     protected final ReservedStreamingHttpConnection delegate() {
         return delegate;
+    }
+
+    @Override
+    public Completable releaseAsync() {
+        return delegate.releaseAsync();
     }
 
     @Override
@@ -106,11 +113,6 @@ public abstract class ReservedStreamingHttpConnectionFilter extends ReservedStre
 
     @Override
     public String toString() {
-        return ReservedStreamingHttpConnectionFilter.class.getSimpleName() + "(" + delegate + ")";
-    }
-
-    @Override
-    public Completable releaseAsync() {
-        return delegate.releaseAsync();
+        return getClass().getName() + '(' + delegate + ')';
     }
 }

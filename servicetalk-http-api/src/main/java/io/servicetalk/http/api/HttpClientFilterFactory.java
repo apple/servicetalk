@@ -27,7 +27,7 @@ import static java.util.Objects.requireNonNull;
 public interface HttpClientFilterFactory {
 
     /**
-     * Create a {@link StreamingHttpClientFilter} using the provided {@link StreamingHttpClient}.
+     * Creates a {@link StreamingHttpClientFilter} using the provided {@link StreamingHttpClient}.
      *
      * @param client {@link StreamingHttpClient} to filter
      * @param lbEvents the {@link LoadBalancer} events stream

@@ -69,7 +69,7 @@ final class LoadBalancedStreamingHttpConnection extends StreamingHttpClient.Rese
 
     @Override
     public String toString() {
-        return LoadBalancedStreamingHttpConnection.class.getSimpleName() + "(" + delegate + ")";
+        return getClass().getName() + '(' + delegate + ')';
     }
 
     @Override

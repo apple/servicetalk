@@ -191,7 +191,7 @@ final class RedisIdleConnectionReaper implements UnaryOperator<RedisConnection> 
 
         @Override
         public String toString() {
-            return IdleAwareRedisConnection.class.getSimpleName() + "(" + delegate + ")";
+            return getClass().getName() + '(' + delegate + ')';
         }
     }
 }
