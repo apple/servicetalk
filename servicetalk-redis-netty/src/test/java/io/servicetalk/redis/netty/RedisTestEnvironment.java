@@ -76,7 +76,7 @@ final class RedisTestEnvironment implements AutoCloseable {
                 .executionStrategy(defaultStrategy(executor))
                 .maxPipelinedRequests(10)
                 .pingPeriod(ofSeconds(PING_PERIOD_SECONDS))
-                .appendClientFilter(new RetryingRedisRequesterFilter.Builder().maxRetries(10).forImmediateRetries())
+                .appendClientFilter(new RetryingRedisRequesterFilter.Builder().maxRetries(10).buildWithImmediateRetries())
                 .build();
 
         final String serverInfo = awaitIndefinitelyNonNull(

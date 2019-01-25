@@ -122,7 +122,7 @@ public final class GatewayServer {
                         // Set retry and timeout filters for all clients.
                         .appendClientFilter(new RetryingHttpRequesterFilter.Builder()
                                 .maxRetries(3)
-                                .forExponentialBackoffAndJitter(ofMillis(100), null))
+                                .buildWithExponentialBackoffAndJitter(ofMillis(100), null))
                         // Apply a timeout filter for the client to guard against latent clients.
                         .appendClientFilter((client, __) -> new StreamingHttpClientFilter(client) {
                             @Override
