@@ -112,8 +112,8 @@ public final class RetryingRedisRequesterFilter implements RedisClientFilterFact
     }
 
     /**
-     * A builder for {@link RetryingRedisRequesterFilter}, which will not infinitely retry. To configure the maximum
-     * number of retry attempts see {@link #maxRetries(int)}.
+     * A builder for {@link RetryingRedisRequesterFilter}, which puts an upper bound on retry attempts.
+     * To configure the maximum number of retry attempts see {@link #maxRetries(int)}.
      */
     public static final class Builder
             extends AbstractRetryingFilterBuilder<Builder, RetryingRedisRequesterFilter, Command> {

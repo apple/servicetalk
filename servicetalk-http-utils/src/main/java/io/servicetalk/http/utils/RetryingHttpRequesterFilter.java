@@ -96,8 +96,8 @@ public final class RetryingHttpRequesterFilter implements HttpClientFilterFactor
     }
 
     /**
-     * A builder for {@link RetryingHttpRequesterFilter}, which will not infinitely retry. To configure the maximum
-     * number of retry attempts see {@link #maxRetries(int)}.
+     * A builder for {@link RetryingHttpRequesterFilter}, which puts an upper bound on retry attempts.
+     * To configure the maximum number of retry attempts see {@link #maxRetries(int)}.
      */
     public static final class Builder
             extends AbstractRetryingFilterBuilder<Builder, RetryingHttpRequesterFilter, HttpRequestMetaData> {
