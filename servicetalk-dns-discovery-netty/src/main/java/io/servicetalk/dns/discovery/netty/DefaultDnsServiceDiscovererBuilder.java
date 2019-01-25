@@ -126,7 +126,7 @@ public final class DefaultDnsServiceDiscovererBuilder {
      * @param ioExecutor {@link IoExecutor} to use.
      * @return {@code this}.
      */
-    DefaultDnsServiceDiscovererBuilder ioExecutor(IoExecutor ioExecutor) {
+    public DefaultDnsServiceDiscovererBuilder ioExecutor(IoExecutor ioExecutor) {
         executionContextBuilder.ioExecutor(ioExecutor);
         return this;
     }
@@ -137,7 +137,7 @@ public final class DefaultDnsServiceDiscovererBuilder {
      * @param executor {@link Executor} to use.
      * @return {@code this}.
      */
-    DefaultDnsServiceDiscovererBuilder executor(Executor executor) {
+    public DefaultDnsServiceDiscovererBuilder executor(Executor executor) {
         executionContextBuilder.executor(executor);
         return this;
     }
@@ -148,7 +148,7 @@ public final class DefaultDnsServiceDiscovererBuilder {
      * @param allocator {@link BufferAllocator} to use.
      * @return {@code this}.
      */
-    DefaultDnsServiceDiscovererBuilder bufferAllocator(BufferAllocator allocator) {
+    public DefaultDnsServiceDiscovererBuilder bufferAllocator(BufferAllocator allocator) {
         executionContextBuilder.bufferAllocator(allocator);
         return this;
     }
