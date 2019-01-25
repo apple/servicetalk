@@ -159,7 +159,7 @@ public abstract class AbstractRetryingFilterBuilder<Builder
      * @param readOnlySettings a read-only settings for retryable filters
      * @return A new retrying {@link Filter}
      */
-    protected abstract Filter build(final ReadOnlyRetryableSettings<Meta> readOnlySettings);
+    protected abstract Filter build(ReadOnlyRetryableSettings<Meta> readOnlySettings);
 
     /**
      * Returns a default value for {@link #retryFor(BiPredicate)}.
