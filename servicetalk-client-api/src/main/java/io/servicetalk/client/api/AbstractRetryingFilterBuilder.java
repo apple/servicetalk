@@ -275,7 +275,7 @@ public abstract class AbstractRetryingFilterBuilder<Builder
          * was provided at the build time
          * @return a new retry strategy {@link BiIntFunction}
          */
-        public BiIntFunction<Throwable, Completable> newStrategy(@Nullable final Executor alternativeTimerExecutor) {
+        public BiIntFunction<Throwable, Completable> newStrategy(final Executor alternativeTimerExecutor) {
             if (initialDelay == null) {
                 return (count, throwable) -> count <= maxRetries ? completed() : error(throwable);
             } else {
