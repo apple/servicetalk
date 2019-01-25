@@ -46,7 +46,7 @@ import static java.util.Objects.requireNonNull;
 public abstract class AbstractRetryingFilterBuilder<Builder
         extends AbstractRetryingFilterBuilder<Builder, Filter, Meta>, Filter, Meta> {
 
-    private int maxRetries = 2;
+    private int maxRetries;
     @Nullable
     private BiPredicate<Meta, Throwable> retryForPredicate;
 
@@ -87,7 +87,7 @@ public abstract class AbstractRetryingFilterBuilder<Builder
      * @return a new retrying {@link Filter} which retries without delay
      */
     public final Filter buildWithImmediateRetries() {
-        return build(new ReadOnlyRetryableSettings<>(maxRetries, predicate(), null, null, false, false));
+        return build(readOnlySettings(null, null, false, false));
     }
 
     /**
@@ -97,7 +97,7 @@ public abstract class AbstractRetryingFilterBuilder<Builder
      * @return A new retrying {@link Filter} which adds a constant delay between retries
      */
     public final Filter buildWithConstantBackoff(final Duration delay) {
-        return build(new ReadOnlyRetryableSettings<>(maxRetries, predicate(), delay, null, false, false));
+        return build(readOnlySettings(delay, null, false, false));
     }
 
     /**
@@ -109,7 +109,7 @@ public abstract class AbstractRetryingFilterBuilder<Builder
      * @return A new retrying {@link Filter} which adds a constant delay between retries
      */
     public final Filter buildWithConstantBackoff(final Duration delay, final Executor timerExecutor) {
-        return build(new ReadOnlyRetryableSettings<>(maxRetries, predicate(), delay, timerExecutor, false, false));
+        return build(readOnlySettings(delay, timerExecutor, false, false));
     }
 
     /**
@@ -120,7 +120,7 @@ public abstract class AbstractRetryingFilterBuilder<Builder
      * @return A new retrying {@link Filter} which adds a randomized delay between retries
      */
     public final Filter buildWithConstantBackoffAndJitter(final Duration delay) {
-        return build(new ReadOnlyRetryableSettings<>(maxRetries, predicate(), delay, null, false, true));
+        return build(readOnlySettings(delay, null, false, true));
     }
 
     /**
@@ -133,7 +133,7 @@ public abstract class AbstractRetryingFilterBuilder<Builder
      * @return A new retrying {@link Filter} which adds a randomized delay between retries
      */
     public final Filter buildWithConstantBackoffAndJitter(final Duration delay, final Executor timerExecutor) {
-        return build(new ReadOnlyRetryableSettings<>(maxRetries, predicate(), delay, timerExecutor, false, true));
+        return build(readOnlySettings(delay, timerExecutor, false, true));
     }
 
     /**
@@ -147,8 +147,7 @@ public abstract class AbstractRetryingFilterBuilder<Builder
      * @return A new retrying {@link Filter} which adds an exponentially increasing delay between retries
      */
     public final Filter buildWithExponentialBackoff(final Duration initialDelay) {
-        return build(
-                new ReadOnlyRetryableSettings<>(maxRetries, predicate(), initialDelay, null, true, false));
+        return build(readOnlySettings(initialDelay, null, true, false));
     }
 
     /**
@@ -164,8 +163,7 @@ public abstract class AbstractRetryingFilterBuilder<Builder
      * @return A new retrying {@link Filter} which adds an exponentially increasing delay between retries
      */
     public final Filter buildWithExponentialBackoff(final Duration initialDelay, final Executor timerExecutor) {
-        return build(
-                new ReadOnlyRetryableSettings<>(maxRetries, predicate(), initialDelay, timerExecutor, true, false));
+        return build(readOnlySettings(initialDelay, timerExecutor, true, false));
     }
 
     /**
@@ -181,8 +179,7 @@ public abstract class AbstractRetryingFilterBuilder<Builder
      * @return A new retrying {@link Filter} which adds an exponentially increasing delay between retries with jitter
      */
     public final Filter buildWithExponentialBackoffAndJitter(final Duration initialDelay) {
-        return build(
-                new ReadOnlyRetryableSettings<>(maxRetries, predicate(), initialDelay, null, true, true));
+        return build(readOnlySettings(initialDelay, null, true, true));
     }
 
     /**
@@ -201,8 +198,7 @@ public abstract class AbstractRetryingFilterBuilder<Builder
      */
     public final Filter buildWithExponentialBackoffAndJitter(final Duration initialDelay,
                                                              final Executor timerExecutor) {
-        return build(
-                new ReadOnlyRetryableSettings<>(maxRetries, predicate(), initialDelay, timerExecutor, true, true));
+        return build(readOnlySettings(initialDelay, timerExecutor, true, true));
     }
 
     /**
@@ -221,8 +217,13 @@ public abstract class AbstractRetryingFilterBuilder<Builder
      */
     public abstract BiPredicate<Meta, Throwable> defaultRetryForPredicate();
 
-    private BiPredicate<Meta, Throwable> predicate() {
-        return retryForPredicate != null ? retryForPredicate : defaultRetryForPredicate();
+    private ReadOnlyRetryableSettings<Meta> readOnlySettings(@Nullable final Duration initialDelay,
+                                                             @Nullable final Executor timerExecutor,
+                                                             final boolean exponential,
+                                                             final boolean jitter) {
+        return new ReadOnlyRetryableSettings<>(maxRetries > 0 ? maxRetries : (exponential ? 2 : 1),
+                retryForPredicate != null ? retryForPredicate : defaultRetryForPredicate(),
+                initialDelay, timerExecutor, exponential, jitter);
     }
 
     /**
@@ -232,14 +233,14 @@ public abstract class AbstractRetryingFilterBuilder<Builder
      */
     public static final class ReadOnlyRetryableSettings<Meta> {
 
-        @Nullable
-        private final Executor timerExecutor;
         private final int maxRetries;
-        private final boolean jitter;
-        private final boolean exponential;
+        private final BiPredicate<Meta, Throwable> retryForPredicate;
         @Nullable
         private final Duration initialDelay;
-        private final BiPredicate<Meta, Throwable> retryForPredicate;
+        @Nullable
+        private final Executor timerExecutor;
+        private final boolean exponential;
+        private final boolean jitter;
 
         private ReadOnlyRetryableSettings(final int maxRetries,
                                           final BiPredicate<Meta, Throwable> retryForPredicate,
@@ -247,12 +248,12 @@ public abstract class AbstractRetryingFilterBuilder<Builder
                                           @Nullable final Executor timerExecutor,
                                           final boolean exponential,
                                           final boolean jitter) {
-            this.timerExecutor = timerExecutor;
             this.maxRetries = maxRetries;
-            this.jitter = jitter;
-            this.exponential = exponential;
-            this.initialDelay = initialDelay;
             this.retryForPredicate = retryForPredicate;
+            this.initialDelay = initialDelay;
+            this.timerExecutor = timerExecutor;
+            this.exponential = exponential;
+            this.jitter = jitter;
         }
 
         /**
