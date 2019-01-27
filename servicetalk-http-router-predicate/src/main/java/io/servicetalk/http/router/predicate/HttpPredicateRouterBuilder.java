@@ -16,6 +16,7 @@
 package io.servicetalk.http.router.predicate;
 
 import io.servicetalk.http.api.HttpCookie;
+import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequestHandler;
@@ -65,6 +66,13 @@ public final class HttpPredicateRouterBuilder implements RouteStarter {
     @Nullable
     private BiPredicate<ConnectionContext, StreamingHttpRequest> predicate;
     private final RouteContinuationImpl continuation = new RouteContinuationImpl();
+    /**
+     * Do not define any strategy by default which will use the default strategy.
+     * Since, we invoke user-code (predicates) from this router, we want to use the default strategy and an opt-in for
+     * non-blocking predicates.
+     */
+    @Nullable
+    private HttpExecutionStrategy strategy;
 
     @Override
     public RouteContinuation whenMethod(final HttpRequestMethod method) {
@@ -152,8 +160,14 @@ public final class HttpPredicateRouterBuilder implements RouteStarter {
     }
 
     @Override
+    public RouteStarter executionStrategy(final HttpExecutionStrategy strategy) {
+        this.strategy = strategy;
+        return this;
+    }
+
+    @Override
     public StreamingHttpService buildStreaming() {
-        return new InOrderRouter(DefaultFallbackServiceStreaming.instance(), predicateServicePairs);
+        return new InOrderRouter(DefaultFallbackServiceStreaming.instance(), predicateServicePairs, strategy);
     }
 
     private void andPredicate(final BiPredicate<ConnectionContext, StreamingHttpRequest> newPredicate) {
