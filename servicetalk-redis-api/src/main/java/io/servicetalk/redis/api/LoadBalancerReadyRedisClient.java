@@ -17,6 +17,7 @@ package io.servicetalk.redis.api;
 
 import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.api.LoadBalancerReadyEvent;
+import io.servicetalk.client.api.NoAvailableHostException;
 import io.servicetalk.client.api.RetryableException;
 import io.servicetalk.client.internal.LoadBalancerReadySubscriber;
 import io.servicetalk.concurrent.api.BiIntFunction;
@@ -67,7 +68,7 @@ public final class LoadBalancerReadyRedisClient extends RedisClientFilter {
     }
 
     private BiIntFunction<Throwable, Completable> retryWhenFunction() {
-        return (count, cause) -> count <= maxRetryCount && cause instanceof RetryableException ?
+        return (count, cause) -> count <= maxRetryCount && cause instanceof NoAvailableHostException ?
                 loadBalancerReadySubscriber.onHostsAvailable() : error(cause);
     }
 }
