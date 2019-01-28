@@ -29,6 +29,8 @@ import java.util.Map;
 import javax.annotation.Nullable;
 
 import static java.lang.Math.max;
+import static java.lang.Math.min;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 final class MinTtlCache implements DnsCache {
 
@@ -36,7 +38,8 @@ final class MinTtlCache implements DnsCache {
 
     private final DnsCache cache;
     private final long initialTtl;
-    private final Map<String, Long> minTtlMap = new HashMap<>();
+    private final Map<String, Long> minExpiryMap = new HashMap<>();
+    private long resolveTime;
 
     MinTtlCache(final DnsCache cache) {
         this(cache, 2);
@@ -48,18 +51,23 @@ final class MinTtlCache implements DnsCache {
     }
 
     void prepareForResolution(final String hostname) {
-        minTtlMap.remove(hostname.toLowerCase());
+        minExpiryMap.remove(hostname);
     }
 
     long minTtl(final String hostname) {
-        final Long minTtl = minTtlMap.get(hostname.toLowerCase());
-        return minTtl == null ? initialTtl : minTtl;
+        final Long minExpiry = minExpiryMap.get(hostname);
+        if (minExpiry == null) {
+            return initialTtl;
+        } else {
+            final long minTtl = minExpiry - MILLISECONDS.toSeconds(System.currentTimeMillis());
+            return minTtl >= 0 ? minTtl : initialTtl;
+        }
     }
 
     @Override
     public void clear() {
         cache.clear();
-        minTtlMap.clear();
+        minExpiryMap.clear();
     }
 
     @Override
@@ -84,7 +92,14 @@ final class MinTtlCache implements DnsCache {
     @Override
     public DnsCacheEntry cache(final String hostname, final DnsRecord[] additionals, final InetAddress address,
                                final long originalTtl, final EventLoop loop) {
-        minTtlMap.merge(hostname.toLowerCase(), max(initialTtl, originalTtl), Math::min);
+        final Long existingExpiry = minExpiryMap.get(hostname);
+        if (existingExpiry == null) {
+            resolveTime = MILLISECONDS.toSeconds(System.currentTimeMillis());
+            minExpiryMap.put(hostname, resolveTime + originalTtl);
+        } else {
+            final long newExpiry = resolveTime + max(initialTtl, originalTtl);
+            minExpiryMap.put(hostname, min(existingExpiry, newExpiry));
+        }
         return cache.cache(hostname, additionals, address, originalTtl, loop);
     }
 
