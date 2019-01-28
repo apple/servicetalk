@@ -59,6 +59,7 @@ final class MinTtlCache implements DnsCache {
     @Override
     public void clear() {
         cache.clear();
+        minTtlMap.clear();
     }
 
     @Override
@@ -81,13 +82,15 @@ final class MinTtlCache implements DnsCache {
     }
 
     @Override
-    public DnsCacheEntry cache(final String hostname, final DnsRecord[] additionals, final InetAddress address, final long originalTtl, final EventLoop loop) {
+    public DnsCacheEntry cache(final String hostname, final DnsRecord[] additionals, final InetAddress address,
+                               final long originalTtl, final EventLoop loop) {
         minTtlMap.merge(hostname.toLowerCase(), max(initialTtl, originalTtl), Math::min);
         return cache.cache(hostname, additionals, address, originalTtl, loop);
     }
 
     @Override
-    public DnsCacheEntry cache(final String hostname, final DnsRecord[] additionals, final Throwable cause, final EventLoop loop) {
+    public DnsCacheEntry cache(final String hostname, final DnsRecord[] additionals, final Throwable cause,
+                               final EventLoop loop) {
         return cache.cache(hostname, additionals, cause, loop);
     }
 }
