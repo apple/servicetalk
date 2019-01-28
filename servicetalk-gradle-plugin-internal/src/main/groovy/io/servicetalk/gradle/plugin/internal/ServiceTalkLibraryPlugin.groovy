@@ -234,6 +234,7 @@ class ServiceTalkLibraryPlugin extends ServiceTalkCorePlugin {
 
       project.task("checkstyleRoot", type: Checkstyle) {
         description = "Run Checkstyle analysis for files in the root directory"
+        // The classpath field must be non-null, but could be empty because it's not required for this task:
         classpath = project.files([])
         source = fileTree(".") {
           includes = ["*.gradle", "*.properties", "gradle/**"]

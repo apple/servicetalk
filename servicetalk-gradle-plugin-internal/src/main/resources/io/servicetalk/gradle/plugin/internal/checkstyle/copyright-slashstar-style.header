@@ -1,5 +1,5 @@
 ^/\*$
-^ \* Copyright © \d{4}(-\d{4}|, \d{4})* Apple Inc\. and the ServiceTalk project authors$
+^ \* Copyright © 20\d{2}(-20\d{2}|, 20\d{2})* Apple Inc\. and the ServiceTalk project authors$
 ^ \*$
 ^ \* Licensed under the Apache License, Version 2\.0 \(the "License"\);$
 ^ \* you may not use this file except in compliance with the License\.$

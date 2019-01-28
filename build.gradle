@@ -73,7 +73,7 @@ ext.findTasks = { taskName, excludedBuilds = [] ->
 
 task clean {
   doFirst {
-    delete file("./build")
+    delete file("$projectDir/build")
   }
   dependsOn findTasks('clean')
 }
