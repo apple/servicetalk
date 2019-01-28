@@ -486,8 +486,8 @@ final class DefaultDnsServiceDiscoverer
                     if (!terminated) {
                         terminated = true;
                         final List<InetAddress> addresses = activeAddresses;
-                        List<ServiceDiscovererEvent<InetAddress>> events = new ArrayList<>(addresses.size());
                         if (cause instanceof UnknownHostException && !(cause.getCause() instanceof DnsNameResolverTimeoutException)) {
+                            List<ServiceDiscovererEvent<InetAddress>> events = new ArrayList<>(addresses.size());
                             if (addresses instanceof RandomAccess) {
                                 for (int i = 0; i < addresses.size(); ++i) {
                                     events.add(new DefaultServiceDiscovererEvent<>(addresses.get(i), false));
@@ -497,8 +497,8 @@ final class DefaultDnsServiceDiscoverer
                                     events.add(new DefaultServiceDiscovererEvent<>(address, false));
                                 }
                             }
+                            subscriber.onNext(events);
                         }
-                        subscriber.onNext(events);
                         subscriber.onError(cause);
                     }
                 }
