@@ -445,7 +445,7 @@ final class DefaultDnsServiceDiscoverer
                     if (DiscoverEntry.this.subscriber != null) {
                         Throwable cause = addressFuture.cause();
                         if (cause != null) {
-                            handleError0(cause);
+                            handleError0(cause, true);
                         } else {
                             List<InetAddress> addresses = addressFuture.getNow();
                             List<ServiceDiscovererEvent<InetAddress>> events = calculateDifference(activeAddresses,
@@ -466,7 +466,7 @@ final class DefaultDnsServiceDiscoverer
 
                                     subscriber.onNext(events);
                                 } catch (Throwable error) {
-                                    handleError0(error);
+                                    handleError0(error, false);
                                 }
                             } else {
                                 LOGGER.trace("DNS discoverer {}, resolution done but no changes observed for {}. Resolution result: (size {}) {}",
@@ -477,27 +477,31 @@ final class DefaultDnsServiceDiscoverer
                     }
                 }
 
-                private void handleError0(Throwable cause) {
+                private void handleError0(Throwable cause, boolean sendInactiveForUnknownHostException) {
                     assertInEventloop();
 
-                    LOGGER.debug("DNS discoverer {}, DNS lookup failed for {}.", DefaultDnsServiceDiscoverer.this, inetHost, cause);
+                    LOGGER.debug("DNS discoverer {}, DNS lookup failed for {}.", DefaultDnsServiceDiscoverer.this,
+                            inetHost, cause);
                     boolean wasAlreadyTerminated = DiscoverEntry.this.subscriber == null;
                     DiscoverEntry.this.subscriber = null; // allow sequential subscriptions
                     cancel0();
                     if (!wasAlreadyTerminated) {
-                        final List<InetAddress> addresses = activeAddresses;
-                        if (cause instanceof UnknownHostException && !(cause.getCause() instanceof DnsNameResolverTimeoutException)) {
-                            List<ServiceDiscovererEvent<InetAddress>> events = new ArrayList<>(addresses.size());
-                            if (addresses instanceof RandomAccess) {
-                                for (int i = 0; i < addresses.size(); ++i) {
-                                    events.add(new DefaultServiceDiscovererEvent<>(addresses.get(i), false));
+                        if (sendInactiveForUnknownHostException) {
+                            final List<InetAddress> addresses = activeAddresses;
+                            if (cause instanceof UnknownHostException &&
+                                    !(cause.getCause() instanceof DnsNameResolverTimeoutException)) {
+                                List<ServiceDiscovererEvent<InetAddress>> events = new ArrayList<>(addresses.size());
+                                if (addresses instanceof RandomAccess) {
+                                    for (int i = 0; i < addresses.size(); ++i) {
+                                        events.add(new DefaultServiceDiscovererEvent<>(addresses.get(i), false));
+                                    }
+                                } else {
+                                    for (final InetAddress address : addresses) {
+                                        events.add(new DefaultServiceDiscovererEvent<>(address, false));
+                                    }
                                 }
-                            } else {
-                                for (final InetAddress address : addresses) {
-                                    events.add(new DefaultServiceDiscovererEvent<>(address, false));
-                                }
+                                subscriber.onNext(events);
                             }
-                            subscriber.onNext(events);
                         }
                         subscriber.onError(cause);
                     }
