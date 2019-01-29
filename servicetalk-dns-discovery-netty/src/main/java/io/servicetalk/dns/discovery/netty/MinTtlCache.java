@@ -47,10 +47,6 @@ final class MinTtlCache implements DnsCache {
     private final Map<String, Long> minExpiryMap = new HashMap<>();
     private long resolveTime;
 
-    MinTtlCache(final DnsCache cache) {
-        this(cache, 2);
-    }
-
     MinTtlCache(final DnsCache cache, final long initialTtl) {
         this.cache = cache;
         this.initialTtl = initialTtl;
