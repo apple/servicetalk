@@ -442,37 +442,37 @@ final class DefaultDnsServiceDiscoverer
                 private void handleResolveDone0(Future<List<InetAddress>> addressFuture) {
                     assertInEventloop();
 
-                    Throwable cause = addressFuture.cause();
-                    if (cause != null) {
-                        handleError0(cause);
-                    } else {
-                        List<InetAddress> addresses = addressFuture.getNow();
-                        List<ServiceDiscovererEvent<InetAddress>> events = calculateDifference(activeAddresses,
-                                addresses, INET_ADDRESS_COMPARATOR);
-                        ttlNanos = SECONDS.toNanos(ttlCache.minTtl(inetHost));
-                        if (events != null) {
-                            --pendingRequests;
-                            if (pendingRequests > 0) {
-                                scheduleQuery0(ttlNanos);
-                            } else {
-                                resolveDoneNoScheduleTime = nanoTime();
-                                cancellableForQuery = null;
-                            }
-                            activeAddresses = addresses;
-                            try {
-                                LOGGER.debug("DNS discoverer {}, sending events for address {}: (size {}) {}.",
-                                        DefaultDnsServiceDiscoverer.this, inetHost, events.size(), events);
-
-                                if (DiscoverEntry.this.subscriber != null) {
-                                    subscriber.onNext(events);
-                                }
-                            } catch (Throwable error) {
-                                handleError0(error);
-                            }
+                    if (DiscoverEntry.this.subscriber != null) {
+                        Throwable cause = addressFuture.cause();
+                        if (cause != null) {
+                            handleError0(cause);
                         } else {
-                            LOGGER.trace("DNS discoverer {}, resolution done but no changes observed for {}. Resolution result: (size {}) {}",
-                                    DefaultDnsServiceDiscoverer.this, inetHost, addresses.size(), addresses);
-                            scheduleQuery0(ttlNanos);
+                            List<InetAddress> addresses = addressFuture.getNow();
+                            List<ServiceDiscovererEvent<InetAddress>> events = calculateDifference(activeAddresses,
+                                    addresses, INET_ADDRESS_COMPARATOR);
+                            ttlNanos = SECONDS.toNanos(ttlCache.minTtl(inetHost));
+                            if (events != null) {
+                                --pendingRequests;
+                                if (pendingRequests > 0) {
+                                    scheduleQuery0(ttlNanos);
+                                } else {
+                                    resolveDoneNoScheduleTime = nanoTime();
+                                    cancellableForQuery = null;
+                                }
+                                activeAddresses = addresses;
+                                try {
+                                    LOGGER.debug("DNS discoverer {}, sending events for address {}: (size {}) {}.",
+                                            DefaultDnsServiceDiscoverer.this, inetHost, events.size(), events);
+
+                                    subscriber.onNext(events);
+                                } catch (Throwable error) {
+                                    handleError0(error);
+                                }
+                            } else {
+                                LOGGER.trace("DNS discoverer {}, resolution done but no changes observed for {}. Resolution result: (size {}) {}",
+                                        DefaultDnsServiceDiscoverer.this, inetHost, addresses.size(), addresses);
+                                scheduleQuery0(ttlNanos);
+                            }
                         }
                     }
                 }
