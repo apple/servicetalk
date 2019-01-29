@@ -331,6 +331,8 @@ final class DefaultDnsServiceDiscoverer
 
         private void initializeSubscriber0(
                 Subscriber<? super ServiceDiscovererEvent<InetAddress>> subscriber) {
+            assertInEventloop();
+
             if (this.subscriber != null) {
                 subscriber.onSubscribe(EMPTY_SUBSCRIPTION);
                 subscriber.onError(new DuplicateSubscribeException(this.subscriber, subscriber));
@@ -384,6 +386,8 @@ final class DefaultDnsServiceDiscoverer
                 }
 
                 private void request0(long n) {
+                    assertInEventloop();
+
                     pendingRequests = FlowControlUtil.addWithOverflowProtection(pendingRequests, n);
                     if (cancellableForQuery == null) {
                         if (ttlNanos < 0) {
@@ -393,7 +397,7 @@ final class DefaultDnsServiceDiscoverer
                             if (durationNs > ttlNanos) {
                                 doQuery0();
                             } else {
-                                scheduleQuery(ttlNanos - durationNs);
+                                scheduleQuery0(ttlNanos - durationNs);
                             }
                         }
                     }
@@ -415,6 +419,8 @@ final class DefaultDnsServiceDiscoverer
                 }
 
                 private void cancel0() {
+                    assertInEventloop();
+
                     if (cancellableForQuery != null) {
                         cancellableForQuery.cancel();
                         cancellableForQuery = null;
@@ -422,7 +428,9 @@ final class DefaultDnsServiceDiscoverer
                     removeEntry(DiscoverEntry.this);
                 }
 
-                private void scheduleQuery(long nanos) {
+                private void scheduleQuery0(long nanos) {
+                    assertInEventloop();
+
                     LOGGER.trace("DNS discoverer {}, scheduling DNS query for {} after {} nanos.",
                             DefaultDnsServiceDiscoverer.this, inetHost, nanos);
                     // This value is coming from DNS TTL for which the unit is seconds and the minimum value we accept
@@ -445,7 +453,7 @@ final class DefaultDnsServiceDiscoverer
                         if (events != null) {
                             --pendingRequests;
                             if (pendingRequests > 0) {
-                                scheduleQuery(ttlNanos);
+                                scheduleQuery0(ttlNanos);
                             } else {
                                 resolveDoneNoScheduleTime = nanoTime();
                                 cancellableForQuery = null;
@@ -464,7 +472,7 @@ final class DefaultDnsServiceDiscoverer
                         } else {
                             LOGGER.trace("DNS discoverer {}, resolution done but no changes observed for {}. Resolution result: (size {}) {}",
                                     DefaultDnsServiceDiscoverer.this, inetHost, addresses.size(), addresses);
-                            scheduleQuery(ttlNanos);
+                            scheduleQuery0(ttlNanos);
                         }
                     }
                 }
