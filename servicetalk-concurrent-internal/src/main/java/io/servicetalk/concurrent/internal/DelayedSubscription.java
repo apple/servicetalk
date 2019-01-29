@@ -49,7 +49,7 @@ public final class DelayedSubscription implements Subscription {
      */
     public void setDelayedSubscription(Subscription delayedSubscription) {
         // Temporarily wrap in a ConcurrentSubscription to prevent concurrent invocation between this thread and
-        // a thread which may be interacting with this class's Subscription API.DelayedSubscriptionTest.java
+        // a thread which may be interacting with this class's Subscription API.
         final Subscription concurrentSubscription = wrap(delayedSubscription);
         if (!currentUpdater.compareAndSet(this, null, concurrentSubscription)) {
             delayedSubscription.cancel();
