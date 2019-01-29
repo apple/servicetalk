@@ -103,6 +103,9 @@ final class NoOffloadsHttpExecutionStrategy implements HttpExecutionStrategy {
 
     @Override
     public Executor executor() {
-        return immediate();
+        // Returning immediate() here isn't a desirable default as it may end up being used as the Executor for the
+        // associated server and hence any tasks run on the Executor will not be offloaded which may not be the intent.
+        // If a user does want to use immediate() for the server they can create a delegating strategy to do that.
+        return null;
     }
 }
