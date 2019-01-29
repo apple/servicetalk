@@ -336,15 +336,13 @@ final class DefaultDnsServiceDiscoverer
             if (this.subscriber != null) {
                 subscriber.onSubscribe(EMPTY_SUBSCRIPTION);
                 subscriber.onError(new DuplicateSubscribeException(this.subscriber, subscriber));
-                return;
-            }
-            if (closed) {
+            } else if (closed) {
                 subscriber.onSubscribe(EMPTY_SUBSCRIPTION);
                 completeSubscriberOnClose0(subscriber);
-                return;
+            } else {
+                this.subscriber = subscriber;
+                flatMapIterable(identity()).subscribe(subscriber);
             }
-            this.subscriber = subscriber;
-            flatMapIterable(identity()).subscribe(subscriber);
         }
 
         @Override
