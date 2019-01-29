@@ -136,9 +136,9 @@ public final class ChannelSet implements ListenableAsyncCloseable {
                 CompositeCloseable closeable = newCompositeCloseable().appendAll(() -> onClose);
 
                 for (final Channel channel : channelMap.values()) {
-                    final ConnectionHolderChannelHandler<?, ?> holder =
-                            channel.pipeline().get(ConnectionHolderChannelHandler.class);
-                    NettyConnection<?, ?> connection = holder == null ? null : holder.getConnection();
+                    final AsyncCloseableHolderChannelHandler holder =
+                            channel.pipeline().get(AsyncCloseableHolderChannelHandler.class);
+                    AsyncCloseable connection = holder == null ? null : holder.asyncClosable();
                     if (connection != null) {
                         // Upon shutdown of the set, we will close all live channels. If close of individual channels
                         // are offloaded, then this would trigger a surge in threads required to offload these closures.

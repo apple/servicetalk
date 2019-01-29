@@ -28,6 +28,7 @@ import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
+import io.servicetalk.tcp.netty.internal.ReadOnlyTcpClientConfig;
 import io.servicetalk.tcp.netty.internal.TcpClientChannelInitializer;
 import io.servicetalk.tcp.netty.internal.TcpClientConfig;
 import io.servicetalk.tcp.netty.internal.TcpConnector;
@@ -35,19 +36,18 @@ import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.SslConfig;
-import io.servicetalk.transport.netty.internal.ChannelInitializer;
 import io.servicetalk.transport.netty.internal.CloseHandler;
+import io.servicetalk.transport.netty.internal.DefaultNettyConnection;
 import io.servicetalk.transport.netty.internal.ExecutionContextBuilder;
 import io.servicetalk.transport.netty.internal.NettyConnection;
+import io.servicetalk.transport.netty.internal.NettyConnection.TerminalPredicate;
 
 import java.io.InputStream;
 import java.net.InetSocketAddress;
 import java.net.SocketOption;
-import java.util.function.Function;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.concurrent.api.Single.defer;
 import static io.servicetalk.transport.netty.internal.CloseHandler.forPipelinedRequestResponse;
 import static java.util.Objects.requireNonNull;
 
@@ -123,7 +123,7 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress> extends HttpCon
             final ExecutionContext executionContext, ResolvedAddress resolvedAddress, ReadOnlyHttpClientConfig roConfig,
             final HttpConnectionFilterFactory connectionFilterFunction,
             final StreamingHttpRequestResponseFactory reqRespFactory, final HttpExecutionStrategy strategy) {
-        return buildStreaming(executionContext, resolvedAddress, roConfig, conn ->
+        return buildStreaming(executionContext, resolvedAddress, roConfig).map(conn ->
                 connectionFilterFunction.create(
                         new PipelinedStreamingHttpConnection(conn, roConfig, executionContext, reqRespFactory,
                                 strategy)));
@@ -133,25 +133,26 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress> extends HttpCon
             final ExecutionContext executionContext, ResolvedAddress resolvedAddress, ReadOnlyHttpClientConfig roConfig,
             final HttpConnectionFilterFactory connectionFilterFunction,
             final StreamingHttpRequestResponseFactory reqRespFactory, final HttpExecutionStrategy strategy) {
-        return buildStreaming(executionContext, resolvedAddress, roConfig, conn ->
+        return buildStreaming(executionContext, resolvedAddress, roConfig).map(conn ->
                 connectionFilterFunction.create(
                         new NonPipelinedStreamingHttpConnection(conn, roConfig, executionContext, reqRespFactory,
                                 strategy)));
     }
 
-    private static <ResolvedAddress> Single<StreamingHttpConnection> buildStreaming(
-            final ExecutionContext executionContext, ResolvedAddress resolvedAddress, ReadOnlyHttpClientConfig roConfig,
-            final Function<NettyConnection<Object, Object>, StreamingHttpConnection> mapper) {
-        return defer(() -> {
-            final CloseHandler closeHandler = forPipelinedRequestResponse(true);
-            final ChannelInitializer initializer = new TcpClientChannelInitializer(roConfig.getTcpClientConfig())
-                    .andThen(new HttpClientChannelInitializer(roConfig, closeHandler));
-
-            final TcpConnector<Object, Object> connector = new TcpConnector<>(roConfig.getTcpClientConfig(),
-                    initializer, DefaultHttpConnectionBuilder::lastChunkPredicate, null, closeHandler);
-            return connector.connect(executionContext, resolvedAddress, false).map(mapper)
-                    .subscribeShareContext();
-        });
+    private static <ResolvedAddress> Single<? extends NettyConnection<Object, Object>> buildStreaming(
+            final ExecutionContext executionContext, ResolvedAddress resolvedAddress,
+            ReadOnlyHttpClientConfig roConfig) {
+        // This state is read only, so safe to keep a copy across Subscribers
+        final ReadOnlyTcpClientConfig tcpClientConfig = roConfig.getTcpClientConfig();
+        return TcpConnector.connect(null, resolvedAddress, tcpClientConfig, executionContext)
+                .flatMap(channel -> {
+                    CloseHandler closeHandler = forPipelinedRequestResponse(true, channel.config());
+                    return DefaultNettyConnection.initChannel(channel, executionContext.bufferAllocator(),
+                            executionContext.executor(), new TerminalPredicate<>(LAST_CHUNK_PREDICATE), closeHandler,
+                            tcpClientConfig.getFlushStrategy(), new TcpClientChannelInitializer(
+                                    roConfig.getTcpClientConfig()).andThen(new HttpClientChannelInitializer(roConfig,
+                                    closeHandler)));
+                });
     }
 
     /**

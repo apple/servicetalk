@@ -331,8 +331,8 @@ public class RequestResponseCloseHandlerTest {
                 }
                 return scc;
             });
-            h = (RequestResponseCloseHandler) spy(mode == Mode.C ?
-                    forPipelinedRequestResponse(true) : forPipelinedRequestResponse(false));
+            h = (RequestResponseCloseHandler) spy(mode == Mode.C ? forPipelinedRequestResponse(true, channel.config()) :
+                    forPipelinedRequestResponse(false, channel.config()));
             h.registerEventHandler(channel, e -> {
                 if (observedEvent == null) {
                     LOGGER.debug("Emitted: {}", e);

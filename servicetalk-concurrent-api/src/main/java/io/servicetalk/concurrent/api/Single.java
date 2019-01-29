@@ -1040,7 +1040,7 @@ public abstract class Single<T> implements io.servicetalk.concurrent.Single<T> {
      * @return {@link Cancellable} used to invoke {@link Cancellable#cancel()} on the parameter of
      * {@link Subscriber#onSubscribe(Cancellable)} for this {@link Single}.
      */
-    public final Cancellable subscribe(Consumer<T> resultConsumer) {
+    public final Cancellable subscribe(Consumer<? super T> resultConsumer) {
         SimpleSingleSubscriber<T> subscriber = new SimpleSingleSubscriber<>(resultConsumer);
         subscribe(subscriber);
         return subscriber;

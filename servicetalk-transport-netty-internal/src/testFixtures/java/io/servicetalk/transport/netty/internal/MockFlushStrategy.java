@@ -48,13 +48,6 @@ public final class MockFlushStrategy implements FlushStrategy {
     }
 
     /**
-     * Verifies that this {@link FlushStrategy} was not applied.
-     */
-    public void verifyNotApplied() {
-        Mockito.verifyNoMoreInteractions(mock);
-    }
-
-    /**
      * Verifies that this {@link FlushStrategy} was applied.
      *
      * @return {@link FlushSender} provided to {@link #apply(FlushSender)}.
@@ -105,15 +98,6 @@ public final class MockFlushStrategy implements FlushStrategy {
     public void verifyNoMoreInteractions() {
         Mockito.verifyNoMoreInteractions(mock);
         writeVerifier.verifyNoMoreInteractions();
-    }
-
-    /**
-     * Resets this mock.
-     */
-    public void reset() {
-        Mockito.reset(mock);
-        Mockito.reset(writeListener);
-        when(mock.apply(any())).thenReturn(writeListener);
     }
 
     @Override

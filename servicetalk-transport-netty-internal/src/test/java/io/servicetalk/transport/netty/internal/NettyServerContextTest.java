@@ -87,7 +87,7 @@ public class NettyServerContextTest {
     @Mock
     private ChannelPipeline channelPipeline;
     @Mock
-    private ConnectionHolderChannelHandler connectionHolderChannelHandler;
+    private AsyncCloseableHolderChannelHandler asyncCloseableHolder;
 
     ListenableAsyncCloseable channelSetCloseable = AsyncCloseables.toListenableAsyncCloseable(new AsyncCloseable() {
         @Override
@@ -125,7 +125,7 @@ public class NettyServerContextTest {
             return channelCloseFuture;
         });
         when(channel.pipeline()).thenReturn(channelPipeline);
-        when(channelPipeline.get(ConnectionHolderChannelHandler.class)).thenReturn(connectionHolderChannelHandler);
+        when(channelPipeline.get(AsyncCloseableHolderChannelHandler.class)).thenReturn(asyncCloseableHolder);
         fixture = NettyServerContext.wrap(channel, channelSetCloseable, closeBefore,
                 new ExecutionContextBuilder().executor(immediate()).build());
     }

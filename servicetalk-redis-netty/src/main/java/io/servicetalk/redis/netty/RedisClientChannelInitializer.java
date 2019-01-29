@@ -15,38 +15,16 @@
  */
 package io.servicetalk.redis.netty;
 
-import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
-import io.servicetalk.transport.netty.internal.RefCountedTrapper;
 
 import io.netty.channel.Channel;
-import io.netty.channel.ChannelPipeline;
-import io.netty.channel.EventLoop;
-
-import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 
 final class RedisClientChannelInitializer implements ChannelInitializer {
-    // It doesn't really matter which allocator we pass in as we never use it.
-    private static final RefCountedTrapper TRAPPER = new RefCountedTrapper(DEFAULT_ALLOCATOR) {
-        @Override
-        protected Object decode(EventLoop eventLoop, BufferAllocator allocator, Object msg) {
-            return msg;
-        }
-
-        @Override
-        public boolean isSharable() {
-            return true;
-        }
-    };
-
     @Override
     public ConnectionContext init(final Channel channel, final ConnectionContext ctx) {
-        final ChannelPipeline pipeline = channel.pipeline();
         // We only use the decoder, as encoding is trivial
-        pipeline.addLast(new RedisDecoder());
-        // Add the RefCountTrapper to ensure we always releaseAsync reference counted objects and also silence a warning.
-        pipeline.addLast(TRAPPER);
+        channel.pipeline().addLast(new RedisDecoder());
         return ctx;
     }
 }

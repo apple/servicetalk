@@ -29,23 +29,24 @@ import io.servicetalk.tcp.netty.internal.TcpConnector;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.SslConfig;
-import io.servicetalk.transport.netty.internal.ChannelInitializer;
+import io.servicetalk.transport.netty.internal.CloseHandler;
+import io.servicetalk.transport.netty.internal.DefaultNettyConnection;
 import io.servicetalk.transport.netty.internal.ExecutionContextBuilder;
 import io.servicetalk.transport.netty.internal.NettyConnection;
+import io.servicetalk.transport.netty.internal.NettyConnection.TerminalPredicate;
 
 import io.netty.buffer.ByteBuf;
 
 import java.io.InputStream;
 import java.net.SocketOption;
 import java.time.Duration;
-import java.util.function.Function;
 import java.util.function.UnaryOperator;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.concurrent.api.Single.defer;
 import static io.servicetalk.redis.api.RedisConnectionFilterFactory.identity;
 import static io.servicetalk.redis.netty.InternalSubscribedRedisConnection.newSubscribedConnection;
 import static io.servicetalk.redis.netty.PipelinedRedisConnection.newPipelinedConnection;
+import static io.servicetalk.transport.netty.internal.CloseHandler.forPipelinedRequestResponse;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -240,10 +241,10 @@ public final class DefaultRedisConnectionBuilder<ResolvedAddress> implements Red
                                                                        ResolvedAddress resolvedAddress,
                                                                        ReadOnlyRedisClientConfig roConfig,
                                                                RedisConnectionFilterFactory connectionFilterFactory) {
-        return roConfig.getIdleConnectionTimeout() == null ? build(executionContext, resolvedAddress, roConfig, conn ->
-                connectionFilterFactory.create(newSubscribedConnection(conn, executionContext, roConfig))) :
+        return roConfig.getIdleConnectionTimeout() == null ? build(executionContext, resolvedAddress, roConfig).map(
+                conn -> connectionFilterFactory.create(newSubscribedConnection(conn, executionContext, roConfig))) :
                 // User Filters -> IdleReaper -> Connection
-                build(executionContext, resolvedAddress, roConfig, conn -> connectionFilterFactory.create(
+                build(executionContext, resolvedAddress, roConfig).map(conn -> connectionFilterFactory.create(
                         new RedisIdleConnectionReaper(roConfig.getIdleConnectionTimeout()).apply(
                                 newSubscribedConnection(conn, executionContext, roConfig))));
     }
@@ -252,26 +253,25 @@ public final class DefaultRedisConnectionBuilder<ResolvedAddress> implements Red
                                                                        ResolvedAddress resolvedAddress,
                                                                        ReadOnlyRedisClientConfig roConfig,
                                                                RedisConnectionFilterFactory connectionFilterFactory) {
-        return roConfig.getIdleConnectionTimeout() == null ? build(executionContext, resolvedAddress, roConfig, conn ->
-                connectionFilterFactory.create(newPipelinedConnection(conn, executionContext, roConfig))) :
+        return roConfig.getIdleConnectionTimeout() == null ? build(executionContext, resolvedAddress, roConfig).map(
+                conn -> connectionFilterFactory.create(newPipelinedConnection(conn, executionContext, roConfig))) :
                 // User Filters -> IdleReaper -> Connection
-                build(executionContext, resolvedAddress, roConfig, conn -> connectionFilterFactory.create(
+                build(executionContext, resolvedAddress, roConfig).map(conn -> connectionFilterFactory.create(
                         new RedisIdleConnectionReaper(roConfig.getIdleConnectionTimeout()).apply(
                                 newPipelinedConnection(conn, executionContext, roConfig))));
     }
 
-    private static <ResolvedAddress> Single<RedisConnection> build(ExecutionContext executionContext,
-                                                 ResolvedAddress resolvedAddress,
-                                                 ReadOnlyRedisClientConfig roConfig,
-                                   Function<NettyConnection<RedisData, ByteBuf>, RedisConnection> mapper) {
-        return defer(() -> {
-            final ReadOnlyTcpClientConfig roTcpConfig = roConfig.getTcpClientConfig();
-            final ChannelInitializer initializer = new TcpClientChannelInitializer(roTcpConfig)
-                    .andThen(new RedisClientChannelInitializer());
-
-            final TcpConnector<RedisData, ByteBuf> connector =
-                    new TcpConnector<>(roTcpConfig, initializer, () -> o -> false);
-            return connector.connect(executionContext, resolvedAddress).map(mapper).subscribeShareContext();
-        });
+    private static <ResolvedAddress> Single<? extends NettyConnection<RedisData, ByteBuf>> build(
+            ExecutionContext executionContext, ResolvedAddress resolvedAddress, ReadOnlyRedisClientConfig roConfig) {
+        // This state is read only, so safe to keep a copy across Subscribers
+        final ReadOnlyTcpClientConfig tcpClientConfig = roConfig.getTcpClientConfig();
+        return TcpConnector.connect(null, resolvedAddress, tcpClientConfig, executionContext)
+                .flatMap(channel -> {
+                    CloseHandler closeHandler = forPipelinedRequestResponse(true, channel.config());
+                    return DefaultNettyConnection.initChannel(channel, executionContext.bufferAllocator(),
+                            executionContext.executor(), new TerminalPredicate<>(o -> false), closeHandler,
+                            tcpClientConfig.getFlushStrategy(), new TcpClientChannelInitializer(
+                                    tcpClientConfig).andThen(new RedisClientChannelInitializer()));
+                });
     }
 }

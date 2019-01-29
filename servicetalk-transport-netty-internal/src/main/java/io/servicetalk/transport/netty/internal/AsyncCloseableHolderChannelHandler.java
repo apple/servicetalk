@@ -15,23 +15,18 @@
  */
 package io.servicetalk.transport.netty.internal;
 
+import io.servicetalk.concurrent.api.AsyncCloseable;
+
 import io.netty.channel.ChannelHandler;
 
-import javax.annotation.Nullable;
-
 /**
- * A {@link ChannelHandler} that contains a {@link NettyConnection}.
- *
- * @param <Read> Type of objects read from this connection.
- * @param <Write> Type of objects written to this connection.
+ * A holder of a {@link AsyncCloseable} object.
  */
-public interface ConnectionHolderChannelHandler<Read, Write> extends ChannelHandler {
-
+public interface AsyncCloseableHolderChannelHandler extends ChannelHandler {
     /**
-     * Get the {@link NettyConnection} associated with this object.
+     * Get the {@link AsyncCloseable} associated with this object.
      *
-     * @return the {@link NettyConnection} associated with this object.
+     * @return the {@link AsyncCloseable} associated with this object.
      */
-    @Nullable
-    NettyConnection<Read, Write> getConnection();
+    AsyncCloseable asyncClosable();
 }

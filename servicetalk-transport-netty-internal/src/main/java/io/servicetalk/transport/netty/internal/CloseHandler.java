@@ -16,9 +16,11 @@
 package io.servicetalk.transport.netty.internal;
 
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelConfig;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.EventLoop;
 import io.netty.channel.socket.SocketChannel;
+import io.netty.channel.socket.SocketChannelConfig;
 
 import java.nio.channels.ClosedChannelException;
 import java.util.function.Consumer;
@@ -35,9 +37,15 @@ public abstract class CloseHandler {
      * New {@link CloseHandler} instance.
      *
      * @param client operation mode, {@code TRUE} for {@code client} or {@code FALSE} for {@code server}
+     * @param config The {@link ChannelConfig} associated with the channel to create the {@link CloseHandler} for.
+     * This {@link ChannelConfig} maybe modified to ensure the underlying options allow for half-closure.
      * @return a new connection close handler with behavior for a pipelined request/response client or server
      */
-    public static CloseHandler forPipelinedRequestResponse(boolean client) {
+    public static CloseHandler forPipelinedRequestResponse(boolean client, ChannelConfig config) {
+        if (config instanceof SocketChannelConfig) {
+            ((SocketChannelConfig) config).setAllowHalfClosure(true);
+        }
+        config.setAutoClose(false);
         return new RequestResponseCloseHandler(client);
     }
 
