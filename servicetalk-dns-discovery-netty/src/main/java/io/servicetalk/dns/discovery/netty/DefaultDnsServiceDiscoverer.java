@@ -77,15 +77,15 @@ final class DefaultDnsServiceDiscoverer
 
     static final Comparator<InetAddress> INET_ADDRESS_COMPARATOR = comparing(o -> wrap(o.getAddress()));
 
-    private static final Subscriber<ServiceDiscovererEvent<InetAddress>> CANCELLED =
-            new Subscriber<ServiceDiscovererEvent<InetAddress>>() {
+    private static final Subscriber<? super Iterable<ServiceDiscovererEvent<InetAddress>>> CANCELLED =
+            new Subscriber<Iterable<ServiceDiscovererEvent<InetAddress>>>() {
         @Override
         public void onSubscribe(Subscription s) {
             s.cancel();
         }
 
         @Override
-        public void onNext(ServiceDiscovererEvent<InetAddress> event) {
+        public void onNext(Iterable<ServiceDiscovererEvent<InetAddress>> serviceDiscovererEvents) {
         }
 
         @Override
@@ -279,232 +279,232 @@ final class DefaultDnsServiceDiscoverer
         assert nettyIoExecutor.isCurrentThreadEventLoop() : "Must be called from the associated eventloop.";
     }
 
-    private final class DiscoverEntry extends Publisher<Iterable<ServiceDiscovererEvent<InetAddress>>> {
+    private final class DiscoverEntry {
         @Nullable
-        private Subscriber<? super ServiceDiscovererEvent<InetAddress>> subscriber;
+        private Subscriber<? super Iterable<ServiceDiscovererEvent<InetAddress>>> discoverySubscriber;
         final String inetHost;
         final Publisher<ServiceDiscovererEvent<InetAddress>> publisher;
 
         DiscoverEntry(String inetHost) {
             this.inetHost = inetHost;
-            Publisher<ServiceDiscovererEvent<InetAddress>> publisher =
-                    new Publisher<ServiceDiscovererEvent<InetAddress>>() {
-                        @Override
-                        protected void handleSubscribe(
-                                Subscriber<? super ServiceDiscovererEvent<InetAddress>> subscriber) {
-                            initializeSubscriber(subscriber);
-                        }
-                    };
-            this.publisher = retryStrategy == null ? publisher :
-                    publisher.retryWhen(retryStrategy);
+            Publisher<Iterable<ServiceDiscovererEvent<InetAddress>>> publisher = new EntriesPublisher();
+            if (retryStrategy != null) {
+                publisher = publisher.retryWhen(retryStrategy);
+            }
+
+            this.publisher = publisher.flatMapIterable(identity());
         }
 
         void completeSubscription0() {
             assertInEventloop();
 
-            Subscriber<? super ServiceDiscovererEvent<InetAddress>> oldSubscriber = subscriber;
-            subscriber = CANCELLED;
+            Subscriber<? super Iterable<ServiceDiscovererEvent<InetAddress>>> oldSubscriber = discoverySubscriber;
+            discoverySubscriber = CANCELLED;
             if (oldSubscriber != null) {
                 completeSubscriberOnClose0(oldSubscriber);
             }
         }
 
         private void completeSubscriberOnClose0(
-                Subscriber<? super ServiceDiscovererEvent<InetAddress>> subscriber) {
+                Subscriber<? super Iterable<ServiceDiscovererEvent<InetAddress>>> subscriber) {
             assertInEventloop();
 
             final IllegalStateException cause = new IllegalStateException(DefaultDnsServiceDiscoverer.this + " has been closed!");
-            if (DiscoverEntry.this.subscriber != null) {
-                DiscoverEntry.this.subscriber = null;
+            if (discoverySubscriber != null) {
+                discoverySubscriber = null;
                 subscriber.onError(cause);
             }
         }
 
-        private void initializeSubscriber(
-                Subscriber<? super ServiceDiscovererEvent<InetAddress>> subscriber) {
-            if (nettyIoExecutor.isCurrentThreadEventLoop()) {
-                initializeSubscriber0(subscriber);
-            } else {
-                nettyIoExecutor.asExecutor().execute(() -> initializeSubscriber0(subscriber));
+        private final class EntriesPublisher extends Publisher<Iterable<ServiceDiscovererEvent<InetAddress>>> {
+
+            @Override
+            protected void handleSubscribe(final Subscriber<? super Iterable<ServiceDiscovererEvent<InetAddress>>> subscriber) {
+                if (nettyIoExecutor.isCurrentThreadEventLoop()) {
+                    handleSubscribe0(subscriber);
+                } else {
+                    nettyIoExecutor.asExecutor().execute(() -> handleSubscribe0(subscriber));
+                }
+            }
+
+            private void handleSubscribe0(final Subscriber<? super Iterable<ServiceDiscovererEvent<InetAddress>>> subscriber) {
+                assertInEventloop();
+
+                if (discoverySubscriber != null) {
+                    subscriber.onSubscribe(EMPTY_SUBSCRIPTION);
+                    subscriber.onError(new DuplicateSubscribeException(discoverySubscriber, subscriber));
+                } else if (closed) {
+                    subscriber.onSubscribe(EMPTY_SUBSCRIPTION);
+                    completeSubscriberOnClose0(subscriber);
+                } else {
+                    discoverySubscriber = subscriber;
+                    LOGGER.debug("DNS discoverer {}, starting DNS resolution for {}.", DefaultDnsServiceDiscoverer.this,
+                            inetHost);
+                    subscriber.onSubscribe(new EntriesPublisherSubscription(subscriber));
+                }
             }
         }
 
-        private void initializeSubscriber0(
-                Subscriber<? super ServiceDiscovererEvent<InetAddress>> subscriber) {
-            assertInEventloop();
+        private final class EntriesPublisherSubscription implements Subscription {
+            private final Subscriber<? super Iterable<ServiceDiscovererEvent<InetAddress>>> subscriber;
+            private long pendingRequests;
+            private List<InetAddress> activeAddresses;
+            private long resolveDoneNoScheduleTime;
+            @Nullable
+            private Cancellable cancellableForQuery;
+            private long ttlNanos;
 
-            if (this.subscriber != null) {
-                subscriber.onSubscribe(EMPTY_SUBSCRIPTION);
-                subscriber.onError(new DuplicateSubscribeException(this.subscriber, subscriber));
-            } else if (closed) {
-                subscriber.onSubscribe(EMPTY_SUBSCRIPTION);
-                completeSubscriberOnClose0(subscriber);
-            } else {
+            EntriesPublisherSubscription(final Subscriber<? super Iterable<ServiceDiscovererEvent<InetAddress>>> subscriber) {
                 this.subscriber = subscriber;
-                flatMapIterable(identity()).subscribe(subscriber);
+                activeAddresses = Collections.emptyList();
+                ttlNanos = -1;
             }
-        }
 
-        @Override
-        protected void handleSubscribe(Subscriber<? super Iterable<ServiceDiscovererEvent<InetAddress>>> subscriber) {
-            assertInEventloop();
-
-            LOGGER.debug("DNS discoverer {}, starting DNS resolution for {}.", DefaultDnsServiceDiscoverer.this,
-                    inetHost);
-            subscriber.onSubscribe(new Subscription() {
-                private long pendingRequests;
-                private List<InetAddress> activeAddresses = Collections.emptyList();
-                private long resolveDoneNoScheduleTime;
-                @Nullable
-                private Cancellable cancellableForQuery;
-                private long ttlNanos = -1;
-
-                @Override
-                public void request(long n) {
-                    // TODO(scott): use a custom cache which can do the following:
-                    // If the value is not in the cache (and we don't have an outstanding query?), the query for it
-                    // if there is already a Runnable scheduled in TTL time to refresh, then add to pendingRequests and
-                    // do nothing if the value is in the cache and not expired then return it and schedule a Runnable
-                    // to refresh our data in (current time - last data delivered time) time units.
-                    // If the value is in the cache, but expired then remove/query for it.
-                    if (nettyIoExecutor.isCurrentThreadEventLoop()) {
-                        request0(n);
-                    } else {
-                        nettyIoExecutor.asExecutor().execute(() -> request0(n));
-                    }
+            @Override
+            public void request(long n) {
+                // TODO(scott): use a custom cache which can do the following:
+                // If the value is not in the cache (and we don't have an outstanding query?), the query for it
+                // if there is already a Runnable scheduled in TTL time to refresh, then add to pendingRequests and
+                // do nothing if the value is in the cache and not expired then return it and schedule a Runnable
+                // to refresh our data in (current time - last data delivered time) time units.
+                // If the value is in the cache, but expired then remove/query for it.
+                if (nettyIoExecutor.isCurrentThreadEventLoop()) {
+                    request0(n);
+                } else {
+                    nettyIoExecutor.asExecutor().execute(() -> request0(n));
                 }
+            }
 
-                @Override
-                public void cancel() {
-                    if (nettyIoExecutor.isCurrentThreadEventLoop()) {
-                        cancel0();
-                    } else {
-                        nettyIoExecutor.asExecutor().execute(this::cancel0);
-                    }
+            @Override
+            public void cancel() {
+                if (nettyIoExecutor.isCurrentThreadEventLoop()) {
+                    cancel0();
+                } else {
+                    nettyIoExecutor.asExecutor().execute(this::cancel0);
                 }
+            }
 
-                private void request0(long n) {
-                    assertInEventloop();
+            private void request0(long n) {
+                assertInEventloop();
 
-                    pendingRequests = FlowControlUtil.addWithOverflowProtection(pendingRequests, n);
-                    if (cancellableForQuery == null) {
-                        if (ttlNanos < 0) {
+                pendingRequests = FlowControlUtil.addWithOverflowProtection(pendingRequests, n);
+                if (cancellableForQuery == null) {
+                    if (ttlNanos < 0) {
+                        doQuery0();
+                    } else {
+                        long durationNs = nanoTime() - resolveDoneNoScheduleTime;
+                        if (durationNs > ttlNanos) {
                             doQuery0();
                         } else {
-                            long durationNs = nanoTime() - resolveDoneNoScheduleTime;
-                            if (durationNs > ttlNanos) {
-                                doQuery0();
-                            } else {
-                                scheduleQuery0(ttlNanos - durationNs);
-                            }
+                            scheduleQuery0(ttlNanos - durationNs);
                         }
                     }
                 }
+            }
 
-                private void doQuery0() {
-                    assertInEventloop();
+            private void doQuery0() {
+                assertInEventloop();
 
-                    LOGGER.trace("DNS discoverer {}, querying DNS for {}.", DefaultDnsServiceDiscoverer.this, inetHost);
+                LOGGER.trace("DNS discoverer {}, querying DNS for {}.", DefaultDnsServiceDiscoverer.this, inetHost);
 
-                    ttlCache.prepareForResolution(inetHost);
-                    cancellableForQuery = IGNORE_CANCEL;
-                    Future<List<InetAddress>> addressFuture = resolver.resolveAll(inetHost);
-                    if (addressFuture.isDone()) {
-                        handleResolveDone0(addressFuture);
+                ttlCache.prepareForResolution(inetHost);
+                cancellableForQuery = IGNORE_CANCEL;
+                Future<List<InetAddress>> addressFuture = resolver.resolveAll(inetHost);
+                if (addressFuture.isDone()) {
+                    handleResolveDone0(addressFuture);
+                } else {
+                    addressFuture.addListener((FutureListener<List<InetAddress>>) this::handleResolveDone0);
+                }
+            }
+
+            private void cancel0() {
+                assertInEventloop();
+
+                if (cancellableForQuery != null) {
+                    cancellableForQuery.cancel();
+                    cancellableForQuery = null;
+                }
+                removeEntry(DiscoverEntry.this);
+            }
+
+            private void scheduleQuery0(long nanos) {
+                assertInEventloop();
+
+                LOGGER.trace("DNS discoverer {}, scheduling DNS query for {} after {} nanos.",
+                        DefaultDnsServiceDiscoverer.this, inetHost, nanos);
+                // This value is coming from DNS TTL for which the unit is seconds and the minimum value we accept
+                // in the builder is 1 second.
+                cancellableForQuery = nettyIoExecutor.asExecutor().schedule(
+                        this::doQuery0, nanos, NANOSECONDS);
+            }
+
+            private void handleResolveDone0(Future<List<InetAddress>> addressFuture) {
+                assertInEventloop();
+
+                if (discoverySubscriber != null) {
+                    Throwable cause = addressFuture.cause();
+                    if (cause != null) {
+                        handleError0(cause, true);
                     } else {
-                        addressFuture.addListener((FutureListener<List<InetAddress>>) this::handleResolveDone0);
-                    }
-                }
+                        List<InetAddress> addresses = addressFuture.getNow();
+                        List<ServiceDiscovererEvent<InetAddress>> events = calculateDifference(activeAddresses,
+                                addresses, INET_ADDRESS_COMPARATOR);
+                        ttlNanos = SECONDS.toNanos(ttlCache.minTtl(inetHost));
+                        if (events != null) {
+                            --pendingRequests;
+                            if (pendingRequests > 0) {
+                                scheduleQuery0(ttlNanos);
+                            } else {
+                                resolveDoneNoScheduleTime = nanoTime();
+                                cancellableForQuery = null;
+                            }
+                            activeAddresses = addresses;
+                            try {
+                                LOGGER.debug("DNS discoverer {}, sending events for address {}: (size {}) {}.",
+                                        DefaultDnsServiceDiscoverer.this, inetHost, events.size(), events);
 
-                private void cancel0() {
-                    assertInEventloop();
-
-                    if (cancellableForQuery != null) {
-                        cancellableForQuery.cancel();
-                        cancellableForQuery = null;
-                    }
-                    removeEntry(DiscoverEntry.this);
-                }
-
-                private void scheduleQuery0(long nanos) {
-                    assertInEventloop();
-
-                    LOGGER.trace("DNS discoverer {}, scheduling DNS query for {} after {} nanos.",
-                            DefaultDnsServiceDiscoverer.this, inetHost, nanos);
-                    // This value is coming from DNS TTL for which the unit is seconds and the minimum value we accept
-                    // in the builder is 1 second.
-                    cancellableForQuery = nettyIoExecutor.asExecutor().schedule(
-                            this::doQuery0, nanos, NANOSECONDS);
-                }
-
-                private void handleResolveDone0(Future<List<InetAddress>> addressFuture) {
-                    assertInEventloop();
-
-                    if (DiscoverEntry.this.subscriber != null) {
-                        Throwable cause = addressFuture.cause();
-                        if (cause != null) {
-                            handleError0(cause, true);
+                                subscriber.onNext(events);
+                            } catch (Throwable error) {
+                                handleError0(error, false);
+                            }
                         } else {
-                            List<InetAddress> addresses = addressFuture.getNow();
-                            List<ServiceDiscovererEvent<InetAddress>> events = calculateDifference(activeAddresses,
-                                    addresses, INET_ADDRESS_COMPARATOR);
-                            ttlNanos = SECONDS.toNanos(ttlCache.minTtl(inetHost));
-                            if (events != null) {
-                                --pendingRequests;
-                                if (pendingRequests > 0) {
-                                    scheduleQuery0(ttlNanos);
-                                } else {
-                                    resolveDoneNoScheduleTime = nanoTime();
-                                    cancellableForQuery = null;
-                                }
-                                activeAddresses = addresses;
-                                try {
-                                    LOGGER.debug("DNS discoverer {}, sending events for address {}: (size {}) {}.",
-                                            DefaultDnsServiceDiscoverer.this, inetHost, events.size(), events);
+                            LOGGER.trace("DNS discoverer {}, resolution done but no changes observed for {}. Resolution result: (size {}) {}",
+                                    DefaultDnsServiceDiscoverer.this, inetHost, addresses.size(), addresses);
+                            scheduleQuery0(ttlNanos);
+                        }
+                    }
+                }
+            }
 
-                                    subscriber.onNext(events);
-                                } catch (Throwable error) {
-                                    handleError0(error, false);
+            private void handleError0(Throwable cause, boolean sendInactiveForUnknownHostException) {
+                assertInEventloop();
+
+                LOGGER.debug("DNS discoverer {}, DNS lookup failed for {}.", DefaultDnsServiceDiscoverer.this,
+                        inetHost, cause);
+                boolean wasAlreadyTerminated = discoverySubscriber == null;
+                discoverySubscriber = null; // allow sequential subscriptions
+                cancel0();
+                if (!wasAlreadyTerminated) {
+                    if (sendInactiveForUnknownHostException) {
+                        final List<InetAddress> addresses = activeAddresses;
+                        if (cause instanceof UnknownHostException &&
+                                !(cause.getCause() instanceof DnsNameResolverTimeoutException)) {
+                            List<ServiceDiscovererEvent<InetAddress>> events = new ArrayList<>(addresses.size());
+                            if (addresses instanceof RandomAccess) {
+                                for (int i = 0; i < addresses.size(); ++i) {
+                                    events.add(new DefaultServiceDiscovererEvent<>(addresses.get(i), false));
                                 }
                             } else {
-                                LOGGER.trace("DNS discoverer {}, resolution done but no changes observed for {}. Resolution result: (size {}) {}",
-                                        DefaultDnsServiceDiscoverer.this, inetHost, addresses.size(), addresses);
-                                scheduleQuery0(ttlNanos);
-                            }
-                        }
-                    }
-                }
-
-                private void handleError0(Throwable cause, boolean sendInactiveForUnknownHostException) {
-                    assertInEventloop();
-
-                    LOGGER.debug("DNS discoverer {}, DNS lookup failed for {}.", DefaultDnsServiceDiscoverer.this,
-                            inetHost, cause);
-                    boolean wasAlreadyTerminated = DiscoverEntry.this.subscriber == null;
-                    DiscoverEntry.this.subscriber = null; // allow sequential subscriptions
-                    cancel0();
-                    if (!wasAlreadyTerminated) {
-                        if (sendInactiveForUnknownHostException) {
-                            final List<InetAddress> addresses = activeAddresses;
-                            if (cause instanceof UnknownHostException &&
-                                    !(cause.getCause() instanceof DnsNameResolverTimeoutException)) {
-                                List<ServiceDiscovererEvent<InetAddress>> events = new ArrayList<>(addresses.size());
-                                if (addresses instanceof RandomAccess) {
-                                    for (int i = 0; i < addresses.size(); ++i) {
-                                        events.add(new DefaultServiceDiscovererEvent<>(addresses.get(i), false));
-                                    }
-                                } else {
-                                    for (final InetAddress address : addresses) {
-                                        events.add(new DefaultServiceDiscovererEvent<>(address, false));
-                                    }
+                                for (final InetAddress address : addresses) {
+                                    events.add(new DefaultServiceDiscovererEvent<>(address, false));
                                 }
-                                subscriber.onNext(events);
                             }
+                            subscriber.onNext(events);
                         }
-                        subscriber.onError(cause);
                     }
+                    subscriber.onError(cause);
                 }
-            });
+            }
         }
     }
 
