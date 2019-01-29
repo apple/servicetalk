@@ -23,6 +23,7 @@ import io.servicetalk.concurrent.api.BiIntFunction;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.CompletableProcessor;
 import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.concurrent.internal.DelayedSubscription;
 import io.servicetalk.concurrent.internal.DuplicateSubscribeException;
 import io.servicetalk.concurrent.internal.FlowControlUtil;
 import io.servicetalk.transport.api.ExecutionContext;
@@ -162,14 +163,6 @@ final class DefaultDnsServiceDiscoverer
         assertInEventloop();
 
         registerMap.computeIfAbsent(entry.inetHost, k -> new ArrayList<>(2)).add(entry);
-    }
-
-    void removeEntry(DiscoverEntry entry) {
-        if (nettyIoExecutor.isCurrentThreadEventLoop()) {
-            removeEntry0(entry);
-        } else {
-            nettyIoExecutor.asExecutor().execute(() -> removeEntry0(entry));
-        }
     }
 
     private void removeEntry0(DiscoverEntry entry) {
@@ -320,27 +313,30 @@ final class DefaultDnsServiceDiscoverer
 
             @Override
             protected void handleSubscribe(final Subscriber<? super Iterable<ServiceDiscovererEvent<InetAddress>>> subscriber) {
+                DelayedSubscription subscription = new DelayedSubscription();
                 if (nettyIoExecutor.isCurrentThreadEventLoop()) {
-                    handleSubscribe0(subscriber);
+                    handleSubscribe0(subscriber, subscription);
                 } else {
-                    nettyIoExecutor.asExecutor().execute(() -> handleSubscribe0(subscriber));
+                    nettyIoExecutor.asExecutor().execute(() -> handleSubscribe0(subscriber, subscription));
                 }
+                subscriber.onSubscribe(subscription);
             }
 
-            private void handleSubscribe0(final Subscriber<? super Iterable<ServiceDiscovererEvent<InetAddress>>> subscriber) {
+            private void handleSubscribe0(final Subscriber<? super Iterable<ServiceDiscovererEvent<InetAddress>>> subscriber,
+                                          final DelayedSubscription subscription) {
                 assertInEventloop();
 
                 if (discoverySubscriber != null) {
-                    subscriber.onSubscribe(EMPTY_SUBSCRIPTION);
+                    subscription.setDelayedSubscription(EMPTY_SUBSCRIPTION);
                     subscriber.onError(new DuplicateSubscribeException(discoverySubscriber, subscriber));
                 } else if (closed) {
-                    subscriber.onSubscribe(EMPTY_SUBSCRIPTION);
+                    subscription.setDelayedSubscription(EMPTY_SUBSCRIPTION);
                     completeSubscriberOnClose0(subscriber);
                 } else {
                     discoverySubscriber = subscriber;
                     LOGGER.debug("DNS discoverer {}, starting DNS resolution for {}.", DefaultDnsServiceDiscoverer.this,
                             inetHost);
-                    subscriber.onSubscribe(new EntriesPublisherSubscription(subscriber));
+                    subscription.setDelayedSubscription(new EntriesPublisherSubscription(subscriber));
                 }
             }
         }
@@ -424,7 +420,7 @@ final class DefaultDnsServiceDiscoverer
                     cancellableForQuery.cancel();
                     cancellableForQuery = null;
                 }
-                removeEntry(DiscoverEntry.this);
+                removeEntry0(DiscoverEntry.this);
             }
 
             private void scheduleQuery0(long nanos) {
