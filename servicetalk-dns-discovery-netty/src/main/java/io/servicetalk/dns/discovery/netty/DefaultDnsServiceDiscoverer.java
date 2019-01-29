@@ -290,8 +290,6 @@ final class DefaultDnsServiceDiscoverer
         final String inetHost;
         final Publisher<ServiceDiscovererEvent<InetAddress>> publisher;
 
-        private boolean terminated;
-
         DiscoverEntry(String inetHost) {
             this.inetHost = inetHost;
             Publisher<ServiceDiscovererEvent<InetAddress>> publisher =
@@ -321,8 +319,8 @@ final class DefaultDnsServiceDiscoverer
             assertInEventloop();
 
             final IllegalStateException cause = new IllegalStateException(DefaultDnsServiceDiscoverer.this + " has been closed!");
-            if (!terminated) {
-                terminated = true;
+            if (DiscoverEntry.this.subscriber != null) {
+                DiscoverEntry.this.subscriber = null;
                 subscriber.onError(cause);
             }
         }
@@ -358,7 +356,6 @@ final class DefaultDnsServiceDiscoverer
 
             LOGGER.debug("DNS discoverer {}, starting DNS resolution for {}.", DefaultDnsServiceDiscoverer.this,
                     inetHost);
-            terminated = false;
             subscriber.onSubscribe(new Subscription() {
                 private long pendingRequests;
                 private List<InetAddress> activeAddresses = Collections.emptyList();
@@ -463,7 +460,7 @@ final class DefaultDnsServiceDiscoverer
                                 LOGGER.debug("DNS discoverer {}, sending events for address {}: (size {}) {}.",
                                         DefaultDnsServiceDiscoverer.this, inetHost, events.size(), events);
 
-                                if (!terminated) {
+                                if (DiscoverEntry.this.subscriber != null) {
                                     subscriber.onNext(events);
                                 }
                             } catch (Throwable error) {
@@ -481,10 +478,10 @@ final class DefaultDnsServiceDiscoverer
                     assertInEventloop();
 
                     LOGGER.debug("DNS discoverer {}, DNS lookup failed for {}.", DefaultDnsServiceDiscoverer.this, inetHost, cause);
+                    boolean wasAlreadyTerminated = DiscoverEntry.this.subscriber == null;
                     DiscoverEntry.this.subscriber = null; // allow sequential subscriptions
                     cancel0();
-                    if (!terminated) {
-                        terminated = true;
+                    if (!wasAlreadyTerminated) {
                         final List<InetAddress> addresses = activeAddresses;
                         if (cause instanceof UnknownHostException && !(cause.getCause() instanceof DnsNameResolverTimeoutException)) {
                             List<ServiceDiscovererEvent<InetAddress>> events = new ArrayList<>(addresses.size());
