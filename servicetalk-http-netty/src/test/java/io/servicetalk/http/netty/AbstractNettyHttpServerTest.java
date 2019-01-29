@@ -26,7 +26,6 @@ import io.servicetalk.http.api.HttpResponseStatuses;
 import io.servicetalk.http.api.HttpServerBuilder;
 import io.servicetalk.http.api.StreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpRequest;
-import io.servicetalk.http.api.StreamingHttpRequestFactory;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.test.resources.DefaultTestCerts;
@@ -169,11 +168,11 @@ public abstract class AbstractNettyHttpServerTest {
     protected void ignoreTestWhen(ExecutorSupplier clientExecutorSupplier, ExecutorSupplier serverExecutorSupplier) {
         assumeThat("Ignored flaky test",
                 parseBoolean(System.getenv("CI")) &&
-                this.clientExecutorSupplier == clientExecutorSupplier &&
-                this.serverExecutorSupplier == serverExecutorSupplier, is(FALSE));
+                        this.clientExecutorSupplier == clientExecutorSupplier &&
+                        this.serverExecutorSupplier == serverExecutorSupplier, is(FALSE));
     }
 
-    void setService(final StreamingHttpService service) {
+    protected void setService(final StreamingHttpService service) {
         this.service = service;
     }
 
@@ -236,7 +235,7 @@ public abstract class AbstractNettyHttpServerTest {
         return Publisher.from(texts).map(this::getChunkFromString);
     }
 
-    StreamingHttpRequestFactory getStreamingRequestFactory() {
+    StreamingHttpConnection streamingHttpConnection() {
         return httpConnection;
     }
 

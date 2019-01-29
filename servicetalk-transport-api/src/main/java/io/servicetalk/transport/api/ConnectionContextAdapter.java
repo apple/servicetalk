@@ -16,6 +16,7 @@
 package io.servicetalk.transport.api;
 
 import io.servicetalk.concurrent.api.Completable;
+import io.servicetalk.concurrent.api.Single;
 
 import java.net.SocketAddress;
 import javax.annotation.Nullable;
@@ -68,6 +69,11 @@ public class ConnectionContextAdapter implements ConnectionContext {
     @Override
     public ExecutionContext executionContext() {
         return delegate.executionContext();
+    }
+
+    @Override
+    public Single<Throwable> transportError() {
+        return delegate.transportError();
     }
 
     @Override

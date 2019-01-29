@@ -16,6 +16,7 @@
 package io.servicetalk.http.api;
 
 import io.servicetalk.concurrent.api.Completable;
+import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.transport.api.ExecutionContext;
 
 import java.net.InetSocketAddress;
@@ -58,6 +59,11 @@ public class TestHttpServiceContext extends HttpServiceContext {
     @Override
     public ExecutionContext executionContext() {
         return executionContext;
+    }
+
+    @Override
+    public Single<Throwable> transportError() {
+        return Single.never();
     }
 
     @Override

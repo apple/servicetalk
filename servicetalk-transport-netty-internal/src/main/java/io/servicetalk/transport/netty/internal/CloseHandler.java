@@ -22,6 +22,7 @@ import io.netty.channel.socket.SocketChannel;
 
 import java.nio.channels.ClosedChannelException;
 import java.util.function.Consumer;
+import javax.annotation.Nullable;
 
 /**
  * Contract between protocol codecs and a close handler.
@@ -137,42 +138,48 @@ public abstract class CloseHandler {
         /**
          * Outbound protocol close command observed eg. HTTP header: {@code Connection: close}.
          */
-        PROTOCOL_CLOSING_OUTBOUND,
+        PROTOCOL_CLOSING_OUTBOUND("Outbound protocol close command observed eg. HTTP header: Connection: close."),
         /**
          * Inbound protocol close command observed eg. HTTP header: {@code Connection: close}.
          */
-        PROTOCOL_CLOSING_INBOUND,
+        PROTOCOL_CLOSING_INBOUND("Inbound protocol close command observed eg. HTTP header: Connection: close."),
         /**
          * User initiated close command, depends on the implementation but usually resembles outbound protocol close.
          */
-        USER_CLOSING,
+        USER_CLOSING("User initiated close command."),
         /**
          * Outbound {@link SocketChannel} shutdown observed.
          */
-        CHANNEL_CLOSED_OUTBOUND,
+        CHANNEL_CLOSED_OUTBOUND("Outbound SocketChannel shutdown observed"),
         /**
          * Inbound {@link SocketChannel} shutdown observed.
          */
-        CHANNEL_CLOSED_INBOUND;
+        CHANNEL_CLOSED_INBOUND("Inbound SocketChannel shutdown observed");
 
-        Throwable wrapError(Throwable cause) {
-            return new CloseEventObservedException(cause, this.name());
+        private final String description;
+
+        CloseEvent(final String description) {
+            this.description = description;
+        }
+
+        Throwable wrapError(@Nullable Throwable cause) {
+            return new CloseEventObservedException(cause, this);
         }
     }
 
     private static final class CloseEventObservedException extends ClosedChannelException {
         private static final long serialVersionUID = -4181001701486049092L;
 
-        private final String closeEventName;
+        private final CloseEvent event;
 
-        private CloseEventObservedException(Throwable cause, final String closeEventName) {
-            this.closeEventName = closeEventName;
+        private CloseEventObservedException(@Nullable Throwable cause, final CloseEvent closeEvent) {
+            this.event = closeEvent;
             initCause(cause);
         }
 
         @Override
         public String getMessage() {
-            return closeEventName;
+            return String.format("%s(%s)", event.name(), event.description);
         }
 
         @Override

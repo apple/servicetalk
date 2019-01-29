@@ -16,6 +16,7 @@
 package io.servicetalk.transport.api;
 
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
+import io.servicetalk.concurrent.api.Single;
 
 import java.net.SocketAddress;
 import javax.annotation.Nullable;
@@ -54,4 +55,11 @@ public interface ConnectionContext extends ListenableAsyncCloseable {
      * @return the {@link ExecutionContext} for this {@link ConnectionContext}.
      */
     ExecutionContext executionContext();
+
+    /**
+     * Returns a {@link Single}&lt;{@link Throwable}&gt; that may complete when an error is observed at the transport.
+     *
+     * @return a {@link Single}&lt;{@link Throwable}&gt; that may complete when an error is observed at the transport.
+     */
+    Single<Throwable> transportError();
 }

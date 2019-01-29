@@ -17,6 +17,7 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.Completable;
+import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.BlockingStreamingHttpResponseFactory;
 import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.api.HttpResponseFactory;
@@ -70,6 +71,11 @@ final class DefaultHttpServiceContext extends HttpServiceContext {
     @Override
     public ExecutionContext executionContext() {
         return connectionContext.executionContext();
+    }
+
+    @Override
+    public Single<Throwable> transportError() {
+        return connectionContext.transportError();
     }
 
     @Override

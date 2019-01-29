@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,10 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.concurrent.api.internal;
+package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
-import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.QueueFullAndRejectedSubscribeException;
 
 import java.util.Queue;
@@ -89,7 +88,7 @@ public final class SingleProcessor<T> extends Single<T> implements Single.Proces
 
     @Override
     public void onSuccess(@Nullable final T result) {
-        terminate(result);
+        terminate(ThrowableWrapper.wrapIfThrowable(result));
     }
 
     @Override
@@ -109,10 +108,36 @@ public final class SingleProcessor<T> extends Single<T> implements Single.Proces
             drainSingleConsumerQueueDelayThrow(subscribers, subscriber -> subscriber.onError(error),
                     drainingTheQueueUpdater, this);
         } else {
-            @SuppressWarnings("unchecked")
-            final T value = (T) terminalSignal;
+            final T value = ThrowableWrapper.unwrapIfNeeded(terminalSignal);
             drainSingleConsumerQueueDelayThrow(subscribers, subscriber -> subscriber.onSuccess(value),
                     drainingTheQueueUpdater, this);
+        }
+    }
+
+    /**
+     * Wrapper to mark {@link Throwable} data so that we don't deliver it as {@link Subscriber#onError(Throwable)}.
+     */
+    private static final class ThrowableWrapper {
+        private final Throwable t;
+        private ThrowableWrapper(final Throwable t) {
+            this.t = t;
+        }
+
+        @SuppressWarnings("unchecked")
+        @Nullable
+        static <T> T unwrapIfNeeded(@Nullable Object inData) {
+            if (inData instanceof SingleProcessor.ThrowableWrapper) {
+                return (T) ((ThrowableWrapper) inData).t;
+            }
+            return (T) inData;
+        }
+
+        @Nullable
+        static Object wrapIfThrowable(@Nullable Object inData) {
+            if (inData instanceof Throwable) {
+                return new ThrowableWrapper((Throwable) inData);
+            }
+            return inData;
         }
     }
 }

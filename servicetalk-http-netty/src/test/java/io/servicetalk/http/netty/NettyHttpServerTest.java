@@ -20,10 +20,15 @@ import io.servicetalk.concurrent.BlockingIterator;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.api.MockedCompletableListenerRule;
 import io.servicetalk.concurrent.api.PublisherRule;
+import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
+import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.StreamingHttpResponse;
+import io.servicetalk.http.api.StreamingHttpResponseFactory;
+import io.servicetalk.http.api.StreamingHttpService;
+import io.servicetalk.http.api.StreamingHttpServiceFilter;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -32,7 +37,9 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import java.io.IOException;
+import java.nio.channels.ClosedChannelException;
 import java.util.Collection;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.AsyncCloseables.closeAsyncGracefully;
@@ -40,8 +47,6 @@ import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.http.api.DefaultHttpHeadersFactory.INSTANCE;
 import static io.servicetalk.http.api.HttpHeaderNames.CONNECTION;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
-import static io.servicetalk.http.api.HttpHeaderNames.TRANSFER_ENCODING;
-import static io.servicetalk.http.api.HttpHeaderValues.CHUNKED;
 import static io.servicetalk.http.api.HttpHeaderValues.CLOSE;
 import static io.servicetalk.http.api.HttpHeaderValues.KEEP_ALIVE;
 import static io.servicetalk.http.api.HttpHeaderValues.ZERO;
@@ -70,10 +75,14 @@ import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
@@ -88,6 +97,8 @@ public class NettyHttpServerTest extends AbstractNettyHttpServerTest {
     public final MockedCompletableListenerRule completableListenerRule = new MockedCompletableListenerRule();
     private final StreamingHttpRequestResponseFactory reqRespFactory =
             new DefaultStreamingHttpRequestResponseFactory(DEFAULT_ALLOCATOR, INSTANCE);
+
+    private AtomicReference<Single<Throwable>> capturedServiceTransportErrorRef = new AtomicReference<>();
 
     public NettyHttpServerTest(final ExecutorSupplier clientExecutorSupplier,
                                final ExecutorSupplier serverExecutorSupplier) {
@@ -135,7 +146,6 @@ public class NettyHttpServerTest extends AbstractNettyHttpServerTest {
     public void testGetEchoPayloadChunked() throws Exception {
         final StreamingHttpRequest request = reqRespFactory.newRequest(GET, SVC_ECHO).payloadBody(
                 getChunkPublisherFromStrings("hello"));
-        request.headers().set(TRANSFER_ENCODING, CHUNKED); // TODO: Eventually, this won't be necessary.
         final StreamingHttpResponse response = makeRequest(request);
         assertResponse(response, HTTP_1_1, OK, singletonList("hello"));
     }
@@ -153,7 +163,6 @@ public class NettyHttpServerTest extends AbstractNettyHttpServerTest {
     public void testGetIgnoreRequestPayload() throws Exception {
         final StreamingHttpRequest request = reqRespFactory.newRequest(GET, SVC_COUNTER).payloadBody(
                 getChunkPublisherFromStrings("hello"));
-        request.headers().set(TRANSFER_ENCODING, CHUNKED); // TODO: Eventually, this won't be necessary.
         final StreamingHttpResponse response = makeRequest(request);
         assertResponse(response, HTTP_1_1, OK, singletonList("Testing1\n"));
     }
@@ -206,13 +215,11 @@ public class NettyHttpServerTest extends AbstractNettyHttpServerTest {
     public void testMultipleGetsEchoPayloadChunked() throws Exception {
         final StreamingHttpRequest request1 = reqRespFactory.newRequest(GET, SVC_ECHO).payloadBody(
                 getChunkPublisherFromStrings("hello"));
-        request1.headers().set(TRANSFER_ENCODING, CHUNKED); // TODO: Eventually, this won't be necessary.
         final StreamingHttpResponse response1 = makeRequest(request1);
         assertResponse(response1, HTTP_1_1, OK, singletonList("hello"));
 
         final StreamingHttpRequest request2 = reqRespFactory.newRequest(GET, SVC_ECHO).payloadBody(
                 getChunkPublisherFromStrings("hello"));
-        request2.headers().set(TRANSFER_ENCODING, CHUNKED); // TODO: Eventually, this won't be necessary.
         final StreamingHttpResponse response2 = makeRequest(request2);
         assertResponse(response2, HTTP_1_1, OK, singletonList("hello"));
     }
@@ -434,7 +441,6 @@ public class NettyHttpServerTest extends AbstractNettyHttpServerTest {
 
         final StreamingHttpRequest request = reqRespFactory.newRequest(GET, SVC_ERROR_BEFORE_READ).payloadBody(
                 getChunkPublisherFromStrings("Goodbye", "cruel", "world!"));
-        request.headers().set(TRANSFER_ENCODING, CHUNKED); // TODO: Eventually, this won't be necessary.
         final StreamingHttpResponse response = makeRequest(request);
 
         assertEquals(OK, response.status());
@@ -461,7 +467,6 @@ public class NettyHttpServerTest extends AbstractNettyHttpServerTest {
 
         final StreamingHttpRequest request = reqRespFactory.newRequest(GET, SVC_ERROR_DURING_READ).payloadBody(
                 getChunkPublisherFromStrings("Goodbye", "cruel", "world!"));
-        request.headers().set(TRANSFER_ENCODING, CHUNKED); // TODO: Eventually, this won't be necessary.
         final StreamingHttpResponse response = makeRequest(request);
 
         assertEquals(OK, response.status());
@@ -472,16 +477,51 @@ public class NettyHttpServerTest extends AbstractNettyHttpServerTest {
         assertEquals("cruel", httpPayloadChunks.next().toString(US_ASCII));
         assertEquals("world!", httpPayloadChunks.next().toString(US_ASCII));
 
-        thrown.expect(RuntimeException.class);
         // Due to a race condition, the exception cause here can vary.
         // If the socket closure is delayed slightly (for example, by delaying the Publisher.error(...) on the server)
         // then the client throws ClosedChannelException. However if the socket closure happens quickly enough,
         // the client throws NativeIoException (KQueue) or IOException (NIO).
-        thrown.expectCause(instanceOf(IOException.class));
         try {
             httpPayloadChunks.next();
-        } finally {
-            assertConnectionClosed();
+            fail("Server should close upon receiving the request");
+        } catch (RuntimeException wrapped) { // BlockingIterator wraps
+            assertClientTransportInboundClosed(wrapped.getCause());
         }
+        assertConnectionClosed();
+        // Client inbound channel closed - should be same exception as above
+        Throwable clientThrowable = streamingHttpConnection().connectionContext().transportError()
+                .toFuture().get(1000, MILLISECONDS);
+        assertClientTransportInboundClosed(clientThrowable);
+        // Server outbound channel force closed (reset)
+        Throwable serverThrowable = capturedServiceTransportErrorRef.get().toFuture().get(1000, MILLISECONDS);
+        assertThat(serverThrowable, instanceOf(ClosedChannelException.class));
+        assertThat(serverThrowable.getMessage(),
+                equalTo("CHANNEL_CLOSED_OUTBOUND(Outbound SocketChannel shutdown observed)"));
+        assertThat(serverThrowable.getCause(), nullValue());
+    }
+
+    private void assertClientTransportInboundClosed(final Throwable clientThrowable) {
+        if (clientThrowable instanceof ClosedChannelException) {
+            assertThat(clientThrowable.getMessage(),
+                    equalTo("CHANNEL_CLOSED_INBOUND(Inbound SocketChannel shutdown observed)"));
+        } else if (clientThrowable instanceof IOException) {
+            // connection reset - unlikely, but possible due to races (no standard way to assert)
+        } else {
+            throw new AssertionError("Unexpected", clientThrowable);
+        }
+    }
+
+    @Override
+    protected void setService(final StreamingHttpService service) {
+        super.setService(new StreamingHttpServiceFilter(service) {
+            @Override
+            public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
+                                                        final StreamingHttpRequest request,
+                                                        final StreamingHttpResponseFactory responseFactory) {
+                // Capture for future assertions on the transport errors
+                capturedServiceTransportErrorRef.set(ctx.transportError());
+                return delegate().handle(ctx, request, responseFactory);
+            }
+        });
     }
 }
