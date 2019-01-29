@@ -27,12 +27,13 @@ import io.servicetalk.transport.api.ExecutionContext;
 
 import java.util.function.Function;
 
+import static io.servicetalk.client.internal.RequestConcurrencyController.Result.Accepted;
 import static java.util.Objects.requireNonNull;
 
 final class DefaultStreamingHttpClient extends StreamingHttpClient {
 
     private static final Function<LoadBalancedStreamingHttpConnection, LoadBalancedStreamingHttpConnection>
-            SELECTOR_FOR_REQUEST = conn -> conn.tryRequest() ? conn : null;
+            SELECTOR_FOR_REQUEST = conn -> conn.tryRequest() == Accepted ? conn : null;
     private static final Function<LoadBalancedStreamingHttpConnection, LoadBalancedStreamingHttpConnection>
             SELECTOR_FOR_RESERVE = conn -> conn.tryReserve() ? conn : null;
 

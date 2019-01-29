@@ -18,6 +18,10 @@ package io.servicetalk.client.internal;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 
+import static io.servicetalk.client.internal.RequestConcurrencyController.Result.Accepted;
+import static io.servicetalk.client.internal.RequestConcurrencyController.Result.RejectedPermanently;
+import static io.servicetalk.client.internal.RequestConcurrencyController.Result.RejectedTemporary;
+
 final class ReservableRequestConcurrencyControllerOnlySingle extends AbstractReservableRequestConcurrencyController {
     ReservableRequestConcurrencyControllerOnlySingle(final Publisher<Integer> maxConcurrencySettingStream,
                                                      final Completable onClose) {
@@ -25,8 +29,14 @@ final class ReservableRequestConcurrencyControllerOnlySingle extends AbstractRes
     }
 
     @Override
-    public boolean tryRequest() {
+    public Result tryRequest() {
         // No concurrency means we have to have 0 requests!
-        return getLastSeenMaxValue(1) > 0 && casPendingRequests(0, 1);
+        if (getLastSeenMaxValue(1) > 0) {
+            if (casPendingRequests(0, 1)) {
+                return Accepted;
+            }
+            return RejectedTemporary;
+        }
+        return RejectedPermanently;
     }
 }

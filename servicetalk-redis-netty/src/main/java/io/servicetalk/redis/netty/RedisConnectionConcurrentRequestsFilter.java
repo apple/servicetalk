@@ -15,15 +15,19 @@
  */
 package io.servicetalk.redis.netty;
 
+import io.servicetalk.client.api.ConnectionClosedException;
 import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.internal.MaxRequestLimitExceededRejectedSubscribeException;
 import io.servicetalk.client.internal.RequestConcurrencyController;
 import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.concurrent.internal.LatestValueSubscriber;
+import io.servicetalk.concurrent.internal.ThrowableUtil;
 import io.servicetalk.redis.api.RedisConnection;
 import io.servicetalk.redis.api.RedisConnectionFilter;
 import io.servicetalk.redis.api.RedisData;
 import io.servicetalk.redis.api.RedisExecutionStrategy;
 import io.servicetalk.redis.api.RedisRequest;
+import io.servicetalk.transport.netty.internal.NettyConnectionContext;
 
 import org.reactivestreams.Subscriber;
 
@@ -37,11 +41,20 @@ import static io.servicetalk.redis.api.RedisConnection.SettingKey.MAX_CONCURRENC
  * This is only used for connections built without a {@link LoadBalancer}.
  */
 final class RedisConnectionConcurrentRequestsFilter extends RedisConnectionFilter {
+    private static final Throwable NONE = ThrowableUtil.unknownStackTrace(new Throwable(),
+            RedisConnectionConcurrentRequestsFilter.class, "request()");
+
     private final RequestConcurrencyController limiter;
+    private final LatestValueSubscriber<Throwable> transportError = new LatestValueSubscriber<>();
 
     RedisConnectionConcurrentRequestsFilter(RedisConnection next,
                                             int defaultMaxPipelinedRequests) {
         super(next);
+        if (next.connectionContext() instanceof NettyConnectionContext) {
+            ((NettyConnectionContext) next.connectionContext()).transportError()
+                    .toPublisher().subscribe(transportError);
+        }
+
         limiter = defaultMaxPipelinedRequests == 1 ?
                 newSingleController(next.settingStream(MAX_CONCURRENCY), next.onClose()) :
                 newController(next.settingStream(MAX_CONCURRENCY), next.onClose(), defaultMaxPipelinedRequests);
@@ -52,14 +65,37 @@ final class RedisConnectionConcurrentRequestsFilter extends RedisConnectionFilte
         return new Publisher<RedisData>() {
             @Override
             protected void handleSubscribe(final Subscriber<? super RedisData> subscriber) {
-                if (limiter.tryRequest()) {
-                    delegate().request(strategy, request).doBeforeFinally(limiter::requestFinished)
-                            .subscribe(subscriber);
-                } else {
-                    subscriber.onSubscribe(EMPTY_SUBSCRIPTION);
-                    subscriber.onError(new MaxRequestLimitExceededRejectedSubscribeException(
-                            "Max concurrent requests saturated for: " + RedisConnectionConcurrentRequestsFilter.this));
+                RequestConcurrencyController.Result result = limiter.tryRequest();
+                Throwable reportedError;
+                switch (result) {
+                    case Accepted:
+                        delegate().request(strategy, request).doBeforeFinally(limiter::requestFinished)
+                                .subscribe(subscriber);
+                        return;
+                    case RejectedTemporary:
+                        reportedError = new MaxRequestLimitExceededRejectedSubscribeException(
+                                "Max concurrent requests saturated for: " +
+                                        RedisConnectionConcurrentRequestsFilter.this);
+                        break;
+                    case RejectedPermanently:
+                        reportedError = RedisConnectionConcurrentRequestsFilter.this.transportError
+                                .getLastSeenValue(NONE);
+                        if (reportedError == NONE) {
+                            reportedError = new ConnectionClosedException(
+                                    "Connection Closed: " + RedisConnectionConcurrentRequestsFilter.this);
+                        } else {
+                            reportedError = new ConnectionClosedException(
+                                    "Connection Closed: " + RedisConnectionConcurrentRequestsFilter.this, reportedError);
+                        }
+                        break;
+                    default:
+                        reportedError = new AssertionError("Unexpected result: " + result +
+                                " determining concurrency limit for the connection " +
+                                RedisConnectionConcurrentRequestsFilter.this);
+                        break;
                 }
+                subscriber.onSubscribe(EMPTY_SUBSCRIPTION);
+                subscriber.onError(reportedError);
             }
         };
     }

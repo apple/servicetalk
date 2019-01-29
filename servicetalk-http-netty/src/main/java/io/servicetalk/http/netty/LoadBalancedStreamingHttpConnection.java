@@ -53,7 +53,7 @@ final class LoadBalancedStreamingHttpConnection extends StreamingHttpClient.Rese
     }
 
     @Override
-    public boolean tryRequest() {
+    public Result tryRequest() {
         return limiter.tryRequest();
     }
 

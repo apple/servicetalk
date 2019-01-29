@@ -80,7 +80,7 @@ final class LoadBalancedRedisConnection extends ReservedRedisConnection
     }
 
     @Override
-    public boolean tryRequest() {
+    public Result tryRequest() {
         return limiter.tryRequest();
     }
 

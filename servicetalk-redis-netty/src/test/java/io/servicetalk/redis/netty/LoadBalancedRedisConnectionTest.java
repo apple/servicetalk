@@ -23,6 +23,7 @@ import io.servicetalk.redis.api.RedisRequest;
 
 import org.junit.Test;
 
+import static io.servicetalk.client.internal.RequestConcurrencyController.Result.Accepted;
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Completable.never;
 import static io.servicetalk.concurrent.api.Publisher.just;
@@ -30,7 +31,8 @@ import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.redis.api.RedisData.PONG;
 import static io.servicetalk.redis.api.RedisProtocolSupport.Command.PING;
 import static io.servicetalk.redis.api.RedisRequests.newRequest;
-import static org.junit.Assert.assertTrue;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -46,10 +48,10 @@ public class LoadBalancedRedisConnectionTest {
         when(delegate.request(any(), any(RedisRequest.class))).thenReturn(just(PONG));
         LoadBalancedRedisConnection connection = new LoadBalancedRedisConnection(delegate,
                 ReservableRequestConcurrencyControllers.newController(just(1), never(), 1));
-        assertTrue(connection.tryRequest());
+        assertThat(connection.tryRequest(), is(Accepted));
         awaitIndefinitely(connection.request(newRequest(PING)));
         connection.requestFinished();
-        assertTrue(connection.tryRequest());
+        assertThat(connection.tryRequest(), is(Accepted));
         connection.closeAsync().subscribe();
     }
 }

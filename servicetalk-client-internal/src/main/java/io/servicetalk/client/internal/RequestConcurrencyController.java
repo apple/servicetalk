@@ -21,11 +21,30 @@ import io.servicetalk.concurrent.api.Publisher;
  * An interface which allows controlling reserving connections which maybe used concurrently.
  */
 public interface RequestConcurrencyController {
+
+    /**
+     * Result of the {@link #tryRequest()} call.
+     */
+    enum Result {
+        /**
+         * Selecting the resource succeeded.
+         */
+        Accepted,
+        /**
+         * Selecting the resource was denied, but may succeed at later time.
+         */
+        RejectedTemporary,
+        /**
+         * Selecting the resource was denied, and will not succeed at later time.
+         */
+        RejectedPermanently
+    }
+
     /**
      * Attempts to reserve a connection for a single request, needs to be followed by {@link #requestFinished()}.
-     * @return {@code true} if this connection is available and reserved for performing a single request.
+     * @return {@link Result#Accepted} if this connection is available and reserved for performing a single request.
      */
-    boolean tryRequest();
+    Result tryRequest();
 
     /**
      * Must be called after {@link #tryRequest()} to signify the request has completed. This method should be called
