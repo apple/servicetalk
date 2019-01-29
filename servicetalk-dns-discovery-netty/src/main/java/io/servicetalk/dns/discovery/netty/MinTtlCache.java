@@ -19,6 +19,7 @@ import io.netty.channel.EventLoop;
 import io.netty.handler.codec.dns.DnsRecord;
 import io.netty.resolver.dns.DnsCache;
 import io.netty.resolver.dns.DnsCacheEntry;
+import io.netty.resolver.dns.DnsNameResolver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,6 +33,11 @@ import static java.lang.Math.max;
 import static java.lang.Math.min;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
+/**
+ * While netty's {@link DnsCache} can be called by any thread calling the {@link DnsNameResolver}, we ensure, in
+ * {@link DefaultDnsServiceDiscoverer} that the resolver is only ever called on the event loop. This allows us to
+ * not worry about multithreaded access in this class.
+ */
 final class MinTtlCache implements DnsCache {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MinTtlCache.class);
