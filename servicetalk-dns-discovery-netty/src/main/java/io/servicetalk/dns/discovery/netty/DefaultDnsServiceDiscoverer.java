@@ -161,12 +161,7 @@ final class DefaultDnsServiceDiscoverer
     private void addEntry0(DiscoverEntry entry) {
         assertInEventloop();
 
-        List<DiscoverEntry> entries = registerMap.get(entry.inetHost);
-        if (entries == null) {
-            entries = new ArrayList<>(2);
-            registerMap.put(entry.inetHost, entries);
-        }
-        entries.add(entry);
+        registerMap.computeIfAbsent(entry.inetHost, k -> new ArrayList<>(2)).add(entry);
     }
 
     void removeEntry(DiscoverEntry entry) {
