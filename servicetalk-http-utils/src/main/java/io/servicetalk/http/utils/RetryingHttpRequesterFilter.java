@@ -15,6 +15,7 @@
  */
 package io.servicetalk.http.utils;
 
+import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.client.api.AbstractRetryingFilterBuilder;
 import io.servicetalk.client.api.AbstractRetryingFilterBuilder.ReadOnlyRetryableSettings;
 import io.servicetalk.client.api.RetryableException;
@@ -26,7 +27,6 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpClientFilterFactory;
 import io.servicetalk.http.api.HttpConnectionFilterFactory;
 import io.servicetalk.http.api.HttpExecutionStrategy;
-import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpClientFilter;
 import io.servicetalk.http.api.StreamingHttpConnection;
@@ -35,6 +35,7 @@ import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequester;
 import io.servicetalk.http.api.StreamingHttpResponse;
 
+import java.io.IOException;
 import java.util.function.BiPredicate;
 
 import static io.servicetalk.concurrent.api.Completable.error;
@@ -46,9 +47,9 @@ import static io.servicetalk.concurrent.api.Completable.error;
  */
 public final class RetryingHttpRequesterFilter implements HttpClientFilterFactory, HttpConnectionFilterFactory {
 
-    private final ReadOnlyRetryableSettings<HttpRequestMetaData> settings;
+    private final ReadOnlyRetryableSettings<StreamingHttpRequest> settings;
 
-    private RetryingHttpRequesterFilter(final ReadOnlyRetryableSettings<HttpRequestMetaData> settings) {
+    private RetryingHttpRequesterFilter(final ReadOnlyRetryableSettings<StreamingHttpRequest> settings) {
         this.settings = settings;
     }
 
@@ -100,18 +101,19 @@ public final class RetryingHttpRequesterFilter implements HttpClientFilterFactor
      * To configure the maximum number of retry attempts see {@link #maxRetries(int)}.
      */
     public static final class Builder
-            extends AbstractRetryingFilterBuilder<Builder, RetryingHttpRequesterFilter, HttpRequestMetaData> {
+            extends AbstractRetryingFilterBuilder<Builder, RetryingHttpRequesterFilter, StreamingHttpRequest> {
 
         @Override
         protected RetryingHttpRequesterFilter build(
-                final ReadOnlyRetryableSettings<HttpRequestMetaData> readOnlySettings) {
+                final ReadOnlyRetryableSettings<StreamingHttpRequest> readOnlySettings) {
             return new RetryingHttpRequesterFilter(readOnlySettings);
         }
 
         @Override
-        public BiPredicate<HttpRequestMetaData, Throwable> defaultRetryForPredicate() {
-            return (meta, throwable) ->
-                    throwable instanceof RetryableException || meta.method().methodProperties().idempotent();
+        public BiPredicate<StreamingHttpRequest, Throwable> defaultRetryForPredicate() {
+            return (request, throwable) -> throwable instanceof RetryableException
+                    || (throwable instanceof IOException && request.method().methodProperties().idempotent()
+                            && request.payloadBody() == Publisher.<Buffer>empty());
         }
     }
 }

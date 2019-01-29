@@ -39,7 +39,6 @@ import io.servicetalk.redis.api.ReservedRedisConnectionFilter;
 import java.util.function.BiPredicate;
 
 import static io.servicetalk.concurrent.api.Completable.error;
-import static io.servicetalk.redis.api.RedisProtocolSupport.CommandFlag.READONLY;
 
 /**
  * A filter to enable retries for {@link RedisRequest}s.
@@ -125,7 +124,7 @@ public final class RetryingRedisRequesterFilter implements RedisClientFilterFact
 
         @Override
         public BiPredicate<Command, Throwable> defaultRetryForPredicate() {
-            return (command, throwable) -> throwable instanceof RetryableException || command.hasFlag(READONLY);
+            return (command, throwable) -> throwable instanceof RetryableException;
         }
     }
 }
