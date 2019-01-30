@@ -43,6 +43,7 @@ public final class DefaultDnsServiceDiscovererBuilder {
     private DnsResolverAddressTypes dnsResolverAddressTypes;
     @Nullable
     private Integer ndots;
+    private boolean sendUnavailableWhenUnknownHost = true;
     @Nullable
     private Boolean optResourceEnabled;
     @Nullable
@@ -115,6 +116,18 @@ public final class DefaultDnsServiceDiscovererBuilder {
      */
     public DefaultDnsServiceDiscovererBuilder queryTimeout(Duration queryTimeout) {
         this.queryTimeout = queryTimeout;
+        return this;
+    }
+
+    /**
+     * Enable sending 'unavailable' events for all current active hosts when DNS indicates the hostname is not found.
+     * Note: This does not send 'unavailable' events when a DNS lookup timeouts out.
+     *
+     * @param sendUnavailableWhenUnknownHost whether or not to send 'unavailable' events.
+     * @return {@code this}.
+     */
+    public DefaultDnsServiceDiscovererBuilder sendUnavailableWhenUnknownHost(boolean sendUnavailableWhenUnknownHost) {
+        this.sendUnavailableWhenUnknownHost = sendUnavailableWhenUnknownHost;
         return this;
     }
 
@@ -214,8 +227,10 @@ public final class DefaultDnsServiceDiscovererBuilder {
             final ServiceDiscovererFilterFactory<String, InetAddress, ServiceDiscovererEvent<InetAddress>> defaultFilterFactory = client -> new DefaultDnsServiceDiscovererFilter(client, retryStrategy);
             factory = defaultFilterFactory.append(factory);
         }
-        return factory.create(new DefaultDnsServiceDiscoverer(ioExecutor == null ? globalExecutionContext().ioExecutor() : ioExecutor,
-                minTTLSeconds, ndots, optResourceEnabled, queryTimeout, dnsResolverAddressTypes, dnsServerAddressStreamProvider));
+        return factory.create(new DefaultDnsServiceDiscoverer(
+                ioExecutor == null ? globalExecutionContext().ioExecutor() : ioExecutor, minTTLSeconds, ndots,
+                sendUnavailableWhenUnknownHost, optResourceEnabled, queryTimeout, dnsResolverAddressTypes,
+                dnsServerAddressStreamProvider));
     }
 
     /**

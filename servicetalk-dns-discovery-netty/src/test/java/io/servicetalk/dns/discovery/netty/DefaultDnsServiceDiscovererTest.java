@@ -332,6 +332,36 @@ public class DefaultDnsServiceDiscovererTest {
     }
 
     @Test
+    public void repeatDiscoverNxDomainNoSendUnavailable() throws Exception {
+        recordStore.addResponse("apple.com", A, nextIp());
+
+        ServiceDiscoverer<String, InetAddress, ServiceDiscovererEvent<InetAddress>> discoverer =
+                serviceDiscovererBuilder()
+                        .disableDefaultFilter()
+                        .sendUnavailableWhenUnknownHost(false)
+                        .buildInetDiscoverer();
+        try {
+            final int expectedActiveCount = 1;
+            final int expectedInactiveCount = 0;
+
+            CountDownLatch latch = new CountDownLatch(expectedActiveCount + expectedInactiveCount + 1);
+            AtomicReference<Throwable> throwableRef = new AtomicReference<>();
+            Publisher<ServiceDiscovererEvent<InetAddress>> publisher = discoverer.discover("apple.com");
+            ServiceDiscovererTestSubscriber<InetAddress> subscriber =
+                    new ServiceDiscovererTestSubscriber<>(latch, throwableRef, Long.MAX_VALUE);
+            publisher.subscribe(subscriber);
+
+            latch.await();
+            assertThat("Unexpected exception during DNS lookup.",
+                    throwableRef.get(), instanceOf(UnknownHostException.class));
+            assertThat(subscriber.getActiveCount(), equalTo(expectedActiveCount));
+            assertThat(subscriber.getInactiveCount(), equalTo(expectedInactiveCount));
+        } finally {
+            awaitIndefinitely(discoverer.closeAsync());
+        }
+    }
+
+    @Test
     public void repeatDiscoverNxDomainAndRecover() throws Exception {
         recordStore.addResponse("apple.com", A, nextIp());
 

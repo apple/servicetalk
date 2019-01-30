@@ -83,16 +83,18 @@ final class DefaultDnsServiceDiscoverer
     private final EventLoopAwareNettyIoExecutor nettyIoExecutor;
     private final DnsNameResolver resolver;
     private final MinTtlCache ttlCache;
+    private final boolean sendUnavailableWhenUnknownHost;
     private boolean closed;
 
     DefaultDnsServiceDiscoverer(IoExecutor ioExecutor, int minTTL,
-                                @Nullable Integer ndots, @Nullable Boolean optResourceEnabled,
-                                @Nullable Duration queryTimeout,
+                                @Nullable Integer ndots, boolean sendUnavailableWhenUnknownHost,
+                                @Nullable Boolean optResourceEnabled, @Nullable Duration queryTimeout,
                                 @Nullable DnsResolverAddressTypes dnsResolverAddressTypes,
                                 @Nullable DnsServerAddressStreamProvider dnsServerAddressStreamProvider) {
         // Implementation of this class expects to use only single EventLoop from IoExecutor
         this.nettyIoExecutor = toEventLoopAwareNettyIoExecutor(ioExecutor).next();
         this.ttlCache = new MinTtlCache(new DefaultDnsCache(minTTL, Integer.MAX_VALUE, minTTL), minTTL);
+        this.sendUnavailableWhenUnknownHost = sendUnavailableWhenUnknownHost;
         EventLoop eventLoop = this.nettyIoExecutor.getEventLoopGroup().next();
         DnsNameResolverBuilder builder = new DnsNameResolverBuilder(eventLoop)
                 .resolveCache(ttlCache)
@@ -393,7 +395,7 @@ final class DefaultDnsServiceDiscoverer
                     if (discoverySubscriber != null) {
                         Throwable cause = addressFuture.cause();
                         if (cause != null) {
-                            handleError0(cause, true);
+                            handleError0(cause, sendUnavailableWhenUnknownHost);
                         } else {
                             List<InetAddress> addresses = addressFuture.getNow();
                             List<ServiceDiscovererEvent<InetAddress>> events = calculateDifference(activeAddresses,
@@ -426,7 +428,7 @@ final class DefaultDnsServiceDiscoverer
                     }
                 }
 
-                private void handleError0(Throwable cause, boolean sendInactiveForUnknownHostException) {
+                private void handleError0(Throwable cause, boolean sendUnavailableWhenUnknownHost) {
                     assertInEventloop();
 
                     LOGGER.debug("DNS discoverer {}, DNS lookup failed for {}.", DefaultDnsServiceDiscoverer.this,
@@ -438,7 +440,7 @@ final class DefaultDnsServiceDiscoverer
                         return;
                     }
 
-                    if (sendInactiveForUnknownHostException && cause instanceof UnknownHostException &&
+                    if (sendUnavailableWhenUnknownHost && cause instanceof UnknownHostException &&
                             !(cause.getCause() instanceof DnsNameResolverTimeoutException)) {
                         final List<InetAddress> addresses = activeAddresses;
                         List<ServiceDiscovererEvent<InetAddress>> events = new ArrayList<>(addresses.size());
