@@ -55,9 +55,10 @@ import java.util.RandomAccess;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.client.internal.ServiceDiscovererUtils.calculateDifference;
-import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.api.Publisher.error;
 import static io.servicetalk.concurrent.internal.EmptySubscription.EMPTY_SUBSCRIPTION;
+import static io.servicetalk.concurrent.internal.SubscriberUtils.isRequestNValid;
+import static io.servicetalk.concurrent.internal.SubscriberUtils.newExceptionForInvalidRequestN;
 import static io.servicetalk.transport.netty.internal.BuilderUtils.datagramChannel;
 import static io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutors.toEventLoopAwareNettyIoExecutor;
 import static java.lang.System.nanoTime;
@@ -76,26 +77,6 @@ final class DefaultDnsServiceDiscoverer
     private static final Logger LOGGER = LoggerFactory.getLogger(DefaultDnsServiceDiscoverer.class);
 
     static final Comparator<InetAddress> INET_ADDRESS_COMPARATOR = comparing(o -> wrap(o.getAddress()));
-
-    private static final Subscriber<? super Iterable<ServiceDiscovererEvent<InetAddress>>> CANCELLED =
-            new Subscriber<Iterable<ServiceDiscovererEvent<InetAddress>>>() {
-        @Override
-        public void onSubscribe(Subscription s) {
-            s.cancel();
-        }
-
-        @Override
-        public void onNext(Iterable<ServiceDiscovererEvent<InetAddress>> serviceDiscovererEvents) {
-        }
-
-        @Override
-        public void onError(Throwable t) {
-        }
-
-        @Override
-        public void onComplete() {
-        }
-    };
 
     private final CompletableProcessor closeCompletable = new CompletableProcessor();
     private final Map<String, List<DiscoverEntry>> registerMap = new HashMap<>(8);
@@ -328,7 +309,7 @@ final class DefaultDnsServiceDiscoverer
                 assertInEventloop();
 
                 Subscriber<? super Iterable<ServiceDiscovererEvent<InetAddress>>> oldSubscriber = discoverySubscriber;
-                discoverySubscriber = CANCELLED;
+                discoverySubscriber = null;
                 if (oldSubscriber != null) {
                     completeSubscriberOnClose0(oldSubscriber);
                 }
@@ -387,8 +368,13 @@ final class DefaultDnsServiceDiscoverer
                 private void request0(long n) {
                     assertInEventloop();
 
-                    pendingRequests = FlowControlUtil.addWithOverflowProtection(pendingRequests, n);
+                    if (!isRequestNValid(n)) {
+                        handleError0(newExceptionForInvalidRequestN(n), false);
+                        return;
+                    }
+
                     if (cancellableForQuery == null) {
+                        pendingRequests = FlowControlUtil.addWithOverflowProtection(pendingRequests, n);
                         if (ttlNanos < 0) {
                             doQuery0();
                         } else {
@@ -408,8 +394,8 @@ final class DefaultDnsServiceDiscoverer
                     LOGGER.trace("DNS discoverer {}, querying DNS for {}.", DefaultDnsServiceDiscoverer.this, inetHost);
 
                     ttlCache.prepareForResolution(inetHost);
-                    cancellableForQuery = IGNORE_CANCEL;
                     Future<List<InetAddress>> addressFuture = resolver.resolveAll(inetHost);
+                    cancellableForQuery = () -> addressFuture.cancel(true);
                     if (addressFuture.isDone()) {
                         handleResolveDone0(addressFuture);
                     } else {
@@ -420,11 +406,12 @@ final class DefaultDnsServiceDiscoverer
                 private void cancel0() {
                     assertInEventloop();
 
+                    removeEntry0(DiscoverEntry.this);
                     if (cancellableForQuery != null) {
                         cancellableForQuery.cancel();
                         cancellableForQuery = null;
+                        discoverySubscriber = null;
                     }
-                    removeEntry0(DiscoverEntry.this);
                 }
 
                 private void scheduleQuery0(long nanos) {
