@@ -280,12 +280,9 @@ final class DefaultDnsServiceDiscoverer
 
         DiscoverEntry(String inetHost) {
             this.inetHost = inetHost;
-            Publisher<Iterable<ServiceDiscovererEvent<InetAddress>>> publisher = new EntriesPublisher();
-            if (retryStrategy != null) {
-                publisher = publisher.retryWhen(retryStrategy);
-            }
-
-            this.publisher = publisher.flatMapIterable(identity());
+            Publisher<ServiceDiscovererEvent<InetAddress>> publisher =
+                    new EntriesPublisher().flatMapIterable(identity());
+            this.publisher = retryStrategy == null ? publisher : publisher.retryWhen(retryStrategy);
         }
 
         void completeSubscription0() {
