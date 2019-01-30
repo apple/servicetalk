@@ -26,8 +26,8 @@ import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.internal.DelayedSubscription;
 import io.servicetalk.concurrent.internal.DuplicateSubscribeException;
 import io.servicetalk.concurrent.internal.FlowControlUtil;
-import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.HostAndPort;
+import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutor;
 
 import io.netty.channel.EventLoop;
@@ -107,13 +107,13 @@ final class DefaultDnsServiceDiscoverer
     private final MinTtlCache ttlCache;
     private boolean closed;
 
-    DefaultDnsServiceDiscoverer(ExecutionContext executionContext,
+    DefaultDnsServiceDiscoverer(IoExecutor ioExecutor,
                                 @Nullable BiIntFunction<Throwable, Completable> retryStrategy, int minTTL,
                                 @Nullable Integer ndots, @Nullable Boolean optResourceEnabled,
                                 @Nullable DnsResolverAddressTypes dnsResolverAddressTypes,
                                 @Nullable DnsServerAddressStreamProvider dnsServerAddressStreamProvider) {
         // Implementation of this class expects to use only single EventLoop from IoExecutor
-        this.nettyIoExecutor = toEventLoopAwareNettyIoExecutor(executionContext.ioExecutor()).next();
+        this.nettyIoExecutor = toEventLoopAwareNettyIoExecutor(ioExecutor).next();
         this.retryStrategy = retryStrategy;
         this.ttlCache = new MinTtlCache(new DefaultDnsCache(minTTL, Integer.MAX_VALUE, minTTL), minTTL);
         EventLoop eventLoop = this.nettyIoExecutor.getEventLoopGroup().next();

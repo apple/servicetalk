@@ -49,7 +49,6 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Completable.error;
-import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.dns.discovery.netty.DnsTestUtils.nextIp;
@@ -467,7 +466,6 @@ public class DefaultDnsServiceDiscovererTest {
         DefaultDnsServiceDiscovererBuilder builder =
                 new DefaultDnsServiceDiscovererBuilder()
                         .ioExecutor(nettyIoExecutor)
-                        .executor(immediate())
                         .dnsResolverAddressTypes(DnsResolverAddressTypes.IPV4_PREFERRED)
                         .optResourceEnabled(false)
                         .dnsServerAddressStreamProvider(new SingletonDnsServerAddressStreamProvider(
