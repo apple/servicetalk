@@ -62,7 +62,8 @@ final class NoOffloadsHttpExecutionStrategy implements HttpExecutionStrategy {
             public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
                                                         StreamingHttpRequest request,
                                                         final StreamingHttpResponseFactory responseFactory) {
-                HttpServiceContext wrappedCtx = new ExecutionContextOverridingServiceContext(ctx, immediate());
+                // Always use fallback as the Executor as this strategy does not specify an Executor.
+                HttpServiceContext wrappedCtx = new ExecutionContextOverridingServiceContext(ctx, fallback);
                 request = request.transformPayloadBody(p -> p.publishOnOverride(immediate()));
                 return handler.handle(wrappedCtx, request, responseFactory)
                         .map(r -> r.transformPayloadBody(p -> p.subscribeOnOverride(immediate())))
