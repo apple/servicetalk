@@ -23,6 +23,8 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
+import static java.util.Objects.requireNonNull;
+
 /**
  * An {@link HttpExecutionStrategy} that delegates all method calls to another {@link HttpExecutionStrategy}.
  */
@@ -36,7 +38,7 @@ public class HttpExecutionStrategyAdapter implements HttpExecutionStrategy {
      * @param delegate {@link HttpExecutionStrategy} to which all method calls will be delegated.
      */
     public HttpExecutionStrategyAdapter(final HttpExecutionStrategy delegate) {
-        this.delegate = delegate;
+        this.delegate = requireNonNull(delegate);
     }
 
     @Override

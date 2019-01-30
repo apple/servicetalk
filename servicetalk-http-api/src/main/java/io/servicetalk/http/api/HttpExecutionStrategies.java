@@ -149,7 +149,12 @@ public final class HttpExecutionStrategies {
          * @return New {@link HttpExecutionStrategy}.
          */
         public HttpExecutionStrategy build() {
-            return offloads == 0 ? NO_OFFLOADS : new DefaultHttpExecutionStrategy(executor, offloads, threadAffinity);
+            return offloads == 0 ? executor == null ? NO_OFFLOADS : new HttpExecutionStrategyAdapter(NO_OFFLOADS) {
+                @Override
+                public Executor executor() {
+                    return executor;
+                }
+            } : new DefaultHttpExecutionStrategy(executor, offloads, threadAffinity);
         }
 
         private Builder addOffload(byte flag) {

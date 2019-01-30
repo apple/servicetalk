@@ -22,6 +22,8 @@ import io.servicetalk.concurrent.api.Single;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
+import static java.util.Objects.requireNonNull;
+
 /**
  * An {@link RedisExecutionStrategy} that delegates all method calls to another {@link RedisExecutionStrategy}.
  */
@@ -35,7 +37,7 @@ public class RedisExecutionStrategyAdapter implements RedisExecutionStrategy {
      * @param delegate {@link RedisExecutionStrategy} to which all method calls will be delegated.
      */
     public RedisExecutionStrategyAdapter(final RedisExecutionStrategy delegate) {
-        this.delegate = delegate;
+        this.delegate = requireNonNull(delegate);
     }
 
     @Override
