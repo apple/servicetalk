@@ -23,7 +23,6 @@ import io.servicetalk.concurrent.api.BiIntFunction;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.CompletableProcessor;
 import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.concurrent.internal.DelayedSubscription;
 import io.servicetalk.concurrent.internal.DuplicateSubscribeException;
 import io.servicetalk.concurrent.internal.FlowControlUtil;
 import io.servicetalk.transport.api.HostAndPort;
@@ -310,30 +309,29 @@ final class DefaultDnsServiceDiscoverer
 
             @Override
             protected void handleSubscribe(final Subscriber<? super Iterable<ServiceDiscovererEvent<InetAddress>>> subscriber) {
-                DelayedSubscription subscription = new DelayedSubscription();
+                EntriesPublisherSubscription subscription = new EntriesPublisherSubscription(subscriber);
                 if (nettyIoExecutor.isCurrentThreadEventLoop()) {
                     handleSubscribe0(subscriber, subscription);
                 } else {
                     nettyIoExecutor.asExecutor().execute(() -> handleSubscribe0(subscriber, subscription));
                 }
-                subscriber.onSubscribe(subscription);
             }
 
             private void handleSubscribe0(final Subscriber<? super Iterable<ServiceDiscovererEvent<InetAddress>>> subscriber,
-                                          final DelayedSubscription subscription) {
+                                          final EntriesPublisherSubscription subscription) {
                 assertInEventloop();
 
                 if (discoverySubscriber != null) {
-                    subscription.setDelayedSubscription(EMPTY_SUBSCRIPTION);
+                    subscriber.onSubscribe(EMPTY_SUBSCRIPTION);
                     subscriber.onError(new DuplicateSubscribeException(discoverySubscriber, subscriber));
                 } else if (closed) {
-                    subscription.setDelayedSubscription(EMPTY_SUBSCRIPTION);
+                    subscriber.onSubscribe(EMPTY_SUBSCRIPTION);
                     completeSubscriberOnClose0(subscriber);
                 } else {
                     discoverySubscriber = subscriber;
                     LOGGER.debug("DNS discoverer {}, starting DNS resolution for {}.", DefaultDnsServiceDiscoverer.this,
                             inetHost);
-                    subscription.setDelayedSubscription(new EntriesPublisherSubscription(subscriber));
+                    subscriber.onSubscribe(subscription);
                 }
             }
         }
