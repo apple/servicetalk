@@ -17,7 +17,6 @@ package io.servicetalk.http.router.predicate;
 
 import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.concurrent.api.DefaultThreadFactory;
-import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.BlockingHttpClient;
@@ -30,10 +29,11 @@ import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.http.netty.HttpClients;
 import io.servicetalk.http.netty.HttpServers;
-import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.ServerContext;
+import io.servicetalk.transport.netty.internal.ExecutionContextRule;
 
 import org.junit.After;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
@@ -44,6 +44,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
 import static io.servicetalk.concurrent.api.Single.success;
@@ -60,19 +61,20 @@ public class PredicateRouterOffloadingTest {
     public static final String EXECUTOR_NAME_PREFIX = "router-executor";
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
+    @Rule
+    public final ExecutionContextRule executionContextRule = new ExecutionContextRule(() -> DEFAULT_ALLOCATOR,
+            () -> createIoExecutor(new DefaultThreadFactory(IO_EXECUTOR_NAME_PREFIX, true, NORM_PRIORITY)),
+            () -> newCachedThreadExecutor(new DefaultThreadFactory(EXECUTOR_NAME_PREFIX, true, NORM_PRIORITY)));
     @Nullable
     protected ServerContext context;
     @Nullable
     private BlockingHttpClient client;
-    protected final ConcurrentMap<RouterOffloadPoint, Thread> invokingThreads;
-    protected final HttpServerBuilder builder;
-    private final IoExecutor ioExecutor;
-    private final Executor executor;
+    protected ConcurrentMap<RouterOffloadPoint, Thread> invokingThreads;
+    protected HttpServerBuilder builder;
 
-    public PredicateRouterOffloadingTest() {
-        ioExecutor = createIoExecutor(new DefaultThreadFactory(IO_EXECUTOR_NAME_PREFIX, true, NORM_PRIORITY));
-        executor = newCachedThreadExecutor(new DefaultThreadFactory(EXECUTOR_NAME_PREFIX, true, NORM_PRIORITY));
-        builder = HttpServers.forPort(0).ioExecutor(ioExecutor);
+    @Before
+    public void setUp() {
+        builder = HttpServers.forPort(0).ioExecutor(executionContextRule.ioExecutor());
         invokingThreads = new ConcurrentHashMap<>();
     }
 
@@ -85,7 +87,7 @@ public class PredicateRouterOffloadingTest {
         if (context != null) {
             closeable.append(context);
         }
-        closeable.appendAll(ioExecutor).closeAsync().toFuture().get();
+        closeable.closeAsync().toFuture().get();
     }
 
     @Test
@@ -94,7 +96,7 @@ public class PredicateRouterOffloadingTest {
         routerBuilder.when(newPredicate()).thenRouteTo(newOffloadingService());
         BlockingHttpClient client = buildServer(routerBuilder.buildStreaming());
         client.request(client.get("/"));
-        verifyOffloadCount();
+        verifyAllOffloadPointsRecorded();
         assertPredicateOffloaded();
         assertRouteOffloaded();
     }
@@ -105,7 +107,7 @@ public class PredicateRouterOffloadingTest {
         routerBuilder.when(newPredicate()).thenRouteTo(newNonOffloadingService());
         BlockingHttpClient client = buildServer(routerBuilder.buildStreaming());
         client.request(client.get("/"));
-        verifyOffloadCount();
+        verifyAllOffloadPointsRecorded();
         assertPredicateOffloadedAndNotRoute();
     }
 
@@ -116,7 +118,7 @@ public class PredicateRouterOffloadingTest {
         routerBuilder.when(newPredicate()).thenRouteTo(newOffloadingService());
         BlockingHttpClient client = buildServer(routerBuilder.buildStreaming());
         client.request(client.get("/"));
-        verifyOffloadCount();
+        verifyAllOffloadPointsRecorded();
         assertRouteOffloadedAndNotPredicate();
     }
 
@@ -127,13 +129,13 @@ public class PredicateRouterOffloadingTest {
         routerBuilder.when(newPredicate()).thenRouteTo(newNonOffloadingService());
         BlockingHttpClient client = buildServer(routerBuilder.buildStreaming());
         client.request(client.get("/"));
-        verifyOffloadCount();
+        verifyAllOffloadPointsRecorded();
         assertRouteAndPredicateNotOffloaded();
     }
 
     private HttpPredicateRouterBuilder newRouteBuilder() {
         HttpPredicateRouterBuilder routerBuilder = new HttpPredicateRouterBuilder();
-        routerBuilder.executionStrategy(defaultStrategy(executor));
+        routerBuilder.executionStrategy(defaultStrategy(executionContextRule.executor()));
         return routerBuilder;
     }
 
@@ -161,7 +163,6 @@ public class PredicateRouterOffloadingTest {
         assertPredicateNotOffloaded();
         assertThat("Unexpected thread for point: " + RouterOffloadPoint.Route,
                 invokingThreads.get(RouterOffloadPoint.Route).getName(),
-                // Since predicate is offloaded, route will be called on the predicate thread.
                 startsWith(EXECUTOR_NAME_PREFIX));
     }
 
@@ -181,7 +182,7 @@ public class PredicateRouterOffloadingTest {
                 invokingThreads.get(RouterOffloadPoint.Predicate).getName(), startsWith(EXECUTOR_NAME_PREFIX));
     }
 
-    private void verifyOffloadCount() {
+    private void verifyAllOffloadPointsRecorded() {
         assertThat("Unexpected offload points recorded.", invokingThreads.size(), is(2));
     }
 
@@ -193,7 +194,7 @@ public class PredicateRouterOffloadingTest {
     }
 
     private StreamingHttpService newOffloadingService() {
-        return new StreamingHttpServiceImpl(defaultStrategy(executor));
+        return new StreamingHttpServiceImpl(defaultStrategy(executionContextRule.executor()));
     }
 
     private StreamingHttpService newNonOffloadingService() {

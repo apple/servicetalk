@@ -66,6 +66,7 @@ public final class HttpPredicateRouterBuilder implements RouteStarter {
     @Nullable
     private BiPredicate<ConnectionContext, StreamingHttpRequest> predicate;
     private final RouteContinuationImpl continuation = new RouteContinuationImpl();
+
     /**
      * Do not define any strategy by default which will use the default strategy.
      * Since, we invoke user-code (predicates) from this router, we want to use the default strategy and an opt-in for
@@ -161,7 +162,7 @@ public final class HttpPredicateRouterBuilder implements RouteStarter {
 
     @Override
     public RouteStarter executionStrategy(final HttpExecutionStrategy strategy) {
-        this.strategy = strategy;
+        this.strategy = requireNonNull(strategy);
         return this;
     }
 

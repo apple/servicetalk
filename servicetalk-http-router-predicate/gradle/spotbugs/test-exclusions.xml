@@ -22,7 +22,7 @@
   </Match>
   <Match>
     <!-- Return value while verifying mocks is ignored. -->
-    <Source name="HttpPredicateRouterBuilderTest.java"/>
+    <Class name="io.servicetalk.http.router.predicate.HttpPredicateRouterBuilderTest"/>
     <Bug pattern="RV_RETURN_VALUE_IGNORED_NO_SIDE_EFFECT"/>
   </Match>
 </FindBugsFilter>
