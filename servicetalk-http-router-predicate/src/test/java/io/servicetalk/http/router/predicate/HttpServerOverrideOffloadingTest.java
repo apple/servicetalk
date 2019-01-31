@@ -73,6 +73,7 @@ public class HttpServerOverrideOffloadingTest {
         server = forPort(0)
                 .ioExecutor(ioExecutor)
                 .listenAndAwait(new HttpPredicateRouterBuilder()
+                        .executionStrategy(noOffloadsStrategy())
                         .whenPathStartsWith("/service1").thenRouteTo(service1)
                         .whenPathStartsWith("/service2").thenRouteTo(service2).build());
         InetSocketAddress socketAddress = (InetSocketAddress) server.listenAddress();
