@@ -25,6 +25,7 @@ import io.servicetalk.concurrent.api.CompletableProcessor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.internal.DuplicateSubscribeException;
 import io.servicetalk.concurrent.internal.FlowControlUtil;
+import io.servicetalk.concurrent.internal.RejectedSubscribeError;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutor;
@@ -46,7 +47,6 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -63,6 +63,7 @@ import static io.servicetalk.transport.netty.internal.BuilderUtils.datagramChann
 import static io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutors.toEventLoopAwareNettyIoExecutor;
 import static java.lang.System.nanoTime;
 import static java.nio.ByteBuffer.wrap;
+import static java.util.Collections.emptyList;
 import static java.util.Comparator.comparing;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -113,7 +114,8 @@ final class DefaultDnsServiceDiscoverer
             builder.resolvedAddressTypes(toNettyType(dnsResolverAddressTypes));
         }
         resolver = builder.build();
-        LOGGER.debug("Created a new DNS discoverer {} with minimum TTL (seconds): {}, ndots: {}, optResourceEnabled {}, dnsResolverAddressTypes {}, dnsServerAddressStreamProvider {}.",
+        LOGGER.debug("Created a new DNS discoverer {} with minimum TTL (seconds): {}, ndots: {}, " +
+                        "optResourceEnabled {}, dnsResolverAddressTypes {}, dnsServerAddressStreamProvider {}.",
                 this, minTTL, ndots, optResourceEnabled, dnsResolverAddressTypes, dnsServerAddressStreamProvider);
     }
 
@@ -122,7 +124,8 @@ final class DefaultDnsServiceDiscoverer
         final DiscoverEntry entry;
         if (nettyIoExecutor.isCurrentThreadEventLoop()) {
             if (closed) {
-                return error(new IllegalStateException(DefaultDnsServiceDiscoverer.class.getSimpleName() + " closed!"));
+                return error(new IllegalStateException(DefaultDnsServiceDiscoverer.class.getSimpleName() +
+                        " closed!"));
             }
             entry = new DiscoverEntry(address);
             addEntry0(entry);
@@ -130,7 +133,7 @@ final class DefaultDnsServiceDiscoverer
             entry = new DiscoverEntry(address);
             nettyIoExecutor.asExecutor().execute(() -> {
                 if (closed) {
-                    entry.completeSubscription0();
+                    entry.close0();
                 } else {
                     addEntry0(entry);
                 }
@@ -189,10 +192,13 @@ final class DefaultDnsServiceDiscoverer
         closed = true;
         resolver.close();
         RuntimeException aggregateCause = null;
-        for (Map.Entry<String, List<DiscoverEntry>> mapEntry : registerMap.entrySet()) {
-            for (DiscoverEntry entry : mapEntry.getValue()) {
+        // Create a copy of `registerMap` to iterate over, because closing entries removes them from the map,
+        // which would result in a `ConcurrentModificationException`.
+        final Map<String, List<DiscoverEntry>> registerMapCopy = new HashMap<>(registerMap);
+        for (Map.Entry<String, List<DiscoverEntry>> mapEntry : registerMapCopy.entrySet()) {
+            for (DiscoverEntry entry : new ArrayList<>(mapEntry.getValue())) {
                 try {
-                    entry.completeSubscription0();
+                    entry.close0();
                 } catch (Throwable cause) {
                     if (aggregateCause == null) {
                         aggregateCause = new RuntimeException(
@@ -253,9 +259,9 @@ final class DefaultDnsServiceDiscoverer
     }
 
     private final class DiscoverEntry {
-        final String inetHost;
-        final EntriesPublisher entriesPublisher = new EntriesPublisher();
-        final Publisher<ServiceDiscovererEvent<InetAddress>> publisher;
+        private final String inetHost;
+        private final EntriesPublisher entriesPublisher = new EntriesPublisher();
+        private final Publisher<ServiceDiscovererEvent<InetAddress>> publisher;
 
         DiscoverEntry(String inetHost) {
             this.inetHost = inetHost;
@@ -263,32 +269,30 @@ final class DefaultDnsServiceDiscoverer
             this.publisher = retryStrategy == null ? publisher : publisher.retryWhen(retryStrategy);
         }
 
-        void completeSubscription0() {
+        void close0() {
             entriesPublisher.close0();
-        }
-
-        private void completeSubscriberOnClose0(
-                Subscriber<? super Iterable<ServiceDiscovererEvent<InetAddress>>> subscriber) {
-            entriesPublisher.close0(subscriber);
         }
 
         private final class EntriesPublisher extends Publisher<Iterable<ServiceDiscovererEvent<InetAddress>>> {
 
             @Nullable
             private Subscriber<? super Iterable<ServiceDiscovererEvent<InetAddress>>> discoverySubscriber;
+            @Nullable
+            private EntriesPublisherSubscription subscription;
 
             @Override
-            protected void handleSubscribe(final Subscriber<? super Iterable<ServiceDiscovererEvent<InetAddress>>> subscriber) {
-                EntriesPublisherSubscription subscription = new EntriesPublisherSubscription(subscriber);
+            protected void handleSubscribe(
+                    final Subscriber<? super Iterable<ServiceDiscovererEvent<InetAddress>>> subscriber) {
+
                 if (nettyIoExecutor.isCurrentThreadEventLoop()) {
-                    handleSubscribe0(subscriber, subscription);
+                    handleSubscribe0(subscriber);
                 } else {
-                    nettyIoExecutor.asExecutor().execute(() -> handleSubscribe0(subscriber, subscription));
+                    nettyIoExecutor.asExecutor().execute(() -> handleSubscribe0(subscriber));
                 }
             }
 
-            private void handleSubscribe0(final Subscriber<? super Iterable<ServiceDiscovererEvent<InetAddress>>> subscriber,
-                                          final EntriesPublisherSubscription subscription) {
+            private void handleSubscribe0(
+                    final Subscriber<? super Iterable<ServiceDiscovererEvent<InetAddress>>> subscriber) {
                 assertInEventloop();
 
                 if (discoverySubscriber != null) {
@@ -296,11 +300,13 @@ final class DefaultDnsServiceDiscoverer
                     subscriber.onError(new DuplicateSubscribeException(discoverySubscriber, subscriber));
                 } else if (closed) {
                     subscriber.onSubscribe(EMPTY_SUBSCRIPTION);
-                    completeSubscriberOnClose0(subscriber);
+                    subscriber.onError(new ClosedServiceDiscovererException(DefaultDnsServiceDiscoverer.this +
+                            " has been closed!"));
                 } else {
+                    subscription = new DiscoverEntry.EntriesPublisher.EntriesPublisherSubscription(subscriber);
                     discoverySubscriber = subscriber;
-                    LOGGER.debug("DNS discoverer {}, starting DNS resolution for {}.", DefaultDnsServiceDiscoverer.this,
-                            inetHost);
+                    LOGGER.debug("DNS discoverer {}, starting DNS resolution for {}.",
+                            DefaultDnsServiceDiscoverer.this, inetHost);
                     subscriber.onSubscribe(subscription);
                 }
             }
@@ -311,22 +317,16 @@ final class DefaultDnsServiceDiscoverer
                 Subscriber<? super Iterable<ServiceDiscovererEvent<InetAddress>>> oldSubscriber = discoverySubscriber;
                 discoverySubscriber = null;
                 if (oldSubscriber != null) {
-                    completeSubscriberOnClose0(oldSubscriber);
-                }
-            }
-
-            private void close0(
-                    Subscriber<? super Iterable<ServiceDiscovererEvent<InetAddress>>> subscriber) {
-                assertInEventloop();
-
-                final IllegalStateException cause = new IllegalStateException(DefaultDnsServiceDiscoverer.this + " has been closed!");
-                if (discoverySubscriber != null) {
-                    discoverySubscriber = null;
-                    subscriber.onError(cause);
+                    assert subscription != null;
+                    subscription.cancelWithoutRemove();
+                    oldSubscriber.onError(new ClosedServiceDiscovererException(DefaultDnsServiceDiscoverer.this +
+                            " has been closed!"));
                 }
             }
 
             private final class EntriesPublisherSubscription implements Subscription {
+                private static final long CANCELLED = -1;
+
                 private final Subscriber<? super Iterable<ServiceDiscovererEvent<InetAddress>>> subscriber;
                 private long pendingRequests;
                 private List<InetAddress> activeAddresses;
@@ -335,9 +335,10 @@ final class DefaultDnsServiceDiscoverer
                 private Cancellable cancellableForQuery;
                 private long ttlNanos;
 
-                EntriesPublisherSubscription(final Subscriber<? super Iterable<ServiceDiscovererEvent<InetAddress>>> subscriber) {
+                EntriesPublisherSubscription(
+                        final Subscriber<? super Iterable<ServiceDiscovererEvent<InetAddress>>> subscriber) {
                     this.subscriber = subscriber;
-                    activeAddresses = Collections.emptyList();
+                    activeAddresses = emptyList();
                     ttlNanos = -1;
                 }
 
@@ -373,7 +374,7 @@ final class DefaultDnsServiceDiscoverer
                         return;
                     }
 
-                    pendingRequests = FlowControlUtil.addWithOverflowProtection(pendingRequests, n);
+                    pendingRequests = FlowControlUtil.addWithOverflowProtectionIfNotNegative(pendingRequests, n);
                     if (cancellableForQuery == null) {
                         if (ttlNanos < 0) {
                             doQuery0();
@@ -391,7 +392,8 @@ final class DefaultDnsServiceDiscoverer
                 private void doQuery0() {
                     assertInEventloop();
 
-                    LOGGER.trace("DNS discoverer {}, querying DNS for {}.", DefaultDnsServiceDiscoverer.this, inetHost);
+                    LOGGER.trace("DNS discoverer {}, querying DNS for {}.", DefaultDnsServiceDiscoverer.this,
+                            inetHost);
 
                     ttlCache.prepareForResolution(inetHost);
                     Future<List<InetAddress>> addressFuture = resolver.resolveAll(inetHost);
@@ -407,10 +409,15 @@ final class DefaultDnsServiceDiscoverer
                     assertInEventloop();
 
                     removeEntry0(DiscoverEntry.this);
+                    cancelWithoutRemove();
+                }
+
+                public void cancelWithoutRemove() {
                     if (cancellableForQuery != null) {
-                        cancellableForQuery.cancel();
                         cancellableForQuery = TERMINATED;
                         discoverySubscriber = null;
+                        pendingRequests = CANCELLED;
+                        cancellableForQuery.cancel();
                     }
                 }
 
@@ -428,6 +435,8 @@ final class DefaultDnsServiceDiscoverer
                 private void handleResolveDone0(Future<List<InetAddress>> addressFuture) {
                     assertInEventloop();
 
+                    // If `discoverySubscriber` is null, then this publisher has terminated, so we can't send any more
+                    // signals. There's no point in even scheduling a query in that case.
                     if (discoverySubscriber != null) {
                         Throwable cause = addressFuture.cause();
                         if (cause != null) {
@@ -455,7 +464,8 @@ final class DefaultDnsServiceDiscoverer
                                     handleError0(error, false);
                                 }
                             } else {
-                                LOGGER.trace("DNS discoverer {}, resolution done but no changes observed for {}. Resolution result: (size {}) {}",
+                                LOGGER.trace("DNS discoverer {}, resolution done but no changes observed for {}. " +
+                                                "Resolution result: (size {}) {}",
                                         DefaultDnsServiceDiscoverer.this, inetHost, addresses.size(), addresses);
                                 scheduleQuery0(ttlNanos);
                             }
@@ -471,26 +481,32 @@ final class DefaultDnsServiceDiscoverer
                     boolean wasAlreadyTerminated = discoverySubscriber == null;
                     discoverySubscriber = null; // allow sequential subscriptions
                     cancel0();
-                    if (!wasAlreadyTerminated) {
-                        if (sendInactiveForUnknownHostException) {
-                            final List<InetAddress> addresses = activeAddresses;
-                            if (cause instanceof UnknownHostException &&
-                                    !(cause.getCause() instanceof DnsNameResolverTimeoutException)) {
-                                List<ServiceDiscovererEvent<InetAddress>> events = new ArrayList<>(addresses.size());
-                                if (addresses instanceof RandomAccess) {
-                                    for (int i = 0; i < addresses.size(); ++i) {
-                                        events.add(new DefaultServiceDiscovererEvent<>(addresses.get(i), false));
-                                    }
-                                } else {
-                                    for (final InetAddress address : addresses) {
-                                        events.add(new DefaultServiceDiscovererEvent<>(address, false));
-                                    }
+                    if (wasAlreadyTerminated) {
+                        return;
+                    }
+
+                    if (sendInactiveForUnknownHostException) {
+                        final List<InetAddress> addresses = activeAddresses;
+                        if (cause instanceof UnknownHostException &&
+                                !(cause.getCause() instanceof DnsNameResolverTimeoutException)) {
+                            List<ServiceDiscovererEvent<InetAddress>> events = new ArrayList<>(addresses.size());
+                            if (addresses instanceof RandomAccess) {
+                                for (int i = 0; i < addresses.size(); ++i) {
+                                    events.add(new DefaultServiceDiscovererEvent<>(addresses.get(i), false));
                                 }
+                            } else {
+                                for (final InetAddress address : addresses) {
+                                    events.add(new DefaultServiceDiscovererEvent<>(address, false));
+                                }
+                            }
+                            try {
                                 subscriber.onNext(events);
+                            } catch (Throwable e) {
+                                LOGGER.warn("Exception from subscriber while handling error", e);
                             }
                         }
-                        subscriber.onError(cause);
                     }
+                    subscriber.onError(cause);
                 }
             }
         }
@@ -537,6 +553,13 @@ final class DefaultDnsServiceDiscoverer
         @Override
         public io.netty.resolver.dns.DnsServerAddressStream duplicate() {
             return new ServiceTalkToNettyDnsServerAddressStream(stream.duplicate());
+        }
+    }
+
+    private static final class ClosedServiceDiscovererException extends RuntimeException
+            implements RejectedSubscribeError {
+        ClosedServiceDiscovererException(final String message) {
+            super(message);
         }
     }
 }

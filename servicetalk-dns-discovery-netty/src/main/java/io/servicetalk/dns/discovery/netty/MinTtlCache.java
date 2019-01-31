@@ -30,7 +30,6 @@ import java.util.Map;
 import javax.annotation.Nullable;
 
 import static java.lang.Math.max;
-import static java.lang.Math.min;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 /**
@@ -45,7 +44,6 @@ final class MinTtlCache implements DnsCache {
     private final DnsCache cache;
     private final long initialTtl;
     private final Map<String, Long> minExpiryMap = new HashMap<>();
-    private long resolveTime;
 
     MinTtlCache(final DnsCache cache, final long initialTtl) {
         this.cache = cache;
@@ -94,14 +92,8 @@ final class MinTtlCache implements DnsCache {
     @Override
     public DnsCacheEntry cache(final String hostname, final DnsRecord[] additionals, final InetAddress address,
                                final long originalTtl, final EventLoop loop) {
-        final Long existingExpiry = minExpiryMap.get(hostname);
-        if (existingExpiry == null) {
-            resolveTime = MILLISECONDS.toSeconds(System.currentTimeMillis());
-            minExpiryMap.put(hostname, resolveTime + originalTtl);
-        } else {
-            final long newExpiry = resolveTime + max(initialTtl, originalTtl);
-            minExpiryMap.put(hostname, min(existingExpiry, newExpiry));
-        }
+        final long currentTime = MILLISECONDS.toSeconds(System.currentTimeMillis());
+        minExpiryMap.merge(hostname, currentTime + max(initialTtl, originalTtl), Math::min);
         return cache.cache(hostname, additionals, address, originalTtl, loop);
     }
 
