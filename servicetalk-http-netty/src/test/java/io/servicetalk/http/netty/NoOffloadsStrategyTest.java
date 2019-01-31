@@ -28,23 +28,22 @@ import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.api.StreamingHttpService;
-import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.ServerContext;
 
 import org.junit.After;
 import org.junit.Test;
 
-import java.net.InetSocketAddress;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
 import static io.servicetalk.transport.netty.NettyIoExecutors.createIoExecutor;
+import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
+import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static java.lang.Thread.NORM_PRIORITY;
 import static java.lang.Thread.currentThread;
-import static java.net.InetAddress.getLoopbackAddress;
 import static java.util.Objects.requireNonNull;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.not;
@@ -53,7 +52,6 @@ import static org.hamcrest.Matchers.startsWith;
 public class NoOffloadsStrategyTest {
 
     private static final String IO_EXECUTOR_NAME = "io-executor";
-    private static final InetSocketAddress LISTEN_ADDRESS = new InetSocketAddress(getLoopbackAddress(), 0);
     private final HttpServerBuilder serverBuilder;
     private final IoExecutor ioExecutor;
     @Nullable
@@ -63,7 +61,7 @@ public class NoOffloadsStrategyTest {
 
     public NoOffloadsStrategyTest() {
         ioExecutor = createIoExecutor(new DefaultThreadFactory(IO_EXECUTOR_NAME, true, NORM_PRIORITY));
-        serverBuilder = HttpServers.forAddress(LISTEN_ADDRESS).ioExecutor(ioExecutor);
+        serverBuilder = HttpServers.forAddress(localAddress()).ioExecutor(ioExecutor);
     }
 
     @After
@@ -104,7 +102,7 @@ public class NoOffloadsStrategyTest {
 
     private BlockingHttpClient initServerAndClient(final StreamingHttpService service) throws Exception {
         context = serverBuilder.listenStreamingAndAwait(service);
-        client = HttpClients.forSingleAddress(HostAndPort.of((InetSocketAddress) context.listenAddress()))
+        client = HttpClients.forSingleAddress(serverHostAndPort(context))
                 .buildBlocking();
         return requireNonNull(client);
     }
