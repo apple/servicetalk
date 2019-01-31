@@ -28,6 +28,7 @@ import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.api.StreamingHttpService;
+import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.ServerContext;
 
@@ -43,6 +44,7 @@ import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy
 import static io.servicetalk.transport.netty.NettyIoExecutors.createIoExecutor;
 import static java.lang.Thread.NORM_PRIORITY;
 import static java.lang.Thread.currentThread;
+import static java.net.InetAddress.getLoopbackAddress;
 import static java.util.Objects.requireNonNull;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.not;
@@ -51,7 +53,7 @@ import static org.hamcrest.Matchers.startsWith;
 public class NoOffloadsStrategyTest {
 
     private static final String IO_EXECUTOR_NAME = "io-executor";
-
+    private static final InetSocketAddress LISTEN_ADDRESS = new InetSocketAddress(getLoopbackAddress(), 0);
     private final HttpServerBuilder serverBuilder;
     private final IoExecutor ioExecutor;
     @Nullable
@@ -61,7 +63,7 @@ public class NoOffloadsStrategyTest {
 
     public NoOffloadsStrategyTest() {
         ioExecutor = createIoExecutor(new DefaultThreadFactory(IO_EXECUTOR_NAME, true, NORM_PRIORITY));
-        serverBuilder = HttpServers.forPort(0).ioExecutor(ioExecutor);
+        serverBuilder = HttpServers.forAddress(LISTEN_ADDRESS).ioExecutor(ioExecutor);
     }
 
     @After
@@ -102,8 +104,8 @@ public class NoOffloadsStrategyTest {
 
     private BlockingHttpClient initServerAndClient(final StreamingHttpService service) throws Exception {
         context = serverBuilder.listenStreamingAndAwait(service);
-        InetSocketAddress addr = (InetSocketAddress) context.listenAddress();
-        client = HttpClients.forSingleAddress(addr.getHostName(), addr.getPort()).buildBlocking();
+        client = HttpClients.forSingleAddress(HostAndPort.of((InetSocketAddress) context.listenAddress()))
+                .buildBlocking();
         return requireNonNull(client);
     }
 
