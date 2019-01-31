@@ -29,6 +29,7 @@ import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.http.api.StreamingHttpServiceFilter;
+import io.servicetalk.transport.netty.internal.NettyConnectionContext;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -75,8 +76,8 @@ import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.nullValue;
+import static org.hamcrest.Matchers.startsWith;
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -489,21 +490,21 @@ public class NettyHttpServerTest extends AbstractNettyHttpServerTest {
         }
         assertConnectionClosed();
         // Client inbound channel closed - should be same exception as above
-        Throwable clientThrowable = streamingHttpConnection().connectionContext().transportError()
-                .toFuture().get(1000, MILLISECONDS);
+        Throwable clientThrowable = ((NettyConnectionContext) streamingHttpConnection().connectionContext())
+                .transportError().toFuture().get(1000, MILLISECONDS);
         assertClientTransportInboundClosed(clientThrowable);
         // Server outbound channel force closed (reset)
         Throwable serverThrowable = capturedServiceTransportErrorRef.get().toFuture().get(1000, MILLISECONDS);
         assertThat(serverThrowable, instanceOf(ClosedChannelException.class));
-        assertThat(serverThrowable.getMessage(),
-                equalTo("CHANNEL_CLOSED_OUTBOUND(Outbound SocketChannel shutdown observed)"));
+        assertThat(serverThrowable.getMessage(), startsWith(
+                "CHANNEL_CLOSED_OUTBOUND(Outbound SocketChannel shutdown observed) [id: 0x"));
         assertThat(serverThrowable.getCause(), nullValue());
     }
 
     private void assertClientTransportInboundClosed(final Throwable clientThrowable) {
         if (clientThrowable instanceof ClosedChannelException) {
-            assertThat(clientThrowable.getMessage(),
-                    equalTo("CHANNEL_CLOSED_INBOUND(Inbound SocketChannel shutdown observed)"));
+            assertThat(clientThrowable.getMessage(), startsWith(
+                    "CHANNEL_CLOSED_INBOUND(Inbound SocketChannel shutdown observed) [id: 0x"));
         } else if (clientThrowable instanceof IOException) {
             // connection reset - unlikely, but possible due to races (no standard way to assert)
         } else {
@@ -519,7 +520,7 @@ public class NettyHttpServerTest extends AbstractNettyHttpServerTest {
                                                         final StreamingHttpRequest request,
                                                         final StreamingHttpResponseFactory responseFactory) {
                 // Capture for future assertions on the transport errors
-                capturedServiceTransportErrorRef.set(ctx.transportError());
+                capturedServiceTransportErrorRef.set(((NettyConnectionContext) ctx).transportError());
                 return delegate().handle(ctx, request, responseFactory);
             }
         });

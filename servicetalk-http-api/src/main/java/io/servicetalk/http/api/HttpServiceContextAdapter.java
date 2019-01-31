@@ -16,7 +16,6 @@
 package io.servicetalk.http.api;
 
 import io.servicetalk.concurrent.api.Completable;
-import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.transport.api.ExecutionContext;
 
 import java.net.SocketAddress;
@@ -60,11 +59,6 @@ public class HttpServiceContextAdapter extends HttpServiceContext {
     @Override
     public ExecutionContext executionContext() {
         return delegate.executionContext();
-    }
-
-    @Override
-    public Single<Throwable> transportError() {
-        return delegate.transportError();
     }
 
     @Override

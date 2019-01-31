@@ -17,6 +17,7 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.internal.QueueFullAndRejectedSubscribeException;
+import io.servicetalk.concurrent.internal.TerminalNotification;
 
 import java.util.Queue;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
@@ -88,12 +89,12 @@ public final class SingleProcessor<T> extends Single<T> implements Single.Proces
 
     @Override
     public void onSuccess(@Nullable final T result) {
-        terminate(ThrowableWrapper.wrapIfThrowable(result));
+        terminate(result);
     }
 
     @Override
     public void onError(final Throwable t) {
-        terminate(t);
+        terminate(TerminalNotification.error(t));
     }
 
     private void terminate(@Nullable Object terminalSignal) {
@@ -103,41 +104,16 @@ public final class SingleProcessor<T> extends Single<T> implements Single.Proces
     }
 
     private void notifyListeners(@Nullable Object terminalSignal) {
-        if (terminalSignal instanceof Throwable) {
-            final Throwable error = (Throwable) terminalSignal;
+        if (terminalSignal instanceof TerminalNotification) {
+            final Throwable error = ((TerminalNotification) terminalSignal).getCause();
+            assert error != null : "Cause can't be null from TerminalNotification.error(..)";
             drainSingleConsumerQueueDelayThrow(subscribers, subscriber -> subscriber.onError(error),
                     drainingTheQueueUpdater, this);
         } else {
-            final T value = ThrowableWrapper.unwrapIfNeeded(terminalSignal);
+            @SuppressWarnings("unchecked")
+            final T value = (T) terminalSignal;
             drainSingleConsumerQueueDelayThrow(subscribers, subscriber -> subscriber.onSuccess(value),
                     drainingTheQueueUpdater, this);
-        }
-    }
-
-    /**
-     * Wrapper to mark {@link Throwable} data so that we don't deliver it as {@link Subscriber#onError(Throwable)}.
-     */
-    private static final class ThrowableWrapper {
-        private final Throwable t;
-        private ThrowableWrapper(final Throwable t) {
-            this.t = t;
-        }
-
-        @SuppressWarnings("unchecked")
-        @Nullable
-        static <T> T unwrapIfNeeded(@Nullable Object inData) {
-            if (inData instanceof SingleProcessor.ThrowableWrapper) {
-                return (T) ((ThrowableWrapper) inData).t;
-            }
-            return (T) inData;
-        }
-
-        @Nullable
-        static Object wrapIfThrowable(@Nullable Object inData) {
-            if (inData instanceof Throwable) {
-                return new ThrowableWrapper((Throwable) inData);
-            }
-            return inData;
         }
     }
 }

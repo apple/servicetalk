@@ -443,8 +443,9 @@ public class DefaultNettyConnectionTest {
         // Exception should be of type CloseEventObservedException
         assertThat(exCaptor.getValue(), instanceOf(ClosedChannelException.class));
         assertThat(exCaptor.getValue().getCause(), instanceOf(ClosedChannelException.class));
-        assertThat(exCaptor.getValue().getMessage(),
-                equalTo("CHANNEL_CLOSED_OUTBOUND(Outbound SocketChannel shutdown observed)"));
+        assertThat(exCaptor.getValue().getMessage(), equalTo(
+                "CHANNEL_CLOSED_OUTBOUND(Outbound SocketChannel shutdown observed) " +
+                        "[id: 0xembedded, L:embedded ! R:embedded]"));
     }
 
     @Test
@@ -462,8 +463,9 @@ public class DefaultNettyConnectionTest {
         // Exception should be of type CloseEventObservedException
         assertThat(exCaptor.getValue(), instanceOf(ClosedChannelException.class));
         assertThat(exCaptor.getValue().getCause(), equalTo(DELIBERATE_EXCEPTION));
-        assertThat(exCaptor.getValue().getMessage(),
-                equalTo("CHANNEL_CLOSED_INBOUND(Inbound SocketChannel shutdown observed)"));
+        assertThat(exCaptor.getValue().getMessage(), equalTo(
+                "CHANNEL_CLOSED_INBOUND(Inbound SocketChannel shutdown observed) " +
+                        "[id: 0xembedded, L:embedded ! R:embedded]"));
     }
 
     @Test

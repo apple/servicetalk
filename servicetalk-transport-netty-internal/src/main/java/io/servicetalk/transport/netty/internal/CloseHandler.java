@@ -162,8 +162,8 @@ public abstract class CloseHandler {
             this.description = description;
         }
 
-        Throwable wrapError(@Nullable Throwable cause) {
-            return new CloseEventObservedException(cause, this);
+        Throwable wrapError(@Nullable Throwable cause, Channel channel) {
+            return new CloseEventObservedException(cause, this, channel);
         }
     }
 
@@ -171,15 +171,19 @@ public abstract class CloseHandler {
         private static final long serialVersionUID = -4181001701486049092L;
 
         private final CloseEvent event;
+        private final String channelDetails;
 
-        private CloseEventObservedException(@Nullable Throwable cause, final CloseEvent closeEvent) {
+        private CloseEventObservedException(@Nullable Throwable cause,
+                                            final CloseEvent closeEvent,
+                                            final Channel channel) {
             this.event = closeEvent;
+            this.channelDetails = channel.toString();
             initCause(cause);
         }
 
         @Override
         public String getMessage() {
-            return String.format("%s(%s)", event.name(), event.description);
+            return event.name() + "(" + event.description + ") " + channelDetails;
         }
 
         @Override

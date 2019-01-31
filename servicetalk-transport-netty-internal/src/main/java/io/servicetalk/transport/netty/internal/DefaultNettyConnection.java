@@ -135,8 +135,9 @@ public class DefaultNettyConnection<Read, Write> extends ConnectionContextAdapte
             closeHandler.registerEventHandler(channel, evt -> { // Called from EventLoop only!
                 if (closeReason == null) {
                     closeReason = evt;
-                    transportError.onSuccess(evt.wrapError(null));
+                    transportError.onSuccess(evt.wrapError(null, channel));
                     LOGGER.debug("{} Emitted CloseEvent: {}", channel, evt);
+                    onClosing.onComplete();
                 }
             });
             // Users may depend on onClosing to be notified for all kinds of closures and not just graceful close.
@@ -225,7 +226,7 @@ public class DefaultNettyConnection<Read, Write> extends ConnectionContextAdapte
     }
 
     private Throwable enrichError(final Throwable t) {
-        Throwable throwable = closeReason != null ? closeReason.wrapError(t) : t;
+        Throwable throwable = closeReason != null ? closeReason.wrapError(t, channel) : t;
         transportError.onSuccess(throwable);
         return throwable;
     }
