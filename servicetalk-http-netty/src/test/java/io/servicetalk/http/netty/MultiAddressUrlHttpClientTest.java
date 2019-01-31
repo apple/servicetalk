@@ -41,7 +41,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
 
-import java.net.InetSocketAddress;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
@@ -71,12 +70,12 @@ import static io.servicetalk.http.api.HttpResponseStatuses.PERMANENT_REDIRECT;
 import static io.servicetalk.http.api.HttpResponseStatuses.SEE_OTHER;
 import static io.servicetalk.http.api.HttpResponseStatuses.UNAUTHORIZED;
 import static io.servicetalk.http.api.HttpResponseStatuses.getResponseStatus;
-import static io.servicetalk.transport.api.HostAndPort.of;
 import static io.servicetalk.transport.netty.internal.AddressUtils.hostHeader;
+import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
+import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static io.servicetalk.transport.netty.internal.ExecutionContextRule.immediate;
 import static java.lang.Integer.parseInt;
 import static java.lang.String.format;
-import static java.net.InetAddress.getLoopbackAddress;
 import static java.util.Arrays.asList;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
@@ -151,7 +150,7 @@ public class MultiAddressUrlHttpClientTest {
         };
         serverCtx = startNewLocalServer(httpService, afterClassCloseables);
 
-        final HostAndPort serverHostAndPort = of((InetSocketAddress) serverCtx.listenAddress());
+        final HostAndPort serverHostAndPort = serverHostAndPort(serverCtx);
         serverHost = serverHostAndPort.getHostName();
         serverPort = serverHostAndPort.getPort();
         hostHeader = hostHeader(serverHostAndPort);
@@ -264,35 +263,37 @@ public class MultiAddressUrlHttpClientTest {
     public void multipleRequestsToMultipleServers() throws Exception {
         try (CompositeCloseable closeables = newCompositeCloseable()) {
             ServerContext serverCtx2 = startNewLocalServer(httpService, closeables);
+            final String hostHeader2 = hostHeader(serverHostAndPort(serverCtx2));
             ServerContext serverCtx3 = startNewLocalServer(httpService, closeables);
+            final String hostHeader3 = hostHeader(serverHostAndPort(serverCtx3));
 
             List<HttpResponseStatus> statuses = asList(OK, CREATED, ACCEPTED,
                     MOVED_PERMANENTLY, SEE_OTHER, PERMANENT_REDIRECT,
                     BAD_REQUEST, UNAUTHORIZED, FORBIDDEN,
                     INTERNAL_SERVER_ERROR, NOT_IMPLEMENTED, BAD_GATEWAY);
             for (HttpResponseStatus status : statuses) {
-                makeGetRequestAndValidate(serverCtx, status);
-                makeGetRequestAndValidate(serverCtx2, status);
-                makeGetRequestAndValidate(serverCtx3, status);
+                makeGetRequestAndValidate(hostHeader, status);
+                makeGetRequestAndValidate(hostHeader2, status);
+                makeGetRequestAndValidate(hostHeader3, status);
             }
         }
     }
 
-    private static void makeGetRequestAndValidate(ServerContext serverCtx, HttpResponseStatus status) throws Exception {
+    private static void makeGetRequestAndValidate(final String hostHeader, final HttpResponseStatus status) throws Exception {
         final StreamingHttpRequest request =
-                requester.get(format("http:/%s/%d?param=value#tag", serverCtx.listenAddress(), status.code()));
+                requester.get(format("http://%s/%d?param=value#tag", hostHeader, status.code()));
         requestAndValidate(request, status);
     }
 
-    private static void requestAndValidate(StreamingHttpRequest request,
-                                           HttpResponseStatus expectedStatus) throws Exception {
+    private static void requestAndValidate(final StreamingHttpRequest request,
+                                           final HttpResponseStatus expectedStatus) throws Exception {
         StreamingHttpResponse response = awaitIndefinitelyNonNull(requester.request(request));
         assertThat(response.status(), is(expectedStatus));
     }
 
     private static ServerContext startNewLocalServer(final StreamingHttpService httpService,
                                                      final CompositeCloseable closeables) throws Exception {
-        return closeables.append(HttpServers.forAddress(new InetSocketAddress(getLoopbackAddress(), 0))
+        return closeables.append(HttpServers.forAddress(localAddress())
                 .ioExecutor(CTX.ioExecutor())
                 .listenStreamingAndAwait(httpService));
     }

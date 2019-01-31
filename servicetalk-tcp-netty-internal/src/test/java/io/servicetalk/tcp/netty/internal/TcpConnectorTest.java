@@ -61,7 +61,6 @@ public final class TcpConnectorTest extends AbstractTcpServerTest {
     }
 
     @Test
-    @SuppressWarnings("PMD.AvoidUsingHardCodedIP")
     public void testUnresolvedAddress() throws Exception {
         testWriteAndRead(client.connectBlocking(CLIENT_CTX,
                 createUnresolved(serverAddress.getHostString(), serverAddress.getPort())));

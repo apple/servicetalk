@@ -16,8 +16,13 @@
 package io.servicetalk.transport.netty.internal;
 
 import io.servicetalk.transport.api.HostAndPort;
+import io.servicetalk.transport.api.ServerContext;
+
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
 
 import static io.netty.util.NetUtil.isValidIpV6Address;
+import static java.net.InetAddress.getLoopbackAddress;
 
 /**
  * A utility class to work with addresses.
@@ -26,6 +31,39 @@ public final class AddressUtils {
 
     private AddressUtils() {
         // No instances
+    }
+
+    /**
+     * Creates an {@link InetSocketAddress} with {@link InetAddress#getLoopbackAddress() loopback address} and zero
+     * port number.
+     *
+     * @return an {@link InetSocketAddress} with {@link InetAddress#getLoopbackAddress() loopback address} and zero
+     * port number
+     */
+    public static InetSocketAddress localAddress() {
+        return localAddress(0);
+    }
+
+    /**
+     * Creates an {@link InetSocketAddress} with {@link InetAddress#getLoopbackAddress() loopback address} and specified
+     * port number.
+     *
+     * @param port the port number
+     * @return an {@link InetSocketAddress} with {@link InetAddress#getLoopbackAddress() loopback address} and specified
+     * port number
+     */
+    public static InetSocketAddress localAddress(final int port) {
+        return new InetSocketAddress(getLoopbackAddress(), port);
+    }
+
+    /**
+     * Returns a {@link HostAndPort} representation of server's listening address.
+     *
+     * @param ctx The {@link ServerContext} of the server
+     * @return a {@link HostAndPort} representation of server's listening address.
+     */
+    public static HostAndPort serverHostAndPort(final ServerContext ctx) {
+        return HostAndPort.of((InetSocketAddress) ctx.listenAddress());
     }
 
     /**

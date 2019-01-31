@@ -48,8 +48,8 @@ import static io.servicetalk.http.netty.RedirectingClientAndConnectionFilterTest
 import static io.servicetalk.http.netty.RedirectingClientAndConnectionFilterTest.Type.Connection;
 import static io.servicetalk.http.netty.RedirectingClientAndConnectionFilterTest.Type.Reserved;
 import static io.servicetalk.transport.netty.internal.AddressUtils.hostHeader;
+import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static java.lang.String.format;
-import static java.net.InetAddress.getLoopbackAddress;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertThat;
 
@@ -122,7 +122,7 @@ public final class RedirectingClientAndConnectionFilterTest {
 
     @Test
     public void redirectFilterNoHostHeaderRelativeLocation() throws Exception {
-        try (ServerContext serverContext = HttpServers.forAddress(new InetSocketAddress(getLoopbackAddress(), 0))
+        try (ServerContext serverContext = HttpServers.forAddress(localAddress())
                 .listenBlockingAndAwait((ctx, request, responseFactory) -> {
                     if (request.requestTarget().equals("/")) {
                         return responseFactory.permanentRedirect()
@@ -149,7 +149,7 @@ public final class RedirectingClientAndConnectionFilterTest {
 
     @Test
     public void redirectFilterNoHostHeaderAbsoluteLocation() throws Exception {
-        try (ServerContext serverContext = HttpServers.forAddress(new InetSocketAddress(getLoopbackAddress(), 0))
+        try (ServerContext serverContext = HttpServers.forAddress(localAddress())
                 .listenBlockingAndAwait((ctx, request, responseFactory) -> {
                     if (request.requestTarget().equals("/")) {
                         InetSocketAddress socketAddress = (InetSocketAddress) ctx.localAddress();
@@ -177,7 +177,7 @@ public final class RedirectingClientAndConnectionFilterTest {
 
     @Test
     public void redirectFilterWithHostHeaderRelativeLocation() throws Exception {
-        try (ServerContext serverContext = HttpServers.forAddress(new InetSocketAddress(getLoopbackAddress(), 0))
+        try (ServerContext serverContext = HttpServers.forAddress(localAddress())
                 .listenBlockingAndAwait((ctx, request, responseFactory) -> {
                     if (request.requestTarget().equals("/")) {
                         return responseFactory.permanentRedirect()
@@ -197,7 +197,7 @@ public final class RedirectingClientAndConnectionFilterTest {
 
     @Test
     public void redirectFilterWithHostHeaderAbsoluteLocation() throws Exception {
-        try (ServerContext serverContext = HttpServers.forAddress(new InetSocketAddress(getLoopbackAddress(), 0))
+        try (ServerContext serverContext = HttpServers.forAddress(localAddress())
                 .listenBlockingAndAwait((ctx, request, responseFactory) -> {
                     if (request.requestTarget().equals("/")) {
                         return responseFactory.permanentRedirect()

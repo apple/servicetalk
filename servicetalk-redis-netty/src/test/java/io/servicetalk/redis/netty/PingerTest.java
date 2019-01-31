@@ -67,6 +67,7 @@ import static io.servicetalk.transport.netty.NettyIoExecutors.createIoExecutor;
 import static io.servicetalk.transport.netty.internal.NettyIoExecutors.toNettyIoExecutor;
 import static io.servicetalk.transport.netty.internal.RandomDataUtils.randomCharSequenceOfByteLength;
 import static java.lang.Long.MAX_VALUE;
+import static java.net.InetAddress.getLoopbackAddress;
 import static java.time.Duration.ofSeconds;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
@@ -89,12 +90,11 @@ public class PingerTest {
     private static InetSocketAddress serverAddress;
 
     @BeforeClass
-    @SuppressWarnings("PMD.AvoidUsingHardCodedIP")
     public static void setUp() {
         final String tmpRedisPort = System.getenv("REDIS_PORT");
         assumeThat(tmpRedisPort, not(isEmptyOrNullString()));
         int redisPort = Integer.parseInt(tmpRedisPort);
-        String redisHost = System.getenv().getOrDefault("REDIS_HOST", "127.0.0.1");
+        String redisHost = System.getenv().getOrDefault("REDIS_HOST", getLoopbackAddress().getHostName());
         serverAddress = new InetSocketAddress(redisHost, redisPort);
 
         nettyIoExecutor = toNettyIoExecutor(createIoExecutor());

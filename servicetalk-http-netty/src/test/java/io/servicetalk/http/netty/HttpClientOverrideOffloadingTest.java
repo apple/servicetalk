@@ -20,7 +20,6 @@ import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.HttpClient;
 import io.servicetalk.http.api.HttpExecutionStrategy;
-import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.ServerContext;
 
@@ -31,7 +30,6 @@ import org.junit.rules.Timeout;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -45,9 +43,10 @@ import static io.servicetalk.concurrent.api.Single.success;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
 import static io.servicetalk.transport.netty.NettyIoExecutors.createIoExecutor;
+import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
+import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static java.lang.Thread.NORM_PRIORITY;
 import static java.lang.Thread.currentThread;
-import static java.net.InetAddress.getLoopbackAddress;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 
@@ -74,10 +73,9 @@ public class HttpClientOverrideOffloadingTest {
         executor = newCachedThreadExecutor();
         this.isInvalidThread = isInvalidThread;
         this.overridingStrategy = overridingStrategy == null ? defaultStrategy(executor) : overridingStrategy;
-        server = HttpServers.forAddress(new InetSocketAddress(getLoopbackAddress(), 0))
+        server = HttpServers.forAddress(localAddress())
                 .listenStreamingAndAwait((ctx, request, responseFactory) -> success(responseFactory.ok()));
-        InetSocketAddress socketAddress = (InetSocketAddress) server.listenAddress();
-        client = HttpClients.forSingleAddress(HostAndPort.of(socketAddress))
+        client = HttpClients.forSingleAddress(serverHostAndPort(server))
                 .ioExecutor(ioExecutor)
                 .executionStrategy(defaultStrategy == null ? defaultStrategy(executor) : defaultStrategy)
                 .build();

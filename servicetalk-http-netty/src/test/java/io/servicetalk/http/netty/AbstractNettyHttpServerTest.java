@@ -65,10 +65,10 @@ import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitelyNonNull;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.transport.api.ConnectionAcceptor.ACCEPT_ALL;
+import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.parseBoolean;
 import static java.lang.Thread.NORM_PRIORITY;
-import static java.net.InetAddress.getLoopbackAddress;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.Matchers.contains;
@@ -129,7 +129,7 @@ public abstract class AbstractNettyHttpServerTest {
 
     @Before
     public void startServer() throws Exception {
-        final InetSocketAddress bindAddress = new InetSocketAddress(getLoopbackAddress(), 0);
+        final InetSocketAddress bindAddress = localAddress();
         setService(new TestServiceStreaming(publisherSupplier, defaultStrategy(serverExecutor)));
 
         // A small SNDBUF is needed to test that the server defers closing the connection until writes are complete.

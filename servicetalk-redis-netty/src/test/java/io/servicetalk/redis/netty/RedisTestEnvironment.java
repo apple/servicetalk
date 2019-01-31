@@ -23,7 +23,6 @@ import io.servicetalk.redis.utils.RetryingRedisRequesterFilter;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.IoExecutor;
 
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -51,7 +50,6 @@ import static org.junit.Assume.assumeThat;
 final class RedisTestEnvironment implements AutoCloseable {
 
     public static final int PING_PERIOD_SECONDS = 1;
-    private static final InetAddress LOOPBACK_ADDRESS = getLoopbackAddress();
     static final String IO_EXECUTOR_THREAD_NAME_PREFIX = "redis-client-io-executor-";
 
     final int redisPort;
@@ -103,7 +101,7 @@ final class RedisTestEnvironment implements AutoCloseable {
     }
 
     static String redisServerHost() {
-        return System.getenv().getOrDefault("REDIS_HOST", LOOPBACK_ADDRESS.getHostName());
+        return System.getenv().getOrDefault("REDIS_HOST", getLoopbackAddress().getHostName());
     }
 
     static int redisServerPort() {

@@ -42,7 +42,6 @@ import org.junit.Test;
 import org.junit.rules.Timeout;
 import org.mockito.stubbing.Answer;
 
-import java.net.InetSocketAddress;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 import javax.annotation.Nullable;
@@ -62,9 +61,10 @@ import static io.servicetalk.http.api.SslConfigProviders.secureByDefault;
 import static io.servicetalk.transport.api.SslConfigBuilder.forClientWithoutServerIdentity;
 import static io.servicetalk.transport.api.SslConfigBuilder.forServer;
 import static io.servicetalk.transport.netty.internal.AddressUtils.hostHeader;
+import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
+import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static io.servicetalk.transport.netty.internal.ExecutionContextRule.immediate;
 import static java.lang.String.format;
-import static java.net.InetAddress.getLoopbackAddress;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -110,11 +110,10 @@ public class MultiAddressUrlHttpClientSslTest {
         when(STREAMING_HTTP_SERVICE.executionStrategy()).thenReturn(noOffloadsStrategy());
         when(STREAMING_HTTP_SERVICE.closeAsync()).thenReturn(completed());
         when(STREAMING_HTTP_SERVICE.closeAsyncGracefully()).thenReturn(completed());
-        serverCtx = HttpServers.forAddress(new InetSocketAddress(getLoopbackAddress(), 0))
+        serverCtx = HttpServers.forAddress(localAddress())
                 .ioExecutor(CTX.ioExecutor())
                 .listenStreamingAndAwait(STREAMING_HTTP_SERVICE);
-        final InetSocketAddress serverSocketAddress = (InetSocketAddress) serverCtx.listenAddress();
-        serverHostHeader = hostHeader(HostAndPort.of(serverSocketAddress));
+        serverHostHeader = hostHeader(serverHostAndPort(serverCtx));
 
         // Configure HTTPS server
         when(SECURE_STREAMING_HTTP_SERVICE.handle(any(), any(), any())).thenAnswer(
@@ -127,12 +126,11 @@ public class MultiAddressUrlHttpClientSslTest {
         when(SECURE_STREAMING_HTTP_SERVICE.executionStrategy()).thenReturn(noOffloadsStrategy());
         when(SECURE_STREAMING_HTTP_SERVICE.closeAsync()).thenReturn(completed());
         when(SECURE_STREAMING_HTTP_SERVICE.closeAsyncGracefully()).thenReturn(completed());
-        secureServerCtx = HttpServers.forAddress(new InetSocketAddress(getLoopbackAddress(), 0))
+        secureServerCtx = HttpServers.forAddress(localAddress())
                 .sslConfig(forServer(DefaultTestCerts::loadServerPem, DefaultTestCerts::loadServerKey).build())
                 .ioExecutor(CTX.ioExecutor())
                 .listenStreamingAndAwait(SECURE_STREAMING_HTTP_SERVICE);
-        final InetSocketAddress secureServerSocketAddress = (InetSocketAddress) secureServerCtx.listenAddress();
-        secureServerHostHeader = hostHeader(HostAndPort.of(secureServerSocketAddress));
+        secureServerHostHeader = hostHeader(serverHostAndPort(secureServerCtx));
     }
 
     @AfterClass

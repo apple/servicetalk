@@ -28,7 +28,6 @@ import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.api.StreamingHttpService;
-import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.ServerContext;
 
 import org.junit.After;
@@ -40,8 +39,6 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import java.io.IOException;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
 import java.nio.channels.ClosedChannelException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -59,6 +56,8 @@ import static io.servicetalk.http.api.HttpExecutionStrategies.customStrategyBuil
 import static io.servicetalk.http.api.HttpResponseStatuses.OK;
 import static io.servicetalk.http.api.HttpResponseStatuses.SERVICE_UNAVAILABLE;
 import static io.servicetalk.http.netty.HttpClients.forSingleAddress;
+import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
+import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.instanceOf;
@@ -130,19 +129,18 @@ public class InsufficientlySizedExecutorHttpTest {
     }
 
     private void initClientAndServer(boolean clientUnderProvisioned) throws Exception {
-        InetSocketAddress addr;
         executor = getExecutorForCapacity(capacity, !threadBased);
         final HttpExecutionStrategies.Builder strategyBuilder = customStrategyBuilder().offloadAll().executor(executor);
         final HttpExecutionStrategy strategy = threadBased ? strategyBuilder.offloadWithThreadAffinity().build() :
                 strategyBuilder.build();
         if (clientUnderProvisioned) {
-            server = HttpServers.forAddress(new InetSocketAddress(InetAddress.getLoopbackAddress(), 0))
+            server = HttpServers.forAddress(localAddress())
                     .listenStreamingAndAwait((ctx, request, responseFactory) -> success(responseFactory.ok()));
-            addr = (InetSocketAddress) server.listenAddress();
-            client = forSingleAddress(HostAndPort.of(addr)).executionStrategy(strategy)
+            client = forSingleAddress(serverHostAndPort(server))
+                    .executionStrategy(strategy)
                     .buildStreaming();
         } else {
-            server = HttpServers.forAddress(new InetSocketAddress(InetAddress.getLoopbackAddress(), 0))
+            server = HttpServers.forAddress(localAddress())
                     .listenStreamingAndAwait(new StreamingHttpService() {
                         @Override
                         public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
@@ -156,8 +154,7 @@ public class InsufficientlySizedExecutorHttpTest {
                             return strategy;
                         }
                     });
-            addr = (InetSocketAddress) server.listenAddress();
-            client = forSingleAddress(HostAndPort.of(addr)).buildStreaming();
+            client = forSingleAddress(serverHostAndPort(server)).buildStreaming();
         }
     }
 

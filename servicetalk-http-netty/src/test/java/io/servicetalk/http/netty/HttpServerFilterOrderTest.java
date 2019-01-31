@@ -24,12 +24,10 @@ import io.servicetalk.transport.api.ServerContext;
 import org.junit.Test;
 import org.mockito.InOrder;
 
-import java.net.InetSocketAddress;
-
 import static io.servicetalk.http.api.HttpResponseStatuses.OK;
 import static io.servicetalk.http.netty.HttpClients.forSingleAddress;
-import static io.servicetalk.transport.api.HostAndPort.of;
-import static java.net.InetAddress.getLoopbackAddress;
+import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
+import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.mockito.ArgumentMatchers.any;
@@ -43,11 +41,11 @@ public class HttpServerFilterOrderTest {
     public void prependOrder() throws Exception {
         StreamingHttpRequestHandler filter1 = newMockHandler();
         StreamingHttpRequestHandler filter2 = newMockHandler();
-        ServerContext serverContext = HttpServers.forAddress(new InetSocketAddress(getLoopbackAddress(), 0))
+        ServerContext serverContext = HttpServers.forAddress(localAddress())
                 .appendRequestHandlerFilter(addFilter(filter1))
                 .appendRequestHandlerFilter(addFilter(filter2))
                 .listenBlockingAndAwait((ctx, request, responseFactory) -> responseFactory.ok());
-        BlockingHttpClient client = forSingleAddress(of((InetSocketAddress) serverContext.listenAddress()))
+        BlockingHttpClient client = forSingleAddress(serverHostAndPort(serverContext))
                 .buildBlocking();
         HttpResponse resp = client.request(client.get("/"));
         assertThat("Unexpected response.", resp.status(), is(OK));

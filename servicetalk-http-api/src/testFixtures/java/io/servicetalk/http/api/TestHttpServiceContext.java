@@ -18,13 +18,11 @@ package io.servicetalk.http.api;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.transport.api.ExecutionContext;
 
-import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import javax.annotation.Nullable;
 import javax.net.ssl.SSLSession;
 
 import static io.servicetalk.concurrent.api.Completable.completed;
-import static java.net.InetAddress.getLoopbackAddress;
 
 public class TestHttpServiceContext extends HttpServiceContext {
     private final ExecutionContext executionContext;
@@ -37,7 +35,7 @@ public class TestHttpServiceContext extends HttpServiceContext {
                 reqRespFactory,
                 new StreamingHttpRequestResponseFactoryToBlockingStreamingHttpRequestResponseFactory(reqRespFactory));
         this.executionContext = executionContext;
-        remoteAddress = localAddress = new InetSocketAddress(getLoopbackAddress(), 0);
+        remoteAddress = localAddress = localAddress();
     }
 
     @Override

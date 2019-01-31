@@ -15,6 +15,8 @@
  */
 package io.servicetalk.dns.discovery.netty;
 
+import io.servicetalk.transport.netty.internal.AddressUtils;
+
 import org.apache.directory.server.dns.DnsException;
 import org.apache.directory.server.dns.DnsServer;
 import org.apache.directory.server.dns.io.encoder.DnsMessageEncoder;
@@ -45,8 +47,6 @@ import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 import java.util.Set;
 
-import static java.net.InetAddress.getLoopbackAddress;
-
 class TestDnsServer extends DnsServer {
     private final DelegateRecordStore store;
 
@@ -60,7 +60,7 @@ class TestDnsServer extends DnsServer {
 
     @Override
     public void start() throws IOException {
-        InetSocketAddress address = new InetSocketAddress(getLoopbackAddress(), 0);
+        InetSocketAddress address = AddressUtils.localAddress();
         UdpTransport transport = new UdpTransport(address.getHostString(), address.getPort());
         setTransports(transport);
 

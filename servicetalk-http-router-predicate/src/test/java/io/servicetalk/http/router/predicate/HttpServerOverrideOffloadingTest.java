@@ -28,14 +28,12 @@ import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.http.netty.HttpClients;
 import io.servicetalk.http.netty.HttpServers;
-import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.ServerContext;
 
 import org.junit.After;
 import org.junit.Test;
 
-import java.net.InetSocketAddress;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
@@ -48,9 +46,10 @@ import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
 import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
 import static io.servicetalk.transport.netty.NettyIoExecutors.createIoExecutor;
+import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
+import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static java.lang.Thread.NORM_PRIORITY;
 import static java.lang.Thread.currentThread;
-import static java.net.InetAddress.getLoopbackAddress;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
@@ -72,13 +71,12 @@ public class HttpServerOverrideOffloadingTest {
         service1 = new OffloadingTesterService(noOffloadsStrategy(), th -> !isInServerEventLoop(th));
         service2 = new OffloadingTesterService(defaultStrategy(executor),
                 HttpServerOverrideOffloadingTest::isInServerEventLoop);
-        server = HttpServers.forAddress(new InetSocketAddress(getLoopbackAddress(), 0))
+        server = HttpServers.forAddress(localAddress())
                 .ioExecutor(ioExecutor)
                 .listenAndAwait(new HttpPredicateRouterBuilder()
                         .whenPathStartsWith("/service1").thenRouteTo(service1)
                         .whenPathStartsWith("/service2").thenRouteTo(service2).build());
-        InetSocketAddress socketAddress = (InetSocketAddress) server.listenAddress();
-        client = HttpClients.forSingleAddress(HostAndPort.of(socketAddress)).build();
+        client = HttpClients.forSingleAddress(serverHostAndPort(server)).build();
     }
 
     @After

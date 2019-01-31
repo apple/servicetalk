@@ -28,7 +28,6 @@ import io.servicetalk.http.api.StreamingHttpRequestFactory;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.api.StreamingHttpService;
-import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.netty.internal.ExecutionContextRule;
 
@@ -38,7 +37,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
 
-import java.net.InetSocketAddress;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Single.error;
@@ -48,7 +46,8 @@ import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderValues.ZERO;
 import static io.servicetalk.http.api.HttpResponseStatuses.OK;
-import static java.net.InetAddress.getLoopbackAddress;
+import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
+import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static java.util.Objects.requireNonNull;
 import static org.junit.Assert.assertEquals;
 
@@ -76,7 +75,7 @@ public class HttpAuthConnectionFactoryClientTest {
 
     @Test
     public void simulateAuth() throws Exception {
-        serverContext = HttpServers.forAddress(new InetSocketAddress(getLoopbackAddress(), 0))
+        serverContext = HttpServers.forAddress(localAddress())
                 .ioExecutor(CTX.ioExecutor())
                 .listenStreamingAndAwait(
                         new StreamingHttpService() {
@@ -93,8 +92,7 @@ public class HttpAuthConnectionFactoryClientTest {
                             }
                         });
 
-        final InetSocketAddress serverSocketAddress = (InetSocketAddress) serverContext.listenAddress();
-        client = HttpClients.forSingleAddress(HostAndPort.of(serverSocketAddress))
+        client = HttpClients.forSingleAddress(serverHostAndPort(serverContext))
                 .appendConnectionFactoryFilter(TestHttpAuthConnectionFactory::new)
                 .ioExecutor(CTX.ioExecutor())
                 .executionStrategy(noOffloadsStrategy())

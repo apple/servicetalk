@@ -41,8 +41,8 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitelyNonNull;
 import static io.servicetalk.transport.api.ConnectionAcceptor.ACCEPT_ALL;
+import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.CloseHandler.UNSUPPORTED_PROTOCOL_CLOSE_HANDLER;
-import static java.net.InetAddress.getLoopbackAddress;
 
 /**
  * A utility to create a TCP server for tests.
@@ -102,7 +102,7 @@ public class TcpServer {
                                Function<NettyConnection<Buffer, Buffer>, Completable> service)
             throws ExecutionException, InterruptedException {
         TcpServerInitializer initializer = new TcpServerInitializer(executionContext, config);
-        return awaitIndefinitelyNonNull(initializer.start(new InetSocketAddress(getLoopbackAddress(), port),
+        return awaitIndefinitelyNonNull(initializer.start(localAddress(port),
                 connectionAcceptor, new TcpServerChannelInitializer(config, connectionAcceptor)
                         .andThen(getChannelInitializer(service, executionContext)), false, false)
                 .doBeforeSuccess(ctx -> LOGGER.info("Server started on port {}.", getServerPort(ctx)))

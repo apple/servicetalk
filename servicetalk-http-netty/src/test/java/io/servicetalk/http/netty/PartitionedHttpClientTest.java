@@ -50,10 +50,14 @@ import java.util.function.Function;
 
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
+import static io.servicetalk.http.api.HttpResponseStatuses.OK;
 import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
+import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
+import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static java.net.InetAddress.getLoopbackAddress;
 import static java.util.Objects.requireNonNull;
 import static org.hamcrest.Matchers.hasToString;
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -74,11 +78,11 @@ public class PartitionedHttpClientTest {
 
     @BeforeClass
     public static void setUpServers() throws Exception {
-        srv1 = HttpServers.forAddress(new InetSocketAddress(getLoopbackAddress(), 0))
+        srv1 = HttpServers.forAddress(localAddress())
                 .listenBlockingAndAwait((ctx, request, responseFactory) ->
                         responseFactory.ok().setHeader(X_SERVER, SRV_1));
 
-        srv2 = HttpServers.forAddress(new InetSocketAddress(getLoopbackAddress(), 0))
+        srv2 = HttpServers.forAddress(localAddress())
                 .listenBlockingAndAwait((ctx, request, responseFactory) ->
                         responseFactory.ok().setHeader(X_SERVER, SRV_2));
     }
@@ -240,11 +244,18 @@ public class PartitionedHttpClientTest {
     @Test
     public void testClientGroupPartitioning() throws Exception {
         // user partition discovery service, userId=1 => srv1 | userId=2 => srv2
-        try (ServerContext userDisco = HttpServers.forAddress(new InetSocketAddress(getLoopbackAddress(), 0))
+        try (ServerContext userDisco = HttpServers.forAddress(localAddress())
                 .listenBlockingAndAwait((ctx, request, responseFactory) -> {
                     if ("/partition".equals(request.path())) {
-                        int userId = Integer.parseInt(request.queryParameter("userId"));
-                        ServerContext dSrv = userId == 1 ? srv1 : userId == 2 ? srv2 : null;
+                        String userIdParam = request.queryParameter("userId");
+                        if (userIdParam == null || userIdParam.isEmpty()) {
+                            return responseFactory.badRequest();
+                        }
+                        int userId = Integer.parseInt(userIdParam);
+                        if (userId != 1 && userId != 2) {
+                            return responseFactory.notFound();
+                        }
+                        ServerContext dSrv = userId == 1 ? srv1 : srv2;
                         InetSocketAddress socketAddress = (InetSocketAddress) dSrv.listenAddress();
                         return responseFactory.ok().payloadBody(socketAddress.getPort() + "", textSerializer());
                     }
@@ -257,7 +268,10 @@ public class PartitionedHttpClientTest {
                 StreamingHttpResponse httpResponse1 = client.request(new User(1), client.get("/foo")).toFuture().get();
                 StreamingHttpResponse httpResponse2 = client.request(new User(2), client.get("/foo")).toFuture().get();
 
+                assertThat(httpResponse1.status(), is(OK));
                 assertThat(httpResponse1.headers().get(X_SERVER), hasToString(SRV_1));
+
+                assertThat(httpResponse2.status(), is(OK));
                 assertThat(httpResponse2.headers().get(X_SERVER), hasToString(SRV_2));
             }
         }
@@ -307,7 +321,7 @@ public class PartitionedHttpClientTest {
 
         PartitioningHttpClientWithOutOfBandDiscovery(ServerContext disco) {
             // User Partition Discovery Service - IRL this client should typically cache responses
-            udClient = HttpClients.forSingleAddress(HostAndPort.of((InetSocketAddress) disco.listenAddress())).build();
+            udClient = HttpClients.forSingleAddress(serverHostAndPort(disco)).build();
 
             requestFactory = new DefaultStreamingHttpRequestResponseFactory(
                     udClient.executionContext().bufferAllocator(), DefaultHttpHeadersFactory.INSTANCE);

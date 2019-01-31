@@ -35,6 +35,7 @@ import javax.annotation.Nonnull;
 
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
+import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.inOrder;
@@ -72,10 +73,9 @@ public class HttpClientBuilderTest extends AbstractEchoServerBasedHttpRequesterT
 
     @Test
     public void withConnectionFactoryFilter() throws Exception {
-        final InetSocketAddress serverSocketAddress = (InetSocketAddress) serverContext.listenAddress();
         ConnectionFactory<InetSocketAddress, ? extends StreamingHttpConnection> factory1 = newFilter();
         ConnectionFactory<InetSocketAddress, ? extends StreamingHttpConnection> factory2 = newFilter();
-        StreamingHttpClient requester = HttpClients.forSingleAddress(HostAndPort.of(serverSocketAddress))
+        StreamingHttpClient requester = HttpClients.forSingleAddress(serverHostAndPort(serverContext))
                 .appendConnectionFactoryFilter(factoryFilter(factory1))
                 .appendConnectionFactoryFilter(factoryFilter(factory2))
                 .ioExecutor(CTX.ioExecutor())
@@ -113,8 +113,7 @@ public class HttpClientBuilderTest extends AbstractEchoServerBasedHttpRequesterT
                 mock(ServiceDiscoverer.class);
         when(disco.discover(any())).thenReturn(sdPub);
 
-        final InetSocketAddress serverSocketAddress = (InetSocketAddress) serverContext.listenAddress();
-        StreamingHttpClient requester = HttpClients.forSingleAddress(HostAndPort.of(serverSocketAddress))
+        StreamingHttpClient requester = HttpClients.forSingleAddress(serverHostAndPort(serverContext))
                 .serviceDiscoverer(disco)
                 .ioExecutor(CTX.ioExecutor())
                 .executionStrategy(noOffloadsStrategy())

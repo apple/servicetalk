@@ -56,7 +56,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
 
-import java.net.InetSocketAddress;
 import java.util.ArrayDeque;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
@@ -82,11 +81,11 @@ import static io.servicetalk.http.api.HttpRequestMetaDataFactory.newRequestMetaD
 import static io.servicetalk.http.api.HttpRequestMethods.GET;
 import static io.servicetalk.transport.api.ConnectionAcceptor.ACCEPT_ALL;
 import static io.servicetalk.transport.netty.NettyIoExecutors.createIoExecutor;
+import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static java.lang.Boolean.TRUE;
 import static java.lang.Integer.toHexString;
 import static java.lang.String.valueOf;
 import static java.lang.Thread.NORM_PRIORITY;
-import static java.net.InetAddress.getLoopbackAddress;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -411,15 +410,13 @@ public class HttpRequestEncoderTest {
             ReadOnlyTcpServerConfig sConfig = new TcpServerConfig(true)
                     .enableWireLogging("servicetalk-tests-server-wire-logger").asReadOnly();
             ServerContext serverContext = resources.prepend(awaitIndefinitelyNonNull(
-                    new TcpServerInitializer(SEC, sConfig)
-                            .start(new InetSocketAddress(getLoopbackAddress(), 0),
-                                    context -> Single.success(TRUE),
-                                    new TcpServerChannelInitializer(sConfig, ACCEPT_ALL).andThen(
-                                            (c, cc) -> {
-                                                serverChannelRef.compareAndSet(null, c);
-                                                serverChannelLatch.countDown();
-                                                return cc;
-                                            }), false, true)));
+                    new TcpServerInitializer(SEC, sConfig).start(localAddress(),
+                            context -> Single.success(TRUE),
+                            new TcpServerChannelInitializer(sConfig, ACCEPT_ALL).andThen((c, cc) -> {
+                                serverChannelRef.compareAndSet(null, c);
+                                serverChannelLatch.countDown();
+                                return cc;
+                            }), false, true)));
 
             HttpClientConfig cConfig = new HttpClientConfig(new TcpClientConfig(true)
                     .enableWireLogging("servicetalk-tests-client-wire-logger"));
