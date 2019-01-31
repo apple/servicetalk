@@ -16,11 +16,13 @@
 package io.servicetalk.http.api;
 
 import io.servicetalk.buffer.api.Buffer;
+import io.servicetalk.concurrent.api.DefaultThreadFactory;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.transport.netty.internal.ExecutionContextRule;
+import io.servicetalk.transport.netty.internal.NettyIoExecutors;
 
 import org.junit.After;
 import org.junit.Rule;
@@ -39,7 +41,6 @@ import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.function.Function;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
-import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
 import static io.servicetalk.concurrent.api.Publisher.just;
 import static io.servicetalk.concurrent.api.Single.error;
@@ -62,14 +63,15 @@ public class DefaultHttpExecutionStrategyTest {
 
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
-    @Rule
-    public final ExecutionContextRule contextRule = ExecutionContextRule.immediate();
 
     private final boolean offloadReceiveMeta;
     private final boolean offloadReceiveData;
     private final boolean offloadSend;
     private final HttpExecutionStrategy strategy;
-    private final Executor executor;
+    private final Executor executor = newCachedThreadExecutor();
+    @Rule
+    public final ExecutionContextRule contextRule = new ExecutionContextRule(() -> DEFAULT_ALLOCATOR,
+            () -> NettyIoExecutors.createIoExecutor(new DefaultThreadFactory()), () -> executor);
 
     public DefaultHttpExecutionStrategyTest(@SuppressWarnings("unused") final String description,
                                             final boolean offloadReceiveMeta, final boolean offloadReceiveData,
@@ -77,7 +79,6 @@ public class DefaultHttpExecutionStrategyTest {
         this.offloadReceiveMeta = offloadReceiveMeta;
         this.offloadReceiveData = offloadReceiveData;
         this.offloadSend = offloadSend;
-        executor = newCachedThreadExecutor();
         HttpExecutionStrategies.Builder builder = customStrategyBuilder();
         if (strategySpecifiesExecutor) {
             builder.executor(executor);
@@ -293,13 +294,20 @@ public class DefaultHttpExecutionStrategyTest {
         }
 
         void checkContext(HttpServiceContext context) {
-            if (strategy == NO_OFFLOADS && context.executionContext().executor() != immediate()) {
-                errors.add(new AssertionError("Unexpected executor in context. Expected: " + immediate() +
-                        ", actual: " + context.executionContext().executor()));
-            } else if (strategy != NO_OFFLOADS && context.executionContext().executor() != executor) {
+            if (noOffloads()) {
+                Executor expectedExecutor = strategy.executor() != null ? strategy.executor() : contextRule.executor();
+                if (expectedExecutor != context.executionContext().executor()) {
+                    errors.add(new AssertionError("Unexpected executor in context. Expected: " +
+                            expectedExecutor + ", actual: " + context.executionContext().executor()));
+                }
+            } else if (context.executionContext().executor() != executor) {
                 errors.add(new AssertionError("Unexpected executor in context. Expected: " + executor +
                         ", actual: " + context.executionContext().executor()));
             }
+        }
+
+        private boolean noOffloads() {
+            return !offloadReceiveData && !offloadReceiveMeta && !offloadSend;
         }
 
         void checkServiceInvocation() {
