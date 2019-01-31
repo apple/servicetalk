@@ -18,6 +18,7 @@ package io.servicetalk.http.router.predicate.dsl;
 import io.servicetalk.http.api.BlockingHttpService;
 import io.servicetalk.http.api.BlockingStreamingHttpService;
 import io.servicetalk.http.api.HttpCookie;
+import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.HttpService;
 import io.servicetalk.http.api.StreamingHttpRequest;
@@ -145,6 +146,14 @@ public interface RouteStarter {
      * @return {@link RouteContinuation} for the next steps of building a route.
      */
     RouteContinuation when(BiPredicate<ConnectionContext, StreamingHttpRequest> predicate);
+
+    /**
+     * Sets the {@link HttpExecutionStrategy} for all services created from this {@link RouteStarter}.
+     *
+     * @param strategy {@link HttpExecutionStrategy} to use.
+     * @return {@code this}.
+     */
+    RouteStarter executionStrategy(HttpExecutionStrategy strategy);
 
     /**
      * Builds the {@link StreamingHttpService} that performs the configured routing.

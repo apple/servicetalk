@@ -74,6 +74,7 @@ public class HttpServerOverrideOffloadingTest {
         server = HttpServers.forAddress(localAddress())
                 .ioExecutor(ioExecutor)
                 .listenAndAwait(new HttpPredicateRouterBuilder()
+                        .executionStrategy(noOffloadsStrategy())
                         .whenPathStartsWith("/service1").thenRouteTo(service1)
                         .whenPathStartsWith("/service2").thenRouteTo(service2).build());
         client = HttpClients.forSingleAddress(serverHostAndPort(server)).build();

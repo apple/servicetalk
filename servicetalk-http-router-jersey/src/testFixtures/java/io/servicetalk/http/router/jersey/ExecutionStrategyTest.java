@@ -313,6 +313,8 @@ public final class ExecutionStrategyTest extends AbstractJerseyStreamingHttpServ
                     case DEFAULT:
                         switch (methodExecutionStrategy) {
                             case DEFAULT:
+                                assertDefaultNoOffloadsExecutor(testMode, context, isIoExecutorThread(), threadingInfo);
+                                return;
                             case NO_OFFLOADS:
                                 assertOffloadsExecutor(testMode, context, isIoExecutorThread(), threadingInfo);
                                 return;
@@ -375,6 +377,17 @@ public final class ExecutionStrategyTest extends AbstractJerseyStreamingHttpServ
                                         Map<String, String> threadingInfo) {
         assertThat(context, threadingInfo.get(EXEC_NAME), isImmediateExecutor());
         assertThat(context, threadingInfo.get(THREAD_NAME), routerExecutorThreadMatcher);
+        if (testMode.rs) {
+            assertThat(context, threadingInfo.get(RS_THREAD_NAME),
+                    testMode == POST_RS ? isIoExecutorThread() : routerExecutorThreadMatcher);
+        }
+    }
+
+    private void assertDefaultNoOffloadsExecutor(final TestMode testMode, final String context,
+                                                 Matcher<String> routerExecutorThreadMatcher,
+                                                 Map<String, String> threadingInfo) {
+        assertThat(context, threadingInfo.get(EXEC_NAME), isGlobalExecutor());
+        assertThat(context, threadingInfo.get(THREAD_NAME), isIoExecutorThread());
         if (testMode.rs) {
             assertThat(context, threadingInfo.get(RS_THREAD_NAME),
                     testMode == POST_RS ? isIoExecutorThread() : routerExecutorThreadMatcher);

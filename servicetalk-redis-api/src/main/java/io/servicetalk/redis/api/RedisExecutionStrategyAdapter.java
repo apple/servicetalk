@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,49 +20,55 @@ import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 
 import java.util.function.Function;
+import javax.annotation.Nullable;
 
-import static io.servicetalk.concurrent.api.Executors.immediate;
+import static java.util.Objects.requireNonNull;
 
-final class NoOffloadsRedisExecutionStrategy implements RedisExecutionStrategy {
+/**
+ * An {@link RedisExecutionStrategy} that delegates all method calls to another {@link RedisExecutionStrategy}.
+ */
+public class RedisExecutionStrategyAdapter implements RedisExecutionStrategy {
 
-    static final RedisExecutionStrategy NO_OFFLOADS = new NoOffloadsRedisExecutionStrategy();
+    private final RedisExecutionStrategy delegate;
 
-    private NoOffloadsRedisExecutionStrategy() {
-        // Singleton
+    /**
+     * Create a new instance.
+     *
+     * @param delegate {@link RedisExecutionStrategy} to which all method calls will be delegated.
+     */
+    public RedisExecutionStrategyAdapter(final RedisExecutionStrategy delegate) {
+        this.delegate = requireNonNull(delegate);
     }
 
     @Override
     public Publisher<RedisData> invokeClient(final Executor fallback, final RedisRequest request,
                                              final Function<RedisRequest, Publisher<RedisData>> client) {
-        return client.apply(request.transformContent(p -> p.subscribeOnOverride(immediate())))
-                .publishOnOverride(immediate());
+        return delegate.invokeClient(fallback, request, client);
     }
 
     @Override
     public <T> Single<T> offloadSend(final Executor fallback, final Single<T> original) {
-        return original.subscribeOnOverride(immediate());
+        return delegate.offloadSend(fallback, original);
     }
 
     @Override
     public <T> Single<T> offloadReceive(final Executor fallback, final Single<T> original) {
-        return original.publishOnOverride(immediate());
+        return delegate.offloadReceive(fallback, original);
     }
 
     @Override
     public <T> Publisher<T> offloadSend(final Executor fallback, final Publisher<T> original) {
-        return original.subscribeOnOverride(immediate());
+        return delegate.offloadSend(fallback, original);
     }
 
     @Override
     public <T> Publisher<T> offloadReceive(final Executor fallback, final Publisher<T> original) {
-        return original.publishOnOverride(immediate());
+        return delegate.offloadReceive(fallback, original);
     }
 
     @Override
+    @Nullable
     public Executor executor() {
-        // We do not return immediate() here as it is an implementation detail to use immediate() and not necessarily
-        // required to be used otherwise. Returning immediate() from here may lead to a user inadvertently using that
-        // Executor for any custom tasks.
-        return null;
+        return delegate.executor();
     }
 }
