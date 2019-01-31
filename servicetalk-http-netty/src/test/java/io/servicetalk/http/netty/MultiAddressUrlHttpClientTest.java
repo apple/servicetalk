@@ -29,6 +29,7 @@ import io.servicetalk.http.api.StreamingHttpRequester;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.api.StreamingHttpService;
+import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.netty.internal.ExecutionContextRule;
 
@@ -70,16 +71,18 @@ import static io.servicetalk.http.api.HttpResponseStatuses.PERMANENT_REDIRECT;
 import static io.servicetalk.http.api.HttpResponseStatuses.SEE_OTHER;
 import static io.servicetalk.http.api.HttpResponseStatuses.UNAUTHORIZED;
 import static io.servicetalk.http.api.HttpResponseStatuses.getResponseStatus;
+import static io.servicetalk.transport.api.HostAndPort.of;
+import static io.servicetalk.transport.netty.internal.AddressUtils.hostHeader;
 import static io.servicetalk.transport.netty.internal.ExecutionContextRule.immediate;
 import static java.lang.Integer.parseInt;
 import static java.lang.String.format;
+import static java.net.InetAddress.getLoopbackAddress;
 import static java.util.Arrays.asList;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 
 public class MultiAddressUrlHttpClientTest {
 
-    private static final String HOSTNAME = "localhost";
     private static final String X_REQUESTED_LOCATION = "X-Requested-Location";
 
     @ClassRule
@@ -94,6 +97,7 @@ public class MultiAddressUrlHttpClientTest {
     private static CompositeCloseable afterClassCloseables;
     private static StreamingHttpService httpService;
     private static ServerContext serverCtx;
+    private static String serverHost;
     private static int serverPort;
     private static String hostHeader;
     private static StreamingHttpRequester requester;
@@ -146,8 +150,11 @@ public class MultiAddressUrlHttpClientTest {
             }
         };
         serverCtx = startNewLocalServer(httpService, afterClassCloseables);
-        serverPort = ((InetSocketAddress) serverCtx.listenAddress()).getPort();
-        hostHeader = HOSTNAME + ':' + serverPort;
+
+        final HostAndPort serverHostAndPort = of((InetSocketAddress) serverCtx.listenAddress());
+        serverHost = serverHostAndPort.getHostName();
+        serverPort = serverHostAndPort.getPort();
+        hostHeader = hostHeader(serverHostAndPort);
     }
 
     @AfterClass
@@ -181,7 +188,7 @@ public class MultiAddressUrlHttpClientTest {
     @Test(expected = ExecutionException.class)
     public void requestWithRelativeFormRequestTargetWithWrongPortInHeader() throws Exception {
         StreamingHttpRequest request = requester.get("/200?param=value");
-        request.headers().set(HOST, format("%s:%d", HOSTNAME, serverPort + 1));
+        request.headers().set(HOST, format("%s:%d", serverHost, serverPort + 1));
         awaitIndefinitely(requester.request(request));
     }
 
@@ -211,14 +218,14 @@ public class MultiAddressUrlHttpClientTest {
     @Test(expected = ExecutionException.class)
     public void requestWithAbsoluteFormRequestTargetWithWrongPort() throws Exception {
         StreamingHttpRequest request = requester.get(
-                format("http://%s:%d/200?param=value#tag", HOSTNAME, serverPort + 1));
+                format("http://%s:%d/200?param=value#tag", serverHost, serverPort + 1));
         awaitIndefinitely(requester.request(request));
     }
 
     @Test
     public void requestWithIncorrectPortInAbsoluteFormRequestTarget() {
         StreamingHttpRequest request =
-                requester.get(format("http://%s:-1/200?param=value#tag", HOSTNAME));
+                requester.get(format("http://%s:-1/200?param=value#tag", serverHost));
         listener.listen(requester.request(request))
                 .verifyFailure(IllegalArgumentException.class);
     }
@@ -285,7 +292,7 @@ public class MultiAddressUrlHttpClientTest {
 
     private static ServerContext startNewLocalServer(final StreamingHttpService httpService,
                                                      final CompositeCloseable closeables) throws Exception {
-        return closeables.append(HttpServers.forAddress(new InetSocketAddress(HOSTNAME, 0))
+        return closeables.append(HttpServers.forAddress(new InetSocketAddress(getLoopbackAddress(), 0))
                 .ioExecutor(CTX.ioExecutor())
                 .listenStreamingAndAwait(httpService));
     }

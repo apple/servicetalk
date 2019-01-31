@@ -60,6 +60,7 @@ import static io.servicetalk.opentracing.internal.utils.ZipkinHeaderNames.SAMPLE
 import static io.servicetalk.opentracing.internal.utils.ZipkinHeaderNames.SPAN_ID;
 import static io.servicetalk.opentracing.internal.utils.ZipkinHeaderNames.TRACE_ID;
 import static io.servicetalk.transport.api.HostAndPort.of;
+import static java.net.InetAddress.getLoopbackAddress;
 import static org.hamcrest.Matchers.equalToIgnoringCase;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
@@ -87,10 +88,10 @@ public class TracingHttpServiceFilterTest {
         initMocks(this);
     }
 
-    private ServerContext buildServer(CountingInMemorySpanEventListener spanListener) throws Exception {
+    private static ServerContext buildServer(CountingInMemorySpanEventListener spanListener) throws Exception {
         DefaultInMemoryTracer tracer = new DefaultInMemoryTracer.Builder(SCOPE_MANAGER)
                 .addListener(spanListener).build();
-        return HttpServers.forPort(0)
+        return HttpServers.forAddress(new InetSocketAddress(getLoopbackAddress(), 0))
                 .appendRequestHandlerFilter(handler -> new TracingHttpServiceFilter(tracer, "testServer", handler))
                 .listenStreamingAndAwait(((StreamingHttpRequestHandler) (ctx, request, responseFactory) -> {
                     InMemorySpan span = tracer.activeSpan();
@@ -168,7 +169,7 @@ public class TracingHttpServiceFilterTest {
     @Test
     public void tracerThrowsReturnsErrorResponse() throws Exception {
         when(mockTracer.buildSpan(any())).thenThrow(DELIBERATE_EXCEPTION);
-        try (ServerContext context = HttpServers.forPort(0)
+        try (ServerContext context = HttpServers.forAddress(new InetSocketAddress(getLoopbackAddress(), 0))
                 .appendRequestHandlerFilter(handler -> new TracingHttpServiceFilter(mockTracer, "testServer", handler))
                 .listenStreamingAndAwait(((StreamingHttpRequestHandler) (ctx, request, responseFactory) ->
                                 success(responseFactory.forbidden())).asStreamingService())) {

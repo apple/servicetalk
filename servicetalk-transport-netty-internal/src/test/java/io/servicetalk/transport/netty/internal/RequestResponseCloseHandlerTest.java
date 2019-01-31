@@ -99,6 +99,7 @@ import static io.servicetalk.transport.netty.internal.RequestResponseCloseHandle
 import static io.servicetalk.transport.netty.internal.RequestResponseCloseHandlerTest.Scenarios.Mode.S;
 import static java.lang.Integer.toHexString;
 import static java.lang.Thread.NORM_PRIORITY;
+import static java.net.InetAddress.getLoopbackAddress;
 import static java.util.Arrays.asList;
 import static java.util.Objects.hash;
 import static java.util.stream.Collectors.toSet;
@@ -545,7 +546,8 @@ public class RequestResponseCloseHandlerTest {
             bs.childOption(ALLOW_HALF_CLOSURE, true);
             bs.childOption(AUTO_CLOSE, false);
 
-            return (ServerSocketChannel) bs.bind(new InetSocketAddress(0)).syncUninterruptibly().channel();
+            return (ServerSocketChannel) bs.bind(new InetSocketAddress(getLoopbackAddress(), 0))
+                    .syncUninterruptibly().channel();
         }
 
         // Based on TcpConnector

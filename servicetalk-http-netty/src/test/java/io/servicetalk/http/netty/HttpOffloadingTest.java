@@ -44,7 +44,6 @@ import org.junit.rules.Timeout;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.Collection;
 import java.util.Queue;
@@ -77,8 +76,6 @@ public class HttpOffloadingTest {
 
     private static final String IO_EXECUTOR_NAME_PREFIX = "io-executor";
 
-    private static final InetAddress LOOPBACK_ADDRESS = getLoopbackAddress();
-
     @ClassRule
     public static final ExecutionContextRule CLIENT_CTX = cached(new IoThreadFactory(IO_EXECUTOR_NAME_PREFIX));
     @ClassRule
@@ -94,17 +91,17 @@ public class HttpOffloadingTest {
 
     @Before
     public void beforeTest() throws Exception {
-        final InetSocketAddress bindAddress = new InetSocketAddress(LOOPBACK_ADDRESS, 0);
+        final InetSocketAddress bindAddress = new InetSocketAddress(getLoopbackAddress(), 0);
         service = new OffloadingVerifyingServiceStreaming(defaultStrategy(SERVER_CTX.executor()));
         serverContext = HttpServers.forAddress(bindAddress)
                 .ioExecutor(SERVER_CTX.ioExecutor())
                 .listenStreamingAndAwait(service);
 
-        final InetSocketAddress socketAddress = (InetSocketAddress) serverContext.listenAddress();
+        final InetSocketAddress serverSocketAddress = (InetSocketAddress) serverContext.listenAddress();
 
         errors = new ConcurrentLinkedQueue<>();
         terminated = new CountDownLatch(1);
-        client = forSingleAddress(HostAndPort.of(LOOPBACK_ADDRESS.getHostName(), socketAddress.getPort()))
+        client = forSingleAddress(HostAndPort.of(serverSocketAddress))
                 .ioExecutor(CLIENT_CTX.ioExecutor())
                 .executionStrategy(defaultStrategy(CLIENT_CTX.executor()))
                 .buildStreaming();

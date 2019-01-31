@@ -26,6 +26,9 @@ import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.api.StreamingHttpService;
+import io.servicetalk.http.netty.HttpClients;
+import io.servicetalk.http.netty.HttpServers;
+import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.ServerContext;
 
@@ -44,11 +47,10 @@ import static io.servicetalk.concurrent.api.Single.success;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
 import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
-import static io.servicetalk.http.netty.HttpClients.forSingleAddress;
-import static io.servicetalk.http.netty.HttpServers.forPort;
 import static io.servicetalk.transport.netty.NettyIoExecutors.createIoExecutor;
 import static java.lang.Thread.NORM_PRIORITY;
 import static java.lang.Thread.currentThread;
+import static java.net.InetAddress.getLoopbackAddress;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
@@ -70,13 +72,13 @@ public class HttpServerOverrideOffloadingTest {
         service1 = new OffloadingTesterService(noOffloadsStrategy(), th -> !isInServerEventLoop(th));
         service2 = new OffloadingTesterService(defaultStrategy(executor),
                 HttpServerOverrideOffloadingTest::isInServerEventLoop);
-        server = forPort(0)
+        server = HttpServers.forAddress(new InetSocketAddress(getLoopbackAddress(), 0))
                 .ioExecutor(ioExecutor)
                 .listenAndAwait(new HttpPredicateRouterBuilder()
                         .whenPathStartsWith("/service1").thenRouteTo(service1)
                         .whenPathStartsWith("/service2").thenRouteTo(service2).build());
         InetSocketAddress socketAddress = (InetSocketAddress) server.listenAddress();
-        client = forSingleAddress(socketAddress.getHostName(), socketAddress.getPort()).build();
+        client = HttpClients.forSingleAddress(HostAndPort.of(socketAddress)).build();
     }
 
     @After

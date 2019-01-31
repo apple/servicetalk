@@ -50,7 +50,6 @@ import org.mockito.junit.MockitoRule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.StandardSocketOptions;
 import java.util.List;
@@ -93,7 +92,6 @@ public abstract class AbstractNettyHttpServerTest {
     }
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractNettyHttpServerTest.class);
-    private static final InetAddress LOOPBACK_ADDRESS = getLoopbackAddress();
 
     @Rule
     public final ServiceTalkTestTimeout timeout = new ServiceTalkTestTimeout();
@@ -131,7 +129,7 @@ public abstract class AbstractNettyHttpServerTest {
 
     @Before
     public void startServer() throws Exception {
-        final InetSocketAddress bindAddress = new InetSocketAddress(LOOPBACK_ADDRESS, 0);
+        final InetSocketAddress bindAddress = new InetSocketAddress(getLoopbackAddress(), 0);
         setService(new TestServiceStreaming(publisherSupplier, defaultStrategy(serverExecutor)));
 
         // A small SNDBUF is needed to test that the server defers closing the connection until writes are complete.
@@ -152,9 +150,6 @@ public abstract class AbstractNettyHttpServerTest {
                 .doBeforeSuccess(ctx -> LOGGER.debug("Server started on {}.", ctx.listenAddress()))
                 .doBeforeError(throwable -> LOGGER.debug("Failed starting server on {}.", bindAddress)));
 
-        final InetSocketAddress socketAddress = new InetSocketAddress(LOOPBACK_ADDRESS,
-                ((InetSocketAddress) serverContext.listenAddress()).getPort());
-
         final DefaultHttpConnectionBuilder<Object> httpConnectionBuilder = new DefaultHttpConnectionBuilder<>();
         if (sslEnabled) {
             final SslConfig sslConfig = SslConfigBuilder.forClientWithoutServerIdentity()
@@ -163,7 +158,7 @@ public abstract class AbstractNettyHttpServerTest {
         }
         httpConnection = awaitIndefinitelyNonNull(httpConnectionBuilder.ioExecutor(clientIoExecutor)
                 .executor(clientExecutor)
-                .buildStreaming(socketAddress));
+                .buildStreaming(serverContext.listenAddress()));
     }
 
     protected void ignoreTestWhen(ExecutorSupplier clientExecutorSupplier, ExecutorSupplier serverExecutorSupplier) {

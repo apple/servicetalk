@@ -49,7 +49,7 @@ import java.util.concurrent.LinkedBlockingDeque;
 
 import static io.servicetalk.opentracing.asynccontext.AsyncContextInMemoryScopeManager.SCOPE_MANAGER;
 import static io.servicetalk.opentracing.zipkin.publisher.ZipkinPublisher.Encoder.JSON_V1;
-import static java.net.InetAddress.getLocalHost;
+import static java.net.InetAddress.getLoopbackAddress;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -101,7 +101,8 @@ public class ZipkinPublisherTest {
 
     @Test
     public void testNoReceiver() throws Exception {
-        try (ZipkinPublisher publisher = buildPublisher(new InetSocketAddress(getLocalHost(), DUMMY_PORT), JSON_V1)) {
+        try (ZipkinPublisher publisher =
+                     buildPublisher(new InetSocketAddress(getLoopbackAddress(), DUMMY_PORT), JSON_V1)) {
             InMemorySpan span = tracer.buildSpan("test operation")
                     .withTag("stringKey", "string")
                     .withTag("boolKey", true)
@@ -186,7 +187,7 @@ public class ZipkinPublisherTest {
                             });
                         }
                     })
-                    .localAddress(new InetSocketAddress(getLocalHost(), 0))
+                    .localAddress(new InetSocketAddress(getLoopbackAddress(), 0))
                     .bind().sync().channel();
         }
 

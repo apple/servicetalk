@@ -22,6 +22,7 @@ import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
+import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.ServerContext;
 
@@ -45,10 +46,10 @@ import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
 import static io.servicetalk.concurrent.api.Single.success;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
-import static io.servicetalk.http.netty.HttpServers.forPort;
 import static io.servicetalk.transport.netty.NettyIoExecutors.createIoExecutor;
 import static java.lang.Thread.NORM_PRIORITY;
 import static java.lang.Thread.currentThread;
+import static java.net.InetAddress.getLoopbackAddress;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 
@@ -75,9 +76,10 @@ public class HttpStreamingClientOverrideOffloadingTest {
         this.executor = newCachedThreadExecutor();
         this.isInvalidThread = isInvalidThread;
         this.overridingStrategy = overridingStrategy == null ? defaultStrategy(executor) : overridingStrategy;
-        server = forPort(0).listenStreamingAndAwait((ctx, request, responseFactory) -> success(responseFactory.ok()));
+        server = HttpServers.forAddress(new InetSocketAddress(getLoopbackAddress(), 0))
+                .listenStreamingAndAwait((ctx, request, responseFactory) -> success(responseFactory.ok()));
         InetSocketAddress socketAddress = (InetSocketAddress) server.listenAddress();
-        client = HttpClients.forSingleAddress(socketAddress.getHostName(), socketAddress.getPort())
+        client = HttpClients.forSingleAddress(HostAndPort.of(socketAddress))
                 .ioExecutor(ioExecutor)
                 .executionStrategy(defaultStrategy == null ? defaultStrategy(executor) : defaultStrategy)
                 .buildStreaming();

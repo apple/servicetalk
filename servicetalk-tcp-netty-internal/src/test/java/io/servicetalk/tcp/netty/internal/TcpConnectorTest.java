@@ -43,12 +43,12 @@ public final class TcpConnectorTest extends AbstractTcpServerTest {
 
     @Test
     public void testConnect() throws Exception {
-        client.connectBlocking(CLIENT_CTX, serverPort);
+        client.connectBlocking(CLIENT_CTX, serverAddress);
     }
 
     @Test
     public void testWriteAndRead() throws Exception {
-        testWriteAndRead(client.connectBlocking(CLIENT_CTX, serverPort));
+        testWriteAndRead(client.connectBlocking(CLIENT_CTX, serverAddress));
     }
 
     private static void testWriteAndRead(NettyConnection<Buffer, Buffer> connection)
@@ -63,7 +63,8 @@ public final class TcpConnectorTest extends AbstractTcpServerTest {
     @Test
     @SuppressWarnings("PMD.AvoidUsingHardCodedIP")
     public void testUnresolvedAddress() throws Exception {
-        testWriteAndRead(client.connectBlocking(CLIENT_CTX, createUnresolved("127.0.0.1", serverPort)));
+        testWriteAndRead(client.connectBlocking(CLIENT_CTX,
+                createUnresolved(serverAddress.getHostString(), serverAddress.getPort())));
     }
 
     @Test
@@ -72,7 +73,7 @@ public final class TcpConnectorTest extends AbstractTcpServerTest {
                 instanceOf(ClosedChannelException.class)));
         awaitIndefinitely(serverContext.closeAsync());
         // Closing the server to increase probability of finding a port on which no one is listening.
-        client.connectBlocking(CLIENT_CTX, serverPort);
+        client.connectBlocking(CLIENT_CTX, serverAddress);
     }
 
     @Test

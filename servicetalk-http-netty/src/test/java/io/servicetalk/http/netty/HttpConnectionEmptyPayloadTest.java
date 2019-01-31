@@ -34,6 +34,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
 
+import java.net.InetSocketAddress;
 import java.util.concurrent.ThreadLocalRandom;
 
 import static io.servicetalk.buffer.api.EmptyBuffer.EMPTY_BUFFER;
@@ -47,6 +48,7 @@ import static io.servicetalk.http.api.HttpRequestMethods.HEAD;
 import static io.servicetalk.http.api.HttpResponseStatuses.OK;
 import static io.servicetalk.transport.netty.internal.ExecutionContextRule.immediate;
 import static java.lang.Integer.parseInt;
+import static java.net.InetAddress.getLoopbackAddress;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -63,7 +65,8 @@ public class HttpConnectionEmptyPayloadTest {
             final int expectedContentLength = 128;
             byte[] expectedPayload = new byte[expectedContentLength];
             ThreadLocalRandom.current().nextBytes(expectedPayload);
-            ServerContext serverContext = closeable.merge(HttpServers.forPort(0)
+            ServerContext serverContext = closeable.merge(HttpServers
+                    .forAddress(new InetSocketAddress(getLoopbackAddress(), 0))
                     .ioExecutor(executionContextRule.ioExecutor())
                     .listenStreamingAndAwait(
                             new StreamingHttpService() {

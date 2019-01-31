@@ -35,6 +35,7 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.rules.Timeout;
 
+import java.net.InetSocketAddress;
 import java.time.Duration;
 import java.util.concurrent.ExecutionException;
 
@@ -47,6 +48,7 @@ import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy
 import static io.servicetalk.http.api.HttpHeaderValues.CHUNKED;
 import static io.servicetalk.http.api.HttpRequestMethods.GET;
 import static io.servicetalk.transport.netty.internal.ExecutionContextRule.immediate;
+import static java.net.InetAddress.getLoopbackAddress;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasToString;
@@ -64,7 +66,7 @@ public abstract class AbstractEchoServerBasedHttpRequesterTest {
 
     @BeforeClass
     public static void startServer() throws Exception {
-        serverContext = HttpServers.forPort(0)
+        serverContext = HttpServers.forAddress(new InetSocketAddress(getLoopbackAddress(), 0))
                 .ioExecutor(CTX.ioExecutor())
                 .listenStreamingAndAwait(new EchoServiceStreaming());
     }

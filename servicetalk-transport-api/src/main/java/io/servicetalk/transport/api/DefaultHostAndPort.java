@@ -46,7 +46,7 @@ final class DefaultHostAndPort implements HostAndPort {
 
     @Override
     public String toString() {
-        return hostName + ":" + port;
+        return hostName + ':' + port;
     }
 
     @Override

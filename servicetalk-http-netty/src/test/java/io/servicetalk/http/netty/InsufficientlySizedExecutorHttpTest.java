@@ -28,6 +28,7 @@ import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.api.StreamingHttpService;
+import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.ServerContext;
 
 import org.junit.After;
@@ -39,6 +40,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.nio.channels.ClosedChannelException;
 import java.util.ArrayList;
@@ -57,7 +59,6 @@ import static io.servicetalk.http.api.HttpExecutionStrategies.customStrategyBuil
 import static io.servicetalk.http.api.HttpResponseStatuses.OK;
 import static io.servicetalk.http.api.HttpResponseStatuses.SERVICE_UNAVAILABLE;
 import static io.servicetalk.http.netty.HttpClients.forSingleAddress;
-import static io.servicetalk.http.netty.HttpServers.forPort;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.instanceOf;
@@ -135,27 +136,28 @@ public class InsufficientlySizedExecutorHttpTest {
         final HttpExecutionStrategy strategy = threadBased ? strategyBuilder.offloadWithThreadAffinity().build() :
                 strategyBuilder.build();
         if (clientUnderProvisioned) {
-            server = forPort(0).listenStreamingAndAwait(
-                    (ctx, request, responseFactory) -> success(responseFactory.ok()));
+            server = HttpServers.forAddress(new InetSocketAddress(InetAddress.getLoopbackAddress(), 0))
+                    .listenStreamingAndAwait((ctx, request, responseFactory) -> success(responseFactory.ok()));
             addr = (InetSocketAddress) server.listenAddress();
-            client = forSingleAddress(addr.getHostName(), addr.getPort()).executionStrategy(strategy)
+            client = forSingleAddress(HostAndPort.of(addr)).executionStrategy(strategy)
                     .buildStreaming();
         } else {
-            server = forPort(0).listenStreamingAndAwait(new StreamingHttpService() {
-                @Override
-                public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
-                                                            final StreamingHttpRequest request,
-                                                            final StreamingHttpResponseFactory responseFactory) {
-                    return success(responseFactory.ok());
-                }
+            server = HttpServers.forAddress(new InetSocketAddress(InetAddress.getLoopbackAddress(), 0))
+                    .listenStreamingAndAwait(new StreamingHttpService() {
+                        @Override
+                        public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
+                                                                    final StreamingHttpRequest request,
+                                                                    final StreamingHttpResponseFactory respFactory) {
+                            return success(respFactory.ok());
+                        }
 
-                @Override
-                public HttpExecutionStrategy executionStrategy() {
-                    return strategy;
-                }
-            });
+                        @Override
+                        public HttpExecutionStrategy executionStrategy() {
+                            return strategy;
+                        }
+                    });
             addr = (InetSocketAddress) server.listenAddress();
-            client = forSingleAddress(addr.getHostName(), addr.getPort()).buildStreaming();
+            client = forSingleAddress(HostAndPort.of(addr)).buildStreaming();
         }
     }
 

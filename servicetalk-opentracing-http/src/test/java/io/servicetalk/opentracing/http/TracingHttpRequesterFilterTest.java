@@ -61,6 +61,7 @@ import static io.servicetalk.opentracing.internal.utils.ZipkinHeaderNames.SPAN_I
 import static io.servicetalk.opentracing.internal.utils.ZipkinHeaderNames.TRACE_ID;
 import static io.servicetalk.transport.api.HostAndPort.of;
 import static java.lang.String.valueOf;
+import static java.net.InetAddress.getLoopbackAddress;
 import static org.hamcrest.Matchers.equalToIgnoringCase;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
@@ -173,7 +174,7 @@ public class TracingHttpRequesterFilterTest {
     }
 
     private static ServerContext buildServer() throws Exception {
-        return HttpServers.forPort(0)
+        return HttpServers.forAddress(new InetSocketAddress(getLoopbackAddress(), 0))
                 .listenStreamingAndAwait((ctx, request, responseFactory) ->
                         success(responseFactory.ok().payloadBody(just(new TestSpanState(
                         valueOf(request.headers().get(TRACE_ID)),

@@ -22,6 +22,7 @@ import io.servicetalk.transport.api.ServerContext;
 
 import org.junit.Test;
 
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 
 import static io.servicetalk.concurrent.api.Publisher.just;
@@ -30,7 +31,6 @@ import static io.servicetalk.http.api.HttpHeaderNames.HOST;
 import static io.servicetalk.http.api.HttpSerializationProviders.textDeserializer;
 import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
 import static io.servicetalk.http.netty.HttpClients.forSingleAddress;
-import static io.servicetalk.transport.api.HostAndPort.of;
 import static java.util.Objects.requireNonNull;
 import static org.junit.Assert.assertEquals;
 
@@ -46,9 +46,9 @@ public class HostHeaderHttpRequesterFilterTest {
         doHostHeaderTest("::1", "[::1]");
     }
 
-    private void doHostHeaderTest(String hostHeader, String expectedValue) throws Exception {
+    private static void doHostHeaderTest(String hostHeader, String expectedValue) throws Exception {
         try (ServerContext context = buildServer();
-             BlockingHttpClient client = forSingleAddress(of((InetSocketAddress) context.listenAddress()))
+             BlockingHttpClient client = forSingleAddress(HostAndPort.of((InetSocketAddress) context.listenAddress()))
                 .enableHostHeaderFallback(hostHeader)
                 .buildBlocking()) {
             assertEquals(expectedValue,
@@ -56,8 +56,8 @@ public class HostHeaderHttpRequesterFilterTest {
         }
     }
 
-    private ServerContext buildServer() throws Exception {
-        return HttpServers.forPort(0)
+    private static ServerContext buildServer() throws Exception {
+        return HttpServers.forAddress(new InetSocketAddress(InetAddress.getLoopbackAddress(), 0))
                 .listenStreamingAndAwait((ctx, request, responseFactory) ->
                             success(responseFactory.ok().payloadBody(
                                     just(requireNonNull(request.headers().get(HOST)).toString()), textSerializer())));
@@ -66,7 +66,7 @@ public class HostHeaderHttpRequesterFilterTest {
     @Test
     public void clientBuilderAppendClientFilter() throws Exception {
         try (ServerContext context = buildServer();
-             BlockingHttpClient client = forSingleAddress(of((InetSocketAddress) context.listenAddress()))
+             BlockingHttpClient client = forSingleAddress(HostAndPort.of((InetSocketAddress) context.listenAddress()))
                     .disableHostHeaderFallback() // turn off the default
                     .appendClientFilter(new HostHeaderHttpRequesterFilter(HostAndPort.of("foo.bar", -1)))
                     .buildBlocking()) {
@@ -78,7 +78,7 @@ public class HostHeaderHttpRequesterFilterTest {
     @Test
     public void clientBuilderAppendConnectionFilter() throws Exception {
         try (ServerContext context = buildServer();
-             BlockingHttpClient client = forSingleAddress(of((InetSocketAddress) context.listenAddress()))
+             BlockingHttpClient client = forSingleAddress(HostAndPort.of((InetSocketAddress) context.listenAddress()))
                     .disableHostHeaderFallback() // turn off the default
                     .appendConnectionFilter(new HostHeaderHttpRequesterFilter(HostAndPort.of("foo.bar", -1)))
                     .buildBlocking()) {

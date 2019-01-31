@@ -86,6 +86,7 @@ import static java.lang.Boolean.TRUE;
 import static java.lang.Integer.toHexString;
 import static java.lang.String.valueOf;
 import static java.lang.Thread.NORM_PRIORITY;
+import static java.net.InetAddress.getLoopbackAddress;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -411,7 +412,7 @@ public class HttpRequestEncoderTest {
                     .enableWireLogging("servicetalk-tests-server-wire-logger").asReadOnly();
             ServerContext serverContext = resources.prepend(awaitIndefinitelyNonNull(
                     new TcpServerInitializer(SEC, sConfig)
-                            .start(new InetSocketAddress(0),
+                            .start(new InetSocketAddress(getLoopbackAddress(), 0),
                                     context -> Single.success(TRUE),
                                     new TcpServerChannelInitializer(sConfig, ACCEPT_ALL).andThen(
                                             (c, cc) -> {

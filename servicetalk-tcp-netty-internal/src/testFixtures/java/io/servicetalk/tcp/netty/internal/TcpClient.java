@@ -36,7 +36,6 @@ import io.netty.channel.kqueue.KQueueEventLoopGroup;
 import io.netty.channel.kqueue.KQueueSocketChannel;
 import io.netty.channel.unix.UnixChannel;
 
-import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.net.StandardSocketOptions;
 import java.util.concurrent.ExecutionException;
@@ -77,20 +76,6 @@ public final class TcpClient {
             return context;
         });
         return new TcpConnector<>(config, initializer, () -> buffer -> false);
-    }
-
-    /**
-     * Connect and await for the connection.
-     *
-     * @param executionContext {@link ExecutionContext} to use for the connections.
-     * @param port to connect.
-     * @return New {@link NettyConnection}.
-     * @throws ExecutionException If connect failed.
-     * @throws InterruptedException If interrupted while waiting for connect to complete.
-     */
-    public NettyConnection<Buffer, Buffer> connectBlocking(ExecutionContext executionContext, int port)
-            throws ExecutionException, InterruptedException {
-        return connectBlocking(executionContext, new InetSocketAddress(port));
     }
 
     /**
