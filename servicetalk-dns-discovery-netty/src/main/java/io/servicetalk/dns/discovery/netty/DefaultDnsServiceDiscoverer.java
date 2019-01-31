@@ -75,8 +75,8 @@ final class DefaultDnsServiceDiscoverer
         implements ServiceDiscoverer<String, InetAddress, ServiceDiscovererEvent<InetAddress>> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DefaultDnsServiceDiscoverer.class);
-
-    static final Comparator<InetAddress> INET_ADDRESS_COMPARATOR = comparing(o -> wrap(o.getAddress()));
+    private static final Comparator<InetAddress> INET_ADDRESS_COMPARATOR = comparing(o -> wrap(o.getAddress()));
+    private static final Cancellable TERMINATED = () -> { };
 
     private final CompletableProcessor closeCompletable = new CompletableProcessor();
     private final Map<String, List<DiscoverEntry>> registerMap = new HashMap<>(8);
@@ -373,8 +373,8 @@ final class DefaultDnsServiceDiscoverer
                         return;
                     }
 
+                    pendingRequests = FlowControlUtil.addWithOverflowProtection(pendingRequests, n);
                     if (cancellableForQuery == null) {
-                        pendingRequests = FlowControlUtil.addWithOverflowProtection(pendingRequests, n);
                         if (ttlNanos < 0) {
                             doQuery0();
                         } else {
@@ -409,7 +409,7 @@ final class DefaultDnsServiceDiscoverer
                     removeEntry0(DiscoverEntry.this);
                     if (cancellableForQuery != null) {
                         cancellableForQuery.cancel();
-                        cancellableForQuery = null;
+                        cancellableForQuery = TERMINATED;
                         discoverySubscriber = null;
                     }
                 }
