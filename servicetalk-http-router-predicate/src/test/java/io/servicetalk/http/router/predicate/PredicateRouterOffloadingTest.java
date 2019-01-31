@@ -29,6 +29,7 @@ import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.http.netty.HttpClients;
 import io.servicetalk.http.netty.HttpServers;
+import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.netty.internal.ExecutionContextRule;
 
@@ -52,13 +53,16 @@ import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
 import static io.servicetalk.transport.netty.NettyIoExecutors.createIoExecutor;
 import static java.lang.Thread.NORM_PRIORITY;
+import static java.net.InetAddress.getLoopbackAddress;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.startsWith;
 
 public class PredicateRouterOffloadingTest {
-    public static final String IO_EXECUTOR_NAME_PREFIX = "io-executor";
-    public static final String EXECUTOR_NAME_PREFIX = "router-executor";
+    private static final String IO_EXECUTOR_NAME_PREFIX = "io-executor";
+    private static final String EXECUTOR_NAME_PREFIX = "router-executor";
+    private static final InetSocketAddress LISTEN_ADDRESS = new InetSocketAddress(getLoopbackAddress(), 0);
+
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
     @Rule
@@ -74,7 +78,7 @@ public class PredicateRouterOffloadingTest {
 
     @Before
     public void setUp() {
-        builder = HttpServers.forPort(0).ioExecutor(executionContextRule.ioExecutor());
+        builder = HttpServers.forAddress(LISTEN_ADDRESS).ioExecutor(executionContextRule.ioExecutor());
         invokingThreads = new ConcurrentHashMap<>();
     }
 
@@ -141,8 +145,8 @@ public class PredicateRouterOffloadingTest {
 
     private BlockingHttpClient buildServer(StreamingHttpService service) throws Exception {
         this.context = builder.listenStreamingAndAwait(service);
-        InetSocketAddress addr = (InetSocketAddress) context.listenAddress();
-        client = HttpClients.forSingleAddress(addr.getHostName(), addr.getPort()).buildBlocking();
+        client = HttpClients.forSingleAddress(HostAndPort.of((InetSocketAddress) context.listenAddress()))
+                .buildBlocking();
         return client;
     }
 
