@@ -36,9 +36,4 @@ final class RedisSubscribedConcurrencyLimitingFilter extends RedisConnectionFilt
         return limiter.tryRequest() ? delegate().request(strategy, request) :
                 Publisher.error(new IllegalStateException("Connection in invalid state for requests: " + this));
     }
-
-    @Override
-    public String toString() {
-        return RedisSubscribedConcurrencyLimitingFilter.class.getSimpleName() + "(" + delegate() + ")";
-    }
 }

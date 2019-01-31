@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,10 +23,8 @@ import org.junit.rules.Timeout;
 
 import java.util.concurrent.CompletableFuture;
 
-import static io.servicetalk.concurrent.api.ExecutorCompletionStageToCompletableFuture.forStage;
-import static io.servicetalk.concurrent.api.Executors.immediate;
+import static io.servicetalk.concurrent.api.Single.fromStage;
 import static io.servicetalk.concurrent.api.Single.success;
-import static io.servicetalk.concurrent.api.SingleToCompletionStage.createAndSubscribe;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
@@ -38,15 +36,35 @@ public class ExecutorCompletionStageToCompletableFutureTest {
     @Test
     public void wrappedTerminationTerminates() throws Exception {
         CompletableFuture<String> composed = completedFuture("Hello")
-                .thenCompose(s -> forStage(createAndSubscribe(success("Hello-Nested"), immediate())));
+                .thenCompose(s -> success("Hello-Nested").toCompletionStage().toCompletableFuture());
+        assertThat("Unexpected result.", composed.get(), is("Hello-Nested"));
+    }
+
+    @Test
+    public void deferredWrappedTerminationTerminates() throws Exception {
+        CompletableFuture<String> cf = new CompletableFuture<>();
+        CompletableFuture<String> composed = completedFuture("Hello")
+                .thenCompose(s -> fromStage(cf).toCompletionStage().toCompletableFuture());
+
+        cf.complete("Hello-Nested");
         assertThat("Unexpected result.", composed.get(), is("Hello-Nested"));
     }
 
     @Test
     public void wrappedAndApplyTerminationTerminates() throws Exception {
         CompletableFuture<String> composed = completedFuture("Hello")
-                .thenCompose(s -> forStage(createAndSubscribe(success("Hello-Nested"), immediate()))
+                .thenCompose(s -> success("Hello-Nested").toCompletionStage().toCompletableFuture()
                         .thenApply(s1 -> s1));
+        assertThat("Unexpected result.", composed.get(), is("Hello-Nested"));
+    }
+
+    @Test
+    public void deferredWrappedAndApplyTerminationTerminates() throws Exception {
+        CompletableFuture<String> cf = new CompletableFuture<>();
+        CompletableFuture<String> composed = completedFuture("Hello")
+                .thenCompose(s -> fromStage(cf).toCompletionStage().toCompletableFuture().thenApply(str -> str));
+
+        cf.complete("Hello-Nested");
         assertThat("Unexpected result.", composed.get(), is("Hello-Nested"));
     }
 }

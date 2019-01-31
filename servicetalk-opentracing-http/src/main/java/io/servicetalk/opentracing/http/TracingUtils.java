@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,6 @@
  */
 package io.servicetalk.opentracing.http;
 
-import io.servicetalk.concurrent.Single;
 import io.servicetalk.http.api.HttpResponseMetaData;
 import io.servicetalk.http.api.StreamingHttpResponse;
 
@@ -29,7 +28,6 @@ import javax.annotation.Nullable;
 
 import static io.opentracing.tag.Tags.ERROR;
 import static io.opentracing.tag.Tags.HTTP_STATUS;
-import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.SERVER_ERROR_5XX;
 
 final class TracingUtils {
@@ -88,13 +86,10 @@ final class TracingUtils {
         return tracingMapper(scope, scopeClosed, errorChecker).apply(resp);
     }
 
-    static void handlePrematureException(@Nullable Scope scope, @Nullable AtomicBoolean scopeClosed,
-                                         Single.Subscriber<?> subscriber, Throwable cause) {
+    static void handlePrematureException(@Nullable Scope scope, @Nullable AtomicBoolean scopeClosed) {
         if (scope != null) {
             assert scopeClosed != null;
             tagErrorAndClose(scope, scopeClosed);
         }
-        subscriber.onSubscribe(IGNORE_CANCEL);
-        subscriber.onError(cause);
     }
 }

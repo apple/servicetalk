@@ -40,7 +40,7 @@ public abstract class GroupedPublisher<Key, T> extends Publisher<T> {
      *
      * @return Key for this group.
      */
-    public Key getKey() {
+    public final Key getKey() {
         return key;
     }
 
@@ -58,7 +58,7 @@ public abstract class GroupedPublisher<Key, T> extends Publisher<T> {
 
     @Override
     public String toString() {
-        return GroupedPublisher.class.getSimpleName() + "{" +
+        return getClass().getName() + '{' +
                 "key=" + key +
                 ", publisher=" + super.toString() +
                 '}';

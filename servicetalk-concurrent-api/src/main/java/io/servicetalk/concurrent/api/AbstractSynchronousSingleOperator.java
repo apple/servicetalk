@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,7 +43,8 @@ abstract class AbstractSynchronousSingleOperator<T, R> extends AbstractNoHandleS
     }
 
     @Override
-    final void handleSubscribe(Subscriber<? super R> subscriber, SignalOffloader signalOffloader) {
-        original.subscribe(apply(subscriber), signalOffloader);
+    final void handleSubscribe(Subscriber<? super R> subscriber, SignalOffloader signalOffloader,
+                               AsyncContextMap contextMap, AsyncContextProvider contextProvider) {
+        original.subscribeWithOffloaderAndContext(apply(subscriber), signalOffloader, contextMap, contextProvider);
     }
 }

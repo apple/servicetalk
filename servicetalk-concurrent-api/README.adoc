@@ -96,26 +96,6 @@ void myCode() {
 
 We provide a number of extensions to simplify integration with other libraries.
 
-### servicetalk-rxjava-context
-
-`servicetalk-rxjava-context` hooks into RxJava to ensure `AsyncContext` is
-also propagated into RxJava operator methods.
-
-Usage:
-
-```java
-RxJavaContextHooks.install(); // this must be called once at startup
-```
-
-```java
-AsyncContext.put(key, value);
-
-Observable.create(e -> ...)
-  .map(v -> {
-    // here AsyncContext.get(key) == value
-  });
-```
-
 ### servicetalk-log4j2-mdc
 
 `servicetalk-log4j2-mdc` sets up the Log4j 2 `MDC` / `ThreadContext` so

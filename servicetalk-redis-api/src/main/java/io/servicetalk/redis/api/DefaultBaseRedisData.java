@@ -56,6 +56,6 @@ public abstract class DefaultBaseRedisData<T> implements RedisData {
 
     @Override
     public String toString() {
-        return this.getClass().getSimpleName() + "{value=" + value.toString() + "}";
+        return getClass().getName() + "{value=" + value + '}';
     }
 }

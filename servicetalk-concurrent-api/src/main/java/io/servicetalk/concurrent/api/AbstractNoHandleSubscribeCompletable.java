@@ -21,7 +21,7 @@ import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 
 /**
  * A {@link Completable} that does not expect to receive a call to {@link #handleSubscribe(Subscriber)} since it
- * overrides {@link #handleSubscribe(Subscriber, SignalOffloader)}.
+ * overrides {@link #handleSubscribe(Subscriber, SignalOffloader, AsyncContextMap, AsyncContextProvider)}.
  */
 abstract class AbstractNoHandleSubscribeCompletable extends Completable {
 

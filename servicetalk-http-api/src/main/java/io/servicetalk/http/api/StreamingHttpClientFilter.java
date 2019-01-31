@@ -128,7 +128,7 @@ public class StreamingHttpClientFilter extends StreamingHttpClient {
 
     @Override
     public String toString() {
-        return StreamingHttpClientFilter.class.getSimpleName() + "(" + delegate + ")";
+        return getClass().getName() + '(' + delegate + ')';
     }
 
     private final class ClientFilterToReservedConnectionFilter extends ReservedStreamingHttpConnectionFilter {

@@ -16,9 +16,9 @@
 package io.servicetalk.transport.netty.internal;
 
 import io.servicetalk.buffer.api.BufferAllocator;
+import io.servicetalk.concurrent.api.DefaultThreadFactory;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Executors;
-import io.servicetalk.concurrent.internal.DefaultThreadFactory;
 import io.servicetalk.transport.api.DefaultExecutionContext;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.IoExecutor;

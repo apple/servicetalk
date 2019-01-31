@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,8 @@
 package io.servicetalk.tcp.netty.internal;
 
 import io.servicetalk.concurrent.Cancellable;
+import io.servicetalk.concurrent.api.AsyncContext;
+import io.servicetalk.concurrent.api.AsyncContextMap;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.SequentialCancellable;
@@ -80,6 +82,9 @@ abstract class AbstractContextFilterChannelHandler extends ChannelDuplexHandler 
     abstract void onContextFilterSuccessful(ChannelHandlerContext ctx);
 
     private void runContextFilter(final ChannelHandlerContext ctx) {
+        // We don't want the AsyncContext to leak between invocations of the connection acceptor, so we set a new
+        // empty context and replace the old context after the fact.
+        AsyncContextMap contextMap = AsyncContext.getAndReset();
         try {
             connectionAcceptor.accept(context).subscribe(new Single.Subscriber<Boolean>() {
                 @Override
@@ -94,10 +99,18 @@ abstract class AbstractContextFilterChannelHandler extends ChannelDuplexHandler 
                         // offload the whole method to the event loop. This also ensures handleSuccess is only run from
                         // the event loop, which means state doesn't need to be handled concurrently.
                         final EventLoop eventLoop = ctx.channel().eventLoop();
-                        if (eventLoop.inEventLoop()) {
-                            handleSuccess(ctx);
-                        } else {
-                            eventLoop.execute(() -> handleSuccess(ctx));
+
+                        // We don't want the AsyncContext to leak to other control flow (e.g. request processing) so we
+                        // set a new empty context and replace the old context after the fact.
+                        AsyncContextMap contextMap = AsyncContext.getAndReset();
+                        try {
+                            if (eventLoop.inEventLoop()) {
+                                handleSuccess(ctx);
+                            } else {
+                                eventLoop.execute(() -> handleSuccess(ctx));
+                            }
+                        } finally {
+                            AsyncContext.replace(contextMap);
                         }
                     } else {
                         // Getting the remote-address may involve volatile reads and potentially a syscall, so guard it.
@@ -115,6 +128,7 @@ abstract class AbstractContextFilterChannelHandler extends ChannelDuplexHandler 
                 }
             });
         } catch (Throwable t) {
+            AsyncContext.replace(contextMap);
             LOGGER.warn("Exception from context filter {} for context {}.", connectionAcceptor, context, t);
             ctx.close();
         }

@@ -16,9 +16,9 @@
 package io.servicetalk.http.router.predicate;
 
 import io.servicetalk.concurrent.api.CompletableProcessor;
+import io.servicetalk.concurrent.api.DefaultThreadFactory;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.concurrent.internal.DefaultThreadFactory;
 import io.servicetalk.http.api.HttpClient;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpServiceContext;

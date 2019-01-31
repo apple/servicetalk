@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,53 +26,51 @@ final class ContextPreservingSubscriber<T> implements Subscriber<T> {
     private final Subscriber<? super T> subscriber;
 
     ContextPreservingSubscriber(Subscriber<? super T> subscriber, AsyncContextMap current) {
-        // Wrapping is used internally and the wrapped subscriber would not escape to user code,
-        // so we don't have to unwrap it.
         this.subscriber = requireNonNull(subscriber);
         this.saved = requireNonNull(current);
     }
 
     @Override
     public void onSubscribe(Subscription s) {
-        AsyncContextMap prev = INSTANCE.getContextMap();
+        AsyncContextMap prev = INSTANCE.contextMap();
         try {
-            INSTANCE.setContextMap(saved);
-            subscriber.onSubscribe(new ContextPreservingSubscription(s, saved));
+            INSTANCE.contextMap(saved);
+            subscriber.onSubscribe(s);
         } finally {
-            INSTANCE.setContextMap(prev);
+            INSTANCE.contextMap(prev);
         }
     }
 
     @Override
     public void onNext(T t) {
-        AsyncContextMap prev = INSTANCE.getContextMap();
+        AsyncContextMap prev = INSTANCE.contextMap();
         try {
-            INSTANCE.setContextMap(saved);
+            INSTANCE.contextMap(saved);
             subscriber.onNext(t);
         } finally {
-            INSTANCE.setContextMap(prev);
+            INSTANCE.contextMap(prev);
         }
     }
 
     @Override
     public void onError(Throwable t) {
-        AsyncContextMap prev = INSTANCE.getContextMap();
+        AsyncContextMap prev = INSTANCE.contextMap();
         try {
-            INSTANCE.setContextMap(saved);
+            INSTANCE.contextMap(saved);
             subscriber.onError(t);
         } finally {
-            INSTANCE.setContextMap(prev);
+            INSTANCE.contextMap(prev);
         }
     }
 
     @Override
     public void onComplete() {
-        AsyncContextMap prev = INSTANCE.getContextMap();
+        AsyncContextMap prev = INSTANCE.contextMap();
         try {
-            INSTANCE.setContextMap(saved);
+            INSTANCE.contextMap(saved);
             subscriber.onComplete();
         } finally {
-            INSTANCE.setContextMap(prev);
+            INSTANCE.contextMap(prev);
         }
     }
 }

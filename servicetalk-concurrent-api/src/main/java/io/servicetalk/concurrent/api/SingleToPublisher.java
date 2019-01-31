@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,21 +40,27 @@ final class SingleToPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
     }
 
     @Override
-    void handleSubscribe(final Subscriber<? super T> subscriber, final SignalOffloader signalOffloader) {
-        subscriber.onSubscribe(new State<>(original, subscriber, signalOffloader));
+    void handleSubscribe(final Subscriber<? super T> subscriber, final SignalOffloader signalOffloader,
+                         final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
+        subscriber.onSubscribe(new State<>(original, subscriber, signalOffloader, contextMap, contextProvider));
     }
 
     private static final class State<T> implements Subscription, Single.Subscriber<T> {
         private final SequentialCancellable sequentialCancellable;
         private final Subscriber<? super T> subscriber;
         private final SignalOffloader signalOffloader;
+        private final AsyncContextMap contextMap;
+        private final AsyncContextProvider contextProvider;
         private final Single<T> parent;
         private boolean subscribedToParent;
 
-        private State(Single<T> parent, Subscriber<? super T> subscriber, final SignalOffloader signalOffloader) {
+        private State(Single<T> parent, Subscriber<? super T> subscriber, final SignalOffloader signalOffloader,
+                      final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
             this.parent = parent;
             this.subscriber = subscriber;
             this.signalOffloader = signalOffloader;
+            this.contextMap = contextMap;
+            this.contextProvider = contextProvider;
             sequentialCancellable = new SequentialCancellable();
         }
 
@@ -91,7 +97,7 @@ final class SingleToPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
                     // parent is a Single but we always drive the Cancellable from this Subscription.
                     // So, even though we are using the subscribe method that does not offload Cancellable, we do not
                     // need to explicitly add the offload here.
-                    parent.subscribe(this, signalOffloader);
+                    parent.subscribeWithOffloaderAndContext(this, signalOffloader, contextMap, contextProvider);
                 } else {
                     subscriber.onError(newExceptionForInvalidRequestN(n));
                 }

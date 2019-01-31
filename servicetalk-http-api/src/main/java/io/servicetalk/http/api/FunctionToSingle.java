@@ -33,7 +33,7 @@ final class FunctionToSingle<T, R> extends Single<R> {
     @Override
     protected void handleSubscribe(final Subscriber<? super R> subscriber) {
         subscriber.onSubscribe(IGNORE_CANCEL);
-        R result;
+        final R result;
         try {
             result = func.apply(orig);
         } catch (Throwable t) {

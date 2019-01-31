@@ -122,31 +122,32 @@ final class PublisherAsBlockingIterable<T> implements BlockingIterable<T> {
         public void close() {
             subscription.cancel();
             if (!terminated && !data.offer(CANCELLED_SIGNAL)) {
-                throw new IllegalStateException("Unexpected reject from queue while offering cancel. Queue size: " +
-                        data.size() + ", capacity: " + queueCapacity);
+                LOGGER.error("Unexpected reject from queue while offering terminal event. Queue size: {}, capacity: {}",
+                        data.size(), queueCapacity);
+                throw new QueueFullException("publisher-iterator", queueCapacity);
             }
         }
 
         @Override
         public void onNext(@Nullable T t) {
             if (!data.offer(t == null ? NULL_PLACEHOLDER : t)) { // We have received more data than we requested.
-                throw new QueueFullException("publisher-iterator", maxBufferedItems);
+                throw new QueueFullException("publisher-iterator", queueCapacity);
             }
         }
 
         @Override
         public void onError(final Throwable t) {
             if (!data.offer(error(t))) {
-                LOGGER.error("Unexpected reject from queue while offering terminal event. Queue size: " + data.size()
-                        + ", capacity: " + (queueCapacity), t);
+                LOGGER.error("Unexpected reject from queue while offering terminal event. Queue size: {}, capacity: {}",
+                        data.size(), queueCapacity, t);
             }
         }
 
         @Override
         public void onComplete() {
             if (!data.offer(COMPLETE_NOTIFICATION)) {
-                LOGGER.error("Unexpected reject from queue while offering terminal event. Queue size: " + data.size()
-                        + ", capacity: " + (queueCapacity));
+                LOGGER.error("Unexpected reject from queue while offering terminal event. Queue size: {}, capacity: {}",
+                        data.size(), queueCapacity);
             }
         }
 

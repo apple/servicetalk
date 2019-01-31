@@ -177,6 +177,6 @@ final class PipelinedRedisConnection extends AbstractRedisConnection {
 
     @Override
     public String toString() {
-        return PipelinedRedisConnection.class.getSimpleName() + "(" + connection + ")";
+        return getClass().getName() + '(' + connection + ')';
     }
 }

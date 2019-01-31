@@ -34,7 +34,6 @@ import static java.util.function.Function.identity;
  * Default implementation for {@link HttpExecutionStrategy}.
  */
 final class DefaultHttpExecutionStrategy implements HttpExecutionStrategy {
-
     static final byte OFFLOAD_RECEIVE_META = 1;
     static final byte OFFLOAD_RECEIVE_DATA = 2;
     static final byte OFFLOAD_SEND = 4;
@@ -86,7 +85,7 @@ final class DefaultHttpExecutionStrategy implements HttpExecutionStrategy {
         final Single<StreamingHttpResponse> responseSingle;
         if (offloaded(OFFLOAD_RECEIVE_META)) {
             final StreamingHttpRequest r = request;
-            responseSingle = e.submit(() -> service.apply(r))
+            responseSingle = e.submit(() -> service.apply(r).subscribeShareContext())
                     // exec.submit() returns a Single<Single<response>>, so flatten the nested Single.
                     .flatMap(identity());
         } else {
@@ -118,7 +117,7 @@ final class DefaultHttpExecutionStrategy implements HttpExecutionStrategy {
                 final Single<StreamingHttpResponse> resp;
                 if (offloaded(OFFLOAD_RECEIVE_META)) {
                     final StreamingHttpRequest r = request;
-                    resp = e.submit(() -> handler.handle(wrappedCtx, r, responseFactory))
+                    resp = e.submit(() -> handler.handle(wrappedCtx, r, responseFactory).subscribeShareContext())
                             // exec.submit() returns a Single<Single<response>>, so flatten the nested Single.
                             .flatMap(identity());
                 } else {

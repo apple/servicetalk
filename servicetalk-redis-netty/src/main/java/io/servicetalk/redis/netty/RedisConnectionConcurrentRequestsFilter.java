@@ -63,9 +63,4 @@ final class RedisConnectionConcurrentRequestsFilter extends RedisConnectionFilte
             }
         };
     }
-
-    @Override
-    public String toString() {
-        return RedisConnectionConcurrentRequestsFilter.class.getSimpleName() + "(" + delegate() + ")";
-    }
 }

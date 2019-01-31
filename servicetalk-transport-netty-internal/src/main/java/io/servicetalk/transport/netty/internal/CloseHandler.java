@@ -161,6 +161,7 @@ public abstract class CloseHandler {
     }
 
     private static final class CloseEventObservedException extends ClosedChannelException {
+        private static final long serialVersionUID = -4181001701486049092L;
 
         private final String closeEventName;
 

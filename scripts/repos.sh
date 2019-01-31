@@ -41,7 +41,6 @@ servicetalk-redis-api \
 servicetalk-redis-internal \
 servicetalk-redis-netty \
 servicetalk-redis-utils \
-servicetalk-rxjava-context \
 servicetalk-serialization-api \
 servicetalk-tcp-netty-internal \
 servicetalk-test-resources \

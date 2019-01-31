@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,7 +39,8 @@ final class CompletableConcatWithSingle<T> extends AbstractNoHandleSubscribeSing
     }
 
     @Override
-    protected void handleSubscribe(Subscriber<? super T> subscriber, SignalOffloader offloader) {
+    protected void handleSubscribe(Subscriber<? super T> subscriber, SignalOffloader offloader,
+                                   AsyncContextMap contextMap, AsyncContextProvider contextProvider) {
         // Since we use the same Subscriber for two sources we always need to offload it. We do not subscribe to the
         // next source using the same offloader so we have the following cases:
         //
@@ -57,8 +58,10 @@ final class CompletableConcatWithSingle<T> extends AbstractNoHandleSubscribeSing
         // eventloop. Important thing to note is that once the next Single is subscribed we never touch the Cancellable
         // of the original Completable. So, we do not need to do anything special there.
         // In order to cover for this case ((2) above) we always offload the passed Subscriber here.
-        Subscriber<? super T> offloadSubscriber = offloader.offloadSubscriber(subscriber);
-        original.subscribe(new ConcatWithSubscriber<>(offloadSubscriber, next), offloader);
+        Subscriber<? super T> offloadSubscriber = offloader.offloadSubscriber(
+                contextProvider.wrap(subscriber, contextMap));
+        original.subscribeWithOffloaderAndContext(new ConcatWithSubscriber<>(offloadSubscriber, next), offloader,
+                contextMap, contextProvider);
     }
 
     private static final class ConcatWithSubscriber<T> implements Subscriber<T>, Completable.Subscriber {
@@ -78,6 +81,8 @@ final class CompletableConcatWithSingle<T> extends AbstractNoHandleSubscribeSing
             // Using a regular subscribe helps us to inherit the threading model for this next source. However, since
             // we always offload the original Subscriber (in handleSubscribe above) we are assured that this Subscriber
             // is not called unexpectedly on an eventloop if this source does not use an Executor.
+            //
+            // This is an asynchronous boundary, and so we should recapture the AsyncContext instead of propagating it.
             next.subscribe(this);
         }
 

@@ -35,8 +35,8 @@ import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.api.PublishAndSubscribeOnPublishers.deliverOnSubscribeAndOnError;
 import static io.servicetalk.concurrent.internal.ConcurrentSubscription.wrap;
-import static io.servicetalk.concurrent.internal.EmptySubscription.EMPTY_SUBSCRIPTION;
 import static io.servicetalk.concurrent.internal.PlatformDependent.throwException;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.NULL_TOKEN;
 import static java.lang.Math.min;
@@ -111,13 +111,13 @@ final class MulticastPublisher<T> extends AbstractNoHandleSubscribePublisher<T> 
     }
 
     @Override
-    void handleSubscribe(Subscriber<? super T> subscriber, SignalOffloader signalOffloader) {
+    void handleSubscribe(Subscriber<? super T> subscriber, SignalOffloader signalOffloader,
+                         AsyncContextMap contextMap, AsyncContextProvider contextProvider) {
         for (;;) {
             final int subscriberCount = this.subscriberCount;
             if (subscriberCount == subscribers.length() || subscriberCount < 0) {
-                subscriber.onSubscribe(EMPTY_SUBSCRIPTION);
-                subscriber.onError(new RejectedSubscribeException("Only " + subscribers.length() +
-                        " subscribers are allowed!"));
+                deliverOnSubscribeAndOnError(subscriber, signalOffloader, contextMap, contextProvider,
+                        new RejectedSubscribeException("Only " + subscribers.length() + " subscribers are allowed!"));
                 break;
             }
 
@@ -127,7 +127,9 @@ final class MulticastPublisher<T> extends AbstractNoHandleSubscribePublisher<T> 
                 subscribers.set(subscriberCount, multicastSubscriber);
                 multicastSubscriber.onSubscribe(subscription);
                 if (subscriberCount == subscribers.length() - 1) {
-                    original.subscribe(this, signalOffloader);
+                    // This operator has special behavior where it chooses to use the AsyncContext and signal offloader
+                    // from the last subscribe operation.
+                    original.subscribeWithOffloaderAndContext(this, signalOffloader, contextMap, contextProvider);
                 }
                 break;
             }

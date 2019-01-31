@@ -28,7 +28,7 @@ buildscript {
 
 plugins {
   id 'com.github.johnrengelman.shadow' version '4.0.3'
-  id "me.champeau.gradle.jmh" version "0.4.7"
+  id "me.champeau.gradle.jmh" version "0.4.8"
 }
 
 apply plugin: "servicetalk-library"
@@ -41,7 +41,7 @@ dependencies {
   compile "io.servicetalk:servicetalk-concurrent-api:$project.version"
   compile "io.servicetalk:servicetalk-concurrent-api-internal:$project.version"
   compile "io.servicetalk:servicetalk-redis-netty:$project.version"
-  compile "org.openjdk.jmh:jmh-core:1.20"
+  compile "org.openjdk.jmh:jmh-core:1.21"
 
   implementation "com.google.code.findbugs:jsr305"
   implementation "io.servicetalk:servicetalk-annotations:$project.version"
@@ -58,7 +58,7 @@ jmh {
   include = ".*Benchmark"
 //  iterations = 5
   jmhVersion = "$jmhVersion"
-  jvmArgsPrepend = "-Dio.netty.maxDirectMemory=9223372036854775807"
+  jvmArgsPrepend = "-Dio.netty.maxDirectMemory=9223372036854775807 -Djmh.executor=CUSTOM -Djmh.executor.class=io.servicetalk.benchmark.concurrent.AsyncContextFriendlyExecutor"
   // jvmArgsPrepend = "-XX:+UnlockCommercialFeatures -XX:+FlightRecorder"
 }
 

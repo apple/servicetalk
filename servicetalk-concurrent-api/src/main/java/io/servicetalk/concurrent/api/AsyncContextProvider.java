@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,6 @@ package io.servicetalk.concurrent.api;
 
 import org.reactivestreams.Subscription;
 
-import java.util.concurrent.Callable;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
@@ -31,39 +30,34 @@ import java.util.function.Function;
  */
 interface AsyncContextProvider {
     /**
-     * Subscribe {@code listener} for notification of {@link AsyncContextProvider} change events.
-     *
-     * @param listener A listener which will be notified of {@link AsyncContextProvider} change events.
-     * @return {@code true} if the listener was subscribed.
-     */
-    boolean addListener(AsyncContext.Listener listener);
-
-    /**
-     * Unsubscribe {@code listener} for notification of {@link AsyncContextProvider} change events.
-     *
-     * @param listener A listener which will no longer be notified of {@link AsyncContextProvider} change events.
-     * @return {@code true} if the listener was unsubscribed.
-     */
-    boolean removeListener(AsyncContext.Listener listener);
-
-    /**
-     * Remove all listeners.
-     */
-    void clearListeners();
-
-    /**
      * Get the current context.
      *
      * @return The current context.
      */
-    AsyncContextMap getContextMap();
+    AsyncContextMap contextMap();
 
     /**
      * Set the current context.
      *
      * @param newContextMap The current context.
      */
-    void setContextMap(AsyncContextMap newContextMap);
+    void contextMap(AsyncContextMap newContextMap);
+
+    /**
+     * Create a {@link AsyncContextMap} that is empty.
+     * @return a {@link AsyncContextMap} that is empty.
+     */
+    AsyncContextMap newContextMap();
+
+    /**
+     * Wrap the {@link io.servicetalk.concurrent.Cancellable} to ensure it is able to track
+     * {@link AsyncContext} correctly.
+     * @param subscriber The {@link Completable.Subscriber} for which to wrap the corresponding
+     * {@link io.servicetalk.concurrent.Cancellable}.
+     * @param current The current {@link AsyncContextMap}.
+     * @return The wrapped {@link Completable.Subscriber}.
+     */
+    Completable.Subscriber wrapCancellable(Completable.Subscriber subscriber, AsyncContextMap current);
 
     /**
      * Wrap an {@link Completable.Subscriber} to ensure it is able to track {@link AsyncContext} correctly.
@@ -72,6 +66,17 @@ interface AsyncContextProvider {
      * @return The wrapped subscriber.
      */
     Completable.Subscriber wrap(Completable.Subscriber subscriber, AsyncContextMap current);
+
+    /**
+     * Wrap the {@link io.servicetalk.concurrent.Cancellable} to ensure it is able to track
+     * {@link AsyncContext} correctly.
+     * @param subscriber The {@link Single.Subscriber} for which to wrap the corresponding
+     * {@link io.servicetalk.concurrent.Cancellable}.
+     * @param current The current {@link AsyncContextMap}.
+     * @param <T> Type of the {@link Single}.
+     * @return The wrapped {@link Single.Subscriber}.
+     */
+    <T> Single.Subscriber<T> wrapCancellable(Single.Subscriber<T> subscriber, AsyncContextMap current);
 
     /**
      * Wrap an {@link Single.Subscriber} to ensure it is able to track {@link AsyncContext} correctly.
@@ -84,11 +89,13 @@ interface AsyncContextProvider {
 
     /**
      * Wrap an {@link Subscription} to ensure it is able to track {@link AsyncContext} correctly.
-     * @param subscription The subscription to wrap.
+     * @param subscriber The {@link org.reactivestreams.Subscriber} for which to wrap the corresponding
+     * {@link Subscription}.
      * @param current The current {@link AsyncContextMap}.
-     * @return The wrapped subscription.
+     * @return The wrapped {@link org.reactivestreams.Subscriber}.
      */
-    Subscription wrap(Subscription subscription, AsyncContextMap current);
+    <T> org.reactivestreams.Subscriber<T> wrapSubscription(org.reactivestreams.Subscriber<T> subscriber,
+                                                           AsyncContextMap current);
 
     /**
      * Wrap an {@link org.reactivestreams.Subscriber} to ensure it is able to track {@link AsyncContext} correctly.
@@ -157,15 +164,7 @@ interface AsyncContextProvider {
      * @param <T> The type of data for {@link CompletionStage}.
      * @return the wrapped {@link CompletionStage}.
      */
-    <T> CompletionStage<T> wrap(CompletionStage<T> stage);
-
-    /**
-     * Make a best effort to unwrap a {@link CompletionStage} so that it no longer tracks {@link AsyncContext}.
-     * @param stage The stage to unwrap.
-     * @param <T> The type of data for {@link CompletionStage}.
-     * @return the unwrapped {@link CompletionStage}.
-     */
-    <T> CompletionStage<T> unwrap(CompletionStage<T> stage);
+    <T> CompletionStage<T> wrap(CompletionStage<T> stage, AsyncContextMap current);
 
     /**
      * Wrap a {@link ScheduledExecutorService} to ensure it is able to track {@link AsyncContext} correctly.
@@ -184,17 +183,19 @@ interface AsyncContextProvider {
     /**
      * Wrap a {@link Runnable} to ensure it is able to track {@link AsyncContext} correctly.
      * @param runnable The runnable to wrap.
+     * @param contextMap The {@link AsyncContext}.
      * @return The wrapped {@link Runnable}.
      */
-    Runnable wrap(Runnable runnable);
+    Runnable wrap(Runnable runnable, AsyncContextMap contextMap);
 
     /**
-     * Wrap a {@link Callable} to ensure it is able to track {@link AsyncContext} correctly.
-     * @param callable The callable to wrap.
-     * @param <V> The type of data returned by {@code callable}.
-     * @return The wrapped {@link Callable}.
+     * Wrap a {@link Consumer} to ensure it is able to track {@link AsyncContext} correctly.
+     * @param consumer The consumer to wrap.
+     * @param contextMap The {@link AsyncContext}.
+     * @param <T> The type of data consumed by {@code consumer}.
+     * @return The wrapped {@link Consumer}.
      */
-    <V> Callable<V> wrap(Callable<V> callable);
+    <T> Consumer<T> wrap(Consumer<T> consumer, AsyncContextMap contextMap);
 
     /**
      * Wrap a {@link Consumer} to ensure it is able to track {@link AsyncContext} correctly.
@@ -202,33 +203,38 @@ interface AsyncContextProvider {
      * @param <T> The type of data consumed by {@code consumer}.
      * @return The wrapped {@link Consumer}.
      */
-    <T> Consumer<T> wrap(Consumer<T> consumer);
+    default <T> Consumer<T> wrap(Consumer<T> consumer) {
+        return wrap(consumer, contextMap());
+    }
 
     /**
      * Wrap a {@link Function} to ensure it is able to track {@link AsyncContext} correctly.
      * @param func The function to wrap.
+     * @param contextMap The {@link AsyncContext}.
      * @param <T> The type of data consumed by {@code func}.
      * @param <U> The type of data returned by {@code func}.
      * @return The wrapped {@link Function}.
      */
-    <T, U> Function<T, U> wrap(Function<T, U> func);
+    <T, U> Function<T, U> wrap(Function<T, U> func, AsyncContextMap contextMap);
 
     /**
      * Wrap a {@link BiFunction} to ensure it is able to track {@link AsyncContext} correctly.
      * @param consumer The consumer to wrap.
+     * @param contextMap The {@link AsyncContext}.
      * @param <T> The type of data consumed by {@code func}.
      * @param <U> The type of data consumed by {@code func}.
      * @return The wrapped {@link BiConsumer}.
      */
-    <T, U> BiConsumer<T, U> wrap(BiConsumer<T, U> consumer);
+    <T, U> BiConsumer<T, U> wrap(BiConsumer<T, U> consumer, AsyncContextMap contextMap);
 
     /**
      * Wrap a {@link BiFunction} to ensure it is able to track {@link AsyncContext} correctly.
      * @param func The function to wrap.
+     * @param contextMap The {@link AsyncContext}.
      * @param <T> The type of data consumed by {@code func}.
      * @param <U> The type of data consumed by {@code func}.
      * @param <V> The type of data returned by {@code func}.
      * @return The wrapped {@link BiFunction}.
      */
-    <T, U, V> BiFunction<T, U, V> wrap(BiFunction<T, U, V> func);
+    <T, U, V> BiFunction<T, U, V> wrap(BiFunction<T, U, V> func, AsyncContextMap contextMap);
 }

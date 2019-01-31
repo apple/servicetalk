@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,42 +27,40 @@ final class ContextPreservingSingleSubscriber<T> implements Single.Subscriber<T>
     private final Single.Subscriber<? super T> subscriber;
 
     ContextPreservingSingleSubscriber(Single.Subscriber<? super T> subscriber, AsyncContextMap current) {
-        // Wrapping is used internally and the wrapped subscriber would not escape to user code,
-        // so we don't have to unwrap it.
         this.subscriber = requireNonNull(subscriber);
         this.saved = requireNonNull(current);
     }
 
     @Override
     public void onSubscribe(Cancellable cancellable) {
-        AsyncContextMap prev = INSTANCE.getContextMap();
+        AsyncContextMap prev = INSTANCE.contextMap();
         try {
-            INSTANCE.setContextMap(saved);
+            INSTANCE.contextMap(saved);
             subscriber.onSubscribe(cancellable);
         } finally {
-            INSTANCE.setContextMap(prev);
+            INSTANCE.contextMap(prev);
         }
     }
 
     @Override
     public void onSuccess(@Nullable T result) {
-        AsyncContextMap prev = INSTANCE.getContextMap();
+        AsyncContextMap prev = INSTANCE.contextMap();
         try {
-            INSTANCE.setContextMap(saved);
+            INSTANCE.contextMap(saved);
             subscriber.onSuccess(result);
         } finally {
-            INSTANCE.setContextMap(prev);
+            INSTANCE.contextMap(prev);
         }
     }
 
     @Override
     public void onError(Throwable t) {
-        AsyncContextMap prev = INSTANCE.getContextMap();
+        AsyncContextMap prev = INSTANCE.contextMap();
         try {
-            INSTANCE.setContextMap(saved);
+            INSTANCE.contextMap(saved);
             subscriber.onError(t);
         } finally {
-            INSTANCE.setContextMap(prev);
+            INSTANCE.contextMap(prev);
         }
     }
 }

@@ -15,9 +15,9 @@
  */
 package io.servicetalk.http.router.jersey;
 
+import io.servicetalk.concurrent.api.DefaultThreadFactory;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.ExecutorRule;
-import io.servicetalk.concurrent.internal.DefaultThreadFactory;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.router.jersey.resources.ExecutionStrategyResources.ResourceDefaultStrategy;
 import io.servicetalk.http.router.jersey.resources.ExecutionStrategyResources.ResourceRouteExecIdStrategy;

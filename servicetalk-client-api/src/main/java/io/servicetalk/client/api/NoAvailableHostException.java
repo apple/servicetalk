@@ -18,7 +18,7 @@ package io.servicetalk.client.api;
 /**
  * Thrown when no host is available but at least one is required.
  */
-public final class NoAvailableHostException extends RetryableException {
+public final class NoAvailableHostException extends RuntimeException implements RetryableException {
     private static final long serialVersionUID = 5340791072245425967L;
 
     /**

@@ -25,7 +25,7 @@ final class RouteStrategiesConfig {
     final Map<String, HttpExecutionStrategy> routeStrategies;
 
     RouteStrategiesConfig(final Map<String, HttpExecutionStrategy> routeStrategies) {
-        // We do not clone routeStrategies because it comes from our code and no adverse mutation is expected
+        // We do not copy routeStrategies because it comes from our code and no adverse mutation is expected
         this.routeStrategies = unmodifiableMap(routeStrategies);
     }
 }

@@ -23,6 +23,9 @@ import io.servicetalk.concurrent.internal.RejectedSubscribeError;
  */
 public final class MaxRequestLimitExceededRejectedSubscribeException extends MaxRequestLimitExceededException
         implements RejectedSubscribeError {
+
+    private static final long serialVersionUID = -4289401663713189702L;
+
     /**
      * New instance.
      *
