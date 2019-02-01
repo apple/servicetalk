@@ -51,10 +51,11 @@ public final class DefaultDnsServiceDiscovererBuilder {
     @Nullable
     private Duration queryTimeout;
     private BiIntFunction<Throwable, Completable> retryStrategy = RetryStrategies.retryWithConstantBackoffAndJitter(
-            Integer.MAX_VALUE, t -> true, Duration.ofSeconds(60), GlobalExecutionContext.globalExecutionContext().executor());
-    private int minTTLSeconds = 2;
-    private ServiceDiscovererFilterFactory<String, InetAddress, ServiceDiscovererEvent<InetAddress>> serviceDiscoveryFilterFactory =
-            ServiceDiscovererFilterFactory.identity();
+            Integer.MAX_VALUE, t -> true, Duration.ofSeconds(60),
+            GlobalExecutionContext.globalExecutionContext().executor());
+    private int minTTLSeconds = 10;
+    private ServiceDiscovererFilterFactory<String, InetAddress, ServiceDiscovererEvent<InetAddress>>
+            serviceDiscoveryFilterFactory = ServiceDiscovererFilterFactory.identity();
     private boolean useDefaultFilter = true;
 
     /**
@@ -221,10 +222,13 @@ public final class DefaultDnsServiceDiscovererBuilder {
         return toHostAndPortDiscoverer(newDefaultDnsServiceDiscoverer());
     }
 
-    private ServiceDiscoverer<String, InetAddress, ServiceDiscovererEvent<InetAddress>> newDefaultDnsServiceDiscoverer() {
-        ServiceDiscovererFilterFactory<String, InetAddress, ServiceDiscovererEvent<InetAddress>> factory = this.serviceDiscoveryFilterFactory;
+    private ServiceDiscoverer<String, InetAddress,
+            ServiceDiscovererEvent<InetAddress>> newDefaultDnsServiceDiscoverer() {
+        ServiceDiscovererFilterFactory<String, InetAddress, ServiceDiscovererEvent<InetAddress>> factory =
+                this.serviceDiscoveryFilterFactory;
         if (useDefaultFilter) {
-            final ServiceDiscovererFilterFactory<String, InetAddress, ServiceDiscovererEvent<InetAddress>> defaultFilterFactory = client -> new DefaultDnsServiceDiscovererFilter(client, retryStrategy);
+            ServiceDiscovererFilterFactory<String, InetAddress, ServiceDiscovererEvent<InetAddress>>
+                    defaultFilterFactory = client -> new DefaultDnsServiceDiscovererFilter(client, retryStrategy);
             factory = defaultFilterFactory.append(factory);
         }
         return factory.create(new DefaultDnsServiceDiscoverer(
@@ -240,8 +244,9 @@ public final class DefaultDnsServiceDiscovererBuilder {
      * @return a resolver which will convert from {@link String} host names and {@link InetAddress} resolved address to
      * {@link HostAndPort} to {@link InetSocketAddress}.
      */
-    ServiceDiscoverer<HostAndPort, InetSocketAddress,
-            ServiceDiscovererEvent<InetSocketAddress>> toHostAndPortDiscoverer(ServiceDiscoverer<String, InetAddress, ServiceDiscovererEvent<InetAddress>> client) {
+    private static ServiceDiscoverer<HostAndPort, InetSocketAddress,
+            ServiceDiscovererEvent<InetSocketAddress>> toHostAndPortDiscoverer(
+            ServiceDiscoverer<String, InetAddress, ServiceDiscovererEvent<InetAddress>> client) {
         return new ServiceDiscoverer<HostAndPort, InetSocketAddress, ServiceDiscovererEvent<InetSocketAddress>>() {
             @Override
             public Completable closeAsync() {

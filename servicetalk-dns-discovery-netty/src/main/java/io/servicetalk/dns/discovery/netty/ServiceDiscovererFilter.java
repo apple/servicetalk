@@ -20,6 +20,8 @@ import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 
+import static java.util.Objects.requireNonNull;
+
 /**
  * A {@link ServiceDiscoverer} that delegates all methods to a different {@link ServiceDiscoverer}.
  *
@@ -39,7 +41,7 @@ public class ServiceDiscovererFilter<UnresolvedAddress, ResolvedAddress,
      * @param delegate The {@link ServiceDiscoverer} to delegate all calls to.
      */
     public ServiceDiscovererFilter(final ServiceDiscoverer<UnresolvedAddress, ResolvedAddress, E> delegate) {
-        this.delegate = delegate;
+        this.delegate = requireNonNull(delegate);
     }
 
     @Override
