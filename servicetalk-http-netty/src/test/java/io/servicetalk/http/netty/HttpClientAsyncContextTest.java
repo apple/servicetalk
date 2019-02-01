@@ -72,7 +72,7 @@ public class HttpClientAsyncContextTest {
     private static void contextPreservedOverFilterBoundaries(boolean useImmediate) throws Exception {
         Queue<Throwable> errorQueue = new ConcurrentLinkedQueue<>();
         CompositeCloseable compositeCloseable = AsyncCloseables.newCompositeCloseable();
-        ServerContext serverContext = compositeCloseable.append(HttpServers.forAddress(localAddress())
+        ServerContext serverContext = compositeCloseable.append(HttpServers.forAddress(localAddress(0))
                 .listenAndAwait((ctx, request, responseFactory) -> success(responseFactory.ok())));
         try {
             SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> clientBuilder = HttpClients.forSingleAddress(

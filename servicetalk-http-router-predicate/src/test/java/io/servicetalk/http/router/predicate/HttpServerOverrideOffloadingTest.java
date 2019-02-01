@@ -71,7 +71,7 @@ public class HttpServerOverrideOffloadingTest {
         service1 = new OffloadingTesterService(noOffloadsStrategy(), th -> !isInServerEventLoop(th));
         service2 = new OffloadingTesterService(defaultStrategy(executor),
                 HttpServerOverrideOffloadingTest::isInServerEventLoop);
-        server = HttpServers.forAddress(localAddress())
+        server = HttpServers.forAddress(localAddress(0))
                 .ioExecutor(ioExecutor)
                 .listenAndAwait(new HttpPredicateRouterBuilder()
                         .executionStrategy(noOffloadsStrategy())

@@ -173,7 +173,7 @@ public class TracingHttpRequesterFilterTest {
     }
 
     private static ServerContext buildServer() throws Exception {
-        return HttpServers.forAddress(localAddress())
+        return HttpServers.forAddress(localAddress(0))
                 .listenStreamingAndAwait((ctx, request, responseFactory) ->
                         success(responseFactory.ok().payloadBody(just(new TestSpanState(
                         valueOf(request.headers().get(TRACE_ID)),

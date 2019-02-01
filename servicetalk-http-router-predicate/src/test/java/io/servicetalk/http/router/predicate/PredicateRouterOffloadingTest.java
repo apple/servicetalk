@@ -76,7 +76,7 @@ public class PredicateRouterOffloadingTest {
 
     @Before
     public void setUp() {
-        builder = HttpServers.forAddress(localAddress()).ioExecutor(executionContextRule.ioExecutor());
+        builder = HttpServers.forAddress(localAddress(0)).ioExecutor(executionContextRule.ioExecutor());
         invokingThreads = new ConcurrentHashMap<>();
     }
 

@@ -100,7 +100,7 @@ public abstract class AbstractJerseyStreamingHttpServiceTest {
         streamingJsonEnabled = getValue(config.getProperties(), config.getRuntimeType(), JSON_FEATURE, "",
                 String.class).toLowerCase().contains("servicetalk");
 
-        serverContext = HttpServers.forAddress(localAddress())
+        serverContext = HttpServers.forAddress(localAddress(0))
                 .ioExecutor(SERVER_CTX.ioExecutor())
                 .bufferAllocator(SERVER_CTX.bufferAllocator())
                 .listenStreamingAndAwait(router);

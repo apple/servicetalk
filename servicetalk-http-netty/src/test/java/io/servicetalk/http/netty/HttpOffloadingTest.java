@@ -91,7 +91,7 @@ public class HttpOffloadingTest {
     @Before
     public void beforeTest() throws Exception {
         service = new OffloadingVerifyingServiceStreaming(defaultStrategy(SERVER_CTX.executor()));
-        serverContext = HttpServers.forAddress(localAddress())
+        serverContext = HttpServers.forAddress(localAddress(0))
                 .ioExecutor(SERVER_CTX.ioExecutor())
                 .listenStreamingAndAwait(service);
 

@@ -410,7 +410,7 @@ public class HttpRequestEncoderTest {
             ReadOnlyTcpServerConfig sConfig = new TcpServerConfig(true)
                     .enableWireLogging("servicetalk-tests-server-wire-logger").asReadOnly();
             ServerContext serverContext = resources.prepend(awaitIndefinitelyNonNull(
-                    new TcpServerInitializer(SEC, sConfig).start(localAddress(),
+                    new TcpServerInitializer(SEC, sConfig).start(localAddress(0),
                             context -> Single.success(TRUE),
                             new TcpServerChannelInitializer(sConfig, ACCEPT_ALL).andThen((c, cc) -> {
                                 serverChannelRef.compareAndSet(null, c);

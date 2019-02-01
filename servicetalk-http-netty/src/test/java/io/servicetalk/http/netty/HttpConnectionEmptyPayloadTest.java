@@ -65,7 +65,7 @@ public class HttpConnectionEmptyPayloadTest {
             byte[] expectedPayload = new byte[expectedContentLength];
             ThreadLocalRandom.current().nextBytes(expectedPayload);
             ServerContext serverContext = closeable.merge(HttpServers
-                    .forAddress(localAddress())
+                    .forAddress(localAddress(0))
                     .ioExecutor(executionContextRule.ioExecutor())
                     .listenStreamingAndAwait(
                             new StreamingHttpService() {

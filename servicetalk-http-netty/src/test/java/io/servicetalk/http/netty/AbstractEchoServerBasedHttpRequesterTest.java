@@ -65,7 +65,7 @@ public abstract class AbstractEchoServerBasedHttpRequesterTest {
 
     @BeforeClass
     public static void startServer() throws Exception {
-        serverContext = HttpServers.forAddress(localAddress())
+        serverContext = HttpServers.forAddress(localAddress(0))
                 .ioExecutor(CTX.ioExecutor())
                 .listenStreamingAndAwait(new EchoServiceStreaming());
     }

@@ -134,13 +134,13 @@ public class InsufficientlySizedExecutorHttpTest {
         final HttpExecutionStrategy strategy = threadBased ? strategyBuilder.offloadWithThreadAffinity().build() :
                 strategyBuilder.build();
         if (clientUnderProvisioned) {
-            server = HttpServers.forAddress(localAddress())
+            server = HttpServers.forAddress(localAddress(0))
                     .listenStreamingAndAwait((ctx, request, responseFactory) -> success(responseFactory.ok()));
             client = forSingleAddress(serverHostAndPort(server))
                     .executionStrategy(strategy)
                     .buildStreaming();
         } else {
-            server = HttpServers.forAddress(localAddress())
+            server = HttpServers.forAddress(localAddress(0))
                     .listenStreamingAndAwait(new StreamingHttpService() {
                         @Override
                         public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,

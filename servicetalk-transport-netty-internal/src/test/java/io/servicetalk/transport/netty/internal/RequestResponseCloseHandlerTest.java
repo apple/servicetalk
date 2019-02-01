@@ -546,7 +546,7 @@ public class RequestResponseCloseHandlerTest {
             bs.childOption(ALLOW_HALF_CLOSURE, true);
             bs.childOption(AUTO_CLOSE, false);
 
-            return (ServerSocketChannel) bs.bind(localAddress())
+            return (ServerSocketChannel) bs.bind(localAddress(0))
                     .syncUninterruptibly().channel();
         }
 

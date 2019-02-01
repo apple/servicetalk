@@ -78,11 +78,11 @@ public class PartitionedHttpClientTest {
 
     @BeforeClass
     public static void setUpServers() throws Exception {
-        srv1 = HttpServers.forAddress(localAddress())
+        srv1 = HttpServers.forAddress(localAddress(0))
                 .listenBlockingAndAwait((ctx, request, responseFactory) ->
                         responseFactory.ok().setHeader(X_SERVER, SRV_1));
 
-        srv2 = HttpServers.forAddress(localAddress())
+        srv2 = HttpServers.forAddress(localAddress(0))
                 .listenBlockingAndAwait((ctx, request, responseFactory) ->
                         responseFactory.ok().setHeader(X_SERVER, SRV_2));
     }
@@ -244,7 +244,7 @@ public class PartitionedHttpClientTest {
     @Test
     public void testClientGroupPartitioning() throws Exception {
         // user partition discovery service, userId=1 => srv1 | userId=2 => srv2
-        try (ServerContext userDisco = HttpServers.forAddress(localAddress())
+        try (ServerContext userDisco = HttpServers.forAddress(localAddress(0))
                 .listenBlockingAndAwait((ctx, request, responseFactory) -> {
                     if ("/partition".equals(request.path())) {
                         String userIdParam = request.queryParameter("userId");

@@ -73,7 +73,7 @@ public class HttpClientOverrideOffloadingTest {
         executor = newCachedThreadExecutor();
         this.isInvalidThread = isInvalidThread;
         this.overridingStrategy = overridingStrategy == null ? defaultStrategy(executor) : overridingStrategy;
-        server = HttpServers.forAddress(localAddress())
+        server = HttpServers.forAddress(localAddress(0))
                 .listenStreamingAndAwait((ctx, request, responseFactory) -> success(responseFactory.ok()));
         client = HttpClients.forSingleAddress(serverHostAndPort(server))
                 .ioExecutor(ioExecutor)

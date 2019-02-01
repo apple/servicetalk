@@ -75,7 +75,7 @@ public class FlushStrategyOverrideTest {
     @Before
     public void setUp() throws Exception {
         service = new FlushingService();
-        serverCtx = HttpServers.forAddress(localAddress())
+        serverCtx = HttpServers.forAddress(localAddress(0))
                 .ioExecutor(ctx.ioExecutor())
                 .listenStreaming(service)
                 .toFuture().get();

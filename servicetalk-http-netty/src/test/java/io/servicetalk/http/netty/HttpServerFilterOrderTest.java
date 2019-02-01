@@ -41,7 +41,7 @@ public class HttpServerFilterOrderTest {
     public void prependOrder() throws Exception {
         StreamingHttpRequestHandler filter1 = newMockHandler();
         StreamingHttpRequestHandler filter2 = newMockHandler();
-        ServerContext serverContext = HttpServers.forAddress(localAddress())
+        ServerContext serverContext = HttpServers.forAddress(localAddress(0))
                 .appendRequestHandlerFilter(addFilter(filter1))
                 .appendRequestHandlerFilter(addFilter(filter2))
                 .listenBlockingAndAwait((ctx, request, responseFactory) -> responseFactory.ok());

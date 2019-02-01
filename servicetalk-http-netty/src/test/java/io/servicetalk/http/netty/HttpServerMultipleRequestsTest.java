@@ -96,7 +96,7 @@ public class HttpServerMultipleRequestsTest {
         final int concurrency = 10;
         final int numRequests = 10;
         CompositeCloseable compositeCloseable = AsyncCloseables.newCompositeCloseable();
-        ServerContext ctx = compositeCloseable.append(HttpServers.forAddress(localAddress())
+        ServerContext ctx = compositeCloseable.append(HttpServers.forAddress(localAddress(0))
                 .ioExecutor(serverExecution.ioExecutor())
                 .listenStreamingAndAwait(service));
         ExecutorService executorService = Executors.newCachedThreadPool();

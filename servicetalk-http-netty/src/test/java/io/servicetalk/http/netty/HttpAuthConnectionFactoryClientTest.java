@@ -75,7 +75,7 @@ public class HttpAuthConnectionFactoryClientTest {
 
     @Test
     public void simulateAuth() throws Exception {
-        serverContext = HttpServers.forAddress(localAddress())
+        serverContext = HttpServers.forAddress(localAddress(0))
                 .ioExecutor(CTX.ioExecutor())
                 .listenStreamingAndAwait(
                         new StreamingHttpService() {

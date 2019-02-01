@@ -92,7 +92,7 @@ public class HttpServiceAsyncContextTest {
     private void newRequestsGetFreshContext(boolean useImmediate) throws Exception {
         StreamingHttpService service = newEmptyAsyncContextService(useImmediate);
         CompositeCloseable compositeCloseable = AsyncCloseables.newCompositeCloseable();
-        HttpServerBuilder serverBuilder = HttpServers.forAddress(localAddress());
+        HttpServerBuilder serverBuilder = HttpServers.forAddress(localAddress(0));
         ServerContext ctx = serverBuilder.listenStreamingAndAwait(service);
 
         ExecutorService executorService = Executors.newCachedThreadPool();
@@ -271,7 +271,7 @@ public class HttpServiceAsyncContextTest {
             }
         };
         CompositeCloseable compositeCloseable = AsyncCloseables.newCompositeCloseable();
-        HttpServerBuilder serverBuilder = HttpServers.forAddress(localAddress());
+        HttpServerBuilder serverBuilder = HttpServers.forAddress(localAddress(0));
         ServerContext ctx = compositeCloseable.append(serverBuilder
                 .ioExecutor(immediateExecutor.ioExecutor())
                 .listenStreamingAndAwait(filter));
@@ -299,7 +299,7 @@ public class HttpServiceAsyncContextTest {
     private void connectionContextFilterContextDoesNotLeak(boolean serverUseImmediate) throws Exception {
         StreamingHttpService service = newEmptyAsyncContextService(serverUseImmediate);
         CompositeCloseable compositeCloseable = AsyncCloseables.newCompositeCloseable();
-        ServerContext ctx = compositeCloseable.append(HttpServers.forAddress(localAddress())
+        ServerContext ctx = compositeCloseable.append(HttpServers.forAddress(localAddress(0))
                 .appendConnectionAcceptorFilter(original -> new ConnectionAcceptorFilter(context -> {
                     AsyncContext.put(K1, "v1");
                     return success(true);

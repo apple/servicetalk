@@ -122,7 +122,7 @@ public final class RedirectingClientAndConnectionFilterTest {
 
     @Test
     public void redirectFilterNoHostHeaderRelativeLocation() throws Exception {
-        try (ServerContext serverContext = HttpServers.forAddress(localAddress())
+        try (ServerContext serverContext = HttpServers.forAddress(localAddress(0))
                 .listenBlockingAndAwait((ctx, request, responseFactory) -> {
                     if (request.requestTarget().equals("/")) {
                         return responseFactory.permanentRedirect()
@@ -149,7 +149,7 @@ public final class RedirectingClientAndConnectionFilterTest {
 
     @Test
     public void redirectFilterNoHostHeaderAbsoluteLocation() throws Exception {
-        try (ServerContext serverContext = HttpServers.forAddress(localAddress())
+        try (ServerContext serverContext = HttpServers.forAddress(localAddress(0))
                 .listenBlockingAndAwait((ctx, request, responseFactory) -> {
                     if (request.requestTarget().equals("/")) {
                         InetSocketAddress socketAddress = (InetSocketAddress) ctx.localAddress();
@@ -177,7 +177,7 @@ public final class RedirectingClientAndConnectionFilterTest {
 
     @Test
     public void redirectFilterWithHostHeaderRelativeLocation() throws Exception {
-        try (ServerContext serverContext = HttpServers.forAddress(localAddress())
+        try (ServerContext serverContext = HttpServers.forAddress(localAddress(0))
                 .listenBlockingAndAwait((ctx, request, responseFactory) -> {
                     if (request.requestTarget().equals("/")) {
                         return responseFactory.permanentRedirect()
@@ -197,7 +197,7 @@ public final class RedirectingClientAndConnectionFilterTest {
 
     @Test
     public void redirectFilterWithHostHeaderAbsoluteLocation() throws Exception {
-        try (ServerContext serverContext = HttpServers.forAddress(localAddress())
+        try (ServerContext serverContext = HttpServers.forAddress(localAddress(0))
                 .listenBlockingAndAwait((ctx, request, responseFactory) -> {
                     if (request.requestTarget().equals("/")) {
                         return responseFactory.permanentRedirect()

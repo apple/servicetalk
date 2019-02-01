@@ -293,7 +293,7 @@ public class MultiAddressUrlHttpClientTest {
 
     private static ServerContext startNewLocalServer(final StreamingHttpService httpService,
                                                      final CompositeCloseable closeables) throws Exception {
-        return closeables.append(HttpServers.forAddress(localAddress())
+        return closeables.append(HttpServers.forAddress(localAddress(0))
                 .ioExecutor(CTX.ioExecutor())
                 .listenStreamingAndAwait(httpService));
     }

@@ -186,7 +186,7 @@ public class ZipkinPublisherTest {
                             });
                         }
                     })
-                    .localAddress(localAddress())
+                    .localAddress(localAddress(0))
                     .bind().sync().channel();
         }
 

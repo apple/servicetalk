@@ -129,7 +129,7 @@ public abstract class AbstractNettyHttpServerTest {
 
     @Before
     public void startServer() throws Exception {
-        final InetSocketAddress bindAddress = localAddress();
+        final InetSocketAddress bindAddress = localAddress(0);
         setService(new TestServiceStreaming(publisherSupplier, defaultStrategy(serverExecutor)));
 
         // A small SNDBUF is needed to test that the server defers closing the connection until writes are complete.

@@ -34,17 +34,6 @@ public final class AddressUtils {
     }
 
     /**
-     * Creates an {@link InetSocketAddress} with {@link InetAddress#getLoopbackAddress() loopback address} and zero
-     * port number.
-     *
-     * @return an {@link InetSocketAddress} with {@link InetAddress#getLoopbackAddress() loopback address} and zero
-     * port number
-     */
-    public static InetSocketAddress localAddress() {
-        return localAddress(0);
-    }
-
-    /**
      * Creates an {@link InetSocketAddress} with {@link InetAddress#getLoopbackAddress() loopback address} and specified
      * port number.
      *

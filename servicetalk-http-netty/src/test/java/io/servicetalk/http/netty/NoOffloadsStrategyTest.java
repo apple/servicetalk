@@ -61,7 +61,7 @@ public class NoOffloadsStrategyTest {
 
     public NoOffloadsStrategyTest() {
         ioExecutor = createIoExecutor(new DefaultThreadFactory(IO_EXECUTOR_NAME, true, NORM_PRIORITY));
-        serverBuilder = HttpServers.forAddress(localAddress()).ioExecutor(ioExecutor);
+        serverBuilder = HttpServers.forAddress(localAddress(0)).ioExecutor(ioExecutor);
     }
 
     @After

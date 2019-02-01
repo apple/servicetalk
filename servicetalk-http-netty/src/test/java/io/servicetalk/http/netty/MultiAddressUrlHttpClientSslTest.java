@@ -110,7 +110,7 @@ public class MultiAddressUrlHttpClientSslTest {
         when(STREAMING_HTTP_SERVICE.executionStrategy()).thenReturn(noOffloadsStrategy());
         when(STREAMING_HTTP_SERVICE.closeAsync()).thenReturn(completed());
         when(STREAMING_HTTP_SERVICE.closeAsyncGracefully()).thenReturn(completed());
-        serverCtx = HttpServers.forAddress(localAddress())
+        serverCtx = HttpServers.forAddress(localAddress(0))
                 .ioExecutor(CTX.ioExecutor())
                 .listenStreamingAndAwait(STREAMING_HTTP_SERVICE);
         serverHostHeader = hostHeader(serverHostAndPort(serverCtx));
@@ -126,7 +126,7 @@ public class MultiAddressUrlHttpClientSslTest {
         when(SECURE_STREAMING_HTTP_SERVICE.executionStrategy()).thenReturn(noOffloadsStrategy());
         when(SECURE_STREAMING_HTTP_SERVICE.closeAsync()).thenReturn(completed());
         when(SECURE_STREAMING_HTTP_SERVICE.closeAsyncGracefully()).thenReturn(completed());
-        secureServerCtx = HttpServers.forAddress(localAddress())
+        secureServerCtx = HttpServers.forAddress(localAddress(0))
                 .sslConfig(forServer(DefaultTestCerts::loadServerPem, DefaultTestCerts::loadServerKey).build())
                 .ioExecutor(CTX.ioExecutor())
                 .listenStreamingAndAwait(SECURE_STREAMING_HTTP_SERVICE);
