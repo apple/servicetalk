@@ -192,11 +192,8 @@ final class DefaultDnsServiceDiscoverer
         closed = true;
         resolver.close();
         RuntimeException aggregateCause = null;
-        // Create a copy of `registerMap` to iterate over, because closing entries removes them from the map,
-        // which would result in a `ConcurrentModificationException`.
-        final Map<String, List<DiscoverEntry>> registerMapCopy = new HashMap<>(registerMap);
-        for (Map.Entry<String, List<DiscoverEntry>> mapEntry : registerMapCopy.entrySet()) {
-            for (DiscoverEntry entry : new ArrayList<>(mapEntry.getValue())) {
+        for (Map.Entry<String, List<DiscoverEntry>> mapEntry : registerMap.entrySet()) {
+            for (DiscoverEntry entry : mapEntry.getValue()) {
                 try {
                     entry.close0();
                 } catch (Throwable cause) {
@@ -303,7 +300,7 @@ final class DefaultDnsServiceDiscoverer
                     subscriber.onError(new ClosedServiceDiscovererException(DefaultDnsServiceDiscoverer.this +
                             " has been closed!"));
                 } else {
-                    subscription = new DiscoverEntry.EntriesPublisher.EntriesPublisherSubscription(subscriber);
+                    subscription = new EntriesPublisherSubscription(subscriber);
                     discoverySubscriber = subscriber;
                     LOGGER.debug("DNS discoverer {}, starting DNS resolution for {}.",
                             DefaultDnsServiceDiscoverer.this, inetHost);
@@ -318,14 +315,13 @@ final class DefaultDnsServiceDiscoverer
                 discoverySubscriber = null;
                 if (oldSubscriber != null) {
                     assert subscription != null;
-                    subscription.cancelWithoutRemove();
+                    subscription.cancelWithoutRemove0();
                     oldSubscriber.onError(new ClosedServiceDiscovererException(DefaultDnsServiceDiscoverer.this +
                             " has been closed!"));
                 }
             }
 
             private final class EntriesPublisherSubscription implements Subscription {
-                private static final long CANCELLED = -1;
 
                 private final Subscriber<? super Iterable<ServiceDiscovererEvent<InetAddress>>> subscriber;
                 private long pendingRequests;
@@ -344,12 +340,6 @@ final class DefaultDnsServiceDiscoverer
 
                 @Override
                 public void request(long n) {
-                    // TODO(scott): use a custom cache which can do the following:
-                    // If the value is not in the cache (and we don't have an outstanding query?), the query for it
-                    // if there is already a Runnable scheduled in TTL time to refresh, then add to pendingRequests and
-                    // do nothing if the value is in the cache and not expired then return it and schedule a Runnable
-                    // to refresh our data in (current time - last data delivered time) time units.
-                    // If the value is in the cache, but expired then remove/query for it.
                     if (nettyIoExecutor.isCurrentThreadEventLoop()) {
                         request0(n);
                     } else {
@@ -409,14 +399,14 @@ final class DefaultDnsServiceDiscoverer
                     assertInEventloop();
 
                     removeEntry0(DiscoverEntry.this);
-                    cancelWithoutRemove();
+                    cancelWithoutRemove0();
                 }
 
-                public void cancelWithoutRemove() {
+                private void cancelWithoutRemove0() {
                     if (cancellableForQuery != null) {
                         cancellableForQuery = TERMINATED;
                         discoverySubscriber = null;
-                        pendingRequests = CANCELLED;
+                        pendingRequests = -1;
                         cancellableForQuery.cancel();
                     }
                 }
@@ -485,25 +475,23 @@ final class DefaultDnsServiceDiscoverer
                         return;
                     }
 
-                    if (sendInactiveForUnknownHostException) {
+                    if (sendInactiveForUnknownHostException && cause instanceof UnknownHostException &&
+                            !(cause.getCause() instanceof DnsNameResolverTimeoutException)) {
                         final List<InetAddress> addresses = activeAddresses;
-                        if (cause instanceof UnknownHostException &&
-                                !(cause.getCause() instanceof DnsNameResolverTimeoutException)) {
-                            List<ServiceDiscovererEvent<InetAddress>> events = new ArrayList<>(addresses.size());
-                            if (addresses instanceof RandomAccess) {
-                                for (int i = 0; i < addresses.size(); ++i) {
-                                    events.add(new DefaultServiceDiscovererEvent<>(addresses.get(i), false));
-                                }
-                            } else {
-                                for (final InetAddress address : addresses) {
-                                    events.add(new DefaultServiceDiscovererEvent<>(address, false));
-                                }
+                        List<ServiceDiscovererEvent<InetAddress>> events = new ArrayList<>(addresses.size());
+                        if (addresses instanceof RandomAccess) {
+                            for (int i = 0; i < addresses.size(); ++i) {
+                                events.add(new DefaultServiceDiscovererEvent<>(addresses.get(i), false));
                             }
-                            try {
-                                subscriber.onNext(events);
-                            } catch (Throwable e) {
-                                LOGGER.warn("Exception from subscriber while handling error", e);
+                        } else {
+                            for (final InetAddress address : addresses) {
+                                events.add(new DefaultServiceDiscovererEvent<>(address, false));
                             }
+                        }
+                        try {
+                            subscriber.onNext(events);
+                        } catch (Throwable e) {
+                            LOGGER.warn("Exception from subscriber while handling error", e);
                         }
                     }
                     subscriber.onError(cause);

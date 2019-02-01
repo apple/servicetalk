@@ -349,7 +349,8 @@ public class DefaultDnsServiceDiscovererTest {
 
         latch.await();
         assertNull(subscriber.throwableRef.get());
-        assertThat(new HashSet<>(subscriber.activeEventAddresses), equalTo(new HashSet<>(asList(ipA1, ipA2, ipB1, ipB2))));
+        assertThat(new HashSet<>(subscriber.activeEventAddresses),
+                equalTo(new HashSet<>(asList(ipA1, ipA2, ipB1, ipB2))));
         assertThat(subscriber.activeEventAddresses.size(), equalTo(expectedActiveCount));
         assertThat(new HashSet<>(subscriber.inactiveEventAddresses), equalTo(new HashSet<>(asList(ipA1, ipA2))));
         assertThat(subscriber.inactiveEventAddresses.size(), equalTo(expectedInactiveCount));
@@ -512,6 +513,7 @@ public class DefaultDnsServiceDiscovererTest {
 
         @Override
         public void onComplete() {
+            throwableRef.set(new IllegalStateException("Unexpected completion"));
         }
     }
 }

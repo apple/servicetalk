@@ -42,7 +42,8 @@ public final class DefaultDnsServiceDiscovererBuilder {
     private Boolean optResourceEnabled;
     @Nullable
     private BiIntFunction<Throwable, Completable> retryStrategy;
-    private IoExecutor ioExecutor = globalExecutionContext().ioExecutor();
+    @Nullable
+    private IoExecutor ioExecutor;
     private int minTTLSeconds = 2;
 
     /**
@@ -150,7 +151,8 @@ public final class DefaultDnsServiceDiscovererBuilder {
     }
 
     private DefaultDnsServiceDiscoverer newDefaultDnsServiceDiscoverer() {
-        return new DefaultDnsServiceDiscoverer(ioExecutor, retryStrategy, minTTLSeconds, ndots,
-                optResourceEnabled, dnsResolverAddressTypes, dnsServerAddressStreamProvider);
+        return new DefaultDnsServiceDiscoverer(ioExecutor == null ? globalExecutionContext().ioExecutor() : ioExecutor,
+                retryStrategy, minTTLSeconds, ndots, optResourceEnabled, dnsResolverAddressTypes,
+                dnsServerAddressStreamProvider);
     }
 }

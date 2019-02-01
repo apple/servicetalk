@@ -30,7 +30,7 @@ import java.util.Map;
 import javax.annotation.Nullable;
 
 import static java.lang.Math.max;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
 /**
  * While netty's {@link DnsCache} can be called by any thread calling the {@link DnsNameResolver}, we ensure, in
@@ -59,7 +59,7 @@ final class MinTtlCache implements DnsCache {
         if (minExpiry == null) {
             return initialTtl;
         } else {
-            final long minTtl = minExpiry - MILLISECONDS.toSeconds(System.currentTimeMillis());
+            final long minTtl = minExpiry - NANOSECONDS.toSeconds(System.nanoTime());
             return minTtl >= 0 ? minTtl : initialTtl;
         }
     }
@@ -92,7 +92,7 @@ final class MinTtlCache implements DnsCache {
     @Override
     public DnsCacheEntry cache(final String hostname, final DnsRecord[] additionals, final InetAddress address,
                                final long originalTtl, final EventLoop loop) {
-        final long currentTime = MILLISECONDS.toSeconds(System.currentTimeMillis());
+        final long currentTime = NANOSECONDS.toSeconds(System.nanoTime());
         minExpiryMap.merge(hostname, currentTime + max(initialTtl, originalTtl), Math::min);
         return cache.cache(hostname, additionals, address, originalTtl, loop);
     }
