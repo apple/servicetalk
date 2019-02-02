@@ -497,14 +497,14 @@ public class NettyHttpServerTest extends AbstractNettyHttpServerTest {
         Throwable serverThrowable = capturedServiceTransportErrorRef.get().toFuture().get(1000, MILLISECONDS);
         assertThat(serverThrowable, instanceOf(ClosedChannelException.class));
         assertThat(serverThrowable.getMessage(), startsWith(
-                "CHANNEL_CLOSED_OUTBOUND(Outbound SocketChannel shutdown observed) [id: 0x"));
+                "CHANNEL_CLOSED_OUTBOUND(The transport backing this connection has been shutdown (write)) [id: 0x"));
         assertThat(serverThrowable.getCause(), nullValue());
     }
 
     private void assertClientTransportInboundClosed(final Throwable clientThrowable) {
         if (clientThrowable instanceof ClosedChannelException) {
             assertThat(clientThrowable.getMessage(), startsWith(
-                    "CHANNEL_CLOSED_INBOUND(Inbound SocketChannel shutdown observed) [id: 0x"));
+                    "CHANNEL_CLOSED_INBOUND(The transport backing this connection has been shutdown (read)) [id: 0x"));
         } else if (clientThrowable instanceof IOException) {
             // connection reset - unlikely, but possible due to races (no standard way to assert)
         } else {

@@ -444,7 +444,7 @@ public class DefaultNettyConnectionTest {
         assertThat(exCaptor.getValue(), instanceOf(ClosedChannelException.class));
         assertThat(exCaptor.getValue().getCause(), instanceOf(ClosedChannelException.class));
         assertThat(exCaptor.getValue().getMessage(), equalTo(
-                "CHANNEL_CLOSED_OUTBOUND(Outbound SocketChannel shutdown observed) " +
+                "CHANNEL_CLOSED_OUTBOUND(The transport backing this connection has been shutdown (write)) " +
                         "[id: 0xembedded, L:embedded ! R:embedded]"));
     }
 
@@ -464,7 +464,7 @@ public class DefaultNettyConnectionTest {
         assertThat(exCaptor.getValue(), instanceOf(ClosedChannelException.class));
         assertThat(exCaptor.getValue().getCause(), equalTo(DELIBERATE_EXCEPTION));
         assertThat(exCaptor.getValue().getMessage(), equalTo(
-                "CHANNEL_CLOSED_INBOUND(Inbound SocketChannel shutdown observed) " +
+                "CHANNEL_CLOSED_INBOUND(The transport backing this connection has been shutdown (read)) " +
                         "[id: 0xembedded, L:embedded ! R:embedded]"));
     }
 

@@ -37,7 +37,6 @@ import org.slf4j.LoggerFactory;
 
 import java.nio.channels.ClosedChannelException;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
-import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 import javax.annotation.Nullable;
@@ -318,7 +317,7 @@ public class DefaultNettyConnection<Read, Write> extends ConnectionContextAdapte
 
     @Override
     public Single<Throwable> transportError() {
-        return transportError.map(Function.identity()); // don't let SingleProcessor escape
+        return transportError;
     }
 
     private void invokeUserCloseHandler() {

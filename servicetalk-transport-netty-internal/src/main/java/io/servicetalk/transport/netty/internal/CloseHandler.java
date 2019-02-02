@@ -138,23 +138,25 @@ public abstract class CloseHandler {
         /**
          * Outbound protocol close command observed eg. HTTP header: {@code Connection: close}.
          */
-        PROTOCOL_CLOSING_OUTBOUND("Outbound protocol close command observed eg. HTTP header: Connection: close."),
+        PROTOCOL_CLOSING_OUTBOUND("The application protocol closed the write side of this connection. " +
+                "This maybe the result of sending an HTTP header such as Connection: close."),
         /**
          * Inbound protocol close command observed eg. HTTP header: {@code Connection: close}.
          */
-        PROTOCOL_CLOSING_INBOUND("Inbound protocol close command observed eg. HTTP header: Connection: close."),
+        PROTOCOL_CLOSING_INBOUND("The application protocol closed the read side of this connection. " +
+                "This maybe the result of sending an HTTP header such as Connection: close."),
         /**
          * User initiated close command, depends on the implementation but usually resembles outbound protocol close.
          */
-        USER_CLOSING("User initiated close command."),
+        USER_CLOSING("The close* method was called in the local application."),
         /**
          * Outbound {@link SocketChannel} shutdown observed.
          */
-        CHANNEL_CLOSED_OUTBOUND("Outbound SocketChannel shutdown observed"),
+        CHANNEL_CLOSED_OUTBOUND("The transport backing this connection has been shutdown (write)"),
         /**
          * Inbound {@link SocketChannel} shutdown observed.
          */
-        CHANNEL_CLOSED_INBOUND("Inbound SocketChannel shutdown observed");
+        CHANNEL_CLOSED_INBOUND("The transport backing this connection has been shutdown (read)");
 
         private final String description;
 
