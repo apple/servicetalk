@@ -24,7 +24,6 @@ final class DnsTestUtils {
     private static final int[] NUMBERS = new int[254];
     @SuppressWarnings("PMD.AvoidUsingHardCodedIP")
     private static final String[] IPV6_ADDRESSES = {
-            "::1",
             "0:0:0:0:0:0:1:1",
             "0:0:0:0:0:1:1:1",
             "0:0:0:0:1:1:1:1",

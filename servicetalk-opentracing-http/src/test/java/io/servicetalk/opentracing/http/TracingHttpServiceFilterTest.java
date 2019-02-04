@@ -35,8 +35,6 @@ import org.junit.Test;
 import org.junit.rules.Timeout;
 import org.mockito.Mock;
 
-import java.net.InetSocketAddress;
-
 import static io.opentracing.tag.Tags.ERROR;
 import static io.opentracing.tag.Tags.HTTP_METHOD;
 import static io.opentracing.tag.Tags.HTTP_STATUS;
@@ -59,7 +57,8 @@ import static io.servicetalk.opentracing.internal.utils.ZipkinHeaderNames.PARENT
 import static io.servicetalk.opentracing.internal.utils.ZipkinHeaderNames.SAMPLED;
 import static io.servicetalk.opentracing.internal.utils.ZipkinHeaderNames.SPAN_ID;
 import static io.servicetalk.opentracing.internal.utils.ZipkinHeaderNames.TRACE_ID;
-import static io.servicetalk.transport.api.HostAndPort.of;
+import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
+import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static org.hamcrest.Matchers.equalToIgnoringCase;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
@@ -87,10 +86,10 @@ public class TracingHttpServiceFilterTest {
         initMocks(this);
     }
 
-    private ServerContext buildServer(CountingInMemorySpanEventListener spanListener) throws Exception {
+    private static ServerContext buildServer(CountingInMemorySpanEventListener spanListener) throws Exception {
         DefaultInMemoryTracer tracer = new DefaultInMemoryTracer.Builder(SCOPE_MANAGER)
                 .addListener(spanListener).build();
-        return HttpServers.forPort(0)
+        return HttpServers.forAddress(localAddress(0))
                 .appendRequestHandlerFilter(handler -> new TracingHttpServiceFilter(tracer, "testServer", handler))
                 .listenStreamingAndAwait(((StreamingHttpRequestHandler) (ctx, request, responseFactory) -> {
                     InMemorySpan span = tracer.activeSpan();
@@ -112,7 +111,7 @@ public class TracingHttpServiceFilterTest {
     public void testRequestWithTraceKey() throws Exception {
         CountingInMemorySpanEventListener spanListener = new CountingInMemorySpanEventListener();
         try (ServerContext context = buildServer(spanListener)) {
-            try (HttpClient client = forSingleAddress(of((InetSocketAddress) context.listenAddress())).build()) {
+            try (HttpClient client = forSingleAddress(serverHostAndPort(context)).build()) {
                 String traceId = randomHexId();
                 String spanId = randomHexId();
                 String parentSpanId = randomHexId();
@@ -142,7 +141,7 @@ public class TracingHttpServiceFilterTest {
         final String requestUrl = "/foo";
         CountingInMemorySpanEventListener spanListener = new CountingInMemorySpanEventListener();
         try (ServerContext context = buildServer(spanListener)) {
-            try (HttpClient client = forSingleAddress(of((InetSocketAddress) context.listenAddress())).build()) {
+            try (HttpClient client = forSingleAddress(serverHostAndPort(context)).build()) {
                 HttpRequest request = client.get(requestUrl);
                 HttpResponse response = client.request(request).toFuture().get();
                 TestSpanState serverSpanState = response.payloadBody(httpSerializer.deserializerFor(
@@ -168,11 +167,11 @@ public class TracingHttpServiceFilterTest {
     @Test
     public void tracerThrowsReturnsErrorResponse() throws Exception {
         when(mockTracer.buildSpan(any())).thenThrow(DELIBERATE_EXCEPTION);
-        try (ServerContext context = HttpServers.forPort(0)
+        try (ServerContext context = HttpServers.forAddress(localAddress(0))
                 .appendRequestHandlerFilter(handler -> new TracingHttpServiceFilter(mockTracer, "testServer", handler))
                 .listenStreamingAndAwait(((StreamingHttpRequestHandler) (ctx, request, responseFactory) ->
                                 success(responseFactory.forbidden())).asStreamingService())) {
-            try (HttpClient client = forSingleAddress(of((InetSocketAddress) context.listenAddress())).build()) {
+            try (HttpClient client = forSingleAddress(serverHostAndPort(context)).build()) {
                 HttpRequest request = client.get("/");
                 HttpResponse response = client.request(request).toFuture().get();
                 assertThat(response.status(), is(INTERNAL_SERVER_ERROR));

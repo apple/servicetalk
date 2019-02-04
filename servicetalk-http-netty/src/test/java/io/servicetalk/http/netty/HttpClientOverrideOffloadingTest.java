@@ -30,7 +30,6 @@ import org.junit.rules.Timeout;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -43,8 +42,9 @@ import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
 import static io.servicetalk.concurrent.api.Single.success;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
-import static io.servicetalk.http.netty.HttpServers.forPort;
 import static io.servicetalk.transport.netty.NettyIoExecutors.createIoExecutor;
+import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
+import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static java.lang.Thread.NORM_PRIORITY;
 import static java.lang.Thread.currentThread;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -73,9 +73,9 @@ public class HttpClientOverrideOffloadingTest {
         executor = newCachedThreadExecutor();
         this.isInvalidThread = isInvalidThread;
         this.overridingStrategy = overridingStrategy == null ? defaultStrategy(executor) : overridingStrategy;
-        server = forPort(0).listenStreamingAndAwait((ctx, request, responseFactory) -> success(responseFactory.ok()));
-        InetSocketAddress socketAddress = (InetSocketAddress) server.listenAddress();
-        client = HttpClients.forSingleAddress(socketAddress.getHostName(), socketAddress.getPort())
+        server = HttpServers.forAddress(localAddress(0))
+                .listenStreamingAndAwait((ctx, request, responseFactory) -> success(responseFactory.ok()));
+        client = HttpClients.forSingleAddress(serverHostAndPort(server))
                 .ioExecutor(ioExecutor)
                 .executionStrategy(defaultStrategy == null ? defaultStrategy(executor) : defaultStrategy)
                 .build();

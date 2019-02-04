@@ -30,7 +30,6 @@ import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.transport.api.ConnectionContext;
-import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.netty.IoThreadFactory;
 import io.servicetalk.transport.netty.internal.ExecutionContextRule;
@@ -44,8 +43,6 @@ import org.junit.rules.Timeout;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
 import java.util.Collection;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -62,10 +59,11 @@ import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpResponseStatuses.OK;
 import static io.servicetalk.http.api.StreamingHttpConnection.SettingKey.MAX_CONCURRENCY;
 import static io.servicetalk.http.netty.HttpClients.forSingleAddress;
+import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
+import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static io.servicetalk.transport.netty.internal.ExecutionContextRule.cached;
 import static java.lang.Long.MAX_VALUE;
 import static java.lang.Thread.currentThread;
-import static java.net.InetAddress.getLoopbackAddress;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.is;
@@ -76,8 +74,6 @@ public class HttpOffloadingTest {
     public final Timeout timeout = new ServiceTalkTestTimeout();
 
     private static final String IO_EXECUTOR_NAME_PREFIX = "io-executor";
-
-    private static final InetAddress LOOPBACK_ADDRESS = getLoopbackAddress();
 
     @ClassRule
     public static final ExecutionContextRule CLIENT_CTX = cached(new IoThreadFactory(IO_EXECUTOR_NAME_PREFIX));
@@ -94,17 +90,14 @@ public class HttpOffloadingTest {
 
     @Before
     public void beforeTest() throws Exception {
-        final InetSocketAddress bindAddress = new InetSocketAddress(LOOPBACK_ADDRESS, 0);
         service = new OffloadingVerifyingServiceStreaming(defaultStrategy(SERVER_CTX.executor()));
-        serverContext = HttpServers.forAddress(bindAddress)
+        serverContext = HttpServers.forAddress(localAddress(0))
                 .ioExecutor(SERVER_CTX.ioExecutor())
                 .listenStreamingAndAwait(service);
 
-        final InetSocketAddress socketAddress = (InetSocketAddress) serverContext.listenAddress();
-
         errors = new ConcurrentLinkedQueue<>();
         terminated = new CountDownLatch(1);
-        client = forSingleAddress(HostAndPort.of(LOOPBACK_ADDRESS.getHostName(), socketAddress.getPort()))
+        client = forSingleAddress(serverHostAndPort(serverContext))
                 .ioExecutor(CLIENT_CTX.ioExecutor())
                 .executionStrategy(defaultStrategy(CLIENT_CTX.executor()))
                 .buildStreaming();

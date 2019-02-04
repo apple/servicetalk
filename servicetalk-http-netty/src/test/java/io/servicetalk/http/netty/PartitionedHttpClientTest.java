@@ -21,7 +21,6 @@ import io.servicetalk.client.api.partition.PartitionAttributes;
 import io.servicetalk.client.api.partition.PartitionAttributesBuilder;
 import io.servicetalk.client.api.partition.PartitionedServiceDiscovererEvent;
 import io.servicetalk.client.internal.partition.DefaultPartitionAttributesBuilder;
-import io.servicetalk.concurrent.api.AsyncCloseables;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.TestPublisher;
@@ -51,9 +50,14 @@ import java.util.function.Function;
 
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
+import static io.servicetalk.http.api.HttpResponseStatuses.OK;
 import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
+import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
+import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
+import static java.net.InetAddress.getLoopbackAddress;
 import static java.util.Objects.requireNonNull;
 import static org.hamcrest.Matchers.hasToString;
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -65,6 +69,7 @@ public class PartitionedHttpClientTest {
     private static final String SRV_1 = "srv1";
     private static final String SRV_2 = "srv2";
     private static final String X_SERVER = "X-SERVER";
+    private static final String LOOPBACK_ADDRESS = getLoopbackAddress().getHostAddress();
     private static ServerContext srv1;
     private static ServerContext srv2;
     private TestPublisher<PartitionedServiceDiscovererEvent<ServerAddress>> sdPublisher;
@@ -73,11 +78,11 @@ public class PartitionedHttpClientTest {
 
     @BeforeClass
     public static void setUpServers() throws Exception {
-        srv1 = HttpServers.forPort(0)
+        srv1 = HttpServers.forAddress(localAddress(0))
                 .listenBlockingAndAwait((ctx, request, responseFactory) ->
                         responseFactory.ok().setHeader(X_SERVER, SRV_1));
 
-        srv2 = HttpServers.forPort(0)
+        srv2 = HttpServers.forAddress(localAddress(0))
                 .listenBlockingAndAwait((ctx, request, responseFactory) ->
                         responseFactory.ok().setHeader(X_SERVER, SRV_2));
     }
@@ -110,10 +115,6 @@ public class PartitionedHttpClientTest {
     @AfterClass
     public static void tearDownServers() throws Exception {
         newCompositeCloseable().mergeAll(srv1, srv2).close();
-    }
-
-    private static int port(ServerContext ctx) {
-        return ((InetSocketAddress) ctx.listenAddress()).getPort();
     }
 
     @Test
@@ -243,12 +244,20 @@ public class PartitionedHttpClientTest {
     @Test
     public void testClientGroupPartitioning() throws Exception {
         // user partition discovery service, userId=1 => srv1 | userId=2 => srv2
-        try (ServerContext userDisco = HttpServers.forPort(0)
+        try (ServerContext userDisco = HttpServers.forAddress(localAddress(0))
                 .listenBlockingAndAwait((ctx, request, responseFactory) -> {
                     if ("/partition".equals(request.path())) {
-                        int userId = Integer.parseInt(request.queryParameter("userId"));
-                        ServerContext dSrv = userId == 1 ? srv1 : userId == 2 ? srv2 : null;
-                        return responseFactory.ok().payloadBody(port(dSrv) + "", textSerializer());
+                        String userIdParam = request.queryParameter("userId");
+                        if (userIdParam == null || userIdParam.isEmpty()) {
+                            return responseFactory.badRequest();
+                        }
+                        int userId = Integer.parseInt(userIdParam);
+                        if (userId != 1 && userId != 2) {
+                            return responseFactory.notFound();
+                        }
+                        ServerContext dSrv = userId == 1 ? srv1 : srv2;
+                        InetSocketAddress socketAddress = (InetSocketAddress) dSrv.listenAddress();
+                        return responseFactory.ok().payloadBody(socketAddress.getPort() + "", textSerializer());
                     }
                     return responseFactory.notFound();
                 })) {
@@ -259,7 +268,10 @@ public class PartitionedHttpClientTest {
                 StreamingHttpResponse httpResponse1 = client.request(new User(1), client.get("/foo")).toFuture().get();
                 StreamingHttpResponse httpResponse2 = client.request(new User(2), client.get("/foo")).toFuture().get();
 
+                assertThat(httpResponse1.status(), is(OK));
                 assertThat(httpResponse1.headers().get(X_SERVER), hasToString(SRV_1));
+
+                assertThat(httpResponse2.status(), is(OK));
                 assertThat(httpResponse2.headers().get(X_SERVER), hasToString(SRV_2));
             }
         }
@@ -309,7 +321,7 @@ public class PartitionedHttpClientTest {
 
         PartitioningHttpClientWithOutOfBandDiscovery(ServerContext disco) {
             // User Partition Discovery Service - IRL this client should typically cache responses
-            udClient = HttpClients.forSingleAddress("localhost", port(disco)).build();
+            udClient = HttpClients.forSingleAddress(serverHostAndPort(disco)).build();
 
             requestFactory = new DefaultStreamingHttpRequestResponseFactory(
                     udClient.executionContext().bufferAllocator(), DefaultHttpHeadersFactory.INSTANCE);
@@ -326,9 +338,9 @@ public class PartitionedHttpClientTest {
             return udClient
                     .request(udClient.get("/partition?userId=" + user.id()))
                     .flatMap(resp -> {
-                        // user discovery returns the port of the server (both run on localhost)
+                        // user discovery returns the port of the server (both run on loopback address)
                         int port = Integer.parseInt(resp.payloadBody().toString(StandardCharsets.UTF_8));
-                        Group key = new Group(HostAndPort.of("localhost", port), udClient.executionContext());
+                        Group key = new Group(HostAndPort.of(LOOPBACK_ADDRESS, port), udClient.executionContext());
                         return clients.get(key).request(req);
                     });
         }
@@ -340,7 +352,7 @@ public class PartitionedHttpClientTest {
 
         @Override
         public void close() throws Exception {
-            AsyncCloseables.newCompositeCloseable().prependAll(udClient, clients).closeAsync().toFuture().get();
+            newCompositeCloseable().prependAll(udClient, clients).closeAsync().toFuture().get();
         }
     }
 }

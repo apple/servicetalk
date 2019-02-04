@@ -15,19 +15,18 @@
  */
 package io.servicetalk.dns.discovery.netty;
 
-import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.concurrent.api.BiIntFunction;
 import io.servicetalk.concurrent.api.Completable;
-import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.IoExecutor;
-import io.servicetalk.transport.netty.internal.ExecutionContextBuilder;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import javax.annotation.Nullable;
+
+import static io.servicetalk.transport.netty.internal.GlobalExecutionContext.globalExecutionContext;
 
 /**
  * Builder use to create objects of type {@link DefaultDnsServiceDiscoverer}.
@@ -43,7 +42,8 @@ public final class DefaultDnsServiceDiscovererBuilder {
     private Boolean optResourceEnabled;
     @Nullable
     private BiIntFunction<Throwable, Completable> retryStrategy;
-    private final ExecutionContextBuilder executionContextBuilder = new ExecutionContextBuilder();
+    @Nullable
+    private IoExecutor ioExecutor;
     private int minTTLSeconds = 2;
 
     /**
@@ -127,29 +127,7 @@ public final class DefaultDnsServiceDiscovererBuilder {
      * @return {@code this}.
      */
     public DefaultDnsServiceDiscovererBuilder ioExecutor(IoExecutor ioExecutor) {
-        executionContextBuilder.ioExecutor(ioExecutor);
-        return this;
-    }
-
-    /**
-     * Sets the {@link Executor}.
-     *
-     * @param executor {@link Executor} to use.
-     * @return {@code this}.
-     */
-    public DefaultDnsServiceDiscovererBuilder executor(Executor executor) {
-        executionContextBuilder.executor(executor);
-        return this;
-    }
-
-    /**
-     * Sets the {@link BufferAllocator}.
-     *
-     * @param allocator {@link BufferAllocator} to use.
-     * @return {@code this}.
-     */
-    public DefaultDnsServiceDiscovererBuilder bufferAllocator(BufferAllocator allocator) {
-        executionContextBuilder.bufferAllocator(allocator);
+        this.ioExecutor = ioExecutor;
         return this;
     }
 
@@ -173,7 +151,8 @@ public final class DefaultDnsServiceDiscovererBuilder {
     }
 
     private DefaultDnsServiceDiscoverer newDefaultDnsServiceDiscoverer() {
-        return new DefaultDnsServiceDiscoverer(executionContextBuilder.build(), retryStrategy, minTTLSeconds, ndots,
-                optResourceEnabled, dnsResolverAddressTypes, dnsServerAddressStreamProvider);
+        return new DefaultDnsServiceDiscoverer(ioExecutor == null ? globalExecutionContext().ioExecutor() : ioExecutor,
+                retryStrategy, minTTLSeconds, ndots, optResourceEnabled, dnsResolverAddressTypes,
+                dnsServerAddressStreamProvider);
     }
 }

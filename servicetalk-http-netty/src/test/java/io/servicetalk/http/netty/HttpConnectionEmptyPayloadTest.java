@@ -45,6 +45,7 @@ import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpRequestMethods.HEAD;
 import static io.servicetalk.http.api.HttpResponseStatuses.OK;
+import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.ExecutionContextRule.immediate;
 import static java.lang.Integer.parseInt;
 import static org.junit.Assert.assertArrayEquals;
@@ -63,7 +64,8 @@ public class HttpConnectionEmptyPayloadTest {
             final int expectedContentLength = 128;
             byte[] expectedPayload = new byte[expectedContentLength];
             ThreadLocalRandom.current().nextBytes(expectedPayload);
-            ServerContext serverContext = closeable.merge(HttpServers.forPort(0)
+            ServerContext serverContext = closeable.merge(HttpServers
+                    .forAddress(localAddress(0))
                     .ioExecutor(executionContextRule.ioExecutor())
                     .listenStreamingAndAwait(
                             new StreamingHttpService() {

@@ -40,6 +40,7 @@ import static io.servicetalk.concurrent.api.Single.success;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.transport.netty.NettyIoExecutors.createIoExecutor;
 import static io.servicetalk.transport.netty.internal.NettyIoExecutors.toNettyIoExecutor;
+import static java.net.InetAddress.getLoopbackAddress;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.isEmptyOrNullString;
@@ -111,14 +112,13 @@ public class RedisAuthConnectionFactoryConnectionTest {
         });
     }
 
-    @SuppressWarnings("PMD.AvoidUsingHardCodedIP")
     private void authTestConnection(String tmpRedisPort, String password, Consumer<Single<RedisConnection>> connectionConsumer) throws Exception {
         int redisPort;
         String redisHost;
         assumeThat(tmpRedisPort, not(isEmptyOrNullString()));
         redisPort = Integer.parseInt(tmpRedisPort);
 
-        redisHost = System.getenv().getOrDefault("REDIS_HOST", "127.0.0.1");
+        redisHost = System.getenv().getOrDefault("REDIS_HOST", getLoopbackAddress().getHostName());
 
         ioExecutor = toNettyIoExecutor(createIoExecutor());
 

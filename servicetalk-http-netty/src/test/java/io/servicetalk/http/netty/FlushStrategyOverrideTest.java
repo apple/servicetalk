@@ -55,6 +55,7 @@ import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Single.success;
 import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
 import static io.servicetalk.http.netty.HttpClients.forSingleAddress;
+import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.ExecutionContextRule.immediate;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
@@ -74,7 +75,7 @@ public class FlushStrategyOverrideTest {
     @Before
     public void setUp() throws Exception {
         service = new FlushingService();
-        serverCtx = HttpServers.forPort(0)
+        serverCtx = HttpServers.forAddress(localAddress(0))
                 .ioExecutor(ctx.ioExecutor())
                 .listenStreaming(service)
                 .toFuture().get();

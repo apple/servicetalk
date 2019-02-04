@@ -42,7 +42,6 @@ import org.junit.Test;
 import org.junit.rules.Timeout;
 import org.reactivestreams.Subscription;
 
-import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -61,8 +60,8 @@ import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
 import static io.servicetalk.http.api.HttpResponseStatuses.BAD_REQUEST;
 import static io.servicetalk.http.api.HttpResponseStatuses.OK;
+import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static java.lang.Thread.currentThread;
-import static java.net.InetAddress.getLoopbackAddress;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
 import static org.junit.Assert.assertEquals;
@@ -73,7 +72,6 @@ public class HttpServiceAsyncContextTest {
     private static final Key<CharSequence> K1 = Key.newKey("k1");
     private static final CharSequence REQUEST_ID_HEADER = newAsciiString("request-id");
     private static final String IO_THREAD_PREFIX = "iothread-";
-    private static final InetSocketAddress LOCAL_0 = new InetSocketAddress(getLoopbackAddress(), 0);
 
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
@@ -94,7 +92,7 @@ public class HttpServiceAsyncContextTest {
     private void newRequestsGetFreshContext(boolean useImmediate) throws Exception {
         StreamingHttpService service = newEmptyAsyncContextService(useImmediate);
         CompositeCloseable compositeCloseable = AsyncCloseables.newCompositeCloseable();
-        HttpServerBuilder serverBuilder = HttpServers.forAddress(LOCAL_0);
+        HttpServerBuilder serverBuilder = HttpServers.forAddress(localAddress(0));
         ServerContext ctx = serverBuilder.listenStreamingAndAwait(service);
 
         ExecutorService executorService = Executors.newCachedThreadPool();
@@ -273,7 +271,7 @@ public class HttpServiceAsyncContextTest {
             }
         };
         CompositeCloseable compositeCloseable = AsyncCloseables.newCompositeCloseable();
-        HttpServerBuilder serverBuilder = HttpServers.forAddress(LOCAL_0);
+        HttpServerBuilder serverBuilder = HttpServers.forAddress(localAddress(0));
         ServerContext ctx = compositeCloseable.append(serverBuilder
                 .ioExecutor(immediateExecutor.ioExecutor())
                 .listenStreamingAndAwait(filter));
@@ -301,7 +299,7 @@ public class HttpServiceAsyncContextTest {
     private void connectionContextFilterContextDoesNotLeak(boolean serverUseImmediate) throws Exception {
         StreamingHttpService service = newEmptyAsyncContextService(serverUseImmediate);
         CompositeCloseable compositeCloseable = AsyncCloseables.newCompositeCloseable();
-        ServerContext ctx = compositeCloseable.append(HttpServers.forAddress(LOCAL_0)
+        ServerContext ctx = compositeCloseable.append(HttpServers.forAddress(localAddress(0))
                 .appendConnectionAcceptorFilter(original -> new ConnectionAcceptorFilter(context -> {
                     AsyncContext.put(K1, "v1");
                     return success(true);
