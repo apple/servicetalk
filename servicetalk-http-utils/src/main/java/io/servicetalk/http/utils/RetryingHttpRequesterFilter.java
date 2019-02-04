@@ -26,6 +26,7 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpClientFilterFactory;
 import io.servicetalk.http.api.HttpConnectionFilterFactory;
 import io.servicetalk.http.api.HttpExecutionStrategy;
+import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpClientFilter;
 import io.servicetalk.http.api.StreamingHttpConnection;
@@ -46,9 +47,9 @@ import static io.servicetalk.concurrent.api.Completable.error;
  */
 public final class RetryingHttpRequesterFilter implements HttpClientFilterFactory, HttpConnectionFilterFactory {
 
-    private final ReadOnlyRetryableSettings<StreamingHttpRequest> settings;
+    private final ReadOnlyRetryableSettings<HttpRequestMetaData> settings;
 
-    private RetryingHttpRequesterFilter(final ReadOnlyRetryableSettings<StreamingHttpRequest> settings) {
+    private RetryingHttpRequesterFilter(final ReadOnlyRetryableSettings<HttpRequestMetaData> settings) {
         this.settings = settings;
     }
 
@@ -100,7 +101,7 @@ public final class RetryingHttpRequesterFilter implements HttpClientFilterFactor
      * To configure the maximum number of retry attempts see {@link #maxRetries(int)}.
      */
     public static final class Builder
-            extends AbstractRetryingFilterBuilder<Builder, RetryingHttpRequesterFilter, StreamingHttpRequest> {
+            extends AbstractRetryingFilterBuilder<Builder, RetryingHttpRequesterFilter, HttpRequestMetaData> {
 
         private boolean retryIdempotent;
 
@@ -137,19 +138,19 @@ public final class RetryingHttpRequesterFilter implements HttpClientFilterFactor
 
         @Override
         protected RetryingHttpRequesterFilter build(
-                final ReadOnlyRetryableSettings<StreamingHttpRequest> readOnlySettings) {
+                final ReadOnlyRetryableSettings<HttpRequestMetaData> readOnlySettings) {
             return new RetryingHttpRequesterFilter(readOnlySettings);
         }
 
         @Override
-        public BiPredicate<StreamingHttpRequest, Throwable> defaultRetryForPredicate() {
+        public BiPredicate<HttpRequestMetaData, Throwable> defaultRetryForPredicate() {
             final boolean retryIdempotentSaved = retryIdempotent;
-            return (request, throwable) -> {
+            return (meta, throwable) -> {
                 if (throwable instanceof RetryableException) {
                     return true;
                 }
                 return retryIdempotentSaved && throwable instanceof IOException
-                        && request.method().methodProperties().idempotent();
+                        && meta.method().methodProperties().idempotent();
             };
         }
     }
