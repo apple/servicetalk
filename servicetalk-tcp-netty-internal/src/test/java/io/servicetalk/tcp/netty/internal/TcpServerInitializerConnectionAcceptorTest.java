@@ -142,7 +142,7 @@ public class TcpServerInitializerConnectionAcceptorTest extends AbstractTcpServe
 
     @Test
     public void testAcceptConnection() throws Exception {
-        NettyConnection<Buffer, Buffer> connection = client.connectBlocking(CLIENT_CTX, serverPort);
+        NettyConnection<Buffer, Buffer> connection = client.connectBlocking(CLIENT_CTX, serverAddress);
         final Buffer buffer = connection.executionContext().bufferAllocator().fromAscii("Hello");
 
         // Write something, then try to read something and wait for a result.

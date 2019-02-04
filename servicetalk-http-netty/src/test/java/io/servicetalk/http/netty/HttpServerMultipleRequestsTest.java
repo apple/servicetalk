@@ -35,7 +35,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
 
-import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
@@ -49,15 +48,14 @@ import static io.servicetalk.http.api.CharSequences.newAsciiString;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpResponseStatuses.BAD_REQUEST;
 import static io.servicetalk.http.api.HttpResponseStatuses.OK;
+import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.ExecutionContextRule.cached;
 import static java.lang.Thread.NORM_PRIORITY;
-import static java.net.InetAddress.getLoopbackAddress;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 public class HttpServerMultipleRequestsTest {
-    private static final InetSocketAddress LOCAL_0 = new InetSocketAddress(getLoopbackAddress(), 0);
     private static final CharSequence REQUEST_ID_HEADER = newAsciiString("request-id");
 
     @Rule
@@ -98,7 +96,7 @@ public class HttpServerMultipleRequestsTest {
         final int concurrency = 10;
         final int numRequests = 10;
         CompositeCloseable compositeCloseable = AsyncCloseables.newCompositeCloseable();
-        ServerContext ctx = compositeCloseable.append(HttpServers.forAddress(LOCAL_0)
+        ServerContext ctx = compositeCloseable.append(HttpServers.forAddress(localAddress(0))
                 .ioExecutor(serverExecution.ioExecutor())
                 .listenStreamingAndAwait(service));
         ExecutorService executorService = Executors.newCachedThreadPool();

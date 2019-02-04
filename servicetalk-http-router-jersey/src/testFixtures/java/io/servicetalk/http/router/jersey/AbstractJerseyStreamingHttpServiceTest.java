@@ -27,6 +27,7 @@ import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.http.netty.HttpClients;
 import io.servicetalk.http.netty.HttpServers;
+import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.netty.IoThreadFactory;
 import io.servicetalk.transport.netty.internal.ExecutionContextRule;
@@ -40,7 +41,6 @@ import org.junit.rules.ExpectedException;
 import org.mockito.junit.MockitoJUnit;
 import org.mockito.junit.MockitoRule;
 
-import java.net.InetSocketAddress;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import javax.annotation.Nullable;
@@ -66,7 +66,9 @@ import static io.servicetalk.http.api.HttpRequestMethods.OPTIONS;
 import static io.servicetalk.http.api.HttpRequestMethods.POST;
 import static io.servicetalk.http.api.HttpRequestMethods.PUT;
 import static io.servicetalk.http.router.jersey.TestUtils.getContentAsString;
-import static io.servicetalk.transport.api.HostAndPort.of;
+import static io.servicetalk.transport.netty.internal.AddressUtils.hostHeader;
+import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
+import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static io.servicetalk.transport.netty.internal.ExecutionContextRule.cached;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.glassfish.jersey.CommonProperties.getValue;
@@ -87,6 +89,7 @@ public abstract class AbstractJerseyStreamingHttpServiceTest {
     public static final ExecutionContextRule SERVER_CTX = cached(new IoThreadFactory("stserverio"));
 
     private ServerContext serverContext;
+    private String hostHeader;
     private boolean streamingJsonEnabled;
     private StreamingHttpClient httpClient;
 
@@ -97,13 +100,14 @@ public abstract class AbstractJerseyStreamingHttpServiceTest {
         streamingJsonEnabled = getValue(config.getProperties(), config.getRuntimeType(), JSON_FEATURE, "",
                 String.class).toLowerCase().contains("servicetalk");
 
-        serverContext = HttpServers.forPort(0)
+        serverContext = HttpServers.forAddress(localAddress(0))
                 .ioExecutor(SERVER_CTX.ioExecutor())
                 .bufferAllocator(SERVER_CTX.bufferAllocator())
                 .listenStreamingAndAwait(router);
 
-        final InetSocketAddress serverAddress = (InetSocketAddress) serverContext.listenAddress();
-        httpClient = HttpClients.forSingleAddress(of(serverAddress)).buildStreaming();
+        final HostAndPort hostAndPort = serverHostAndPort(serverContext);
+        httpClient = HttpClients.forSingleAddress(hostAndPort).buildStreaming();
+        hostHeader = hostHeader(hostAndPort);
     }
 
     protected HttpJerseyRouterBuilder configureBuilder(final HttpJerseyRouterBuilder builder) {
@@ -123,7 +127,7 @@ public abstract class AbstractJerseyStreamingHttpServiceTest {
     protected abstract Application getApplication();
 
     protected String host() {
-        return "localhost:" + ((InetSocketAddress) serverContext.listenAddress()).getPort();
+        return hostHeader;
     }
 
     protected boolean isStreamingJsonEnabled() {

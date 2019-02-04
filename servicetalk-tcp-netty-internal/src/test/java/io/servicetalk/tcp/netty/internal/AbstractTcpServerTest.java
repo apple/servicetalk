@@ -34,6 +34,7 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.rules.Timeout;
 
+import java.net.InetSocketAddress;
 import java.util.function.Function;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
@@ -58,11 +59,12 @@ public abstract class AbstractTcpServerTest {
     private ConnectionAcceptor connectionAcceptor = ACCEPT_ALL;
     private Function<NettyConnection<Buffer, Buffer>, Completable> service =
             conn -> conn.write(conn.read());
-    ServerContext serverContext;
-    int serverPort;
-    TcpClient client;
-    TcpServer server;
     private boolean sslEnabled;
+
+    protected ServerContext serverContext;
+    protected InetSocketAddress serverAddress;
+    protected TcpClient client;
+    protected TcpServer server;
 
     void setConnectionAcceptor(final ConnectionAcceptor connectionAcceptor) {
         this.connectionAcceptor = connectionAcceptor;
@@ -84,7 +86,7 @@ public abstract class AbstractTcpServerTest {
     public void startServer() throws Exception {
         server = createServer();
         serverContext = server.start(SERVER_CTX, 0, connectionAcceptor, service);
-        serverPort = TcpServer.getServerPort(serverContext);
+        serverAddress = (InetSocketAddress) serverContext.listenAddress();
         client = createClient();
     }
 

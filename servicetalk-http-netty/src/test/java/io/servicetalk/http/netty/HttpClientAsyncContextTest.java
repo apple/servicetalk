@@ -46,7 +46,8 @@ import javax.annotation.Nullable;
 import static io.servicetalk.concurrent.api.Single.success;
 import static io.servicetalk.http.api.CharSequences.newAsciiString;
 import static io.servicetalk.http.api.HttpResponseStatuses.OK;
-import static java.net.InetAddress.getLoopbackAddress;
+import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
+import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
 import static org.junit.Assert.assertEquals;
@@ -55,7 +56,6 @@ public class HttpClientAsyncContextTest {
     private static final AsyncContextMap.Key<CharSequence> K1 = AsyncContextMap.Key.newKey("k1");
     private static final CharSequence REQUEST_ID_HEADER = newAsciiString("request-id");
     private static final CharSequence CONSUMED_REQUEST_ID_HEADER = newAsciiString("consumed-request-id");
-    private static final InetSocketAddress LOCAL_0 = new InetSocketAddress(getLoopbackAddress(), 0);
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
 
@@ -69,14 +69,14 @@ public class HttpClientAsyncContextTest {
         contextPreservedOverFilterBoundaries(true);
     }
 
-    private void contextPreservedOverFilterBoundaries(boolean useImmediate) throws Exception {
+    private static void contextPreservedOverFilterBoundaries(boolean useImmediate) throws Exception {
         Queue<Throwable> errorQueue = new ConcurrentLinkedQueue<>();
         CompositeCloseable compositeCloseable = AsyncCloseables.newCompositeCloseable();
-        ServerContext serverContext = compositeCloseable.append(HttpServers.forAddress(LOCAL_0)
+        ServerContext serverContext = compositeCloseable.append(HttpServers.forAddress(localAddress(0))
                 .listenAndAwait((ctx, request, responseFactory) -> success(responseFactory.ok())));
         try {
             SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> clientBuilder = HttpClients.forSingleAddress(
-                    HostAndPort.of((InetSocketAddress) serverContext.listenAddress()))
+                    serverHostAndPort(serverContext))
                     .appendClientFilter((c, lbEvents) -> new TestStreamingHttpClientFilter(c, errorQueue))
                     .appendClientFilter((c, lbEvents) -> new TestStreamingHttpClientFilter(c, errorQueue));
             if (useImmediate) {

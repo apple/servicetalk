@@ -24,11 +24,10 @@ import io.servicetalk.transport.api.ServerContext;
 import org.junit.Test;
 import org.mockito.InOrder;
 
-import java.net.InetSocketAddress;
-
 import static io.servicetalk.http.api.HttpResponseStatuses.OK;
 import static io.servicetalk.http.netty.HttpClients.forSingleAddress;
-import static io.servicetalk.transport.api.HostAndPort.of;
+import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
+import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.mockito.ArgumentMatchers.any;
@@ -42,11 +41,11 @@ public class HttpServerFilterOrderTest {
     public void prependOrder() throws Exception {
         StreamingHttpRequestHandler filter1 = newMockHandler();
         StreamingHttpRequestHandler filter2 = newMockHandler();
-        ServerContext serverContext = HttpServers.forPort(0)
+        ServerContext serverContext = HttpServers.forAddress(localAddress(0))
                 .appendRequestHandlerFilter(addFilter(filter1))
                 .appendRequestHandlerFilter(addFilter(filter2))
                 .listenBlockingAndAwait((ctx, request, responseFactory) -> responseFactory.ok());
-        BlockingHttpClient client = forSingleAddress(of((InetSocketAddress) serverContext.listenAddress()))
+        BlockingHttpClient client = forSingleAddress(serverHostAndPort(serverContext))
                 .buildBlocking();
         HttpResponse resp = client.request(client.get("/"));
         assertThat("Unexpected response.", resp.status(), is(OK));
@@ -56,7 +55,7 @@ public class HttpServerFilterOrderTest {
         verifier.verify(filter2).handle(any(), any(), any());
     }
 
-    private StreamingHttpRequestHandler newMockHandler() {
+    private static StreamingHttpRequestHandler newMockHandler() {
         StreamingHttpRequestHandler mock = mock(StreamingHttpRequestHandler.class);
         when(mock.asStreamingService()).thenCallRealMethod();
         return mock;

@@ -35,6 +35,7 @@ import javax.annotation.Nonnull;
 
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
+import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.inOrder;
@@ -72,10 +73,9 @@ public class HttpClientBuilderTest extends AbstractEchoServerBasedHttpRequesterT
 
     @Test
     public void withConnectionFactoryFilter() throws Exception {
-        int port = ((InetSocketAddress) serverContext.listenAddress()).getPort();
         ConnectionFactory<InetSocketAddress, ? extends StreamingHttpConnection> factory1 = newFilter();
         ConnectionFactory<InetSocketAddress, ? extends StreamingHttpConnection> factory2 = newFilter();
-        StreamingHttpClient requester = HttpClients.forSingleAddress("localhost", port)
+        StreamingHttpClient requester = HttpClients.forSingleAddress(serverHostAndPort(serverContext))
                 .appendConnectionFactoryFilter(factoryFilter(factory1))
                 .appendConnectionFactoryFilter(factoryFilter(factory2))
                 .ioExecutor(CTX.ioExecutor())
@@ -89,7 +89,7 @@ public class HttpClientBuilderTest extends AbstractEchoServerBasedHttpRequesterT
     }
 
     @Nonnull
-    private ConnectionFactoryFilter<InetSocketAddress, StreamingHttpConnection> factoryFilter(
+    private static ConnectionFactoryFilter<InetSocketAddress, StreamingHttpConnection> factoryFilter(
             final ConnectionFactory<InetSocketAddress, ? extends StreamingHttpConnection> factory) {
         return orig -> {
             when(factory.newConnection(any()))
@@ -99,7 +99,7 @@ public class HttpClientBuilderTest extends AbstractEchoServerBasedHttpRequesterT
     }
 
     @SuppressWarnings("unchecked")
-    private ConnectionFactory<InetSocketAddress, ? extends StreamingHttpConnection> newFilter() {
+    private static ConnectionFactory<InetSocketAddress, ? extends StreamingHttpConnection> newFilter() {
         ConnectionFactory<InetSocketAddress, ? extends StreamingHttpConnection> factory = mock(ConnectionFactory.class);
         when(factory.closeAsyncGracefully()).thenReturn(completed());
         when(factory.closeAsync()).thenReturn(completed());
@@ -112,8 +112,8 @@ public class HttpClientBuilderTest extends AbstractEchoServerBasedHttpRequesterT
         ServiceDiscoverer<HostAndPort, InetSocketAddress, ServiceDiscovererEvent<InetSocketAddress>> disco =
                 mock(ServiceDiscoverer.class);
         when(disco.discover(any())).thenReturn(sdPub);
-        int port = ((InetSocketAddress) serverContext.listenAddress()).getPort();
-        StreamingHttpClient requester = HttpClients.forSingleAddress("localhost", port)
+
+        StreamingHttpClient requester = HttpClients.forSingleAddress(serverHostAndPort(serverContext))
                 .serviceDiscoverer(disco)
                 .ioExecutor(CTX.ioExecutor())
                 .executionStrategy(noOffloadsStrategy())
