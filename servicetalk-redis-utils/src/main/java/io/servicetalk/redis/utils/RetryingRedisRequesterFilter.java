@@ -32,13 +32,16 @@ import io.servicetalk.redis.api.RedisConnectionFilterFactory;
 import io.servicetalk.redis.api.RedisData;
 import io.servicetalk.redis.api.RedisExecutionStrategy;
 import io.servicetalk.redis.api.RedisProtocolSupport.Command;
+import io.servicetalk.redis.api.RedisProtocolSupport.CommandFlag;
 import io.servicetalk.redis.api.RedisRequest;
 import io.servicetalk.redis.api.RedisRequester;
 import io.servicetalk.redis.api.ReservedRedisConnectionFilter;
 
+import java.io.IOException;
 import java.util.function.BiPredicate;
 
 import static io.servicetalk.concurrent.api.Completable.error;
+import static io.servicetalk.redis.api.RedisProtocolSupport.CommandFlag.READONLY;
 
 /**
  * A filter to enable retries for {@link RedisRequest}s.
@@ -117,6 +120,37 @@ public final class RetryingRedisRequesterFilter implements RedisClientFilterFact
     public static final class Builder
             extends AbstractRetryingFilterBuilder<Builder, RetryingRedisRequesterFilter, Command> {
 
+        private boolean retryReadOnly;
+
+        /**
+         * Configures the {@link #defaultRetryForPredicate()} to retry {@link CommandFlag#READONLY read-only} commands
+         * if {@link IOException} occurred.
+         * <p>
+         * <b>Note 1:</b> Use this setting only when you know that the {@link RedisRequest#content() content} of the
+         * request is repeatable.
+         * <p>
+         * <b>Note 2:</b> In case an alternative retry-for predicate was set via {@link #retryFor(BiPredicate)}, this
+         * method has no effect.
+         *
+         * @return {@code this}
+         * @see #doNotRetryReadOnly()
+         */
+        public Builder retryReadOnly() {
+            retryReadOnly = true;
+            return this;
+        }
+
+        /**
+         * Disables retries for {@link CommandFlag#READONLY read-only} commands configured via {@link #retryReadOnly()}.
+         *
+         * @return {@code this}
+         * @see #retryReadOnly()
+         */
+        public Builder doNotRetryReadOnly() {
+            retryReadOnly = false;
+            return this;
+        }
+
         @Override
         protected RetryingRedisRequesterFilter build(final ReadOnlyRetryableSettings<Command> readOnlySettings) {
             return new RetryingRedisRequesterFilter(readOnlySettings);
@@ -124,7 +158,13 @@ public final class RetryingRedisRequesterFilter implements RedisClientFilterFact
 
         @Override
         public BiPredicate<Command, Throwable> defaultRetryForPredicate() {
-            return (command, throwable) -> throwable instanceof RetryableException;
+            final boolean retryReadOnlySaved = retryReadOnly;
+            return (command, throwable) -> {
+                if (throwable instanceof RetryableException) {
+                    return true;
+                }
+                return retryReadOnlySaved && throwable instanceof IOException && command.hasFlag(READONLY);
+            };
         }
     }
 }
