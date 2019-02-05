@@ -19,8 +19,10 @@ import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
 
 import static io.servicetalk.buffer.api.EmptyBuffer.EMPTY_BUFFER;
+import static io.servicetalk.concurrent.api.Publisher.empty;
 import static io.servicetalk.concurrent.api.Publisher.just;
 import static io.servicetalk.concurrent.api.Single.success;
+import static io.servicetalk.concurrent.internal.BlockingIterables.emptyBlockingIterable;
 import static io.servicetalk.concurrent.internal.BlockingIterables.singletonBlockingIterable;
 import static java.util.Objects.requireNonNull;
 
@@ -153,14 +155,15 @@ final class BufferHttpRequest extends DefaultHttpRequestMetaData implements Http
 
     @Override
     public StreamingHttpRequest toStreamingRequest() {
-        return new BufferStreamingHttpRequest(method(), requestTarget(), version(),
-                headers(), success(trailers), allocator, just(payloadBody));
+        return new BufferStreamingHttpRequest(method(), requestTarget(), version(), headers(), success(trailers),
+                allocator, payloadBody.readableBytes() == 0 ? empty() : just(payloadBody));
     }
 
     @Override
     public BlockingStreamingHttpRequest toBlockingStreamingRequest() {
         return new BufferBlockingStreamingHttpRequest(method(), requestTarget(), version(), headers(),
-                success(trailers), allocator, singletonBlockingIterable(payloadBody));
+                success(trailers), allocator,
+                payloadBody.readableBytes() == 0 ? emptyBlockingIterable() : singletonBlockingIterable(payloadBody));
     }
 
     @Override
