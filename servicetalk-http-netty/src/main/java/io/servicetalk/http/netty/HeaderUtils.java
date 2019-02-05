@@ -64,9 +64,11 @@ final class HeaderUtils {
         addTransferEncodingIfNecessary(request);
     }
 
-    static void addResponseTransferEncodingIfNecessary(final HttpResponseMetaData response, final HttpRequestMethod requestMethod) {
+    static void addResponseTransferEncodingIfNecessary(final HttpResponseMetaData response,
+                                                       final HttpRequestMethod requestMethod) {
         final int statusCode = response.status().code();
-        if (requestMethod.equals(HEAD) || INFORMATIONAL_1XX.contains(statusCode) || statusCode == 204 || statusCode == 304) {
+        if (requestMethod.equals(HEAD) || INFORMATIONAL_1XX.contains(statusCode)
+                || statusCode == 204 || statusCode == 304) {
             // Do not add a transfer-encoding header in this case. See 3.3.3.1:
             // https://tools.ietf.org/html/rfc7230#section-3.3.3
             return;
@@ -87,8 +89,9 @@ final class HeaderUtils {
      */
     private static void addTransferEncodingIfNecessary(final HttpMetaData metaData) {
         final HttpHeaders headers = metaData.headers();
-        if (!headers.contains(CONTENT_LENGTH) && !headers.contains(TRANSFER_ENCODING, CHUNKED)) {
-            LOGGER.debug("No '{}' or '{}: {}' headers, setting '{}: {}'.", CONTENT_LENGTH, TRANSFER_ENCODING, CHUNKED, TRANSFER_ENCODING, CHUNKED);
+        if (!headers.contains(CONTENT_LENGTH) && !headers.contains(TRANSFER_ENCODING, CHUNKED, true)) {
+            LOGGER.debug("No '{}' or '{}: {}' headers, setting '{}: {}'.",
+                    CONTENT_LENGTH, TRANSFER_ENCODING, CHUNKED, TRANSFER_ENCODING, CHUNKED);
             headers.add(TRANSFER_ENCODING, CHUNKED);
             // See https://tools.ietf.org/html/rfc7230#section-3.3.3
         }
