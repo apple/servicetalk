@@ -22,10 +22,8 @@ import io.servicetalk.client.api.ServiceDiscovererFilterFactory;
 import io.servicetalk.concurrent.api.BiIntFunction;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.concurrent.api.RetryStrategies;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.IoExecutor;
-import io.servicetalk.transport.netty.internal.GlobalExecutionContext;
 
 import io.netty.resolver.dns.DnsNameResolverTimeoutException;
 
@@ -36,6 +34,8 @@ import java.time.Duration;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.client.api.ServiceDiscovererFilterFactory.identity;
+import static io.servicetalk.concurrent.api.RetryStrategies.retryWithConstantBackoffAndJitter;
 import static io.servicetalk.transport.netty.internal.GlobalExecutionContext.globalExecutionContext;
 import static java.util.Objects.requireNonNull;
 
@@ -58,12 +58,11 @@ public final class DefaultDnsServiceDiscovererBuilder {
     @Nullable
     private Duration queryTimeout;
     @Nullable
-    private BiIntFunction<Throwable, Completable> retryStrategy = RetryStrategies.retryWithConstantBackoffAndJitter(
-            Integer.MAX_VALUE, t -> true, Duration.ofSeconds(60),
-            GlobalExecutionContext.globalExecutionContext().executor());
+    private BiIntFunction<Throwable, Completable> retryStrategy = retryWithConstantBackoffAndJitter(
+            Integer.MAX_VALUE, t -> true, Duration.ofSeconds(60), globalExecutionContext().executor());
     private int minTTLSeconds = 10;
     private ServiceDiscovererFilterFactory<String, InetAddress, ServiceDiscovererEvent<InetAddress>>
-            serviceDiscoveryFilterFactory = ServiceDiscovererFilterFactory.identity();
+            serviceDiscoveryFilterFactory = identity();
 
     /**
      * The minimum allowed TTL. This will be the minimum poll interval.
@@ -185,9 +184,9 @@ public final class DefaultDnsServiceDiscovererBuilder {
      * <pre>
      *     builder.append(filter1).append(filter2).append(filter3)
      * </pre>
-     * making a request to a client wrapped by this filter chain the order of invocation of these filters will be:
+     * making a request to a service discoverer wrapped by this filter chain the order of invocation of these filters will be:
      * <pre>
-     *     filter1 =&gt; filter2 =&gt; filter3 =&gt; client
+     *     filter1 =&gt; filter2 =&gt; filter3 =&gt; service discoverer
      * </pre>
      *
      * @param factory {@link ServiceDiscovererFilterFactory} to decorate a {@link ServiceDiscoverer} for the purpose of
@@ -237,7 +236,8 @@ public final class DefaultDnsServiceDiscovererBuilder {
                 this.serviceDiscoveryFilterFactory;
         if (retryStrategy != null) {
             ServiceDiscovererFilterFactory<String, InetAddress, ServiceDiscovererEvent<InetAddress>>
-                    defaultFilterFactory = client -> new DefaultDnsServiceDiscovererFilter(client, retryStrategy);
+                    defaultFilterFactory = serviceDiscoverer -> new DefaultDnsServiceDiscovererFilter(
+                    serviceDiscoverer, retryStrategy);
             factory = defaultFilterFactory.append(factory);
         }
         return factory.create(new DefaultDnsServiceDiscoverer(
@@ -255,26 +255,26 @@ public final class DefaultDnsServiceDiscovererBuilder {
      */
     private static ServiceDiscoverer<HostAndPort, InetSocketAddress,
             ServiceDiscovererEvent<InetSocketAddress>> toHostAndPortDiscoverer(
-            ServiceDiscoverer<String, InetAddress, ServiceDiscovererEvent<InetAddress>> client) {
+            ServiceDiscoverer<String, InetAddress, ServiceDiscovererEvent<InetAddress>> serviceDiscoverer) {
         return new ServiceDiscoverer<HostAndPort, InetSocketAddress, ServiceDiscovererEvent<InetSocketAddress>>() {
             @Override
             public Completable closeAsync() {
-                return client.closeAsync();
+                return serviceDiscoverer.closeAsync();
             }
 
             @Override
             public Completable closeAsyncGracefully() {
-                return client.closeAsyncGracefully();
+                return serviceDiscoverer.closeAsyncGracefully();
             }
 
             @Override
             public Completable onClose() {
-                return client.onClose();
+                return serviceDiscoverer.onClose();
             }
 
             @Override
             public Publisher<ServiceDiscovererEvent<InetSocketAddress>> discover(HostAndPort hostAndPort) {
-                return client.discover(hostAndPort.getHostName()).map(originalEvent ->
+                return serviceDiscoverer.discover(hostAndPort.getHostName()).map(originalEvent ->
                         new DefaultServiceDiscovererEvent<>(new InetSocketAddress(originalEvent.address(),
                                 hostAndPort.getPort()), originalEvent.available())
                 );
