@@ -13,10 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.dns.discovery.netty;
+package io.servicetalk.client.api;
 
-import io.servicetalk.client.api.ServiceDiscoverer;
-import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 

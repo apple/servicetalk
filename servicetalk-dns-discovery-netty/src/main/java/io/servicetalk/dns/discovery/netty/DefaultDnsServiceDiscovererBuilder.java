@@ -18,6 +18,7 @@ package io.servicetalk.dns.discovery.netty;
 import io.servicetalk.client.api.DefaultServiceDiscovererEvent;
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
+import io.servicetalk.client.api.ServiceDiscovererFilterFactory;
 import io.servicetalk.concurrent.api.BiIntFunction;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
@@ -26,12 +27,17 @@ import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.netty.internal.GlobalExecutionContext;
 
+import io.netty.resolver.dns.DnsNameResolverTimeoutException;
+
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.UnknownHostException;
 import java.time.Duration;
+import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.transport.netty.internal.GlobalExecutionContext.globalExecutionContext;
+import static java.util.Objects.requireNonNull;
 
 /**
  * Builder use to create objects of type {@link DefaultDnsServiceDiscoverer}.
@@ -43,20 +49,21 @@ public final class DefaultDnsServiceDiscovererBuilder {
     private DnsResolverAddressTypes dnsResolverAddressTypes;
     @Nullable
     private Integer ndots;
-    private boolean sendUnavailableWhenUnknownHost = true;
+    private Predicate<Throwable> invalidateHostsOnDnsFailure = t -> t instanceof UnknownHostException &&
+            !(t.getCause() instanceof DnsNameResolverTimeoutException);
     @Nullable
     private Boolean optResourceEnabled;
     @Nullable
     private IoExecutor ioExecutor;
     @Nullable
     private Duration queryTimeout;
+    @Nullable
     private BiIntFunction<Throwable, Completable> retryStrategy = RetryStrategies.retryWithConstantBackoffAndJitter(
             Integer.MAX_VALUE, t -> true, Duration.ofSeconds(60),
             GlobalExecutionContext.globalExecutionContext().executor());
     private int minTTLSeconds = 10;
     private ServiceDiscovererFilterFactory<String, InetAddress, ServiceDiscovererEvent<InetAddress>>
             serviceDiscoveryFilterFactory = ServiceDiscovererFilterFactory.identity();
-    private boolean useDefaultFilter = true;
 
     /**
      * The minimum allowed TTL. This will be the minimum poll interval.
@@ -121,14 +128,16 @@ public final class DefaultDnsServiceDiscovererBuilder {
     }
 
     /**
-     * Enable sending 'unavailable' events for all current active hosts when DNS indicates the hostname is not found.
-     * Note: This does not send 'unavailable' events when a DNS lookup timeouts out.
+     * Allows sending 'unavailable' events for all current active hosts for particular DNS errors.
+     * <p>
+     * Note: The default does not send 'unavailable' events when a DNS lookup times out.
      *
-     * @param sendUnavailableWhenUnknownHost whether or not to send 'unavailable' events.
+     * @param invalidateHostsOnDnsFailure determines whether or not to send 'unavailable' events.
      * @return {@code this}.
      */
-    public DefaultDnsServiceDiscovererBuilder sendUnavailableWhenUnknownHost(boolean sendUnavailableWhenUnknownHost) {
-        this.sendUnavailableWhenUnknownHost = sendUnavailableWhenUnknownHost;
+    public DefaultDnsServiceDiscovererBuilder invalidateHostsOnDnsFailure(
+            Predicate<Throwable> invalidateHostsOnDnsFailure) {
+        this.invalidateHostsOnDnsFailure = invalidateHostsOnDnsFailure;
         return this;
     }
 
@@ -151,17 +160,17 @@ public final class DefaultDnsServiceDiscovererBuilder {
      * @return {@code this}.
      */
     public DefaultDnsServiceDiscovererBuilder retryDnsFailures(BiIntFunction<Throwable, Completable> retryStrategy) {
-        this.retryStrategy = retryStrategy;
+        this.retryStrategy = requireNonNull(retryStrategy);
         return this;
     }
 
     /**
-     * Disable adding the default {@link ServiceDiscovererFilter} that retries errors.
+     * Do not perform retries if DNS lookup fails. Instead, terminate the {@link Publisher} with the error.
      *
-     * @return {@code this}
+     * @return {@code this}.
      */
-    public DefaultDnsServiceDiscovererBuilder disableDefaultFilter() {
-        useDefaultFilter = false;
+    public DefaultDnsServiceDiscovererBuilder noRetriesOnDnsFailures() {
+        this.retryStrategy = null;
         return this;
     }
 
@@ -226,14 +235,14 @@ public final class DefaultDnsServiceDiscovererBuilder {
             ServiceDiscovererEvent<InetAddress>> newDefaultDnsServiceDiscoverer() {
         ServiceDiscovererFilterFactory<String, InetAddress, ServiceDiscovererEvent<InetAddress>> factory =
                 this.serviceDiscoveryFilterFactory;
-        if (useDefaultFilter) {
+        if (retryStrategy != null) {
             ServiceDiscovererFilterFactory<String, InetAddress, ServiceDiscovererEvent<InetAddress>>
                     defaultFilterFactory = client -> new DefaultDnsServiceDiscovererFilter(client, retryStrategy);
             factory = defaultFilterFactory.append(factory);
         }
         return factory.create(new DefaultDnsServiceDiscoverer(
                 ioExecutor == null ? globalExecutionContext().ioExecutor() : ioExecutor, minTTLSeconds, ndots,
-                sendUnavailableWhenUnknownHost, optResourceEnabled, queryTimeout, dnsResolverAddressTypes,
+                invalidateHostsOnDnsFailure, optResourceEnabled, queryTimeout, dnsResolverAddressTypes,
                 dnsServerAddressStreamProvider));
     }
 

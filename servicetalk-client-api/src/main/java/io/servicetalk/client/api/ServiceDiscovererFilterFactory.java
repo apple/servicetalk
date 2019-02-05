@@ -13,10 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.dns.discovery.netty;
-
-import io.servicetalk.client.api.ServiceDiscoverer;
-import io.servicetalk.client.api.ServiceDiscovererEvent;
+package io.servicetalk.client.api;
 
 import static java.util.Objects.requireNonNull;
 
@@ -34,10 +31,11 @@ public interface ServiceDiscovererFilterFactory<UnresolvedAddress, ResolvedAddre
     /**
      * Create a {@link ServiceDiscovererFilter} using the provided {@link ServiceDiscoverer}.
      *
-     * @param client {@link ServiceDiscoverer} to filter
+     * @param serviceDiscoverer {@link ServiceDiscoverer} to filter
      * @return {@link ServiceDiscovererFilter} using the provided {@link ServiceDiscoverer}.
      */
-    ServiceDiscovererFilter<UnresolvedAddress, ResolvedAddress, E> create(ServiceDiscoverer<UnresolvedAddress, ResolvedAddress, E> client);
+    ServiceDiscovererFilter<UnresolvedAddress, ResolvedAddress, E> create(
+            ServiceDiscoverer<UnresolvedAddress, ResolvedAddress, E> serviceDiscoverer);
 
     /**
      * Returns a composed function that first applies the {@code before} function to its input, and then applies
@@ -47,18 +45,20 @@ public interface ServiceDiscovererFilterFactory<UnresolvedAddress, ResolvedAddre
      * <pre>
      *     filter1.append(filter2).append(filter3)
      * </pre>
-     * making a request to a client wrapped by this filter chain the order of invocation of these filters will be:
+     * making a request to a service discoverer wrapped by this filter chain the order of invocation of these filters
+     * will be:
      * <pre>
-     *     filter1 =&gt; filter2 =&gt; filter3 =&gt; client
+     *     filter1 =&gt; filter2 =&gt; filter3 =&gt; service discoverer
      * </pre>
      *
      * @param before the function to apply before this function is applied
      * @return a composed function that first applies the {@code before}
      * function and then applies this function
      */
-    default ServiceDiscovererFilterFactory<UnresolvedAddress, ResolvedAddress, E> append(ServiceDiscovererFilterFactory<UnresolvedAddress, ResolvedAddress, E> before) {
+    default ServiceDiscovererFilterFactory<UnresolvedAddress, ResolvedAddress, E> append(
+            ServiceDiscovererFilterFactory<UnresolvedAddress, ResolvedAddress, E> before) {
         requireNonNull(before);
-        return client -> create(before.create(client));
+        return serviceDiscoverer -> create(before.create(serviceDiscoverer));
     }
 
     /**
@@ -69,7 +69,8 @@ public interface ServiceDiscovererFilterFactory<UnresolvedAddress, ResolvedAddre
      * @param <E> Type of {@link ServiceDiscovererEvent}s published from {@link ServiceDiscoverer#discover(Object)}.
      * @return a function that always returns its input {@link ServiceDiscoverer}.
      */
-    static <UnresolvedAddress, ResolvedAddress, E extends ServiceDiscovererEvent<ResolvedAddress>> ServiceDiscovererFilterFactory<UnresolvedAddress, ResolvedAddress, E> identity() {
+    static <UnresolvedAddress, ResolvedAddress, E extends ServiceDiscovererEvent<ResolvedAddress>>
+    ServiceDiscovererFilterFactory<UnresolvedAddress, ResolvedAddress, E> identity() {
         return ServiceDiscovererFilter::new;
     }
 }

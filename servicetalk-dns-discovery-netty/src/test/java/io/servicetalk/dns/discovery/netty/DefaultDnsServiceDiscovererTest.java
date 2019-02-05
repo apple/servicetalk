@@ -17,6 +17,7 @@ package io.servicetalk.dns.discovery.netty;
 
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
+import io.servicetalk.client.api.ServiceDiscovererFilter;
 import io.servicetalk.client.servicediscoverer.ServiceDiscovererTestSubscriber;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
@@ -337,8 +338,8 @@ public class DefaultDnsServiceDiscovererTest {
 
         ServiceDiscoverer<String, InetAddress, ServiceDiscovererEvent<InetAddress>> discoverer =
                 serviceDiscovererBuilder()
-                        .disableDefaultFilter()
-                        .sendUnavailableWhenUnknownHost(false)
+                        .noRetriesOnDnsFailures()
+                        .invalidateHostsOnDnsFailure(__ -> false)
                         .buildInetDiscoverer();
         try {
             final int expectedActiveCount = 1;
@@ -494,7 +495,7 @@ public class DefaultDnsServiceDiscovererTest {
         CountDownLatch latchOnSubscribe = new CountDownLatch(1);
         ServiceDiscoverer<String, InetAddress, ServiceDiscovererEvent<InetAddress>> discoverer =
                 serviceDiscovererBuilder()
-                        .disableDefaultFilter()
+                        .noRetriesOnDnsFailures()
                         .buildInetDiscoverer();
         Subscriber<ServiceDiscovererEvent<InetAddress>> subscriber = mock(Subscriber.class);
 

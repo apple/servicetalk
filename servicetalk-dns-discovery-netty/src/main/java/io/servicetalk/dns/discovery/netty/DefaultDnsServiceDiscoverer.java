@@ -33,7 +33,6 @@ import io.netty.resolver.ResolvedAddressTypes;
 import io.netty.resolver.dns.DefaultDnsCache;
 import io.netty.resolver.dns.DnsNameResolver;
 import io.netty.resolver.dns.DnsNameResolverBuilder;
-import io.netty.resolver.dns.DnsNameResolverTimeoutException;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
 import org.reactivestreams.Subscriber;
@@ -43,7 +42,6 @@ import org.slf4j.LoggerFactory;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.net.UnknownHostException;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -51,6 +49,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.RandomAccess;
+import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.client.internal.ServiceDiscovererUtils.calculateDifference;
@@ -83,18 +82,18 @@ final class DefaultDnsServiceDiscoverer
     private final EventLoopAwareNettyIoExecutor nettyIoExecutor;
     private final DnsNameResolver resolver;
     private final MinTtlCache ttlCache;
-    private final boolean sendUnavailableWhenUnknownHost;
+    private final Predicate<Throwable> invalidateHostsOnDnsFailure;
     private boolean closed;
 
     DefaultDnsServiceDiscoverer(IoExecutor ioExecutor, int minTTL,
-                                @Nullable Integer ndots, boolean sendUnavailableWhenUnknownHost,
+                                @Nullable Integer ndots, Predicate<Throwable> invalidateHostsOnDnsFailure,
                                 @Nullable Boolean optResourceEnabled, @Nullable Duration queryTimeout,
                                 @Nullable DnsResolverAddressTypes dnsResolverAddressTypes,
                                 @Nullable DnsServerAddressStreamProvider dnsServerAddressStreamProvider) {
         // Implementation of this class expects to use only single EventLoop from IoExecutor
         this.nettyIoExecutor = toEventLoopAwareNettyIoExecutor(ioExecutor).next();
         this.ttlCache = new MinTtlCache(new DefaultDnsCache(minTTL, Integer.MAX_VALUE, minTTL), minTTL);
-        this.sendUnavailableWhenUnknownHost = sendUnavailableWhenUnknownHost;
+        this.invalidateHostsOnDnsFailure = invalidateHostsOnDnsFailure;
         EventLoop eventLoop = this.nettyIoExecutor.getEventLoopGroup().next();
         DnsNameResolverBuilder builder = new DnsNameResolverBuilder(eventLoop)
                 .resolveCache(ttlCache)
@@ -325,7 +324,7 @@ final class DefaultDnsServiceDiscoverer
                     assertInEventloop();
 
                     if (!isRequestNValid(n)) {
-                        handleError0(newExceptionForInvalidRequestN(n), false);
+                        handleError0(newExceptionForInvalidRequestN(n), __ -> false);
                         return;
                     }
 
@@ -395,7 +394,7 @@ final class DefaultDnsServiceDiscoverer
                     if (discoverySubscriber != null) {
                         Throwable cause = addressFuture.cause();
                         if (cause != null) {
-                            handleError0(cause, sendUnavailableWhenUnknownHost);
+                            handleError0(cause, invalidateHostsOnDnsFailure);
                         } else {
                             List<InetAddress> addresses = addressFuture.getNow();
                             List<ServiceDiscovererEvent<InetAddress>> events = calculateDifference(activeAddresses,
@@ -416,7 +415,7 @@ final class DefaultDnsServiceDiscoverer
 
                                     subscriber.onNext(events);
                                 } catch (Throwable error) {
-                                    handleError0(error, false);
+                                    handleError0(error, __ -> false);
                                 }
                             } else {
                                 LOGGER.trace("DNS discoverer {}, resolution done but no changes observed for {}. " +
@@ -428,7 +427,7 @@ final class DefaultDnsServiceDiscoverer
                     }
                 }
 
-                private void handleError0(Throwable cause, boolean sendUnavailableWhenUnknownHost) {
+                private void handleError0(Throwable cause, Predicate<Throwable> invalidateHostsOnDnsFailure) {
                     assertInEventloop();
 
                     LOGGER.debug("DNS discoverer {}, DNS lookup failed for {}.", DefaultDnsServiceDiscoverer.this,
@@ -440,8 +439,9 @@ final class DefaultDnsServiceDiscoverer
                         return;
                     }
 
-                    if (sendUnavailableWhenUnknownHost && cause instanceof UnknownHostException &&
-                            !(cause.getCause() instanceof DnsNameResolverTimeoutException)) {
+                    if (invalidateHostsOnDnsFailure.test(cause)) {
+                        // if (invalidateHostsOnDnsFailure && cause instanceof UnknownHostException &&
+                        //         !(cause.getCause() instanceof DnsNameResolverTimeoutException)) {
                         final List<InetAddress> addresses = activeAddresses;
                         List<ServiceDiscovererEvent<InetAddress>> events = new ArrayList<>(addresses.size());
                         if (addresses instanceof RandomAccess) {
