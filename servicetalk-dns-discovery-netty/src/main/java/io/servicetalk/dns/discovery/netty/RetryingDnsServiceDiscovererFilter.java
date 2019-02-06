@@ -28,14 +28,18 @@ import org.slf4j.LoggerFactory;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 
-final class DefaultDnsServiceDiscovererFilter extends ServiceDiscovererFilter<String, InetAddress, ServiceDiscovererEvent<InetAddress>> {
+import static io.servicetalk.concurrent.api.Completable.error;
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(DefaultDnsServiceDiscovererFilter.class);
+final class RetryingDnsServiceDiscovererFilter extends ServiceDiscovererFilter<String, InetAddress,
+        ServiceDiscovererEvent<InetAddress>> {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(RetryingDnsServiceDiscovererFilter.class);
 
     private final BiIntFunction<Throwable, Completable> retryStrategy;
 
-    DefaultDnsServiceDiscovererFilter(final ServiceDiscoverer<String, InetAddress, ServiceDiscovererEvent<InetAddress>> delegate,
-                                      final BiIntFunction<Throwable, Completable> retryStrategy) {
+    RetryingDnsServiceDiscovererFilter(
+            final ServiceDiscoverer<String, InetAddress, ServiceDiscovererEvent<InetAddress>> delegate,
+            final BiIntFunction<Throwable, Completable> retryStrategy) {
         super(delegate);
         this.retryStrategy = retryStrategy;
     }
@@ -47,7 +51,7 @@ final class DefaultDnsServiceDiscovererFilter extends ServiceDiscovererFilter<St
                 LOGGER.warn("Unable to resolve host {}", unresolvedAddress, t);
                 return retryStrategy.apply(i, t);
             } else {
-                return Completable.error(t);
+                return error(t);
             }
         });
     }

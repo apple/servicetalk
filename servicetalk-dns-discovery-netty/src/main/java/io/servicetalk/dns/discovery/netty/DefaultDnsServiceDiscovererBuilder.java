@@ -43,14 +43,16 @@ import static java.util.Objects.requireNonNull;
  * Builder use to create objects of type {@link DefaultDnsServiceDiscoverer}.
  */
 public final class DefaultDnsServiceDiscovererBuilder {
+
+    private static final BiIntFunction<Throwable, Completable> UNSPECIFIED_RETRY_STRATEGY = (i, t) -> Completable.never();
+
     @Nullable
     private DnsServerAddressStreamProvider dnsServerAddressStreamProvider;
     @Nullable
     private DnsResolverAddressTypes dnsResolverAddressTypes;
     @Nullable
     private Integer ndots;
-    private Predicate<Throwable> invalidateHostsOnDnsFailure = t -> t instanceof UnknownHostException &&
-            !(t.getCause() instanceof DnsNameResolverTimeoutException);
+    private Predicate<Throwable> invalidateHostsOnDnsFailure = defaultInvalidateHostsOnDnsFailurePredicate();
     @Nullable
     private Boolean optResourceEnabled;
     @Nullable
@@ -58,8 +60,7 @@ public final class DefaultDnsServiceDiscovererBuilder {
     @Nullable
     private Duration queryTimeout;
     @Nullable
-    private BiIntFunction<Throwable, Completable> retryStrategy = retryWithConstantBackoffAndJitter(
-            Integer.MAX_VALUE, t -> true, Duration.ofSeconds(60), globalExecutionContext().executor());
+    private BiIntFunction<Throwable, Completable> retryStrategy = UNSPECIFIED_RETRY_STRATEGY;
     private int minTTLSeconds = 10;
     private ServiceDiscovererFilterFactory<String, InetAddress, ServiceDiscovererEvent<InetAddress>>
             serviceDiscoveryFilterFactory = identity();
@@ -138,6 +139,16 @@ public final class DefaultDnsServiceDiscovererBuilder {
             Predicate<Throwable> invalidateHostsOnDnsFailure) {
         this.invalidateHostsOnDnsFailure = invalidateHostsOnDnsFailure;
         return this;
+    }
+
+    /**
+     * Returns a default value for {@link #invalidateHostsOnDnsFailure(Predicate)}.
+     *
+     * @return a default value for {@link #invalidateHostsOnDnsFailure(Predicate)}
+     */
+    public Predicate<Throwable> defaultInvalidateHostsOnDnsFailurePredicate() {
+        return t -> t instanceof UnknownHostException &&
+                !(t.getCause() instanceof DnsNameResolverTimeoutException);
     }
 
     /**
@@ -234,9 +245,13 @@ public final class DefaultDnsServiceDiscovererBuilder {
             ServiceDiscovererEvent<InetAddress>> newDefaultDnsServiceDiscoverer() {
         ServiceDiscovererFilterFactory<String, InetAddress, ServiceDiscovererEvent<InetAddress>> factory =
                 this.serviceDiscoveryFilterFactory;
+        if (retryStrategy == UNSPECIFIED_RETRY_STRATEGY) {
+            retryStrategy = retryWithConstantBackoffAndJitter(
+                    Integer.MAX_VALUE, t -> true, Duration.ofSeconds(60), globalExecutionContext().executor());
+        }
         if (retryStrategy != null) {
             ServiceDiscovererFilterFactory<String, InetAddress, ServiceDiscovererEvent<InetAddress>>
-                    defaultFilterFactory = serviceDiscoverer -> new DefaultDnsServiceDiscovererFilter(
+                    defaultFilterFactory = serviceDiscoverer -> new RetryingDnsServiceDiscovererFilter(
                     serviceDiscoverer, retryStrategy);
             factory = defaultFilterFactory.append(factory);
         }

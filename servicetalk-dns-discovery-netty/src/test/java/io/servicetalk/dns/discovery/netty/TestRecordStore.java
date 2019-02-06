@@ -102,7 +102,7 @@ final class TestRecordStore implements RecordStore {
         if (recordsToReturn != null) {
             final List<Supplier<List<ResourceRecord>>> recordsForType = recordsToReturn.get(
                     questionRecord.getRecordType());
-            if (recordsForType != null && recordsForType.size() > 0) {
+            if (recordsForType != null && !recordsForType.isEmpty()) {
                 List<ResourceRecord> records = recordsForType.remove(0).get();
                 LOGGER.debug("Found records {}", records);
                 return new HashSet<>(records);

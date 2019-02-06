@@ -22,11 +22,11 @@ import static java.util.Objects.requireNonNull;
  *
  * @param <UnresolvedAddress> The type of address before resolution.
  * @param <ResolvedAddress> The type of address after resolution.
- * @param <E> Type of {@link ServiceDiscovererEvent}s published from {@link ServiceDiscoverer#discover(Object)}.
+ * @param <Event> Type of {@link ServiceDiscovererEvent}s published from {@link ServiceDiscoverer#discover(Object)}.
  */
 @FunctionalInterface
 public interface ServiceDiscovererFilterFactory<UnresolvedAddress, ResolvedAddress,
-        E extends ServiceDiscovererEvent<ResolvedAddress>> {
+        Event extends ServiceDiscovererEvent<ResolvedAddress>> {
 
     /**
      * Create a {@link ServiceDiscovererFilter} using the provided {@link ServiceDiscoverer}.
@@ -34,8 +34,8 @@ public interface ServiceDiscovererFilterFactory<UnresolvedAddress, ResolvedAddre
      * @param serviceDiscoverer {@link ServiceDiscoverer} to filter
      * @return {@link ServiceDiscovererFilter} using the provided {@link ServiceDiscoverer}.
      */
-    ServiceDiscovererFilter<UnresolvedAddress, ResolvedAddress, E> create(
-            ServiceDiscoverer<UnresolvedAddress, ResolvedAddress, E> serviceDiscoverer);
+    ServiceDiscovererFilter<UnresolvedAddress, ResolvedAddress, Event> create(
+            ServiceDiscoverer<UnresolvedAddress, ResolvedAddress, Event> serviceDiscoverer);
 
     /**
      * Returns a composed function that first applies the {@code before} function to its input, and then applies
@@ -55,8 +55,8 @@ public interface ServiceDiscovererFilterFactory<UnresolvedAddress, ResolvedAddre
      * @return a composed function that first applies the {@code before}
      * function and then applies this function
      */
-    default ServiceDiscovererFilterFactory<UnresolvedAddress, ResolvedAddress, E> append(
-            ServiceDiscovererFilterFactory<UnresolvedAddress, ResolvedAddress, E> before) {
+    default ServiceDiscovererFilterFactory<UnresolvedAddress, ResolvedAddress, Event> append(
+            ServiceDiscovererFilterFactory<UnresolvedAddress, ResolvedAddress, Event> before) {
         requireNonNull(before);
         return serviceDiscoverer -> create(before.create(serviceDiscoverer));
     }

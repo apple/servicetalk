@@ -25,25 +25,25 @@ import static java.util.Objects.requireNonNull;
  *
  * @param <UnresolvedAddress> The type of address before resolution.
  * @param <ResolvedAddress> The type of address after resolution.
- * @param <E> Type of {@link ServiceDiscovererEvent}s published from {@link ServiceDiscoverer#discover(Object)}.
+ * @param <Event> Type of {@link ServiceDiscovererEvent}s published from {@link ServiceDiscoverer#discover(Object)}.
  */
 public class ServiceDiscovererFilter<UnresolvedAddress, ResolvedAddress,
-        E extends ServiceDiscovererEvent<ResolvedAddress>> implements ServiceDiscoverer<UnresolvedAddress, ResolvedAddress,
-        E> {
+        Event extends ServiceDiscovererEvent<ResolvedAddress>>
+        implements ServiceDiscoverer<UnresolvedAddress, ResolvedAddress, Event> {
 
-    private final ServiceDiscoverer<UnresolvedAddress, ResolvedAddress, E> delegate;
+    private final ServiceDiscoverer<UnresolvedAddress, ResolvedAddress, Event> delegate;
 
     /**
      * Create a new instance.
      *
      * @param delegate The {@link ServiceDiscoverer} to delegate all calls to.
      */
-    public ServiceDiscovererFilter(final ServiceDiscoverer<UnresolvedAddress, ResolvedAddress, E> delegate) {
+    public ServiceDiscovererFilter(final ServiceDiscoverer<UnresolvedAddress, ResolvedAddress, Event> delegate) {
         this.delegate = requireNonNull(delegate);
     }
 
     @Override
-    public Publisher<E> discover(final UnresolvedAddress unresolvedAddress) {
+    public Publisher<Event> discover(final UnresolvedAddress unresolvedAddress) {
         return delegate.discover(unresolvedAddress);
     }
 

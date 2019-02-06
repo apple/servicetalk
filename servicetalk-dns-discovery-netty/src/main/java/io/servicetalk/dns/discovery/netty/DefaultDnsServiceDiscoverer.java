@@ -440,8 +440,6 @@ final class DefaultDnsServiceDiscoverer
                     }
 
                     if (invalidateHostsOnDnsFailure.test(cause)) {
-                        // if (invalidateHostsOnDnsFailure && cause instanceof UnknownHostException &&
-                        //         !(cause.getCause() instanceof DnsNameResolverTimeoutException)) {
                         final List<InetAddress> addresses = activeAddresses;
                         List<ServiceDiscovererEvent<InetAddress>> events = new ArrayList<>(addresses.size());
                         if (addresses instanceof RandomAccess) {
