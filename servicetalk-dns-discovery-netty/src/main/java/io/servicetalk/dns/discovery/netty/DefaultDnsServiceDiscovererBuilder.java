@@ -44,7 +44,8 @@ import static java.util.Objects.requireNonNull;
  */
 public final class DefaultDnsServiceDiscovererBuilder {
 
-    private static final BiIntFunction<Throwable, Completable> UNSPECIFIED_RETRY_STRATEGY = (i, t) -> Completable.never();
+    private static final BiIntFunction<Throwable, Completable> UNSPECIFIED_RETRY_STRATEGY =
+            (i, t) -> Completable.never();
 
     @Nullable
     private DnsServerAddressStreamProvider dnsServerAddressStreamProvider;
@@ -195,7 +196,8 @@ public final class DefaultDnsServiceDiscovererBuilder {
      * <pre>
      *     builder.append(filter1).append(filter2).append(filter3)
      * </pre>
-     * making a request to a service discoverer wrapped by this filter chain the order of invocation of these filters will be:
+     * making a request to a service discoverer wrapped by this filter chain the order of invocation of these filters
+     * will be:
      * <pre>
      *     filter1 =&gt; filter2 =&gt; filter3 =&gt; service discoverer
      * </pre>
