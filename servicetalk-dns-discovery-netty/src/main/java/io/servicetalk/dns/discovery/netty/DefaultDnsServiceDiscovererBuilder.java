@@ -65,7 +65,7 @@ public final class DefaultDnsServiceDiscovererBuilder {
      * @param minTTLSeconds The minimum amount of time a cache entry will be considered valid (in seconds).
      * @return {@code this}.
      */
-    public DefaultDnsServiceDiscovererBuilder minTTL(int minTTLSeconds) {
+    public DefaultDnsServiceDiscovererBuilder minTTL(final int minTTLSeconds) {
         if (minTTLSeconds < 1) {
             throw new IllegalArgumentException("minTTLSeconds: " + minTTLSeconds + " (expected > 1)");
         }
@@ -81,7 +81,7 @@ public final class DefaultDnsServiceDiscovererBuilder {
      * @return {@code this}.
      */
     public DefaultDnsServiceDiscovererBuilder dnsServerAddressStreamProvider(
-            @Nullable DnsServerAddressStreamProvider dnsServerAddressStreamProvider) {
+            @Nullable final DnsServerAddressStreamProvider dnsServerAddressStreamProvider) {
         this.dnsServerAddressStreamProvider = dnsServerAddressStreamProvider;
         return this;
     }
@@ -94,7 +94,7 @@ public final class DefaultDnsServiceDiscovererBuilder {
      * @param optResourceEnabled if optional records inclusion is enabled.
      * @return {@code this}.
      */
-    public DefaultDnsServiceDiscovererBuilder optResourceEnabled(boolean optResourceEnabled) {
+    public DefaultDnsServiceDiscovererBuilder optResourceEnabled(final boolean optResourceEnabled) {
         this.optResourceEnabled = optResourceEnabled;
         return this;
     }
@@ -105,7 +105,7 @@ public final class DefaultDnsServiceDiscovererBuilder {
      * @param ndots the ndots value.
      * @return {@code this}.
      */
-    public DefaultDnsServiceDiscovererBuilder ndots(int ndots) {
+    public DefaultDnsServiceDiscovererBuilder ndots(final int ndots) {
         this.ndots = ndots;
         return this;
     }
@@ -116,7 +116,7 @@ public final class DefaultDnsServiceDiscovererBuilder {
      * @param queryTimeout the query timeout value
      * @return {@code this}.
      */
-    public DefaultDnsServiceDiscovererBuilder queryTimeout(Duration queryTimeout) {
+    public DefaultDnsServiceDiscovererBuilder queryTimeout(final Duration queryTimeout) {
         this.queryTimeout = queryTimeout;
         return this;
     }
@@ -130,7 +130,7 @@ public final class DefaultDnsServiceDiscovererBuilder {
      * @return {@code this}.
      */
     public DefaultDnsServiceDiscovererBuilder invalidateHostsOnDnsFailure(
-            Predicate<Throwable> invalidateHostsOnDnsFailure) {
+            final Predicate<Throwable> invalidateHostsOnDnsFailure) {
         this.invalidateHostsOnDnsFailure = invalidateHostsOnDnsFailure;
         return this;
     }
@@ -152,7 +152,7 @@ public final class DefaultDnsServiceDiscovererBuilder {
      * @return {@code this}.
      */
     public DefaultDnsServiceDiscovererBuilder dnsResolverAddressTypes(
-            @Nullable DnsResolverAddressTypes dnsResolverAddressTypes) {
+            @Nullable final DnsResolverAddressTypes dnsResolverAddressTypes) {
         this.dnsResolverAddressTypes = dnsResolverAddressTypes;
         return this;
     }
@@ -189,7 +189,7 @@ public final class DefaultDnsServiceDiscovererBuilder {
      * @return {@code this}
      */
     public DefaultDnsServiceDiscovererBuilder appendFilter(
-            ServiceDiscovererFilterFactory<String, InetAddress, ServiceDiscovererEvent<InetAddress>>
+            final ServiceDiscovererFilterFactory<String, InetAddress, ServiceDiscovererEvent<InetAddress>>
                     factory) {
         serviceDiscoveryFilterFactory = serviceDiscoveryFilterFactory.append(factory);
         return this;
@@ -201,7 +201,7 @@ public final class DefaultDnsServiceDiscovererBuilder {
      * @param ioExecutor {@link IoExecutor} to use.
      * @return {@code this}.
      */
-    public DefaultDnsServiceDiscovererBuilder ioExecutor(IoExecutor ioExecutor) {
+    public DefaultDnsServiceDiscovererBuilder ioExecutor(final IoExecutor ioExecutor) {
         this.ioExecutor = ioExecutor;
         return this;
     }
@@ -231,7 +231,7 @@ public final class DefaultDnsServiceDiscovererBuilder {
                 this.serviceDiscoveryFilterFactory;
 
         if (applyRetryFilter) {
-            ServiceDiscovererFilterFactory<String, InetAddress, ServiceDiscovererEvent<InetAddress>>
+            final ServiceDiscovererFilterFactory<String, InetAddress, ServiceDiscovererEvent<InetAddress>>
                     defaultFilterFactory = serviceDiscoverer -> new RetryingDnsServiceDiscovererFilter(
                     serviceDiscoverer, retryWithConstantBackoffAndJitter(
                     Integer.MAX_VALUE, t -> true, Duration.ofSeconds(60), globalExecutionContext().executor()));
@@ -252,7 +252,7 @@ public final class DefaultDnsServiceDiscovererBuilder {
      */
     private static ServiceDiscoverer<HostAndPort, InetSocketAddress,
             ServiceDiscovererEvent<InetSocketAddress>> toHostAndPortDiscoverer(
-            ServiceDiscoverer<String, InetAddress, ServiceDiscovererEvent<InetAddress>> serviceDiscoverer) {
+            final ServiceDiscoverer<String, InetAddress, ServiceDiscovererEvent<InetAddress>> serviceDiscoverer) {
         return new ServiceDiscoverer<HostAndPort, InetSocketAddress, ServiceDiscovererEvent<InetSocketAddress>>() {
             @Override
             public Completable closeAsync() {
@@ -270,7 +270,7 @@ public final class DefaultDnsServiceDiscovererBuilder {
             }
 
             @Override
-            public Publisher<ServiceDiscovererEvent<InetSocketAddress>> discover(HostAndPort hostAndPort) {
+            public Publisher<ServiceDiscovererEvent<InetSocketAddress>> discover(final HostAndPort hostAndPort) {
                 return serviceDiscoverer.discover(hostAndPort.getHostName()).map(originalEvent ->
                         new DefaultServiceDiscovererEvent<>(new InetSocketAddress(originalEvent.address(),
                                 hostAndPort.getPort()), originalEvent.available())

@@ -85,17 +85,17 @@ final class DefaultDnsServiceDiscoverer
     private final Predicate<Throwable> invalidateHostsOnDnsFailure;
     private boolean closed;
 
-    DefaultDnsServiceDiscoverer(IoExecutor ioExecutor, int minTTL,
-                                @Nullable Integer ndots, Predicate<Throwable> invalidateHostsOnDnsFailure,
-                                @Nullable Boolean optResourceEnabled, @Nullable Duration queryTimeout,
-                                @Nullable DnsResolverAddressTypes dnsResolverAddressTypes,
-                                @Nullable DnsServerAddressStreamProvider dnsServerAddressStreamProvider) {
+    DefaultDnsServiceDiscoverer(final IoExecutor ioExecutor, final int minTTL,
+                                @Nullable final Integer ndots, final Predicate<Throwable> invalidateHostsOnDnsFailure,
+                                @Nullable final Boolean optResourceEnabled, @Nullable final Duration queryTimeout,
+                                @Nullable final DnsResolverAddressTypes dnsResolverAddressTypes,
+                                @Nullable final DnsServerAddressStreamProvider dnsServerAddressStreamProvider) {
         // Implementation of this class expects to use only single EventLoop from IoExecutor
         this.nettyIoExecutor = toEventLoopAwareNettyIoExecutor(ioExecutor).next();
         this.ttlCache = new MinTtlCache(new DefaultDnsCache(minTTL, Integer.MAX_VALUE, minTTL), minTTL);
         this.invalidateHostsOnDnsFailure = invalidateHostsOnDnsFailure;
-        EventLoop eventLoop = this.nettyIoExecutor.getEventLoopGroup().next();
-        DnsNameResolverBuilder builder = new DnsNameResolverBuilder(eventLoop)
+        final EventLoop eventLoop = this.nettyIoExecutor.getEventLoopGroup().next();
+        final DnsNameResolverBuilder builder = new DnsNameResolverBuilder(eventLoop)
                 .resolveCache(ttlCache)
                 .channelType(datagramChannel(eventLoop));
         if (queryTimeout != null) {
@@ -120,7 +120,7 @@ final class DefaultDnsServiceDiscoverer
     }
 
     @Override
-    public Publisher<ServiceDiscovererEvent<InetAddress>> discover(String address) {
+    public Publisher<ServiceDiscovererEvent<InetAddress>> discover(final String address) {
         final DiscoverEntry entry;
         if (nettyIoExecutor.isCurrentThreadEventLoop()) {
             if (closed) {
@@ -142,18 +142,18 @@ final class DefaultDnsServiceDiscoverer
         return entry.publisher;
     }
 
-    private void addEntry0(DiscoverEntry entry) {
+    private void addEntry0(final DiscoverEntry entry) {
         assertInEventloop();
 
         registerMap.computeIfAbsent(entry.inetHost, k -> new ArrayList<>(2)).add(entry);
     }
 
-    private void removeEntry0(DiscoverEntry entry) {
+    private void removeEntry0(final DiscoverEntry entry) {
         assertInEventloop();
 
         LOGGER.debug("DNS discoverer {}, cancelled DNS resolution for {}.", DefaultDnsServiceDiscoverer.this,
                 entry.inetHost);
-        List<DiscoverEntry> entries = registerMap.get(entry.inetHost);
+        final List<DiscoverEntry> entries = registerMap.get(entry.inetHost);
         if (entries == null) {
             return;
         }
@@ -172,7 +172,7 @@ final class DefaultDnsServiceDiscoverer
     public Completable closeAsync() {
         return new Completable() {
             @Override
-            protected void handleSubscribe(Subscriber subscriber) {
+            protected void handleSubscribe(final Subscriber subscriber) {
                 closeCompletable.subscribe(subscriber);
                 if (nettyIoExecutor.isCurrentThreadEventLoop()) {
                     closeAsync0();
@@ -192,11 +192,11 @@ final class DefaultDnsServiceDiscoverer
         closed = true;
         resolver.close();
         RuntimeException aggregateCause = null;
-        for (Map.Entry<String, List<DiscoverEntry>> mapEntry : registerMap.entrySet()) {
-            for (DiscoverEntry entry : mapEntry.getValue()) {
+        for (final Map.Entry<String, List<DiscoverEntry>> mapEntry : registerMap.entrySet()) {
+            for (final DiscoverEntry entry : mapEntry.getValue()) {
                 try {
                     entry.close0();
-                } catch (Throwable cause) {
+                } catch (final Throwable cause) {
                     if (aggregateCause == null) {
                         aggregateCause = new RuntimeException(
                                 "Unexpected exception completing " + entry + " when closing " + this, cause);
@@ -225,7 +225,7 @@ final class DefaultDnsServiceDiscoverer
         private final EntriesPublisher entriesPublisher = new EntriesPublisher();
         private final Publisher<ServiceDiscovererEvent<InetAddress>> publisher;
 
-        DiscoverEntry(String inetHost) {
+        DiscoverEntry(final String inetHost) {
             this.inetHost = inetHost;
             publisher = new EntriesPublisher().flatMapIterable(identity());
         }
@@ -275,7 +275,8 @@ final class DefaultDnsServiceDiscoverer
             void close0() {
                 assertInEventloop();
 
-                Subscriber<? super Iterable<ServiceDiscovererEvent<InetAddress>>> oldSubscriber = discoverySubscriber;
+                final Subscriber<? super Iterable<ServiceDiscovererEvent<InetAddress>>> oldSubscriber =
+                        discoverySubscriber;
                 discoverySubscriber = null;
                 if (oldSubscriber != null) {
                     assert subscription != null;
@@ -303,7 +304,7 @@ final class DefaultDnsServiceDiscoverer
                 }
 
                 @Override
-                public void request(long n) {
+                public void request(final long n) {
                     if (nettyIoExecutor.isCurrentThreadEventLoop()) {
                         request0(n);
                     } else {
@@ -320,7 +321,7 @@ final class DefaultDnsServiceDiscoverer
                     }
                 }
 
-                private void request0(long n) {
+                private void request0(final long n) {
                     assertInEventloop();
 
                     if (!isRequestNValid(n)) {
@@ -333,7 +334,7 @@ final class DefaultDnsServiceDiscoverer
                         if (ttlNanos < 0) {
                             doQuery0();
                         } else {
-                            long durationNs = nanoTime() - resolveDoneNoScheduleTime;
+                            final long durationNs = nanoTime() - resolveDoneNoScheduleTime;
                             if (durationNs > ttlNanos) {
                                 doQuery0();
                             } else {
@@ -350,7 +351,7 @@ final class DefaultDnsServiceDiscoverer
                             inetHost);
 
                     ttlCache.prepareForResolution(inetHost);
-                    Future<List<InetAddress>> addressFuture = resolver.resolveAll(inetHost);
+                    final Future<List<InetAddress>> addressFuture = resolver.resolveAll(inetHost);
                     cancellableForQuery = () -> addressFuture.cancel(true);
                     if (addressFuture.isDone()) {
                         handleResolveDone0(addressFuture);
@@ -375,7 +376,7 @@ final class DefaultDnsServiceDiscoverer
                     }
                 }
 
-                private void scheduleQuery0(long nanos) {
+                private void scheduleQuery0(final long nanos) {
                     assertInEventloop();
 
                     LOGGER.trace("DNS discoverer {}, scheduling DNS query for {} after {} nanos.",
@@ -386,19 +387,19 @@ final class DefaultDnsServiceDiscoverer
                             this::doQuery0, nanos, NANOSECONDS);
                 }
 
-                private void handleResolveDone0(Future<List<InetAddress>> addressFuture) {
+                private void handleResolveDone0(final Future<List<InetAddress>> addressFuture) {
                     assertInEventloop();
 
                     // If `discoverySubscriber` is null, then this publisher has terminated, so we can't send any more
                     // signals. There's no point in even scheduling a query in that case.
                     if (discoverySubscriber != null) {
-                        Throwable cause = addressFuture.cause();
+                        final Throwable cause = addressFuture.cause();
                         if (cause != null) {
                             handleError0(cause, invalidateHostsOnDnsFailure);
                         } else {
-                            List<InetAddress> addresses = addressFuture.getNow();
-                            List<ServiceDiscovererEvent<InetAddress>> events = calculateDifference(activeAddresses,
-                                    addresses, INET_ADDRESS_COMPARATOR);
+                            final List<InetAddress> addresses = addressFuture.getNow();
+                            final List<ServiceDiscovererEvent<InetAddress>> events =
+                                    calculateDifference(activeAddresses, addresses, INET_ADDRESS_COMPARATOR);
                             ttlNanos = SECONDS.toNanos(ttlCache.minTtl(inetHost));
                             if (events != null) {
                                 --pendingRequests;
@@ -414,7 +415,7 @@ final class DefaultDnsServiceDiscoverer
                                             DefaultDnsServiceDiscoverer.this, inetHost, events.size(), events);
 
                                     subscriber.onNext(events);
-                                } catch (Throwable error) {
+                                } catch (final Throwable error) {
                                     handleError0(error, __ -> false);
                                 }
                             } else {
@@ -427,12 +428,13 @@ final class DefaultDnsServiceDiscoverer
                     }
                 }
 
-                private void handleError0(Throwable cause, Predicate<Throwable> invalidateHostsOnDnsFailure) {
+                private void handleError0(final Throwable cause,
+                                          final Predicate<Throwable> invalidateHostsOnDnsFailure) {
                     assertInEventloop();
 
                     LOGGER.debug("DNS discoverer {}, DNS lookup failed for {}.", DefaultDnsServiceDiscoverer.this,
                             inetHost, cause);
-                    boolean wasAlreadyTerminated = discoverySubscriber == null;
+                    final boolean wasAlreadyTerminated = discoverySubscriber == null;
                     discoverySubscriber = null; // allow sequential subscriptions
                     cancel0();
                     if (wasAlreadyTerminated) {
@@ -441,7 +443,7 @@ final class DefaultDnsServiceDiscoverer
 
                     if (invalidateHostsOnDnsFailure.test(cause)) {
                         final List<InetAddress> addresses = activeAddresses;
-                        List<ServiceDiscovererEvent<InetAddress>> events = new ArrayList<>(addresses.size());
+                        final List<ServiceDiscovererEvent<InetAddress>> events = new ArrayList<>(addresses.size());
                         if (addresses instanceof RandomAccess) {
                             for (int i = 0; i < addresses.size(); ++i) {
                                 events.add(new DefaultServiceDiscovererEvent<>(addresses.get(i), false));
@@ -453,7 +455,7 @@ final class DefaultDnsServiceDiscoverer
                         }
                         try {
                             subscriber.onNext(events);
-                        } catch (Throwable e) {
+                        } catch (final Throwable e) {
                             LOGGER.warn("Exception from subscriber while handling error", e);
                         }
                     }
@@ -463,7 +465,7 @@ final class DefaultDnsServiceDiscoverer
         }
     }
 
-    private static ResolvedAddressTypes toNettyType(DnsResolverAddressTypes dnsResolverAddressTypes) {
+    private static ResolvedAddressTypes toNettyType(final DnsResolverAddressTypes dnsResolverAddressTypes) {
         switch (dnsResolverAddressTypes) {
             case IPV4_ONLY:
                 return ResolvedAddressTypes.IPV4_ONLY;
@@ -479,7 +481,7 @@ final class DefaultDnsServiceDiscoverer
     }
 
     private static io.netty.resolver.dns.DnsServerAddressStreamProvider toNettyType(
-            DnsServerAddressStreamProvider provider) {
+            final DnsServerAddressStreamProvider provider) {
         return hostname -> new ServiceTalkToNettyDnsServerAddressStream(provider.nameServerAddressStream(hostname));
     }
 
@@ -487,7 +489,7 @@ final class DefaultDnsServiceDiscoverer
             implements io.netty.resolver.dns.DnsServerAddressStream {
         private final DnsServerAddressStream stream;
 
-        ServiceTalkToNettyDnsServerAddressStream(DnsServerAddressStream stream) {
+        ServiceTalkToNettyDnsServerAddressStream(final DnsServerAddressStream stream) {
             this.stream = stream;
         }
 
