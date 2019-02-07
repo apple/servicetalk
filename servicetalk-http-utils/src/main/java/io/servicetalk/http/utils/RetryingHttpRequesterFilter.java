@@ -17,7 +17,6 @@ package io.servicetalk.http.utils;
 
 import io.servicetalk.client.api.AbstractRetryingFilterBuilder;
 import io.servicetalk.client.api.AbstractRetryingFilterBuilder.ReadOnlyRetryableSettings;
-import io.servicetalk.client.api.RetryableException;
 import io.servicetalk.concurrent.api.BiIntFunction;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
@@ -103,55 +102,27 @@ public final class RetryingHttpRequesterFilter implements HttpClientFilterFactor
     public static final class Builder
             extends AbstractRetryingFilterBuilder<Builder, RetryingHttpRequesterFilter, HttpRequestMetaData> {
 
-        private boolean retryIdempotent;
-
-        /**
-         * Configures the {@link #defaultRetryForPredicate()} to retry
-         * <a href="https://tools.ietf.org/html/rfc7231#section-4.2.2">idempotent</a> requests if {@link IOException}
-         * occurred.
-         * <p>
-         * <b>Note 1:</b> Use this setting only for requests without payload body, or when you know that the payload
-         * body of your request is repeatable.
-         * <p>
-         * <b>Note 2:</b> In case an alternative retry-for predicate was set via {@link #retryFor(BiPredicate)}, this
-         * method has no effect.
-         *
-         * @return {@code this}
-         * @see #doNotRetryIdempotent()
-         */
-        public Builder retryIdempotent() {
-            retryIdempotent = true;
-            return this;
-        }
-
-        /**
-         * Disables retries for <a href="https://tools.ietf.org/html/rfc7231#section-4.2.2">idempotent</a> requests
-         * configured via {@link #retryIdempotent()}.
-         *
-         * @return {@code this}
-         * @see #retryIdempotent()
-         */
-        public Builder doNotRetryIdempotent() {
-            retryIdempotent = false;
-            return this;
-        }
-
         @Override
         protected RetryingHttpRequesterFilter build(
                 final ReadOnlyRetryableSettings<HttpRequestMetaData> readOnlySettings) {
             return new RetryingHttpRequesterFilter(readOnlySettings);
         }
 
-        @Override
-        public BiPredicate<HttpRequestMetaData, Throwable> defaultRetryForPredicate() {
-            final boolean retryIdempotentSaved = retryIdempotent;
-            return (meta, throwable) -> {
-                if (throwable instanceof RetryableException) {
-                    return true;
-                }
-                return retryIdempotentSaved && throwable instanceof IOException
-                        && meta.method().methodProperties().idempotent();
-            };
+        /**
+         * Behaves as {@link #defaultRetryForPredicate()}, but also retries
+         * <a href="https://tools.ietf.org/html/rfc7231#section-4.2.2">idempotent</a> requests if {@link IOException}
+         * occurred.
+         * <p>
+         * <b>Note:</b> This predicate expects that the retried {@link StreamingHttpRequest requests} have a
+         * {@link StreamingHttpRequest#payloadBody() payload body} that is replayable, i.e. multiple subscribes to the
+         * payload {@link Publisher} emit the same data. {@link Publisher}s that do not emit any data or which are
+         * created from in-memory data are typically replayable.
+         *
+         * @return a {@link BiPredicate} for {@link #retryFor(BiPredicate)} builder method
+         */
+        public BiPredicate<HttpRequestMetaData, Throwable> retryForIdempotentRequestsPredicate() {
+            return (meta, throwable) -> defaultRetryForPredicate().test(meta, throwable)
+                    || (throwable instanceof IOException && meta.method().methodProperties().idempotent());
         }
     }
 }

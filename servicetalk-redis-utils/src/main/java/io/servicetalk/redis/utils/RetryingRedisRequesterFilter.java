@@ -17,7 +17,6 @@ package io.servicetalk.redis.utils;
 
 import io.servicetalk.client.api.AbstractRetryingFilterBuilder;
 import io.servicetalk.client.api.AbstractRetryingFilterBuilder.ReadOnlyRetryableSettings;
-import io.servicetalk.client.api.RetryableException;
 import io.servicetalk.concurrent.api.BiIntFunction;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
@@ -120,51 +119,25 @@ public final class RetryingRedisRequesterFilter implements RedisClientFilterFact
     public static final class Builder
             extends AbstractRetryingFilterBuilder<Builder, RetryingRedisRequesterFilter, Command> {
 
-        private boolean retryReadOnly;
-
-        /**
-         * Configures the {@link #defaultRetryForPredicate()} to retry {@link CommandFlag#READONLY read-only} commands
-         * if {@link IOException} occurred.
-         * <p>
-         * <b>Note 1:</b> Use this setting only when you know that the {@link RedisRequest#content() content} of the
-         * request is repeatable.
-         * <p>
-         * <b>Note 2:</b> In case an alternative retry-for predicate was set via {@link #retryFor(BiPredicate)}, this
-         * method has no effect.
-         *
-         * @return {@code this}
-         * @see #doNotRetryReadOnly()
-         */
-        public Builder retryReadOnly() {
-            retryReadOnly = true;
-            return this;
-        }
-
-        /**
-         * Disables retries for {@link CommandFlag#READONLY read-only} commands configured via {@link #retryReadOnly()}.
-         *
-         * @return {@code this}
-         * @see #retryReadOnly()
-         */
-        public Builder doNotRetryReadOnly() {
-            retryReadOnly = false;
-            return this;
-        }
-
         @Override
         protected RetryingRedisRequesterFilter build(final ReadOnlyRetryableSettings<Command> readOnlySettings) {
             return new RetryingRedisRequesterFilter(readOnlySettings);
         }
 
-        @Override
-        public BiPredicate<Command, Throwable> defaultRetryForPredicate() {
-            final boolean retryReadOnlySaved = retryReadOnly;
-            return (command, throwable) -> {
-                if (throwable instanceof RetryableException) {
-                    return true;
-                }
-                return retryReadOnlySaved && throwable instanceof IOException && command.hasFlag(READONLY);
-            };
+        /**
+         * Behaves as {@link #defaultRetryForPredicate()}, but also retries {@link CommandFlag#READONLY read-only}
+         * commands if {@link IOException} occurred.
+         * <p>
+         * <b>Note:</b> This predicate expects that the retried {@link RedisRequest requests} have a
+         * {@link RedisRequest#content() content} that is replayable, i.e. multiple subscribes to the content
+         * {@link Publisher} emit the same data. {@link Publisher}s that created from in-memory data are typically
+         * replayable.
+         *
+         * @return a {@link BiPredicate} for {@link #retryFor(BiPredicate)} builder method
+         */
+        public BiPredicate<Command, Throwable> retryForReadOnlyRequestsPredicate() {
+            return (command, throwable) -> defaultRetryForPredicate().test(command, throwable)
+                    || (throwable instanceof IOException && command.hasFlag(READONLY));
         }
     }
 }
