@@ -491,10 +491,10 @@ public class NettyHttpServerTest extends AbstractNettyHttpServerTest {
         assertConnectionClosed();
         // Client inbound channel closed - should be same exception as above
         Throwable clientThrowable = ((NettyConnectionContext) streamingHttpConnection().connectionContext())
-                .transportError().toFuture().get(1000, MILLISECONDS);
+                .transportError().toFuture().get();
         assertClientTransportInboundClosed(clientThrowable);
         // Server outbound channel force closed (reset)
-        Throwable serverThrowable = capturedServiceTransportErrorRef.get().toFuture().get(1000, MILLISECONDS);
+        Throwable serverThrowable = capturedServiceTransportErrorRef.get().toFuture().get();
         assertThat(serverThrowable, instanceOf(ClosedChannelException.class));
         assertThat(serverThrowable.getMessage(), startsWith(
                 "CHANNEL_CLOSED_OUTBOUND(The transport backing this connection has been shutdown (write)) [id: 0x"));

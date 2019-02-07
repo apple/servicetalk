@@ -317,7 +317,7 @@ public class DefaultNettyConnection<Read, Write> extends ConnectionContextAdapte
 
     @Override
     public Single<Throwable> transportError() {
-        return transportError;
+        return transportError.publishOn(executionContext().executor());
     }
 
     private void invokeUserCloseHandler() {
