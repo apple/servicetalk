@@ -99,11 +99,13 @@ public class DefaultDnsServiceDiscovererTest {
     public void unknownHostDiscover() throws Exception {
         CountDownLatch retryLatch = new CountDownLatch(2);
         ServiceDiscoverer<String, InetAddress, ServiceDiscovererEvent<InetAddress>> discoverer =
-                serviceDiscovererBuilder().retryDnsFailures((retryCount, cause) -> {
-                    retryLatch.countDown();
-                    return retryCount == 1 && cause instanceof UnknownHostException ?
-                            globalExecutionContext().executor().timer(Duration.ofSeconds(1)) : error(cause);
-                }).buildInetDiscoverer();
+                serviceDiscovererBuilderWithoutRetry()
+                        .appendFilter(serviceDiscoverer -> new RetryingDnsServiceDiscovererFilter(
+                                serviceDiscoverer, (retryCount, cause) -> {
+                            retryLatch.countDown();
+                            return retryCount == 1 && cause instanceof UnknownHostException ?
+                                    globalExecutionContext().executor().timer(Duration.ofSeconds(1)) : error(cause);
+                        })).buildInetDiscoverer();
 
         try {
             AtomicReference<Throwable> throwableRef = new AtomicReference<>();
@@ -337,8 +339,7 @@ public class DefaultDnsServiceDiscovererTest {
         recordStore.addResponse("apple.com", A, nextIp());
 
         ServiceDiscoverer<String, InetAddress, ServiceDiscovererEvent<InetAddress>> discoverer =
-                serviceDiscovererBuilder()
-                        .noRetriesOnDnsFailures()
+                serviceDiscovererBuilderWithoutRetry()
                         .invalidateHostsOnDnsFailure(__ -> false)
                         .buildInetDiscoverer();
         try {
@@ -494,8 +495,7 @@ public class DefaultDnsServiceDiscovererTest {
         recordStore.setDefaultResponse("apple.com", A, nextIp());
         CountDownLatch latchOnSubscribe = new CountDownLatch(1);
         ServiceDiscoverer<String, InetAddress, ServiceDiscovererEvent<InetAddress>> discoverer =
-                serviceDiscovererBuilder()
-                        .noRetriesOnDnsFailures()
+                serviceDiscovererBuilderWithoutRetry()
                         .buildInetDiscoverer();
         Subscriber<ServiceDiscovererEvent<InetAddress>> subscriber = mock(Subscriber.class);
 
@@ -520,16 +520,22 @@ public class DefaultDnsServiceDiscovererTest {
         }
     }
 
-    private DefaultDnsServiceDiscovererBuilder serviceDiscovererBuilder() {
+    private DefaultDnsServiceDiscovererBuilder serviceDiscovererBuilderWithoutRetry() {
         return new DefaultDnsServiceDiscovererBuilder()
-                        .ioExecutor(nettyIoExecutor)
-                        .retryDnsFailures((i, t) -> globalExecutionContext().executor().timer(Duration.ofSeconds(1)))
-                        .dnsResolverAddressTypes(DnsResolverAddressTypes.IPV4_PREFERRED)
-                        .optResourceEnabled(false)
-                        .dnsServerAddressStreamProvider(new SingletonDnsServerAddressStreamProvider(
-                                new SingletonDnsServerAddresses(dnsServer.localAddress())))
-                        .ndots(1)
-                        .minTTL(1);
+                .ioExecutor(nettyIoExecutor)
+                .noRetriesOnDnsFailures()
+                .dnsResolverAddressTypes(DnsResolverAddressTypes.IPV4_PREFERRED)
+                .optResourceEnabled(false)
+                .dnsServerAddressStreamProvider(new SingletonDnsServerAddressStreamProvider(
+                        new SingletonDnsServerAddresses(dnsServer.localAddress())))
+                .ndots(1)
+                .minTTL(1);
+    }
+
+    private DefaultDnsServiceDiscovererBuilder serviceDiscovererBuilder() {
+        return serviceDiscovererBuilderWithoutRetry()
+                .appendFilter(serviceDiscoverer -> new RetryingDnsServiceDiscovererFilter(
+                        serviceDiscoverer, (i, t) -> globalExecutionContext().executor().timer(Duration.ofSeconds(1))));
     }
 
     private static class TestSubscriber implements Subscriber<ServiceDiscovererEvent<InetAddress>> {

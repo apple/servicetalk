@@ -30,14 +30,26 @@ import java.net.UnknownHostException;
 
 import static io.servicetalk.concurrent.api.Completable.error;
 
-final class RetryingDnsServiceDiscovererFilter extends ServiceDiscovererFilter<String, InetAddress,
+/**
+ * Applies a retry strategy to a DNS {@link ServiceDiscoverer}.
+ * <p>
+ * {@link Throwable}s that pass {@link #shouldRetry(Throwable)} are logged, and the retry strategy is invoked. All
+ * other {@link Throwable}s will result in the {@link Publisher} terminating with the {@link Throwable}.
+ */
+public class RetryingDnsServiceDiscovererFilter extends ServiceDiscovererFilter<String, InetAddress,
         ServiceDiscovererEvent<InetAddress>> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RetryingDnsServiceDiscovererFilter.class);
 
     private final BiIntFunction<Throwable, Completable> retryStrategy;
 
-    RetryingDnsServiceDiscovererFilter(
+    /**
+     * Create an instance of the filter.
+     *
+     * @param delegate the {@link ServiceDiscoverer} to delegate to
+     * @param retryStrategy the retry strategy to apply
+     */
+    public RetryingDnsServiceDiscovererFilter(
             final ServiceDiscoverer<String, InetAddress, ServiceDiscovererEvent<InetAddress>> delegate,
             final BiIntFunction<Throwable, Completable> retryStrategy) {
         super(delegate);
@@ -47,12 +59,22 @@ final class RetryingDnsServiceDiscovererFilter extends ServiceDiscovererFilter<S
     @Override
     public Publisher<ServiceDiscovererEvent<InetAddress>> discover(final String unresolvedAddress) {
         return super.discover(unresolvedAddress).retryWhen((i, t) -> {
-            if (t instanceof UnknownHostException) {
+            if (shouldRetry(t)) {
                 LOGGER.warn("Unable to resolve host {}", unresolvedAddress, t);
                 return retryStrategy.apply(i, t);
             } else {
                 return error(t);
             }
         });
+    }
+
+    /**
+     * Determines which {@link Throwable}s should be retried.
+     *
+     * @param cause the {@link Throwable} to check
+     * @return true to retry, false to terminate the {@link Publisher}
+     */
+    protected boolean shouldRetry(final Throwable cause) {
+        return cause instanceof UnknownHostException;
     }
 }

@@ -19,7 +19,6 @@ import io.servicetalk.client.api.DefaultServiceDiscovererEvent;
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.client.api.ServiceDiscovererFilterFactory;
-import io.servicetalk.concurrent.api.BiIntFunction;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.transport.api.HostAndPort;
@@ -37,16 +36,11 @@ import javax.annotation.Nullable;
 import static io.servicetalk.client.api.ServiceDiscovererFilterFactory.identity;
 import static io.servicetalk.concurrent.api.RetryStrategies.retryWithConstantBackoffAndJitter;
 import static io.servicetalk.transport.netty.internal.GlobalExecutionContext.globalExecutionContext;
-import static java.util.Objects.requireNonNull;
 
 /**
  * Builder use to create objects of type {@link DefaultDnsServiceDiscoverer}.
  */
 public final class DefaultDnsServiceDiscovererBuilder {
-
-    private static final BiIntFunction<Throwable, Completable> UNSPECIFIED_RETRY_STRATEGY =
-            (i, t) -> Completable.never();
-
     @Nullable
     private DnsServerAddressStreamProvider dnsServerAddressStreamProvider;
     @Nullable
@@ -60,8 +54,7 @@ public final class DefaultDnsServiceDiscovererBuilder {
     private IoExecutor ioExecutor;
     @Nullable
     private Duration queryTimeout;
-    @Nullable
-    private BiIntFunction<Throwable, Completable> retryStrategy = UNSPECIFIED_RETRY_STRATEGY;
+    private boolean applyRetryFilter = true;
     private int minTTLSeconds = 10;
     private ServiceDiscovererFilterFactory<String, InetAddress, ServiceDiscovererEvent<InetAddress>>
             serviceDiscoveryFilterFactory = identity();
@@ -165,23 +158,12 @@ public final class DefaultDnsServiceDiscovererBuilder {
     }
 
     /**
-     * Configures retry strategy if DNS lookup fails.
-     *
-     * @param retryStrategy Retry strategy to use for retrying DNS lookup failures.
-     * @return {@code this}.
-     */
-    public DefaultDnsServiceDiscovererBuilder retryDnsFailures(BiIntFunction<Throwable, Completable> retryStrategy) {
-        this.retryStrategy = requireNonNull(retryStrategy);
-        return this;
-    }
-
-    /**
      * Do not perform retries if DNS lookup fails. Instead, terminate the {@link Publisher} with the error.
      *
      * @return {@code this}.
      */
     public DefaultDnsServiceDiscovererBuilder noRetriesOnDnsFailures() {
-        this.retryStrategy = null;
+        this.applyRetryFilter = false;
         return this;
     }
 
@@ -247,14 +229,12 @@ public final class DefaultDnsServiceDiscovererBuilder {
             ServiceDiscovererEvent<InetAddress>> newDefaultDnsServiceDiscoverer() {
         ServiceDiscovererFilterFactory<String, InetAddress, ServiceDiscovererEvent<InetAddress>> factory =
                 this.serviceDiscoveryFilterFactory;
-        if (retryStrategy == UNSPECIFIED_RETRY_STRATEGY) {
-            retryStrategy = retryWithConstantBackoffAndJitter(
-                    Integer.MAX_VALUE, t -> true, Duration.ofSeconds(60), globalExecutionContext().executor());
-        }
-        if (retryStrategy != null) {
+
+        if (applyRetryFilter) {
             ServiceDiscovererFilterFactory<String, InetAddress, ServiceDiscovererEvent<InetAddress>>
                     defaultFilterFactory = serviceDiscoverer -> new RetryingDnsServiceDiscovererFilter(
-                    serviceDiscoverer, retryStrategy);
+                    serviceDiscoverer, retryWithConstantBackoffAndJitter(
+                    Integer.MAX_VALUE, t -> true, Duration.ofSeconds(60), globalExecutionContext().executor()));
             factory = defaultFilterFactory.append(factory);
         }
         return factory.create(new DefaultDnsServiceDiscoverer(
