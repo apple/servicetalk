@@ -87,7 +87,8 @@ public final class DefaultNettyConnectionContext implements NettyConnectionConte
 
     @Override
     public Single<Throwable> transportError() {
-        return Single.error(new UnsupportedOperationException("source to be provided by the associated connection"));
+        // TODO(scott) remove this as part of #288
+        return Single.error(new UnsupportedOperationException("Temporary hack, this class will go away in #288"));
     }
 
     /**
