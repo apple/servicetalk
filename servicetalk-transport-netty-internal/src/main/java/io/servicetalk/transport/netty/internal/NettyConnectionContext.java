@@ -40,9 +40,11 @@ public interface NettyConnectionContext extends ConnectionContext {
     Cancellable updateFlushStrategy(UnaryOperator<FlushStrategy> strategyProvider);
 
     /**
-     * Returns a {@link Single}&lt;{@link Throwable}&gt; that may complete when an error is observed at the transport.
+     * Returns a {@link Single}&lt;{@link Throwable}&gt; that may terminate with an error, if an error is observed at
+     * the transport.
      *
-     * @return a {@link Single}&lt;{@link Throwable}&gt; that may complete when an error is observed at the transport.
+     * @return a {@link Single}&lt;{@link Throwable}&gt; that may terminate with an error, if an error is observed at
+     * the transport.
      */
     Single<Throwable> transportError();
 }
