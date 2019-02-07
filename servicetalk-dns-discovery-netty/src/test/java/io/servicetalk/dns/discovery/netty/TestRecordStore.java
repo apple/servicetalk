@@ -21,6 +21,8 @@ import org.apache.directory.server.dns.messages.RecordType;
 import org.apache.directory.server.dns.messages.ResourceRecord;
 import org.apache.directory.server.dns.store.DnsAttribute;
 import org.apache.directory.server.dns.store.RecordStore;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -32,6 +34,8 @@ import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
 final class TestRecordStore implements RecordStore {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(TestRecordStore.class);
 
     public static final int DEFAULT_TTL = 1;
 
@@ -59,6 +63,7 @@ final class TestRecordStore implements RecordStore {
         final Map<RecordType, Supplier<List<ResourceRecord>>> defaultRecords =
                 defaultRecordsByDomain.computeIfAbsent(domain, k -> new HashMap<>());
         defaultRecords.put(recordType, records);
+        LOGGER.debug("Set default response for {} type {} to {}", domain, recordType, records);
         return this;
     }
 
@@ -83,6 +88,7 @@ final class TestRecordStore implements RecordStore {
         final List<Supplier<List<ResourceRecord>>> records2 = recordsToReturn.computeIfAbsent(
                 recordType, k -> new ArrayList<>());
         records2.add(records);
+        LOGGER.debug("Added response for {} type {} of {}", domain, recordType, records);
         return this;
     }
 
@@ -92,18 +98,23 @@ final class TestRecordStore implements RecordStore {
         final String domain = questionRecord.getDomainName();
         final Map<RecordType, List<Supplier<List<ResourceRecord>>>> recordsToReturn =
                 recordsToReturnByDomain.get(domain);
+        LOGGER.debug("Getting {} records for {}", questionRecord.getRecordType(), domain);
         if (recordsToReturn != null) {
-            final List<Supplier<List<ResourceRecord>>> records = recordsToReturn.get(
+            final List<Supplier<List<ResourceRecord>>> recordsForType = recordsToReturn.get(
                     questionRecord.getRecordType());
-            if (records != null && records.size() > 0) {
-                return new HashSet<>(records.remove(0).get());
+            if (recordsForType != null && !recordsForType.isEmpty()) {
+                List<ResourceRecord> records = recordsForType.remove(0).get();
+                LOGGER.debug("Found records {}", records);
+                return new HashSet<>(records);
             }
         }
         final Map<RecordType, Supplier<List<ResourceRecord>>> defaultRecords = defaultRecordsByDomain.get(domain);
         if (defaultRecords != null) {
-            final Supplier<List<ResourceRecord>> records = defaultRecords.get(questionRecord.getRecordType());
-            if (records != null) {
-                return new HashSet<>(records.get());
+            final Supplier<List<ResourceRecord>> recordsForType = defaultRecords.get(questionRecord.getRecordType());
+            if (recordsForType != null) {
+                List<ResourceRecord> records = recordsForType.get();
+                LOGGER.debug("Found default records {}", records);
+                return new HashSet<>(records);
             }
         }
         return null;
