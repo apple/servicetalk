@@ -20,6 +20,9 @@ import io.servicetalk.concurrent.api.Completable;
 
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
+import static io.servicetalk.client.internal.RequestConcurrencyController.Result.Accepted;
+import static io.servicetalk.client.internal.RequestConcurrencyController.Result.RejectedPermanently;
+import static io.servicetalk.client.internal.RequestConcurrencyController.Result.RejectedTemporary;
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 
@@ -58,9 +61,15 @@ final class RedisSubscribedReservableRequestConcurrencyController implements Res
     }
 
     @Override
-    public boolean tryRequest() {
-        return requestState == STATE_REQUEST_ONLY ||
-                requestSeenUpdater.compareAndSet(this, STATE_IDLE, STATE_REQUEST_ONLY);
+    public Result tryRequest() {
+        if (requestState == STATE_QUIT) {
+            return RejectedPermanently;
+        }
+        if (requestState == STATE_REQUEST_ONLY ||
+                requestSeenUpdater.compareAndSet(this, STATE_IDLE, STATE_REQUEST_ONLY)) {
+            return Accepted;
+        }
+        return RejectedTemporary;
     }
 
     @Override

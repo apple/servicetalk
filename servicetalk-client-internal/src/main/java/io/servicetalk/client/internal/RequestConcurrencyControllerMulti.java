@@ -18,6 +18,10 @@ package io.servicetalk.client.internal;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 
+import static io.servicetalk.client.internal.RequestConcurrencyController.Result.Accepted;
+import static io.servicetalk.client.internal.RequestConcurrencyController.Result.RejectedPermanently;
+import static io.servicetalk.client.internal.RequestConcurrencyController.Result.RejectedTemporary;
+
 final class RequestConcurrencyControllerMulti extends AbstractRequestConcurrencyController {
     private final int maxRequests;
 
@@ -29,15 +33,18 @@ final class RequestConcurrencyControllerMulti extends AbstractRequestConcurrency
     }
 
     @Override
-    public boolean tryRequest() {
+    public Result tryRequest() {
         final int maxConcurrency = getLastSeenMaxValue(maxRequests);
         for (;;) {
             final int currentPending = getPendingRequests();
-            if (currentPending < 0 || currentPending >= maxConcurrency) {
-                return false;
+            if (currentPending < 0) {
+                return RejectedPermanently;
+            }
+            if (currentPending >= maxConcurrency) {
+                return RejectedTemporary;
             }
             if (casPendingRequests(currentPending, currentPending + 1)) {
-                return true;
+                return Accepted;
             }
         }
     }

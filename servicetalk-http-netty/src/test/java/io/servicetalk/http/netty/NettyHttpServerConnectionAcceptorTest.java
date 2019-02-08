@@ -16,6 +16,7 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.client.api.MaxRequestLimitExceededException;
+import io.servicetalk.client.api.NoAvailableHostException;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.DeliberateException;
@@ -148,7 +149,9 @@ public class NettyHttpServerConnectionAcceptorTest extends AbstractNettyHttpServ
             if (filterMode.expectAccept) {
                 throw new AssertionError("Unexpected exception while reading/writing request/response", e);
             }
-            assertThat(e.getCause(), anyOf(instanceOf(IOException.class), instanceOf(MaxRequestLimitExceededException.class)));
+            assertThat(e.getCause(), anyOf(instanceOf(IOException.class),
+                    instanceOf(MaxRequestLimitExceededException.class),
+                    instanceOf(NoAvailableHostException.class)));
         }
 
         if (getSslEnabled()) {
