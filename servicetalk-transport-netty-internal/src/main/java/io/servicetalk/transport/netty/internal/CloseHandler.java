@@ -22,6 +22,7 @@ import io.netty.channel.socket.SocketChannel;
 
 import java.nio.channels.ClosedChannelException;
 import java.util.function.Consumer;
+import javax.annotation.Nullable;
 
 /**
  * Contract between protocol codecs and a close handler.
@@ -137,42 +138,54 @@ public abstract class CloseHandler {
         /**
          * Outbound protocol close command observed eg. HTTP header: {@code Connection: close}.
          */
-        PROTOCOL_CLOSING_OUTBOUND,
+        PROTOCOL_CLOSING_OUTBOUND("The application protocol closed the write side of this connection. " +
+                "This maybe the result of sending an HTTP header such as Connection: close."),
         /**
          * Inbound protocol close command observed eg. HTTP header: {@code Connection: close}.
          */
-        PROTOCOL_CLOSING_INBOUND,
+        PROTOCOL_CLOSING_INBOUND("The application protocol closed the read side of this connection. " +
+                "This maybe the result of sending an HTTP header such as Connection: close."),
         /**
          * User initiated close command, depends on the implementation but usually resembles outbound protocol close.
          */
-        USER_CLOSING,
+        USER_CLOSING("The close* method was called in the local application."),
         /**
          * Outbound {@link SocketChannel} shutdown observed.
          */
-        CHANNEL_CLOSED_OUTBOUND,
+        CHANNEL_CLOSED_OUTBOUND("The transport backing this connection has been shutdown (write)"),
         /**
          * Inbound {@link SocketChannel} shutdown observed.
          */
-        CHANNEL_CLOSED_INBOUND;
+        CHANNEL_CLOSED_INBOUND("The transport backing this connection has been shutdown (read)");
 
-        Throwable wrapError(Throwable cause) {
-            return new CloseEventObservedException(cause, this.name());
+        private final String description;
+
+        CloseEvent(final String description) {
+            this.description = description;
+        }
+
+        Throwable wrapError(@Nullable Throwable cause, Channel channel) {
+            return new CloseEventObservedException(cause, this, channel);
         }
     }
 
     private static final class CloseEventObservedException extends ClosedChannelException {
         private static final long serialVersionUID = -4181001701486049092L;
 
-        private final String closeEventName;
+        private final CloseEvent event;
+        private final String channelDetails;
 
-        private CloseEventObservedException(Throwable cause, final String closeEventName) {
-            this.closeEventName = closeEventName;
+        private CloseEventObservedException(@Nullable Throwable cause,
+                                            final CloseEvent closeEvent,
+                                            final Channel channel) {
+            this.event = closeEvent;
+            this.channelDetails = channel.toString();
             initCause(cause);
         }
 
         @Override
         public String getMessage() {
-            return closeEventName;
+            return event.name() + "(" + event.description + ") " + channelDetails;
         }
 
         @Override

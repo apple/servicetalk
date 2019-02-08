@@ -17,6 +17,7 @@ package io.servicetalk.transport.netty.internal;
 
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.api.Completable;
+import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ExecutionContext;
 
@@ -82,6 +83,12 @@ public final class DefaultNettyConnectionContext implements NettyConnectionConte
     @Override
     public ExecutionContext executionContext() {
         return executionContext;
+    }
+
+    @Override
+    public Single<Throwable> transportError() {
+        // TODO(scott) remove this as part of #288
+        return Single.error(new UnsupportedOperationException("Temporary hack, this class will go away in #288"));
     }
 
     /**

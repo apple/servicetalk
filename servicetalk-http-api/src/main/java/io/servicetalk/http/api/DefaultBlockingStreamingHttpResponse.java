@@ -21,7 +21,7 @@ import io.servicetalk.concurrent.BlockingIterable;
 import io.servicetalk.concurrent.CloseableIterable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.concurrent.api.internal.SingleProcessor;
+import io.servicetalk.concurrent.api.SingleProcessor;
 import io.servicetalk.concurrent.internal.BlockingIterables;
 import io.servicetalk.http.api.HttpDataSourceTranformations.HttpBufferFilterIterable;
 import io.servicetalk.http.api.HttpDataSourceTranformations.HttpBuffersAndTrailersIterable;

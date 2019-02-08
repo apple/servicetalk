@@ -249,6 +249,11 @@ final class NettyHttpServerConnection extends HttpServiceContext implements Nett
     }
 
     @Override
+    public Single<Throwable> transportError() {
+        return connection.transportError();
+    }
+
+    @Override
     public Completable onClose() {
         return connection.onClose();
     }
