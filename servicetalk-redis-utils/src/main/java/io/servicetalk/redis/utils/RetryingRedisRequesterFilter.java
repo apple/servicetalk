@@ -17,7 +17,6 @@ package io.servicetalk.redis.utils;
 
 import io.servicetalk.client.api.AbstractRetryingFilterBuilder;
 import io.servicetalk.client.api.AbstractRetryingFilterBuilder.ReadOnlyRetryableSettings;
-import io.servicetalk.client.api.RetryableException;
 import io.servicetalk.concurrent.api.BiIntFunction;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
@@ -32,10 +31,12 @@ import io.servicetalk.redis.api.RedisConnectionFilterFactory;
 import io.servicetalk.redis.api.RedisData;
 import io.servicetalk.redis.api.RedisExecutionStrategy;
 import io.servicetalk.redis.api.RedisProtocolSupport.Command;
+import io.servicetalk.redis.api.RedisProtocolSupport.CommandFlag;
 import io.servicetalk.redis.api.RedisRequest;
 import io.servicetalk.redis.api.RedisRequester;
 import io.servicetalk.redis.api.ReservedRedisConnectionFilter;
 
+import java.io.IOException;
 import java.util.function.BiPredicate;
 
 import static io.servicetalk.concurrent.api.Completable.error;
@@ -123,9 +124,20 @@ public final class RetryingRedisRequesterFilter implements RedisClientFilterFact
             return new RetryingRedisRequesterFilter(readOnlySettings);
         }
 
-        @Override
-        public BiPredicate<Command, Throwable> defaultRetryForPredicate() {
-            return (command, throwable) -> throwable instanceof RetryableException || command.hasFlag(READONLY);
+        /**
+         * Behaves as {@link #defaultRetryForPredicate()}, but also retries {@link CommandFlag#READONLY read-only}
+         * commands when applicable.
+         * <p>
+         * <b>Note:</b> This predicate expects that the retried {@link RedisRequest requests} have a
+         * {@link RedisRequest#content() content} that is replayable, i.e. multiple subscribes to the content
+         * {@link Publisher} emit the same data. {@link Publisher}s that created from in-memory data are typically
+         * replayable.
+         *
+         * @return a {@link BiPredicate} for {@link #retryFor(BiPredicate)} builder method
+         */
+        public BiPredicate<Command, Throwable> retryForReadOnlyRequestsPredicate() {
+            return defaultRetryForPredicate().or((command, throwable) ->
+                    throwable instanceof IOException && command.hasFlag(READONLY));
         }
     }
 }

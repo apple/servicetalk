@@ -17,7 +17,6 @@ package io.servicetalk.http.utils;
 
 import io.servicetalk.client.api.AbstractRetryingFilterBuilder;
 import io.servicetalk.client.api.AbstractRetryingFilterBuilder.ReadOnlyRetryableSettings;
-import io.servicetalk.client.api.RetryableException;
 import io.servicetalk.concurrent.api.BiIntFunction;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
@@ -35,6 +34,7 @@ import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequester;
 import io.servicetalk.http.api.StreamingHttpResponse;
 
+import java.io.IOException;
 import java.util.function.BiPredicate;
 
 import static io.servicetalk.concurrent.api.Completable.error;
@@ -108,10 +108,20 @@ public final class RetryingHttpRequesterFilter implements HttpClientFilterFactor
             return new RetryingHttpRequesterFilter(readOnlySettings);
         }
 
-        @Override
-        public BiPredicate<HttpRequestMetaData, Throwable> defaultRetryForPredicate() {
-            return (meta, throwable) ->
-                    throwable instanceof RetryableException || meta.method().methodProperties().idempotent();
+        /**
+         * Behaves as {@link #defaultRetryForPredicate()}, but also retries
+         * <a href="https://tools.ietf.org/html/rfc7231#section-4.2.2">idempotent</a> requests when applicable.
+         * <p>
+         * <b>Note:</b> This predicate expects that the retried {@link StreamingHttpRequest requests} have a
+         * {@link StreamingHttpRequest#payloadBody() payload body} that is replayable, i.e. multiple subscribes to the
+         * payload {@link Publisher} emit the same data. {@link Publisher}s that do not emit any data or which are
+         * created from in-memory data are typically replayable.
+         *
+         * @return a {@link BiPredicate} for {@link #retryFor(BiPredicate)} builder method
+         */
+        public BiPredicate<HttpRequestMetaData, Throwable> retryForIdempotentRequestsPredicate() {
+            return defaultRetryForPredicate().or((meta, throwable) ->
+                    throwable instanceof IOException && meta.method().methodProperties().idempotent());
         }
     }
 }

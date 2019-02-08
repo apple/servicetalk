@@ -215,7 +215,9 @@ public abstract class AbstractRetryingFilterBuilder<Builder
      *
      * @return a default value for {@link #retryFor(BiPredicate)}
      */
-    public abstract BiPredicate<Meta, Throwable> defaultRetryForPredicate();
+    public BiPredicate<Meta, Throwable> defaultRetryForPredicate() {
+        return (meta, throwable) -> throwable instanceof RetryableException;
+    }
 
     private ReadOnlyRetryableSettings<Meta> readOnlySettings(@Nullable final Duration initialDelay,
                                                              @Nullable final Executor timerExecutor,
