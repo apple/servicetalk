@@ -89,7 +89,7 @@ final class HeaderUtils {
      */
     private static void addTransferEncodingIfNecessary(final HttpMetaData metaData) {
         final HttpHeaders headers = metaData.headers();
-        if (!headers.contains(CONTENT_LENGTH) && !headers.contains(TRANSFER_ENCODING, CHUNKED, true)) {
+        if (!headers.contains(CONTENT_LENGTH) && !isTransferEncodingChunked(headers)) {
             LOGGER.debug("No '{}' or '{}: {}' headers, setting '{}: {}'.",
                     CONTENT_LENGTH, TRANSFER_ENCODING, CHUNKED, TRANSFER_ENCODING, CHUNKED);
             headers.add(TRANSFER_ENCODING, CHUNKED);

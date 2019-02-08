@@ -75,8 +75,7 @@ public class HeaderUtilsTest {
 
         addRequestTransferEncodingIfNecessary(httpRequest);
 
-        assertEquals(1, httpRequest.headers().size());
-        assertTrue(httpRequest.headers().contains(TRANSFER_ENCODING, CHUNKED, true));
+        assertOneTransferEncodingChunked();
     }
 
     @Test
@@ -87,8 +86,7 @@ public class HeaderUtilsTest {
 
         addRequestTransferEncodingIfNecessary(httpRequest);
 
-        assertEquals(1, httpRequest.headers().size());
-        assertTrue(httpRequest.headers().contains(TRANSFER_ENCODING, CHUNKED, true));
+        assertOneTransferEncodingChunked();
     }
 
     @Test
@@ -99,6 +97,10 @@ public class HeaderUtilsTest {
 
         addRequestTransferEncodingIfNecessary(httpRequest);
 
+        assertOneTransferEncodingChunked();
+    }
+
+    private void assertOneTransferEncodingChunked() {
         assertEquals(1, httpRequest.headers().size());
         assertTrue(httpRequest.headers().contains(TRANSFER_ENCODING, CHUNKED, true));
     }
