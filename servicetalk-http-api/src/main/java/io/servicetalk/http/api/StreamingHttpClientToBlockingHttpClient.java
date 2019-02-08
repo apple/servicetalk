@@ -35,8 +35,8 @@ final class StreamingHttpClientToBlockingHttpClient extends BlockingHttpClient {
 
     @Override
     public ReservedBlockingHttpConnection reserveConnection(final HttpExecutionStrategy strategy,
-                                                            final HttpRequest request) throws Exception {
-        return blockingInvocation(client.reserveConnection(strategy, request.toStreamingRequest())
+                                                            final HttpRequestMetaData metaData) throws Exception {
+        return blockingInvocation(client.reserveConnection(strategy, metaData)
                 .map(ReservedStreamingHttpConnectionToBlocking::new));
     }
 

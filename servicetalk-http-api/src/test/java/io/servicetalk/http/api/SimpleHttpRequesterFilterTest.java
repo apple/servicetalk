@@ -76,8 +76,8 @@ public class SimpleHttpRequesterFilterTest extends AbstractHttpRequesterFilterTe
                 protected Single<? extends ReservedStreamingHttpConnection> reserveConnection(
                         final StreamingHttpClient delegate,
                         final HttpExecutionStrategy strategy,
-                        final StreamingHttpRequest request) {
-                    return delegate.reserveConnection(strategy, request).map(r ->
+                        final HttpRequestMetaData metaData) {
+                    return delegate.reserveConnection(strategy, metaData).map(r ->
                             new ReservedStreamingHttpConnectionFilter(r) {
                                 @Override
                                 public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
@@ -153,8 +153,8 @@ public class SimpleHttpRequesterFilterTest extends AbstractHttpRequesterFilterTe
                 protected Single<? extends ReservedStreamingHttpConnection> reserveConnection(
                         final StreamingHttpClient delegate,
                         final HttpExecutionStrategy strategy,
-                        final StreamingHttpRequest request) {
-                    return delegate.reserveConnection(strategy, request)
+                        final HttpRequestMetaData metaData) {
+                    return delegate.reserveConnection(strategy, metaData)
                             .map(r -> new ReservedStreamingHttpConnectionFilter(r) {
                                 @Override
                                 public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
@@ -216,8 +216,8 @@ public class SimpleHttpRequesterFilterTest extends AbstractHttpRequesterFilterTe
                 protected Single<? extends ReservedStreamingHttpConnection> reserveConnection(
                         final StreamingHttpClient delegate,
                         final HttpExecutionStrategy strategy,
-                        final StreamingHttpRequest request) {
-                    return delegate.reserveConnection(strategy, request)
+                        final HttpRequestMetaData metaData) {
+                    return delegate.reserveConnection(strategy, metaData)
                             .map(r -> new ReservedStreamingHttpConnectionFilter(r) {
                                 @Override
                                 public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,

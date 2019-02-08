@@ -57,7 +57,7 @@ import static org.mockito.MockitoAnnotations.initMocks;
 public class LoadBalancerReadyHttpClientTest {
     private static final BufferAllocator allocator = DEFAULT_ALLOCATOR;
     private final StreamingHttpRequestResponseFactory reqRespFactory = new DefaultStreamingHttpRequestResponseFactory(
-            allocator, DefaultHttpHeadersFactory.INSTANCE);
+            allocator, INSTANCE);
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
     @Rule
@@ -74,7 +74,7 @@ public class LoadBalancerReadyHttpClientTest {
 
         @Override
         public Single<? extends ReservedStreamingHttpConnection> reserveConnection(final HttpExecutionStrategy strategy,
-                final StreamingHttpRequest request) {
+                                                                                   final HttpRequestMetaData metaData) {
             return defer(new DeferredSuccessSupplier<>(mockReservedConnection));
         }
     };
@@ -170,7 +170,7 @@ public class LoadBalancerReadyHttpClientTest {
         }
     }
 
-    private StreamingHttpResponse newOkResponse() {
+    private static StreamingHttpResponse newOkResponse() {
         return StreamingHttpResponses.newResponse(OK, HTTP_1_1, INSTANCE.newHeaders(), INSTANCE.newTrailers(),
                 DEFAULT_ALLOCATOR);
     }

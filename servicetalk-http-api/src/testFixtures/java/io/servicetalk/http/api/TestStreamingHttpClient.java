@@ -53,7 +53,7 @@ public class TestStreamingHttpClient extends StreamingHttpClient {
 
     @Override
     public Single<? extends ReservedStreamingHttpConnection> reserveConnection(final HttpExecutionStrategy strategy,
-                                                                               final StreamingHttpRequest request) {
+                                                                               final HttpRequestMetaData metaData) {
         return error(new UnsupportedOperationException());
     }
 }

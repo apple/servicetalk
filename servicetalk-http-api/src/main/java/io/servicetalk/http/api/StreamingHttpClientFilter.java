@@ -54,14 +54,14 @@ public class StreamingHttpClientFilter extends StreamingHttpClient {
 
     @Override
     public final Single<? extends ReservedStreamingHttpConnection> reserveConnection(
-            final StreamingHttpRequest request) {
-        return reserveConnection(defaultStrategy, request);
+            final HttpRequestMetaData metaData) {
+        return reserveConnection(defaultStrategy, metaData);
     }
 
     @Override
     public final Single<? extends ReservedStreamingHttpConnection> reserveConnection(
-            final HttpExecutionStrategy strategy, final StreamingHttpRequest request) {
-        return reserveConnection(delegate, strategy, request);
+            final HttpExecutionStrategy strategy, final HttpRequestMetaData metaData) {
+        return reserveConnection(delegate, strategy, metaData);
     }
 
     @Override
@@ -93,17 +93,17 @@ public class StreamingHttpClientFilter extends StreamingHttpClient {
     /**
      * Called when the filter needs to delegate the reserve connection request using the provided {@link
      * StreamingHttpClient} on which to call {@link StreamingHttpClient#reserveConnection(HttpExecutionStrategy,
-     * StreamingHttpRequest)}.
+     * HttpRequestMetaData)}.
      *
      * @param delegate the {@link StreamingHttpClient} to delegate requests to.
-     * @param strategy the {@link HttpExecutionStrategy} to use for executing the request.
-     * @param request The request for reserving the connection.
-     * @return the response.
+     * @param strategy the {@link HttpExecutionStrategy} to use for reserving a connection.
+     * @param metaData the {@link HttpRequestMetaData} for reserving a connection.
+     * @return a {@link Single} that provides the {@link ReservedStreamingHttpConnection} upon completion.
      */
     protected Single<? extends ReservedStreamingHttpConnection> reserveConnection(final StreamingHttpClient delegate,
                                                                                   final HttpExecutionStrategy strategy,
-                                                                                  final StreamingHttpRequest request) {
-        return delegate.reserveConnection(strategy, request).map(ClientFilterToReservedConnectionFilter::new);
+                                                                                  final HttpRequestMetaData metaData) {
+        return delegate.reserveConnection(strategy, metaData).map(ClientFilterToReservedConnectionFilter::new);
     }
 
     @Override

@@ -39,26 +39,28 @@ public abstract class HttpClient extends HttpRequester {
     }
 
     /**
-     * Reserve a {@link HttpConnection} for handling the provided {@link HttpRequest} but <b>does not execute it</b>!
+     * Reserve an {@link HttpConnection} based on provided {@link HttpRequestMetaData}.
      *
-     * @param request Allows the underlying layers to know what {@link HttpConnection}s are valid to reserve.
+     * @param metaData Allows the underlying layers to know what {@link HttpConnection}s are valid to
+     * reserve for future {@link HttpRequest requests} with the same {@link HttpRequestMetaData}.
      * For example this may provide some insight into shard or other info.
      * @return a {@link Single} that provides the {@link ReservedHttpConnection} upon completion.
      */
-    public Single<? extends ReservedHttpConnection> reserveConnection(HttpRequest request) {
-        return reserveConnection(executionStrategy(), request);
+    public Single<? extends ReservedHttpConnection> reserveConnection(HttpRequestMetaData metaData) {
+        return reserveConnection(executionStrategy(), metaData);
     }
 
     /**
-     * Reserve a {@link HttpConnection} for handling the provided {@link HttpRequest} but <b>does not execute it</b>!
+     * Reserve an {@link HttpConnection} based on provided {@link HttpRequestMetaData}.
      *
      * @param strategy {@link HttpExecutionStrategy} to use.
-     * @param request Allows the underlying layers to know what {@link HttpConnection}s are valid to reserve.
+     * @param metaData Allows the underlying layers to know what {@link HttpConnection}s are valid to
+     * reserve for future {@link HttpRequest requests} with the same {@link HttpRequestMetaData}.
      * For example this may provide some insight into shard or other info.
      * @return a {@link Single} that provides the {@link ReservedHttpConnection} upon completion.
      */
     public abstract Single<? extends ReservedHttpConnection> reserveConnection(HttpExecutionStrategy strategy,
-                                                                               HttpRequest request);
+                                                                               HttpRequestMetaData metaData);
 
     /**
      * Convert this {@link HttpClient} to the {@link StreamingHttpClient} API.
@@ -97,8 +99,8 @@ public abstract class HttpClient extends HttpRequester {
 
     /**
      * A special type of {@link HttpConnection} for the exclusive use of the caller of
-     * {@link #reserveConnection(HttpRequest)} and {@link #reserveConnection(HttpExecutionStrategy, HttpRequest)}.
-     * @see ReservedStreamingHttpConnection
+     * {@link #reserveConnection(HttpRequestMetaData)} and
+     * {@link #reserveConnection(HttpExecutionStrategy, HttpRequestMetaData)}.
      */
     public abstract static class ReservedHttpConnection extends HttpConnection {
         /**

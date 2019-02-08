@@ -19,6 +19,7 @@ import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpExecutionStrategy;
+import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
@@ -54,7 +55,7 @@ final class DefaultStreamingHttpClient extends StreamingHttpClient {
 
     @Override
     public Single<? extends ReservedStreamingHttpConnection> reserveConnection(final HttpExecutionStrategy strategy,
-                                                                               final StreamingHttpRequest request) {
+                                                                               final HttpRequestMetaData metaData) {
         return strategy.offloadReceive(executionContext.executor(),
                 loadBalancer.selectConnection(SELECTOR_FOR_RESERVE));
     }
