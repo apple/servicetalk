@@ -110,8 +110,7 @@ public final class RetryingHttpRequesterFilter implements HttpClientFilterFactor
 
         /**
          * Behaves as {@link #defaultRetryForPredicate()}, but also retries
-         * <a href="https://tools.ietf.org/html/rfc7231#section-4.2.2">idempotent</a> requests if {@link IOException}
-         * occurred.
+         * <a href="https://tools.ietf.org/html/rfc7231#section-4.2.2">idempotent</a> requests when applicable.
          * <p>
          * <b>Note:</b> This predicate expects that the retried {@link StreamingHttpRequest requests} have a
          * {@link StreamingHttpRequest#payloadBody() payload body} that is replayable, i.e. multiple subscribes to the
@@ -121,8 +120,8 @@ public final class RetryingHttpRequesterFilter implements HttpClientFilterFactor
          * @return a {@link BiPredicate} for {@link #retryFor(BiPredicate)} builder method
          */
         public BiPredicate<HttpRequestMetaData, Throwable> retryForIdempotentRequestsPredicate() {
-            return (meta, throwable) -> defaultRetryForPredicate().test(meta, throwable)
-                    || (throwable instanceof IOException && meta.method().methodProperties().idempotent());
+            return defaultRetryForPredicate().or((meta, throwable) ->
+                    throwable instanceof IOException && meta.method().methodProperties().idempotent());
         }
     }
 }

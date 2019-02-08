@@ -126,7 +126,7 @@ public final class RetryingRedisRequesterFilter implements RedisClientFilterFact
 
         /**
          * Behaves as {@link #defaultRetryForPredicate()}, but also retries {@link CommandFlag#READONLY read-only}
-         * commands if {@link IOException} occurred.
+         * commands when applicable.
          * <p>
          * <b>Note:</b> This predicate expects that the retried {@link RedisRequest requests} have a
          * {@link RedisRequest#content() content} that is replayable, i.e. multiple subscribes to the content
@@ -136,8 +136,8 @@ public final class RetryingRedisRequesterFilter implements RedisClientFilterFact
          * @return a {@link BiPredicate} for {@link #retryFor(BiPredicate)} builder method
          */
         public BiPredicate<Command, Throwable> retryForReadOnlyRequestsPredicate() {
-            return (command, throwable) -> defaultRetryForPredicate().test(command, throwable)
-                    || (throwable instanceof IOException && command.hasFlag(READONLY));
+            return defaultRetryForPredicate().or((command, throwable) ->
+                    throwable instanceof IOException && command.hasFlag(READONLY));
         }
     }
 }
