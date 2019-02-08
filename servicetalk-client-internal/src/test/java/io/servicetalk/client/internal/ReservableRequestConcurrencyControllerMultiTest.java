@@ -20,10 +20,13 @@ import io.servicetalk.concurrent.api.Publisher;
 
 import org.junit.Test;
 
+import static io.servicetalk.client.internal.RequestConcurrencyController.Result.Accepted;
 import static io.servicetalk.concurrent.api.Completable.never;
 import static io.servicetalk.concurrent.api.Publisher.just;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 public class ReservableRequestConcurrencyControllerMultiTest extends AbstractRequestConcurrencyControllerMultiTest {
@@ -53,7 +56,7 @@ public class ReservableRequestConcurrencyControllerMultiTest extends AbstractReq
     @Test
     public void reserveFailsWhenPendingRequest() {
         ReservableRequestConcurrencyController controller = newController(just(10), never(), 10);
-        assertTrue(controller.tryRequest());
+        assertThat(controller.tryRequest(), is(Accepted));
         assertFalse(controller.tryReserve());
     }
 }

@@ -18,7 +18,7 @@ package io.servicetalk.redis.api;
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.concurrent.api.internal.SingleProcessor;
+import io.servicetalk.concurrent.api.SingleProcessor;
 import io.servicetalk.redis.api.CommanderUtils.DiscardSingle;
 import io.servicetalk.redis.api.CommanderUtils.ExecCompletable;
 import io.servicetalk.redis.internal.RedisUtils;

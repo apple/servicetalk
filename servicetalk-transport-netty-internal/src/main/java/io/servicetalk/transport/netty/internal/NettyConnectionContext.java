@@ -16,6 +16,7 @@
 package io.servicetalk.transport.netty.internal;
 
 import io.servicetalk.concurrent.Cancellable;
+import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.transport.api.ConnectionContext;
 
 import java.util.function.UnaryOperator;
@@ -37,4 +38,13 @@ public interface NettyConnectionContext extends ConnectionContext {
      * connection to a default value.
      */
     Cancellable updateFlushStrategy(UnaryOperator<FlushStrategy> strategyProvider);
+
+    /**
+     * Returns a {@link Single}&lt;{@link Throwable}&gt; that may terminate with an error, if an error is observed at
+     * the transport.
+     *
+     * @return a {@link Single}&lt;{@link Throwable}&gt; that may terminate with an error, if an error is observed at
+     * the transport.
+     */
+    Single<Throwable> transportError();
 }

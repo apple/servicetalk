@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.concurrent.api.internal;
+package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
-import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.QueueFullAndRejectedSubscribeException;
+import io.servicetalk.concurrent.internal.TerminalNotification;
 
 import java.util.Queue;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
@@ -94,7 +94,7 @@ public final class SingleProcessor<T> extends Single<T> implements Single.Proces
 
     @Override
     public void onError(final Throwable t) {
-        terminate(t);
+        terminate(TerminalNotification.error(t));
     }
 
     private void terminate(@Nullable Object terminalSignal) {
@@ -104,8 +104,9 @@ public final class SingleProcessor<T> extends Single<T> implements Single.Proces
     }
 
     private void notifyListeners(@Nullable Object terminalSignal) {
-        if (terminalSignal instanceof Throwable) {
-            final Throwable error = (Throwable) terminalSignal;
+        if (terminalSignal instanceof TerminalNotification) {
+            final Throwable error = ((TerminalNotification) terminalSignal).getCause();
+            assert error != null : "Cause can't be null from TerminalNotification.error(..)";
             drainSingleConsumerQueueDelayThrow(subscribers, subscriber -> subscriber.onError(error),
                     drainingTheQueueUpdater, this);
         } else {

@@ -185,6 +185,11 @@ public final class DefaultNettyPipelinedConnection<Req, Resp> implements NettyPi
     }
 
     @Override
+    public Single<Throwable> transportError() {
+        return connection.transportError();
+    }
+
+    @Override
     public Completable onClose() {
         return connection.onClose();
     }

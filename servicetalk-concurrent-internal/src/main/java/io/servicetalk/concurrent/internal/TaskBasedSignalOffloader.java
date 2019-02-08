@@ -571,7 +571,7 @@ final class TaskBasedSignalOffloader implements SignalOffloader {
 
         @Override
         public void onError(final Throwable t) {
-            setTerminal(t);
+            setTerminal(TerminalNotification.error(t));
         }
 
         @Override
@@ -581,9 +581,11 @@ final class TaskBasedSignalOffloader implements SignalOffloader {
 
         @Override
         void deliverTerminalToSubscriber(final Object terminal) {
-            if (terminal instanceof Throwable) {
+            if (terminal instanceof TerminalNotification) {
                 try {
-                    target.onError((Throwable) terminal);
+                    final Throwable error = ((TerminalNotification) terminal).getCause();
+                    assert error != null : "Cause can't be null from TerminalNotification.error(..)";
+                    target.onError(error);
                 } catch (Throwable t) {
                     LOGGER.error("Ignored unexpected exception from onError. Subscriber: {}", target, t);
                 }

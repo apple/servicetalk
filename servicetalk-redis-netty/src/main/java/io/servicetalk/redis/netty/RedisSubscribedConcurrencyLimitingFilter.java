@@ -23,6 +23,8 @@ import io.servicetalk.redis.api.RedisData;
 import io.servicetalk.redis.api.RedisExecutionStrategy;
 import io.servicetalk.redis.api.RedisRequest;
 
+import static io.servicetalk.client.internal.RequestConcurrencyController.Result.Accepted;
+
 final class RedisSubscribedConcurrencyLimitingFilter extends RedisConnectionFilter {
     private final RequestConcurrencyController limiter;
 
@@ -33,7 +35,8 @@ final class RedisSubscribedConcurrencyLimitingFilter extends RedisConnectionFilt
 
     @Override
     public Publisher<RedisData> request(RedisExecutionStrategy strategy, RedisRequest request) {
-        return limiter.tryRequest() ? delegate().request(strategy, request) :
-                Publisher.error(new IllegalStateException("Connection in invalid state for requests: " + this));
+        RequestConcurrencyController.Result result = limiter.tryRequest();
+        return result == Accepted ? delegate().request(strategy, request) :
+                Publisher.error(new IllegalStateException("Connection in invalid state for requests: " + result));
     }
 }

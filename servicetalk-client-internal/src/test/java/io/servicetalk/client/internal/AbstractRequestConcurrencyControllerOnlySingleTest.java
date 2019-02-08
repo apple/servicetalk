@@ -24,11 +24,14 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
 
+import static io.servicetalk.client.internal.RequestConcurrencyController.Result.Accepted;
+import static io.servicetalk.client.internal.RequestConcurrencyController.Result.RejectedPermanently;
+import static io.servicetalk.client.internal.RequestConcurrencyController.Result.RejectedTemporary;
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Completable.never;
 import static io.servicetalk.concurrent.api.Publisher.just;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
 
 public abstract class AbstractRequestConcurrencyControllerOnlySingleTest {
     @Rule
@@ -42,8 +45,8 @@ public abstract class AbstractRequestConcurrencyControllerOnlySingleTest {
     public void singleRequestAtTime() {
         RequestConcurrencyController controller = newController(just(1), never());
         for (int i = 0; i < 100; ++i) {
-            assertTrue(controller.tryRequest());
-            assertFalse(controller.tryRequest());
+            assertThat(controller.tryRequest(), is(Accepted));
+            assertThat(controller.tryRequest(), is(RejectedTemporary));
             controller.requestFinished();
         }
     }
@@ -53,8 +56,8 @@ public abstract class AbstractRequestConcurrencyControllerOnlySingleTest {
         RequestConcurrencyController controller = newController(limitRule.getPublisher(), never());
         for (int i = 1; i < 100; ++i) {
             limitRule.sendItems(i);
-            assertTrue(controller.tryRequest());
-            assertFalse(controller.tryRequest());
+            assertThat(controller.tryRequest(), is(Accepted));
+            assertThat(controller.tryRequest(), is(RejectedTemporary));
             controller.requestFinished();
         }
     }
@@ -63,25 +66,25 @@ public abstract class AbstractRequestConcurrencyControllerOnlySingleTest {
     public void singleRequestEventIfLimitIsLower() {
         RequestConcurrencyController controller = newController(limitRule.getPublisher(), never());
         limitRule.sendItems(0);
-        assertFalse(controller.tryRequest());
+        assertThat(controller.tryRequest(), is(RejectedPermanently));
 
         limitRule.sendItems(1);
-        assertTrue(controller.tryRequest());
-        assertFalse(controller.tryRequest());
+        assertThat(controller.tryRequest(), is(Accepted));
+        assertThat(controller.tryRequest(), is(RejectedTemporary));
 
         limitRule.sendItems(0);
         controller.requestFinished();
 
-        assertFalse(controller.tryRequest());
+        assertThat(controller.tryRequest(), is(RejectedPermanently));
 
         limitRule.sendItems(1);
-        assertTrue(controller.tryRequest());
-        assertFalse(controller.tryRequest());
+        assertThat(controller.tryRequest(), is(Accepted));
+        assertThat(controller.tryRequest(), is(RejectedTemporary));
     }
 
     @Test
     public void noMoreRequestsAfterClose() {
         RequestConcurrencyController controller = newController(just(1), completed());
-        assertFalse(controller.tryRequest());
+        assertThat(controller.tryRequest(), is(RejectedTemporary));
     }
 }

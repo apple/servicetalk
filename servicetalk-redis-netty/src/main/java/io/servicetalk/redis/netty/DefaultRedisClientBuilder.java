@@ -50,6 +50,7 @@ import java.util.function.Function;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.client.internal.RequestConcurrencyController.Result.Accepted;
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.loadbalancer.RoundRobinLoadBalancer.newRoundRobinFactory;
 import static io.servicetalk.redis.api.RedisExecutionStrategies.defaultStrategy;
@@ -66,7 +67,7 @@ import static java.util.Objects.requireNonNull;
 final class DefaultRedisClientBuilder<U, R> implements RedisClientBuilder<U, R> {
 
     public static final Function<LoadBalancedRedisConnection, LoadBalancedRedisConnection> SELECTOR_FOR_REQUEST =
-            conn -> conn.tryRequest() ? conn : null;
+            conn -> conn.tryRequest() == Accepted ? conn : null;
     public static final Function<LoadBalancedRedisConnection, LoadBalancedRedisConnection> SELECTOR_FOR_RESERVE =
             conn -> conn.tryReserve() ? conn : null;
     private static final RedisClientFilterFactory LB_READY_FILTER =

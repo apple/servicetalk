@@ -24,11 +24,14 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
 
+import static io.servicetalk.client.internal.RequestConcurrencyController.Result.Accepted;
+import static io.servicetalk.client.internal.RequestConcurrencyController.Result.RejectedPermanently;
+import static io.servicetalk.client.internal.RequestConcurrencyController.Result.RejectedTemporary;
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Completable.never;
 import static io.servicetalk.concurrent.api.Publisher.just;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
 
 public abstract class AbstractRequestConcurrencyControllerMultiTest {
     @Rule
@@ -46,9 +49,9 @@ public abstract class AbstractRequestConcurrencyControllerMultiTest {
         RequestConcurrencyController controller = newController(just(maxRequestCount), never(), maxRequestCount);
         for (int i = 0; i < 100; ++i) {
             for (int j = 0; j < maxRequestCount; ++j) {
-                assertTrue(controller.tryRequest());
+                assertThat(controller.tryRequest(), is(Accepted));
             }
-            assertFalse(controller.tryRequest());
+            assertThat(controller.tryRequest(), is(RejectedTemporary));
             for (int j = 0; j < maxRequestCount; ++j) {
                 controller.requestFinished();
             }
@@ -61,9 +64,9 @@ public abstract class AbstractRequestConcurrencyControllerMultiTest {
         for (int i = 1; i < 100; ++i) {
             limitRule.sendItems(i);
             for (int j = 0; j < i; ++j) {
-                assertTrue(controller.tryRequest());
+                assertThat(controller.tryRequest(), is(Accepted));
             }
-            assertFalse(controller.tryRequest());
+            assertThat(controller.tryRequest(), is(RejectedTemporary));
             for (int j = 0; j < i; ++j) {
                 controller.requestFinished();
             }
@@ -76,22 +79,22 @@ public abstract class AbstractRequestConcurrencyControllerMultiTest {
         RequestConcurrencyController controller = newController(limitRule.getPublisher(), never(), 10);
 
         for (int j = 0; j < maxRequestCount; ++j) {
-            assertTrue(controller.tryRequest());
+            assertThat(controller.tryRequest(), is(Accepted));
         }
-        assertFalse(controller.tryRequest());
+        assertThat(controller.tryRequest(), is(RejectedTemporary));
         limitRule.sendItems(0);
 
         for (int j = 0; j < maxRequestCount; ++j) {
             controller.requestFinished();
         }
 
-        assertFalse(controller.tryRequest());
+        assertThat(controller.tryRequest(), is(RejectedTemporary));
     }
 
     @Test
     public void noMoreRequestsAfterClose() {
         RequestConcurrencyController controller = newController(just(1), completed(), 10);
-        assertFalse(controller.tryRequest());
+        assertThat(controller.tryRequest(), is(RejectedPermanently));
     }
 
     @Test
@@ -99,9 +102,9 @@ public abstract class AbstractRequestConcurrencyControllerMultiTest {
         final int maxRequestCount = 10;
         RequestConcurrencyController controller = newController(limitRule.getPublisher(), never(), 10);
         for (int j = 0; j < maxRequestCount; ++j) {
-            assertTrue(controller.tryRequest());
+            assertThat(controller.tryRequest(), is(Accepted));
         }
-        assertFalse(controller.tryRequest());
+        assertThat(controller.tryRequest(), is(RejectedTemporary));
         for (int j = 0; j < maxRequestCount; ++j) {
             controller.requestFinished();
         }

@@ -21,8 +21,9 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.CompletableProcessor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.concurrent.api.SingleProcessor;
 import io.servicetalk.transport.api.ConnectionContext;
-import io.servicetalk.transport.api.ExecutionContext;
+import io.servicetalk.transport.api.ConnectionContextAdapter;
 import io.servicetalk.transport.netty.internal.CloseHandler.CloseEvent;
 
 import io.netty.channel.AbstractChannel;
@@ -34,13 +35,11 @@ import io.netty.channel.socket.ChannelOutputShutdownEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.net.SocketAddress;
 import java.nio.channels.ClosedChannelException;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 import javax.annotation.Nullable;
-import javax.net.ssl.SSLSession;
 
 import static io.netty.util.ReferenceCountUtil.release;
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
@@ -57,7 +56,8 @@ import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater
  * @param <Read> Type of objects read from this connection.
  * @param <Write> Type of objects written to this connection.
  */
-public class DefaultNettyConnection<Read, Write> implements NettyConnection<Read, Write> {
+public class DefaultNettyConnection<Read, Write> extends ConnectionContextAdapter
+        implements NettyConnection<Read, Write> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DefaultNettyConnection.class);
 
@@ -77,13 +77,15 @@ public class DefaultNettyConnection<Read, Write> implements NettyConnection<Read
     private volatile WritableListener writableListener = PLACE_HOLDER_WRITABLE_LISTENER;
 
     private final Channel channel;
-    private final ConnectionContext context;
     private final Publisher<Read> read;
     private final TerminalPredicate<Read> terminalMsgPredicate;
     private final CloseHandler closeHandler;
 
     @Nullable
     private final CompletableProcessor onClosing;
+
+    private final SingleProcessor<Throwable> transportError = new SingleProcessor<>();
+
     private volatile FlushStrategy flushStrategy;
 
     /**
@@ -121,8 +123,8 @@ public class DefaultNettyConnection<Read, Write> implements NettyConnection<Read
     public DefaultNettyConnection(Channel channel, ConnectionContext context, Publisher<Read> read,
                                   TerminalPredicate<Read> terminalMsgPredicate, CloseHandler closeHandler,
                                   FlushStrategy flushStrategy) {
+        super(requireNonNull(context));
         this.channel = requireNonNull(channel);
-        this.context = requireNonNull(context);
         this.read = read.onErrorResume(this::enrichErrorPublisher);
         this.terminalMsgPredicate = requireNonNull(terminalMsgPredicate);
         this.closeHandler = requireNonNull(closeHandler);
@@ -132,6 +134,7 @@ public class DefaultNettyConnection<Read, Write> implements NettyConnection<Read
             closeHandler.registerEventHandler(channel, evt -> { // Called from EventLoop only!
                 if (closeReason == null) {
                     closeReason = evt;
+                    transportError.onSuccess(evt.wrapError(null, channel));
                     LOGGER.debug("{} Emitted CloseEvent: {}", channel, evt);
                     onClosing.onComplete();
                 }
@@ -222,7 +225,9 @@ public class DefaultNettyConnection<Read, Write> implements NettyConnection<Read
     }
 
     private Throwable enrichError(final Throwable t) {
-        return closeReason != null ? closeReason.wrapError(t) : t;
+        Throwable throwable = closeReason != null ? closeReason.wrapError(t, channel) : t;
+        transportError.onSuccess(throwable);
+        return throwable;
     }
 
     private void cleanupOnWriteTerminated() {
@@ -295,11 +300,6 @@ public class DefaultNettyConnection<Read, Write> implements NettyConnection<Read
     }
 
     @Override
-    public Completable closeAsync() {
-        return context.closeAsync();
-    }
-
-    @Override
     public Completable closeAsyncGracefully() {
         return new Completable() {
             @Override
@@ -316,28 +316,8 @@ public class DefaultNettyConnection<Read, Write> implements NettyConnection<Read
     }
 
     @Override
-    public Completable onClose() {
-        return context.onClose();
-    }
-
-    @Override
-    public SocketAddress localAddress() {
-        return context.localAddress();
-    }
-
-    @Override
-    public SocketAddress remoteAddress() {
-        return context.remoteAddress();
-    }
-
-    @Override
-    public SSLSession sslSession() {
-        return context.sslSession();
-    }
-
-    @Override
-    public ExecutionContext executionContext() {
-        return context.executionContext();
+    public Single<Throwable> transportError() {
+        return transportError.publishOn(executionContext().executor());
     }
 
     private void invokeUserCloseHandler() {

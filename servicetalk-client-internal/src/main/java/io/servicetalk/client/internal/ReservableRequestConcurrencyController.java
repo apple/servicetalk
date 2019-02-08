@@ -22,6 +22,7 @@ import io.servicetalk.concurrent.api.Completable;
  * A {@link RequestConcurrencyController} that also allows to {@link #tryReserve()} a connection for exclusive use.
  */
 public interface ReservableRequestConcurrencyController extends RequestConcurrencyController {
+
     /**
      * Attempts to reserve a connection for exclusive use until {@link #releaseAsync()} is called.
      * @return {@code true} if this connection is available and reserved for performing a single request.
