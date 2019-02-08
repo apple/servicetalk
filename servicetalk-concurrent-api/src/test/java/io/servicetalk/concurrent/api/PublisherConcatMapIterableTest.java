@@ -19,6 +19,7 @@ import io.servicetalk.concurrent.BlockingIterable;
 
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -27,8 +28,11 @@ import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static java.util.function.Function.identity;
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
 
 public class PublisherConcatMapIterableTest {
     @Rule
@@ -37,6 +41,8 @@ public class PublisherConcatMapIterableTest {
     public final MockedSubscriberRule<String> subscriber = new MockedSubscriberRule<>();
     @Rule
     public final PublisherRule<BlockingIterable<String>> cancellablePublisher = new PublisherRule<>();
+    @Rule
+    public final ExpectedException expectedException = ExpectedException.none();
 
     @Test
     public void cancellableIterableIsCancelled() {
@@ -217,6 +223,24 @@ public class PublisherConcatMapIterableTest {
         publisher.sendItems(asList("four"));
         subscriber.verifyItems("four");
         verifyTermination(success);
+    }
+
+    @Test
+    public void exceptionFromOnErrorIsPropagated() {
+        publisher.getPublisher().concatMapIterable(identity()).subscribe(subscriber.getSubscriber());
+        subscriber.verifySubscribe();
+        doThrow(DELIBERATE_EXCEPTION).when(subscriber.getSubscriber()).onError(any());
+        expectedException.expect(is(DELIBERATE_EXCEPTION));
+        publisher.fail();
+    }
+
+    @Test
+    public void exceptionFromOnCompleteIsPropagated() {
+        publisher.getPublisher().concatMapIterable(identity()).subscribe(subscriber.getSubscriber());
+        subscriber.verifySubscribe();
+        doThrow(DELIBERATE_EXCEPTION).when(subscriber.getSubscriber()).onComplete();
+        expectedException.expect(is(DELIBERATE_EXCEPTION));
+        publisher.complete();
     }
 
     private void verifyTermination(boolean success) {
