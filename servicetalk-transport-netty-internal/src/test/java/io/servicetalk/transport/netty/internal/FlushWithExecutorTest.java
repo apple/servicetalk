@@ -27,7 +27,6 @@ import java.util.Collection;
 import java.util.List;
 
 import static io.servicetalk.concurrent.api.Publisher.from;
-import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.transport.netty.internal.ExecutionContextRule.cached;
 import static io.servicetalk.transport.netty.internal.FlushStrategyAndVerifier.batchFlush;
 import static io.servicetalk.transport.netty.internal.FlushStrategyAndVerifier.flushBeforeEnd;
@@ -60,7 +59,7 @@ public class FlushWithExecutorTest extends AbstractFlushTest {
     public void testFlushBeforeEnd() throws Exception {
         Publisher<String> source = from(data).map(String::valueOf).publishAndSubscribeOn(contextRule.executor());
         Publisher<String> flushSource = setup(source, flushStrategyAndVerifier.getFlushStrategy());
-        awaitIndefinitely(flushSource);
+        flushSource.toFuture().get();
         int index = 0;
         for (String datum : data) {
             verifyWrite(datum);

@@ -29,8 +29,8 @@ import java.util.regex.Pattern;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
-import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
-import static io.servicetalk.concurrent.internal.Await.awaitIndefinitelyNonNull;
+import static io.servicetalk.concurrent.api.BlockingTestUtils.awaitIndefinitely;
+import static io.servicetalk.concurrent.api.BlockingTestUtils.awaitIndefinitelyNonNull;
 import static io.servicetalk.redis.api.RedisExecutionStrategies.defaultStrategy;
 import static io.servicetalk.redis.api.RedisProtocolSupport.Command.INFO;
 import static io.servicetalk.redis.api.RedisRequests.newRequest;

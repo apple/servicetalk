@@ -43,10 +43,9 @@ import java.util.concurrent.CountDownLatch;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.api.BlockingTestUtils.awaitIndefinitelyNonNull;
 import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
 import static io.servicetalk.concurrent.api.Publisher.just;
-import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
-import static io.servicetalk.concurrent.internal.Await.awaitIndefinitelyNonNull;
 import static io.servicetalk.redis.api.RedisConnection.SettingKey.MAX_CONCURRENCY;
 import static io.servicetalk.redis.api.RedisProtocolSupport.Command.PING;
 import static io.servicetalk.redis.api.RedisRequests.newRequest;
@@ -151,7 +150,7 @@ public class RedisClientOffloadingTest {
         subscribeTo(RedisTestEnvironment::isInClientEventLoop, errors,
                 connection.settingStream(MAX_CONCURRENCY).doAfterFinally(terminated::countDown),
                 "Client settings stream: ");
-        awaitIndefinitely(connection.closeAsyncGracefully());
+        connection.closeAsyncGracefully().toFuture().get();
         terminated.await();
         assertThat("Unexpected errors.", errors, is(empty()));
     }
@@ -174,7 +173,7 @@ public class RedisClientOffloadingTest {
 
     @Test
     public void onCloseIsOffloaded() throws Exception {
-        awaitIndefinitely(connectionContext.closeAsync());
+        connectionContext.closeAsync().toFuture().get();
         subscribeTo(RedisTestEnvironment::isInClientEventLoop, errors,
                 connectionContext.onClose().doAfterFinally(terminated::countDown));
         terminated.await();

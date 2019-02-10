@@ -58,10 +58,8 @@ import java.util.function.Supplier;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
+import static io.servicetalk.concurrent.api.BlockingTestUtils.awaitIndefinitelyNonNull;
 import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
-import static io.servicetalk.concurrent.internal.Await.await;
-import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
-import static io.servicetalk.concurrent.internal.Await.awaitIndefinitelyNonNull;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.transport.api.ConnectionAcceptor.ACCEPT_ALL;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
@@ -173,12 +171,12 @@ public abstract class AbstractNettyHttpServerTest {
 
     @After
     public void stopServer() throws Exception {
-        awaitIndefinitely(newCompositeCloseable().appendAll(httpConnection, clientExecutor, serverContext).closeAsync());
+        newCompositeCloseable().appendAll(httpConnection, clientExecutor, serverContext).closeAsync().toFuture().get();
     }
 
     @AfterClass
     public static void shutdownClientIoExecutor() throws Exception {
-        awaitIndefinitely(newCompositeCloseable().appendAll(clientIoExecutor, serverIoExecutor).closeAsync());
+        newCompositeCloseable().appendAll(clientIoExecutor, serverIoExecutor).closeAsync().toFuture().get();
     }
 
     void setConnectionAcceptor(final ConnectionAcceptor connectionAcceptor) {
@@ -244,6 +242,6 @@ public abstract class AbstractNettyHttpServerTest {
     }
 
     void assertConnectionClosed() throws Exception {
-        await(httpConnection.onClose(), 1000, MILLISECONDS);
+        httpConnection.onClose().toFuture().get(1000, MILLISECONDS);
     }
 }

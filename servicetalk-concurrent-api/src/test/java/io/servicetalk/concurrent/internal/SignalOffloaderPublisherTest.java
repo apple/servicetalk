@@ -270,7 +270,7 @@ public class SignalOffloaderPublisherTest {
 
         void shutdown() {
             try {
-                Await.awaitIndefinitely(executor.closeAsync());
+                executor.closeAsync().toFuture().get();
             } catch (Exception e) {
                 LOGGER.warn("Failed to close the executor {}.", executor, e);
             }

@@ -57,9 +57,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
+import static io.servicetalk.concurrent.api.BlockingTestUtils.awaitIndefinitely;
 import static io.servicetalk.concurrent.api.Single.error;
 import static io.servicetalk.concurrent.api.Single.success;
-import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.concurrent.internal.ServiceTalkTestTimeout.DEFAULT_TIMEOUT_SECONDS;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -254,7 +254,7 @@ public class RoundRobinLoadBalancerTest {
                     for (int j = 0; j < 5; j++) {
                         selections = selections.concatWith(lb.selectConnection(selectionFilter));
                     }
-                    selectedConnections.addAll(awaitIndefinitely(selections));
+                    selectedConnections.addAll(selections.toFuture().get());
                 } catch (final Throwable t) {
                     exceptions.add(t);
                 }

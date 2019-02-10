@@ -37,7 +37,6 @@ import org.mockito.junit.MockitoRule;
 
 import static io.servicetalk.concurrent.api.AsyncCloseables.closeAsyncGracefully;
 import static io.servicetalk.concurrent.api.Executors.immediate;
-import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.parseBoolean;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -150,7 +149,7 @@ public class ChannelSetTest {
         // closeAsyncGracefully must complete.
         closeAsyncGracefullyCompletable.onComplete();
 
-        awaitIndefinitely(fixture.onClose());
+        fixture.onClose().toFuture().get();
 
         subscriberRule1.verifyCompletion();
         subscriberRule2.verifyCompletion();
@@ -167,7 +166,7 @@ public class ChannelSetTest {
         subscriberRule1.listen(gracefulCompletable);
         verify(defaultNettyConnection, never()).closeAsyncGracefully();
 
-        awaitIndefinitely(fixture.onClose());
+        fixture.onClose().toFuture().get();
 
         subscriberRule1.verifyCompletion();
         subscriberRule2.verifyCompletion();
@@ -190,7 +189,7 @@ public class ChannelSetTest {
 
         listener.operationComplete(channelCloseFuture);
 
-        awaitIndefinitely(fixture.onClose());
+        fixture.onClose().toFuture().get();
 
         subscriberRule1.verifyCompletion();
         subscriberRule2.verifyCompletion();
@@ -207,7 +206,7 @@ public class ChannelSetTest {
         subscriberRule2.listen(gracefulCompletable2);
         verify(defaultNettyConnection, times(1)).closeAsyncGracefully();
 
-        awaitIndefinitely(gracefulCompletable1);
+        gracefulCompletable1.toFuture().get();
         subscriberRule2.verifyCompletion();
         verify(channel).close();
     }
@@ -223,7 +222,7 @@ public class ChannelSetTest {
         subscriberRule2.listen(closeCompletable2);
         verify(channel, times(1)).close();
 
-        awaitIndefinitely(fixture.onClose());
+        fixture.onClose().toFuture().get();
 
         subscriberRule1.verifyCompletion();
         subscriberRule2.verifyCompletion();
@@ -235,7 +234,7 @@ public class ChannelSetTest {
         Completable completable = closeAsyncGracefully(fixture, 100, MILLISECONDS);
         subscriberRule1.listen(completable);
         verify(defaultNettyConnection).closeAsyncGracefully();
-        awaitIndefinitely(fixture.onClose());
+        fixture.onClose().toFuture().get();
         verify(channel).close();
         subscriberRule1.verifyCompletion();
     }

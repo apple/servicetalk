@@ -17,6 +17,7 @@ package io.servicetalk.concurrent.internal;
 
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.Completable.Subscriber;
+import io.servicetalk.concurrent.api.BlockingTestUtils;
 import io.servicetalk.concurrent.api.Executor;
 
 import org.junit.After;
@@ -206,7 +207,7 @@ public class SignalOffloaderCompletableTest {
 
         void shutdown() {
             try {
-                Await.awaitIndefinitely(executor.closeAsync());
+                BlockingTestUtils.awaitIndefinitely(executor.closeAsync());
             } catch (Exception e) {
                 LOGGER.warn("Failed to close the executor {}.", executor, e);
             }

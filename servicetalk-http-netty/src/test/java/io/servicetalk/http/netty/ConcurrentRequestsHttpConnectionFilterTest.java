@@ -57,12 +57,11 @@ import java.util.function.Function;
 
 import static io.servicetalk.buffer.api.EmptyBuffer.EMPTY_BUFFER;
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
+import static io.servicetalk.concurrent.api.BlockingTestUtils.awaitIndefinitelyNonNull;
 import static io.servicetalk.concurrent.api.Publisher.empty;
 import static io.servicetalk.concurrent.api.Publisher.just;
 import static io.servicetalk.concurrent.api.Single.error;
 import static io.servicetalk.concurrent.api.Single.success;
-import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
-import static io.servicetalk.concurrent.internal.Await.awaitIndefinitelyNonNull;
 import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
 import static io.servicetalk.http.api.StreamingHttpConnection.SettingKey.MAX_CONCURRENCY;
 import static org.hamcrest.Matchers.equalTo;
@@ -124,7 +123,7 @@ public class ConcurrentRequestsHttpConnectionFilterTest {
                 limitedConnection.request(limitedConnection.get("/foo")));
         awaitIndefinitelyNonNull(limitedConnection.request(limitedConnection.get("/bar")));
         try {
-            awaitIndefinitely(limitedConnection.request(limitedConnection.get("/baz")));
+            limitedConnection.request(limitedConnection.get("/baz")).toFuture().get();
             fail();
         } catch (ExecutionException e) {
             assertThat(e.getCause(), is(instanceOf(MaxRequestLimitExceededException.class)));

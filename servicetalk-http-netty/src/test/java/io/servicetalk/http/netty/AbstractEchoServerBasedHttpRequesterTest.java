@@ -39,10 +39,9 @@ import java.time.Duration;
 import java.util.concurrent.ExecutionException;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
+import static io.servicetalk.concurrent.api.BlockingTestUtils.awaitIndefinitelyNonNull;
 import static io.servicetalk.concurrent.api.Publisher.just;
 import static io.servicetalk.concurrent.api.RetryStrategies.retryWithExponentialBackoff;
-import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
-import static io.servicetalk.concurrent.internal.Await.awaitIndefinitelyNonNull;
 import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
 import static io.servicetalk.http.api.HttpHeaderValues.CHUNKED;
 import static io.servicetalk.http.api.HttpRequestMethods.GET;
@@ -72,7 +71,7 @@ public abstract class AbstractEchoServerBasedHttpRequesterTest {
 
     @AfterClass
     public static void stopServer() throws Exception {
-        awaitIndefinitely(serverContext.closeAsync());
+        serverContext.closeAsync().toFuture().get();
     }
 
     private static class EchoServiceStreaming extends StreamingHttpService {
@@ -121,9 +120,9 @@ public abstract class AbstractEchoServerBasedHttpRequesterTest {
             assertThat(headers.get("test-req-target"), hasToString("/request?foo=bar&foo=baz"));
             assertThat(headers.get("test-req-header-host"), hasToString("mock.servicetalk.io"));
             assertThat(headers.get("test-req-header-transfer-encoding"), equalTo(CHUNKED));
-            assertThat(awaitIndefinitely(respBody), equalTo("Testing123"));
+            assertThat(respBody.toFuture().get(), equalTo("Testing123"));
         } finally {
-            awaitIndefinitely(requester.closeAsync());
+            requester.closeAsync().toFuture().get();
         }
     }
 }

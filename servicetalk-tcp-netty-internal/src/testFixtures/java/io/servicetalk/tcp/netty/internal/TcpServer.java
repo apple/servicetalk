@@ -39,7 +39,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.concurrent.internal.Await.awaitIndefinitelyNonNull;
 import static io.servicetalk.transport.api.ConnectionAcceptor.ACCEPT_ALL;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.CloseHandler.UNSUPPORTED_PROTOCOL_CLOSE_HANDLER;
@@ -102,11 +101,11 @@ public class TcpServer {
                                Function<NettyConnection<Buffer, Buffer>, Completable> service)
             throws ExecutionException, InterruptedException {
         TcpServerInitializer initializer = new TcpServerInitializer(executionContext, config);
-        return awaitIndefinitelyNonNull(initializer.start(localAddress(port),
+        return initializer.start(localAddress(port),
                 connectionAcceptor, new TcpServerChannelInitializer(config, connectionAcceptor)
                         .andThen(getChannelInitializer(service, executionContext)), false, false)
                 .doBeforeSuccess(ctx -> LOGGER.info("Server started on port {}.", getServerPort(ctx)))
-                .doBeforeError(throwable -> LOGGER.error("Failed starting server on port {}.", port)));
+                .doBeforeError(throwable -> LOGGER.error("Failed starting server on port {}.", port)).toFuture().get();
     }
 
     // Visible to allow tests to override.

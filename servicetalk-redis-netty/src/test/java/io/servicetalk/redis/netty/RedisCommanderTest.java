@@ -46,9 +46,9 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.stream.IntStream;
 
-import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
-import static io.servicetalk.concurrent.internal.Await.awaitIndefinitelyNonNull;
-import static io.servicetalk.concurrent.internal.Await.awaitIndefinitelyUnchecked;
+import static io.servicetalk.concurrent.api.BlockingTestUtils.awaitIndefinitely;
+import static io.servicetalk.concurrent.api.BlockingTestUtils.awaitIndefinitelyNonNull;
+import static io.servicetalk.concurrent.api.BlockingTestUtils.awaitIndefinitelyUnchecked;
 import static io.servicetalk.concurrent.internal.ServiceTalkTestTimeout.DEFAULT_TIMEOUT_SECONDS;
 import static io.servicetalk.redis.api.RedisProtocolSupport.BitfieldOverflow.FAIL;
 import static io.servicetalk.redis.api.RedisProtocolSupport.BitfieldOverflow.SAT;

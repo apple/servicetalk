@@ -41,6 +41,7 @@ dependencies {
 
   testImplementation "io.servicetalk:servicetalk-concurrent-api-testFixtures:$project.version"
   testImplementation "io.servicetalk:servicetalk-concurrent-internal-testFixtures:$project.version"
+  testImplementation "io.servicetalk:servicetalk-concurrent-api-testFixtures:$project.version"
   testImplementation "io.servicetalk:servicetalk-test-resources:$project.version"
   testImplementation "junit:junit"
   testImplementation "org.hamcrest:hamcrest-library"

@@ -29,7 +29,6 @@ import java.nio.channels.ClosedChannelException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 
-import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static java.net.InetSocketAddress.createUnresolved;
 import static java.nio.charset.Charset.defaultCharset;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -53,11 +52,10 @@ public final class TcpConnectorTest extends AbstractTcpServerTest {
 
     private static void testWriteAndRead(NettyConnection<Buffer, Buffer> connection)
             throws ExecutionException, InterruptedException {
-        awaitIndefinitely(connection.writeAndFlush(
-                connection.executionContext().bufferAllocator().fromAscii("Hello")));
-        String response = awaitIndefinitely(connection.read().first().map(buffer -> buffer.toString(defaultCharset())));
+        connection.writeAndFlush(connection.executionContext().bufferAllocator().fromAscii("Hello")).toFuture().get();
+        String response = connection.read().first().map(buffer -> buffer.toString(defaultCharset())).toFuture().get();
         assertThat("Unexpected response.", response, is("Hello"));
-        awaitIndefinitely(connection.onClose());
+        connection.onClose().toFuture().get();
     }
 
     @Test
@@ -70,7 +68,7 @@ public final class TcpConnectorTest extends AbstractTcpServerTest {
     public void testConnectToUnknownPort() throws Exception {
         thrown.expectCause(anyOf(instanceOf(RetryableConnectException.class),
                 instanceOf(ClosedChannelException.class)));
-        awaitIndefinitely(serverContext.closeAsync());
+        serverContext.closeAsync().toFuture().get();
         // Closing the server to increase probability of finding a port on which no one is listening.
         client.connectBlocking(CLIENT_CTX, serverAddress);
     }
@@ -102,10 +100,10 @@ public final class TcpConnectorTest extends AbstractTcpServerTest {
                     });
                     return context;
                 }, () -> v -> true);
-        NettyConnection<Buffer, Buffer> connection = awaitIndefinitely(connector.connect(CLIENT_CTX,
-                serverContext.listenAddress()));
+        NettyConnection<Buffer, Buffer> connection =
+                connector.connect(CLIENT_CTX, serverContext.listenAddress()).toFuture().get();
         assert connection != null;
-        awaitIndefinitely(connection.closeAsync());
+        connection.closeAsync().toFuture().get();
 
         registeredLatch.await();
         activeLatch.await();

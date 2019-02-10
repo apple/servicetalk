@@ -24,10 +24,10 @@ import io.servicetalk.redis.api.RedisRequest;
 import org.junit.Test;
 
 import static io.servicetalk.client.internal.RequestConcurrencyController.Result.Accepted;
+import static io.servicetalk.concurrent.api.BlockingTestUtils.awaitIndefinitely;
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Completable.never;
 import static io.servicetalk.concurrent.api.Publisher.just;
-import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.redis.api.RedisData.PONG;
 import static io.servicetalk.redis.api.RedisProtocolSupport.Command.PING;
 import static io.servicetalk.redis.api.RedisRequests.newRequest;

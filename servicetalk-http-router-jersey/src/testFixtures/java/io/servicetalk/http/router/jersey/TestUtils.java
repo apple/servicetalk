@@ -21,7 +21,7 @@ import io.servicetalk.http.api.StreamingHttpResponse;
 
 import java.util.Random;
 
-import static io.servicetalk.concurrent.internal.Await.awaitIndefinitelyNonNull;
+import static io.servicetalk.concurrent.api.BlockingTestUtils.awaitIndefinitelyNonNull;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.glassfish.jersey.message.internal.CommittingOutputStream.DEFAULT_BUFFER_SIZE;
 

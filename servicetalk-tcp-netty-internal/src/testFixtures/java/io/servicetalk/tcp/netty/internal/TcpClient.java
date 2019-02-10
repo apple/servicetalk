@@ -41,7 +41,6 @@ import java.net.StandardSocketOptions;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static io.servicetalk.concurrent.internal.Await.awaitIndefinitelyNonNull;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assume.assumeTrue;
@@ -90,7 +89,7 @@ public final class TcpClient {
     public NettyConnection<Buffer, Buffer> connectBlocking(ExecutionContext executionContext, SocketAddress address)
             throws ExecutionException, InterruptedException {
         TcpConnector<Buffer, Buffer> connector = createConnector(executionContext.bufferAllocator());
-        return awaitIndefinitelyNonNull(connector.connect(executionContext, address));
+        return connector.connect(executionContext, address).toFuture().get();
     }
 
     /**

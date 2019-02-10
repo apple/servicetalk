@@ -29,8 +29,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.regex.Pattern;
 import javax.net.ssl.SSLSession;
 
-import static io.servicetalk.concurrent.internal.Await.await;
-import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
+import static io.servicetalk.concurrent.api.BlockingTestUtils.await;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.http.api.HttpProtocolVersions.HTTP_1_0;
 import static io.servicetalk.http.api.HttpProtocolVersions.HTTP_1_1;
@@ -67,7 +66,7 @@ public class HttpPredicateRouterBuilderTest extends BaseHttpPredicateRouterBuild
                 .buildStreaming();
 
         final Single<StreamingHttpResponse> responseSingle = service.handle(ctx, request, reqRespFactory);
-        final StreamingHttpResponse response = awaitIndefinitely(responseSingle);
+        final StreamingHttpResponse response = responseSingle.toFuture().get();
         assert response != null;
         assertEquals(404, response.status().code());
     }

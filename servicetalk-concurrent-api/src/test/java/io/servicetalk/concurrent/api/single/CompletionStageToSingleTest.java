@@ -17,13 +17,28 @@ package io.servicetalk.concurrent.api.single;
 
 import io.servicetalk.concurrent.api.Single;
 
+import org.junit.Test;
+
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 
 import static io.servicetalk.concurrent.api.Single.fromStage;
+import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static org.hamcrest.Matchers.is;
 
 public class CompletionStageToSingleTest extends AbstractFutureToSingleTest {
     @Override
     Single<String> from(final CompletableFuture<String> future) {
         return fromStage(future);
+    }
+
+    @Test
+    public void failure() throws Exception {
+        CompletableFuture<String> future = new CompletableFuture<>();
+        Single<String> single = from(future);
+        jdkExecutor.execute(() -> future.completeExceptionally(DELIBERATE_EXCEPTION));
+        thrown.expect(ExecutionException.class);
+        thrown.expectCause(is(DELIBERATE_EXCEPTION));
+        single.toFuture().get();
     }
 }

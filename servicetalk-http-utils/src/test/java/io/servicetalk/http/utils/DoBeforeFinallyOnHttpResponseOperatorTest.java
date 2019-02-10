@@ -38,14 +38,12 @@ import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 
 import java.util.concurrent.CancellationException;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.api.Publisher.never;
-import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.http.api.HttpResponseStatuses.OK;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -137,9 +135,8 @@ public class DoBeforeFinallyOnHttpResponseOperatorTest {
         subscriber.verifyResponseReceived();
         verifyNoMoreInteractions(doBeforeFinally);
         assert subscriber.response != null;
-        expectedException.expect(instanceOf(ExecutionException.class));
-        expectedException.expectCause(instanceOf(CancellationException.class));
-        awaitIndefinitely(subscriber.response.payloadBody());
+        expectedException.expect(instanceOf(CancellationException.class));
+        subscriber.response.payloadBody().toFuture().get();
     }
 
     @Test

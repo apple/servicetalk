@@ -20,8 +20,6 @@ import org.junit.rules.ExternalResource;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Supplier;
 
-import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
-
 /**
  * An {@link ExternalResource} wrapper for an {@link Executor}.
  */
@@ -64,7 +62,7 @@ public final class ExecutorRule extends ExternalResource {
     @Override
     protected void after() {
         try {
-            awaitIndefinitely(executor.closeAsync());
+            executor.closeAsync().toFuture().get();
         } catch (ExecutionException | InterruptedException e) {
             throw new RuntimeException(e);
         }

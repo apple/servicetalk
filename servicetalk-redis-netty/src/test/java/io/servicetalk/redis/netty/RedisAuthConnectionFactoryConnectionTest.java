@@ -37,7 +37,6 @@ import javax.annotation.Nullable;
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.Single.success;
-import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.transport.netty.NettyIoExecutors.createIoExecutor;
 import static io.servicetalk.transport.netty.internal.NettyIoExecutors.toNettyIoExecutor;
 import static java.net.InetAddress.getLoopbackAddress;
@@ -64,12 +63,11 @@ public class RedisAuthConnectionFactoryConnectionTest {
     public void cleanup() throws Exception {
         if (connectionSingle != null) {
             assert ioExecutor != null;
-            awaitIndefinitely(connectionSingle
-                    .flatMap(connection ->
-                            connection.closeAsync().onErrorResume(cause -> completed()).concatWith(success(connection)))
+            connectionSingle.flatMap(connection ->
+                    connection.closeAsync().onErrorResume(cause -> completed()).concatWith(success(connection)))
                     .ignoreResult()
                     .onErrorResume(cause -> completed())
-                    .concatWith(ioExecutor.closeAsync()));
+                    .concatWith(ioExecutor.closeAsync()).toFuture().get();
         }
     }
 
@@ -77,8 +75,8 @@ public class RedisAuthConnectionFactoryConnectionTest {
     public void noPasswordSetFailureConnectionBuilder() throws Exception {
         authTestConnection(System.getenv("REDIS_PORT"), CORRECT_PASSWORD, connectionSingle -> {
             try {
-                RedisCommander commandClient = awaitIndefinitely(connectionSingle).asCommander();
-                awaitIndefinitely(commandClient.ping());
+                RedisCommander commandClient = connectionSingle.toFuture().get().asCommander();
+                commandClient.ping().toFuture().get();
                 fail();
             } catch (Exception e) {
                 assertThat(e.getCause(), is(instanceOf(RedisAuthorizationException.class)));
@@ -91,8 +89,8 @@ public class RedisAuthConnectionFactoryConnectionTest {
     public void correctPasswordConnectionBuilder() throws Exception {
         authTestConnection(System.getenv("REDIS_AUTH_PORT"), CORRECT_PASSWORD, connectionSingle -> {
             try {
-                RedisCommander commandClient = awaitIndefinitely(connectionSingle).asCommander();
-                assertThat(awaitIndefinitely(commandClient.ping()), is("PONG"));
+                RedisCommander commandClient = connectionSingle.toFuture().get().asCommander();
+                assertThat(commandClient.ping().toFuture().get(), is("PONG"));
             } catch (Exception e) {
                 PlatformDependent.throwException(e);
             }
@@ -103,8 +101,8 @@ public class RedisAuthConnectionFactoryConnectionTest {
     public void invalidPasswordConnectionBuilder() throws Exception {
         authTestConnection(System.getenv("REDIS_AUTH_PORT"), CORRECT_PASSWORD + "foo", connectionSingle -> {
             try {
-                RedisCommander commandClient = awaitIndefinitely(connectionSingle).asCommander();
-                awaitIndefinitely(commandClient.ping());
+                RedisCommander commandClient = connectionSingle.toFuture().get().asCommander();
+                commandClient.ping().toFuture().get();
                 fail();
             } catch (Exception e) {
                 assertThat(e.getCause(), is(instanceOf(RedisAuthorizationException.class)));
