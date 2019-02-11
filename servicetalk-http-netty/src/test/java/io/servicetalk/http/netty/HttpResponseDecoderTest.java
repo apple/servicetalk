@@ -13,6 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+/*
+ * Copyright 2013 The Netty Project
+ *
+ * The Netty Project licenses this file to you under the Apache License,
+ * version 2.0 (the "License"); you may not use this file except in compliance
+ * with the License. You may obtain a copy of the License at:
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ */
 package io.servicetalk.http.netty;
 
 import io.servicetalk.buffer.api.Buffer;
@@ -36,6 +51,9 @@ import static io.netty.buffer.Unpooled.wrappedBuffer;
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.http.api.HttpHeaderNames.CONNECTION;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
+import static io.servicetalk.http.api.HttpHeaderNames.TRAILER;
+import static io.servicetalk.http.api.HttpHeaderNames.TRANSFER_ENCODING;
+import static io.servicetalk.http.api.HttpHeaderValues.CHUNKED;
 import static io.servicetalk.http.api.HttpHeaderValues.KEEP_ALIVE;
 import static io.servicetalk.http.api.HttpProtocolVersions.HTTP_1_1;
 import static io.servicetalk.http.api.HttpResponseStatuses.OK;
@@ -135,6 +153,33 @@ public class HttpResponseDecoderTest {
         assertTrue(channel.writeInbound(wrappedBuffer(afterContentBytes)));
         validateHttpResponse(channel, -content.length, true);
         channel.finishAndReleaseAll();
+    }
+
+    @Test
+    public void chunkedWithTrailersEmptyLineSeparateBuffer() {
+        EmbeddedChannel channel = newEmbeddedChannel();
+        byte[] beforeContentBytes = ("HTTP/1.1 200 OK" + "\r\n" +
+                "Connection: keep-alive" + "\r\n" +
+                "Transfer-Encoding: chunked" + "\r\n" +
+                "Server: unit-test" + "\r\n" +
+                "Trailer: My-Trailer" + "\r\n").getBytes(US_ASCII);
+        assertFalse(channel.writeInbound(wrappedBuffer(beforeContentBytes)));
+        assertTrue(channel.writeInbound(wrappedBuffer("\r\n".getBytes(US_ASCII))));
+        assertTrue(channel.writeInbound(wrappedBuffer("0\r\n".getBytes(US_ASCII))));
+        assertTrue(channel.writeInbound(wrappedBuffer("My-Trailer: 42\r\n".getBytes(US_ASCII))));
+        assertTrue(channel.writeInbound(wrappedBuffer("\r\n".getBytes(US_ASCII))));
+
+        HttpResponseMetaData response = channel.readInbound();
+        assertEquals(OK, response.status());
+        assertEquals(HTTP_1_1, response.version());
+        HttpHeaders headers = response.headers();
+        assertStandardHeaders(headers);
+        assertSingleHeaderValue(headers, TRANSFER_ENCODING, CHUNKED);
+        assertSingleHeaderValue(headers, TRAILER, "My-Trailer");
+
+        HttpHeaders trailers = channel.readInbound();
+        assertSingleHeaderValue(trailers, "My-Trailer", "42");
+        assertFalse(channel.finishAndReleaseAll());
     }
 
     @Test
