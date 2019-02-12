@@ -87,7 +87,7 @@ public final class AbstractHttpConnectionTest {
     private class MockStreamingHttpConnection extends AbstractStreamingHttpConnection<NettyConnection<Object, Object>> {
         protected MockStreamingHttpConnection(final NettyConnection<Object, Object> connection,
                                               final ReadOnlyHttpClientConfig config) {
-            super(connection, never(), config, ctx, reqRespFactory, defaultStrategy());
+            super(connection, config, ctx, reqRespFactory, defaultStrategy());
         }
 
         @Override
@@ -101,7 +101,9 @@ public final class AbstractHttpConnectionTest {
     public void setup() {
         reqResp = mock(Function.class);
         config.setMaxPipelinedRequests(101);
-        http = new MockStreamingHttpConnection(mock(NettyConnection.class), config.asReadOnly());
+        NettyConnection conn = mock(NettyConnection.class);
+        when(conn.onClose()).thenReturn(never());
+        http = new MockStreamingHttpConnection(conn, config.asReadOnly());
     }
 
     @Test

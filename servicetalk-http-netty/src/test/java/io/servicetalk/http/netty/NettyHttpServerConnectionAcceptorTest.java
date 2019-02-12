@@ -15,8 +15,8 @@
  */
 package io.servicetalk.http.netty;
 
+import io.servicetalk.client.api.ConnectionClosedException;
 import io.servicetalk.client.api.MaxRequestLimitExceededException;
-import io.servicetalk.client.api.NoAvailableHostException;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.DeliberateException;
@@ -25,7 +25,6 @@ import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.transport.api.ConnectionAcceptor;
 import io.servicetalk.transport.api.ConnectionContext;
 
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -130,7 +129,6 @@ public class NettyHttpServerConnectionAcceptorTest extends AbstractNettyHttpServ
         return parameters;
     }
 
-    @Ignore("this test is flaky on CI: https://github.com/servicetalk/servicetalk/issues/296")
     @Test
     public void testAcceptConnection() throws Exception {
         try {
@@ -153,7 +151,7 @@ public class NettyHttpServerConnectionAcceptorTest extends AbstractNettyHttpServ
             }
             assertThat(e.getCause(), anyOf(instanceOf(IOException.class),
                     instanceOf(MaxRequestLimitExceededException.class),
-                    instanceOf(NoAvailableHostException.class)));
+                    instanceOf(ConnectionClosedException.class)));
         }
 
         if (getSslEnabled()) {

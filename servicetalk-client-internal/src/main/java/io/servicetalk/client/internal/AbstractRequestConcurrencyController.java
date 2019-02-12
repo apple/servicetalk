@@ -37,8 +37,9 @@ abstract class AbstractRequestConcurrencyController implements RequestConcurrenc
 
     AbstractRequestConcurrencyController(final Publisher<Integer> maxConcurrencySettingStream,
                                          final Completable onClose) {
-        maxConcurrencyHolder = new LatestValueSubscriber<>();
-        maxConcurrencySettingStream.subscribe(maxConcurrencyHolder);
+        // Subscribe to onClose() before maxConcurrencySettingStream, this order increases the chances of capturing the
+        // STATE_QUIT before observing 0 from maxConcurrencySettingStream which could lead to more ambiguous max
+        // concurrency error messages for the users on connection tear-down.
         onClose.subscribe(new Completable.Subscriber() {
             @Override
             public void onSubscribe(Cancellable cancellable) {
@@ -55,6 +56,8 @@ abstract class AbstractRequestConcurrencyController implements RequestConcurrenc
                 pendingRequests = STATE_QUIT;
             }
         });
+        maxConcurrencyHolder = new LatestValueSubscriber<>();
+        maxConcurrencySettingStream.subscribe(maxConcurrencyHolder);
     }
 
     @Override
