@@ -40,7 +40,8 @@ import static java.util.Objects.requireNonNull;
 final class PublisherConcatMapIterable<T, U> extends AbstractSynchronousPublisherOperator<T, U> {
     private final Function<? super T, ? extends Iterable<? extends U>> mapper;
 
-    PublisherConcatMapIterable(Publisher<T> original, Function<? super T, ? extends Iterable<? extends U>> mapper, Executor executor) {
+    PublisherConcatMapIterable(Publisher<T> original, Function<? super T, ? extends Iterable<? extends U>> mapper,
+                               Executor executor) {
         super(original, executor);
         this.mapper = requireNonNull(mapper);
     }
@@ -63,9 +64,9 @@ final class PublisherConcatMapIterable<T, U> extends AbstractSynchronousPublishe
         private volatile TerminalNotification terminalNotification;
         /**
          * We only ever request a single {@link Iterable} at a time, and wait to request another {@link Iterable} until
-         * {@link Iterator#hasNext()} returns {@code false}. This means we don't need to queue {@link Iterator}s, and was
-         * done because we don't know how many elements will be returned by each {@link Iterator} and so we are as conservative
-         * as we can be about memory consumption.
+         * {@link Iterator#hasNext()} returns {@code false}. This means we don't need to queue {@link Iterator}s, and
+         * was done because we don't know how many elements will be returned by each {@link Iterator} and so we are as
+         * conservative as we can be about memory consumption.
          */
         private volatile Iterator<? extends U> currentIterator = emptyIterator();
         @SuppressWarnings("unused")
@@ -123,7 +124,9 @@ final class PublisherConcatMapIterable<T, U> extends AbstractSynchronousPublishe
             if (!isRequestNValid(n)) {
                 sourceSubscription.request(n);
             } else {
-                tryDrainIterator(currentIterator, sourceSubscription, terminalNotification, requestNUpdater.accumulateAndGet(this, n, FlowControlUtil::addWithOverflowProtectionIfNotNegative));
+                tryDrainIterator(currentIterator, sourceSubscription, terminalNotification,
+                        requestNUpdater.accumulateAndGet(this, n,
+                                FlowControlUtil::addWithOverflowProtectionIfNotNegative));
             }
         }
 
@@ -131,7 +134,8 @@ final class PublisherConcatMapIterable<T, U> extends AbstractSynchronousPublishe
         public void cancel() {
             Subscription sourceSubscription = this.sourceSubscription;
             assert sourceSubscription != null;
-            if (requestNUpdater.getAndSet(this, -1) >= 0 && emittingUpdater.compareAndSet(this, CONCURRENT_IDLE, CONCURRENT_EMITTING)) {
+            if (requestNUpdater.getAndSet(this, -1) >= 0 && emittingUpdater.compareAndSet(this, CONCURRENT_IDLE,
+                    CONCURRENT_EMITTING)) {
                 doCancel(sourceSubscription);
             }
         }
@@ -145,7 +149,8 @@ final class PublisherConcatMapIterable<T, U> extends AbstractSynchronousPublishe
             sourceSubscription.cancel();
         }
 
-        private void tryDrainIterator(Iterator<? extends U> currentIterator, Subscription sourceSubscription, @Nullable TerminalNotification terminalNotification, long requestN) {
+        private void tryDrainIterator(Iterator<? extends U> currentIterator, Subscription sourceSubscription,
+                                      @Nullable TerminalNotification terminalNotification, long requestN) {
             boolean hasNext = false;
             boolean terminated = false;
             do {
@@ -163,49 +168,53 @@ final class PublisherConcatMapIterable<T, U> extends AbstractSynchronousPublishe
                         terminalNotification.terminate(target);
                     }
                 } finally {
-                    requestN = requestNUpdater.accumulateAndGet(this, requestN - initialRequestN, FlowControlUtil::addWithOverflowProtectionIfNotNegative);
-                    if (terminated) {
-                        break;
-                    }
+                    requestN = requestNUpdater.accumulateAndGet(this, requestN - initialRequestN,
+                            FlowControlUtil::addWithOverflowProtectionIfNotNegative);
                     if (requestN < 0) {
-                        // We clear out the current iterator to allow for GC, and we don't want to deliver any more data because
-                        // it may be out of order or incomplete ... so simulate a terminated event.
+                        terminated = true;
+                        // We clear out the current iterator to allow for GC, and we don't want to deliver any more data
+                        // because it may be out of order or incomplete ... so simulate a terminated event.
                         doCancel(sourceSubscription);
-                        break;
-                    } else {
+                    } else if (!terminated) {
                         final Iterator<? extends U> previousIterator;
                         try {
-                            if (terminalNotification == null && !hasNext && requestN > 0 && currentIterator != EmptyIterator.instance()) {
-                                // We only request 1 at a time, and therefore we don't have any outstanding demand, so we will
-                                // not be getting an onNext call, so we write to the currentIterator variable here before we unlock emitting
-                                // so visibility to other threads should be taken care of by the write to emitting below (and later read).
+                            if (terminalNotification == null && !hasNext && requestN > 0 &&
+                                    currentIterator != EmptyIterator.instance()) {
+                                // We only request 1 at a time, and therefore we don't have any outstanding demand, so
+                                // we will not be getting an onNext call, so we write to the currentIterator variable
+                                // here before we unlock emitting so visibility to other threads should be taken care of
+                                // by the write to emitting below (and later read).
                                 this.currentIterator = previousIterator = EmptyIterator.instance();
                                 sourceSubscription.request(1);
                             } else {
                                 previousIterator = currentIterator;
                             }
                         } finally {
-                            // The lock must be released after we interact with the subscription for thread safety reasons.
+                            // The lock must be released after we interact with the subscription for thread safety
+                            // reasons.
                             emitting = CONCURRENT_IDLE;
                         }
 
-                        // We may have been cancelled while we were holding the lock, so we need to check if we have been cancelled after
-                        // we release the lock.
+                        // We may have been cancelled while we were holding the lock, so we need to check if we have
+                        // been cancelled after we release the lock.
                         requestN = this.requestN;
 
-                        // We may requested more data while we held the lock. If data was delivered in a re-entry fashion,
-                        // or if data was delivered on another thread while we held the lock we may have to try to re-acquire
-                        // the lock and drain the new Iterator.
+                        // We may requested more data while we held the lock. If data was delivered in a re-entry
+                        // fashion, or if data was delivered on another thread while we held the lock we may have to try
+                        // to re-acquire the lock and drain the new Iterator.
                         currentIterator = this.currentIterator;
                         if (previousIterator != currentIterator) {
-                            // We only want to interact with the iterator inside the lock, and we don't want to exit early
-                            // if we have seen a terminal event in the mean time, so if there is demand we assume for now
-                            // that hasNext is true, and we will find out if there is really data if we re-acquire the lock.
+                            // We only want to interact with the iterator inside the lock, and we don't want to exit
+                            // early if we have seen a terminal event in the mean time, so if there is demand we assume
+                            // for now that hasNext is true, and we will find out if there is really data if we
+                            // re-acquire the lock.
                             hasNext = requestN > 0;
                         }
                     }
                 }
-            } while (requestN < 0 || (requestN > 0 && hasNext) || (!hasNext && (terminalNotification = this.terminalNotification) != null));
+            } while (!terminated &&
+                    (requestN < 0 || (requestN > 0 && hasNext) ||
+                    (!hasNext && (terminalNotification = this.terminalNotification) != null)));
         }
 
         /**
