@@ -36,32 +36,30 @@ public abstract class BlockingHttpClient extends BlockingHttpRequester {
     }
 
     /**
-     * Reserve a {@link ReservedBlockingHttpConnection} for handling the provided
-     * {@link HttpRequest} but <b>does not execute it</b>!
+     * Reserve a {@link BlockingHttpConnection} based on provided {@link HttpRequestMetaData}.
      *
-     * @param request Allows the underlying layers to know what {@link BlockingHttpConnection}s are valid to
-     * reserve. For example this may provide some insight into shard or other info.
+     * @param metaData Allows the underlying layers to know what {@link BlockingHttpConnection}s are valid to
+     * reserve for future {@link HttpRequest requests} with the same {@link HttpRequestMetaData}.
+     * For example this may provide some insight into shard or other info.
      * @return a {@link ReservedBlockingHttpConnection}.
      * @throws Exception if a exception occurs during the reservation process.
-     * @see StreamingHttpClient#reserveConnection(StreamingHttpRequest)
      */
-    public ReservedBlockingHttpConnection reserveConnection(HttpRequest request) throws Exception {
-        return reserveConnection(executionStrategy(), request);
+    public ReservedBlockingHttpConnection reserveConnection(HttpRequestMetaData metaData) throws Exception {
+        return reserveConnection(executionStrategy(), metaData);
     }
 
     /**
-     * Reserve a {@link ReservedBlockingHttpConnection} for handling the provided
-     * {@link HttpRequest} but <b>does not execute it</b>!
+     * Reserve a {@link BlockingHttpConnection} based on provided {@link HttpRequestMetaData}.
      *
      * @param strategy {@link HttpExecutionStrategy} to use.
-     * @param request Allows the underlying layers to know what {@link BlockingHttpConnection}s are valid to
-     * reserve. For example this may provide some insight into shard or other info.
+     * @param metaData Allows the underlying layers to know what {@link BlockingHttpConnection}s are valid to
+     * reserve for future {@link HttpRequest requests} with the same {@link HttpRequestMetaData}.
+     * For example this may provide some insight into shard or other info.
      * @return a {@link ReservedBlockingHttpConnection}.
      * @throws Exception if a exception occurs during the reservation process.
-     * @see StreamingHttpClient#reserveConnection(HttpExecutionStrategy, StreamingHttpRequest)
      */
     public abstract ReservedBlockingHttpConnection reserveConnection(HttpExecutionStrategy strategy,
-                                                                     HttpRequest request) throws Exception;
+                                                                     HttpRequestMetaData metaData) throws Exception;
 
     /**
      * Convert this {@link BlockingHttpClient} to the {@link StreamingHttpClient} API.
@@ -100,8 +98,8 @@ public abstract class BlockingHttpClient extends BlockingHttpRequester {
 
     /**
      * A special type of {@link BlockingHttpConnection} for the exclusive use of the caller of
-     * {@link #reserveConnection(HttpRequest)}.
-     * @see StreamingHttpClient.ReservedStreamingHttpConnection
+     * {@link #reserveConnection(HttpRequestMetaData)} and
+     * {@link #reserveConnection(HttpExecutionStrategy, HttpRequestMetaData)}.
      */
     public abstract static class ReservedBlockingHttpConnection extends BlockingHttpConnection {
         /**

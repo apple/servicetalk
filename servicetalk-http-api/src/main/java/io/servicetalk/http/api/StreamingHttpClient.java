@@ -40,27 +40,28 @@ public abstract class StreamingHttpClient extends StreamingHttpRequester {
     }
 
     /**
-     * Reserve a {@link StreamingHttpConnection} for handling the provided {@link StreamingHttpRequest} but <b>does not
-     * execute it</b>!
-     * @param request Allows the underlying layers to know what {@link StreamingHttpConnection}s are valid to reserve.
+     * Reserve a {@link StreamingHttpConnection} based on provided {@link HttpRequestMetaData}.
+     *
+     * @param metaData Allows the underlying layers to know what {@link StreamingHttpConnection}s are valid to
+     * reserve for future {@link StreamingHttpRequest requests} with the same {@link HttpRequestMetaData}.
      * For example this may provide some insight into shard or other info.
-     * @return a {@link ReservedStreamingHttpConnection}.
+     * @return a {@link Single} that provides the {@link ReservedStreamingHttpConnection} upon completion.
      */
-    public Single<? extends ReservedStreamingHttpConnection> reserveConnection(StreamingHttpRequest request) {
-        return reserveConnection(executionStrategy(), request);
+    public Single<? extends ReservedStreamingHttpConnection> reserveConnection(HttpRequestMetaData metaData) {
+        return reserveConnection(executionStrategy(), metaData);
     }
 
     /**
-     * Reserve a {@link StreamingHttpConnection} for handling the provided {@link StreamingHttpRequest} but <b>does not
-     * execute it</b>!
+     * Reserve a {@link StreamingHttpConnection} based on provided {@link HttpRequestMetaData}.
      *
      * @param strategy {@link HttpExecutionStrategy} to use.
-     * @param request Allows the underlying layers to know what {@link StreamingHttpConnection}s are valid to reserve.
+     * @param metaData Allows the underlying layers to know what {@link StreamingHttpConnection}s are valid to
+     * reserve for future {@link StreamingHttpRequest requests} with the same {@link HttpRequestMetaData}.
      * For example this may provide some insight into shard or other info.
-     * @return a {@link ReservedStreamingHttpConnection}.
+     * @return a {@link Single} that provides the {@link ReservedStreamingHttpConnection} upon completion.
      */
     public abstract Single<? extends ReservedStreamingHttpConnection> reserveConnection(HttpExecutionStrategy strategy,
-                                                                                        StreamingHttpRequest request);
+                                                                                        HttpRequestMetaData metaData);
 
     /**
      * Convert this {@link StreamingHttpClient} to the {@link HttpClient} API.
@@ -109,8 +110,8 @@ public abstract class StreamingHttpClient extends StreamingHttpRequester {
 
     /**
      * A special type of {@link StreamingHttpConnection} for the exclusive use of the caller of
-     * {@link #reserveConnection(StreamingHttpRequest)} and
-     * {@link #reserveConnection(HttpExecutionStrategy, StreamingHttpRequest)}.
+     * {@link #reserveConnection(HttpRequestMetaData)} and
+     * {@link #reserveConnection(HttpExecutionStrategy, HttpRequestMetaData)}.
      */
     public abstract static class ReservedStreamingHttpConnection extends StreamingHttpConnection {
         /**

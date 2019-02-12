@@ -136,14 +136,14 @@ class DefaultPartitionedHttpClientBuilder<U, R> implements PartitionedHttpClient
         }
 
         @Nonnull
-        private StreamingHttpClient selectClient(final StreamingHttpRequest request) {
-            return group.get(pabf.apply(request).build());
+        private StreamingHttpClient selectClient(final HttpRequestMetaData metaData) {
+            return group.get(pabf.apply(metaData).build());
         }
 
         @Override
         public Single<? extends ReservedStreamingHttpConnection> reserveConnection(final HttpExecutionStrategy strategy,
-                                                                                   final StreamingHttpRequest request) {
-            return deferShareContext(() -> selectClient(request).reserveConnection(strategy, request));
+                                                                                   final HttpRequestMetaData metaData) {
+            return deferShareContext(() -> selectClient(metaData).reserveConnection(strategy, metaData));
         }
 
         @Override
@@ -182,7 +182,7 @@ class DefaultPartitionedHttpClientBuilder<U, R> implements PartitionedHttpClient
 
         @Override
         public Single<? extends ReservedStreamingHttpConnection> reserveConnection(final HttpExecutionStrategy strategy,
-                                                                                   final StreamingHttpRequest request) {
+                                                                                   final HttpRequestMetaData metaData) {
             return error(ex);
         }
 

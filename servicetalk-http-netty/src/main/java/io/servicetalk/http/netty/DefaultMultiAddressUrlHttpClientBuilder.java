@@ -30,6 +30,7 @@ import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.HttpConnectionFilterFactory;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpHeadersFactory;
+import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpScheme;
 import io.servicetalk.http.api.MultiAddressHttpClientBuilder;
 import io.servicetalk.http.api.MultiAddressHttpClientFilterFactory;
@@ -133,7 +134,7 @@ final class DefaultMultiAddressUrlHttpClientBuilder
      * Returns a cached {@link UrlKey} or creates a new one based on {@link StreamingHttpRequest} information.
      */
     private static final class CachingKeyFactory
-            implements Function<StreamingHttpRequest, UrlKey>, AsyncCloseable {
+            implements Function<HttpRequestMetaData, UrlKey>, AsyncCloseable {
 
         private final ConcurrentMap<String, UrlKey> urlKeyCache = new ConcurrentHashMap<>();
         private final SslConfigProvider sslConfigProvider;
@@ -143,21 +144,21 @@ final class DefaultMultiAddressUrlHttpClientBuilder
         }
 
         @Override
-        public UrlKey apply(final StreamingHttpRequest request) {
-            final String host = request.effectiveHost();
+        public UrlKey apply(final HttpRequestMetaData metaData) {
+            final String host = metaData.effectiveHost();
             if (host == null) {
                 throw new IllegalArgumentException(
                         "StreamingHttpRequest does not contain information about target server address." +
-                                " Request-target: " + request.requestTarget() +
-                                ", HOST header: " + request.headers().get(HOST));
+                                " Request-target: " + metaData.requestTarget() +
+                                ", HOST header: " + metaData.headers().get(HOST));
             }
-            final int effectivePort = request.effectivePort();
+            final int effectivePort = metaData.effectivePort();
             final int port = effectivePort >= 0 ? effectivePort :
-                    sslConfigProvider.defaultPort(schemeForValue(request.scheme()), host);
-            final String key = request.scheme() + host + ':' + port;
+                    sslConfigProvider.defaultPort(schemeForValue(metaData.scheme()), host);
+            final String key = metaData.scheme() + host + ':' + port;
             final UrlKey urlKey = urlKeyCache.get(key);
             return urlKey != null ? urlKey : urlKeyCache.computeIfAbsent(key, ignore ->
-                    new UrlKey(schemeForValue(request.scheme()), HostAndPort.of(host, port)));
+                    new UrlKey(schemeForValue(metaData.scheme()), HostAndPort.of(host, port)));
         }
 
         @Override
@@ -295,14 +296,14 @@ final class DefaultMultiAddressUrlHttpClientBuilder
             this.executionContext = executionContext;
         }
 
-        private StreamingHttpClient selectClient(StreamingHttpRequest req) {
-            return group.get(keyFactory.apply(req));
+        private StreamingHttpClient selectClient(HttpRequestMetaData metaData) {
+            return group.get(keyFactory.apply(metaData));
         }
 
         @Override
         public Single<? extends ReservedStreamingHttpConnection> reserveConnection(final HttpExecutionStrategy strategy,
-                                                                                   final StreamingHttpRequest request) {
-            return deferShareContext(() -> selectClient(request).reserveConnection(strategy, request));
+                                                                                   final HttpRequestMetaData metaData) {
+            return deferShareContext(() -> selectClient(metaData).reserveConnection(strategy, metaData));
         }
 
         @Override
@@ -348,8 +349,8 @@ final class DefaultMultiAddressUrlHttpClientBuilder
 
         @Override
         public Single<? extends ReservedStreamingHttpConnection> reserveConnection(final HttpExecutionStrategy strategy,
-                                                                                   final StreamingHttpRequest request) {
-            return httpClient.reserveConnection(strategy, request);
+                                                                                   final HttpRequestMetaData metaData) {
+            return httpClient.reserveConnection(strategy, metaData);
         }
 
         @Override
