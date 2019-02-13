@@ -270,8 +270,8 @@ final class SpliceFlatStreamToMetaSingle<Data, MetaData, Payload> extends Single
                                         ", failed the race with a duplicate, but neither has seen onNext()"));
                     }
                 } else {
-                    LOGGER.debug("Terminal error queued for delayed delivery to the payload subscriber. If no"
-                            + " subscribe is done on the payload subscriber this event will not be delivered.", t);
+                    LOGGER.debug("Terminal error queued for delayed delivery to the payload publisher. " +
+                            "If the payload is not subscribed, this event will not be delivered.", t);
                 }
             }
         }
