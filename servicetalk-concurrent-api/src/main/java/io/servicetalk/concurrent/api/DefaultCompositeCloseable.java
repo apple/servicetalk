@@ -108,7 +108,11 @@ final class DefaultCompositeCloseable implements CompositeCloseable {
         try {
             awaitIndefinitely(closeAsync());
         } catch (final ExecutionException e) {
-            throwException(e.getCause());
+            if (e.getCause() != null) {
+                // unwrap original cause of ExecutionException:
+                throwException(e.getCause());
+            }
+            throwException(e);
         }
     }
 
