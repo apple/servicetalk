@@ -26,9 +26,9 @@ import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.api.StreamingHttpService;
 
 import java.util.List;
+import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
-import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toList;
 
@@ -44,6 +44,7 @@ final class InOrderRouter extends StreamingHttpService {
 
     private final StreamingHttpService fallbackService;
     private final PredicateServicePair[] predicateServicePairs;
+    private final HttpExecutionStrategy strategy;
     private final AsyncCloseable closeable;
 
     /**
@@ -51,9 +52,12 @@ final class InOrderRouter extends StreamingHttpService {
      * @param fallbackService the service to use to handle requests if no predicates match.
      * @param predicateServicePairs the list of predicate-service pairs to use for handling requests.
      */
-    InOrderRouter(final StreamingHttpService fallbackService, final List<PredicateServicePair> predicateServicePairs) {
+    InOrderRouter(final StreamingHttpService fallbackService, final List<PredicateServicePair> predicateServicePairs,
+                  @Nullable final HttpExecutionStrategy strategy) {
         this.fallbackService = requireNonNull(fallbackService);
         this.predicateServicePairs = predicateServicePairs.toArray(new PredicateServicePair[0]);
+        // Use default strategy from StreamingHttpService if none defined by the user.
+        this.strategy = strategy == null ? super.executionStrategy() : strategy;
         this.closeable = newCompositeCloseable()
                 .mergeAll(fallbackService)
                 .mergeAll(predicateServicePairs.stream().map(PredicateServicePair::getService).collect(toList()));
@@ -75,8 +79,7 @@ final class InOrderRouter extends StreamingHttpService {
 
     @Override
     public HttpExecutionStrategy executionStrategy() {
-        // Do not offload this service so we can support other non-offloaded services.
-        return noOffloadsStrategy();
+        return strategy;
     }
 
     @Override

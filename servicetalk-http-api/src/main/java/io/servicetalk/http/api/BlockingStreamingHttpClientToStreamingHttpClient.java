@@ -46,9 +46,9 @@ final class BlockingStreamingHttpClientToStreamingHttpClient extends StreamingHt
 
     @Override
     public Single<? extends ReservedStreamingHttpConnection> reserveConnection(final HttpExecutionStrategy strategy,
-                                                                               final StreamingHttpRequest request) {
+                                                                               final HttpRequestMetaData metaData) {
         return blockingToSingle(() -> new BlockingToReservedStreamingHttpConnection(
-                    blockingClient.reserveConnection(strategy, request.toBlockingStreamingRequest())));
+                blockingClient.reserveConnection(strategy, metaData)));
     }
 
     @Override

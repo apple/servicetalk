@@ -30,6 +30,9 @@ public final class SingletonDnsServerAddresses implements DnsServerAddressStream
      * @param address the address to return in {@link #next()}.
      */
     public SingletonDnsServerAddresses(InetSocketAddress address) {
+        if (address.isUnresolved()) {
+            throw new IllegalArgumentException("cannot use an unresolved DNS server address: " + address);
+        }
         this.address = requireNonNull(address);
     }
 

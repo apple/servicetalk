@@ -16,6 +16,7 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.client.api.MaxRequestLimitExceededException;
+import io.servicetalk.client.api.NoAvailableHostException;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.DeliberateException;
@@ -134,7 +135,7 @@ public class NettyHttpServerConnectionAcceptorTest extends AbstractNettyHttpServ
             // Send a request, and wait for the response.
             // We do this to ensure that the server has had a chance to execute code if the connection was accepted.
             // This is necessary for the delayed tests to see the correct state of the acceptedConnection flag.
-            final StreamingHttpRequest request = getStreamingRequestFactory().get(SVC_ECHO).payloadBody(
+            final StreamingHttpRequest request = streamingHttpConnection().get(SVC_ECHO).payloadBody(
                     getChunkPublisherFromStrings("hello"));
             request.headers().set(CONTENT_LENGTH, "5");
             final StreamingHttpResponse response = makeRequest(request);
@@ -148,7 +149,9 @@ public class NettyHttpServerConnectionAcceptorTest extends AbstractNettyHttpServ
             if (filterMode.expectAccept) {
                 throw new AssertionError("Unexpected exception while reading/writing request/response", e);
             }
-            assertThat(e.getCause(), anyOf(instanceOf(IOException.class), instanceOf(MaxRequestLimitExceededException.class)));
+            assertThat(e.getCause(), anyOf(instanceOf(IOException.class),
+                    instanceOf(MaxRequestLimitExceededException.class),
+                    instanceOf(NoAvailableHostException.class)));
         }
 
         if (getSslEnabled()) {

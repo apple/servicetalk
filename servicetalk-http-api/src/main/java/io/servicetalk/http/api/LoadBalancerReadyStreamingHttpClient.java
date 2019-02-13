@@ -17,6 +17,7 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.api.LoadBalancerReadyEvent;
+import io.servicetalk.client.api.NoAvailableHostException;
 import io.servicetalk.client.api.RetryableException;
 import io.servicetalk.client.internal.LoadBalancerReadySubscriber;
 import io.servicetalk.concurrent.api.BiIntFunction;
@@ -65,12 +66,12 @@ public final class LoadBalancerReadyStreamingHttpClient extends StreamingHttpCli
     @Override
     protected Single<? extends ReservedStreamingHttpConnection> reserveConnection(final StreamingHttpClient delegate,
                                                                                   final HttpExecutionStrategy strategy,
-                                                                                  final StreamingHttpRequest request) {
-        return delegate.reserveConnection(strategy, request).retryWhen(retryWhenFunction());
+                                                                                  final HttpRequestMetaData metaData) {
+        return delegate.reserveConnection(strategy, metaData).retryWhen(retryWhenFunction());
     }
 
     private BiIntFunction<Throwable, Completable> retryWhenFunction() {
-        return (count, cause) -> count <= maxRetryCount && cause instanceof RetryableException ?
+        return (count, cause) -> count <= maxRetryCount && cause instanceof NoAvailableHostException ?
                 loadBalancerReadySubscriber.onHostsAvailable() : error(cause);
     }
 }

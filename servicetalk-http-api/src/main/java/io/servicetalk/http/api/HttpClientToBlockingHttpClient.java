@@ -34,9 +34,9 @@ final class HttpClientToBlockingHttpClient extends BlockingHttpClient {
 
     @Override
     public ReservedBlockingHttpConnection reserveConnection(final HttpExecutionStrategy strategy,
-                                                            final HttpRequest request) throws Exception {
+                                                            final HttpRequestMetaData metaData) throws Exception {
         return new ReservedHttpConnectionToReservedBlockingHttpConnection(
-                blockingInvocation(client.reserveConnection(strategy, request)));
+                blockingInvocation(client.reserveConnection(strategy, metaData)));
     }
 
     @Override

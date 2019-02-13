@@ -42,7 +42,7 @@ public class BlockingStreamingHttpClientTest extends AbstractBlockingStreamingHt
 
             @Override
             public Single<? extends ReservedStreamingHttpConnection> reserveConnection(
-                    final HttpExecutionStrategy strategy, final StreamingHttpRequest request) {
+                    final HttpExecutionStrategy strategy, final HttpRequestMetaData metaData) {
                 return error(new UnsupportedOperationException());
             }
         };
@@ -63,7 +63,7 @@ public class BlockingStreamingHttpClientTest extends AbstractBlockingStreamingHt
 
             @Override
             public ReservedBlockingStreamingHttpConnection reserveConnection(
-                    final HttpExecutionStrategy strategy, final BlockingStreamingHttpRequest request) {
+                    final HttpExecutionStrategy strategy, final HttpRequestMetaData metaData) {
                 throw new UnsupportedOperationException();
             }
         };

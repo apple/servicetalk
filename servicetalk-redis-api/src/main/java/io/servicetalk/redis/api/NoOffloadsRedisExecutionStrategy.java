@@ -60,6 +60,9 @@ final class NoOffloadsRedisExecutionStrategy implements RedisExecutionStrategy {
 
     @Override
     public Executor executor() {
-        return immediate();
+        // We do not return immediate() here as it is an implementation detail to use immediate() and not necessarily
+        // required to be used otherwise. Returning immediate() from here may lead to a user inadvertently using that
+        // Executor for any custom tasks.
+        return null;
     }
 }

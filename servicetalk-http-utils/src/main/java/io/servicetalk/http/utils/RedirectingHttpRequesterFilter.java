@@ -23,6 +23,7 @@ import io.servicetalk.http.api.HttpConnection;
 import io.servicetalk.http.api.HttpConnectionFilterFactory;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpHeaderNames;
+import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.ReservedStreamingHttpConnectionFilter;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpClientFilter;
@@ -137,8 +138,8 @@ public final class RedirectingHttpRequesterFilter implements HttpClientFilterFac
             protected Single<? extends ReservedStreamingHttpConnection> reserveConnection(
                     final StreamingHttpClient delegate,
                     final HttpExecutionStrategy strategy,
-                    final StreamingHttpRequest request) {
-                return delegate.reserveConnection(strategy, request)
+                    final HttpRequestMetaData metaData) {
+                return delegate.reserveConnection(strategy, metaData)
                         .map(r -> new ReservedStreamingHttpConnectionFilter(r) {
                             @Override
                             public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,

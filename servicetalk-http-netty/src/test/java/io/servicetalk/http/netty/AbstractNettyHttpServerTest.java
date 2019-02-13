@@ -26,7 +26,6 @@ import io.servicetalk.http.api.HttpResponseStatuses;
 import io.servicetalk.http.api.HttpServerBuilder;
 import io.servicetalk.http.api.StreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpRequest;
-import io.servicetalk.http.api.StreamingHttpRequestFactory;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.test.resources.DefaultTestCerts;
@@ -50,7 +49,6 @@ import org.mockito.junit.MockitoRule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.StandardSocketOptions;
 import java.util.List;
@@ -66,10 +64,10 @@ import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitelyNonNull;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.transport.api.ConnectionAcceptor.ACCEPT_ALL;
+import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.parseBoolean;
 import static java.lang.Thread.NORM_PRIORITY;
-import static java.net.InetAddress.getLoopbackAddress;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.Matchers.contains;
@@ -93,7 +91,6 @@ public abstract class AbstractNettyHttpServerTest {
     }
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractNettyHttpServerTest.class);
-    private static final InetAddress LOOPBACK_ADDRESS = getLoopbackAddress();
 
     @Rule
     public final ServiceTalkTestTimeout timeout = new ServiceTalkTestTimeout();
@@ -131,7 +128,7 @@ public abstract class AbstractNettyHttpServerTest {
 
     @Before
     public void startServer() throws Exception {
-        final InetSocketAddress bindAddress = new InetSocketAddress(LOOPBACK_ADDRESS, 0);
+        final InetSocketAddress bindAddress = localAddress(0);
         setService(new TestServiceStreaming(publisherSupplier, defaultStrategy(serverExecutor)));
 
         // A small SNDBUF is needed to test that the server defers closing the connection until writes are complete.
@@ -152,9 +149,6 @@ public abstract class AbstractNettyHttpServerTest {
                 .doBeforeSuccess(ctx -> LOGGER.debug("Server started on {}.", ctx.listenAddress()))
                 .doBeforeError(throwable -> LOGGER.debug("Failed starting server on {}.", bindAddress)));
 
-        final InetSocketAddress socketAddress = new InetSocketAddress(LOOPBACK_ADDRESS,
-                ((InetSocketAddress) serverContext.listenAddress()).getPort());
-
         final DefaultHttpConnectionBuilder<Object> httpConnectionBuilder = new DefaultHttpConnectionBuilder<>();
         if (sslEnabled) {
             final SslConfig sslConfig = SslConfigBuilder.forClientWithoutServerIdentity()
@@ -163,17 +157,17 @@ public abstract class AbstractNettyHttpServerTest {
         }
         httpConnection = awaitIndefinitelyNonNull(httpConnectionBuilder.ioExecutor(clientIoExecutor)
                 .executor(clientExecutor)
-                .buildStreaming(socketAddress));
+                .buildStreaming(serverContext.listenAddress()));
     }
 
     protected void ignoreTestWhen(ExecutorSupplier clientExecutorSupplier, ExecutorSupplier serverExecutorSupplier) {
         assumeThat("Ignored flaky test",
                 parseBoolean(System.getenv("CI")) &&
-                this.clientExecutorSupplier == clientExecutorSupplier &&
-                this.serverExecutorSupplier == serverExecutorSupplier, is(FALSE));
+                        this.clientExecutorSupplier == clientExecutorSupplier &&
+                        this.serverExecutorSupplier == serverExecutorSupplier, is(FALSE));
     }
 
-    void setService(final StreamingHttpService service) {
+    protected void setService(final StreamingHttpService service) {
         this.service = service;
     }
 
@@ -236,7 +230,7 @@ public abstract class AbstractNettyHttpServerTest {
         return Publisher.from(texts).map(this::getChunkFromString);
     }
 
-    StreamingHttpRequestFactory getStreamingRequestFactory() {
+    StreamingHttpConnection streamingHttpConnection() {
         return httpConnection;
     }
 

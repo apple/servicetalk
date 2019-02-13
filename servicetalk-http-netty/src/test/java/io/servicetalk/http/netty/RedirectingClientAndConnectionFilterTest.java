@@ -47,6 +47,9 @@ import static io.servicetalk.http.api.HttpResponseStatuses.PERMANENT_REDIRECT;
 import static io.servicetalk.http.netty.RedirectingClientAndConnectionFilterTest.Type.Client;
 import static io.servicetalk.http.netty.RedirectingClientAndConnectionFilterTest.Type.Connection;
 import static io.servicetalk.http.netty.RedirectingClientAndConnectionFilterTest.Type.Reserved;
+import static io.servicetalk.transport.netty.internal.AddressUtils.hostHeader;
+import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
+import static java.lang.String.format;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertThat;
 
@@ -74,23 +77,22 @@ public final class RedirectingClientAndConnectionFilterTest {
     }
 
     private BlockingHttpRequester newRequester(ServerContext serverContext) throws Exception {
+        final InetSocketAddress serverSocketAddress = (InetSocketAddress) serverContext.listenAddress();
+        final HostAndPort serverHostAndPort = HostAndPort.of(serverSocketAddress);
         switch (type) {
             case Client:
-                return HttpClients.forSingleAddress(HostAndPort.of("localhost",
-                        ((InetSocketAddress) serverContext.listenAddress()).getPort()))
+                return HttpClients.forSingleAddress(serverHostAndPort)
                         .appendClientFilter(r -> r.headers().contains("X-REDIRECT"),
                                 new RedirectingHttpRequesterFilter())
                         .buildBlocking();
             case Reserved:
                 CompositeCloseable closeables = AsyncCloseables.newCompositeCloseable();
                 try {
-                    StreamingHttpClient localhost = closeables.prepend(
-                            HttpClients.forSingleAddress(HostAndPort.of("localhost",
-                        ((InetSocketAddress) serverContext.listenAddress()).getPort()))
-                        .appendClientFilter(r -> r.headers().contains("X-REDIRECT"),
-                                new RedirectingHttpRequesterFilter())
-                        .buildStreaming());
-                    return localhost.reserveConnection(localhost.get("")).map(r ->
+                    StreamingHttpClient client = closeables.prepend(HttpClients.forSingleAddress(serverHostAndPort)
+                            .appendClientFilter(r -> r.headers().contains("X-REDIRECT"),
+                                    new RedirectingHttpRequesterFilter())
+                            .buildStreaming());
+                    return client.reserveConnection(client.get("")).map(r ->
                             new ReservedStreamingHttpConnectionFilter(closeables.prepend(r)) {
                                 @Override
                                 public Completable closeAsync() {
@@ -111,8 +113,7 @@ public final class RedirectingClientAndConnectionFilterTest {
                 return new DefaultHttpConnectionBuilder<>()
                         .appendConnectionFilter(r -> r.headers().contains("X-REDIRECT"),
                                 new RedirectingHttpRequesterFilter())
-                        .buildBlocking(new InetSocketAddress("localhost",
-                                ((InetSocketAddress) serverContext.listenAddress()).getPort()));
+                        .buildBlocking(serverSocketAddress);
 
             default:
                 throw new IllegalArgumentException(type.name());
@@ -121,7 +122,7 @@ public final class RedirectingClientAndConnectionFilterTest {
 
     @Test
     public void redirectFilterNoHostHeaderRelativeLocation() throws Exception {
-        try (ServerContext serverContext = HttpServers.forPort(0)
+        try (ServerContext serverContext = HttpServers.forAddress(localAddress(0))
                 .listenBlockingAndAwait((ctx, request, responseFactory) -> {
                     if (request.requestTarget().equals("/")) {
                         return responseFactory.permanentRedirect()
@@ -148,12 +149,12 @@ public final class RedirectingClientAndConnectionFilterTest {
 
     @Test
     public void redirectFilterNoHostHeaderAbsoluteLocation() throws Exception {
-        try (ServerContext serverContext = HttpServers.forPort(0)
+        try (ServerContext serverContext = HttpServers.forAddress(localAddress(0))
                 .listenBlockingAndAwait((ctx, request, responseFactory) -> {
                     if (request.requestTarget().equals("/")) {
-                        int port = ((InetSocketAddress) ctx.localAddress()).getPort();
-                        return responseFactory.permanentRedirect()
-                                .addHeader(LOCATION, "http://localhost:" + port + "/next");
+                        InetSocketAddress socketAddress = (InetSocketAddress) ctx.localAddress();
+                        return responseFactory.permanentRedirect().addHeader(LOCATION,
+                                format("http://%s/next", hostHeader(HostAndPort.of(socketAddress))));
                     }
                     return responseFactory.ok();
                 }); BlockingHttpRequester client = newRequester(serverContext)) {
@@ -176,7 +177,7 @@ public final class RedirectingClientAndConnectionFilterTest {
 
     @Test
     public void redirectFilterWithHostHeaderRelativeLocation() throws Exception {
-        try (ServerContext serverContext = HttpServers.forPort(0)
+        try (ServerContext serverContext = HttpServers.forAddress(localAddress(0))
                 .listenBlockingAndAwait((ctx, request, responseFactory) -> {
                     if (request.requestTarget().equals("/")) {
                         return responseFactory.permanentRedirect()
@@ -196,7 +197,7 @@ public final class RedirectingClientAndConnectionFilterTest {
 
     @Test
     public void redirectFilterWithHostHeaderAbsoluteLocation() throws Exception {
-        try (ServerContext serverContext = HttpServers.forPort(0)
+        try (ServerContext serverContext = HttpServers.forAddress(localAddress(0))
                 .listenBlockingAndAwait((ctx, request, responseFactory) -> {
                     if (request.requestTarget().equals("/")) {
                         return responseFactory.permanentRedirect()

@@ -48,8 +48,6 @@ import static io.servicetalk.concurrent.api.Publisher.just;
 import static io.servicetalk.concurrent.api.Publisher.never;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
-import static io.servicetalk.transport.netty.internal.CloseHandler.CloseEvent.CHANNEL_CLOSED_INBOUND;
-import static io.servicetalk.transport.netty.internal.CloseHandler.CloseEvent.CHANNEL_CLOSED_OUTBOUND;
 import static io.servicetalk.transport.netty.internal.CloseHandler.UNSUPPORTED_PROTOCOL_CLOSE_HANDLER;
 import static io.servicetalk.transport.netty.internal.CloseHandler.forPipelinedRequestResponse;
 import static io.servicetalk.transport.netty.internal.FlushStrategies.batchFlush;
@@ -445,7 +443,9 @@ public class DefaultNettyConnectionTest {
         // Exception should be of type CloseEventObservedException
         assertThat(exCaptor.getValue(), instanceOf(ClosedChannelException.class));
         assertThat(exCaptor.getValue().getCause(), instanceOf(ClosedChannelException.class));
-        assertThat(exCaptor.getValue().getMessage(), equalTo(CHANNEL_CLOSED_OUTBOUND.name()));
+        assertThat(exCaptor.getValue().getMessage(), equalTo(
+                "CHANNEL_CLOSED_OUTBOUND(The transport backing this connection has been shutdown (write)) " +
+                        "[id: 0xembedded, L:embedded ! R:embedded]"));
     }
 
     @Test
@@ -463,7 +463,9 @@ public class DefaultNettyConnectionTest {
         // Exception should be of type CloseEventObservedException
         assertThat(exCaptor.getValue(), instanceOf(ClosedChannelException.class));
         assertThat(exCaptor.getValue().getCause(), equalTo(DELIBERATE_EXCEPTION));
-        assertThat(exCaptor.getValue().getMessage(), equalTo(CHANNEL_CLOSED_INBOUND.name()));
+        assertThat(exCaptor.getValue().getMessage(), equalTo(
+                "CHANNEL_CLOSED_INBOUND(The transport backing this connection has been shutdown (read)) " +
+                        "[id: 0xembedded, L:embedded ! R:embedded]"));
     }
 
     @Test

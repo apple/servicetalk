@@ -17,17 +17,16 @@ package io.servicetalk.dns.discovery.netty;
 
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
+import io.servicetalk.client.api.ServiceDiscovererFilter;
 import io.servicetalk.client.servicediscoverer.ServiceDiscovererTestSubscriber;
-import io.servicetalk.concurrent.api.BiIntFunction;
-import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutor;
 
+import io.netty.resolver.dns.DnsNameResolverTimeoutException;
 import org.junit.After;
-import org.junit.AfterClass;
 import org.junit.Before;
-import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
@@ -36,24 +35,34 @@ import org.reactivestreams.Subscription;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
-import javax.annotation.Nullable;
 
-import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Completable.error;
-import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.dns.discovery.netty.DnsTestUtils.nextIp;
+import static io.servicetalk.dns.discovery.netty.DnsTestUtils.nextIp6;
+import static io.servicetalk.dns.discovery.netty.TestRecordStore.createRecord;
 import static io.servicetalk.transport.netty.NettyIoExecutors.createIoExecutor;
 import static io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutors.toEventLoopAwareNettyIoExecutor;
+import static io.servicetalk.transport.netty.internal.GlobalExecutionContext.globalExecutionContext;
+import static java.util.Arrays.asList;
+import static java.util.Collections.emptyList;
+import static java.util.Collections.singletonList;
 import static org.apache.directory.server.dns.messages.RecordType.A;
+import static org.apache.directory.server.dns.messages.RecordType.AAAA;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.lessThan;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
@@ -65,93 +74,56 @@ public class DefaultDnsServiceDiscovererTest {
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
 
-    private static EventLoopAwareNettyIoExecutor nettyIoExecutor;
-    private static TestRecordStore recordStore = new TestRecordStore();
-    private static TestDnsServer dnsServer;
+    private EventLoopAwareNettyIoExecutor nettyIoExecutor;
+    private TestRecordStore recordStore = new TestRecordStore();
+    private TestDnsServer dnsServer;
     private ServiceDiscoverer<String, InetAddress, ServiceDiscovererEvent<InetAddress>> discoverer;
 
-    @BeforeClass
-    public static void beforeClass() throws Exception {
+    @Before
+    public void setup() throws Exception {
         nettyIoExecutor = toEventLoopAwareNettyIoExecutor(createIoExecutor());
 
         dnsServer = new TestDnsServer(recordStore);
         dnsServer.start();
-    }
-
-    @AfterClass
-    public static void afterClass() throws Exception {
-        dnsServer.stop();
-        awaitIndefinitely(nettyIoExecutor.closeAsync());
-    }
-
-    @Before
-    public void setup() {
-        discoverer = buildServiceDiscoverer(null);
-        resetRecordStore();
-    }
-
-    private static void resetRecordStore() {
-        recordStore = new TestRecordStore();
-        dnsServer.setStore(recordStore);
+        discoverer = serviceDiscovererBuilder().buildInetDiscoverer();
     }
 
     @After
     public void tearDown() throws Exception {
         awaitIndefinitely(discoverer.closeAsync());
+        dnsServer.stop();
+        awaitIndefinitely(nettyIoExecutor.closeAsync());
     }
 
     @Test
-    public void testRetry() throws Exception {
-        AtomicInteger retryStrategyCalledCount = new AtomicInteger();
-        ServiceDiscoverer<String, InetAddress, ServiceDiscovererEvent<InetAddress>> retryingDiscoverer =
-                buildServiceDiscoverer((retryCount, cause) -> {
-                    retryStrategyCalledCount.incrementAndGet();
-                    return retryCount == 1 && cause instanceof UnknownHostException ? completed() : error(cause);
-                });
+    public void unknownHostDiscover() throws Exception {
+        CountDownLatch retryLatch = new CountDownLatch(2);
+        ServiceDiscoverer<String, InetAddress, ServiceDiscovererEvent<InetAddress>> discoverer =
+                serviceDiscovererBuilderWithoutRetry()
+                        .appendFilter(serviceDiscoverer -> new RetryingDnsServiceDiscovererFilter(
+                                serviceDiscoverer, (retryCount, cause) -> {
+                            retryLatch.countDown();
+                            return retryCount == 1 && cause instanceof UnknownHostException ?
+                                    globalExecutionContext().executor().timer(Duration.ofSeconds(1)) : error(cause);
+                        })).buildInetDiscoverer();
 
         try {
-            awaitIndefinitely(retryingDiscoverer.discover("unknown.com"));
-            fail("Unknown host lookup did not fail.");
-        } catch (ExecutionException e) {
-            assertThat("Unexpected calls to retry strategy.", retryStrategyCalledCount.get(), equalTo(2));
+            AtomicReference<Throwable> throwableRef = new AtomicReference<>();
+            Publisher<ServiceDiscovererEvent<InetAddress>> publisher = discoverer.discover("unknown.com");
+            final CountDownLatch latch = new CountDownLatch(1);
+            ServiceDiscovererTestSubscriber<InetAddress> subscriber =
+                    new ServiceDiscovererTestSubscriber<>(latch, throwableRef, Long.MAX_VALUE);
+            publisher.subscribe(subscriber);
+
+            retryLatch.await();
+            latch.await();
             assertThat("Unexpected exception during DNS lookup.",
-                    e.getCause(), instanceOf(UnknownHostException.class));
+                    throwableRef.get(), instanceOf(UnknownHostException.class));
+            assertThat(subscriber.getActiveCount(), equalTo(0));
+            assertThat(subscriber.getInactiveCount(), equalTo(0));
         } finally {
-            awaitIndefinitely(retryingDiscoverer.closeAsync());
+            awaitIndefinitely(discoverer.closeAsync());
         }
-    }
-
-    @Test
-    public void unknownHostDiscover() throws InterruptedException {
-        CountDownLatch latch = new CountDownLatch(1);
-        AtomicReference<Throwable> throwableRef = new AtomicReference<>();
-        Publisher<ServiceDiscovererEvent<InetAddress>> publisher = discoverer.discover("unknown.com");
-        publisher.subscribe(new Subscriber<ServiceDiscovererEvent<InetAddress>>() {
-            @Override
-            public void onSubscribe(Subscription s) {
-                s.request(1);
-            }
-
-            @Override
-            public void onNext(ServiceDiscovererEvent<InetAddress> inetAddressEvent) {
-                throwableRef.set(new IllegalStateException("unexpected resolution: " + inetAddressEvent));
-                latch.countDown();
-            }
-
-            @Override
-            public void onError(Throwable t) {
-                latch.countDown();
-            }
-
-            @Override
-            public void onComplete() {
-                throwableRef.set(new IllegalStateException("unexpected onComplete"));
-                latch.countDown();
-            }
-        });
-
-        latch.await();
-        assertNull(throwableRef.get());
     }
 
     @Test
@@ -269,13 +241,262 @@ public class DefaultDnsServiceDiscovererTest {
         assertThat(stSubscriber.getInactiveCount(), equalTo(expectedStInactiveCount));
     }
 
+    @Test
+    public void repeatDiscoverTtl() throws InterruptedException {
+        AtomicLong firstTime = new AtomicLong();
+        AtomicLong secondTime = new AtomicLong();
+        recordStore
+                .addResponse("apple.com", A, () -> {
+                    firstTime.set(System.currentTimeMillis());
+                    return singletonList(createRecord("apple.com", A, 2, nextIp()));
+                })
+                .setDefaultResponse("apple.com", A, () -> {
+                    secondTime.set(System.currentTimeMillis());
+                    return singletonList(createRecord("apple.com", A, 2, nextIp()));
+                });
+
+        final int expectedActiveCount = 2;
+        final int expectedInactiveCount = 1;
+
+        CountDownLatch latch = new CountDownLatch(expectedActiveCount + expectedInactiveCount);
+        AtomicReference<Throwable> throwableRef = new AtomicReference<>();
+        Publisher<ServiceDiscovererEvent<InetAddress>> publisher = discoverer.discover("apple.com");
+        ServiceDiscovererTestSubscriber<InetAddress> subscriber =
+                new ServiceDiscovererTestSubscriber<>(latch, throwableRef, Long.MAX_VALUE);
+        publisher.subscribe(subscriber);
+
+        latch.await();
+        assertNull(throwableRef.get());
+        assertThat(subscriber.getActiveCount(), equalTo(expectedActiveCount));
+        assertThat(subscriber.getInactiveCount(), equalTo(expectedInactiveCount));
+        long timeBetweenQueries = secondTime.get() - firstTime.get();
+        assertThat(timeBetweenQueries, greaterThanOrEqualTo(2000L));
+    }
+
+    @Test
+    public void repeatDiscoverMultiTtl() throws InterruptedException {
+        final String ipA1 = nextIp();
+        final String ipA2 = nextIp();
+        final String ipB1 = nextIp();
+        final String ipB2 = nextIp();
+
+        AtomicLong firstTime = new AtomicLong();
+        AtomicLong secondTime = new AtomicLong();
+        recordStore
+                .addResponse("apple.com", A, () -> {
+                    firstTime.set(System.currentTimeMillis());
+                    return asList(createRecord("apple.com", A, 1, ipA1),
+                            createRecord("apple.com", A, 10, ipA2));
+                })
+                .setDefaultResponse("apple.com", A, () -> {
+                    secondTime.set(System.currentTimeMillis());
+                    return asList(createRecord("apple.com", A, 10, ipB1),
+                            createRecord("apple.com", A, 10, ipB2));
+                });
+
+        final int expectedActiveCount = 4;
+        final int expectedInactiveCount = 2;
+
+        CountDownLatch latch = new CountDownLatch(expectedActiveCount + expectedInactiveCount);
+        Publisher<ServiceDiscovererEvent<InetAddress>> publisher = discoverer.discover("apple.com");
+        final TestSubscriber subscriber = new TestSubscriber(latch);
+        publisher.subscribe(subscriber);
+
+        latch.await();
+        assertNull(subscriber.throwableRef.get());
+        assertThat(new HashSet<>(subscriber.activeEventAddresses),
+                equalTo(new HashSet<>(asList(ipA1, ipA2, ipB1, ipB2))));
+        assertThat(subscriber.activeEventAddresses.size(), equalTo(expectedActiveCount));
+        assertThat(new HashSet<>(subscriber.inactiveEventAddresses), equalTo(new HashSet<>(asList(ipA1, ipA2))));
+        assertThat(subscriber.inactiveEventAddresses.size(), equalTo(expectedInactiveCount));
+        long timeBetweenQueries = secondTime.get() - firstTime.get();
+        assertThat(timeBetweenQueries, greaterThanOrEqualTo(1000L));
+        assertThat(timeBetweenQueries, lessThan(10_000L));
+    }
+
+    @Test
+    public void repeatDiscoverNxDomain() throws Exception {
+        recordStore.addResponse("apple.com", A, nextIp());
+
+        final int expectedActiveCount = 1;
+        final int expectedInactiveCount = 1;
+
+        CountDownLatch latch = new CountDownLatch(expectedActiveCount + expectedInactiveCount);
+        AtomicReference<Throwable> throwableRef = new AtomicReference<>();
+        Publisher<ServiceDiscovererEvent<InetAddress>> publisher = discoverer.discover("apple.com");
+        ServiceDiscovererTestSubscriber<InetAddress> subscriber =
+                new ServiceDiscovererTestSubscriber<>(latch, throwableRef, Long.MAX_VALUE);
+        publisher.subscribe(subscriber);
+
+        latch.await();
+        assertNull(throwableRef.get());
+        assertThat(subscriber.getActiveCount(), equalTo(expectedActiveCount));
+        assertThat(subscriber.getInactiveCount(), equalTo(expectedInactiveCount));
+    }
+
+    @Test
+    public void repeatDiscoverNxDomainNoSendUnavailable() throws Exception {
+        recordStore.addResponse("apple.com", A, nextIp());
+
+        ServiceDiscoverer<String, InetAddress, ServiceDiscovererEvent<InetAddress>> discoverer =
+                serviceDiscovererBuilderWithoutRetry()
+                        .invalidateHostsOnDnsFailure(__ -> false)
+                        .buildInetDiscoverer();
+        try {
+            final int expectedActiveCount = 1;
+            final int expectedInactiveCount = 0;
+
+            CountDownLatch latch = new CountDownLatch(expectedActiveCount + expectedInactiveCount + 1);
+            AtomicReference<Throwable> throwableRef = new AtomicReference<>();
+            Publisher<ServiceDiscovererEvent<InetAddress>> publisher = discoverer.discover("apple.com");
+            ServiceDiscovererTestSubscriber<InetAddress> subscriber =
+                    new ServiceDiscovererTestSubscriber<>(latch, throwableRef, Long.MAX_VALUE);
+            publisher.subscribe(subscriber);
+
+            latch.await();
+            assertThat("Unexpected exception during DNS lookup.",
+                    throwableRef.get(), instanceOf(UnknownHostException.class));
+            assertThat(subscriber.getActiveCount(), equalTo(expectedActiveCount));
+            assertThat(subscriber.getInactiveCount(), equalTo(expectedInactiveCount));
+        } finally {
+            awaitIndefinitely(discoverer.closeAsync());
+        }
+    }
+
+    @Test
+    public void repeatDiscoverNxDomainAndRecover() throws Exception {
+        recordStore.addResponse("apple.com", A, nextIp());
+
+        final int expectedActiveCount = 1;
+        final int expectedInactiveCount = 1;
+
+        CountDownLatch latch1 = new CountDownLatch(expectedActiveCount + expectedInactiveCount);
+        CountDownLatch latch2 = new CountDownLatch(expectedActiveCount + expectedInactiveCount + 1);
+        AtomicReference<Throwable> throwableRef = new AtomicReference<>();
+        Publisher<ServiceDiscovererEvent<InetAddress>> publisher = discoverer.discover("apple.com");
+        ServiceDiscovererTestSubscriber<InetAddress> subscriber =
+                new ServiceDiscovererTestSubscriber<>(latch1, throwableRef, Long.MAX_VALUE);
+        publisher.doBeforeNext(n -> latch2.countDown()).subscribe(subscriber);
+
+        latch1.await();
+        assertNull(throwableRef.get());
+        assertThat(subscriber.getActiveCount(), equalTo(expectedActiveCount));
+        assertThat(subscriber.getInactiveCount(), equalTo(expectedInactiveCount));
+
+        recordStore.setDefaultResponse("apple.com", A, nextIp());
+        latch2.await();
+        assertThat(subscriber.getActiveCount(), equalTo(expectedActiveCount + 1));
+    }
+
+    @Test
+    public void testTimeoutDoesNotInactivate() throws Exception {
+        CountDownLatch timeoutLatch = new CountDownLatch(2);
+        CountDownLatch responseLatch = new CountDownLatch(1);
+        recordStore.addResponse("apple.com", A, nextIp());
+        recordStore.addResponse("apple.com", A, () -> {
+            try {
+                responseLatch.await();
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+            return emptyList();
+        });
+
+        ServiceDiscoverer<String, InetAddress, ServiceDiscovererEvent<InetAddress>> discoverer =
+                serviceDiscovererBuilder()
+                        .queryTimeout(Duration.ofMillis(100))
+                        .appendFilter(client -> new ServiceDiscovererFilter<String, InetAddress, ServiceDiscovererEvent<InetAddress>>(client) {
+                            @Override
+                            public Publisher<ServiceDiscovererEvent<InetAddress>> discover(final String s) {
+                                return super.discover(s).doOnError(t -> {
+                                    if (t.getCause() instanceof DnsNameResolverTimeoutException) {
+                                        timeoutLatch.countDown();
+                                    } else {
+                                        throw new RuntimeException("Unexpected exception", t);
+                                    }
+                                });
+                            }
+                        })
+                        .buildInetDiscoverer();
+
+        try {
+            final int expectedActiveCount = 1;
+            final int expectedInactiveCount = 0;
+
+            CountDownLatch latch = new CountDownLatch(expectedActiveCount + expectedInactiveCount);
+            AtomicReference<Throwable> throwableRef = new AtomicReference<>();
+            Publisher<ServiceDiscovererEvent<InetAddress>> publisher = discoverer.discover("apple.com");
+            ServiceDiscovererTestSubscriber<InetAddress> subscriber =
+                    new ServiceDiscovererTestSubscriber<>(latch, throwableRef, Long.MAX_VALUE);
+            publisher.subscribe(subscriber);
+
+            latch.await();
+            assertNull(throwableRef.get());
+            assertThat(subscriber.getActiveCount(), equalTo(expectedActiveCount));
+            assertThat(subscriber.getInactiveCount(), equalTo(expectedInactiveCount));
+
+            timeoutLatch.await();
+            assertNull(throwableRef.get());
+            assertThat(subscriber.getActiveCount(), equalTo(expectedActiveCount));
+            assertThat(subscriber.getInactiveCount(), equalTo(expectedInactiveCount));
+        } finally {
+            responseLatch.countDown();
+            awaitIndefinitely(discoverer.closeAsync());
+        }
+    }
+
+    @Test
+    public void preferIpv4() throws InterruptedException {
+        final String ipv4 = nextIp();
+        recordStore.addResponse("apple.com", A, ipv4);
+        recordStore.addResponse("apple.com", AAAA, nextIp6());
+
+        final int expectedActiveCount = 1;
+        final int expectedInactiveCount = 0;
+
+        CountDownLatch latch = new CountDownLatch(expectedActiveCount + expectedInactiveCount);
+        AtomicReference<Throwable> throwableRef = new AtomicReference<>();
+        Publisher<ServiceDiscovererEvent<InetAddress>> publisher = discoverer.discover("apple.com");
+        final TestSubscriber subscriber = new TestSubscriber(latch);
+        publisher.subscribe(subscriber);
+
+        latch.await();
+        assertNull(throwableRef.get());
+        assertThat(subscriber.activeEventAddresses.size(), equalTo(expectedActiveCount));
+        assertThat(subscriber.activeEventAddresses.get(0), equalTo(ipv4));
+        assertThat(subscriber.inactiveEventAddresses.size(), equalTo(expectedInactiveCount));
+    }
+
+    @Test
+    public void acceptOnlyIpv6() throws InterruptedException {
+        final String ipv6 = nextIp6();
+        recordStore.setDefaultResponse("apple.com", AAAA, ipv6);
+
+        final int expectedActiveCount = 1;
+        final int expectedInactiveCount = 0;
+
+        CountDownLatch latch = new CountDownLatch(expectedActiveCount + expectedInactiveCount);
+        AtomicReference<Throwable> throwableRef = new AtomicReference<>();
+        Publisher<ServiceDiscovererEvent<InetAddress>> publisher = discoverer.discover("apple.com");
+        final TestSubscriber subscriber = new TestSubscriber(latch);
+        publisher.subscribe(subscriber);
+
+        latch.await();
+        assertNull(throwableRef.get());
+        assertThat(subscriber.activeEventAddresses.size(), equalTo(expectedActiveCount));
+        assertThat(subscriber.activeEventAddresses.get(0), equalTo(ipv6));
+        assertThat(subscriber.inactiveEventAddresses.size(), equalTo(expectedInactiveCount));
+    }
+
+    @Ignore("This is failing because of https://github.com/servicetalk/servicetalk/issues/280")
     @SuppressWarnings("unchecked")
     @Test
     public void exceptionInSubscriberOnErrorWhileClose() throws Exception {
         recordStore.setDefaultResponse("apple.com", A, nextIp());
         CountDownLatch latchOnSubscribe = new CountDownLatch(1);
         ServiceDiscoverer<String, InetAddress, ServiceDiscovererEvent<InetAddress>> discoverer =
-                buildServiceDiscoverer(null);
+                serviceDiscovererBuilderWithoutRetry()
+                        .buildInetDiscoverer();
         Subscriber<ServiceDiscovererEvent<InetAddress>> subscriber = mock(Subscriber.class);
 
         try {
@@ -299,22 +520,58 @@ public class DefaultDnsServiceDiscovererTest {
         }
     }
 
-    private static ServiceDiscoverer<String, InetAddress, ServiceDiscovererEvent<InetAddress>> buildServiceDiscoverer(
-            @Nullable BiIntFunction<Throwable, Completable> retryStrategy) {
+    private DefaultDnsServiceDiscovererBuilder serviceDiscovererBuilderWithoutRetry() {
+        return new DefaultDnsServiceDiscovererBuilder()
+                .ioExecutor(nettyIoExecutor)
+                .noRetriesOnDnsFailures()
+                .dnsResolverAddressTypes(DnsResolverAddressTypes.IPV4_PREFERRED)
+                .optResourceEnabled(false)
+                .dnsServerAddressStreamProvider(new SingletonDnsServerAddressStreamProvider(
+                        new SingletonDnsServerAddresses(dnsServer.localAddress())))
+                .ndots(1)
+                .minTTL(1);
+    }
 
-        DefaultDnsServiceDiscovererBuilder builder =
-                new DefaultDnsServiceDiscovererBuilder()
-                        .ioExecutor(nettyIoExecutor)
-                        .executor(immediate())
-                        .dnsResolverAddressTypes(DnsResolverAddressTypes.IPV4_ONLY)
-                        .optResourceEnabled(false)
-                        .dnsServerAddressStreamProvider(new SingletonDnsServerAddressStreamProvider(
-                                new SingletonDnsServerAddresses(dnsServer.localAddress())))
-                        .ndots(1);
+    private DefaultDnsServiceDiscovererBuilder serviceDiscovererBuilder() {
+        return serviceDiscovererBuilderWithoutRetry()
+                .appendFilter(serviceDiscoverer -> new RetryingDnsServiceDiscovererFilter(
+                        serviceDiscoverer, (i, t) -> globalExecutionContext().executor().timer(Duration.ofSeconds(1))));
+    }
 
-        if (retryStrategy != null) {
-            builder.retryDnsFailures(retryStrategy);
+    private static class TestSubscriber implements Subscriber<ServiceDiscovererEvent<InetAddress>> {
+        private final CountDownLatch latch;
+        private final AtomicReference<Throwable> throwableRef = new AtomicReference<>();
+        private final List<String> activeEventAddresses = new ArrayList<>();
+        private final List<String> inactiveEventAddresses = new ArrayList<>();
+
+        TestSubscriber(final CountDownLatch latch) {
+            this.latch = latch;
         }
-        return builder.buildInetDiscoverer();
+
+        @Override
+        public void onSubscribe(final Subscription s) {
+            s.request(Long.MAX_VALUE);
+        }
+
+        @Override
+        public void onNext(final ServiceDiscovererEvent<InetAddress> event) {
+            if (event.available()) {
+                activeEventAddresses.add(event.address().getHostAddress());
+            } else {
+                inactiveEventAddresses.add(event.address().getHostAddress());
+            }
+            latch.countDown();
+        }
+
+        @Override
+        public void onError(final Throwable t) {
+            throwableRef.set(t);
+            latch.countDown();
+        }
+
+        @Override
+        public void onComplete() {
+            throwableRef.set(new IllegalStateException("Unexpected completion"));
+        }
     }
 }

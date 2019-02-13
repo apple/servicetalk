@@ -318,7 +318,7 @@ public abstract class AbstractHttpRequesterFilterTest {
             protected Single<? extends ReservedStreamingHttpConnection> reserveConnection(
                     final StreamingHttpClient delegate,
                     final HttpExecutionStrategy strategy,
-                    final StreamingHttpRequest request) {
+                    final HttpRequestMetaData metaData) {
                 return success(AbstractHttpRequesterFilterTest.this.newReservedConnection(rwch));
             }
         };

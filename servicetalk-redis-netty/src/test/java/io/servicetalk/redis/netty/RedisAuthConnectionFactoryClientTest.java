@@ -37,6 +37,7 @@ import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.redis.api.RedisExecutionStrategies.noOffloadsStrategy;
 import static io.servicetalk.transport.netty.NettyIoExecutors.createIoExecutor;
 import static io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutors.toEventLoopAwareNettyIoExecutor;
+import static java.net.InetAddress.getLoopbackAddress;
 import static java.time.Duration.ofSeconds;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.Matchers.is;
@@ -129,14 +130,13 @@ public class RedisAuthConnectionFactoryClientTest {
         });
     }
 
-    @SuppressWarnings("PMD.AvoidUsingHardCodedIP")
     private void authTest(String tmpRedisPort, String password, Consumer<RedisClient> clientConsumer) {
         int redisPort;
         String redisHost;
         assumeThat(tmpRedisPort, not(isEmptyOrNullString()));
         redisPort = Integer.parseInt(tmpRedisPort);
 
-        redisHost = System.getenv().getOrDefault("REDIS_HOST", "127.0.0.1");
+        redisHost = System.getenv().getOrDefault("REDIS_HOST", getLoopbackAddress().getHostName());
 
         ioExecutor = toEventLoopAwareNettyIoExecutor(createIoExecutor());
         client = RedisClients.forAddress(redisHost, redisPort)

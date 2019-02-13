@@ -93,10 +93,11 @@ public abstract class AbstractChannelReadHandler<T> extends ChannelInboundHandle
         // all the available data. ChannelInputShutdownReadComplete is the one that seems to (at least in
         // the current netty version) gets triggered reliably at the appropriate time.
         if (evt == ChannelInputShutdownReadComplete.INSTANCE) {
+            // Notify close handler first to enhance error reporting
+            closeHandler.channelClosedInbound(ctx);
             // Since we are only reading data, if the inbound is shutdown, it is equivalent to channel closure, so we
             // notify the publisher the inbound has closed.
             notifyPublisherOfChannelInboundClosed();
-            closeHandler.channelClosedInbound(ctx);
         }
         ctx.fireUserEventTriggered(evt);
     }

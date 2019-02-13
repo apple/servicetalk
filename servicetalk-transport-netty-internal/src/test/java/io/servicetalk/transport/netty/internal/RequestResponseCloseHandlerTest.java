@@ -66,6 +66,7 @@ import static io.netty.channel.ChannelOption.AUTO_CLOSE;
 import static io.netty.channel.ChannelOption.AUTO_READ;
 import static io.netty.util.ReferenceCountUtil.release;
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
+import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.BuilderUtils.serverChannel;
 import static io.servicetalk.transport.netty.internal.BuilderUtils.socketChannel;
 import static io.servicetalk.transport.netty.internal.CloseHandler.CloseEvent.CHANNEL_CLOSED_INBOUND;
@@ -545,7 +546,8 @@ public class RequestResponseCloseHandlerTest {
             bs.childOption(ALLOW_HALF_CLOSURE, true);
             bs.childOption(AUTO_CLOSE, false);
 
-            return (ServerSocketChannel) bs.bind(new InetSocketAddress(0)).syncUninterruptibly().channel();
+            return (ServerSocketChannel) bs.bind(localAddress(0))
+                    .syncUninterruptibly().channel();
         }
 
         // Based on TcpConnector

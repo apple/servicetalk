@@ -15,13 +15,18 @@
  */
 package io.servicetalk.http.api;
 
+import io.servicetalk.concurrent.api.Executor;
+
 import org.junit.Test;
+import org.mockito.Mockito;
 
 import static io.servicetalk.http.api.DefaultHttpExecutionStrategy.OFFLOAD_RECEIVE_DATA;
 import static io.servicetalk.http.api.DefaultHttpExecutionStrategy.OFFLOAD_RECEIVE_META;
 import static io.servicetalk.http.api.DefaultHttpExecutionStrategy.OFFLOAD_SEND;
+import static io.servicetalk.http.api.HttpExecutionStrategies.customStrategyBuilder;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.Assert.assertThat;
 
 public class HttpExecutionStrategiesTest {
@@ -32,5 +37,12 @@ public class HttpExecutionStrategiesTest {
         assertThat("send not offloaded by default.", strategy.offloaded(OFFLOAD_SEND), is(true));
         assertThat("receive meta not offloaded by default.", strategy.offloaded(OFFLOAD_RECEIVE_META), is(true));
         assertThat("receive data not offloaded by default.", strategy.offloaded(OFFLOAD_RECEIVE_DATA), is(true));
+    }
+
+    @Test
+    public void noOffloadsWithExecutor() {
+        Executor executor = Mockito.mock(Executor.class);
+        HttpExecutionStrategy strategy = customStrategyBuilder().executor(executor).build();
+        assertThat("Unexpected executor.", strategy.executor(), sameInstance(executor));
     }
 }

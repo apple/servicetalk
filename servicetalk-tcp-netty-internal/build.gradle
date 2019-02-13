@@ -47,6 +47,7 @@ dependencies {
   testImplementation "io.servicetalk:servicetalk-test-resources:$project.version"
   testImplementation "io.servicetalk:servicetalk-transport-netty-internal-testFixtures:$project.version"
 
+  testFixturesImplementation "io.servicetalk:servicetalk-transport-netty-internal-testFixtures:$project.version"
   testFixturesImplementation group: "io.netty", name: "netty-transport-native-epoll", classifier: "linux-x86_64"
   testFixturesImplementation group: "io.netty", name: "netty-transport-native-kqueue", classifier: "osx-x86_64"
   testFixturesImplementation "junit:junit"

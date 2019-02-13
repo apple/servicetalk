@@ -37,8 +37,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
 
-import java.net.InetSocketAddress;
-
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Single.error;
@@ -48,6 +46,8 @@ import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderValues.ZERO;
 import static io.servicetalk.http.api.HttpResponseStatuses.OK;
+import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
+import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static java.util.Objects.requireNonNull;
 import static org.junit.Assert.assertEquals;
 
@@ -75,7 +75,7 @@ public class HttpAuthConnectionFactoryClientTest {
 
     @Test
     public void simulateAuth() throws Exception {
-        serverContext = HttpServers.forPort(0)
+        serverContext = HttpServers.forAddress(localAddress(0))
                 .ioExecutor(CTX.ioExecutor())
                 .listenStreamingAndAwait(
                         new StreamingHttpService() {
@@ -91,8 +91,8 @@ public class HttpAuthConnectionFactoryClientTest {
                                 return noOffloadsStrategy();
                             }
                         });
-        client = HttpClients.forSingleAddress("localhost",
-                ((InetSocketAddress) serverContext.listenAddress()).getPort())
+
+        client = HttpClients.forSingleAddress(serverHostAndPort(serverContext))
                 .appendConnectionFactoryFilter(TestHttpAuthConnectionFactory::new)
                 .ioExecutor(CTX.ioExecutor())
                 .executionStrategy(noOffloadsStrategy())

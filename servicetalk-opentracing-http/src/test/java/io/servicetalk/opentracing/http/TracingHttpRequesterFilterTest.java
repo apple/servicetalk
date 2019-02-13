@@ -36,7 +36,6 @@ import org.junit.rules.ExpectedException;
 import org.junit.rules.Timeout;
 import org.mockito.Mock;
 
-import java.net.InetSocketAddress;
 import java.util.concurrent.ExecutionException;
 import javax.annotation.Nullable;
 
@@ -59,7 +58,8 @@ import static io.servicetalk.opentracing.internal.utils.ZipkinHeaderNames.PARENT
 import static io.servicetalk.opentracing.internal.utils.ZipkinHeaderNames.SAMPLED;
 import static io.servicetalk.opentracing.internal.utils.ZipkinHeaderNames.SPAN_ID;
 import static io.servicetalk.opentracing.internal.utils.ZipkinHeaderNames.TRACE_ID;
-import static io.servicetalk.transport.api.HostAndPort.of;
+import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
+import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static java.lang.String.valueOf;
 import static org.hamcrest.Matchers.equalToIgnoringCase;
 import static org.hamcrest.Matchers.is;
@@ -96,7 +96,7 @@ public class TracingHttpRequesterFilterTest {
         DefaultInMemoryTracer tracer = new DefaultInMemoryTracer.Builder(SCOPE_MANAGER)
                 .addListener(spanListener).build();
         try (ServerContext context = buildServer()) {
-            try (HttpClient client = forSingleAddress(of((InetSocketAddress) context.listenAddress()))
+            try (HttpClient client = forSingleAddress(serverHostAndPort(context))
                     .appendConnectionFilter(new TracingHttpRequesterFilter(tracer, "testClient")).build()) {
                 HttpResponse response = client.request(client.get(requestUrl)).toFuture().get();
                 TestSpanState serverSpanState = response.payloadBody(httpSerializer.deserializerFor(
@@ -128,7 +128,7 @@ public class TracingHttpRequesterFilterTest {
         DefaultInMemoryTracer tracer = new DefaultInMemoryTracer.Builder(SCOPE_MANAGER)
                 .addListener(spanListener).build();
         try (ServerContext context = buildServer()) {
-            try (HttpClient client = forSingleAddress(of((InetSocketAddress) context.listenAddress()))
+            try (HttpClient client = forSingleAddress(serverHostAndPort(context))
                     .appendConnectionFilter(new TracingHttpRequesterFilter(tracer, "testClient")).build()) {
                 try (InMemoryScope clientScope = tracer.buildSpan("test").startActive(true)) {
                     HttpResponse response = client.request(client.get(requestUrl)).toFuture().get();
@@ -162,7 +162,7 @@ public class TracingHttpRequesterFilterTest {
     public void tracerThrowsReturnsErrorResponse() throws Exception {
         when(mockTracer.buildSpan(any())).thenThrow(DELIBERATE_EXCEPTION);
         try (ServerContext context = buildServer()) {
-            try (HttpClient client = forSingleAddress(of((InetSocketAddress) context.listenAddress()))
+            try (HttpClient client = forSingleAddress(serverHostAndPort(context))
                     .appendConnectionFilter(new TracingHttpRequesterFilter(mockTracer, "testClient")).build()) {
                 HttpRequest request = client.get("/");
                 expected.expect(ExecutionException.class);
@@ -173,7 +173,7 @@ public class TracingHttpRequesterFilterTest {
     }
 
     private static ServerContext buildServer() throws Exception {
-        return HttpServers.forPort(0)
+        return HttpServers.forAddress(localAddress(0))
                 .listenStreamingAndAwait((ctx, request, responseFactory) ->
                         success(responseFactory.ok().payloadBody(just(new TestSpanState(
                         valueOf(request.headers().get(TRACE_ID)),
