@@ -40,6 +40,7 @@ import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.ServerContext;
 
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
@@ -195,6 +196,7 @@ public class ConcurrentRequestsHttpConnectionFilterTest {
         }
     }
 
+    @Ignore("this test is flaky on CI: https://github.com/servicetalk/servicetalk/issues/295")
     @Test
     public void throwConnectionClosedWithCauseOnUnexpectedConnectionClose() throws Exception {
         try (ServerContext serverContext = HttpServers.forPort(0)
