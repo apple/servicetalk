@@ -34,6 +34,7 @@ import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.client.api.ServiceDiscovererFilterFactory.identity;
+import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.RetryStrategies.retryWithConstantBackoffAndJitter;
 import static io.servicetalk.transport.netty.internal.GlobalExecutionContext.globalExecutionContext;
 
@@ -234,7 +235,7 @@ public final class DefaultDnsServiceDiscovererBuilder {
             final ServiceDiscovererFilterFactory<String, InetAddress, ServiceDiscovererEvent<InetAddress>>
                     defaultFilterFactory = serviceDiscoverer -> new RetryingDnsServiceDiscovererFilter(
                     serviceDiscoverer, retryWithConstantBackoffAndJitter(
-                    Integer.MAX_VALUE, t -> true, Duration.ofSeconds(60), globalExecutionContext().executor()));
+                    Integer.MAX_VALUE, t -> true, Duration.ofSeconds(60), immediate()));
             factory = defaultFilterFactory.append(factory);
         }
         return factory.create(new DefaultDnsServiceDiscoverer(
