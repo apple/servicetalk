@@ -264,7 +264,7 @@ public class SimpleHttpRequesterFilterTest extends AbstractHttpRequesterFilterTe
     @Test
     public void unauthorizedConnectionRefusingFilterWithInvalidPrincipal() throws Exception {
 
-        BlockingHttpRequester filter = createFilter(new SecurityEnforcingFilter()).asBlockingRequester();
+        BlockingHttpRequester filter = asBlockingRequester(createFilter(new SecurityEnforcingFilter()));
         HttpResponse resp = filter.request(filter.get("/"));
 
         if (type == Client) {
@@ -281,7 +281,7 @@ public class SimpleHttpRequesterFilterTest extends AbstractHttpRequesterFilterTe
         when(principal.getName()).thenReturn("unit.test.auth");
         when(session.getPeerPrincipal()).thenReturn(principal);
 
-        BlockingHttpRequester filter = createFilter(new SecurityEnforcingFilter()).asBlockingRequester();
+        BlockingHttpRequester filter = asBlockingRequester(createFilter(new SecurityEnforcingFilter()));
         HttpResponse resp = filter.request(filter.get("/"));
 
         if (type == Client) {

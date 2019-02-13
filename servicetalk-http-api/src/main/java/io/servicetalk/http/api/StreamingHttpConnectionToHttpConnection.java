@@ -21,13 +21,15 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ExecutionContext;
 
+import static io.servicetalk.http.api.HttpExecutionStrategies.OFFLOAD_RECEIVE_META_STRATEGY;
 import static java.util.Objects.requireNonNull;
 
 final class StreamingHttpConnectionToHttpConnection extends HttpConnection {
     private final StreamingHttpConnection connection;
 
-    StreamingHttpConnectionToHttpConnection(final StreamingHttpConnection connection) {
-        super(new StreamingHttpRequestResponseFactoryToHttpRequestResponseFactory(connection.reqRespFactory));
+    private StreamingHttpConnectionToHttpConnection(final StreamingHttpConnection connection,
+                                                    final HttpExecutionStrategy strategy) {
+        super(new StreamingHttpRequestResponseFactoryToHttpRequestResponseFactory(connection.reqRespFactory), strategy);
         this.connection = requireNonNull(connection);
     }
 
@@ -69,5 +71,12 @@ final class StreamingHttpConnectionToHttpConnection extends HttpConnection {
     @Override
     StreamingHttpConnection asStreamingConnectionInternal() {
         return connection;
+    }
+
+    static HttpConnection transform(StreamingHttpConnection conn) {
+        final HttpExecutionStrategy defaultStrategy = conn instanceof StreamingHttpConnectionFilter ?
+                ((StreamingHttpConnectionFilter) conn).effectiveExecutionStrategy(OFFLOAD_RECEIVE_META_STRATEGY) :
+                OFFLOAD_RECEIVE_META_STRATEGY;
+        return new StreamingHttpConnectionToHttpConnection(conn, defaultStrategy);
     }
 }

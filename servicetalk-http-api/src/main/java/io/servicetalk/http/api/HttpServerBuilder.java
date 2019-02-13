@@ -18,6 +18,7 @@ package io.servicetalk.http.api;
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.transport.api.ConnectionAcceptor;
+import io.servicetalk.transport.api.ConnectionAcceptorFilter;
 import io.servicetalk.transport.api.ConnectionAcceptorFilterFactory;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.ServerContext;
@@ -32,12 +33,18 @@ import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.http.api.BlockingUtils.blockingInvocation;
+import static io.servicetalk.http.api.HttpServiceFilterFactory.identity;
+import static io.servicetalk.transport.api.ConnectionAcceptor.ACCEPT_ALL;
 import static java.util.Objects.requireNonNull;
 
 /**
  * A builder for building HTTP Servers.
  */
-public interface HttpServerBuilder {
+public abstract class HttpServerBuilder {
+
+    private ConnectionAcceptorFilterFactory connectionAcceptorFilterFactory =
+            ConnectionAcceptorFilterFactory.identity();
+    private HttpServiceFilterFactory serviceFilter = identity();
 
     /**
      * Sets the {@link HttpHeadersFactory} to be used for creating {@link HttpHeaders} when decoding requests.
@@ -45,7 +52,7 @@ public interface HttpServerBuilder {
      * @param headersFactory the {@link HttpHeadersFactory} to use.
      * @return this
      */
-    HttpServerBuilder headersFactory(HttpHeadersFactory headersFactory);
+    public abstract HttpServerBuilder headersFactory(HttpHeadersFactory headersFactory);
 
     /**
      * Set how long to wait (in milliseconds) for a client to close the connection (if no keep-alive is set) before the
@@ -55,7 +62,7 @@ public interface HttpServerBuilder {
      * {@code > 0} if a wait time should be used.
      * @return this
      */
-    HttpServerBuilder clientCloseTimeout(long clientCloseTimeoutMs);
+    public abstract HttpServerBuilder clientCloseTimeout(long clientCloseTimeoutMs);
 
     /**
      * The server will throw {@link Exception} if the initial HTTP line exceeds this length.
@@ -64,7 +71,7 @@ public interface HttpServerBuilder {
      * length.
      * @return this.
      */
-    HttpServerBuilder maxInitialLineLength(int maxInitialLineLength);
+    public abstract HttpServerBuilder maxInitialLineLength(int maxInitialLineLength);
 
     /**
      * The server will throw {@link Exception} if the total size of all HTTP headers exceeds this length.
@@ -73,7 +80,7 @@ public interface HttpServerBuilder {
      * this length.
      * @return this.
      */
-    HttpServerBuilder maxHeaderSize(int maxHeaderSize);
+    public abstract HttpServerBuilder maxHeaderSize(int maxHeaderSize);
 
     /**
      * Used to calculate an exponential moving average of the encoded size of the initial line and the headers for a
@@ -82,7 +89,7 @@ public interface HttpServerBuilder {
      * @param headersEncodedSizeEstimate estimated initial value.
      * @return this
      */
-    HttpServerBuilder headersEncodedSizeEstimate(int headersEncodedSizeEstimate);
+    public abstract HttpServerBuilder headersEncodedSizeEstimate(int headersEncodedSizeEstimate);
 
     /**
      * Used to calculate an exponential moving average of the encoded size of the trailers for a guess for future
@@ -91,7 +98,7 @@ public interface HttpServerBuilder {
      * @param trailersEncodedSizeEstimate estimated initial value.
      * @return this;
      */
-    HttpServerBuilder trailersEncodedSizeEstimate(int trailersEncodedSizeEstimate);
+    public abstract HttpServerBuilder trailersEncodedSizeEstimate(int trailersEncodedSizeEstimate);
 
     /**
      * The maximum queue length for incoming connection indications (a request to connect) is set to the backlog
@@ -100,7 +107,7 @@ public interface HttpServerBuilder {
      * @param backlog the backlog to use when accepting connections.
      * @return this.
      */
-    HttpServerBuilder backlog(int backlog);
+    public abstract HttpServerBuilder backlog(int backlog);
 
     /**
      * Allows to setup SNI.
@@ -113,7 +120,7 @@ public interface HttpServerBuilder {
      * {@link SslConfig#getKeySupplier()}, or {@link SslConfig#getTrustCertChainSupplier()} throws when
      * {@link InputStream#close()} is called.
      */
-    HttpServerBuilder sniConfig(@Nullable Map<String, SslConfig> mappings, SslConfig defaultConfig);
+    public abstract HttpServerBuilder sniConfig(@Nullable Map<String, SslConfig> mappings, SslConfig defaultConfig);
 
     /**
      * Enable SSL/TLS using the provided {@link SslConfig}. To disable it pass in {@code null}.
@@ -124,7 +131,7 @@ public interface HttpServerBuilder {
      * {@link SslConfig#getKeySupplier()}, or {@link SslConfig#getTrustCertChainSupplier()} throws when
      * {@link InputStream#close()} is called.
      */
-    HttpServerBuilder sslConfig(@Nullable SslConfig sslConfig);
+    public abstract HttpServerBuilder sslConfig(@Nullable SslConfig sslConfig);
 
     /**
      * Add a {@link SocketOption} that is applied.
@@ -134,7 +141,7 @@ public interface HttpServerBuilder {
      * @param value the value.
      * @return this.
      */
-    <T> HttpServerBuilder socketOption(SocketOption<T> option, T value);
+    public abstract <T> HttpServerBuilder socketOption(SocketOption<T> option, T value);
 
     /**
      * Enable wire-logging for this server. All wire events will be logged at trace level.
@@ -142,7 +149,7 @@ public interface HttpServerBuilder {
      * @param loggerName The name of the logger to log wire events.
      * @return {@code this}.
      */
-    HttpServerBuilder enableWireLogging(String loggerName);
+    public abstract HttpServerBuilder enableWireLogging(String loggerName);
 
     /**
      * Disable previously configured wire-logging for this server.
@@ -151,7 +158,7 @@ public interface HttpServerBuilder {
      * @return {@code this}.
      * @see #enableWireLogging(String)
      */
-    HttpServerBuilder disableWireLogging();
+    public abstract HttpServerBuilder disableWireLogging();
 
     /**
      * Append the filter to the chain of filters used to decorate the {@link ConnectionAcceptor} used by this builder.
@@ -170,7 +177,10 @@ public interface HttpServerBuilder {
      * {@link ConnectionAcceptorFilterFactory} is managed by this builder and the server started thereof.
      * @return {@code this}
      */
-    HttpServerBuilder appendConnectionAcceptorFilter(ConnectionAcceptorFilterFactory factory);
+    public final HttpServerBuilder appendConnectionAcceptorFilter(final ConnectionAcceptorFilterFactory factory) {
+        this.connectionAcceptorFilterFactory = connectionAcceptorFilterFactory.append(factory);
+        return this;
+    }
 
     /**
      * Append the filter to the chain of filters used to decorate the {@link StreamingHttpService} used by this
@@ -190,7 +200,10 @@ public interface HttpServerBuilder {
      * @param factory {@link HttpServiceFilterFactory} to append.
      * @return {@code this}
      */
-    HttpServerBuilder appendServiceFilter(HttpServiceFilterFactory factory);
+    public final HttpServerBuilder appendServiceFilter(final HttpServiceFilterFactory factory) {
+        serviceFilter = serviceFilter.append(factory);
+        return this;
+    }
 
     /**
      * Append the filter to the chain of filters used to decorate the {@link StreamingHttpService} used by this builder,
@@ -211,8 +224,8 @@ public interface HttpServerBuilder {
      * @param factory {@link HttpServiceFilterFactory} to append.
      * @return {@code this}
      */
-    default HttpServerBuilder appendServiceFilter(Predicate<StreamingHttpRequest> predicate,
-                                                  HttpServiceFilterFactory factory) {
+    public final HttpServerBuilder appendServiceFilter(final Predicate<StreamingHttpRequest> predicate,
+                                                       final HttpServiceFilterFactory factory) {
         requireNonNull(predicate);
         requireNonNull(factory);
 
@@ -238,7 +251,7 @@ public interface HttpServerBuilder {
      * @param factory {@link HttpRequestHandlerFilterFactory} to append.
      * @return {@code this}
      */
-    default HttpServerBuilder appendRequestHandlerFilter(HttpRequestHandlerFilterFactory factory) {
+    public final HttpServerBuilder appendRequestHandlerFilter(final HttpRequestHandlerFilterFactory factory) {
         return appendServiceFilter(factory.asServiceFilterFactory());
     }
 
@@ -261,8 +274,8 @@ public interface HttpServerBuilder {
      * @param factory {@link HttpRequestHandlerFilterFactory} to append.
      * @return {@code this}
      */
-    default HttpServerBuilder appendRequestHandlerFilter(Predicate<StreamingHttpRequest> predicate,
-                                                         HttpRequestHandlerFilterFactory factory) {
+    public final HttpServerBuilder appendRequestHandlerFilter(final Predicate<StreamingHttpRequest> predicate,
+                                                              final HttpRequestHandlerFilterFactory factory) {
         return appendServiceFilter(predicate, factory.asServiceFilterFactory());
     }
 
@@ -273,7 +286,7 @@ public interface HttpServerBuilder {
      * @return {@code this}.
      * @see #port(int)
      */
-    HttpServerBuilder address(SocketAddress address);
+    public abstract HttpServerBuilder address(SocketAddress address);
 
     /**
      * Sets the port to listen on, the IP address is the wildcard address.
@@ -282,7 +295,7 @@ public interface HttpServerBuilder {
      * @return {@code this}.
      * @see #address(SocketAddress)
      */
-    default HttpServerBuilder port(int port) {
+    public HttpServerBuilder port(int port) {
         return address(new InetSocketAddress(port));
     }
 
@@ -292,7 +305,7 @@ public interface HttpServerBuilder {
      * @param ioExecutor {@link IoExecutor} to use.
      * @return {@code this}.
      */
-    HttpServerBuilder ioExecutor(IoExecutor ioExecutor);
+    public abstract HttpServerBuilder ioExecutor(IoExecutor ioExecutor);
 
     /**
      * Sets the {@link BufferAllocator} to be used by this server.
@@ -300,7 +313,7 @@ public interface HttpServerBuilder {
      * @param allocator {@link BufferAllocator} to use.
      * @return {@code this}.
      */
-    HttpServerBuilder bufferAllocator(BufferAllocator allocator);
+    public abstract HttpServerBuilder bufferAllocator(BufferAllocator allocator);
 
     /**
      * Starts this server and returns the {@link ServerContext} after the server has been successfully started.
@@ -313,7 +326,7 @@ public interface HttpServerBuilder {
      * throws an {@link Exception} if the server could not be started.
      * @throws Exception if the server could not be started.
      */
-    default ServerContext listenAndAwait(HttpRequestHandler handler) throws Exception {
+    public final ServerContext listenAndAwait(final HttpRequestHandler handler) throws Exception {
         return blockingInvocation(listen(handler));
     }
 
@@ -328,7 +341,7 @@ public interface HttpServerBuilder {
      * throws an {@link Exception} if the server could not be started.
      * @throws Exception if the server could not be started.
      */
-    default ServerContext listenStreamingAndAwait(StreamingHttpRequestHandler handler) throws Exception {
+    public final ServerContext listenStreamingAndAwait(final StreamingHttpRequestHandler handler) throws Exception {
         return blockingInvocation(listenStreaming(handler));
     }
 
@@ -343,7 +356,7 @@ public interface HttpServerBuilder {
      * throws an {@link Exception} if the server could not be started.
      * @throws Exception if the server could not be started.
      */
-    default ServerContext listenBlockingAndAwait(BlockingHttpRequestHandler handler) throws Exception {
+    public final ServerContext listenBlockingAndAwait(final BlockingHttpRequestHandler handler) throws Exception {
         return blockingInvocation(listenBlocking(handler));
     }
 
@@ -358,8 +371,8 @@ public interface HttpServerBuilder {
      * throws an {@link Exception} if the server could not be started.
      * @throws Exception if the server could not be started.
      */
-    default ServerContext listenBlockingStreamingAndAwait(
-            BlockingStreamingHttpRequestHandler handler) throws Exception {
+    public final ServerContext listenBlockingStreamingAndAwait(
+            final BlockingStreamingHttpRequestHandler handler) throws Exception {
         return blockingInvocation(listenBlockingStreaming(handler));
     }
 
@@ -373,7 +386,7 @@ public interface HttpServerBuilder {
      * @return A {@link Single} that completes when the server is successfully started or terminates with an error if
      * the server could not be started.
      */
-    default Single<ServerContext> listen(HttpRequestHandler handler) {
+    public final Single<ServerContext> listen(final HttpRequestHandler handler) {
         return listenStreaming(handler.asService().asStreamingService());
     }
 
@@ -387,7 +400,15 @@ public interface HttpServerBuilder {
      * @return A {@link Single} that completes when the server is successfully started or terminates with an error if
      * the server could not be started.
      */
-    Single<ServerContext> listenStreaming(StreamingHttpRequestHandler handler);
+    public final Single<ServerContext> listenStreaming(final StreamingHttpRequestHandler handler) {
+        ConnectionAcceptorFilter connectionAcceptorFilter = connectionAcceptorFilterFactory.create(ACCEPT_ALL);
+        StreamingHttpService svc = handler.asStreamingService();
+        HttpExecutionStrategy strategy = svc.executionStrategy();
+        StreamingHttpServiceFilter filterChain = serviceFilter.create(svc);
+        HttpExecutionStrategy effectiveStrategy = filterChain.effectiveExecutionStrategy(strategy);
+        StreamingHttpServiceFilter finalService = new StreamingHttpServiceFilter(filterChain, effectiveStrategy);
+        return doListen(connectionAcceptorFilter, finalService);
+    }
 
     /**
      * Starts this server and returns the {@link ServerContext} after the server has been successfully started.
@@ -399,7 +420,7 @@ public interface HttpServerBuilder {
      * @return A {@link Single} that completes when the server is successfully started or terminates with an error if
      * the server could not be started.
      */
-    default Single<ServerContext> listenBlocking(BlockingHttpRequestHandler handler) {
+    public final Single<ServerContext> listenBlocking(final BlockingHttpRequestHandler handler) {
         return listenStreaming(handler.asBlockingService().asStreamingService());
     }
 
@@ -413,7 +434,20 @@ public interface HttpServerBuilder {
      * @return A {@link Single} that completes when the server is successfully started or terminates with an error if
      * the server could not be started.
      */
-    default Single<ServerContext> listenBlockingStreaming(BlockingStreamingHttpRequestHandler handler) {
+    public final Single<ServerContext> listenBlockingStreaming(final BlockingStreamingHttpRequestHandler handler) {
         return listenStreaming(handler.asBlockingStreamingService().asStreamingService());
     }
+
+    /**
+     * Starts this server and returns the {@link ServerContext} after the server has been successfully started.
+     * <p>
+     * If the underlying protocol (eg. TCP) supports it this should result in a socket bind/listen on {@code address}.
+     *
+     * @param connectionAcceptorFilter {@link ConnectionAcceptorFilter} to use for the server.
+     * @param service {@link StreamingHttpService} to use for the server.
+     * @return A {@link Single} that completes when the server is successfully started or terminates with an error if
+     * the server could not be started.
+     */
+    protected abstract Single<ServerContext> doListen(ConnectionAcceptorFilter connectionAcceptorFilter,
+                                                      StreamingHttpService service);
 }

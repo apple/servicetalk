@@ -112,7 +112,7 @@ public class HttpServerMultipleRequestsTest {
                                 new DefaultHttpConnectionBuilder<SocketAddress>()
                                         .maxPipelinedRequests(numRequests)
                                         .ioExecutor(clientExecution.ioExecutor())
-                                        .executor(clientExecution.executor())
+                                        .executionStrategy(defaultStrategy(clientExecution.executor()))
                                         .buildStreaming(ctx.listenAddress()).toFuture().get());
                         barrier.await();
                         for (int x = 0; x < numRequests; ++x) {

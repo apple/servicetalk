@@ -21,6 +21,7 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.concurrent.internal.SignalOffloaderFactory;
 
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -148,6 +149,49 @@ final class DefaultHttpExecutionStrategy implements HttpExecutionStrategy {
     }
 
     @Override
+    public boolean metadataReceiveOffloaded() {
+        return offloaded(OFFLOAD_RECEIVE_META);
+    }
+
+    @Override
+    public boolean dataReceiveOffloaded() {
+        return offloaded(OFFLOAD_RECEIVE_DATA);
+    }
+
+    @Override
+    public boolean sendOffloaded() {
+        return offloaded(OFFLOAD_SEND);
+    }
+
+    @Override
+    public HttpExecutionStrategy merge(final HttpExecutionStrategy other) {
+        if (other instanceof NoOffloadsHttpExecutionStrategy || equals(other)) {
+            return this;
+        }
+
+        final Executor otherExecutor = other.executor();
+        final Executor executor = otherExecutor == null ? this.executor : otherExecutor;
+        if (other instanceof DefaultHttpExecutionStrategy) {
+            DefaultHttpExecutionStrategy otherAsDefault = (DefaultHttpExecutionStrategy) other;
+            // We checked above that the two strategies are not equal, so just merge and return.
+            return new DefaultHttpExecutionStrategy(executor, (byte) (otherAsDefault.offloads | offloads),
+                    threadAffinity || otherAsDefault.threadAffinity);
+        }
+
+        final byte otherOffloads;
+        final boolean otherThreadAffinity;
+        otherOffloads = (byte) ((other.dataReceiveOffloaded() ? OFFLOAD_RECEIVE_DATA : 0) |
+                (other.metadataReceiveOffloaded() ? OFFLOAD_RECEIVE_META : 0) |
+                (other.sendOffloaded() ? OFFLOAD_SEND : 0));
+        otherThreadAffinity = otherExecutor instanceof SignalOffloaderFactory &&
+                ((SignalOffloaderFactory) otherExecutor).threadAffinity();
+
+        return (otherOffloads == offloads && executor == otherExecutor && otherThreadAffinity == threadAffinity) ?
+                this : new DefaultHttpExecutionStrategy(executor, (byte) (otherOffloads | offloads),
+                threadAffinity || otherThreadAffinity);
+    }
+
+    @Override
     public <T> Single<T> invokeService(final Executor fallback, final Function<Executor, T> service) {
         final Executor e = executor(fallback);
         if (offloaded(OFFLOAD_RECEIVE_META)) {
@@ -184,8 +228,41 @@ final class DefaultHttpExecutionStrategy implements HttpExecutionStrategy {
     }
 
     // Visible for testing
+    boolean isThreadAffinity() {
+        return threadAffinity;
+    }
+
+    // Visible for testing
     boolean offloaded(byte flag) {
         return (offloads & flag) == flag;
+    }
+
+    @Override
+    public boolean equals(final Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+
+        final DefaultHttpExecutionStrategy that = (DefaultHttpExecutionStrategy) o;
+
+        if (offloads != that.offloads) {
+            return false;
+        }
+        if (threadAffinity != that.threadAffinity) {
+            return false;
+        }
+        return executor != null ? executor.equals(that.executor) : that.executor == null;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = executor != null ? executor.hashCode() : 0;
+        result = 31 * result + (int) offloads;
+        result = 31 * result + (threadAffinity ? 1 : 0);
+        return result;
     }
 
     static Publisher<Object> flatten(HttpMetaData metaData, Publisher<Object> payload) {

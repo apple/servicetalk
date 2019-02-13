@@ -20,7 +20,6 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.transport.api.ExecutionContext;
 
 import static io.servicetalk.concurrent.internal.FutureUtils.awaitTermination;
-import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -30,15 +29,19 @@ import static java.util.Objects.requireNonNull;
 public abstract class StreamingHttpRequester implements
                                              StreamingHttpRequestFactory, ListenableAsyncCloseable, AutoCloseable {
     final StreamingHttpRequestResponseFactory reqRespFactory;
+    final HttpExecutionStrategy strategy;
 
     /**
      * Create a new instance.
      *
      * @param reqRespFactory The {@link StreamingHttpRequestResponseFactory} used to
      * {@link #newRequest(HttpRequestMethod, String) create new requests} and {@link #httpResponseFactory()}.
+     * @param strategy Default {@link HttpExecutionStrategy} to use.
      */
-    protected StreamingHttpRequester(final StreamingHttpRequestResponseFactory reqRespFactory) {
+    protected StreamingHttpRequester(final StreamingHttpRequestResponseFactory reqRespFactory,
+                                     final HttpExecutionStrategy strategy) {
         this.reqRespFactory = requireNonNull(reqRespFactory);
+        this.strategy = requireNonNull(strategy);
     }
 
     /**
@@ -48,7 +51,7 @@ public abstract class StreamingHttpRequester implements
      * @return The response.
      */
     public Single<StreamingHttpResponse> request(StreamingHttpRequest request) {
-        return request(executionStrategy(), request);
+        return request(strategy, request);
     }
 
     /**
@@ -71,7 +74,7 @@ public abstract class StreamingHttpRequester implements
     public abstract ExecutionContext executionContext();
 
     final HttpExecutionStrategy executionStrategy() {
-        return defaultStrategy();
+        return strategy;
     }
 
     @Override
@@ -88,55 +91,8 @@ public abstract class StreamingHttpRequester implements
         return reqRespFactory;
     }
 
-    /**
-     * Convert this {@link StreamingHttpRequester} to the {@link BlockingStreamingHttpRequester} API.
-     * <p>
-     * This API is provided for convenience for a more familiar sequential programming model. It is recommended that
-     * filters are implemented using the {@link StreamingHttpRequester} asynchronous API for maximum portability.
-     *
-     * @return a {@link BlockingStreamingHttpRequester} representation of this {@link StreamingHttpRequester}.
-     */
-    public final BlockingStreamingHttpRequester asBlockingStreamingRequester() {
-        return asBlockingStreamingRequesterInternal();
-    }
-
-    /**
-     * Convert this {@link StreamingHttpRequester} to the {@link HttpRequester} API.
-     * <p>
-     * This API is provided for convenience. It is recommended that
-     * filters are implemented using the {@link StreamingHttpRequester} asynchronous API for maximum portability.
-     *
-     * @return a {@link HttpRequester} representation of this {@link StreamingHttpRequester}.
-     */
-    public final HttpRequester asRequester() {
-        return asRequesterInternal();
-    }
-
-    /**
-     * Convert this {@link StreamingHttpRequester} to the {@link BlockingHttpRequester} API.
-     * <p>
-     * This API is provided for convenience. It is recommended that
-     * filters are implemented using the {@link StreamingHttpRequester} asynchronous API for maximum portability.
-     * @return a {@link BlockingHttpRequester} representation of this {@link StreamingHttpRequester}.
-     */
-    public final BlockingHttpRequester asBlockingRequester() {
-        return asBlockingRequesterInternal();
-    }
-
     @Override
     public final void close() {
         awaitTermination(closeAsyncGracefully().toFuture());
-    }
-
-    HttpRequester asRequesterInternal() {
-        return new StreamingHttpRequesterToHttpRequester(this);
-    }
-
-    BlockingStreamingHttpRequester asBlockingStreamingRequesterInternal() {
-        return new StreamingHttpRequesterToBlockingStreamingHttpRequester(this);
-    }
-
-    BlockingHttpRequester asBlockingRequesterInternal() {
-        return new StreamingHttpRequesterToBlockingHttpRequester(this);
     }
 }

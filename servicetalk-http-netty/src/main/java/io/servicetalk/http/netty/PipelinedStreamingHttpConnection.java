@@ -28,14 +28,16 @@ import io.servicetalk.transport.netty.internal.NettyConnection;
 
 import static io.servicetalk.http.api.HttpProtocolVersions.HTTP_1_1;
 
-final class PipelinedStreamingHttpConnection extends AbstractStreamingHttpConnection<DefaultNettyPipelinedConnection<Object, Object>> {
+final class PipelinedStreamingHttpConnection
+        extends AbstractStreamingHttpConnection<DefaultNettyPipelinedConnection<Object, Object>> {
 
     PipelinedStreamingHttpConnection(final NettyConnection<Object, Object> connection,
                                      final ReadOnlyHttpClientConfig config,
                                      final ExecutionContext executionContext,
-                                     final StreamingHttpRequestResponseFactory reqRespFactor) {
+                                     final StreamingHttpRequestResponseFactory reqRespFactory,
+                                     final HttpExecutionStrategy strategy) {
         super(new DefaultNettyPipelinedConnection<>(connection, config.getMaxPipelinedRequests()),
-                connection.onClosing(), config, executionContext, reqRespFactor);
+                connection.onClosing(), config, executionContext, reqRespFactory, strategy);
     }
 
     @Override
@@ -49,7 +51,6 @@ final class PipelinedStreamingHttpConnection extends AbstractStreamingHttpConnec
         return super.request(strategy, request);
     }
 
-    @SuppressWarnings("unchecked")
     @Override
     protected Publisher<Object> writeAndRead(Publisher<Object> requestStream) {
         return connection.request(requestStream);

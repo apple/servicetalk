@@ -43,88 +43,88 @@ import javax.annotation.Nullable;
  * @param <U> the type of address before resolution (unresolved address)
  * @param <R> the type of address after resolution (resolved address)
  */
-public interface PartitionedHttpClientBuilder<U, R>
-        extends BaseSingleAddressHttpClientBuilder<U, R, PartitionedServiceDiscovererEvent<R>> {
+public abstract class PartitionedHttpClientBuilder<U, R>
+        implements BaseSingleAddressHttpClientBuilder<U, R, PartitionedServiceDiscovererEvent<R>> {
 
     @Override
-    PartitionedHttpClientBuilder<U, R> ioExecutor(IoExecutor ioExecutor);
+    public abstract PartitionedHttpClientBuilder<U, R> ioExecutor(IoExecutor ioExecutor);
 
     @Override
-    PartitionedHttpClientBuilder<U, R> executionStrategy(HttpExecutionStrategy strategy);
+    public abstract PartitionedHttpClientBuilder<U, R> executionStrategy(HttpExecutionStrategy strategy);
 
     @Override
-    PartitionedHttpClientBuilder<U, R> bufferAllocator(BufferAllocator allocator);
+    public abstract PartitionedHttpClientBuilder<U, R> bufferAllocator(BufferAllocator allocator);
 
     @Override
-    <T> PartitionedHttpClientBuilder<U, R> socketOption(SocketOption<T> option, T value);
+    public abstract <T> PartitionedHttpClientBuilder<U, R> socketOption(SocketOption<T> option, T value);
 
     @Override
-    PartitionedHttpClientBuilder<U, R> enableWireLogging(String loggerName);
+    public abstract PartitionedHttpClientBuilder<U, R> enableWireLogging(String loggerName);
 
     @Override
-    PartitionedHttpClientBuilder<U, R> disableWireLogging();
+    public abstract PartitionedHttpClientBuilder<U, R> disableWireLogging();
 
     @Override
-    PartitionedHttpClientBuilder<U, R> headersFactory(HttpHeadersFactory headersFactory);
+    public abstract PartitionedHttpClientBuilder<U, R> headersFactory(HttpHeadersFactory headersFactory);
 
     @Override
-    PartitionedHttpClientBuilder<U, R> maxInitialLineLength(int maxInitialLineLength);
+    public abstract PartitionedHttpClientBuilder<U, R> maxInitialLineLength(int maxInitialLineLength);
 
     @Override
-    PartitionedHttpClientBuilder<U, R> maxHeaderSize(int maxHeaderSize);
+    public abstract PartitionedHttpClientBuilder<U, R> maxHeaderSize(int maxHeaderSize);
 
     @Override
-    PartitionedHttpClientBuilder<U, R> headersEncodedSizeEstimate(int headersEncodedSizeEstimate);
+    public abstract PartitionedHttpClientBuilder<U, R> headersEncodedSizeEstimate(int headersEncodedSizeEstimate);
 
     @Override
-    PartitionedHttpClientBuilder<U, R> trailersEncodedSizeEstimate(int trailersEncodedSizeEstimate);
+    public abstract PartitionedHttpClientBuilder<U, R> trailersEncodedSizeEstimate(int trailersEncodedSizeEstimate);
 
     @Override
-    PartitionedHttpClientBuilder<U, R> maxPipelinedRequests(int maxPipelinedRequests);
+    public abstract PartitionedHttpClientBuilder<U, R> maxPipelinedRequests(int maxPipelinedRequests);
 
     @Override
-    PartitionedHttpClientBuilder<U, R> appendConnectionFilter(HttpConnectionFilterFactory factory);
+    public abstract PartitionedHttpClientBuilder<U, R> appendConnectionFilter(HttpConnectionFilterFactory factory);
 
     @Override
-    default PartitionedHttpClientBuilder<U, R> appendConnectionFilter(Predicate<StreamingHttpRequest> predicate,
-                                                                      HttpConnectionFilterFactory factory) {
+    public PartitionedHttpClientBuilder<U, R> appendConnectionFilter(Predicate<StreamingHttpRequest> predicate,
+                                                                     HttpConnectionFilterFactory factory) {
         return (PartitionedHttpClientBuilder<U, R>)
                 BaseSingleAddressHttpClientBuilder.super.appendConnectionFilter(predicate, factory);
     }
 
     @Override
-    PartitionedHttpClientBuilder<U, R> appendConnectionFactoryFilter(
+    public abstract PartitionedHttpClientBuilder<U, R> appendConnectionFactoryFilter(
             ConnectionFactoryFilter<R, StreamingHttpConnection> factory);
 
     @Override
-    PartitionedHttpClientBuilder<U, R> disableHostHeaderFallback();
+    public abstract PartitionedHttpClientBuilder<U, R> disableHostHeaderFallback();
 
     @Override
-    PartitionedHttpClientBuilder<U, R> disableWaitForLoadBalancer();
+    public abstract PartitionedHttpClientBuilder<U, R> disableWaitForLoadBalancer();
 
     @Override
-    PartitionedHttpClientBuilder<U, R> serviceDiscoverer(
+    public abstract PartitionedHttpClientBuilder<U, R> serviceDiscoverer(
             ServiceDiscoverer<U, R, ? extends PartitionedServiceDiscovererEvent<R>> serviceDiscoverer);
 
     @Override
-    PartitionedHttpClientBuilder<U, R> loadBalancerFactory(
+    public abstract PartitionedHttpClientBuilder<U, R> loadBalancerFactory(
             LoadBalancerFactory<R, StreamingHttpConnection> loadBalancerFactory);
 
     @Override
-    PartitionedHttpClientBuilder<U, R> enableHostHeaderFallback(CharSequence hostHeader);
+    public abstract PartitionedHttpClientBuilder<U, R> enableHostHeaderFallback(CharSequence hostHeader);
 
     @Override
-    PartitionedHttpClientBuilder<U, R> appendClientFilter(HttpClientFilterFactory function);
+    public abstract PartitionedHttpClientBuilder<U, R> appendClientFilter(HttpClientFilterFactory function);
 
     @Override
-    default PartitionedHttpClientBuilder<U, R> appendClientFilter(Predicate<StreamingHttpRequest> predicate,
-                                                                  HttpClientFilterFactory factory) {
+    public PartitionedHttpClientBuilder<U, R> appendClientFilter(Predicate<StreamingHttpRequest> predicate,
+                                                                 HttpClientFilterFactory factory) {
         return (PartitionedHttpClientBuilder<U, R>)
                 BaseSingleAddressHttpClientBuilder.super.appendClientFilter(predicate, factory);
     }
 
     @Override
-    PartitionedHttpClientBuilder<U, R> sslConfig(@Nullable SslConfig sslConfig);
+    public abstract PartitionedHttpClientBuilder<U, R> sslConfig(@Nullable SslConfig sslConfig);
 
     /**
      * Sets the maximum amount of {@link ServiceDiscovererEvent} objects that will be queued for each partition.
@@ -136,7 +136,7 @@ public interface PartitionedHttpClientBuilder<U, R>
      * queued for each partition.
      * @return {@code this}.
      */
-    PartitionedHttpClientBuilder<U, R> serviceDiscoveryMaxQueueSize(int serviceDiscoveryMaxQueueSize);
+    public abstract PartitionedHttpClientBuilder<U, R> serviceDiscoveryMaxQueueSize(int serviceDiscoveryMaxQueueSize);
 
     /**
      * Set {@link PartitionMapFactory} to use by all {@link StreamingHttpClient}s created by this builder.
@@ -144,7 +144,7 @@ public interface PartitionedHttpClientBuilder<U, R>
      * @param partitionMapFactory {@link PartitionMapFactory} to use.
      * @return {@code this}.
      */
-    PartitionedHttpClientBuilder<U, R> partitionMapFactory(PartitionMapFactory partitionMapFactory);
+    public abstract PartitionedHttpClientBuilder<U, R> partitionMapFactory(PartitionMapFactory partitionMapFactory);
 
     /**
      * A function that allows customizing the {@link SingleAddressHttpClientBuilder} used to create the client for a
@@ -154,6 +154,6 @@ public interface PartitionedHttpClientBuilder<U, R>
      * before creating the client for the partition
      * @return {@code this}
      */
-    PartitionedHttpClientBuilder<U, R> appendClientBuilderFilter(
+    public abstract PartitionedHttpClientBuilder<U, R> appendClientBuilderFilter(
             PartitionHttpClientBuilderFilterFunction<U, R> clientFilterFunction);
 }

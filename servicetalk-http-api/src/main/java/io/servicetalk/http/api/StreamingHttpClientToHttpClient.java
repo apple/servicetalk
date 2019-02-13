@@ -22,13 +22,14 @@ import io.servicetalk.http.api.StreamingHttpClient.ReservedStreamingHttpConnecti
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ExecutionContext;
 
+import static io.servicetalk.http.api.HttpExecutionStrategies.OFFLOAD_RECEIVE_META_STRATEGY;
 import static java.util.Objects.requireNonNull;
 
 final class StreamingHttpClientToHttpClient extends HttpClient {
     private final StreamingHttpClient client;
 
-    StreamingHttpClientToHttpClient(final StreamingHttpClient client) {
-        super(new StreamingHttpRequestResponseFactoryToHttpRequestResponseFactory(client.reqRespFactory));
+    private StreamingHttpClientToHttpClient(final StreamingHttpClient client, final HttpExecutionStrategy strategy) {
+        super(new StreamingHttpRequestResponseFactoryToHttpRequestResponseFactory(client.reqRespFactory), strategy);
         this.client = requireNonNull(client);
     }
 
@@ -36,7 +37,7 @@ final class StreamingHttpClientToHttpClient extends HttpClient {
     public Single<? extends ReservedHttpConnection> reserveConnection(final HttpExecutionStrategy strategy,
                                                                       final HttpRequestMetaData metaData) {
         return client.reserveConnection(strategy, metaData)
-                .map(ReservedStreamingHttpConnectionToReservedHttpConnection::new);
+                .map(c -> new ReservedStreamingHttpConnectionToReservedHttpConnection(c, executionStrategy()));
     }
 
     @Override
@@ -69,12 +70,20 @@ final class StreamingHttpClientToHttpClient extends HttpClient {
         return client;
     }
 
+    static HttpClient transform(StreamingHttpClient client) {
+        final HttpExecutionStrategy defaultStrategy = client instanceof StreamingHttpClientFilter ?
+                ((StreamingHttpClientFilter) client).effectiveExecutionStrategy(OFFLOAD_RECEIVE_META_STRATEGY) :
+                OFFLOAD_RECEIVE_META_STRATEGY;
+        return new StreamingHttpClientToHttpClient(client, defaultStrategy);
+    }
+
     static final class ReservedStreamingHttpConnectionToReservedHttpConnection extends ReservedHttpConnection {
         private final ReservedStreamingHttpConnection reservedConnection;
 
-        ReservedStreamingHttpConnectionToReservedHttpConnection(ReservedStreamingHttpConnection reservedConnection) {
+        private ReservedStreamingHttpConnectionToReservedHttpConnection(
+                ReservedStreamingHttpConnection reservedConnection, HttpExecutionStrategy strategy) {
             super(new StreamingHttpRequestResponseFactoryToHttpRequestResponseFactory(
-                    reservedConnection.reqRespFactory));
+                    reservedConnection.reqRespFactory), strategy);
             this.reservedConnection = requireNonNull(reservedConnection);
         }
 
@@ -122,6 +131,14 @@ final class StreamingHttpClientToHttpClient extends HttpClient {
         @Override
         ReservedStreamingHttpConnection asStreamingConnectionInternal() {
             return reservedConnection;
+        }
+
+        static ReservedHttpConnection transform(ReservedStreamingHttpConnection conn) {
+            final HttpExecutionStrategy defaultStrategy = conn instanceof ReservedStreamingHttpConnectionFilter ?
+                    ((ReservedStreamingHttpConnectionFilter) conn)
+                            .effectiveExecutionStrategy(OFFLOAD_RECEIVE_META_STRATEGY) :
+                    OFFLOAD_RECEIVE_META_STRATEGY;
+            return new ReservedStreamingHttpConnectionToReservedHttpConnection(conn, defaultStrategy);
         }
     }
 }

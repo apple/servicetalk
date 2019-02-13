@@ -149,6 +149,12 @@ public final class RedirectingHttpRequesterFilter implements HttpClientFilterFac
                             }
                         });
             }
+
+            @Override
+            protected HttpExecutionStrategy mergeForEffectiveStrategy(final HttpExecutionStrategy mergeWith) {
+                // Since this filter does not have any blocking code, we do not need to alter the effective strategy.
+                return mergeWith;
+            }
         };
     }
 
@@ -169,6 +175,12 @@ public final class RedirectingHttpRequesterFilter implements HttpClientFilterFac
             public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
                                                          final StreamingHttpRequest request) {
                 return RedirectingHttpRequesterFilter.this.request(delegate(), strategy, request, onlyRelativeConnection);
+            }
+
+            @Override
+            protected HttpExecutionStrategy mergeForEffectiveStrategy(final HttpExecutionStrategy mergeWith) {
+                // Since this filter does not have any blocking code, we do not need to alter the effective strategy.
+                return mergeWith;
             }
         };
     }

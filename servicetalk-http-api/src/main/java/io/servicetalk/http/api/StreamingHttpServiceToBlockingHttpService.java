@@ -16,13 +16,17 @@
 package io.servicetalk.http.api;
 
 import static io.servicetalk.http.api.BlockingUtils.blockingInvocation;
+import static io.servicetalk.http.api.HttpExecutionStrategies.OFFLOAD_RECEIVE_META_STRATEGY;
 import static java.util.Objects.requireNonNull;
 
 final class StreamingHttpServiceToBlockingHttpService extends BlockingHttpService {
     private final StreamingHttpService service;
+    private final HttpExecutionStrategy effectiveStrategy;
 
-    StreamingHttpServiceToBlockingHttpService(StreamingHttpService service) {
+    StreamingHttpServiceToBlockingHttpService(final StreamingHttpService service,
+                                              final HttpExecutionStrategy effectiveStrategy) {
         this.service = requireNonNull(service);
+        this.effectiveStrategy = effectiveStrategy;
     }
 
     @Override
@@ -40,5 +44,17 @@ final class StreamingHttpServiceToBlockingHttpService extends BlockingHttpServic
     @Override
     StreamingHttpService asStreamingServiceInternal() {
         return service;
+    }
+
+    @Override
+    public HttpExecutionStrategy executionStrategy() {
+        return effectiveStrategy;
+    }
+
+    static BlockingHttpService transform(final StreamingHttpService service) {
+        final HttpExecutionStrategy effectiveStrategy = service instanceof StreamingHttpServiceFilter ?
+                ((StreamingHttpServiceFilter) service).effectiveExecutionStrategy(OFFLOAD_RECEIVE_META_STRATEGY) :
+                OFFLOAD_RECEIVE_META_STRATEGY;
+        return new StreamingHttpServiceToBlockingHttpService(service, effectiveStrategy);
     }
 }

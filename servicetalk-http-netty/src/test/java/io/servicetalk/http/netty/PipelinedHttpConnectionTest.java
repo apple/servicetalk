@@ -39,6 +39,7 @@ import org.junit.rules.Timeout;
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Completable.never;
+import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpProtocolVersions.HTTP_1_0;
 import static io.servicetalk.http.api.HttpProtocolVersions.newProtocolVersion;
 import static io.servicetalk.transport.netty.internal.ExecutionContextRule.immediate;
@@ -96,7 +97,8 @@ public class PipelinedHttpConnectionTest {
         readPublisher2.sendOnSubscribe();
         writePublisher1.sendOnSubscribe();
         writePublisher2.sendOnSubscribe();
-        pipe = new PipelinedStreamingHttpConnection(connection, config.asReadOnly(), ctx, reqRespFactory);
+        pipe = new PipelinedStreamingHttpConnection(connection, config.asReadOnly(), ctx, reqRespFactory,
+                defaultStrategy());
     }
 
     @Test

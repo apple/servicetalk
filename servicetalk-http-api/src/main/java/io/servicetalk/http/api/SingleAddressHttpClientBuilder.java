@@ -28,93 +28,107 @@ import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
 /**
- * A builder of {@link StreamingHttpClient} instances which call a single server based on the provided unresolved address.
+ * A builder of {@link StreamingHttpClient} instances which call a single server based on the provided unresolved
+ * address.
  * <p>
  * It also provides a good set of default settings and configurations, which could be used by most users as-is or
  * could be overridden to address specific use cases.
  * @param <U> the type of address before resolution (unresolved address)
  * @param <R> the type of address after resolution (resolved address)
  */
-public interface SingleAddressHttpClientBuilder<U, R>
-        extends BaseSingleAddressHttpClientBuilder<U, R, ServiceDiscovererEvent<R>> {
+public abstract class SingleAddressHttpClientBuilder<U, R>
+        implements BaseSingleAddressHttpClientBuilder<U, R, ServiceDiscovererEvent<R>> {
+    private HttpExecutionStrategy strategy = DEFAULT_BUILDER_STRATEGY;
 
     @Override
-    SingleAddressHttpClientBuilder<U, R> ioExecutor(IoExecutor ioExecutor);
+    public abstract SingleAddressHttpClientBuilder<U, R> ioExecutor(IoExecutor ioExecutor);
 
     @Override
-    SingleAddressHttpClientBuilder<U, R> executionStrategy(HttpExecutionStrategy strategy);
+    public final SingleAddressHttpClientBuilder<U, R> executionStrategy(HttpExecutionStrategy strategy) {
+        this.strategy = strategy;
+        return this;
+    }
 
     @Override
-    SingleAddressHttpClientBuilder<U, R> bufferAllocator(BufferAllocator allocator);
+    public abstract SingleAddressHttpClientBuilder<U, R> bufferAllocator(BufferAllocator allocator);
 
     @Override
-    <T> SingleAddressHttpClientBuilder<U, R> socketOption(SocketOption<T> option, T value);
+    public abstract <T> SingleAddressHttpClientBuilder<U, R> socketOption(SocketOption<T> option, T value);
 
     @Override
-    SingleAddressHttpClientBuilder<U, R> enableWireLogging(String loggerName);
+    public abstract SingleAddressHttpClientBuilder<U, R> enableWireLogging(String loggerName);
 
     @Override
-    SingleAddressHttpClientBuilder<U, R> disableWireLogging();
+    public abstract SingleAddressHttpClientBuilder<U, R> disableWireLogging();
 
     @Override
-    SingleAddressHttpClientBuilder<U, R> headersFactory(HttpHeadersFactory headersFactory);
+    public abstract SingleAddressHttpClientBuilder<U, R> headersFactory(HttpHeadersFactory headersFactory);
 
     @Override
-    SingleAddressHttpClientBuilder<U, R> maxInitialLineLength(int maxInitialLineLength);
+    public abstract SingleAddressHttpClientBuilder<U, R> maxInitialLineLength(int maxInitialLineLength);
 
     @Override
-    SingleAddressHttpClientBuilder<U, R> maxHeaderSize(int maxHeaderSize);
+    public abstract SingleAddressHttpClientBuilder<U, R> maxHeaderSize(int maxHeaderSize);
 
     @Override
-    SingleAddressHttpClientBuilder<U, R> headersEncodedSizeEstimate(int headersEncodedSizeEstimate);
+    public abstract SingleAddressHttpClientBuilder<U, R> headersEncodedSizeEstimate(int headersEncodedSizeEstimate);
 
     @Override
-    SingleAddressHttpClientBuilder<U, R> trailersEncodedSizeEstimate(int trailersEncodedSizeEstimate);
+    public abstract SingleAddressHttpClientBuilder<U, R> trailersEncodedSizeEstimate(int trailersEncodedSizeEstimate);
 
     @Override
-    SingleAddressHttpClientBuilder<U, R> maxPipelinedRequests(int maxPipelinedRequests);
+    public abstract SingleAddressHttpClientBuilder<U, R> maxPipelinedRequests(int maxPipelinedRequests);
 
     @Override
-    SingleAddressHttpClientBuilder<U, R> appendConnectionFilter(HttpConnectionFilterFactory factory);
+    public abstract SingleAddressHttpClientBuilder<U, R> appendConnectionFilter(HttpConnectionFilterFactory factory);
 
     @Override
-    default SingleAddressHttpClientBuilder<U, R> appendConnectionFilter(Predicate<StreamingHttpRequest> predicate,
-                                                                        HttpConnectionFilterFactory factory) {
+    public SingleAddressHttpClientBuilder<U, R> appendConnectionFilter(Predicate<StreamingHttpRequest> predicate,
+                                                                       HttpConnectionFilterFactory factory) {
         return (SingleAddressHttpClientBuilder<U, R>)
                 BaseSingleAddressHttpClientBuilder.super.appendConnectionFilter(predicate, factory);
     }
 
     @Override
-    SingleAddressHttpClientBuilder<U, R> appendConnectionFactoryFilter(
+    public abstract SingleAddressHttpClientBuilder<U, R> appendConnectionFactoryFilter(
             ConnectionFactoryFilter<R, StreamingHttpConnection> factory);
 
     @Override
-    SingleAddressHttpClientBuilder<U, R> disableHostHeaderFallback();
+    public abstract SingleAddressHttpClientBuilder<U, R> disableHostHeaderFallback();
 
     @Override
-    SingleAddressHttpClientBuilder<U, R> disableWaitForLoadBalancer();
+    public abstract SingleAddressHttpClientBuilder<U, R> disableWaitForLoadBalancer();
 
     @Override
-    SingleAddressHttpClientBuilder<U, R> serviceDiscoverer(
+    public abstract SingleAddressHttpClientBuilder<U, R> serviceDiscoverer(
             ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>> serviceDiscoverer);
 
     @Override
-    SingleAddressHttpClientBuilder<U, R> loadBalancerFactory(
+    public abstract SingleAddressHttpClientBuilder<U, R> loadBalancerFactory(
             LoadBalancerFactory<R, StreamingHttpConnection> loadBalancerFactory);
 
     @Override
-    SingleAddressHttpClientBuilder<U, R> enableHostHeaderFallback(CharSequence hostHeader);
+    public abstract SingleAddressHttpClientBuilder<U, R> enableHostHeaderFallback(CharSequence hostHeader);
 
     @Override
-    SingleAddressHttpClientBuilder<U, R> appendClientFilter(HttpClientFilterFactory function);
+    public abstract SingleAddressHttpClientBuilder<U, R> appendClientFilter(HttpClientFilterFactory function);
 
     @Override
-    default SingleAddressHttpClientBuilder<U, R> appendClientFilter(Predicate<StreamingHttpRequest> predicate,
-                                                                    HttpClientFilterFactory factory) {
+    public SingleAddressHttpClientBuilder<U, R> appendClientFilter(Predicate<StreamingHttpRequest> predicate,
+                                                                   HttpClientFilterFactory factory) {
         return (SingleAddressHttpClientBuilder<U, R>)
                 BaseSingleAddressHttpClientBuilder.super.appendClientFilter(predicate, factory);
     }
 
     @Override
-    SingleAddressHttpClientBuilder<U, R> sslConfig(@Nullable SslConfig sslConfig);
+    public abstract SingleAddressHttpClientBuilder<U, R> sslConfig(@Nullable SslConfig sslConfig);
+
+    /**
+     * Returns the {@link HttpExecutionStrategy} used by this {@link SingleAddressHttpClientBuilder}.
+     *
+     * @return {@link HttpExecutionStrategy} used by this {@link SingleAddressHttpClientBuilder}.
+     */
+    protected HttpExecutionStrategy executionStrategy() {
+        return strategy;
+    }
 }

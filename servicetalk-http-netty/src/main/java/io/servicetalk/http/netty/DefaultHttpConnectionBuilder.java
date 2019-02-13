@@ -21,6 +21,7 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.HttpConnectionBuilder;
 import io.servicetalk.http.api.HttpConnectionFilterFactory;
+import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.api.StreamingHttpClient;
@@ -54,7 +55,7 @@ import static java.util.Objects.requireNonNull;
  *
  * @param <ResolvedAddress> the type of address after resolution.
  */
-public final class DefaultHttpConnectionBuilder<ResolvedAddress> implements HttpConnectionBuilder<ResolvedAddress> {
+public final class DefaultHttpConnectionBuilder<ResolvedAddress> extends HttpConnectionBuilder<ResolvedAddress> {
 
     private static final Predicate<Object> LAST_CHUNK_PREDICATE = p -> p instanceof HttpHeaders;
 
@@ -80,12 +81,6 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress> implements Http
     }
 
     @Override
-    public DefaultHttpConnectionBuilder<ResolvedAddress> executor(final Executor executor) {
-        executionContextBuilder.executor(executor);
-        return this;
-    }
-
-    @Override
     public DefaultHttpConnectionBuilder<ResolvedAddress> bufferAllocator(final BufferAllocator allocator) {
         executionContextBuilder.bufferAllocator(allocator);
         return this;
@@ -95,7 +90,11 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress> implements Http
     public Single<StreamingHttpConnection> buildStreaming(final ResolvedAddress resolvedAddress) {
         ExecutionContext executionContext = executionContextBuilder.build();
         ReadOnlyHttpClientConfig roConfig = config.asReadOnly();
-
+        HttpExecutionStrategy strategy = executionStrategy();
+        Executor executor = strategy.executor();
+        if (executor != null) {
+            executionContextBuilder.executor(executor);
+        }
         final StreamingHttpRequestResponseFactory reqRespFactory =
                 new DefaultStreamingHttpRequestResponseFactory(executionContext.bufferAllocator(),
                         roConfig.getHeadersFactory());
@@ -112,9 +111,9 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress> implements Http
 
         return (roConfig.getMaxPipelinedRequests() == 1 ?
                 buildForNonPipelined(executionContext, resolvedAddress, roConfig, filterFactory,
-                        reqRespFactory)
+                        reqRespFactory, strategy)
                 : buildForPipelined(executionContext, resolvedAddress, roConfig, filterFactory,
-                reqRespFactory))
+                reqRespFactory, strategy))
                     .map(filteredConnection -> new ConcurrentRequestsHttpConnectionFilter(filteredConnection,
                             roConfig.getMaxPipelinedRequests()));
     }
@@ -122,19 +121,21 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress> implements Http
     static <ResolvedAddress> Single<StreamingHttpConnection> buildForPipelined(
             final ExecutionContext executionContext, ResolvedAddress resolvedAddress, ReadOnlyHttpClientConfig roConfig,
             final HttpConnectionFilterFactory connectionFilterFunction,
-            final StreamingHttpRequestResponseFactory reqRespFactory) {
+            final StreamingHttpRequestResponseFactory reqRespFactory, final HttpExecutionStrategy strategy) {
         return buildStreaming(executionContext, resolvedAddress, roConfig, conn ->
                 connectionFilterFunction.create(
-                        new PipelinedStreamingHttpConnection(conn, roConfig, executionContext, reqRespFactory)));
+                        new PipelinedStreamingHttpConnection(conn, roConfig, executionContext, reqRespFactory,
+                                strategy)));
     }
 
     static <ResolvedAddress> Single<StreamingHttpConnection> buildForNonPipelined(
             final ExecutionContext executionContext, ResolvedAddress resolvedAddress, ReadOnlyHttpClientConfig roConfig,
             final HttpConnectionFilterFactory connectionFilterFunction,
-            final StreamingHttpRequestResponseFactory reqRespFactory) {
+            final StreamingHttpRequestResponseFactory reqRespFactory, final HttpExecutionStrategy strategy) {
         return buildStreaming(executionContext, resolvedAddress, roConfig, conn ->
                 connectionFilterFunction.create(
-                        new NonPipelinedStreamingHttpConnection(conn, roConfig, executionContext, reqRespFactory)));
+                        new NonPipelinedStreamingHttpConnection(conn, roConfig, executionContext, reqRespFactory,
+                                strategy)));
     }
 
     private static <ResolvedAddress> Single<StreamingHttpConnection> buildStreaming(
@@ -286,7 +287,7 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress> implements Http
     @Override
     public DefaultHttpConnectionBuilder<ResolvedAddress> appendConnectionFilter(
             final Predicate<StreamingHttpRequest> predicate, final HttpConnectionFilterFactory factory) {
-        HttpConnectionBuilder.super.appendConnectionFilter(predicate, factory);
+        super.appendConnectionFilter(predicate, factory);
         return this;
     }
 }

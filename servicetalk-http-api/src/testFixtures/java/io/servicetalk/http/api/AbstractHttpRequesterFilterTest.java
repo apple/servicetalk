@@ -48,6 +48,7 @@ import static io.servicetalk.http.api.AbstractHttpRequesterFilterTest.RequesterT
 import static io.servicetalk.http.api.AbstractHttpRequesterFilterTest.RequesterType.ReservedConnection;
 import static io.servicetalk.http.api.AbstractHttpRequesterFilterTest.SecurityType.Insecure;
 import static io.servicetalk.http.api.AbstractHttpRequesterFilterTest.SecurityType.Secure;
+import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static java.util.Arrays.asList;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -193,6 +194,14 @@ public abstract class AbstractHttpRequesterFilterTest {
         }
     }
 
+    protected BlockingHttpRequester asBlockingRequester(StreamingHttpRequester requester) {
+        if (requester instanceof StreamingHttpClient) {
+            return ((StreamingHttpClient) requester).asBlockingClient();
+        } else {
+            return ((StreamingHttpConnection) requester).asBlockingConnection();
+        }
+    }
+
     /**
      * Handler for {@link HttpRequester#request(HttpRequest)} calls as delegated from the filter under test.
      */
@@ -265,7 +274,7 @@ public abstract class AbstractHttpRequesterFilterTest {
 
     private ReservedStreamingHttpConnection newReservedConnection(RequestWithContextHandler rwch) {
         StreamingHttpConnection connection = newConnection(rwch);
-        return new ReservedStreamingHttpConnection(connection.reqRespFactory) {
+        return new ReservedStreamingHttpConnection(connection.reqRespFactory, defaultStrategy()) {
 
             @Override
             public Completable closeAsync() {

@@ -78,6 +78,27 @@ final class NoOffloadsHttpExecutionStrategy implements HttpExecutionStrategy {
     }
 
     @Override
+    public boolean metadataReceiveOffloaded() {
+        return false;
+    }
+
+    @Override
+    public boolean dataReceiveOffloaded() {
+        return false;
+    }
+
+    @Override
+    public boolean sendOffloaded() {
+        return false;
+    }
+
+    @Override
+    public HttpExecutionStrategy merge(final HttpExecutionStrategy other) {
+        // Since this strategy does not offload, any offloads specified by the other strategy should always be honored.
+        return other;
+    }
+
+    @Override
     public <T> Single<T> invokeService(Executor fallback, final Function<Executor, T> service) {
         return new FunctionToSingle<>(service, immediate());
     }

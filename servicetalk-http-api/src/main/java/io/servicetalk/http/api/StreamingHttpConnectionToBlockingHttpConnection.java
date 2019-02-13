@@ -21,13 +21,15 @@ import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ExecutionContext;
 
 import static io.servicetalk.http.api.BlockingUtils.blockingInvocation;
+import static io.servicetalk.http.api.HttpExecutionStrategies.OFFLOAD_NONE_STRATEGY;
 import static java.util.Objects.requireNonNull;
 
 final class StreamingHttpConnectionToBlockingHttpConnection extends BlockingHttpConnection {
     private final StreamingHttpConnection connection;
 
-    StreamingHttpConnectionToBlockingHttpConnection(StreamingHttpConnection connection) {
-        super(new StreamingHttpRequestResponseFactoryToHttpRequestResponseFactory(connection.reqRespFactory));
+    private StreamingHttpConnectionToBlockingHttpConnection(final StreamingHttpConnection connection,
+                                                            final HttpExecutionStrategy strategy) {
+        super(new StreamingHttpRequestResponseFactoryToHttpRequestResponseFactory(connection.reqRespFactory), strategy);
         this.connection = requireNonNull(connection);
     }
 
@@ -63,5 +65,12 @@ final class StreamingHttpConnectionToBlockingHttpConnection extends BlockingHttp
 
     Completable onClose() {
         return connection.onClose();
+    }
+
+    static BlockingHttpConnection transform(StreamingHttpConnection conn) {
+        final HttpExecutionStrategy defaultStrategy = conn instanceof StreamingHttpConnectionFilter ?
+                ((StreamingHttpConnectionFilter) conn).effectiveExecutionStrategy(OFFLOAD_NONE_STRATEGY) :
+                OFFLOAD_NONE_STRATEGY;
+        return new StreamingHttpConnectionToBlockingHttpConnection(conn, defaultStrategy);
     }
 }

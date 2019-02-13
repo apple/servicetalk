@@ -17,6 +17,7 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpConnectionFilterFactory;
+import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.transport.api.ExecutionContext;
 
@@ -34,8 +35,9 @@ final class NonPipelinedLBHttpConnectionFactory<ResolvedAddress>
     NonPipelinedLBHttpConnectionFactory(final ReadOnlyHttpClientConfig config,
                                         final ExecutionContext executionContext,
                                         final HttpConnectionFilterFactory connectionFilterFunction,
-                                        final StreamingHttpRequestResponseFactory reqRespFactory) {
-        super(connectionFilterFunction);
+                                        final StreamingHttpRequestResponseFactory reqRespFactory,
+                                        final HttpExecutionStrategy defaultStrategy) {
+        super(connectionFilterFunction, defaultStrategy);
         this.config = requireNonNull(config);
         this.executionContext = requireNonNull(executionContext);
         this.reqRespFactory = requireNonNull(reqRespFactory);
@@ -44,9 +46,10 @@ final class NonPipelinedLBHttpConnectionFactory<ResolvedAddress>
     @Override
     Single<LoadBalancedStreamingHttpConnection> newConnection(final ResolvedAddress resolvedAddress,
                                                               final HttpConnectionFilterFactory connectionFilterFunction) {
-        return buildForNonPipelined(executionContext, resolvedAddress, config, connectionFilterFunction, reqRespFactory)
+        return buildForNonPipelined(executionContext, resolvedAddress, config, connectionFilterFunction,
+                reqRespFactory, defaultStrategy)
                 .map(filteredConnection -> new LoadBalancedStreamingHttpConnection(reqRespFactory, filteredConnection,
                         newSingleController(filteredConnection.settingStream(MAX_CONCURRENCY),
-                                filteredConnection.onClose())));
+                                filteredConnection.onClose()), defaultStrategy));
     }
 }

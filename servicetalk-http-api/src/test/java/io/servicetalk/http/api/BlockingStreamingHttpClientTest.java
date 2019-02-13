@@ -24,6 +24,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiFunction;
 
 import static io.servicetalk.concurrent.api.Single.error;
+import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static java.util.Objects.requireNonNull;
 
 public class BlockingStreamingHttpClientTest extends AbstractBlockingStreamingHttpRequesterTest {
@@ -69,6 +70,16 @@ public class BlockingStreamingHttpClientTest extends AbstractBlockingStreamingHt
         };
     }
 
+    @Override
+    protected BlockingStreamingHttpRequester toBlockingStreamingRequester(final StreamingHttpRequester requester) {
+        return ((StreamingHttpClient) requester).asBlockingStreamingClient();
+    }
+
+    @Override
+    protected StreamingHttpRequester toStreamingRequester(final BlockingStreamingHttpRequester requester) {
+        return ((BlockingStreamingHttpClient) requester).asStreamingClient();
+    }
+
     private abstract static class TestStreamingHttpClient extends StreamingHttpClient implements TestHttpRequester {
         private final AtomicBoolean closed = new AtomicBoolean();
         private final CompletableProcessor onClose = new CompletableProcessor();
@@ -76,7 +87,7 @@ public class BlockingStreamingHttpClientTest extends AbstractBlockingStreamingHt
 
         TestStreamingHttpClient(StreamingHttpRequestResponseFactory factory,
                                 ExecutionContext executionContext) {
-            super(factory);
+            super(factory, defaultStrategy());
             this.executionContext = requireNonNull(executionContext);
         }
 
@@ -116,7 +127,7 @@ public class BlockingStreamingHttpClientTest extends AbstractBlockingStreamingHt
 
         TestBlockingStreamingHttpClient(BlockingStreamingHttpRequestResponseFactory factory,
                                         ExecutionContext executionContext) {
-            super(factory);
+            super(factory, defaultStrategy());
             this.executionContext = requireNonNull(executionContext);
         }
 

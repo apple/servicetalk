@@ -19,7 +19,8 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.transport.api.ExecutionContext;
 
-import static java.util.Objects.requireNonNull;
+import static io.servicetalk.http.api.HttpExecutionStrategies.OFFLOAD_ALL_STRATEGY;
+import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 
 /**
  * A {@link StreamingHttpClient} that delegates all methods to a different {@link StreamingHttpClient}.
@@ -34,22 +35,9 @@ public class StreamingHttpClientFilter extends StreamingHttpClient {
      * @param delegate The {@link StreamingHttpClient} to delegate all calls to.
      */
     public StreamingHttpClientFilter(final StreamingHttpClient delegate) {
-        super(delegate.reqRespFactory);
+        super(delegate.reqRespFactory, defaultStrategy());
         this.delegate = delegate;
-        defaultStrategy = executionStrategy();
-    }
-
-    /**
-     * Create a new instance.
-     *
-     * @param delegate The {@link StreamingHttpClient} to delegate all calls to.
-     * @param defaultStrategy Default {@link HttpExecutionStrategy} to use.
-     */
-    public StreamingHttpClientFilter(final StreamingHttpClient delegate,
-                                     final HttpExecutionStrategy defaultStrategy) {
-        super(delegate.reqRespFactory);
-        this.delegate = delegate;
-        this.defaultStrategy = requireNonNull(defaultStrategy);
+        defaultStrategy = defaultStrategy();
     }
 
     @Override
@@ -104,6 +92,38 @@ public class StreamingHttpClientFilter extends StreamingHttpClient {
                                                                                   final HttpExecutionStrategy strategy,
                                                                                   final HttpRequestMetaData metaData) {
         return delegate.reserveConnection(strategy, metaData).map(ClientFilterToReservedConnectionFilter::new);
+    }
+
+    /**
+     * Determine the effective {@link HttpExecutionStrategy} given the passed {@link HttpExecutionStrategy} and the
+     * strategy required by this {@link StreamingHttpClientFilter}.
+     *
+     * @param strategy A {@link HttpExecutionStrategy} as determined by the caller of this method.
+     * @return Effective {@link HttpExecutionStrategy}.
+     */
+    final HttpExecutionStrategy effectiveExecutionStrategy(HttpExecutionStrategy strategy) {
+        // Since the next client is a filter, we are still in filter chain, so propagate the call
+        if (delegate instanceof StreamingHttpClientFilter) {
+            // A streaming filter will offload all paths by default. Implementations can override the behavior and do
+            // something sophisticated if required.
+            return ((StreamingHttpClientFilter) delegate).effectiveExecutionStrategy(
+                    mergeForEffectiveStrategy(strategy));
+        }
+        // End of the filter chain, delegate will be our client which will not override the passed strategy
+        return strategy;
+    }
+
+    /**
+     * When calculating effective {@link HttpExecutionStrategy} this method is called to merge the strategy for the
+     * next {@link StreamingHttpClient} in the filter chain with the {@link HttpExecutionStrategy} of this
+     * {@link StreamingHttpClientFilter}.
+     *
+     * @param mergeWith A {@link HttpExecutionStrategy} with which this {@link StreamingHttpClientFilter} should merge
+     * its {@link HttpExecutionStrategy}.
+     * @return Merged {@link HttpExecutionStrategy}.
+     */
+    protected HttpExecutionStrategy mergeForEffectiveStrategy(HttpExecutionStrategy mergeWith) {
+        return mergeWith.merge(OFFLOAD_ALL_STRATEGY);
     }
 
     @Override

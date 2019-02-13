@@ -24,9 +24,12 @@ import static java.util.Objects.requireNonNull;
 
 final class BlockingHttpServiceToHttpService extends HttpService {
     private final BlockingHttpService service;
+    private final HttpExecutionStrategy effectiveStrategy;
 
-    BlockingHttpServiceToHttpService(BlockingHttpService service) {
+    private BlockingHttpServiceToHttpService(final BlockingHttpService service,
+                                             final HttpExecutionStrategy effectiveStrategy) {
         this.service = requireNonNull(service);
+        this.effectiveStrategy = requireNonNull(effectiveStrategy);
     }
 
     @Override
@@ -43,5 +46,19 @@ final class BlockingHttpServiceToHttpService extends HttpService {
     @Override
     BlockingHttpService asBlockingServiceInternal() {
         return service;
+    }
+
+    @Override
+    public HttpExecutionStrategy executionStrategy() {
+        return effectiveStrategy;
+    }
+
+    static HttpService transform(final BlockingHttpService service) {
+        // The recommended approach for filtering is using the filter factories which forces people to use the
+        // StreamingHttpServiceFilter API and use the effective strategy. When that path is used, then we will not get
+        // here as the intermediate transitions take care of returning the original StreamingHttpService.
+        // If we are here, it is for a user implemented BlockingStreamingHttpService, so we assume the strategy provided
+        // by the passed service is the effective strategy.
+        return new BlockingHttpServiceToHttpService(service, service.executionStrategy());
     }
 }
