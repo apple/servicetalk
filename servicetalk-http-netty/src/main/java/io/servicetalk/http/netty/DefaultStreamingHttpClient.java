@@ -24,6 +24,7 @@ import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.StreamingHttpResponse;
+import io.servicetalk.http.utils.DoBeforeFinallyOnHttpResponseOperator;
 import io.servicetalk.transport.api.ExecutionContext;
 
 import java.util.function.Function;
@@ -66,7 +67,8 @@ final class DefaultStreamingHttpClient extends StreamingHttpClient {
         // following the LoadBalancer API which this Client depends upon to ensure the concurrent request count state is
         // correct.
         return loadBalancer.selectConnection(SELECTOR_FOR_REQUEST)
-                .flatMap(c -> c.request(strategy, request).liftSynchronous(new ConcurrencyControlSingleOperator(c)));
+                .flatMap(c -> c.request(strategy, request)
+                        .liftSynchronous(new DoBeforeFinallyOnHttpResponseOperator(c::requestFinished)));
     }
 
     @Override

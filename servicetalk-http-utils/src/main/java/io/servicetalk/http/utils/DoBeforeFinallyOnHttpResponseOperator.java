@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,13 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.http.netty;
+package io.servicetalk.http.utils;
 
-import io.servicetalk.client.internal.RequestConcurrencyController;
 import io.servicetalk.concurrent.Cancellable;
-import io.servicetalk.concurrent.Single.Subscriber;
+import io.servicetalk.concurrent.Single;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.SingleOperator;
+import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
 
 import org.reactivestreams.Subscription;
@@ -30,54 +30,76 @@ import java.util.concurrent.CancellationException;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import javax.annotation.Nullable;
 
-import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 
-final class ConcurrencyControlSingleOperator
+/**
+ * Helper operator for signaling the end of an HTTP Request/Response cycle.
+ *
+ * <p>{@link StreamingHttpRequest} and {@link StreamingHttpResponse} are nested sources ({@link Single} of meta-data
+ * containing a payload {@link Publisher}), which makes it non-trivial to get a single signal at the end of this
+ * Request/Response cycle. One needs to consider and coordinate between the multitude of outcomes: cancel/success/error
+ * across both sources.</p>
+ * <p>This operator ensures that the provided callback is triggered just once whenever the sources reach a terminal
+ * state across both sources.</p>
+ *
+ * Example usage tracking the begin and end of a request:
+ *
+ * <pre>{@code
+ *     return requester.request(strategy, request)
+ *                     .doBeforeSubscribe(__ -> tracker.requestStarted())
+ *                     .liftSynchronous(new DoBeforeFinallyOnHttpResponseOperator(tracker::requestFinished));
+ * }</pre>
+ */
+public final class DoBeforeFinallyOnHttpResponseOperator
         implements SingleOperator<StreamingHttpResponse, StreamingHttpResponse> {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(ConcurrencyControlSingleOperator.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(DoBeforeFinallyOnHttpResponseOperator.class);
 
     private static final int IDLE = 0;
     private static final int CANCELLED = 1;
     private static final int TERMINATED = 2;
 
-    private static final AtomicIntegerFieldUpdater<ConcurrencyControlSingleOperator> stateUpdater =
-            newUpdater(ConcurrencyControlSingleOperator.class, "state");
+    private static final AtomicIntegerFieldUpdater<DoBeforeFinallyOnHttpResponseOperator> stateUpdater =
+            newUpdater(DoBeforeFinallyOnHttpResponseOperator.class, "state");
 
-    private final RequestConcurrencyController limiter;
+    private final Runnable doBeforeFinally;
 
     @SuppressWarnings("unused")
     private volatile int state;
 
-    ConcurrencyControlSingleOperator(RequestConcurrencyController limiter) {
-        this.limiter = requireNonNull(limiter);
+    /**
+     * Create a new instance.
+     *
+     * @param doBeforeFinally the callback that is executed just once whenever the sources reach a terminal state across
+     * both sources
+     */
+    public DoBeforeFinallyOnHttpResponseOperator(final Runnable doBeforeFinally) {
+        this.doBeforeFinally = doBeforeFinally;
     }
 
     @Override
-    public Subscriber<? super StreamingHttpResponse> apply(
-            final Subscriber<? super StreamingHttpResponse> subscriber) {
-        // Here we avoid calling limiter.requestFinished() when we get a cancel() on the Single after we have handed out
-        // the StreamingHttpResponse to the subscriber. Doing which will mean we double decrement the concurrency
-        // controller. In case, we do get an StreamingHttpResponse after we got cancel(), we subscribe to the payload
-        // Publisher and cancel to indicate to the Connection that there is no other Subscriber that will use the
-        // payload Publisher.
-        return new ConcurrencyControlManagingSubscriber(subscriber);
+    public Single.Subscriber<? super StreamingHttpResponse> apply(
+            final Single.Subscriber<? super StreamingHttpResponse> subscriber) {
+        // Here we avoid calling doBeforeFinally.run() when we get a cancel() on the Single after we have handed out
+        // the StreamingHttpResponse to the subscriber. In case, we do get an StreamingHttpResponse after we got
+        // cancel(), we subscribe to the payload Publisher and cancel to indicate to the Connection that there is no
+        // other Subscriber that will use the payload Publisher.
+        return new ResponseCompletionSubscriber(subscriber);
     }
 
-    private final class ConcurrencyControlManagingSubscriber implements Subscriber<StreamingHttpResponse> {
+    private final class ResponseCompletionSubscriber implements Single.Subscriber<StreamingHttpResponse> {
 
-        private final Subscriber<? super StreamingHttpResponse> subscriber;
+        private final Single.Subscriber<? super StreamingHttpResponse> subscriber;
 
-        ConcurrencyControlManagingSubscriber(final Subscriber<? super StreamingHttpResponse> sub) {
+        ResponseCompletionSubscriber(final Single.Subscriber<? super StreamingHttpResponse> sub) {
             this.subscriber = sub;
         }
 
         @Override
         public void onSubscribe(final Cancellable cancellable) {
             subscriber.onSubscribe(() -> {
-                if (stateUpdater.compareAndSet(ConcurrencyControlSingleOperator.this, IDLE, CANCELLED)) {
-                    limiter.requestFinished();
+                if (stateUpdater.compareAndSet(DoBeforeFinallyOnHttpResponseOperator.this, IDLE, CANCELLED)) {
+                    doBeforeFinally.run();
                 }
                 // Cancel unconditionally, let the original Single handle cancel post termination, if required
                 cancellable.cancel();
@@ -88,9 +110,9 @@ final class ConcurrencyControlSingleOperator
         public void onSuccess(@Nullable final StreamingHttpResponse response) {
             if (response == null) {
                 sendNullResponse();
-            } else if (stateUpdater.compareAndSet(ConcurrencyControlSingleOperator.this, IDLE, TERMINATED)) {
+            } else if (stateUpdater.compareAndSet(DoBeforeFinallyOnHttpResponseOperator.this, IDLE, TERMINATED)) {
                 subscriber.onSuccess(response.transformRawPayloadBody(payload ->
-                        payload.doBeforeFinally(limiter::requestFinished)));
+                        payload.doBeforeFinally(doBeforeFinally)));
             } else if (state == CANCELLED) {
                 subscriber.onSuccess(response.transformRawPayloadBody(payload -> {
                     // We have been cancelled. Subscribe and cancel the content so that we do not hold up the
@@ -105,15 +127,15 @@ final class ConcurrencyControlSingleOperator
 
         @Override
         public void onError(final Throwable t) {
-            if (stateUpdater.compareAndSet(ConcurrencyControlSingleOperator.this, IDLE, TERMINATED)) {
-                limiter.requestFinished();
+            if (stateUpdater.compareAndSet(DoBeforeFinallyOnHttpResponseOperator.this, IDLE, TERMINATED)) {
+                doBeforeFinally.run();
             }
             subscriber.onError(t);
         }
 
         private void sendNullResponse() {
             // Since, we are not giving out a response, no subscriber will arrive for the payload Publisher.
-            limiter.requestFinished();
+            doBeforeFinally.run();
             subscriber.onSuccess(null);
         }
     }
