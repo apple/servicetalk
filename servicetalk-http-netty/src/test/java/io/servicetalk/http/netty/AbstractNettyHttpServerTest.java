@@ -156,7 +156,7 @@ public abstract class AbstractNettyHttpServerTest {
             httpConnectionBuilder.sslConfig(sslConfig);
         }
         httpConnection = awaitIndefinitelyNonNull(httpConnectionBuilder.ioExecutor(clientIoExecutor)
-                .executor(clientExecutor)
+                .executionStrategy(defaultStrategy(clientExecutor))
                 .buildStreaming(serverContext.listenAddress()));
     }
 

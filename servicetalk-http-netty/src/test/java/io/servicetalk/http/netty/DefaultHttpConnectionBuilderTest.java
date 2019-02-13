@@ -32,6 +32,7 @@ import javax.annotation.Nonnull;
 
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitelyNonNull;
+import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.StreamingHttpConnection.SettingKey.MAX_CONCURRENCY;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertThat;
@@ -51,7 +52,8 @@ public class DefaultHttpConnectionBuilderTest extends AbstractEchoServerBasedHtt
     @Test
     public void requestFromConnectionFactory() throws Exception {
         ConnectionFactory<SocketAddress, StreamingHttpConnection> cf =
-                prepareBuilder(1).ioExecutor(CTX.ioExecutor()).executor(CTX.executor())
+                prepareBuilder(1).ioExecutor(CTX.ioExecutor())
+                        .executionStrategy(defaultStrategy(CTX.executor()))
                         .asConnectionFactory();
         Single<StreamingHttpConnection> connectionSingle =
                 cf.newConnection(serverContext.listenAddress());
@@ -88,7 +90,7 @@ public class DefaultHttpConnectionBuilderTest extends AbstractEchoServerBasedHtt
 
         Single<DummyFanoutFilter> connectionSingle = prepareBuilder(10)
                 .ioExecutor(CTX.ioExecutor())
-                .executor(CTX.executor())
+                .executionStrategy(defaultStrategy(CTX.executor()))
                 .asConnectionFactory()
                 .newConnection(serverContext.listenAddress())
                 .map(DummyFanoutFilter::new);
@@ -105,7 +107,8 @@ public class DefaultHttpConnectionBuilderTest extends AbstractEchoServerBasedHtt
         DefaultHttpConnectionBuilder<SocketAddress> defaultBuilder = prepareBuilder(pipelinedRequests);
 
         Single<StreamingHttpConnection> connectionSingle =
-                defaultBuilder.ioExecutor(CTX.ioExecutor()).executor(CTX.executor())
+                defaultBuilder.ioExecutor(CTX.ioExecutor())
+                        .executionStrategy(defaultStrategy(CTX.executor()))
                 .buildStreaming(serverContext.listenAddress());
 
         makeRequestValidateResponseAndClose(awaitIndefinitelyNonNull(connectionSingle));

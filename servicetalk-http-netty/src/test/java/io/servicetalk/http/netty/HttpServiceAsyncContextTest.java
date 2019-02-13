@@ -111,7 +111,7 @@ public class HttpServiceAsyncContextTest {
                                 .maxPipelinedRequests(numRequests);
                         StreamingHttpConnection connection = (useImmediate ?
                                 connectionBuilder.ioExecutor(immediateExecutor.ioExecutor())
-                                .executor(immediateExecutor.executor())
+                                .executionStrategy(defaultStrategy(immediateExecutor.executor()))
                                 .buildStreaming(ctx.listenAddress()) :
                                 connectionBuilder.buildStreaming(ctx.listenAddress())).toFuture().get();
                         barrier.await();

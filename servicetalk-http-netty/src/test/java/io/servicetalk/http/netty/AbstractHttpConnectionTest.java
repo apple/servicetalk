@@ -46,6 +46,7 @@ import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitelyNonNull;
 import static io.servicetalk.http.api.DefaultHttpHeadersFactory.INSTANCE;
+import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
 import static io.servicetalk.http.api.HttpHeaderValues.TEXT_PLAIN;
 import static io.servicetalk.http.api.HttpProtocolVersions.HTTP_1_1;
@@ -74,7 +75,6 @@ public final class AbstractHttpConnectionTest {
     @Rule
     public final ExecutionContextRule ctx = immediate();
 
-    @SuppressWarnings("unchecked")
     // Use Function to mock connection req/resp
     private Function<Publisher<Object>, Publisher<Object>> reqResp;
 
@@ -88,7 +88,7 @@ public final class AbstractHttpConnectionTest {
     private class MockStreamingHttpConnection extends AbstractStreamingHttpConnection<NettyConnection<Object, Object>> {
         protected MockStreamingHttpConnection(final NettyConnection<Object, Object> connection,
                                               final ReadOnlyHttpClientConfig config) {
-            super(connection, never(), config, ctx, reqRespFactory);
+            super(connection, never(), config, ctx, reqRespFactory, defaultStrategy());
         }
 
         @Override

@@ -67,6 +67,26 @@ public class HttpExecutionStrategyAdapter implements HttpExecutionStrategy {
     }
 
     @Override
+    public boolean metadataReceiveOffloaded() {
+        return delegate.metadataReceiveOffloaded();
+    }
+
+    @Override
+    public boolean dataReceiveOffloaded() {
+        return delegate.dataReceiveOffloaded();
+    }
+
+    @Override
+    public boolean sendOffloaded() {
+        return delegate.sendOffloaded();
+    }
+
+    @Override
+    public HttpExecutionStrategy merge(final HttpExecutionStrategy other) {
+        return delegate.merge(other);
+    }
+
+    @Override
     public <T> Single<T> offloadSend(final Executor fallback, final Single<T> original) {
         return delegate.offloadSend(fallback, original);
     }
@@ -90,5 +110,24 @@ public class HttpExecutionStrategyAdapter implements HttpExecutionStrategy {
     @Nullable
     public Executor executor() {
         return delegate.executor();
+    }
+
+    @Override
+    public boolean equals(final Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+
+        final HttpExecutionStrategyAdapter that = (HttpExecutionStrategyAdapter) o;
+
+        return delegate.equals(that.delegate);
+    }
+
+    @Override
+    public int hashCode() {
+        return delegate.hashCode();
     }
 }

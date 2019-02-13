@@ -18,13 +18,12 @@ package io.servicetalk.http.api;
 import io.servicetalk.concurrent.api.AsyncCloseable;
 import io.servicetalk.concurrent.api.Completable;
 
-import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
+import static io.servicetalk.http.api.HttpExecutionStrategies.OFFLOAD_RECEIVE_META_AND_SEND_STRATEGY;
 
 /**
  * Same as {@link StreamingHttpService} but that accepts {@link HttpRequest} and returns {@link HttpResponse}.
  */
 public abstract class HttpService implements HttpRequestHandler, AsyncCloseable {
-
     /**
      * Closes this {@link HttpService} asynchronously.
      *
@@ -73,14 +72,14 @@ public abstract class HttpService implements HttpRequestHandler, AsyncCloseable 
      * @return The {@link HttpExecutionStrategy} for this {@link HttpService}.
      */
     public HttpExecutionStrategy executionStrategy() {
-        return defaultStrategy();
+        return OFFLOAD_RECEIVE_META_AND_SEND_STRATEGY;
     }
 
     StreamingHttpService asStreamingServiceInternal() {
-        return new HttpServiceToStreamingHttpService(this);
+        return HttpServiceToStreamingHttpService.transform(this);
     }
 
     BlockingHttpService asBlockingServiceInternal() {
-        return new HttpServiceToBlockingHttpService(this);
+        return HttpServiceToBlockingHttpService.transform(this);
     }
 }

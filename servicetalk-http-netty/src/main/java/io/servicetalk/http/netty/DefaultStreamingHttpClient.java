@@ -40,16 +40,13 @@ final class DefaultStreamingHttpClient extends StreamingHttpClient {
 
     // TODO Proto specific LB after upgrade and worry about SSL
     private final ExecutionContext executionContext;
-    private final HttpExecutionStrategy executionStrategy;
     private final LoadBalancer<LoadBalancedStreamingHttpConnection> loadBalancer;
 
-    @SuppressWarnings("unchecked")
     DefaultStreamingHttpClient(final ExecutionContext executionContext, final HttpExecutionStrategy executionStrategy,
                                final LoadBalancer<LoadBalancedStreamingHttpConnection> loadBalancer,
                                final StreamingHttpRequestResponseFactory reqRespFactory) {
-        super(reqRespFactory);
+        super(reqRespFactory, executionStrategy);
         this.executionContext = requireNonNull(executionContext);
-        this.executionStrategy = executionStrategy;
         this.loadBalancer = requireNonNull(loadBalancer);
     }
 
@@ -58,11 +55,6 @@ final class DefaultStreamingHttpClient extends StreamingHttpClient {
                                                                                final HttpRequestMetaData metaData) {
         return strategy.offloadReceive(executionContext.executor(),
                 loadBalancer.selectConnection(SELECTOR_FOR_RESERVE));
-    }
-
-    @Override
-    public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
-        return request(executionStrategy, request);
     }
 
     @Override

@@ -18,13 +18,17 @@ package io.servicetalk.http.api;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
 
+import static io.servicetalk.http.api.HttpExecutionStrategies.OFFLOAD_RECEIVE_META_AND_SEND_STRATEGY;
 import static java.util.Objects.requireNonNull;
 
 final class StreamingHttpServiceToHttpService extends HttpService {
     private final StreamingHttpService service;
+    private final HttpExecutionStrategy effectiveStrategy;
 
-    StreamingHttpServiceToHttpService(StreamingHttpService service) {
+    private StreamingHttpServiceToHttpService(final StreamingHttpService service,
+                                              final HttpExecutionStrategy effectiveStrategy) {
         this.service = requireNonNull(service);
+        this.effectiveStrategy = effectiveStrategy;
     }
 
     @Override
@@ -47,5 +51,18 @@ final class StreamingHttpServiceToHttpService extends HttpService {
     @Override
     StreamingHttpService asStreamingServiceInternal() {
         return service;
+    }
+
+    @Override
+    public HttpExecutionStrategy executionStrategy() {
+        return effectiveStrategy;
+    }
+
+    static HttpService transform(final StreamingHttpService service) {
+        final HttpExecutionStrategy defaultStrategy = service instanceof StreamingHttpServiceFilter ?
+                ((StreamingHttpServiceFilter) service)
+                        .effectiveExecutionStrategy(OFFLOAD_RECEIVE_META_AND_SEND_STRATEGY) :
+                OFFLOAD_RECEIVE_META_AND_SEND_STRATEGY;
+        return new StreamingHttpServiceToHttpService(service, defaultStrategy);
     }
 }

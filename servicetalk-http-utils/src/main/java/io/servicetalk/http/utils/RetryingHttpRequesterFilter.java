@@ -77,6 +77,12 @@ public final class RetryingHttpRequesterFilter implements HttpClientFilterFactor
                                                             final StreamingHttpRequest request) {
                 return RetryingHttpRequesterFilter.this.request(delegate, strategy, request, retryStrategy);
             }
+
+            @Override
+            protected HttpExecutionStrategy mergeForEffectiveStrategy(final HttpExecutionStrategy mergeWith) {
+                // Since this filter does not have any blocking code, we do not need to alter the effective strategy.
+                return mergeWith;
+            }
         };
     }
 
@@ -91,6 +97,12 @@ public final class RetryingHttpRequesterFilter implements HttpClientFilterFactor
             public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
                                                          final StreamingHttpRequest request) {
                 return RetryingHttpRequesterFilter.this.request(delegate(), strategy, request, retryStrategy);
+            }
+
+            @Override
+            protected HttpExecutionStrategy mergeForEffectiveStrategy(final HttpExecutionStrategy mergeWith) {
+                // Since this filter does not have any blocking code, we do not need to alter the effective strategy.
+                return mergeWith;
             }
         };
     }

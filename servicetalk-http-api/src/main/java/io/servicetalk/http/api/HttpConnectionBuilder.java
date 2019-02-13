@@ -17,7 +17,6 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.client.api.ConnectionFactory;
-import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.IoExecutor;
@@ -32,31 +31,40 @@ import static java.util.Objects.requireNonNull;
  *
  * @param <ResolvedAddress> The type of resolved address that can be used for connecting.
  */
-public interface HttpConnectionBuilder<ResolvedAddress> {
+public abstract class HttpConnectionBuilder<ResolvedAddress> {
+    /**
+     * An {@link HttpExecutionStrategy} to use when there is none specifed on the {@link HttpConnectionBuilder}.
+     */
+    public static final HttpExecutionStrategy DEFAULT_BUILDER_STRATEGY = HttpClientBuilder.DEFAULT_BUILDER_STRATEGY;
+
+    private HttpExecutionStrategy strategy = DEFAULT_BUILDER_STRATEGY;
 
     /**
-     * Sets the {@link IoExecutor} for all connections created from this {@link HttpClientBuilder}.
+     * Sets the {@link IoExecutor} for all connections created from this {@link HttpConnectionBuilder}.
      *
      * @param ioExecutor {@link IoExecutor} to use.
      * @return {@code this}.
      */
-    HttpConnectionBuilder<ResolvedAddress> ioExecutor(IoExecutor ioExecutor);
+    public abstract HttpConnectionBuilder<ResolvedAddress> ioExecutor(IoExecutor ioExecutor);
 
     /**
-     * Sets the {@link Executor} for all connections created from this {@link HttpClientBuilder}.
+     * Sets the {@link HttpExecutionStrategy} for all connections created from this {@link HttpConnectionBuilder}.
      *
-     * @param executor {@link Executor} to use.
+     * @param strategy {@link HttpExecutionStrategy} to use.
      * @return {@code this}.
      */
-    HttpConnectionBuilder<ResolvedAddress> executor(Executor executor);
+    public final HttpConnectionBuilder<ResolvedAddress> executionStrategy(HttpExecutionStrategy strategy) {
+        this.strategy = strategy;
+        return this;
+    }
 
     /**
-     * Sets the {@link BufferAllocator} for all connections created from this {@link HttpClientBuilder}.
+     * Sets the {@link BufferAllocator} for all connections created from this {@link HttpConnectionBuilder}.
      *
      * @param allocator {@link BufferAllocator} to use.
      * @return {@code this}.
      */
-    HttpConnectionBuilder<ResolvedAddress> bufferAllocator(BufferAllocator allocator);
+    public abstract HttpConnectionBuilder<ResolvedAddress> bufferAllocator(BufferAllocator allocator);
 
     /**
      * Create a new {@link StreamingHttpConnection}, using a default {@link ExecutionContext}.
@@ -64,7 +72,7 @@ public interface HttpConnectionBuilder<ResolvedAddress> {
      * @param resolvedAddress a resolved address to use when connecting
      * @return A single that will complete with the {@link StreamingHttpConnection}
      */
-    Single<StreamingHttpConnection> buildStreaming(ResolvedAddress resolvedAddress);
+    public abstract Single<StreamingHttpConnection> buildStreaming(ResolvedAddress resolvedAddress);
 
     /**
      * Create a new {@link HttpConnection}, using a default {@link ExecutionContext}.
@@ -72,7 +80,7 @@ public interface HttpConnectionBuilder<ResolvedAddress> {
      * @param resolvedAddress a resolved address to use when connecting
      * @return A single that will complete with the {@link HttpConnection}
      */
-    default Single<HttpConnection> build(ResolvedAddress resolvedAddress) {
+    public Single<HttpConnection> build(ResolvedAddress resolvedAddress) {
         return buildStreaming(resolvedAddress).map(StreamingHttpConnection::asConnection);
     }
 
@@ -84,7 +92,7 @@ public interface HttpConnectionBuilder<ResolvedAddress> {
      * @return {@link BlockingStreamingHttpConnection}
      * @throws Exception If the connection can not be created.
      */
-    default BlockingStreamingHttpConnection buildBlockingStreaming(ResolvedAddress resolvedAddress) throws Exception {
+    public BlockingStreamingHttpConnection buildBlockingStreaming(ResolvedAddress resolvedAddress) throws Exception {
         return blockingInvocation(buildStreaming(resolvedAddress)).asBlockingStreamingConnection();
     }
 
@@ -96,7 +104,7 @@ public interface HttpConnectionBuilder<ResolvedAddress> {
      * @return {@link BlockingHttpConnection}
      * @throws Exception If the connection can not be created.
      */
-    default BlockingHttpConnection buildBlocking(ResolvedAddress resolvedAddress) throws Exception {
+    public BlockingHttpConnection buildBlocking(ResolvedAddress resolvedAddress) throws Exception {
         return blockingInvocation(buildStreaming(resolvedAddress)).asBlockingConnection();
     }
 
@@ -109,7 +117,7 @@ public interface HttpConnectionBuilder<ResolvedAddress> {
      * @return A {@link ConnectionFactory} that will use the {@link #buildStreaming(Object)}
      * method to create new {@link StreamingHttpConnection} objects.
      */
-    default ConnectionFactory<ResolvedAddress, StreamingHttpConnection> asConnectionFactory() {
+    public ConnectionFactory<ResolvedAddress, StreamingHttpConnection> asConnectionFactory() {
         return new EmptyCloseConnectionFactory<>(this::buildStreaming);
     }
 
@@ -133,7 +141,7 @@ public interface HttpConnectionBuilder<ResolvedAddress> {
      * of filtering.
      * @return {@code this}
      */
-    HttpConnectionBuilder<ResolvedAddress> appendConnectionFilter(HttpConnectionFilterFactory factory);
+    public abstract HttpConnectionBuilder<ResolvedAddress> appendConnectionFilter(HttpConnectionFilterFactory factory);
 
     /**
      * Append the filter to the chain of filters used to decorate the {@link StreamingHttpConnection} created by this
@@ -155,12 +163,21 @@ public interface HttpConnectionBuilder<ResolvedAddress> {
      * of filtering.
      * @return {@code this}
      */
-    default HttpConnectionBuilder<ResolvedAddress> appendConnectionFilter(
+    public HttpConnectionBuilder<ResolvedAddress> appendConnectionFilter(
             Predicate<StreamingHttpRequest> predicate, HttpConnectionFilterFactory factory) {
         requireNonNull(predicate);
         requireNonNull(factory);
 
         return appendConnectionFilter((connection) ->
                 new ConditionalHttpConnectionFilter(predicate, factory.create(connection), connection));
+    }
+
+    /**
+     * Returns the {@link HttpExecutionStrategy} used by this {@link HttpConnectionBuilder}.
+     *
+     * @return {@link HttpExecutionStrategy} used by this {@link HttpConnectionBuilder}.
+     */
+    protected HttpExecutionStrategy executionStrategy() {
+        return strategy;
     }
 }

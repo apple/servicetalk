@@ -41,8 +41,9 @@ final class LoadBalancedStreamingHttpConnection extends StreamingHttpClient.Rese
 
     LoadBalancedStreamingHttpConnection(StreamingHttpRequestResponseFactory reqRespFactory,
                                         StreamingHttpConnection delegate,
-                                        ReservableRequestConcurrencyController limiter) {
-        super(reqRespFactory);
+                                        ReservableRequestConcurrencyController limiter,
+                                        final HttpExecutionStrategy defaultStrategy) {
+        super(reqRespFactory, defaultStrategy);
         this.delegate = delegate;
         this.limiter = requireNonNull(limiter);
     }

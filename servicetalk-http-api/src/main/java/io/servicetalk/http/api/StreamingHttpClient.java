@@ -34,9 +34,11 @@ public abstract class StreamingHttpClient extends StreamingHttpRequester {
      *
      * @param reqRespFactory The {@link StreamingHttpRequestResponseFactory} used to
      * {@link #newRequest(HttpRequestMethod, String) create new requests} and {@link #httpResponseFactory()}.
+     * @param strategy Default {@link HttpExecutionStrategy} to use.
      */
-    protected StreamingHttpClient(final StreamingHttpRequestResponseFactory reqRespFactory) {
-        super(reqRespFactory);
+    protected StreamingHttpClient(final StreamingHttpRequestResponseFactory reqRespFactory,
+                                  final HttpExecutionStrategy strategy) {
+        super(reqRespFactory, strategy);
     }
 
     /**
@@ -97,15 +99,15 @@ public abstract class StreamingHttpClient extends StreamingHttpRequester {
     }
 
     HttpClient asClientInternal() {
-        return new StreamingHttpClientToHttpClient(this);
+        return StreamingHttpClientToHttpClient.transform(this);
     }
 
     BlockingStreamingHttpClient asBlockingStreamingClientInternal() {
-        return new StreamingHttpClientToBlockingStreamingHttpClient(this);
+        return StreamingHttpClientToBlockingStreamingHttpClient.transform(this);
     }
 
     BlockingHttpClient asBlockingClientInternal() {
-        return new StreamingHttpClientToBlockingHttpClient(this);
+        return StreamingHttpClientToBlockingHttpClient.transform(this);
     }
 
     /**
@@ -119,9 +121,11 @@ public abstract class StreamingHttpClient extends StreamingHttpRequester {
          *
          * @param reqRespFactory The {@link StreamingHttpRequestResponseFactory} used to
          * {@link #newRequest(HttpRequestMethod, String) create new requests} and {@link #httpResponseFactory()}.
+         * @param strategy Default {@link HttpExecutionStrategy} to use.
          */
-        protected ReservedStreamingHttpConnection(final StreamingHttpRequestResponseFactory reqRespFactory) {
-            super(reqRespFactory);
+        protected ReservedStreamingHttpConnection(final StreamingHttpRequestResponseFactory reqRespFactory,
+                                                  final HttpExecutionStrategy strategy) {
+            super(reqRespFactory, strategy);
         }
 
         /**
@@ -172,17 +176,17 @@ public abstract class StreamingHttpClient extends StreamingHttpRequester {
 
         @Override
         ReservedHttpConnection asConnectionInternal() {
-            return new ReservedStreamingHttpConnectionToReservedHttpConnection(this);
+            return ReservedStreamingHttpConnectionToReservedHttpConnection.transform(this);
         }
 
         @Override
         ReservedBlockingStreamingHttpConnection asBlockingStreamingConnectionInternal() {
-            return new ReservedStreamingHttpConnectionToBlockingStreaming(this);
+            return ReservedStreamingHttpConnectionToBlockingStreaming.transform(this);
         }
 
         @Override
         ReservedBlockingHttpConnection asBlockingConnectionInternal() {
-            return new ReservedStreamingHttpConnectionToBlocking(this);
+            return ReservedStreamingHttpConnectionToBlocking.transform(this);
         }
     }
 }

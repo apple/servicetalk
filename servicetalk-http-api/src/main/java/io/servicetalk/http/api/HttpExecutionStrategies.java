@@ -29,6 +29,15 @@ import static io.servicetalk.http.api.NoOffloadsHttpExecutionStrategy.NO_OFFLOAD
  */
 public final class HttpExecutionStrategies {
 
+    // Package private constants to be used across programming model adapters, should not be made public.
+    static final HttpExecutionStrategy OFFLOAD_NONE_STRATEGY = customStrategyBuilder().build();
+    static final HttpExecutionStrategy OFFLOAD_RECEIVE_META_STRATEGY =
+            customStrategyBuilder().offloadReceiveMetadata().build();
+    static final HttpExecutionStrategy OFFLOAD_ALL_STRATEGY = customStrategyBuilder().offloadAll().build();
+    static final HttpExecutionStrategy OFFLOAD_RECEIVE_META_AND_SEND_STRATEGY =
+            customStrategyBuilder().offloadReceiveMetadata().offloadSend().build();
+    static final HttpExecutionStrategy OFFLOAD_SEND_STRATEGY = customStrategyBuilder().offloadSend().build();
+
     private HttpExecutionStrategies() {
         // No instances.
     }

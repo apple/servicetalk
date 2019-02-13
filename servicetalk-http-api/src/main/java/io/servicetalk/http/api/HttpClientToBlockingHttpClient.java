@@ -22,13 +22,14 @@ import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ExecutionContext;
 
 import static io.servicetalk.http.api.BlockingUtils.blockingInvocation;
+import static io.servicetalk.http.api.HttpExecutionStrategies.OFFLOAD_NONE_STRATEGY;
 import static java.util.Objects.requireNonNull;
 
 final class HttpClientToBlockingHttpClient extends BlockingHttpClient {
     private final HttpClient client;
 
-    HttpClientToBlockingHttpClient(HttpClient client) {
-        super(client.reqRespFactory);
+    private HttpClientToBlockingHttpClient(HttpClient client, HttpExecutionStrategy strategy) {
+        super(client.reqRespFactory, strategy);
         this.client = requireNonNull(client);
     }
 
@@ -36,7 +37,7 @@ final class HttpClientToBlockingHttpClient extends BlockingHttpClient {
     public ReservedBlockingHttpConnection reserveConnection(final HttpExecutionStrategy strategy,
                                                             final HttpRequestMetaData metaData) throws Exception {
         return new ReservedHttpConnectionToReservedBlockingHttpConnection(
-                blockingInvocation(client.reserveConnection(strategy, metaData)));
+                blockingInvocation(client.reserveConnection(strategy, metaData)), executionStrategy());
     }
 
     @Override
@@ -63,11 +64,20 @@ final class HttpClientToBlockingHttpClient extends BlockingHttpClient {
         return client.onClose();
     }
 
+    static BlockingHttpClient transform(HttpClient client) {
+        // Any client created for alternate programming models always originates from the async streaming model
+        // which contains the filters and hence the effective strategy while converting them to the different
+        // programming models. So, in this case we simply take the executionStrategy() from the passed client instead
+        // of re-calculating the effective strategy.
+        return new HttpClientToBlockingHttpClient(client, client.executionStrategy().merge(OFFLOAD_NONE_STRATEGY));
+    }
+
     static final class ReservedHttpConnectionToReservedBlockingHttpConnection extends ReservedBlockingHttpConnection {
         private final ReservedHttpConnection connection;
 
-        ReservedHttpConnectionToReservedBlockingHttpConnection(ReservedHttpConnection connection) {
-            super(connection.reqRespFactory);
+        private ReservedHttpConnectionToReservedBlockingHttpConnection(final ReservedHttpConnection connection,
+                                                                       final HttpExecutionStrategy strategy) {
+            super(connection.reqRespFactory, strategy);
             this.connection = requireNonNull(connection);
         }
 
@@ -108,6 +118,15 @@ final class HttpClientToBlockingHttpClient extends BlockingHttpClient {
         @Override
         ReservedHttpConnection asConnectionInternal() {
             return connection;
+        }
+
+        static ReservedBlockingHttpConnection transform(ReservedHttpConnection connection) {
+            // Any connection created for alternate programming models always originates from the async streaming model
+            // which contains the filters and hence the effective strategy while converting them to the different
+            // programming models. So, in this case we simply take the executionStrategy() from the passed connection
+            // instead of re-calculating the effective strategy.
+            return new ReservedHttpConnectionToReservedBlockingHttpConnection(connection,
+                    connection.executionStrategy().merge(OFFLOAD_NONE_STRATEGY));
         }
     }
 }

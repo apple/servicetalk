@@ -23,6 +23,7 @@ import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.PublisherRule;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StreamingHttpClient;
@@ -41,6 +42,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.Timeout;
 
 import java.net.InetSocketAddress;
 import java.util.Collection;
@@ -66,6 +68,8 @@ public class FlushStrategyOverrideTest {
     public final ExecutionContextRule ctx = immediate();
     @Rule
     public final PublisherRule<Object> payload = new PublisherRule<>();
+    @Rule
+    public final Timeout timeout = new ServiceTalkTestTimeout();
 
     private StreamingHttpClient client;
     private ServerContext serverCtx;

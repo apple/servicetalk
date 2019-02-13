@@ -20,13 +20,14 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.transport.api.ExecutionContext;
 
 import static io.servicetalk.concurrent.api.Single.error;
+import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 
 public class TestStreamingHttpClient extends StreamingHttpClient {
     private final ExecutionContext executionContext;
 
     public TestStreamingHttpClient(StreamingHttpRequestResponseFactory reqRespFactory,
                                    ExecutionContext executionContext) {
-        super(reqRespFactory);
+        super(reqRespFactory, defaultStrategy());
         this.executionContext = executionContext;
     }
 

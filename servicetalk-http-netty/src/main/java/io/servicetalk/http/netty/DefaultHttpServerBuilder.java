@@ -20,10 +20,8 @@ import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.api.HttpServerBuilder;
-import io.servicetalk.http.api.HttpServiceFilterFactory;
-import io.servicetalk.http.api.StreamingHttpRequestHandler;
 import io.servicetalk.http.api.StreamingHttpService;
-import io.servicetalk.transport.api.ConnectionAcceptorFilterFactory;
+import io.servicetalk.transport.api.ConnectionAcceptorFilter;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.api.SslConfig;
@@ -34,19 +32,13 @@ import java.net.SocketOption;
 import java.util.Map;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.http.api.HttpServiceFilterFactory.identity;
-import static io.servicetalk.http.netty.NettyHttpServer.bind;
-import static io.servicetalk.transport.api.ConnectionAcceptor.ACCEPT_ALL;
 import static java.util.Objects.requireNonNull;
 
-final class DefaultHttpServerBuilder implements HttpServerBuilder {
+final class DefaultHttpServerBuilder extends HttpServerBuilder {
 
     private final HttpServerConfig config = new HttpServerConfig();
     private final ExecutionContextBuilder executionContextBuilder = new ExecutionContextBuilder();
-    private ConnectionAcceptorFilterFactory connectionAcceptorFilterFactory =
-            ConnectionAcceptorFilterFactory.identity();
     private SocketAddress address;
-    private HttpServiceFilterFactory serviceFilter = identity();
 
     DefaultHttpServerBuilder(SocketAddress address) {
         this.address = address;
@@ -125,18 +117,6 @@ final class DefaultHttpServerBuilder implements HttpServerBuilder {
     }
 
     @Override
-    public HttpServerBuilder appendConnectionAcceptorFilter(final ConnectionAcceptorFilterFactory factory) {
-        this.connectionAcceptorFilterFactory = connectionAcceptorFilterFactory.append(factory);
-        return this;
-    }
-
-    @Override
-    public HttpServerBuilder appendServiceFilter(final HttpServiceFilterFactory factory) {
-        serviceFilter = serviceFilter.append(factory);
-        return this;
-    }
-
-    @Override
     public HttpServerBuilder address(final SocketAddress address) {
         this.address = requireNonNull(address);
         return this;
@@ -155,14 +135,14 @@ final class DefaultHttpServerBuilder implements HttpServerBuilder {
     }
 
     @Override
-    public Single<ServerContext> listenStreaming(final StreamingHttpRequestHandler handler) {
+    public Single<ServerContext> doListen(final ConnectionAcceptorFilter connectionAcceptorFilter,
+                                          final StreamingHttpService service) {
         ReadOnlyHttpServerConfig roConfig = this.config.asReadOnly();
-        StreamingHttpService service = handler.asStreamingService();
         Executor executor = service.executionStrategy().executor();
         if (executor != null) {
             executionContextBuilder.executor(executor);
         }
-        return bind(executionContextBuilder.build(), roConfig, address,
-                connectionAcceptorFilterFactory.create(ACCEPT_ALL), serviceFilter.create(service).asStreamingService());
+        return NettyHttpServer.bind(executionContextBuilder.build(), roConfig, address, connectionAcceptorFilter,
+                service);
     }
 }

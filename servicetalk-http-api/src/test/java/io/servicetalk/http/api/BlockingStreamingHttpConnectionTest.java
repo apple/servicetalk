@@ -26,6 +26,7 @@ import io.servicetalk.transport.api.ExecutionContext;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiFunction;
 
+import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -61,6 +62,16 @@ public class BlockingStreamingHttpConnectionTest extends AbstractBlockingStreami
         };
     }
 
+    @Override
+    protected BlockingStreamingHttpRequester toBlockingStreamingRequester(final StreamingHttpRequester requester) {
+        return ((StreamingHttpConnection) requester).asBlockingStreamingConnection();
+    }
+
+    @Override
+    protected StreamingHttpRequester toStreamingRequester(final BlockingStreamingHttpRequester requester) {
+        return ((BlockingStreamingHttpConnection) requester).asStreamingConnection();
+    }
+
     private abstract static class TestStreamingHttpConnection extends StreamingHttpConnection implements TestHttpRequester {
         private final AtomicBoolean closed = new AtomicBoolean();
         private final CompletableProcessor onClose = new CompletableProcessor();
@@ -69,7 +80,7 @@ public class BlockingStreamingHttpConnectionTest extends AbstractBlockingStreami
 
         TestStreamingHttpConnection(StreamingHttpRequestResponseFactory factory,
                                     ExecutionContext executionContext) {
-            super(factory);
+            super(factory, defaultStrategy());
             this.executionContext = executionContext;
             this.connectionContext = mock(ConnectionContext.class);
             when(connectionContext.executionContext()).thenReturn(executionContext);
@@ -122,7 +133,7 @@ public class BlockingStreamingHttpConnectionTest extends AbstractBlockingStreami
 
         TestBlockingStreamingHttpConnection(BlockingStreamingHttpRequestResponseFactory factory,
                                             ExecutionContext executionContext) {
-            super(factory);
+            super(factory, defaultStrategy());
             this.executionContext = executionContext;
             this.connectionContext = mock(ConnectionContext.class);
             when(connectionContext.executionContext()).thenReturn(executionContext);

@@ -29,6 +29,7 @@ import java.net.SocketOption;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
+import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -39,6 +40,10 @@ import static java.util.Objects.requireNonNull;
  * @param <SDE> the type of {@link ServiceDiscovererEvent}
  */
 interface HttpClientBuilder<U, R, SDE extends ServiceDiscovererEvent<R>> {
+    /**
+     * An {@link HttpExecutionStrategy} to use when there is none specifed on the {@link HttpClientBuilder}.
+     */
+    HttpExecutionStrategy DEFAULT_BUILDER_STRATEGY = defaultStrategy();
 
     /**
      * Sets the {@link IoExecutor} for all clients created from this {@link HttpClientBuilder}.

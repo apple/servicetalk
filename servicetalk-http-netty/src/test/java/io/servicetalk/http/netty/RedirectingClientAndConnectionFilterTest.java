@@ -103,7 +103,7 @@ public final class RedirectingClientAndConnectionFilterTest {
                                 public Completable closeAsyncGracefully() {
                                     return closeables.closeAsyncGracefully();
                                 }
-                            }.asBlockingRequester()
+                            }.asBlockingConnection()
                     ).toFuture().get();
                 } catch (Throwable t) {
                     closeables.close();

@@ -31,8 +31,8 @@ public abstract class BlockingHttpClient extends BlockingHttpRequester {
      * @param reqRespFactory The {@link HttpRequestResponseFactory} used to
      * {@link #newRequest(HttpRequestMethod, String) create new requests} and {@link #httpResponseFactory()}.
      */
-    protected BlockingHttpClient(final HttpRequestResponseFactory reqRespFactory) {
-        super(reqRespFactory);
+    BlockingHttpClient(final HttpRequestResponseFactory reqRespFactory, final HttpExecutionStrategy strategy) {
+        super(reqRespFactory, strategy);
     }
 
     /**
@@ -89,11 +89,11 @@ public abstract class BlockingHttpClient extends BlockingHttpRequester {
     }
 
     StreamingHttpClient asStreamingClientInternal() {
-        return new BlockingHttpClientToStreamingHttpClient(this);
+        return BlockingHttpClientToStreamingHttpClient.transform(this);
     }
 
     HttpClient asClientInternal() {
-        return new BlockingHttpClientToHttpClient(this);
+        return BlockingHttpClientToHttpClient.transform(this);
     }
 
     /**
@@ -102,14 +102,17 @@ public abstract class BlockingHttpClient extends BlockingHttpRequester {
      * {@link #reserveConnection(HttpExecutionStrategy, HttpRequestMetaData)}.
      */
     public abstract static class ReservedBlockingHttpConnection extends BlockingHttpConnection {
+
         /**
          * Create a new instance.
          *
          * @param reqRespFactory The {@link HttpRequestResponseFactory} used to
          * {@link #newRequest(HttpRequestMethod, String) create new requests} and {@link #httpResponseFactory()}.
+         * @param strategy Default {@link HttpExecutionStrategy} to use.
          */
-        protected ReservedBlockingHttpConnection(final HttpRequestResponseFactory reqRespFactory) {
-            super(reqRespFactory);
+        ReservedBlockingHttpConnection(final HttpRequestResponseFactory reqRespFactory,
+                                       final HttpExecutionStrategy strategy) {
+            super(reqRespFactory, strategy);
         }
 
         /**
@@ -163,12 +166,12 @@ public abstract class BlockingHttpClient extends BlockingHttpRequester {
 
         @Override
         ReservedStreamingHttpConnection asStreamingConnectionInternal() {
-            return new BlockingReservedStreamingHttpConnectionToReserved(this);
+            return BlockingReservedStreamingHttpConnectionToReserved.transform(this);
         }
 
         @Override
         ReservedHttpConnection asConnectionInternal() {
-            return new ReservedBlockingHttpConnectionToReservedHttpConnection(this);
+            return ReservedBlockingHttpConnectionToReservedHttpConnection.transform(this);
         }
     }
 }

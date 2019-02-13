@@ -17,7 +17,6 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.transport.api.ExecutionContext;
 
-import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -25,14 +24,17 @@ import static java.util.Objects.requireNonNull;
  */
 public abstract class BlockingHttpRequester implements HttpRequestFactory, AutoCloseable {
     final HttpRequestResponseFactory reqRespFactory;
+    final HttpExecutionStrategy strategy;
 
     /**
      * Create a new instance.
      * @param reqRespFactory The {@link HttpRequestResponseFactory} used to
      * {@link #newRequest(HttpRequestMethod, String) create new requests} and {@link #httpResponseFactory()}.
+     * @param strategy Default {@link HttpExecutionStrategy} to use.
      */
-    protected BlockingHttpRequester(final HttpRequestResponseFactory reqRespFactory) {
+    BlockingHttpRequester(final HttpRequestResponseFactory reqRespFactory, HttpExecutionStrategy strategy) {
         this.reqRespFactory = requireNonNull(reqRespFactory);
+        this.strategy = requireNonNull(strategy);
     }
 
     /**
@@ -80,55 +82,11 @@ public abstract class BlockingHttpRequester implements HttpRequestFactory, AutoC
     }
 
     /**
-     * Convert this {@link BlockingHttpRequester} to the {@link StreamingHttpRequester} API.
-     * <p>
-     * Note that the resulting {@link StreamingHttpRequester} may still be subject to any blocking, in memory
-     * aggregation, and other behavior as this {@link BlockingStreamingHttpRequester}.
-     *
-     * @return a {@link StreamingHttpRequester} representation of this {@link BlockingStreamingHttpRequester}.
-     */
-    public final StreamingHttpRequester asStreamingRequester() {
-        return asStreamingRequesterInternal();
-    }
-
-    /**
-     * Convert this {@link BlockingHttpRequester} to the {@link HttpRequester} API.
-     * <p>
-     * Note that the resulting {@link HttpRequester} may still be subject to any blocking, in memory
-     * aggregation, and other behavior as this {@link BlockingStreamingHttpRequester}.
-     *
-     * @return a {@link HttpRequester} representation of this {@link BlockingStreamingHttpRequester}.
-     */
-    public final HttpRequester asRequester() {
-        return asRequesterInternal();
-    }
-
-    /**
-     * Convert this {@link BlockingHttpRequester} to the {@link BlockingStreamingHttpRequester} API.
-     * <p>
-     * Note that the resulting {@link BlockingStreamingHttpRequester} may still be subject to in memory
-     * aggregation and other behavior as this {@link BlockingStreamingHttpRequester}.
-     *
-     * @return a {@link BlockingStreamingHttpRequester} representation of this {@link BlockingStreamingHttpRequester}.
-     */
-    public final BlockingStreamingHttpRequester asBlockingStreamingRequester() {
-        return asStreamingRequester().asBlockingStreamingRequester();
-    }
-
-    /**
      * Returns the default {@link HttpExecutionStrategy} for this {@link BlockingHttpRequester}.
      *
      * @return Default {@link HttpExecutionStrategy} for this {@link BlockingHttpRequester}.
      */
     final HttpExecutionStrategy executionStrategy() {
-        return defaultStrategy();
-    }
-
-    StreamingHttpRequester asStreamingRequesterInternal() {
-        return new BlockingHttpRequesterToStreamingHttpRequester(this);
-    }
-
-    HttpRequester asRequesterInternal() {
-        return new BlockingHttpRequesterToHttpRequester(this);
+        return strategy;
     }
 }

@@ -76,8 +76,7 @@ import static java.util.Objects.requireNonNull;
  *
  * @see <a href="https://tools.ietf.org/html/rfc7230#section-5.3.2">absolute-form rfc7230#section-5.3.2</a>
  */
-final class DefaultMultiAddressUrlHttpClientBuilder
-        implements MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> {
+final class DefaultMultiAddressUrlHttpClientBuilder extends MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DefaultMultiAddressUrlHttpClientBuilder.class);
 
@@ -100,6 +99,7 @@ final class DefaultMultiAddressUrlHttpClientBuilder
 
     @Override
     public StreamingHttpClient buildStreaming() {
+        builderTemplate.executionStrategy(executionStrategy());
         final ExecutionContext executionContext = builderTemplate.buildExecutionContext();
         final CompositeCloseable closeables = newCompositeCloseable();
         CachingKeyFactory keyFactory = null;
@@ -115,13 +115,13 @@ final class DefaultMultiAddressUrlHttpClientBuilder
             keyFactory = closeables.prepend(new CachingKeyFactory(sslConfigProvider));
 
             StreamingHttpClient client = closeables.prepend(new StreamingUrlHttpClient(reqRespFactory, clientFactory,
-                    keyFactory, executionContext));
+                    keyFactory, executionContext, clientFactory.builderTemplate.executionStrategy()));
 
             // Need to wrap the top level client (group) in order for non-relative redirects to work
             client = maxRedirects <= 0 ? client : new RedirectingHttpRequesterFilter(false, maxRedirects).create(client);
 
             return new StreamingHttpClientWithDependencies(client, toListenableAsyncCloseable(closeables),
-                    reqRespFactory);
+                    reqRespFactory, clientFactory.builderTemplate.executionStrategy());
         } catch (final Throwable t) {
             if (keyFactory != null) {
                 keyFactory.closeAsync().subscribe();
@@ -289,8 +289,8 @@ final class DefaultMultiAddressUrlHttpClientBuilder
         StreamingUrlHttpClient(final StreamingHttpRequestResponseFactory reqRespFactory,
                                final Function<UrlKey, StreamingHttpClient> clientFactory,
                                final CachingKeyFactory keyFactory,
-                               final ExecutionContext executionContext) {
-            super(reqRespFactory);
+                               final ExecutionContext executionContext, final HttpExecutionStrategy strategy) {
+            super(reqRespFactory, strategy);
             this.group = ClientGroup.from(clientFactory);
             this.keyFactory = keyFactory;
             this.executionContext = executionContext;
@@ -335,8 +335,9 @@ final class DefaultMultiAddressUrlHttpClientBuilder
 
         StreamingHttpClientWithDependencies(final StreamingHttpClient httpClient,
                                             final ListenableAsyncCloseable closeable,
-                                            final StreamingHttpRequestResponseFactory factory) {
-            super(factory);
+                                            final StreamingHttpRequestResponseFactory factory,
+                                            final HttpExecutionStrategy strategy) {
+            super(factory, strategy);
             this.httpClient = requireNonNull(httpClient);
             this.closeable = requireNonNull(closeable);
         }
@@ -377,13 +378,6 @@ final class DefaultMultiAddressUrlHttpClientBuilder
     @Override
     public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> ioExecutor(final IoExecutor ioExecutor) {
         builderTemplate.ioExecutor(ioExecutor);
-        return this;
-    }
-
-    @Override
-    public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> executionStrategy(
-            final HttpExecutionStrategy strategy) {
-        builderTemplate.executionStrategy(strategy);
         return this;
     }
 

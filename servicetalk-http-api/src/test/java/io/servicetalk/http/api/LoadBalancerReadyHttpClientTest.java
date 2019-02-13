@@ -45,6 +45,7 @@ import static io.servicetalk.concurrent.api.Single.error;
 import static io.servicetalk.concurrent.api.Single.success;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.http.api.DefaultHttpHeadersFactory.INSTANCE;
+import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpProtocolVersions.HTTP_1_1;
 import static io.servicetalk.http.api.HttpResponseStatuses.OK;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -84,7 +85,7 @@ public class LoadBalancerReadyHttpClientTest {
     @Before
     public void setup() {
         mockReservedConnection = mock(ReservedStreamingHttpConnection.class,
-                withSettings().useConstructor(reqRespFactory));
+                withSettings().useConstructor(reqRespFactory, defaultStrategy()));
         initMocks(this);
     }
 
