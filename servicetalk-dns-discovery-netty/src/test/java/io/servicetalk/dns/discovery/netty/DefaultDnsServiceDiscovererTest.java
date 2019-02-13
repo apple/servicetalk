@@ -462,7 +462,7 @@ public class DefaultDnsServiceDiscovererTest {
 
         latch.await();
         assertNull(throwableRef.get());
-        assertThat(subscriber.activeEventAddresses.size(), equalTo(expectedActiveCount));
+        assertThat(subscriber.activeEventAddresses.size(), greaterThanOrEqualTo(expectedActiveCount));
         assertThat(subscriber.activeEventAddresses.get(0), equalTo(ipv4));
         assertThat(subscriber.inactiveEventAddresses.size(), equalTo(expectedInactiveCount));
     }
