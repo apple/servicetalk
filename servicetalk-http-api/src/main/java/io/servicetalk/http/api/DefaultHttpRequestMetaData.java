@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -339,9 +339,14 @@ class DefaultHttpRequestMetaData extends AbstractHttpMetaData implements HttpReq
     }
 
     @Override
+    public final String toString() {
+        return method().toString() + " " + requestTarget() + " " + version();
+    }
+
+    @Override
     public final String toString(
             final BiFunction<? super CharSequence, ? super CharSequence, CharSequence> headerFilter) {
-        return method().toString() + " " + requestTarget() + " " + version() + lineSeparator()
+        return toString() + lineSeparator()
                 + headers().toString(headerFilter);
     }
 
