@@ -54,7 +54,7 @@ final class DefaultStreamingHttpClient extends StreamingHttpClient {
     public Single<ReservedStreamingHttpConnection> reserveConnection(final HttpExecutionStrategy strategy,
                                                                      final HttpRequestMetaData metaData) {
         return strategy.offloadReceive(executionContext.executor(),
-                loadBalancer.selectConnection(SELECTOR_FOR_RESERVE).map(c -> (ReservedStreamingHttpConnection) c));
+                loadBalancer.selectConnection(SELECTOR_FOR_RESERVE).map(c -> c));
     }
 
     @Override
