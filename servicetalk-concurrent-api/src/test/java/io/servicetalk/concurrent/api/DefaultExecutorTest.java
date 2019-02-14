@@ -47,6 +47,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.api.BlockingTestUtils.awaitIndefinitelyNonNull;
 import static io.servicetalk.concurrent.api.Executors.from;
 import static io.servicetalk.concurrent.api.Executors.newFixedSizeExecutor;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
@@ -300,8 +301,7 @@ public final class DefaultExecutorTest {
     @Test
     public void submitCallable() throws Throwable {
         CallableTask<Integer> submitted = new CallableTask<>(() -> 1);
-        Integer result = executor.submit(submitted).toFuture().get();
-        assert result != null;
+        Integer result = awaitIndefinitelyNonNull(executor.submit(submitted));
         submitted.awaitDone();
         assertThat(result, is(1));
     }
@@ -313,12 +313,10 @@ public final class DefaultExecutorTest {
         AtomicBoolean returnedSubmitted1 = new AtomicBoolean();
         Supplier<Callable<Integer>> callableSupplier =
                 () -> returnedSubmitted1.getAndSet(true) ? submitted2 : submitted1;
-        Integer result = executor.submitCallable(callableSupplier).toFuture().get();
-        assert result != null;
+        Integer result = awaitIndefinitelyNonNull(executor.submitCallable(callableSupplier));
         submitted1.awaitDone();
         assertThat(result, is(1));
-        result = executor.submitCallable(callableSupplier).toFuture().get();
-        assert result != null;
+        result = awaitIndefinitelyNonNull(executor.submitCallable(callableSupplier));
         submitted2.awaitDone();
         assertThat(result, is(2));
     }

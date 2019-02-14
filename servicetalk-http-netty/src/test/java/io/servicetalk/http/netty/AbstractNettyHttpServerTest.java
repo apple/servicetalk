@@ -170,7 +170,7 @@ public abstract class AbstractNettyHttpServerTest {
 
     @After
     public void stopServer() throws Exception {
-        newCompositeCloseable().appendAll(httpConnection, clientExecutor, serverContext).closeAsync().toFuture().get();
+        newCompositeCloseable().appendAll(httpConnection, clientExecutor, serverContext).close();
     }
 
     @AfterClass
