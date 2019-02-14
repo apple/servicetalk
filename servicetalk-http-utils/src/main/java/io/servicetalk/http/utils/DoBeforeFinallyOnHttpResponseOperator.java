@@ -17,6 +17,7 @@ package io.servicetalk.http.utils;
 
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.Single;
+import io.servicetalk.concurrent.Single.Subscriber;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.SingleOperator;
 import io.servicetalk.http.api.StreamingHttpRequest;
@@ -30,6 +31,7 @@ import java.util.concurrent.CancellationException;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import javax.annotation.Nullable;
 
+import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 
 /**
@@ -74,12 +76,12 @@ public final class DoBeforeFinallyOnHttpResponseOperator
      * both sources
      */
     public DoBeforeFinallyOnHttpResponseOperator(final Runnable doBeforeFinally) {
-        this.doBeforeFinally = doBeforeFinally;
+        this.doBeforeFinally = requireNonNull(doBeforeFinally);
     }
 
     @Override
-    public Single.Subscriber<? super StreamingHttpResponse> apply(
-            final Single.Subscriber<? super StreamingHttpResponse> subscriber) {
+    public Subscriber<? super StreamingHttpResponse> apply(
+            final Subscriber<? super StreamingHttpResponse> subscriber) {
         // Here we avoid calling doBeforeFinally.run() when we get a cancel() on the Single after we have handed out
         // the StreamingHttpResponse to the subscriber. In case, we do get an StreamingHttpResponse after we got
         // cancel(), we subscribe to the payload Publisher and cancel to indicate to the Connection that there is no
@@ -87,11 +89,11 @@ public final class DoBeforeFinallyOnHttpResponseOperator
         return new ResponseCompletionSubscriber(subscriber);
     }
 
-    private final class ResponseCompletionSubscriber implements Single.Subscriber<StreamingHttpResponse> {
+    private final class ResponseCompletionSubscriber implements Subscriber<StreamingHttpResponse> {
 
-        private final Single.Subscriber<? super StreamingHttpResponse> subscriber;
+        private final Subscriber<? super StreamingHttpResponse> subscriber;
 
-        ResponseCompletionSubscriber(final Single.Subscriber<? super StreamingHttpResponse> sub) {
+        ResponseCompletionSubscriber(final Subscriber<? super StreamingHttpResponse> sub) {
             this.subscriber = sub;
         }
 
