@@ -47,7 +47,7 @@ public abstract class HttpRequester implements HttpRequestFactory, ListenableAsy
      * @param request the request to send.
      * @return The response.
      */
-    public Single<? extends HttpResponse> request(HttpRequest request) {
+    public Single<HttpResponse> request(HttpRequest request) {
         return request(executionStrategy(), request);
     }
 
@@ -58,7 +58,7 @@ public abstract class HttpRequester implements HttpRequestFactory, ListenableAsy
      * @param request the request to send.
      * @return The response.
      */
-    public abstract Single<? extends HttpResponse> request(HttpExecutionStrategy strategy, HttpRequest request);
+    public abstract Single<HttpResponse> request(HttpExecutionStrategy strategy, HttpRequest request);
 
     /**
      * Get the {@link ExecutionContext} used during construction of this object.
