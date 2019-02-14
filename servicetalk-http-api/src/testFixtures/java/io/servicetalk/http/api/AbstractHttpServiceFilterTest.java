@@ -37,6 +37,7 @@ import javax.net.ssl.SSLSession;
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.http.api.AbstractHttpServiceFilterTest.SecurityType.Insecure;
 import static io.servicetalk.http.api.AbstractHttpServiceFilterTest.SecurityType.Secure;
+import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static java.util.Arrays.asList;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -122,7 +123,7 @@ public abstract class AbstractHttpServiceFilterTest {
             }
         });
 
-        return new StreamingHttpRequester(REQ_RES_FACTORY) {
+        return new StreamingHttpRequester(REQ_RES_FACTORY, defaultStrategy()) {
             @Override
             public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
                                                          final StreamingHttpRequest request) {
