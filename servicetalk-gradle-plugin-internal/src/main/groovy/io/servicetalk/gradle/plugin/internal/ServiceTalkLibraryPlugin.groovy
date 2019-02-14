@@ -237,7 +237,7 @@ class ServiceTalkLibraryPlugin extends ServiceTalkCorePlugin {
         // The classpath field must be non-null, but could be empty because it's not required for this task:
         classpath = project.files([])
         source = fileTree(".") {
-          includes = ["*.gradle", "*.properties", "gradle/**", "docker/**"]
+          includes = ["docker/**", "gradle/**", "*.gradle", "*.properties"]
           excludes = ["gradle/wrapper/**"]
         }
       }
