@@ -324,7 +324,7 @@ public abstract class AbstractHttpRequesterFilterTest {
             }
 
             @Override
-            protected Single<? extends ReservedStreamingHttpConnection> reserveConnection(
+            protected Single<ReservedStreamingHttpConnection> reserveConnection(
                     final StreamingHttpClient delegate,
                     final HttpExecutionStrategy strategy,
                     final HttpRequestMetaData metaData) {

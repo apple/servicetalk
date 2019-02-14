@@ -48,7 +48,7 @@ public abstract class HttpClient extends HttpRequester {
      * For example this may provide some insight into shard or other info.
      * @return a {@link Single} that provides the {@link ReservedHttpConnection} upon completion.
      */
-    public Single<? extends ReservedHttpConnection> reserveConnection(HttpRequestMetaData metaData) {
+    public Single<ReservedHttpConnection> reserveConnection(HttpRequestMetaData metaData) {
         return reserveConnection(executionStrategy(), metaData);
     }
 
@@ -61,8 +61,8 @@ public abstract class HttpClient extends HttpRequester {
      * For example this may provide some insight into shard or other info.
      * @return a {@link Single} that provides the {@link ReservedHttpConnection} upon completion.
      */
-    public abstract Single<? extends ReservedHttpConnection> reserveConnection(HttpExecutionStrategy strategy,
-                                                                               HttpRequestMetaData metaData);
+    public abstract Single<ReservedHttpConnection> reserveConnection(HttpExecutionStrategy strategy,
+                                                                     HttpRequestMetaData metaData);
 
     /**
      * Convert this {@link HttpClient} to the {@link StreamingHttpClient} API.
