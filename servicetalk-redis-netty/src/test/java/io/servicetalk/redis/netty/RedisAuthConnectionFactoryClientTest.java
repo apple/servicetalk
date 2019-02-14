@@ -33,6 +33,7 @@ import org.junit.rules.Timeout;
 import java.util.function.Consumer;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.redis.api.RedisExecutionStrategies.noOffloadsStrategy;
 import static io.servicetalk.transport.netty.NettyIoExecutors.createIoExecutor;
 import static io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutors.toEventLoopAwareNettyIoExecutor;
@@ -61,7 +62,7 @@ public class RedisAuthConnectionFactoryClientTest {
     public void cleanup() throws Exception {
         if (client != null) {
             assert ioExecutor != null;
-            client.closeAsync().concatWith(ioExecutor.closeAsync()).toFuture().get();
+            newCompositeCloseable().appendAll(client, ioExecutor).close();
         }
     }
 

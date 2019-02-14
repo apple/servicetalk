@@ -31,6 +31,7 @@ import java.util.concurrent.ThreadFactory;
 import java.util.function.Supplier;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
+import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.transport.netty.internal.NettyIoExecutors.createIoExecutor;
 
 /**
@@ -99,7 +100,7 @@ public final class ExecutionContextRule extends ExternalResource implements Exec
     @Override
     protected void after() {
         try {
-            ctx.ioExecutor().closeAsync().mergeDelayError(ctx.executor().closeAsync()).toFuture().get();
+            newCompositeCloseable().appendAll(ctx.ioExecutor(), ctx.executor()).close();
         } catch (Throwable t) {
             throw new RuntimeException(t);
         }

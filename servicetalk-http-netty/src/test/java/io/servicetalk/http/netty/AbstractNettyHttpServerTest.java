@@ -67,7 +67,6 @@ import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.parseBoolean;
 import static java.lang.Thread.NORM_PRIORITY;
 import static java.nio.charset.StandardCharsets.US_ASCII;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
@@ -176,7 +175,7 @@ public abstract class AbstractNettyHttpServerTest {
 
     @AfterClass
     public static void shutdownClientIoExecutor() throws Exception {
-        newCompositeCloseable().appendAll(clientIoExecutor, serverIoExecutor).closeAsync().toFuture().get();
+        newCompositeCloseable().appendAll(clientIoExecutor, serverIoExecutor).close();
     }
 
     void setConnectionAcceptor(final ConnectionAcceptor connectionAcceptor) {
@@ -242,6 +241,6 @@ public abstract class AbstractNettyHttpServerTest {
     }
 
     void assertConnectionClosed() throws Exception {
-        httpConnection.onClose().toFuture().get(1000, MILLISECONDS);
+        httpConnection.onClose().toFuture().get();
     }
 }

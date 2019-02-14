@@ -29,14 +29,12 @@ import java.util.concurrent.ExecutionException;
 import java.util.regex.Pattern;
 import javax.net.ssl.SSLSession;
 
-import static io.servicetalk.concurrent.api.BlockingTestUtils.await;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.http.api.HttpProtocolVersions.HTTP_1_0;
 import static io.servicetalk.http.api.HttpProtocolVersions.HTTP_1_1;
 import static io.servicetalk.http.api.HttpRequestMethods.GET;
 import static io.servicetalk.http.api.HttpRequestMethods.POST;
 import static io.servicetalk.http.api.HttpRequestMethods.PUT;
-import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.regex.Pattern.CASE_INSENSITIVE;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertSame;
@@ -256,7 +254,7 @@ public class HttpPredicateRouterBuilderTest extends BaseHttpPredicateRouterBuild
                 .when((ctx, req) -> true).thenRouteTo(serviceC)
                 .buildStreaming();
 
-        await(service.closeAsync(), 10, SECONDS);
+        service.closeAsync().toFuture().get();
 
         verify(serviceA).closeAsync();
         verify(serviceB).closeAsync();
@@ -285,7 +283,7 @@ public class HttpPredicateRouterBuilderTest extends BaseHttpPredicateRouterBuild
 
         try {
             final Completable completable = service.closeAsync();
-            await(completable, 10, SECONDS);
+            completable.toFuture().get();
             fail("Expected an exception from `await`");
         } catch (final ExecutionException e) {
             assertSame(DELIBERATE_EXCEPTION, e.getCause());

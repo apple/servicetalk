@@ -106,7 +106,7 @@ public class HttpOffloadingTest {
 
     @After
     public void afterTest() throws Exception {
-        newCompositeCloseable().appendAll(httpConnection, client, serverContext).closeAsync().toFuture().get();
+        newCompositeCloseable().appendAll(httpConnection, client, serverContext).close();
     }
 
     @Test
