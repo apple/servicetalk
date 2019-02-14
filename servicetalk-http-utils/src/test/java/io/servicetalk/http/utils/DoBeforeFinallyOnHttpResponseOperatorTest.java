@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,13 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.http.netty;
+package io.servicetalk.http.utils;
 
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
-import io.servicetalk.client.internal.RequestConcurrencyController;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.concurrent.api.SingleOperator;
 import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.api.TestSingle;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
@@ -28,10 +28,14 @@ import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.StreamingHttpResponse;
 
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.Timeout;
+import org.junit.runner.RunWith;
+import org.mockito.Mock;
+import org.mockito.junit.MockitoJUnitRunner;
 
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
@@ -49,12 +53,12 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
 
-public class ConcurrencyControlSingleOperatorTest {
+@RunWith(MockitoJUnitRunner.class)
+public class DoBeforeFinallyOnHttpResponseOperatorTest {
     private static final BufferAllocator allocator = DEFAULT_ALLOCATOR;
     private static final StreamingHttpRequestResponseFactory reqRespFactory =
             new DefaultStreamingHttpRequestResponseFactory(allocator, DefaultHttpHeadersFactory.INSTANCE);
@@ -63,17 +67,26 @@ public class ConcurrencyControlSingleOperatorTest {
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
 
+    @Mock
+    private Runnable doBeforeFinally;
+
+    private SingleOperator<StreamingHttpResponse, StreamingHttpResponse> operator;
+
+    @Before
+    public void setUp() throws Exception {
+        operator = new DoBeforeFinallyOnHttpResponseOperator(doBeforeFinally);
+    }
+
     @Test
     public void nullAsSuccess() {
-        final RequestConcurrencyController controller = mock(RequestConcurrencyController.class);
-        ConcurrencyControlSingleOperator helper = new ConcurrencyControlSingleOperator(controller);
         final ResponseSubscriber subscriber = new ResponseSubscriber();
-        Single.<StreamingHttpResponse>success(null).liftSynchronous(helper).subscribe(subscriber);
+
+        Single.<StreamingHttpResponse>success(null).liftSynchronous(operator).subscribe(subscriber);
         assertThat("onSubscribe not called.", subscriber.cancellable, is(notNullValue()));
-        verify(controller).requestFinished();
+        verify(doBeforeFinally).run();
 
         subscriber.verifyNullResponseReceived();
-        verifyNoMoreInteractions(controller);
+        verifyNoMoreInteractions(doBeforeFinally);
     }
 
     @Test
@@ -88,8 +101,6 @@ public class ConcurrencyControlSingleOperatorTest {
             }
         };
 
-        final RequestConcurrencyController controller = mock(RequestConcurrencyController.class);
-        ConcurrencyControlSingleOperator operator = new ConcurrencyControlSingleOperator(controller);
         final ResponseSubscriber subscriber = new ResponseSubscriber();
         original.liftSynchronous(operator).subscribe(subscriber);
         assertThat("Original Single not subscribed.", subRef.get(), is(notNullValue()));
@@ -98,7 +109,7 @@ public class ConcurrencyControlSingleOperatorTest {
         final StreamingHttpResponse response = reqRespFactory.newResponse(OK);
         subRef.get().onSuccess(response);
         final StreamingHttpResponse received = subscriber.verifyResponseReceived();
-        verifyZeroInteractions(controller);
+        verifyZeroInteractions(doBeforeFinally);
 
         final StreamingHttpResponse response2 = reqRespFactory.newResponse(OK);
 
@@ -106,27 +117,25 @@ public class ConcurrencyControlSingleOperatorTest {
         final StreamingHttpResponse received2 = subscriber.verifyResponseReceived();
         // Old response should be preserved.
         assertThat("Duplicate response received.", received2, is(received));
-        verifyZeroInteractions(controller);
+        verifyZeroInteractions(doBeforeFinally);
     }
 
     @Test
     public void cancelBeforeOnSuccess() throws Exception {
         TestSingle<StreamingHttpResponse> responseSingle = new TestSingle<>(true);
-        final RequestConcurrencyController controller = mock(RequestConcurrencyController.class);
-        ConcurrencyControlSingleOperator operator = new ConcurrencyControlSingleOperator(controller);
         final ResponseSubscriber subscriber = new ResponseSubscriber();
         responseSingle.liftSynchronous(operator).subscribe(subscriber);
         assertThat("onSubscribe not called.", subscriber.cancellable, is(notNullValue()));
 
         subscriber.cancellable.cancel();
-        verify(controller).requestFinished();
+        verify(doBeforeFinally).run();
         responseSingle.verifyCancelled();
 
         final StreamingHttpResponse response = reqRespFactory.newResponse(OK);
         responseSingle.onSuccess(response);
 
         subscriber.verifyResponseReceived();
-        verifyNoMoreInteractions(controller);
+        verifyNoMoreInteractions(doBeforeFinally);
         assert subscriber.response != null;
         expectedException.expect(instanceOf(ExecutionException.class));
         expectedException.expectCause(instanceOf(CancellationException.class));
@@ -136,26 +145,22 @@ public class ConcurrencyControlSingleOperatorTest {
     @Test
     public void cancelBeforeOnError() {
         TestSingle<StreamingHttpResponse> responseSingle = new TestSingle<>(true);
-        final RequestConcurrencyController controller = mock(RequestConcurrencyController.class);
-        ConcurrencyControlSingleOperator operator = new ConcurrencyControlSingleOperator(controller);
         final ResponseSubscriber subscriber = new ResponseSubscriber();
         responseSingle.liftSynchronous(operator).subscribe(subscriber);
         assertThat("onSubscribe not called.", subscriber.cancellable, is(notNullValue()));
 
         subscriber.cancellable.cancel();
-        verify(controller).requestFinished();
+        verify(doBeforeFinally).run();
         responseSingle.verifyCancelled();
 
         responseSingle.onError(DELIBERATE_EXCEPTION);
         assertThat("onError called post cancel.", subscriber.error, is(DELIBERATE_EXCEPTION));
-        verifyNoMoreInteractions(controller);
+        verifyNoMoreInteractions(doBeforeFinally);
     }
 
     @Test
     public void cancelAfterOnSuccess() {
         TestSingle<StreamingHttpResponse> responseSingle = new TestSingle<>(true);
-        final RequestConcurrencyController controller = mock(RequestConcurrencyController.class);
-        ConcurrencyControlSingleOperator operator = new ConcurrencyControlSingleOperator(controller);
         final ResponseSubscriber subscriber = new ResponseSubscriber();
         responseSingle.liftSynchronous(operator).subscribe(subscriber);
         assertThat("onSubscribe not called.", subscriber.cancellable, is(notNullValue()));
@@ -163,12 +168,12 @@ public class ConcurrencyControlSingleOperatorTest {
         final StreamingHttpResponse response = reqRespFactory.ok().payloadBody(never());
         responseSingle.onSuccess(response);
 
-        verifyZeroInteractions(controller);
+        verifyZeroInteractions(doBeforeFinally);
         responseSingle.verifyNotCancelled();
         subscriber.verifyResponseReceived();
 
         subscriber.cancellable.cancel();
-        verifyZeroInteractions(controller);
+        verifyZeroInteractions(doBeforeFinally);
         // We unconditionally cancel and let the original single handle the cancel post terminate
         responseSingle.verifyCancelled();
     }
@@ -176,19 +181,17 @@ public class ConcurrencyControlSingleOperatorTest {
     @Test
     public void cancelAfterOnError() {
         TestSingle<StreamingHttpResponse> responseSingle = new TestSingle<>(true);
-        final RequestConcurrencyController controller = mock(RequestConcurrencyController.class);
-        ConcurrencyControlSingleOperator operator = new ConcurrencyControlSingleOperator(controller);
         final ResponseSubscriber subscriber = new ResponseSubscriber();
         responseSingle.liftSynchronous(operator).subscribe(subscriber);
         assertThat("onSubscribe not called.", subscriber.cancellable, is(notNullValue()));
 
         responseSingle.onError(DELIBERATE_EXCEPTION);
 
-        verify(controller).requestFinished();
+        verify(doBeforeFinally).run();
         assertThat("onError not called.", subscriber.error, is(DELIBERATE_EXCEPTION));
 
         subscriber.cancellable.cancel();
-        verifyNoMoreInteractions(controller);
+        verifyNoMoreInteractions(doBeforeFinally);
         // We unconditionally cancel and let the original single handle the cancel post terminate
         responseSingle.verifyCancelled();
     }
@@ -198,8 +201,6 @@ public class ConcurrencyControlSingleOperatorTest {
         TestPublisher<Buffer> payload = new TestPublisher<>();
         payload.sendOnSubscribe();
         TestSingle<StreamingHttpResponse> responseSingle = new TestSingle<>(true);
-        final RequestConcurrencyController controller = mock(RequestConcurrencyController.class);
-        ConcurrencyControlSingleOperator operator = new ConcurrencyControlSingleOperator(controller);
         final ResponseSubscriber subscriber = new ResponseSubscriber();
         responseSingle.liftSynchronous(operator).subscribe(subscriber);
         assertThat("onSubscribe not called.", subscriber.cancellable, is(notNullValue()));
@@ -207,7 +208,7 @@ public class ConcurrencyControlSingleOperatorTest {
         final StreamingHttpResponse response = reqRespFactory.ok().payloadBody(payload);
         responseSingle.onSuccess(response);
 
-        verifyZeroInteractions(controller);
+        verifyZeroInteractions(doBeforeFinally);
         responseSingle.verifyNotCancelled();
         subscriber.verifyResponseReceived();
         assert subscriber.response != null;
@@ -217,7 +218,7 @@ public class ConcurrencyControlSingleOperatorTest {
 
         payload.onComplete();
 
-        verify(controller).requestFinished();
+        verify(doBeforeFinally).run();
     }
 
     private static final class ResponseSubscriber implements Single.Subscriber<StreamingHttpResponse> {
