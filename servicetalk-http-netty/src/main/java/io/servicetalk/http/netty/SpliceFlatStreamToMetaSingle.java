@@ -24,6 +24,8 @@ import io.servicetalk.http.api.HttpResponseMetaData;
 import io.servicetalk.http.api.StreamingHttpResponse;
 
 import org.reactivestreams.Subscription;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
@@ -47,6 +49,7 @@ import static java.util.Objects.requireNonNull;
  */
 final class SpliceFlatStreamToMetaSingle<Data, MetaData, Payload> extends Single<Data> {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(SpliceFlatStreamToMetaSingle.class);
     private final BiFunction<MetaData, Publisher<Payload>, Data> packer;
     private final Publisher<?> original;
 
@@ -266,6 +269,9 @@ final class SpliceFlatStreamToMetaSingle<Data, MetaData, Payload> extends Single
                                 "Duplicate Subscribers are not allowed. Existing: " + maybeSubscriber +
                                         ", failed the race with a duplicate, but neither has seen onNext()"));
                     }
+                } else {
+                    LOGGER.debug("Terminal error queued for delayed delivery to the payload publisher. " +
+                            "If the payload is not subscribed, this event will not be delivered.", t);
                 }
             }
         }
