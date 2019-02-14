@@ -52,7 +52,6 @@ import java.util.function.Function;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Publisher.error;
-import static io.servicetalk.concurrent.api.Single.deferShareContext;
 import static io.servicetalk.redis.api.PartitionedRedisClientFilterFactory.identity;
 import static java.util.Objects.requireNonNull;
 
@@ -252,21 +251,24 @@ final class DefaultPartitionedRedisClientBuilder<U, R> implements PartitionedRed
         @Override
         public Publisher<RedisData> request(final RedisExecutionStrategy strategy,
                                             final PartitionAttributes partitionSelector, final RedisRequest request) {
-            return Publisher.deferShareContext(() -> group.get(partitionSelector).request(strategy, request));
+            return Publisher.defer(() -> group.get(partitionSelector).request(strategy, request)
+                    .subscribeShareContext());
         }
 
         @Override
         public <Resp> Single<Resp> request(final RedisExecutionStrategy strategy,
                                            final PartitionAttributes partitionSelector,
                                            final RedisRequest request, final Class<Resp> responseType) {
-            return deferShareContext(() -> group.get(partitionSelector).request(strategy, request, responseType));
+            return Single.defer(() -> group.get(partitionSelector).request(strategy, request, responseType)
+                    .subscribeShareContext());
         }
 
         @Override
         public Single<? extends RedisClient.ReservedRedisConnection> reserveConnection(
                 final RedisExecutionStrategy strategy, final PartitionAttributes partitionSelector,
                 final Command command) {
-            return deferShareContext(() -> group.get(partitionSelector).reserveConnection(strategy, command));
+            return Single.defer(() -> group.get(partitionSelector).reserveConnection(strategy, command)
+                    .subscribeShareContext());
         }
 
         @Override

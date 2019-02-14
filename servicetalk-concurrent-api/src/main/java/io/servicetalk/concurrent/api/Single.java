@@ -1102,23 +1102,7 @@ public abstract class Single<T> implements io.servicetalk.concurrent.Single<T> {
      * {@link Subscriber}.
      */
     public static <T> Single<T> defer(Supplier<? extends Single<T>> singleSupplier) {
-        return new SingleDefer<>(singleSupplier, false);
-    }
-
-    /**
-     * Defer creation of a {@link Single} till it is subscribed to. The {@link Single}s returned from
-     * {@code singleSupplier} will share the same {@link AsyncContextMap} as the {@link Single} return from this method.
-     * A typical use case for this is if the {@link Single}s returned from {@code singleSupplier} only modify existing
-     * behavior with additional state, but not if the {@link Single}s may come from an unrelated independent source.
-     * @param singleSupplier {@link Supplier} to create a new {@link Single} for every call to
-     * {@link #subscribe(Subscriber)} to the returned {@link Single}.
-     * @param <T> Type of the {@link Single}.
-     * @return A new {@link Single} that creates a new {@link Single} using {@code singleFactory} for every call to
-     * {@link #subscribe(Subscriber)} and forwards the result or error from the newly created {@link Single} to its
-     * {@link Subscriber}.
-     */
-    public static <T> Single<T> deferShareContext(Supplier<? extends Single<T>> singleSupplier) {
-        return new SingleDefer<>(singleSupplier, true);
+        return new SingleDefer<>(singleSupplier);
     }
 
     /**

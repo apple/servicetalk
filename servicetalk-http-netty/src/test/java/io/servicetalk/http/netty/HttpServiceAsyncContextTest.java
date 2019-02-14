@@ -53,7 +53,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.concurrent.api.Single.deferShareContext;
+import static io.servicetalk.concurrent.api.Single.defer;
 import static io.servicetalk.concurrent.api.Single.success;
 import static io.servicetalk.http.api.CharSequences.newAsciiString;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
@@ -157,7 +157,7 @@ public class HttpServiceAsyncContextTest {
             public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
                                                         final StreamingHttpRequest request,
                                                         final StreamingHttpResponseFactory responseFactory) {
-                return asyncService ? deferShareContext(() -> doHandle(ctx, request, responseFactory)) :
+                return asyncService ? defer(() -> doHandle(ctx, request, responseFactory).subscribeShareContext()) :
                         doHandle(ctx, request, responseFactory);
             }
 
@@ -175,7 +175,7 @@ public class HttpServiceAsyncContextTest {
                 // from the client. So we force the server to consume the entire request here which will make sure the
                 // AsyncContext is as expected while processing the request data in the filter below.
                 return request.payloadBody().ignoreElements()
-                        .concatWith(Single.defer(() -> {
+                        .concatWith(defer(() -> {
                             if (useImmediate && !currentThread().getName().startsWith(IO_THREAD_PREFIX)) {
                                 // verify that if we expect to be offloaded, that we actually are
                                 return success(factory.internalServerError());
@@ -199,7 +199,7 @@ public class HttpServiceAsyncContextTest {
             public Single<StreamingHttpResponse> handle(
                     final HttpServiceContext ctx, final StreamingHttpRequest request,
                     final StreamingHttpResponseFactory factory) {
-                return asyncFilter ? deferShareContext(() -> doHandle(ctx, request, factory)) :
+                return asyncFilter ? defer(() -> doHandle(ctx, request, factory).subscribeShareContext()) :
                         doHandle(ctx, request, factory);
             }
 

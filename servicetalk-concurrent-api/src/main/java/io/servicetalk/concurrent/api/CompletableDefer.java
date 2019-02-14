@@ -15,44 +15,26 @@
  */
 package io.servicetalk.concurrent.api;
 
-import io.servicetalk.concurrent.internal.SignalOffloader;
-
 import java.util.function.Supplier;
 
-import static io.servicetalk.concurrent.api.PublishAndSubscribeOnCompletables.deliverOnSubscribeAndOnError;
 import static java.util.Objects.requireNonNull;
 
 /**
  * As returned by {@link Completable#defer(Supplier)}.
  */
-final class CompletableDefer extends AbstractNoHandleSubscribeCompletable {
+final class CompletableDefer extends Completable {
 
-    private final Supplier<Completable> completableFactory;
-    private final boolean shareContext;
+    private final Supplier<? extends Completable> completableFactory;
 
-    CompletableDefer(Supplier<Completable> completableFactory, boolean shareContext) {
+    CompletableDefer(Supplier<? extends Completable> completableFactory) {
         this.completableFactory = requireNonNull(completableFactory);
-        this.shareContext = shareContext;
     }
 
     @Override
-    protected void handleSubscribe(Subscriber subscriber, SignalOffloader signalOffloader,
-                                   AsyncContextMap contextMap, AsyncContextProvider contextProvider) {
-        final Completable completable;
-        try {
-            completable = requireNonNull(completableFactory.get());
-        } catch (Throwable cause) {
-            deliverOnSubscribeAndOnError(subscriber, signalOffloader, contextMap, contextProvider, cause);
-            return;
-        }
-
+    protected void handleSubscribe(Subscriber subscriber) {
         // There are technically two sources, this one and the one returned by the factory.
-        // Since, we are invoking user code (singleFactory) we need this method to be run using an Executor
-        // and also use the configured Executor for subscribing to the Single returned from singleFactory
-        if (shareContext) {
-            completable.subscribeWithContext(subscriber, contextMap, contextProvider);
-        } else {
-            completable.subscribeWithContext(subscriber, contextMap.copy(), contextProvider);
-        }
+        // Since, we are invoking user code (completableFactory) we need this method to be run using an Executor
+        // and also use the configured Executor for subscribing to the Completable returned from completableFactory
+        completableFactory.get().subscribe(subscriber);
     }
 }

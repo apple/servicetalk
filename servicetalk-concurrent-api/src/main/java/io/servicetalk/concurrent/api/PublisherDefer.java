@@ -15,13 +15,10 @@
  */
 package io.servicetalk.concurrent.api;
 
-import io.servicetalk.concurrent.internal.SignalOffloader;
-
 import org.reactivestreams.Subscriber;
 
 import java.util.function.Supplier;
 
-import static io.servicetalk.concurrent.api.PublishAndSubscribeOnPublishers.deliverOnSubscribeAndOnError;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -29,34 +26,19 @@ import static java.util.Objects.requireNonNull;
  *
  * @param <T> Type of items emitted by this {@link Publisher}.
  */
-final class PublisherDefer<T> extends AbstractNoHandleSubscribePublisher<T> {
+final class PublisherDefer<T> extends Publisher<T> {
 
-    private final Supplier<Publisher<T>> publisherFactory;
-    private final boolean shareContext;
+    private final Supplier<? extends Publisher<T>> publisherFactory;
 
-    PublisherDefer(Supplier<Publisher<T>> publisherFactory, boolean shareContext) {
+    PublisherDefer(Supplier<? extends Publisher<T>> publisherFactory) {
         this.publisherFactory = requireNonNull(publisherFactory);
-        this.shareContext = shareContext;
     }
 
     @Override
-    protected void handleSubscribe(Subscriber<? super T> subscriber, SignalOffloader signalOffloader,
-                                   AsyncContextMap contextMap, AsyncContextProvider contextProvider) {
-        final Publisher<T> publisher;
-        try {
-            publisher = requireNonNull(publisherFactory.get());
-        } catch (Throwable cause) {
-            deliverOnSubscribeAndOnError(subscriber, signalOffloader, contextMap, contextProvider, cause);
-            return;
-        }
-
+    protected void handleSubscribe(Subscriber<? super T> subscriber) {
         // There are technically two sources, this one and the one returned by the factory.
         // Since, we are invoking user code (publisherFactory) we need this method to be run using an Executor
         // and also use the configured Executor for subscribing to the Publisher returned from publisherFactory
-        if (shareContext) {
-            publisher.subscribeWithContext(subscriber, contextMap, contextProvider);
-        } else {
-            publisher.subscribeWithContext(subscriber, contextMap.copy(), contextProvider);
-        }
+        publisherFactory.get().subscribe(subscriber);
     }
 }

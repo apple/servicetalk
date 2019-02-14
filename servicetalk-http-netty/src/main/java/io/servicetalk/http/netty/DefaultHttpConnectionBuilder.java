@@ -47,6 +47,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.api.Single.defer;
 import static io.servicetalk.transport.netty.internal.CloseHandler.forPipelinedRequestResponse;
 import static java.util.Objects.requireNonNull;
 
@@ -141,14 +142,15 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress> extends HttpCon
     private static <ResolvedAddress> Single<StreamingHttpConnection> buildStreaming(
             final ExecutionContext executionContext, ResolvedAddress resolvedAddress, ReadOnlyHttpClientConfig roConfig,
             final Function<NettyConnection<Object, Object>, StreamingHttpConnection> mapper) {
-        return Single.deferShareContext(() -> {
+        return defer(() -> {
             final CloseHandler closeHandler = forPipelinedRequestResponse(true);
             final ChannelInitializer initializer = new TcpClientChannelInitializer(roConfig.getTcpClientConfig())
                     .andThen(new HttpClientChannelInitializer(roConfig, closeHandler));
 
             final TcpConnector<Object, Object> connector = new TcpConnector<>(roConfig.getTcpClientConfig(),
                     initializer, DefaultHttpConnectionBuilder::lastChunkPredicate, null, closeHandler);
-            return connector.connect(executionContext, resolvedAddress, false).map(mapper);
+            return connector.connect(executionContext, resolvedAddress, false).map(mapper)
+                    .subscribeShareContext();
         });
     }
 

@@ -1178,24 +1178,8 @@ public abstract class Completable implements io.servicetalk.concurrent.Completab
      * for every call to {@link #subscribe(Subscriber)} and forwards
      * the termination signal from the newly created {@link Completable} to its {@link Subscriber}.
      */
-    public static Completable defer(Supplier<Completable> completableSupplier) {
-        return new CompletableDefer(completableSupplier, false);
-    }
-
-    /**
-     * Defer creation of a {@link Completable} till it is subscribed to. The {@link Completable}s returned from
-     * {@code singleSupplier} will share the same {@link AsyncContextMap} as the {@link Completable} return from this
-     * method. A typical use case for this is if the {@link Completable}s returned from {@code singleSupplier} only
-     * modify existing behavior with additional state, but not if the {@link Completable}s may come from an unrelated
-     * independent source.
-     * @param completableSupplier {@link Supplier} to create a new {@link Completable} for every call to
-     * {@link #subscribe(Subscriber)} to the returned {@link Completable}.
-     * @return A new {@link Completable} that creates a new {@link Completable} using {@code completableFactory}
-     * for every call to {@link #subscribe(Subscriber)} and forwards
-     * the termination signal from the newly created {@link Completable} to its {@link Subscriber}.
-     */
-    public static Completable deferShareContext(Supplier<Completable> completableSupplier) {
-        return new CompletableDefer(completableSupplier, true);
+    public static Completable defer(Supplier<? extends Completable> completableSupplier) {
+        return new CompletableDefer(completableSupplier);
     }
 
     /**
