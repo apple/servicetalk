@@ -164,7 +164,7 @@ public interface StreamingHttpRequest extends HttpRequestMetaData {
      * @return a {@link Single} that completes with a {@link HttpRequest} representation of this
      * {@link StreamingHttpRequest}.
      */
-    Single<? extends HttpRequest> toRequest();
+    Single<HttpRequest> toRequest();
 
     /**
      * Translate this {@link StreamingHttpRequest} to a {@link BlockingStreamingHttpRequest}.

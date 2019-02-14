@@ -73,7 +73,7 @@ public class SimpleHttpRequesterFilterTest extends AbstractHttpRequesterFilterTe
                 }
 
                 @Override
-                protected Single<? extends ReservedStreamingHttpConnection> reserveConnection(
+                protected Single<ReservedStreamingHttpConnection> reserveConnection(
                         final StreamingHttpClient delegate,
                         final HttpExecutionStrategy strategy,
                         final HttpRequestMetaData metaData) {
@@ -150,7 +150,7 @@ public class SimpleHttpRequesterFilterTest extends AbstractHttpRequesterFilterTe
                 }
 
                 @Override
-                protected Single<? extends ReservedStreamingHttpConnection> reserveConnection(
+                protected Single<ReservedStreamingHttpConnection> reserveConnection(
                         final StreamingHttpClient delegate,
                         final HttpExecutionStrategy strategy,
                         final HttpRequestMetaData metaData) {
@@ -213,7 +213,7 @@ public class SimpleHttpRequesterFilterTest extends AbstractHttpRequesterFilterTe
         public StreamingHttpClientFilter create(final StreamingHttpClient client, final Publisher<Object> lbEvents) {
             return new StreamingHttpClientFilter(client) {
                 @Override
-                protected Single<? extends ReservedStreamingHttpConnection> reserveConnection(
+                protected Single<ReservedStreamingHttpConnection> reserveConnection(
                         final StreamingHttpClient delegate,
                         final HttpExecutionStrategy strategy,
                         final HttpRequestMetaData metaData) {

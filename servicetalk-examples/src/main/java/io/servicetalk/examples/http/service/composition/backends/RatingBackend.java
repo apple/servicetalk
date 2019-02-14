@@ -42,8 +42,8 @@ final class RatingBackend extends HttpService {
     }
 
     @Override
-    public Single<? extends HttpResponse> handle(HttpServiceContext ctx, HttpRequest request,
-                                                 HttpResponseFactory responseFactory) {
+    public Single<HttpResponse> handle(HttpServiceContext ctx, HttpRequest request,
+                                       HttpResponseFactory responseFactory) {
         final String entityId = request.queryParameter(ENTITY_ID_QP_NAME);
         if (entityId == null) {
             return success(responseFactory.badRequest());

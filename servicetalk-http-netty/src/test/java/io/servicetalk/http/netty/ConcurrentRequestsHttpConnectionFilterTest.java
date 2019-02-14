@@ -150,9 +150,9 @@ public class ConcurrentRequestsHttpConnectionFilterTest {
                      .build(serverContext.listenAddress())
                      .toFuture().get()) {
 
-            Single<? extends HttpResponse> resp1 = connection.request(connection.get("/one"));
-            Single<? extends HttpResponse> resp2 = connection.request(connection.get("/two"));
-            Single<? extends HttpResponse> resp3 = connection.request(connection.get("/three"));
+            Single<HttpResponse> resp1 = connection.request(connection.get("/one"));
+            Single<HttpResponse> resp2 = connection.request(connection.get("/two"));
+            Single<HttpResponse> resp3 = connection.request(connection.get("/three"));
 
             try {
                 Publisher.from(resp1, resp2, resp3)
@@ -181,8 +181,8 @@ public class ConcurrentRequestsHttpConnectionFilterTest {
                      .build(serverContext.listenAddress())
                      .toFuture().get()) {
 
-            Single<? extends HttpResponse> resp1 = connection.request(connection.get("/one"));
-            Single<? extends HttpResponse> resp2 = connection.request(connection.get("/two"));
+            Single<HttpResponse> resp1 = connection.request(connection.get("/one"));
+            Single<HttpResponse> resp2 = connection.request(connection.get("/two"));
 
             resp1.toFuture().get();
 
@@ -210,8 +210,8 @@ public class ConcurrentRequestsHttpConnectionFilterTest {
                      .build(serverContext.listenAddress())
                      .toFuture().get()) {
 
-            Single<? extends HttpResponse> resp1 = connection.request(connection.get("/one"));
-            Single<? extends HttpResponse> resp2 = connection.request(connection.get("/two"));
+            Single<HttpResponse> resp1 = connection.request(connection.get("/one"));
+            Single<HttpResponse> resp2 = connection.request(connection.get("/two"));
 
             final AtomicReference<Throwable> ioEx = new AtomicReference<>();
 
