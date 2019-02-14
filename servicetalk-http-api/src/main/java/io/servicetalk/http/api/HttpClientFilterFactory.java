@@ -57,6 +57,22 @@ public interface HttpClientFilterFactory {
     }
 
     /**
+     * Returns a {@link MultiAddressHttpClientFilterFactory} that adapts from a {@link HttpClientFilterFactory}.
+     *
+     * @param <U> the type of address before resolution (unresolved address).
+     * @return a {@link MultiAddressHttpClientFilterFactory} function
+     */
+    default <U> MultiAddressHttpClientFilterFactory<U> asMultiAddressClientFilter() {
+        return (address, client, lbEvents) -> new StreamingHttpClientFilter(create(client, lbEvents)) {
+            @Override
+            protected HttpExecutionStrategy mergeForEffectiveStrategy(final HttpExecutionStrategy mergeWith) {
+                // Since this filter does not have any blocking code, we do not need to alter the effective strategy.
+                return mergeWith;
+            }
+        };
+    }
+
+    /**
      * Returns a function that always returns its input {@link StreamingHttpClient}.
      *
      * @return a function that always returns its input {@link StreamingHttpClient}.

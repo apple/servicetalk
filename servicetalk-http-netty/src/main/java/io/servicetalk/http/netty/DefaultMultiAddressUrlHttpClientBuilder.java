@@ -27,6 +27,7 @@ import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
+import io.servicetalk.http.api.HttpClientFilterFactory;
 import io.servicetalk.http.api.HttpConnectionFilterFactory;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpHeadersFactory;
@@ -459,6 +460,12 @@ final class DefaultMultiAddressUrlHttpClientBuilder extends MultiAddressHttpClie
     public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> appendConnectionFactoryFilter(
             final ConnectionFactoryFilter<InetSocketAddress, StreamingHttpConnection> factory) {
         builderTemplate.appendConnectionFactoryFilter(factory);
+        return this;
+    }
+
+    @Override
+    public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> appendClientFilter(final HttpClientFilterFactory function) {
+        clientFilterFunction = clientFilterFunction.append(function.asMultiAddressClientFilter());
         return this;
     }
 
