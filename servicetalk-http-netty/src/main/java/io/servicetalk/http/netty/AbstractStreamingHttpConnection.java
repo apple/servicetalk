@@ -49,7 +49,7 @@ abstract class AbstractStreamingHttpConnection<CC extends ConnectionContext> ext
         this.connection = requireNonNull(conn);
         this.executionContext = requireNonNull(executionContext);
         // TODO(jayv) we should concat with NettyConnectionContext.onClosing() once it's exposed such that both
-        // this class and ConcurrentRequestsHttpConnectionFilter can to listen to the same event to reduce ambiguity
+        // this class and ConcurrentRequestsHttpConnectionFilter can listen to the same event to reduce ambiguity
         maxConcurrencySetting = just(config.getMaxPipelinedRequests())
                 .concatWith(connection.onClose()).concatWith(Single.success(0));
     }
