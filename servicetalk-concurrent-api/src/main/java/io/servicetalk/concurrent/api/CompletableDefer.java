@@ -17,6 +17,7 @@ package io.servicetalk.concurrent.api;
 
 import java.util.function.Supplier;
 
+import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -32,9 +33,17 @@ final class CompletableDefer extends Completable {
 
     @Override
     protected void handleSubscribe(Subscriber subscriber) {
+        final Completable completable;
+        try {
+            completable = requireNonNull(completableFactory.get());
+        } catch (Throwable cause) {
+            subscriber.onSubscribe(IGNORE_CANCEL);
+            subscriber.onError(cause);
+            return;
+        }
         // There are technically two sources, this one and the one returned by the factory.
         // Since, we are invoking user code (completableFactory) we need this method to be run using an Executor
-        // and also use the configured Executor for subscribing to the Completable returned from completableFactory
-        completableFactory.get().subscribe(subscriber);
+        // and also use the configured Executor for subscribing to the Completable returned from completableFactory.
+        completable.subscribe(subscriber);
     }
 }

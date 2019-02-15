@@ -19,6 +19,7 @@ import org.reactivestreams.Subscriber;
 
 import java.util.function.Supplier;
 
+import static io.servicetalk.concurrent.internal.EmptySubscription.EMPTY_SUBSCRIPTION;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -36,9 +37,17 @@ final class PublisherDefer<T> extends Publisher<T> {
 
     @Override
     protected void handleSubscribe(Subscriber<? super T> subscriber) {
+        final Publisher<T> publisher;
+        try {
+            publisher = requireNonNull(publisherFactory.get());
+        } catch (Throwable cause) {
+            subscriber.onSubscribe(EMPTY_SUBSCRIPTION);
+            subscriber.onError(cause);
+            return;
+        }
         // There are technically two sources, this one and the one returned by the factory.
         // Since, we are invoking user code (publisherFactory) we need this method to be run using an Executor
-        // and also use the configured Executor for subscribing to the Publisher returned from publisherFactory
-        publisherFactory.get().subscribe(subscriber);
+        // and also use the configured Executor for subscribing to the Publisher returned from publisherFactory.
+        publisher.subscribe(subscriber);
     }
 }
