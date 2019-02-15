@@ -41,10 +41,9 @@ import java.util.List;
 import java.util.function.Function;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
+import static io.servicetalk.concurrent.api.BlockingTestUtils.awaitIndefinitelyNonNull;
 import static io.servicetalk.concurrent.api.Completable.never;
 import static io.servicetalk.concurrent.api.Publisher.from;
-import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
-import static io.servicetalk.concurrent.internal.Await.awaitIndefinitelyNonNull;
 import static io.servicetalk.http.api.DefaultHttpHeadersFactory.INSTANCE;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
@@ -107,7 +106,7 @@ public final class AbstractHttpConnectionTest {
 
     @Test
     public void shouldEmitMaxConcurrencyInSettingStream() throws Exception {
-        Integer max = awaitIndefinitely(http.settingStream(MAX_CONCURRENCY).first());
+        Integer max = http.settingStream(MAX_CONCURRENCY).first().toFuture().get();
         assertThat(max, equalTo(101));
     }
 
@@ -136,13 +135,13 @@ public final class AbstractHttpConnectionTest {
 
         StreamingHttpResponse resp = awaitIndefinitelyNonNull(responseSingle);
 
-        assertThat(awaitIndefinitely(reqFlatCaptor.getValue()), contains(req, chunk1, chunk2, chunk3, trailers));
+        assertThat(reqFlatCaptor.getValue().toFuture().get(), contains(req, chunk1, chunk2, chunk3, trailers));
 
         assertThat(resp.status(), equalTo(OK));
         assertThat(resp.version(), equalTo(HTTP_1_1));
         assertThat(resp.headers().get(CONTENT_TYPE), equalTo(TEXT_PLAIN));
 
-        assertThat(awaitIndefinitely(resp.payloadBody()), contains(chunk1, chunk2, chunk3));
+        assertThat(resp.payloadBody().toFuture().get(), contains(chunk1, chunk2, chunk3));
     }
 
     @SuppressWarnings("unchecked")
@@ -177,6 +176,6 @@ public final class AbstractHttpConnectionTest {
         assertThat(resp.version(), equalTo(HTTP_1_1));
         assertThat(resp.headers().get(CONTENT_TYPE), equalTo(TEXT_PLAIN));
 
-        assertThat(awaitIndefinitely(resp.payloadBody()), contains(chunk1, chunk2, chunk3));
+        assertThat(resp.payloadBody().toFuture().get(), contains(chunk1, chunk2, chunk3));
     }
 }

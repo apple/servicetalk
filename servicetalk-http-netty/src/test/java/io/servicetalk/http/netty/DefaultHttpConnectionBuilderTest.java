@@ -30,8 +30,7 @@ import java.net.SocketAddress;
 import java.util.concurrent.ExecutionException;
 import javax.annotation.Nonnull;
 
-import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
-import static io.servicetalk.concurrent.internal.Await.awaitIndefinitelyNonNull;
+import static io.servicetalk.concurrent.api.BlockingTestUtils.awaitIndefinitelyNonNull;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.StreamingHttpConnection.SettingKey.MAX_CONCURRENCY;
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -97,7 +96,7 @@ public class DefaultHttpConnectionBuilderTest extends AbstractEchoServerBasedHtt
 
         DummyFanoutFilter connection = awaitIndefinitelyNonNull(connectionSingle);
 
-        Integer maxConcurrent = awaitIndefinitely(connection.settingStream(MAX_CONCURRENCY).first());
+        Integer maxConcurrent = connection.settingStream(MAX_CONCURRENCY).first().toFuture().get();
         assertThat(maxConcurrent, equalTo(9));
 
         makeRequestValidateResponseAndClose(connection);

@@ -48,7 +48,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.stream.IntStream;
 
-import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
+import static io.servicetalk.concurrent.api.BlockingTestUtils.awaitIndefinitely;
 import static io.servicetalk.redis.api.RedisProtocolSupport.BitfieldOverflow.FAIL;
 import static io.servicetalk.redis.api.RedisProtocolSupport.BitfieldOverflow.SAT;
 import static io.servicetalk.redis.api.RedisProtocolSupport.GeoradiusOrder.ASC;

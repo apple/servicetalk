@@ -44,7 +44,6 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.AsyncCloseables.closeAsyncGracefully;
-import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.http.api.DefaultHttpHeadersFactory.INSTANCE;
 import static io.servicetalk.http.api.HttpHeaderNames.CONNECTION;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
@@ -298,7 +297,7 @@ public class NettyHttpServerTest extends AbstractNettyHttpServerTest {
 
         // Use a very high timeout for the graceful close. It should happen quite quickly because there are no
         // active requests/responses.
-        awaitIndefinitely(closeAsyncGracefully(getServerContext(), 1000, SECONDS));
+        closeAsyncGracefully(getServerContext(), 1000, SECONDS).toFuture().get();
         assertConnectionClosed();
     }
 
@@ -328,7 +327,7 @@ public class NettyHttpServerTest extends AbstractNettyHttpServerTest {
         final StreamingHttpRequest request1 = reqRespFactory.newRequest(GET, SVC_PUBLISHER_RULE);
         makeRequest(request1);
 
-        awaitIndefinitely(getServerContext().closeAsync());
+        getServerContext().closeAsync().toFuture().get();
 
         assertConnectionClosed();
     }
@@ -346,7 +345,7 @@ public class NettyHttpServerTest extends AbstractNettyHttpServerTest {
 
         onCloseListener.verifyNoEmissions();
 
-        awaitIndefinitely(closeAsyncGracefully(getServerContext(), 10, MILLISECONDS));
+        closeAsyncGracefully(getServerContext(), 10, MILLISECONDS).toFuture().get();
 
         onCloseListener.verifyCompletion();
 
@@ -366,7 +365,7 @@ public class NettyHttpServerTest extends AbstractNettyHttpServerTest {
 
         onCloseListener.verifyNoEmissions();
 
-        awaitIndefinitely(getServerContext().closeAsync());
+        getServerContext().closeAsync().toFuture().get();
 
         onCloseListener.verifyCompletion();
 
@@ -380,7 +379,7 @@ public class NettyHttpServerTest extends AbstractNettyHttpServerTest {
         final StreamingHttpRequest request1 = reqRespFactory.newRequest(GET, SVC_PUBLISHER_RULE);
         makeRequest(request1);
 
-        awaitIndefinitely(closeAsyncGracefully(getServerContext(), 500, MILLISECONDS));
+        closeAsyncGracefully(getServerContext(), 500, MILLISECONDS).toFuture().get();
 
         assertConnectionClosed();
     }
@@ -395,7 +394,7 @@ public class NettyHttpServerTest extends AbstractNettyHttpServerTest {
         closeAsyncGracefully(getServerContext(), 1000, SECONDS).subscribe();
         // Wait 500 millis for the "immediate" close to happen, since there are multiple threads involved.
         // If it takes any longer than that, it probably didn't work, but the graceful close would make the test pass.
-        awaitIndefinitely(getServerContext().closeAsync());
+        getServerContext().closeAsync().toFuture().get();
 
         assertConnectionClosed();
     }

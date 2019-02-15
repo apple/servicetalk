@@ -48,9 +48,8 @@ import javax.ws.rs.core.Application;
 import javax.ws.rs.core.Configuration;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
+import static io.servicetalk.concurrent.api.BlockingTestUtils.awaitNonNull;
 import static io.servicetalk.concurrent.api.Publisher.just;
-import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
-import static io.servicetalk.concurrent.internal.Await.awaitNonNull;
 import static io.servicetalk.concurrent.internal.ServiceTalkTestTimeout.DEFAULT_TIMEOUT_SECONDS;
 import static io.servicetalk.http.api.CharSequences.newAsciiString;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
@@ -116,12 +115,12 @@ public abstract class AbstractJerseyStreamingHttpServiceTest {
 
     @After
     public final void closeClient() throws Exception {
-        awaitIndefinitely(httpClient.closeAsync());
+        httpClient.closeAsync().toFuture().get();
     }
 
     @After
     public final void closeServer() throws Exception {
-        awaitIndefinitely(serverContext.closeAsync());
+        serverContext.closeAsync().toFuture().get();
     }
 
     protected abstract Application getApplication();

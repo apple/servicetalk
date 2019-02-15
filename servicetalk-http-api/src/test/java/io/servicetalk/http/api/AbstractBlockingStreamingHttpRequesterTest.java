@@ -41,7 +41,6 @@ import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.Publisher.just;
 import static io.servicetalk.concurrent.api.Single.success;
-import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.http.api.HttpProtocolVersions.HTTP_1_1;
 import static io.servicetalk.http.api.HttpResponseStatuses.OK;
 import static java.nio.charset.StandardCharsets.US_ASCII;
@@ -172,8 +171,7 @@ public abstract class AbstractBlockingStreamingHttpRequesterTest {
         BlockingStreamingHttpRequester syncRequester = newBlockingRequester(blkReqRespFactory, mockExecutionCtx,
                 (strategy, req) -> blkReqRespFactory.ok());
         StreamingHttpRequester asyncRequester = toStreamingRequester(syncRequester);
-        StreamingHttpResponse asyncResponse = awaitIndefinitely(asyncRequester.request(
-                asyncRequester.get("/")));
+        StreamingHttpResponse asyncResponse = asyncRequester.request(asyncRequester.get("/")).toFuture().get();
         assertNotNull(asyncResponse);
         assertEquals(HTTP_1_1, asyncResponse.version());
         assertEquals(OK, asyncResponse.status());
@@ -184,13 +182,12 @@ public abstract class AbstractBlockingStreamingHttpRequesterTest {
         BlockingStreamingHttpRequester syncRequester = newBlockingRequester(blkReqRespFactory, mockExecutionCtx,
                 (strategy, req) -> blkReqRespFactory.ok().payloadBody(singleton(allocator.fromAscii("hello"))));
         StreamingHttpRequester asyncRequester = toStreamingRequester(syncRequester);
-        StreamingHttpResponse asyncResponse = awaitIndefinitely(asyncRequester.request(
-                asyncRequester.get("/")));
+        StreamingHttpResponse asyncResponse = asyncRequester.request(asyncRequester.get("/")).toFuture().get();
         assertNotNull(asyncResponse);
         assertEquals(HTTP_1_1, asyncResponse.version());
         assertEquals(OK, asyncResponse.status());
-        assertEquals("hello", awaitIndefinitely(asyncResponse.payloadBody()
-                .reduce(() -> "", (acc, next) -> acc + next.toString(US_ASCII))));
+        assertEquals("hello", asyncResponse.payloadBody()
+                .reduce(() -> "", (acc, next) -> acc + next.toString(US_ASCII)).toFuture().get());
     }
 
     @Test
@@ -200,7 +197,7 @@ public abstract class AbstractBlockingStreamingHttpRequesterTest {
             throw new IllegalStateException("shouldn't be called!");
         });
         StreamingHttpRequester asyncRequester = toStreamingRequester(syncRequester);
-        awaitIndefinitely(asyncRequester.closeAsync());
+        asyncRequester.closeAsync().toFuture().get();
         assertTrue(((TestHttpRequester) syncRequester).isClosed());
     }
 
@@ -209,8 +206,7 @@ public abstract class AbstractBlockingStreamingHttpRequesterTest {
         BlockingStreamingHttpRequester syncRequester = newBlockingRequester(blkReqRespFactory, mockExecutionCtx,
                 (strategy, req) -> blkReqRespFactory.ok().payloadBody(mockIterable));
         StreamingHttpRequester asyncRequester = toStreamingRequester(syncRequester);
-        StreamingHttpResponse asyncResponse = awaitIndefinitely(asyncRequester.request(
-                asyncRequester.get("/")));
+        StreamingHttpResponse asyncResponse = asyncRequester.request(asyncRequester.get("/")).toFuture().get();
         assertNotNull(asyncResponse);
         CountDownLatch latch = new CountDownLatch(1);
         asyncResponse.payloadBody().subscribe(new Subscriber<Buffer>() {

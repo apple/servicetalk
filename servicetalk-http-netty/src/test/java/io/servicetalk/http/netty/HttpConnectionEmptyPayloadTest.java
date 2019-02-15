@@ -37,10 +37,9 @@ import org.junit.rules.Timeout;
 import java.util.concurrent.ThreadLocalRandom;
 
 import static io.servicetalk.buffer.api.EmptyBuffer.EMPTY_BUFFER;
+import static io.servicetalk.concurrent.api.BlockingTestUtils.awaitIndefinitelyNonNull;
 import static io.servicetalk.concurrent.api.Publisher.just;
 import static io.servicetalk.concurrent.api.Single.success;
-import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
-import static io.servicetalk.concurrent.internal.Await.awaitIndefinitelyNonNull;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
@@ -106,7 +105,7 @@ public class HttpConnectionEmptyPayloadTest {
             assertNotNull(contentLength);
             assertEquals(expectedContentLength, parseInt(contentLength.toString()));
             // Drain the current response content so we will be able to read the next response.
-            awaitIndefinitely(response.payloadBody().ignoreElements());
+            response.payloadBody().ignoreElements().toFuture().get();
 
             response = awaitIndefinitelyNonNull(response2Single);
             assertEquals(OK, response.status());
@@ -125,7 +124,7 @@ public class HttpConnectionEmptyPayloadTest {
             contentLength = response.headers().get(CONTENT_LENGTH);
             assertNotNull(contentLength);
             assertEquals(expectedContentLength, parseInt(contentLength.toString()));
-            awaitIndefinitely(response.payloadBody().ignoreElements());
+            response.payloadBody().ignoreElements().toFuture().get();
         }
     }
 }

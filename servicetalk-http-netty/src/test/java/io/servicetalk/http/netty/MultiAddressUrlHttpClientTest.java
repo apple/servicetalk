@@ -46,9 +46,8 @@ import java.util.concurrent.ExecutionException;
 
 import static io.servicetalk.buffer.api.EmptyBuffer.EMPTY_BUFFER;
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
+import static io.servicetalk.concurrent.api.BlockingTestUtils.awaitIndefinitelyNonNull;
 import static io.servicetalk.concurrent.api.Single.success;
-import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
-import static io.servicetalk.concurrent.internal.Await.awaitIndefinitelyNonNull;
 import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderNames.HOST;
@@ -181,14 +180,14 @@ public class MultiAddressUrlHttpClientTest {
     public void requestWithRelativeFormRequestTargetWithInvalidHostInHeader() throws Exception {
         StreamingHttpRequest request = requester.get("/200?param=value");
         request.headers().set(HOST, "invalid.:" + serverPort);
-        awaitIndefinitely(requester.request(request));
+        requester.request(request).toFuture().get();
     }
 
     @Test(expected = ExecutionException.class)
     public void requestWithRelativeFormRequestTargetWithWrongPortInHeader() throws Exception {
         StreamingHttpRequest request = requester.get("/200?param=value");
         request.headers().set(HOST, format("%s:%d", serverHost, serverPort + 1));
-        awaitIndefinitely(requester.request(request));
+        requester.request(request).toFuture().get();
     }
 
     @Test
@@ -211,14 +210,14 @@ public class MultiAddressUrlHttpClientTest {
     public void requestWithAbsoluteFormRequestTargetWithInvalidHost() throws Exception {
         StreamingHttpRequest request = requester.get(
                 format("http://invalid.:%d/200?param=value#tag", serverPort));
-        awaitIndefinitely(requester.request(request));
+        requester.request(request).toFuture().get();
     }
 
     @Test(expected = ExecutionException.class)
     public void requestWithAbsoluteFormRequestTargetWithWrongPort() throws Exception {
         StreamingHttpRequest request = requester.get(
                 format("http://%s:%d/200?param=value#tag", serverHost, serverPort + 1));
-        awaitIndefinitely(requester.request(request));
+        requester.request(request).toFuture().get();
     }
 
     @Test

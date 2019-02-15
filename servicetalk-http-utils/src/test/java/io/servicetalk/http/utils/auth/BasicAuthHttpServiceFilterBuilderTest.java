@@ -43,13 +43,12 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.AsyncContextMap.Key.newKey;
+import static io.servicetalk.concurrent.api.BlockingTestUtils.awaitIndefinitelyNonNull;
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Publisher.just;
 import static io.servicetalk.concurrent.api.Single.error;
 import static io.servicetalk.concurrent.api.Single.never;
 import static io.servicetalk.concurrent.api.Single.success;
-import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
-import static io.servicetalk.concurrent.internal.Await.awaitIndefinitelyNonNull;
 import static io.servicetalk.http.api.CharSequences.newAsciiString;
 import static io.servicetalk.http.api.HttpHeaderNames.AUTHORIZATION;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
@@ -356,7 +355,7 @@ public class BasicAuthHttpServiceFilterBuilderTest {
 
         assertFalse(credentialsVerifierClosed.get());
         assertFalse(nextServiceClosed.get());
-        awaitIndefinitely(service.closeAsync());
+        service.closeAsync().toFuture().get();
         assertTrue(credentialsVerifierClosed.get());
         assertTrue(nextServiceClosed.get());
     }

@@ -66,9 +66,8 @@ import java.util.function.Predicate;
 import static io.servicetalk.buffer.api.EmptyBuffer.EMPTY_BUFFER;
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
+import static io.servicetalk.concurrent.api.BlockingTestUtils.awaitIndefinitelyNonNull;
 import static io.servicetalk.concurrent.api.Publisher.from;
-import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
-import static io.servicetalk.concurrent.internal.Await.awaitIndefinitelyNonNull;
 import static io.servicetalk.http.api.DefaultHttpHeadersFactory.INSTANCE;
 import static io.servicetalk.http.api.HttpHeaderNames.CONNECTION;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
@@ -452,11 +451,11 @@ public class HttpRequestEncoderTest {
 
             StreamingHttpRequest request = reqRespFactory.post("/closeme");
 
-            awaitIndefinitely(serverCloseTrigger);
+            serverCloseTrigger.toFuture().get();
             Completable write = conn.write(from(request, allocator.fromAscii("Bye"), EmptyHttpHeaders.INSTANCE));
 
             try {
-                awaitIndefinitely(write);
+                write.toFuture().get();
                 fail("Should not complete normally");
             } catch (ExecutionException e) {
                 verify(closeHandler, never()).protocolPayloadEndOutbound(any());

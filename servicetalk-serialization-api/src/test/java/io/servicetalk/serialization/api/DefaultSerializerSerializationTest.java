@@ -34,8 +34,8 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.function.IntUnaryOperator;
 
+import static io.servicetalk.concurrent.api.BlockingTestUtils.awaitIndefinitelyNonNull;
 import static io.servicetalk.concurrent.api.Publisher.from;
-import static io.servicetalk.concurrent.internal.Await.awaitIndefinitelyNonNull;
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static org.hamcrest.MatcherAssert.assertThat;

@@ -51,10 +51,9 @@ import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
+import static io.servicetalk.concurrent.api.BlockingTestUtils.awaitIndefinitelyNonNull;
 import static io.servicetalk.concurrent.api.Publisher.just;
 import static io.servicetalk.concurrent.api.Single.success;
-import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
-import static io.servicetalk.concurrent.internal.Await.awaitIndefinitelyNonNull;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpResponseStatuses.OK;
 import static io.servicetalk.http.api.StreamingHttpConnection.SettingKey.MAX_CONCURRENCY;
@@ -107,7 +106,7 @@ public class HttpOffloadingTest {
 
     @After
     public void afterTest() throws Exception {
-        awaitIndefinitely(newCompositeCloseable().appendAll(httpConnection, client, serverContext).closeAsync());
+        newCompositeCloseable().appendAll(httpConnection, client, serverContext).close();
     }
 
     @Test
@@ -219,7 +218,7 @@ public class HttpOffloadingTest {
 
     @Test
     public void serverOnCloseIsOffloaded() throws Exception {
-        awaitIndefinitely(serverContext.closeAsync());
+        serverContext.closeAsync().toFuture().get();
         subscribeTo(inEventLoop(), errors, serverContext.onClose());
         terminated.await();
         assertThat("Unexpected errors.", errors, is(empty()));
@@ -230,7 +229,7 @@ public class HttpOffloadingTest {
         subscribeTo(inEventLoop(), errors,
                 httpConnection.settingStream(MAX_CONCURRENCY).doAfterFinally(terminated::countDown),
                 "Client settings stream: ");
-        awaitIndefinitely(httpConnection.closeAsyncGracefully());
+        httpConnection.closeAsyncGracefully().toFuture().get();
         terminated.await();
         assertThat("Unexpected errors.", errors, is(empty()));
     }
@@ -251,7 +250,7 @@ public class HttpOffloadingTest {
 
     @Test
     public void clientOnCloseIsOffloaded() throws Exception {
-        awaitIndefinitely(connectionContext.closeAsync());
+        connectionContext.closeAsync().toFuture().get();
         subscribeTo(inEventLoop(), errors, connectionContext.onClose());
         terminated.await();
         assertThat("Unexpected errors.", errors, is(empty()));

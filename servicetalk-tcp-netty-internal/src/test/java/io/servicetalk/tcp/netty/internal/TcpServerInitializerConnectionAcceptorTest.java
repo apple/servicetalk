@@ -37,10 +37,9 @@ import java.util.function.Function;
 import javax.annotation.Nullable;
 import javax.net.ssl.SSLSession;
 
+import static io.servicetalk.concurrent.api.BlockingTestUtils.awaitIndefinitelyNonNull;
 import static io.servicetalk.concurrent.api.Single.error;
 import static io.servicetalk.concurrent.api.Single.success;
-import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
-import static io.servicetalk.concurrent.internal.Await.awaitIndefinitelyNonNull;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -149,7 +148,7 @@ public class TcpServerInitializerConnectionAcceptorTest extends AbstractTcpServe
         // We do this to ensure that the server has had a chance to execute code if the connection was accepted.
         // This is necessary for the delayed tests to see the correct state of the acceptedConnection flag.
         try {
-            awaitIndefinitely(connection.writeAndFlush(buffer));
+            connection.writeAndFlush(buffer).toFuture().get();
             Single<Buffer> read = connection.read().first();
             Buffer responseBuffer = awaitIndefinitelyNonNull(read);
             assertEquals("Did not receive response payload echoing request",
