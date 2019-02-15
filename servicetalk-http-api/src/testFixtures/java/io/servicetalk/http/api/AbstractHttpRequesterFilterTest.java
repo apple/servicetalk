@@ -54,7 +54,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 /**
- * This parameterized test facilitates running HTTP request filter tests under all calling variations: client,
+ * This parameterized test facilitates running HTTP requester filter tests under all calling variations: client,
  * connection, reserved connection, with and without SSL context.
  */
 @RunWith(Parameterized.class)
@@ -206,7 +206,7 @@ public abstract class AbstractHttpRequesterFilterTest {
      * Handler for {@link HttpRequester#request(HttpRequest)} calls as delegated from the filter under test.
      */
     @FunctionalInterface
-    protected interface RequestHandler {
+    public interface RequestHandler {
         /**
          * Handle requests from the filter under test.
          *
@@ -240,7 +240,7 @@ public abstract class AbstractHttpRequesterFilterTest {
      * delegated from the filter under test.
      */
     @FunctionalInterface
-    protected interface RequestWithContextHandler {
+    public interface RequestWithContextHandler {
         /**
          * Handle requests with {@link ConnectionContext} information from the filter under test.
          *
