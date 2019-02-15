@@ -15,6 +15,9 @@
  */
 package io.servicetalk.concurrent.api;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.function.Supplier;
 
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
@@ -26,6 +29,8 @@ import static java.util.Objects.requireNonNull;
  * @param <T> Type of result of this {@link Single}.
  */
 final class SingleDefer<T> extends Single<T> {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(SingleDefer.class);
 
     private final Supplier<? extends Single<T>> singleFactory;
 
@@ -39,8 +44,17 @@ final class SingleDefer<T> extends Single<T> {
         try {
             single = requireNonNull(singleFactory.get());
         } catch (Throwable cause) {
-            subscriber.onSubscribe(IGNORE_CANCEL);
-            subscriber.onError(cause);
+            try {
+                subscriber.onSubscribe(IGNORE_CANCEL);
+            } catch (Throwable t) {
+                LOGGER.debug("Ignoring exception from onSubscribe of Subscriber {}.", subscriber, t);
+                return;
+            }
+            try {
+                subscriber.onError(cause);
+            } catch (Throwable t) {
+                LOGGER.debug("Ignoring exception from onError of Subscriber {}.", subscriber, t);
+            }
             return;
         }
         // There are technically two sources, this one and the one returned by the factory.

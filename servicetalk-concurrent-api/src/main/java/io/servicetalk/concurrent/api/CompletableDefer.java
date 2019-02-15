@@ -15,6 +15,9 @@
  */
 package io.servicetalk.concurrent.api;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.function.Supplier;
 
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
@@ -24,6 +27,8 @@ import static java.util.Objects.requireNonNull;
  * As returned by {@link Completable#defer(Supplier)}.
  */
 final class CompletableDefer extends Completable {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(CompletableDefer.class);
 
     private final Supplier<? extends Completable> completableFactory;
 
@@ -37,8 +42,17 @@ final class CompletableDefer extends Completable {
         try {
             completable = requireNonNull(completableFactory.get());
         } catch (Throwable cause) {
-            subscriber.onSubscribe(IGNORE_CANCEL);
-            subscriber.onError(cause);
+            try {
+                subscriber.onSubscribe(IGNORE_CANCEL);
+            } catch (Throwable t) {
+                LOGGER.debug("Ignoring exception from onSubscribe of Subscriber {}.", subscriber, t);
+                return;
+            }
+            try {
+                subscriber.onError(cause);
+            } catch (Throwable t) {
+                LOGGER.debug("Ignoring exception from onError of Subscriber {}.", subscriber, t);
+            }
             return;
         }
         // There are technically two sources, this one and the one returned by the factory.
