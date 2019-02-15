@@ -46,7 +46,6 @@ import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Publisher.just;
 import static io.servicetalk.concurrent.api.Publisher.never;
-import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.transport.netty.internal.CloseHandler.UNSUPPORTED_PROTOCOL_CLOSE_HANDLER;
 import static io.servicetalk.transport.netty.internal.CloseHandler.forPipelinedRequestResponse;
@@ -356,7 +355,7 @@ public class DefaultNettyConnectionTest {
         CloseHandler closeHandler = forPipelinedRequestResponse(true);
         setupWithCloseHandler(closeHandler);
         closeListener.listen(conn.onClosing());
-        awaitIndefinitely(conn.closeAsyncGracefully());
+        conn.closeAsyncGracefully().toFuture().get();
         closeListener.verifyCompletion();
     }
 
@@ -365,7 +364,7 @@ public class DefaultNettyConnectionTest {
         CloseHandler closeHandler = forPipelinedRequestResponse(true);
         setupWithCloseHandler(closeHandler);
         closeListener.listen(conn.onClosing());
-        awaitIndefinitely(conn.closeAsync());
+        conn.closeAsync().toFuture().get();
         closeListener.verifyCompletion();
     }
 

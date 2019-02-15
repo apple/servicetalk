@@ -47,8 +47,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static io.servicetalk.buffer.api.EmptyBuffer.EMPTY_BUFFER;
-import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
-import static io.servicetalk.concurrent.internal.Await.awaitIndefinitelyNonNull;
+import static io.servicetalk.concurrent.api.BlockingTestUtils.awaitIndefinitely;
+import static io.servicetalk.concurrent.api.BlockingTestUtils.awaitIndefinitelyNonNull;
 import static io.servicetalk.redis.api.RedisProtocolSupport.Command.CLIENT;
 import static io.servicetalk.redis.api.RedisProtocolSupport.Command.COMMAND;
 import static io.servicetalk.redis.api.RedisProtocolSupport.Command.GET;

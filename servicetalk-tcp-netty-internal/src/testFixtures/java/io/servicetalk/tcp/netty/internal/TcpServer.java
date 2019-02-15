@@ -39,7 +39,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.concurrent.internal.Await.awaitIndefinitelyNonNull;
+import static io.servicetalk.concurrent.api.BlockingTestUtils.awaitIndefinitelyNonNull;
 import static io.servicetalk.transport.api.ConnectionAcceptor.ACCEPT_ALL;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.CloseHandler.UNSUPPORTED_PROTOCOL_CLOSE_HANDLER;

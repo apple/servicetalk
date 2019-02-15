@@ -29,7 +29,6 @@ import java.util.concurrent.CancellationException;
 
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Publisher.just;
-import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
@@ -85,7 +84,7 @@ public class SpliceFlatStreamToMetaSingleTest {
         Data data = dataSubscriber.verifySuccessAndReturn(Data.class);
         assertThat(data.getMeta(), equalTo(data.getMeta()));
         upstream.complete();
-        assertThat(awaitIndefinitely(data.getPayload()), empty());
+        assertThat(data.getPayload().toFuture().get(), empty());
     }
 
     @Test

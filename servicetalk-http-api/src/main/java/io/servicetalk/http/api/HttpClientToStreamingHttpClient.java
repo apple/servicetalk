@@ -34,8 +34,8 @@ final class HttpClientToStreamingHttpClient extends StreamingHttpClient {
     }
 
     @Override
-    public Single<? extends ReservedStreamingHttpConnection> reserveConnection(final HttpExecutionStrategy strategy,
-                                                                               final HttpRequestMetaData metaData) {
+    public Single<ReservedStreamingHttpConnection> reserveConnection(final HttpExecutionStrategy strategy,
+                                                                     final HttpRequestMetaData metaData) {
         return client.reserveConnection(strategy, metaData)
                 .map(connection ->
                         new ReservedHttpConnectionToReservedStreamingHttpConnection(connection, executionStrategy()));

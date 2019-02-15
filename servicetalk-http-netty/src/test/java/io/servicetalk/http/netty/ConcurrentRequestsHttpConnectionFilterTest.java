@@ -57,12 +57,11 @@ import java.util.function.Function;
 
 import static io.servicetalk.buffer.api.EmptyBuffer.EMPTY_BUFFER;
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
+import static io.servicetalk.concurrent.api.BlockingTestUtils.awaitIndefinitelyNonNull;
 import static io.servicetalk.concurrent.api.Publisher.empty;
 import static io.servicetalk.concurrent.api.Publisher.just;
 import static io.servicetalk.concurrent.api.Single.error;
 import static io.servicetalk.concurrent.api.Single.success;
-import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
-import static io.servicetalk.concurrent.internal.Await.awaitIndefinitelyNonNull;
 import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
 import static io.servicetalk.http.api.StreamingHttpConnection.SettingKey.MAX_CONCURRENCY;
 import static org.hamcrest.Matchers.equalTo;
@@ -124,7 +123,7 @@ public class ConcurrentRequestsHttpConnectionFilterTest {
                 limitedConnection.request(limitedConnection.get("/foo")));
         awaitIndefinitelyNonNull(limitedConnection.request(limitedConnection.get("/bar")));
         try {
-            awaitIndefinitely(limitedConnection.request(limitedConnection.get("/baz")));
+            limitedConnection.request(limitedConnection.get("/baz")).toFuture().get();
             fail();
         } catch (ExecutionException e) {
             assertThat(e.getCause(), is(instanceOf(MaxRequestLimitExceededException.class)));
@@ -150,9 +149,9 @@ public class ConcurrentRequestsHttpConnectionFilterTest {
                      .build(serverContext.listenAddress())
                      .toFuture().get()) {
 
-            Single<? extends HttpResponse> resp1 = connection.request(connection.get("/one"));
-            Single<? extends HttpResponse> resp2 = connection.request(connection.get("/two"));
-            Single<? extends HttpResponse> resp3 = connection.request(connection.get("/three"));
+            Single<HttpResponse> resp1 = connection.request(connection.get("/one"));
+            Single<HttpResponse> resp2 = connection.request(connection.get("/two"));
+            Single<HttpResponse> resp3 = connection.request(connection.get("/three"));
 
             try {
                 Publisher.from(resp1, resp2, resp3)
@@ -181,8 +180,8 @@ public class ConcurrentRequestsHttpConnectionFilterTest {
                      .build(serverContext.listenAddress())
                      .toFuture().get()) {
 
-            Single<? extends HttpResponse> resp1 = connection.request(connection.get("/one"));
-            Single<? extends HttpResponse> resp2 = connection.request(connection.get("/two"));
+            Single<HttpResponse> resp1 = connection.request(connection.get("/one"));
+            Single<HttpResponse> resp2 = connection.request(connection.get("/two"));
 
             resp1.toFuture().get();
 
@@ -210,8 +209,8 @@ public class ConcurrentRequestsHttpConnectionFilterTest {
                      .build(serverContext.listenAddress())
                      .toFuture().get()) {
 
-            Single<? extends HttpResponse> resp1 = connection.request(connection.get("/one"));
-            Single<? extends HttpResponse> resp2 = connection.request(connection.get("/two"));
+            Single<HttpResponse> resp1 = connection.request(connection.get("/one"));
+            Single<HttpResponse> resp2 = connection.request(connection.get("/two"));
 
             final AtomicReference<Throwable> ioEx = new AtomicReference<>();
 

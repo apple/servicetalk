@@ -36,9 +36,6 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
-import static io.servicetalk.concurrent.internal.Await.awaitIndefinitelyNonNull;
-import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
@@ -52,7 +49,7 @@ public abstract class AbstractFutureToSingleTest {
     @Rule
     public final ExpectedException thrown = ExpectedException.none();
 
-    private static ExecutorService jdkExecutor;
+    static ExecutorService jdkExecutor;
 
     @BeforeClass
     public static void beforeClass() {
@@ -73,17 +70,7 @@ public abstract class AbstractFutureToSingleTest {
         CompletableFuture<String> future = new CompletableFuture<>();
         Single<String> single = from(future);
         jdkExecutor.execute(() -> future.complete("foo"));
-        assertEquals("foo", awaitIndefinitelyNonNull(single));
-    }
-
-    @Test
-    public void failure() throws Exception {
-        CompletableFuture<String> future = new CompletableFuture<>();
-        Single<String> single = from(future);
-        jdkExecutor.execute(() -> future.completeExceptionally(DELIBERATE_EXCEPTION));
-        thrown.expect(ExecutionException.class);
-        thrown.expectCause(is(DELIBERATE_EXCEPTION));
-        awaitIndefinitely(single);
+        assertEquals("foo", single.toFuture().get());
     }
 
     @Test
@@ -92,7 +79,7 @@ public abstract class AbstractFutureToSingleTest {
         Single<String> single = from(future).timeout(1, MILLISECONDS);
         thrown.expect(ExecutionException.class);
         thrown.expectCause(is(instanceOf(TimeoutException.class)));
-        awaitIndefinitely(single);
+        single.toFuture().get();
         assertTrue(future.isCancelled());
     }
 

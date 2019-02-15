@@ -32,7 +32,6 @@ import org.junit.rules.Timeout;
 
 import java.net.InetSocketAddress;
 
-import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.transport.netty.internal.ExecutionContextRule.immediate;
 import static org.junit.Assert.assertNotNull;
@@ -55,7 +54,7 @@ public class DefaultMultiAddressUrlHttpClientBuilderTest {
                 .executionStrategy(defaultStrategy(CTX.executor()))
                 .buildStreaming();
         assertNotNull(newRequester);
-        awaitIndefinitely(newRequester.closeAsync());
+        newRequester.closeAsync().toFuture().get();
     }
 
     @Test
@@ -65,7 +64,7 @@ public class DefaultMultiAddressUrlHttpClientBuilderTest {
                 .executionStrategy(defaultStrategy(CTX.executor()))
                 .build();
         assertNotNull(newAggregatedRequester);
-        awaitIndefinitely(newAggregatedRequester.closeAsync());
+        newAggregatedRequester.closeAsync().toFuture().get();
     }
 
     @Test
@@ -98,7 +97,7 @@ public class DefaultMultiAddressUrlHttpClientBuilderTest {
                 .ioExecutor(CTX.ioExecutor())
                 .executionStrategy(defaultStrategy(CTX.executor()))
                 .buildStreaming();
-        awaitIndefinitely(newRequester.closeAsync());
+        newRequester.closeAsync().toFuture().get();
         verify(mockedServiceDiscoverer, never()).closeAsync();
     }
 }

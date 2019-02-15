@@ -41,8 +41,8 @@ final class UserBackend extends HttpService {
     }
 
     @Override
-    public Single<? extends HttpResponse> handle(HttpServiceContext ctx, HttpRequest request,
-                                                 HttpResponseFactory responseFactory) {
+    public Single<HttpResponse> handle(HttpServiceContext ctx, HttpRequest request,
+                                       HttpResponseFactory responseFactory) {
         final String userId = request.queryParameter(USER_ID_QP_NAME);
         if (userId == null) {
             return success(responseFactory.badRequest());

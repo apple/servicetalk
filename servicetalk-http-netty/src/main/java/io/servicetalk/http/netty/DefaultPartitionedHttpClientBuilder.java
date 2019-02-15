@@ -142,8 +142,8 @@ class DefaultPartitionedHttpClientBuilder<U, R> extends PartitionedHttpClientBui
         }
 
         @Override
-        public Single<? extends ReservedStreamingHttpConnection> reserveConnection(final HttpExecutionStrategy strategy,
-                                                                                   final HttpRequestMetaData metaData) {
+        public Single<ReservedStreamingHttpConnection> reserveConnection(final HttpExecutionStrategy strategy,
+                                                                         final HttpRequestMetaData metaData) {
             return deferShareContext(() -> selectClient(metaData).reserveConnection(strategy, metaData));
         }
 
@@ -182,8 +182,8 @@ class DefaultPartitionedHttpClientBuilder<U, R> extends PartitionedHttpClientBui
         }
 
         @Override
-        public Single<? extends ReservedStreamingHttpConnection> reserveConnection(final HttpExecutionStrategy strategy,
-                                                                                   final HttpRequestMetaData metaData) {
+        public Single<ReservedStreamingHttpConnection> reserveConnection(final HttpExecutionStrategy strategy,
+                                                                         final HttpRequestMetaData metaData) {
             return error(ex);
         }
 

@@ -38,7 +38,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 
-import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
+import static io.servicetalk.concurrent.api.BlockingTestUtils.awaitIndefinitely;
 import static java.util.Objects.requireNonNull;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;

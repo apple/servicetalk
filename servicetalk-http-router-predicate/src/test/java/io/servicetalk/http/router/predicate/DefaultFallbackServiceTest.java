@@ -35,7 +35,6 @@ import org.mockito.junit.MockitoJUnit;
 import org.mockito.junit.MockitoRule;
 
 import static io.servicetalk.concurrent.api.Executors.immediate;
-import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
 import static io.servicetalk.http.api.HttpHeaderValues.TEXT_PLAIN;
@@ -73,7 +72,7 @@ public class DefaultFallbackServiceTest {
 
         final Single<StreamingHttpResponse> responseSingle = fixture.handle(ctx, request, reqRespFactory);
 
-        final StreamingHttpResponse response = awaitIndefinitely(responseSingle);
+        final StreamingHttpResponse response = responseSingle.toFuture().get();
         assert response != null;
         assertEquals(HTTP_1_1, response.version());
         assertEquals(NOT_FOUND, response.status());

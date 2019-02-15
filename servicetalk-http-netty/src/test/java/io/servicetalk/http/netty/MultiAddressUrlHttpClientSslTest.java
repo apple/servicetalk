@@ -46,10 +46,9 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.api.BlockingTestUtils.await;
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Single.success;
-import static io.servicetalk.concurrent.internal.Await.await;
-import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
@@ -136,10 +135,10 @@ public class MultiAddressUrlHttpClientSslTest {
     @AfterClass
     public static void afterClass() throws Exception {
         if (serverCtx != null) {
-            awaitIndefinitely(serverCtx.closeAsync());
+            serverCtx.closeAsync().toFuture().get();
         }
         if (secureServerCtx != null) {
-            awaitIndefinitely(secureServerCtx.closeAsync());
+            secureServerCtx.closeAsync().toFuture().get();
         }
     }
 

@@ -40,8 +40,8 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.api.BlockingTestUtils.awaitIndefinitely;
 import static io.servicetalk.concurrent.api.Executors.immediate;
-import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.concurrent.internal.PlatformDependent.throwException;
 import static io.servicetalk.redis.api.RedisProtocolSupport.Command.PUBLISH;
 import static io.servicetalk.redis.api.RedisRequests.newRequest;

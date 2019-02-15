@@ -42,7 +42,6 @@ import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.Publisher.just;
 import static io.servicetalk.concurrent.api.Single.success;
-import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.http.api.HttpProtocolVersions.HTTP_1_1;
 import static io.servicetalk.http.api.HttpResponseStatuses.OK;
 import static java.nio.charset.StandardCharsets.US_ASCII;
@@ -198,8 +197,8 @@ public class BlockingStreamingHttpServiceTest {
             }
         };
         StreamingHttpService asyncService = syncService.asStreamingService();
-        StreamingHttpResponse asyncResponse = awaitIndefinitely(asyncService.handle(mockCtx,
-                reqRespFactory.get("/"), reqRespFactory));
+        StreamingHttpResponse asyncResponse = asyncService.handle(mockCtx, reqRespFactory.get("/"), reqRespFactory)
+                .toFuture().get();
         assertNotNull(asyncResponse);
         assertEquals(HTTP_1_1, asyncResponse.version());
         assertEquals(OK, asyncResponse.status());
@@ -216,13 +215,12 @@ public class BlockingStreamingHttpServiceTest {
             }
         };
         StreamingHttpService asyncService = syncService.asStreamingService();
-        StreamingHttpResponse asyncResponse = awaitIndefinitely(asyncService.handle(mockCtx,
-                reqRespFactory.get("/"), reqRespFactory));
+        StreamingHttpResponse asyncResponse = asyncService.handle(mockCtx, reqRespFactory.get("/"), reqRespFactory).toFuture().get();
         assertNotNull(asyncResponse);
         assertEquals(HTTP_1_1, asyncResponse.version());
         assertEquals(OK, asyncResponse.status());
-        assertEquals("hello", awaitIndefinitely(asyncResponse.payloadBody()
-                .reduce(() -> "", (acc, next) -> acc + next.toString(US_ASCII))));
+        assertEquals("hello", asyncResponse.payloadBody()
+                .reduce(() -> "", (acc, next) -> acc + next.toString(US_ASCII)).toFuture().get());
     }
 
     @Test
@@ -241,13 +239,14 @@ public class BlockingStreamingHttpServiceTest {
             }
         };
         StreamingHttpService asyncService = syncService.asStreamingService();
-        StreamingHttpResponse asyncResponse = awaitIndefinitely(asyncService.handle(mockCtx,
-                reqRespFactory.post("/").payloadBody(just(allocator.fromAscii(expectedPayload))), reqRespFactory));
+        StreamingHttpResponse asyncResponse = asyncService.handle(mockCtx,
+                reqRespFactory.post("/")
+                        .payloadBody(just(allocator.fromAscii(expectedPayload))), reqRespFactory).toFuture().get();
         assertNotNull(asyncResponse);
         assertEquals(HTTP_1_1, asyncResponse.version());
         assertEquals(OK, asyncResponse.status());
-        assertEquals("hello", awaitIndefinitely(asyncResponse.payloadBody()
-                .reduce(() -> "", (acc, next) -> acc + next.toString(US_ASCII))));
+        assertEquals("hello", asyncResponse.payloadBody().reduce(() -> "",
+                (acc, next) -> acc + next.toString(US_ASCII)).toFuture().get());
     }
 
     @Test
@@ -267,7 +266,7 @@ public class BlockingStreamingHttpServiceTest {
             }
         };
         StreamingHttpService asyncService = syncService.asStreamingService();
-        awaitIndefinitely(asyncService.closeAsync());
+        asyncService.closeAsync().toFuture().get();
         assertTrue(closedCalled.get());
     }
 
@@ -282,8 +281,8 @@ public class BlockingStreamingHttpServiceTest {
             }
         };
         StreamingHttpService asyncService = syncService.asStreamingService();
-        StreamingHttpResponse asyncResponse = awaitIndefinitely(asyncService.handle(mockCtx,
-                reqRespFactory.get("/"), reqRespFactory));
+        StreamingHttpResponse asyncResponse = asyncService.handle(mockCtx, reqRespFactory.get("/"), reqRespFactory)
+                .toFuture().get();
         assertNotNull(asyncResponse);
         CountDownLatch latch = new CountDownLatch(1);
         asyncResponse.payloadBody().subscribe(new Subscriber<Buffer>() {

@@ -301,8 +301,8 @@ final class DefaultMultiAddressUrlHttpClientBuilder extends MultiAddressHttpClie
         }
 
         @Override
-        public Single<? extends ReservedStreamingHttpConnection> reserveConnection(final HttpExecutionStrategy strategy,
-                                                                                   final HttpRequestMetaData metaData) {
+        public Single<ReservedStreamingHttpConnection> reserveConnection(final HttpExecutionStrategy strategy,
+                                                                         final HttpRequestMetaData metaData) {
             return deferShareContext(() -> selectClient(metaData).reserveConnection(strategy, metaData));
         }
 
@@ -349,8 +349,8 @@ final class DefaultMultiAddressUrlHttpClientBuilder extends MultiAddressHttpClie
         }
 
         @Override
-        public Single<? extends ReservedStreamingHttpConnection> reserveConnection(final HttpExecutionStrategy strategy,
-                                                                                   final HttpRequestMetaData metaData) {
+        public Single<ReservedStreamingHttpConnection> reserveConnection(final HttpExecutionStrategy strategy,
+                                                                         final HttpRequestMetaData metaData) {
             return httpClient.reserveConnection(strategy, metaData);
         }
 

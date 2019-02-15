@@ -49,7 +49,6 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.api.DefaultAsyncContextProvider.INSTANCE;
-import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.concurrent.internal.ServiceTalkTestTimeout.DEFAULT_TIMEOUT_SECONDS;
 import static java.lang.Integer.bitCount;
 import static java.lang.Integer.numberOfTrailingZeros;
@@ -159,7 +158,7 @@ public class DefaultAsyncContextProviderTest {
         }).doBeforeFinally(() -> f3.complete(AsyncContext.current().copy()));
 
         AsyncContext.put(K1, "v1.1");
-        awaitIndefinitely(completable);
+        completable.toFuture().get();
 
         assertEquals("v1.2", f1.get().get(K1));
         assertEquals("v1.2", f2.get().get(K1));
@@ -233,7 +232,7 @@ public class DefaultAsyncContextProviderTest {
         }).doBeforeFinally(() -> f5.complete(AsyncContext.current().copy()));
 
         AsyncContext.put(K1, "v1.1");
-        awaitIndefinitely(single);
+        single.toFuture().get();
 
         assertEquals("v1.2", f1.get().get(K1));
         assertEquals("v1.2", f2.get().get(K1));
@@ -275,7 +274,7 @@ public class DefaultAsyncContextProviderTest {
         }).doBeforeFinally(() -> f3.complete(AsyncContext.current().copy()));
 
         AsyncContext.put(K1, "v1.1");
-        awaitIndefinitely(completable);
+        completable.toFuture().get();
 
         assertEquals("v1.2", f1.get().get(K1));
         assertEquals("v1.2", f2.get().get(K1));
@@ -346,7 +345,7 @@ public class DefaultAsyncContextProviderTest {
         }).reduce(StringBuilder::new, StringBuilder::append).doBeforeFinally(() -> f5.complete(AsyncContext.current()));
 
         AsyncContext.put(K1, "v1");
-        awaitIndefinitely(single);
+        single.toFuture().get();
 
         assertEquals("v1", f1.get().get(K1));
         assertEquals("v1", f2.get().get(K1));

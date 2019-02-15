@@ -22,7 +22,6 @@ import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 import static io.servicetalk.concurrent.api.Completable.completed;
-import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.concurrent.internal.PlatformDependent.throwException;
 import static java.util.Arrays.asList;
 import static java.util.stream.Collectors.toList;
@@ -106,7 +105,7 @@ final class DefaultCompositeCloseable implements CompositeCloseable {
     @Override
     public void close() throws Exception {
         try {
-            awaitIndefinitely(closeAsync());
+            closeAsync().toFuture().get();
         } catch (final ExecutionException e) {
             if (e.getCause() != null) {
                 // unwrap original cause of ExecutionException:
