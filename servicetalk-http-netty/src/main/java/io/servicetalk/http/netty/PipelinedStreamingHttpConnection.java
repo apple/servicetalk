@@ -37,7 +37,7 @@ final class PipelinedStreamingHttpConnection
                                      final StreamingHttpRequestResponseFactory reqRespFactory,
                                      final HttpExecutionStrategy strategy) {
         super(new DefaultNettyPipelinedConnection<>(connection, config.getMaxPipelinedRequests()),
-                connection.onClosing(), config, executionContext, reqRespFactory, strategy);
+                config, executionContext, reqRespFactory, strategy);
     }
 
     @Override

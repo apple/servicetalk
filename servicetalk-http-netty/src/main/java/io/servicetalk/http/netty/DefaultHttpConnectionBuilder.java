@@ -88,13 +88,13 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress> extends HttpCon
 
     @Override
     public Single<StreamingHttpConnection> buildStreaming(final ResolvedAddress resolvedAddress) {
-        ExecutionContext executionContext = executionContextBuilder.build();
         ReadOnlyHttpClientConfig roConfig = config.asReadOnly();
         HttpExecutionStrategy strategy = executionStrategy();
         Executor executor = strategy.executor();
         if (executor != null) {
             executionContextBuilder.executor(executor);
         }
+        ExecutionContext executionContext = executionContextBuilder.build();
         final StreamingHttpRequestResponseFactory reqRespFactory =
                 new DefaultStreamingHttpRequestResponseFactory(executionContext.bufferAllocator(),
                         roConfig.getHeadersFactory());
