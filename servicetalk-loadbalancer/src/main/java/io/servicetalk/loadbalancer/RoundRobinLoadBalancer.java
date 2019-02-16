@@ -53,6 +53,7 @@ import static io.servicetalk.client.api.LoadBalancerReadyEvent.LOAD_BALANCER_REA
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.concurrent.api.AsyncCloseables.toAsyncCloseable;
 import static io.servicetalk.concurrent.api.Completable.completed;
+import static io.servicetalk.concurrent.api.Single.defer;
 import static io.servicetalk.concurrent.api.Single.error;
 import static io.servicetalk.concurrent.api.Single.success;
 import static io.servicetalk.concurrent.internal.EmptySubscription.EMPTY_SUBSCRIPTION;
@@ -225,7 +226,7 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends ListenableA
 
     @Override
     public <CC extends C> Single<CC> selectConnection(Function<C, CC> selector) {
-        return Single.deferShareContext(() -> selectConnection0(selector));
+        return defer(() -> selectConnection0(selector).subscribeShareContext());
     }
 
     @Override

@@ -42,7 +42,7 @@ import java.util.function.Function;
 import java.util.function.UnaryOperator;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.concurrent.api.Single.deferShareContext;
+import static io.servicetalk.concurrent.api.Single.defer;
 import static io.servicetalk.redis.api.RedisConnectionFilterFactory.identity;
 import static io.servicetalk.redis.netty.InternalSubscribedRedisConnection.newSubscribedConnection;
 import static io.servicetalk.redis.netty.PipelinedRedisConnection.newPipelinedConnection;
@@ -264,14 +264,14 @@ public final class DefaultRedisConnectionBuilder<ResolvedAddress> implements Red
                                                  ResolvedAddress resolvedAddress,
                                                  ReadOnlyRedisClientConfig roConfig,
                                    Function<NettyConnection<RedisData, ByteBuf>, RedisConnection> mapper) {
-        return deferShareContext(() -> {
+        return defer(() -> {
             final ReadOnlyTcpClientConfig roTcpConfig = roConfig.getTcpClientConfig();
             final ChannelInitializer initializer = new TcpClientChannelInitializer(roTcpConfig)
                     .andThen(new RedisClientChannelInitializer());
 
             final TcpConnector<RedisData, ByteBuf> connector =
                     new TcpConnector<>(roTcpConfig, initializer, () -> o -> false);
-            return connector.connect(executionContext, resolvedAddress).map(mapper);
+            return connector.connect(executionContext, resolvedAddress).map(mapper).subscribeShareContext();
         });
     }
 }

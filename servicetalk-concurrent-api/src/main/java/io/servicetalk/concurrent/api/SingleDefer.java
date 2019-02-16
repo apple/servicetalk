@@ -15,11 +15,12 @@
  */
 package io.servicetalk.concurrent.api;
 
-import io.servicetalk.concurrent.internal.SignalOffloader;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.function.Supplier;
 
-import static io.servicetalk.concurrent.api.PublishAndSubscribeOnSingles.deliverOnSubscribeAndOnError;
+import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -27,34 +28,38 @@ import static java.util.Objects.requireNonNull;
  *
  * @param <T> Type of result of this {@link Single}.
  */
-final class SingleDefer<T> extends AbstractNoHandleSubscribeSingle<T> {
+final class SingleDefer<T> extends Single<T> {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(SingleDefer.class);
 
     private final Supplier<? extends Single<T>> singleFactory;
-    private final boolean shareContext;
 
-    SingleDefer(Supplier<? extends Single<T>> singleFactory, boolean shareContext) {
+    SingleDefer(Supplier<? extends Single<T>> singleFactory) {
         this.singleFactory = requireNonNull(singleFactory);
-        this.shareContext = shareContext;
     }
 
     @Override
-    protected void handleSubscribe(Subscriber<? super T> subscriber, SignalOffloader signalOffloader,
-                                   AsyncContextMap contextMap, AsyncContextProvider contextProvider) {
+    protected void handleSubscribe(Subscriber<? super T> subscriber) {
         final Single<T> single;
         try {
             single = requireNonNull(singleFactory.get());
         } catch (Throwable cause) {
-            deliverOnSubscribeAndOnError(subscriber, signalOffloader, contextMap, contextProvider, cause);
+            try {
+                subscriber.onSubscribe(IGNORE_CANCEL);
+            } catch (Throwable t) {
+                LOGGER.debug("Ignoring exception from onSubscribe of Subscriber {}.", subscriber, t);
+                return;
+            }
+            try {
+                subscriber.onError(cause);
+            } catch (Throwable t) {
+                LOGGER.debug("Ignoring exception from onError of Subscriber {}.", subscriber, t);
+            }
             return;
         }
-
         // There are technically two sources, this one and the one returned by the factory.
         // Since, we are invoking user code (singleFactory) we need this method to be run using an Executor
-        // and also use the configured Executor for subscribing to the Single returned from singleFactory
-        if (shareContext) {
-            single.subscribeWithContext(subscriber, contextMap, contextProvider);
-        } else {
-            single.subscribeWithContext(subscriber, contextMap.copy(), contextProvider);
-        }
+        // and also use the configured Executor for subscribing to the Single returned from singleFactory.
+        single.subscribe(subscriber);
     }
 }
