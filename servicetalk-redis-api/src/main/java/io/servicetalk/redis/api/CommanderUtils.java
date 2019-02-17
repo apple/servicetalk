@@ -16,7 +16,8 @@
 package io.servicetalk.redis.api;
 
 import io.servicetalk.concurrent.Cancellable;
-import io.servicetalk.concurrent.Single.Subscriber;
+import io.servicetalk.concurrent.CompletableSource;
+import io.servicetalk.concurrent.SingleSource.Subscriber;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.SingleProcessor;
@@ -124,7 +125,7 @@ final class CommanderUtils {
     private static void handleCancel(final ReservedRedisConnection reservedCnx,
                                      final List<SingleProcessor<?>> singles,
                                      final String exceptionMessage) {
-        reservedCnx.closeAsync().subscribe(new io.servicetalk.concurrent.Completable.Subscriber() {
+        reservedCnx.closeAsync().subscribe(new CompletableSource.Subscriber() {
             @Override
             public void onSubscribe(final Cancellable cancellable) {
                 // no-op

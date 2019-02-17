@@ -16,11 +16,12 @@
 package io.servicetalk.concurrent.internal;
 
 import io.servicetalk.concurrent.Cancellable;
-import io.servicetalk.concurrent.Completable;
-import io.servicetalk.concurrent.Single;
+import io.servicetalk.concurrent.CompletableSource;
+import io.servicetalk.concurrent.PublisherSource;
+import io.servicetalk.concurrent.PublisherSource.Subscriber;
+import io.servicetalk.concurrent.PublisherSource.Subscription;
+import io.servicetalk.concurrent.SingleSource;
 
-import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -71,9 +72,10 @@ public final class SubscriberUtils {
      * @param <TERM> Type of terminal notification.
      * @param <R> Type of the owner of the atomic fields.
      */
-    public static <T, TERM, R> void sendOnNextWithConcurrentTerminationCheck(Subscriber<? super T> subscriber, T next,
-                               Consumer<TERM> terminator, AtomicIntegerFieldUpdater<R> subscriberStateUpdater,
-                               AtomicReferenceFieldUpdater<R, TERM> terminalNotificationUpdater, R owner) {
+    public static <T, TERM, R> void sendOnNextWithConcurrentTerminationCheck(
+            Subscriber<? super T> subscriber, @Nullable T next, Consumer<TERM> terminator,
+            AtomicIntegerFieldUpdater<R> subscriberStateUpdater,
+            AtomicReferenceFieldUpdater<R, TERM> terminalNotificationUpdater, R owner) {
         boolean acquiredSubscriberLock = subscriberStateUpdater.compareAndSet(
                 owner, SUBSCRIBER_STATE_IDLE, SUBSCRIBER_STATE_ON_NEXT);
         // Allow reentry because we don't want to drop data.
@@ -159,8 +161,8 @@ public final class SubscriberUtils {
      * <ul>
      *     <li>{@link #sendOnNextWithConcurrentTerminationCheck(Runnable, Consumer, AtomicIntegerFieldUpdater,
      *     AtomicReferenceFieldUpdater, Object)}.</li>
-     *     <li>{@link #sendOnNextWithConcurrentTerminationCheck(Subscriber, Object, Consumer, AtomicIntegerFieldUpdater,
-     *     AtomicReferenceFieldUpdater, Object)}</li>
+     *     <li>{@link #sendOnNextWithConcurrentTerminationCheck(PublisherSource.Subscriber, Object, Consumer,
+     *     AtomicIntegerFieldUpdater, AtomicReferenceFieldUpdater, Object)}</li>
      * </ul>
      *
      * @param expect Expected value of the {@code terminalNotificationUpdater}.
@@ -335,13 +337,13 @@ public final class SubscriberUtils {
     }
 
     /**
-     * Deliver a terminal error to a {@link Single.Subscriber} that has not yet had
-     * {@link Single.Subscriber#onSubscribe(Cancellable)} called.
-     * @param subscriber The {@link Single.Subscriber} to terminate.
+     * Deliver a terminal error to a {@link SingleSource.Subscriber} that has not yet had
+     * {@link SingleSource.Subscriber#onSubscribe(Cancellable)} called.
+     * @param subscriber The {@link SingleSource.Subscriber} to terminate.
      * @param cause The terminal event.
-     * @param <T> The type of {@link Single.Subscriber}.
+     * @param <T> The type of {@link SingleSource.Subscriber}.
      */
-    public static <T> void deliverTerminalFromSource(Single.Subscriber<T> subscriber, Throwable cause) {
+    public static <T> void deliverTerminalFromSource(SingleSource.Subscriber<T> subscriber, Throwable cause) {
         try {
             subscriber.onSubscribe(IGNORE_CANCEL);
         } catch (Throwable t) {
@@ -356,12 +358,12 @@ public final class SubscriberUtils {
     }
 
     /**
-     * Deliver a terminal error to a {@link Completable.Subscriber} that has not yet had
-     * {@link Completable.Subscriber#onSubscribe(Cancellable)} called.
-     * @param subscriber The {@link Completable.Subscriber} to terminate.
+     * Deliver a terminal error to a {@link CompletableSource.Subscriber} that has not yet had
+     * {@link CompletableSource.Subscriber#onSubscribe(Cancellable)} called.
+     * @param subscriber The {@link CompletableSource.Subscriber} to terminate.
      * @param cause The terminal event.
      */
-    public static void deliverTerminalFromSource(Completable.Subscriber subscriber, Throwable cause) {
+    public static void deliverTerminalFromSource(CompletableSource.Subscriber subscriber, Throwable cause) {
         try {
             subscriber.onSubscribe(IGNORE_CANCEL);
         } catch (Throwable t) {

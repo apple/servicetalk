@@ -15,10 +15,9 @@
  */
 package io.servicetalk.concurrent.api;
 
+import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.internal.ConcurrentSubscription;
 import io.servicetalk.concurrent.internal.SignalOffloader;
-
-import org.reactivestreams.Subscription;
 
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
@@ -67,14 +66,14 @@ final class ReduceSingle<R, T> extends AbstractNoHandleSubscribeSingle<R> {
         // We are now subscribing to the original Publisher chain for the first time, re-using the SignalOffloader.
         // Using the special subscribe() method means it will not offload the Subscription (done in the public
         // subscribe() method). So, we use the SignalOffloader to offload subscription if required.
-        org.reactivestreams.Subscriber<? super T> offloadedSubscription = signalOffloader.offloadSubscription(
+        io.servicetalk.concurrent.PublisherSource.Subscriber<? super T> offloadedSubscription = signalOffloader.offloadSubscription(
                 contextProvider.wrapSubscription(new ReduceSubscriber<>(r, reducer, singleSubscriber), contextMap));
         // Since we are not creating any new sources by reducing, we should use the same offloader to subscribe to the
         // original Publisher.
         source.subscribeWithOffloaderAndContext(offloadedSubscription, signalOffloader, contextMap, contextProvider);
     }
 
-    private static final class ReduceSubscriber<R, T> implements org.reactivestreams.Subscriber<T> {
+    private static final class ReduceSubscriber<R, T> implements io.servicetalk.concurrent.PublisherSource.Subscriber<T> {
 
         private final BiFunction<R, ? super T, R> reducer;
         private final Subscriber<? super R> subscriber;

@@ -16,7 +16,7 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
-import io.servicetalk.concurrent.Completable.Subscriber;
+import io.servicetalk.concurrent.CompletableSource.Subscriber;
 
 import java.util.function.Consumer;
 import java.util.function.Supplier;

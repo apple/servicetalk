@@ -15,7 +15,7 @@
  */
 package io.servicetalk.concurrent.internal;
 
-import org.reactivestreams.Subscription;
+import io.servicetalk.concurrent.PublisherSource.Subscription;
 
 /**
  * A {@link Subscription} implementation, which does not do anything.

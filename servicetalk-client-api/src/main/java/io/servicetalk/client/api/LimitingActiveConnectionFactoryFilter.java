@@ -16,6 +16,7 @@
 package io.servicetalk.client.api;
 
 import io.servicetalk.concurrent.Cancellable;
+import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Single;
@@ -183,18 +184,18 @@ public final class LimitingActiveConnectionFactoryFilter<ResolvedAddress, C exte
     }
 
     private static final class CountingSubscriber<A, C extends ListenableAsyncCloseable>
-            implements Single.Subscriber<C> {
+            implements SingleSource.Subscriber<C> {
 
         private static final AtomicIntegerFieldUpdater<CountingSubscriber> doneUpdater =
                 newUpdater(CountingSubscriber.class, "done");
 
         @SuppressWarnings("unused")
         private volatile int done;
-        private final Single.Subscriber<? super C> original;
+        private final SingleSource.Subscriber<? super C> original;
         private final ConnectionLimiter<A> limiter;
         private final A address;
 
-        CountingSubscriber(final Single.Subscriber<? super C> original, final ConnectionLimiter<A> limiter,
+        CountingSubscriber(final SingleSource.Subscriber<? super C> original, final ConnectionLimiter<A> limiter,
                            final A address) {
             this.original = original;
             this.limiter = limiter;

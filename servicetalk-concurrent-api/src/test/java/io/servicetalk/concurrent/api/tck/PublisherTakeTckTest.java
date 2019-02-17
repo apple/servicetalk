@@ -23,9 +23,9 @@ import org.testng.annotations.Test;
 public class PublisherTakeTckTest extends AbstractPublisherOperatorTckTest<Integer> {
 
     @Override
-    public Publisher<Integer> createPublisher(long elements) {
+    public Publisher<Integer> createServiceTalkPublisher(long elements) {
         // Double the elements so we can then use take(...) to enforce the original count again.
-        return super.createPublisher(elements * 2);
+        return super.createServiceTalkPublisher(elements * 2);
     }
 
     @Override

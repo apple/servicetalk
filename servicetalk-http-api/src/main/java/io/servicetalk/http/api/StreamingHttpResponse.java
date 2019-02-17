@@ -16,10 +16,9 @@
 package io.servicetalk.http.api;
 
 import io.servicetalk.buffer.api.Buffer;
+import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
-
-import org.reactivestreams.Subscriber;
 
 import java.util.function.BiFunction;
 import java.util.function.Function;

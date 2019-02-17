@@ -16,6 +16,7 @@
 package io.servicetalk.redis.netty;
 
 import io.servicetalk.concurrent.Cancellable;
+import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.internal.SequentialCancellable;
@@ -87,9 +88,9 @@ final class RedisIdleConnectionReaper implements UnaryOperator<RedisConnection> 
                 AtomicIntegerFieldUpdater.newUpdater(IdleAwareRedisConnection.class, "inUse");
 
         private final RedisConnection delegate;
-        private final Consumer<Completable.Subscriber> idleCheckScheduler;
+        private final Consumer<CompletableSource.Subscriber> idleCheckScheduler;
         private final SequentialCancellable timerCancellable;
-        private final Completable.Subscriber timerCompletableSubscriber;
+        private final CompletableSource.Subscriber timerCompletableSubscriber;
 
         @SuppressWarnings("unused")
         private volatile int activeRequestsCount;
@@ -97,13 +98,13 @@ final class RedisIdleConnectionReaper implements UnaryOperator<RedisConnection> 
         private volatile int inUse;
 
         IdleAwareRedisConnection(final RedisConnection delegate,
-                                 final Consumer<Completable.Subscriber> idleCheckScheduler) {
+                                 final Consumer<CompletableSource.Subscriber> idleCheckScheduler) {
 
             this.delegate = requireNonNull(delegate);
             this.idleCheckScheduler = requireNonNull(idleCheckScheduler);
 
             timerCancellable = new SequentialCancellable();
-            timerCompletableSubscriber = new Completable.Subscriber() {
+            timerCompletableSubscriber = new CompletableSource.Subscriber() {
                 @Override
                 public void onSubscribe(final Cancellable cancellable) {
                     timerCancellable.setNextCancellable(cancellable);

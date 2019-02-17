@@ -15,7 +15,7 @@
  */
 package io.servicetalk.transport.netty.internal;
 
-import io.servicetalk.concurrent.api.Completable;
+import io.servicetalk.concurrent.CompletableSource;
 
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.embedded.EmbeddedChannel;
@@ -38,11 +38,11 @@ public abstract class AbstractWriteTest {
 
     protected EmbeddedChannel channel;
     protected NettyConnection.RequestNSupplier requestNSupplier;
-    protected Completable.Subscriber completableSubscriber;
+    protected CompletableSource.Subscriber completableSubscriber;
 
     @Before
     public void setUp() throws Exception {
-        completableSubscriber = mock(Completable.Subscriber.class);
+        completableSubscriber = mock(CompletableSource.Subscriber.class);
         channel = new EmbeddedChannel(new LoggingHandler());
         requestNSupplier = mock(NettyConnection.RequestNSupplier.class);
     }

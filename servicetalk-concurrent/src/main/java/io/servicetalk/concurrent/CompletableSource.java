@@ -15,30 +15,30 @@
  */
 package io.servicetalk.concurrent;
 
-import org.reactivestreams.Publisher;
-
 /**
  * An asynchronous computation that does not emit any data. It just completes or emits an error.
  */
-public interface Completable {
+public interface CompletableSource {
 
     /**
-     * Subscribes to the outcome of this {@code Completable}.
+     * Subscribes to the outcome of this {@code CompletableSource}.
      *
      * @param subscriber of the outcome.
-     * @see Publisher#subscribe(org.reactivestreams.Subscriber)
+     * @see PublisherSource#subscribe(PublisherSource.Subscriber)
      */
     void subscribe(Subscriber subscriber);
 
     /**
      * Subscriber of the outcome of a {@link Cancellable}.
      * <p>
-     * The semantics and threading model of this interface is meant to be the same as {@link org.reactivestreams.Subscriber},
-     * but simplified for the use case where the operations completes or fails with no data.
+     * The semantics and threading model of this interface is meant to be the same as
+     * {@link PublisherSource.Subscriber}, but simplified for the use case where the operations completes or fails with
+     * no data.
      */
     interface Subscriber {
         /**
-         * Called when the associated {@link Completable} is subscribed via {@link Completable#subscribe(Subscriber)}.
+         * Called when the associated {@link CompletableSource} is subscribed via
+         * {@link CompletableSource#subscribe(Subscriber)}.
          * @param cancellable A {@link Cancellable} that can be used to cancel the asynchronous computation for
          * this subscriber.
          */
@@ -62,9 +62,9 @@ public interface Completable {
     }
 
     /**
-     * An entity that is both {@link Completable} and {@link Subscriber}.
-     * This is same as {@link org.reactivestreams.Processor} but for {@link Completable}s.
+     * An entity that is both {@link CompletableSource} and {@link Subscriber}.
+     * This is same as {@link PublisherSource.Processor} but for {@link CompletableSource}s.
      */
-    interface Processor extends Completable, Subscriber {
+    interface Processor extends CompletableSource, Subscriber {
     }
 }

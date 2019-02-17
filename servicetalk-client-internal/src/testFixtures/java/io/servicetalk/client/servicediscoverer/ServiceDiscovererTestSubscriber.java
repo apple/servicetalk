@@ -16,14 +16,14 @@
 package io.servicetalk.client.servicediscoverer;
 
 import io.servicetalk.client.api.ServiceDiscovererEvent;
-
-import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
+import io.servicetalk.concurrent.PublisherSource.Subscriber;
+import io.servicetalk.concurrent.PublisherSource.Subscription;
 
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
+import javax.annotation.Nonnull;
 
 import static java.util.Objects.requireNonNull;
 
@@ -50,7 +50,7 @@ public final class ServiceDiscovererTestSubscriber<T> implements Subscriber<Serv
     }
 
     @Override
-    public void onNext(ServiceDiscovererEvent<T> event) {
+    public void onNext(@Nonnull ServiceDiscovererEvent<T> event) {
         if (event.available()) {
             processActiveEvent(event);
         } else {

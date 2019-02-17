@@ -18,6 +18,8 @@ package io.servicetalk.tcp.netty.internal;
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.buffer.netty.BufferUtil;
 import io.servicetalk.client.api.RetryableConnectException;
+import io.servicetalk.concurrent.SingleSource;
+import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.DelayedCancellable;
 import io.servicetalk.transport.api.ExecutionContext;
@@ -79,7 +81,7 @@ public final class TcpConnector {
 
     private static Future<?> connect0(@Nullable SocketAddress localAddress, Object resolvedRemoteAddress,
                                       ReadOnlyTcpClientConfig config, ExecutionContext executionContext,
-                                      Single.Subscriber<? super Channel> subscriber) {
+                                      SingleSource.Subscriber<? super Channel> subscriber) {
         // We have to subscribe before any possibility that we complete the single, so subscribe now and hookup the
         // cancellable after we get the future.
         final DelayedCancellable cancellable = new DelayedCancellable();
@@ -170,7 +172,7 @@ public final class TcpConnector {
     }
 
     private static void connectFutureToListener(@Nullable SocketAddress localAddress, Object resolvedRemoteAddress,
-                                                Single.Subscriber<? super Channel> subscriber, Future<?> future) {
+                                                SingleSource.Subscriber<? super Channel> subscriber, Future<?> future) {
         future.addListener(f -> {
             Throwable cause = f.cause();
             if (cause != null) {

@@ -18,8 +18,6 @@ package io.servicetalk.concurrent.api;
 import io.servicetalk.concurrent.internal.RejectedSubscribeException;
 import io.servicetalk.concurrent.internal.SignalOffloader;
 
-import org.reactivestreams.Subscriber;
-
 import static io.servicetalk.concurrent.internal.EmptySubscription.EMPTY_SUBSCRIPTION;
 
 /**

@@ -18,10 +18,9 @@ package io.servicetalk.concurrent.api;
 import io.servicetalk.concurrent.BlockingIterable;
 import io.servicetalk.concurrent.BlockingIterator;
 import io.servicetalk.concurrent.Cancellable;
+import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.internal.SignalOffloader;
 
-import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -61,13 +60,12 @@ import static io.servicetalk.concurrent.internal.SignalOffloaders.newOffloaderFo
 import static java.util.Objects.requireNonNull;
 
 /**
- * An asynchronous computation that produces 0, 1 or more elements and may or may not terminate successfully or with an error.
+ * An asynchronous computation that produces 0, 1 or more elements and may or may not terminate successfully or with
+ * an error.
  *
  * @param <T> Type of items emitted.
- *
- * @see org.reactivestreams.Publisher
  */
-public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
+public abstract class Publisher<T> implements PublisherSource<T> {
     private static final Logger LOGGER = LoggerFactory.getLogger(Publisher.class);
 
     private final Executor executor;
@@ -729,9 +727,9 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
      * {@link TimeoutException} if time {@code duration} elapses between adjacent {@link Subscriber#onNext(Object)}
      * calls. The timer starts when the returned {@link Publisher} is {@link #subscribe(Subscriber) subscribed} to.
      * <p>
-     * In the event of timeout any {@link Subscription} from {@link Subscriber#onSubscribe(Subscription)} will be
-     * {@link Subscription#cancel() cancelled} and the associated {@link Subscriber} will be
-     * {@link Subscriber#onError(Throwable) terminated}.
+     * In the event of timeout any {@link Subscription} from
+     * {@link Subscriber#onSubscribe(PublisherSource.Subscription)} will be {@link Subscription#cancel() cancelled} and
+     * the associated {@link Subscriber} will be {@link Subscriber#onError(Throwable) terminated}.
      * @param duration The time duration which is allowed to elapse between {@link Subscriber#onNext(Object)} calls.
      * @param unit The units for {@code duration}.
      * @return a new {@link Publisher} that will mimic the signals of this {@link Publisher} but will terminate with a
@@ -748,9 +746,9 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
      * {@link TimeoutException} if time {@code duration} elapses between adjacent {@link Subscriber#onNext(Object)}
      * calls. The timer starts when the returned {@link Publisher} is {@link #subscribe(Subscriber) subscribed} to.
      * <p>
-     * In the event of timeout any {@link Subscription} from {@link Subscriber#onSubscribe(Subscription)} will be
-     * {@link Subscription#cancel() cancelled} and the associated {@link Subscriber} will be
-     * {@link Subscriber#onError(Throwable) terminated}.
+     * In the event of timeout any {@link Subscription} from
+     * {@link Subscriber#onSubscribe(PublisherSource.Subscription)} will be {@link Subscription#cancel() cancelled}
+     * and the associated {@link Subscriber} will be {@link Subscriber#onError(Throwable) terminated}.
      * @param duration The time duration which is allowed to elapse between {@link Subscriber#onNext(Object)} calls.
      * @return a new {@link Publisher} that will mimic the signals of this {@link Publisher} but will terminate with a
      * {@link TimeoutException} if time {@code duration} elapses between {@link Subscriber#onNext(Object)} calls.
@@ -766,9 +764,9 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
      * {@link TimeoutException} if time {@code duration} elapses between adjacent {@link Subscriber#onNext(Object)}
      * calls. The timer starts when the returned {@link Publisher} is {@link #subscribe(Subscriber) subscribed} to.
      * <p>
-     * In the event of timeout any {@link Subscription} from {@link Subscriber#onSubscribe(Subscription)} will be
-     * {@link Subscription#cancel() cancelled} and the associated {@link Subscriber} will be
-     * {@link Subscriber#onError(Throwable) terminated}.
+     * In the event of timeout any {@link Subscription} from
+     * {@link Subscriber#onSubscribe(PublisherSource.Subscription)} will be {@link Subscription#cancel() cancelled} and
+     * the associated {@link Subscriber} will be {@link Subscriber#onError(Throwable) terminated}.
      * @param duration The time duration which is allowed to elapse between {@link Subscriber#onNext(Object)} calls.
      * @param unit The units for {@code duration}.
      * @param timeoutExecutor The {@link Executor} to use for managing the timer notifications.
@@ -785,9 +783,9 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
      * {@link TimeoutException} if time {@code duration} elapses between adjacent {@link Subscriber#onNext(Object)}
      * calls. The timer starts when the returned {@link Publisher} is {@link #subscribe(Subscriber) subscribed} to.
      * <p>
-     * In the event of timeout any {@link Subscription} from {@link Subscriber#onSubscribe(Subscription)} will be
-     * {@link Subscription#cancel() cancelled} and the associated {@link Subscriber} will be
-     * {@link Subscriber#onError(Throwable) terminated}.
+     * In the event of timeout any {@link Subscription} from
+     * {@link Subscriber#onSubscribe(PublisherSource.Subscription)} will be {@link Subscription#cancel() cancelled} and
+     * the associated {@link Subscriber} will be {@link Subscriber#onError(Throwable) terminated}.
      * @param duration The time duration which is allowed to elapse between {@link Subscriber#onNext(Object)} calls.
      * @param timeoutExecutor The {@link Executor} to use for managing the timer notifications.
      * @return a new {@link Publisher} that will mimic the signals of this {@link Publisher} but will terminate with a
@@ -1349,9 +1347,10 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
      *
      * @param expectedSubscribers The number of expected {@link #subscribe(Subscriber)} calls required on the returned
      *          {@link Publisher} before calling {@link #subscribe(Subscriber)} on this {@link Publisher}.
-     * @param maxQueueSize The maximum number of {@link Subscriber#onNext(Object)} events that will be queued if there is no
-     *                     demand for data before the {@link Subscriber} will be discarded.
-     * @return a {@link Publisher} that allows exactly {@code expectedSubscribers} calls to {@link #subscribe(Subscriber)}.
+     * @param maxQueueSize The maximum number of {@link Subscriber#onNext(Object)} events that will be queued if there
+     * is no demand for data before the {@link Subscriber} will be discarded.
+     * @return a {@link Publisher} that allows exactly {@code expectedSubscribers} calls to
+     * {@link #subscribe(Subscriber)}.
      */
     public final Publisher<T> multicast(int expectedSubscribers, int maxQueueSize) {
         return new MulticastPublisher<>(this, expectedSubscribers, maxQueueSize, executor);
@@ -1359,10 +1358,12 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
 
     /**
      * Invokes the {@code onSubscribe} {@link Consumer} argument <strong>before</strong>
-     * {@link Subscriber#onSubscribe(Subscription)} is called for {@link Subscriber}s of the returned {@link Publisher}.
+     * {@link Subscriber#onSubscribe(PublisherSource.Subscription)} is called for {@link Subscriber}s of the returned
+     * {@link Publisher}.
      *
-     * @param onSubscribe Invoked <strong>before</strong> {@link Subscriber#onSubscribe(Subscription)} is called for
-     * {@link Subscriber}s of the returned {@link Publisher}. <strong>MUST NOT</strong> throw.
+     * @param onSubscribe Invoked <strong>before</strong>
+     * {@link Subscriber#onSubscribe(PublisherSource.Subscription)} is called for {@link Subscriber}s of the returned
+     * {@link Publisher}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Publisher}.
      *
      * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
@@ -1536,9 +1537,11 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
 
     /**
      * Invokes the {@code onSubscribe} {@link Consumer} argument <strong>after</strong>
-     * {@link Subscriber#onSubscribe(Subscription)} is called for {@link Subscriber}s of the returned {@link Publisher}.
+     * {@link Subscriber#onSubscribe(PublisherSource.Subscription)} is called for {@link Subscriber}s of the returned
+     * {@link Publisher}.
      *
-     * @param onSubscribe Invoked <strong>after</strong> {@link Subscriber#onSubscribe(Subscription)} is called for
+     * @param onSubscribe Invoked <strong>after</strong>
+     * {@link Subscriber#onSubscribe(PublisherSource.Subscription)} is called for
      * {@link Subscriber}s of the returned {@link Publisher}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Publisher}.
      *
@@ -1725,7 +1728,7 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
      *
      * @param forEach {@link Consumer} to invoke for each {@link Subscriber#onNext(Object)}.
      * @return {@link Cancellable} used to invoke {@link Subscription#cancel()} on the parameter of
-     * {@link Subscriber#onSubscribe(Subscription)} for this {@link Publisher}.
+     * {@link Subscriber#onSubscribe(PublisherSource.Subscription)} for this {@link Publisher}.
      * */
     public final Cancellable forEach(Consumer<T> forEach) {
         ForEachSubscriber<T> subscriber = new ForEachSubscriber<>(forEach);
@@ -1767,7 +1770,7 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
      * Creates a new {@link Publisher} that will use the passed {@link Executor} to invoke the following methods:
      * <ul>
      *     <li>All {@link Subscription} methods.</li>
-     *     <li>The {@link #handleSubscribe(Subscriber)} method.</li>
+     *     <li>The {@link #handleSubscribe(PublisherSource.Subscriber)} method.</li>
      * </ul>
      * This method does <strong>not</strong> override preceding {@link Executor}s, if any, specified for {@code this}
      * {@link Publisher}. Only subsequent operations, if any, added in this execution chain will use this
@@ -1775,7 +1778,7 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
      *
      * @param executor {@link Executor} to use.
      * @return A new {@link Publisher} that will use the passed {@link Executor} to invoke all methods of
-     * {@link Subscription} and {@link #handleSubscribe(Subscriber)}.
+     * {@link Subscription} and {@link #handleSubscribe(PublisherSource.Subscriber)}.
      */
     public final Publisher<T> subscribeOn(Executor executor) {
         return PublishAndSubscribeOnPublishers.subscribeOn(this, executor);
@@ -1785,7 +1788,7 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
      * Creates a new {@link Publisher} that will use the passed {@link Executor} to invoke the following methods:
      * <ul>
      *     <li>All {@link Subscription} methods.</li>
-     *     <li>The {@link #handleSubscribe(Subscriber)} method.</li>
+     *     <li>The {@link #handleSubscribe(PublisherSource.Subscriber)} method.</li>
      * </ul>
      * This method overrides preceding {@link Executor}s, if any, specified for {@code this} {@link Publisher}.
      * That is to say preceding and subsequent operations for this execution chain will use this {@link Executor}.
@@ -1793,8 +1796,8 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
      *
      * @param executor {@link Executor} to use.
      * @return A new {@link Publisher} that will use the passed {@link Executor} to invoke all methods of
-     * {@link Subscription} and {@link #handleSubscribe(Subscriber)} both for the returned {@link Publisher} as well as
-     * {@code this} {@link Publisher}.
+     * {@link Subscription} and {@link #handleSubscribe(PublisherSource.Subscriber)} both for the returned
+     * {@link Publisher} as well as {@code this} {@link Publisher}.
      */
     public final Publisher<T> subscribeOnOverride(Executor executor) {
         return PublishAndSubscribeOnPublishers.subscribeOnOverride(this, executor);
@@ -1805,7 +1808,7 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
      * <ul>
      *     <li>All {@link Subscriber} methods.</li>
      *     <li>All {@link Subscription} methods.</li>
-     *     <li>The {@link #handleSubscribe(Subscriber)} method.</li>
+     *     <li>The {@link #handleSubscribe(PublisherSource.Subscriber)} method.</li>
      * </ul>
      * This method does <strong>not</strong> override preceding {@link Executor}s, if any, specified for {@code this}
      * {@link Publisher}. Only subsequent operations, if any, added in this execution chain will use this
@@ -1813,7 +1816,7 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
      *
      * @param executor {@link Executor} to use.
      * @return A new {@link Publisher} that will use the passed {@link Executor} to invoke all methods
-     * {@link Subscriber}, {@link Subscription} and {@link #handleSubscribe(Subscriber)}.
+     * {@link Subscriber}, {@link Subscription} and {@link #handleSubscribe(PublisherSource.Subscriber)}.
      */
     public final Publisher<T> publishAndSubscribeOn(Executor executor) {
         return PublishAndSubscribeOnPublishers.publishAndSubscribeOn(this, executor);
@@ -1824,7 +1827,7 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
      * <ul>
      *     <li>All {@link Subscriber} methods.</li>
      *     <li>All {@link Subscription} methods.</li>
-     *     <li>The {@link #handleSubscribe(Subscriber)} method.</li>
+     *     <li>The {@link #handleSubscribe(PublisherSource.Subscriber)} method.</li>
      * </ul>
      * This method overrides preceding {@link Executor}s, if any, specified for {@code this} {@link Publisher}.
      * That is to say preceding and subsequent operations for this execution chain will use this {@link Executor}.
@@ -1832,8 +1835,8 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
      *
      * @param executor {@link Executor} to use.
      * @return A new {@link Publisher} that will use the passed {@link Executor} to invoke all methods of
-     * {@link Subscriber}, {@link Subscription} and {@link #handleSubscribe(Subscriber)} both for the returned
-     * {@link Publisher} as well as {@code this} {@link Publisher}.
+     * {@link Subscriber}, {@link Subscription} and {@link #handleSubscribe(PublisherSource.Subscriber)} both for the
+     * returned {@link Publisher} as well as {@code this} {@link Publisher}.
      */
     public final Publisher<T> publishAndSubscribeOnOverride(Executor executor) {
         return PublishAndSubscribeOnPublishers.publishAndSubscribeOnOverride(this, executor);
@@ -2034,9 +2037,9 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
      * Subscribes to {@code this} {@link Publisher} and converts all signals received by the {@link Subscriber} to the
      * returned {@link InputStream} following the below rules:
      * <ul>
-     *     <li>{@link Subscription} received by {@link Subscriber#onSubscribe(Subscription)} is used to request more
-     *     data when required. If the returned {@link InputStream} is closed, {@link Subscription} is cancelled and
-     *     any unread data is disposed.</li>
+     *     <li>{@link Subscription} received by {@link Subscriber#onSubscribe(PublisherSource.Subscription)} is used to
+     *     request more data when required. If the returned {@link InputStream} is closed, {@link Subscription} is
+     *     cancelled and any unread data is disposed.</li>
      *     <li>Any items received by {@link Subscriber#onNext(Object)} are converted to a {@code byte[]} using the
      *     passed {@code serializer}. These {@code byte}s are available to be read from the {@link InputStream}</li>
      *     <li>Any {@link Throwable} received by {@link Subscriber#onError(Throwable)} is thrown (wrapped in an
@@ -2065,9 +2068,9 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
      * Subscribes to {@code this} {@link Publisher} and converts all signals received by the {@link Subscriber} to the
      * returned {@link InputStream} following the below rules:
      * <ul>
-     *     <li>{@link Subscription} received by {@link Subscriber#onSubscribe(Subscription)} is used to request more
-     *     data when required. If the returned {@link InputStream} is closed, {@link Subscription} is cancelled and
-     *     any unread data is disposed.</li>
+     *     <li>{@link Subscription} received by {@link Subscriber#onSubscribe(PublisherSource.Subscription)} is used to
+     *     request more data when required. If the returned {@link InputStream} is closed, {@link Subscription} is
+     *     cancelled and any unread data is disposed.</li>
      *     <li>Any items received by {@link Subscriber#onNext(Object)} are convertedto a {@code byte[]} using the
      *     passed {@code serializer}. These {@code byte}s are available to be read from the {@link InputStream}</li>
      *     <li>Any {@link Throwable} received by {@link Subscriber#onError(Throwable)} is thrown (wrapped in an
@@ -2099,8 +2102,8 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
      * {@link BlockingIterable#iterator()} is called on the returned {@link BlockingIterable}, {@code this}
      * {@link Publisher} is subscribed following the below rules:
      * <ul>
-     *     <li>{@link Subscription} received by {@link Subscriber#onSubscribe(Subscription)} is used to request more
-     *     data when required.</li>
+     *     <li>{@link Subscription} received by {@link Subscriber#onSubscribe(PublisherSource.Subscription)} is used to
+     *     request more data when required.</li>
      *     <li>Any items received by {@link Subscriber#onNext(Object)} is returned from a call to
      *     {@link BlockingIterator#next()}.</li>
      *     <li>Any {@link Throwable} received by {@link Subscriber#onError(Throwable)} is thrown (wrapped in a
@@ -2136,8 +2139,8 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
      * {@link BlockingIterable#iterator()} is called on the returned {@link BlockingIterable}, {@code this}
      * {@link Publisher} is subscribed following the below rules:
      * <ul>
-     *     <li>{@link Subscription} received by {@link Subscriber#onSubscribe(Subscription)} is used to request more
-     *     data when required.</li>
+     *     <li>{@link Subscription} received by {@link Subscriber#onSubscribe(PublisherSource.Subscription)} is used to
+     *     request more data when required.</li>
      *     <li>Any items received by {@link Subscriber#onNext(Object)} is returned from a call to
      *     {@link BlockingIterator#next()}.</li>
      *     <li>Any {@link Throwable} received by {@link Subscriber#onError(Throwable)} is thrown (wrapped in a
@@ -2354,21 +2357,6 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
         return new PublisherDefer<>(publisherSupplier);
     }
 
-    /**
-     * Returns a {@link Publisher} that wraps a {@link org.reactivestreams.Publisher}.
-     *
-     * @param publisher {@link org.reactivestreams.Publisher} to wrap.
-     *
-     * @param <T> Type of items emitted by the returned {@link Publisher}.
-     * @return a new {@link Publisher} that wraps a {@link org.reactivestreams.Publisher}.
-     */
-    public static <T> Publisher<T> fromReactiveStreamsPublisher(org.reactivestreams.Publisher<T> publisher) {
-        if (publisher instanceof Publisher) {
-            return (Publisher<T>) publisher;
-        }
-        return new ReactiveStreamsPublisher<>(publisher);
-    }
-
     //
     // Static Utility Methods End
     //
@@ -2440,11 +2428,11 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
     }
 
     /**
-     * Override for {@link #handleSubscribe(Subscriber)} to offload the {@link #handleSubscribe(Subscriber)} call to the
-     * passed {@link SignalOffloader}.
+     * Override for {@link #handleSubscribe(PublisherSource.Subscriber)} to offload the
+     * {@link #handleSubscribe(PublisherSource.Subscriber)} call to the passed {@link SignalOffloader}.
      * <p>
      * This method wraps the passed {@link Subscriber} using {@link SignalOffloader#offloadSubscriber(Subscriber)} and
-     * then calls {@link #handleSubscribe(Subscriber)} using
+     * then calls {@link #handleSubscribe(PublisherSource.Subscriber)} using
      * {@link SignalOffloader#offloadSubscribe(Subscriber, Consumer)}.
      * Operators that do not wish to wrap the passed {@link Subscriber} can override this method and omit the wrapping.
      *

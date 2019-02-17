@@ -17,6 +17,10 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.Cancellable;
+import io.servicetalk.concurrent.CompletableSource;
+import io.servicetalk.concurrent.PublisherSource.Subscriber;
+import io.servicetalk.concurrent.PublisherSource.Subscription;
+import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
@@ -40,8 +44,6 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
-import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
 
 import java.util.Collection;
 import java.util.Queue;
@@ -122,7 +124,7 @@ public class HttpOffloadingTest {
                         });
         final Single<StreamingHttpResponse> resp = httpConnection.request(
                 httpConnection.get("/").payloadBody(reqPayload));
-        resp.subscribe(new Single.Subscriber<StreamingHttpResponse>() {
+        resp.subscribe(new SingleSource.Subscriber<StreamingHttpResponse>() {
             @Override
             public void onSubscribe(final Cancellable cancellable) {
                 if (inEventLoop().test(currentThread())) {
@@ -168,7 +170,7 @@ public class HttpOffloadingTest {
     @Test
     public void reserveConnectionIsOffloaded() throws Exception {
         client.reserveConnection(client.get("/")).doAfterFinally(terminated::countDown)
-                .subscribe(new Single.Subscriber<StreamingHttpClient.ReservedStreamingHttpConnection>() {
+                .subscribe(new SingleSource.Subscriber<StreamingHttpClient.ReservedStreamingHttpConnection>() {
                     @Override
                     public void onSubscribe(final Cancellable cancellable) {
                         if (inEventLoop().test(currentThread())) {
@@ -257,7 +259,7 @@ public class HttpOffloadingTest {
     }
 
     private void subscribeTo(Predicate<Thread> notExpectedThread, Collection<Throwable> errors, Completable source) {
-        source.doAfterFinally(terminated::countDown).subscribe(new Completable.Subscriber() {
+        source.doAfterFinally(terminated::countDown).subscribe(new CompletableSource.Subscriber() {
             @Override
             public void onSubscribe(final Cancellable cancellable) {
                 if (notExpectedThread.test(currentThread())) {

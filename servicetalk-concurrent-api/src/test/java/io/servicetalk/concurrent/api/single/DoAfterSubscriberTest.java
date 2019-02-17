@@ -15,6 +15,7 @@
  */
 package io.servicetalk.concurrent.api.single;
 
+import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.api.Single;
 
 import java.util.function.Supplier;
@@ -22,7 +23,8 @@ import java.util.function.Supplier;
 public class DoAfterSubscriberTest extends AbstractDoSubscriberTest {
 
     @Override
-    protected <T> Single<T> doSubscriber(Single<T> single, Supplier<Single.Subscriber<? super T>> subscriberSupplier) {
+    protected <T> Single<T> doSubscriber(Single<T> single,
+                                         Supplier<SingleSource.Subscriber<? super T>> subscriberSupplier) {
         return single.doAfterSubscriber(subscriberSupplier);
     }
 }

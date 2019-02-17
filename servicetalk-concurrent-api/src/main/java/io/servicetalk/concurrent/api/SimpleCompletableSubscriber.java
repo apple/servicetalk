@@ -16,12 +16,13 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
+import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.internal.SequentialCancellable;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-final class SimpleCompletableSubscriber extends SequentialCancellable implements Completable.Subscriber {
+final class SimpleCompletableSubscriber extends SequentialCancellable implements CompletableSource.Subscriber {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SimpleCompletableSubscriber.class);
 

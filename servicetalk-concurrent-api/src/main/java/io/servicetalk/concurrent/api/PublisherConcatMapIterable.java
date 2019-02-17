@@ -18,9 +18,6 @@ package io.servicetalk.concurrent.api;
 import io.servicetalk.concurrent.internal.FlowControlUtil;
 import io.servicetalk.concurrent.internal.TerminalNotification;
 
-import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
-
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.NoSuchElementException;

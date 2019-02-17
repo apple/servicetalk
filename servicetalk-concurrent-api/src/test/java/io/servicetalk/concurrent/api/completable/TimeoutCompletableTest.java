@@ -16,6 +16,7 @@
 package io.servicetalk.concurrent.api.completable;
 
 import io.servicetalk.concurrent.Cancellable;
+import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.MockedCompletableListenerRule;
 import io.servicetalk.concurrent.api.TestSingle;
@@ -124,7 +125,7 @@ public class TimeoutCompletableTest {
         Thread.sleep(1);
         timerSimulator.submit(event.runnable).get();
         Cancellable mockCancellable = mock(Cancellable.class);
-        io.servicetalk.concurrent.Completable.Subscriber subscriber = delayedCompletable.subscriber;
+        CompletableSource.Subscriber subscriber = delayedCompletable.subscriber;
         assertNotNull(subscriber);
         subscriber.onSubscribe(mockCancellable);
         verify(mockCancellable).cancel();

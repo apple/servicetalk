@@ -17,6 +17,9 @@ package io.servicetalk.redis.netty;
 
 import io.servicetalk.client.api.RetryableException;
 import io.servicetalk.concurrent.Cancellable;
+import io.servicetalk.concurrent.CompletableSource;
+import io.servicetalk.concurrent.PublisherSource.Subscriber;
+import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.internal.QueueFullAndRejectedSubscribeException;
@@ -32,8 +35,6 @@ import io.servicetalk.transport.netty.internal.NettyConnection;
 import io.servicetalk.transport.netty.internal.SequentialTaskQueue;
 
 import io.netty.buffer.ByteBuf;
-import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -288,11 +289,11 @@ final class InternalSubscribedRedisConnection extends AbstractRedisConnection {
 
             private final boolean isSubscribedCommand;
             private final Completable write;
-            private final Completable.Subscriber subscriber;
+            private final CompletableSource.Subscriber subscriber;
             @SuppressWarnings("unused")
             volatile int taskCalledPostTerm;
 
-            WriteTask(RedisProtocolSupport.Command command, Completable write, Completable.Subscriber subscriber) {
+            WriteTask(RedisProtocolSupport.Command command, Completable write, CompletableSource.Subscriber subscriber) {
                 this.isSubscribedCommand = command == PSUBSCRIBE || command == SUBSCRIBE;
                 this.write = write;
                 this.subscriber = subscriber;
@@ -302,7 +303,7 @@ final class InternalSubscribedRedisConnection extends AbstractRedisConnection {
                 if (isSubscribedCommand && !subscribed) {
                     subscribed = true;
                 }
-                write.subscribe(new Completable.Subscriber() {
+                write.subscribe(new CompletableSource.Subscriber() {
                     @Override
                     public void onSubscribe(Cancellable cancellable) {
                         subscriber.onSubscribe(() -> {
@@ -367,8 +368,8 @@ final class InternalSubscribedRedisConnection extends AbstractRedisConnection {
 
         return new Publisher<PubSubChannelMessage>() {
             @Override
-            protected void handleSubscribe(org.reactivestreams.Subscriber<? super PubSubChannelMessage> subscriber) {
-                queuedWrite.subscribe(new io.servicetalk.concurrent.Completable.Subscriber() {
+            protected void handleSubscribe(io.servicetalk.concurrent.PublisherSource.Subscriber<? super PubSubChannelMessage> subscriber) {
+                queuedWrite.subscribe(new CompletableSource.Subscriber() {
 
                     @Override
                     public void onSubscribe(Cancellable cancellable) {

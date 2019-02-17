@@ -17,6 +17,9 @@ package io.servicetalk.redis.netty;
 
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.Cancellable;
+import io.servicetalk.concurrent.CompletableSource;
+import io.servicetalk.concurrent.PublisherSource.Subscriber;
+import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.GroupedPublisher;
 import io.servicetalk.concurrent.api.Publisher;
@@ -34,8 +37,6 @@ import io.servicetalk.redis.netty.TerminalMessagePredicates.TerminalMessagePredi
 import io.servicetalk.transport.netty.internal.NettyConnection;
 
 import io.netty.buffer.ByteBuf;
-import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -287,7 +288,7 @@ final class ReadStreamSplitter {
                     command.encodeTo(buf);
                     writeRequestArgument(buf, channel);
                     final RedisRequest request = newRequest(command, buf);
-                    unsubscribeWriter.apply(request).subscribe(new Completable.Subscriber() {
+                    unsubscribeWriter.apply(request).subscribe(new CompletableSource.Subscriber() {
                         @Override
                         public void onSubscribe(final Cancellable cancellable) {
                             // The cancel cannot be propagated because we don't want to cancel outside the scope of this group.

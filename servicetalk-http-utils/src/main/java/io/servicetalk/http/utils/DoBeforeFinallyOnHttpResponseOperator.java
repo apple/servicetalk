@@ -16,14 +16,14 @@
 package io.servicetalk.http.utils;
 
 import io.servicetalk.concurrent.Cancellable;
-import io.servicetalk.concurrent.Single;
-import io.servicetalk.concurrent.Single.Subscriber;
+import io.servicetalk.concurrent.PublisherSource.Subscription;
+import io.servicetalk.concurrent.SingleSource;
+import io.servicetalk.concurrent.SingleSource.Subscriber;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.SingleOperator;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
 
-import org.reactivestreams.Subscription;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,7 +37,7 @@ import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 /**
  * Helper operator for signaling the end of an HTTP Request/Response cycle.
  *
- * <p>{@link StreamingHttpRequest} and {@link StreamingHttpResponse} are nested sources ({@link Single} of meta-data
+ * <p>{@link StreamingHttpRequest} and {@link StreamingHttpResponse} are nested sources ({@link SingleSource} of meta-data
  * containing a payload {@link Publisher}), which makes it non-trivial to get a single signal at the end of this
  * Request/Response cycle. One needs to consider and coordinate between the multitude of outcomes: cancel/success/error
  * across both sources.</p>
@@ -153,7 +153,7 @@ public final class DoBeforeFinallyOnHttpResponseOperator
         }
     }
 
-    private static final class CancelImmediatelySubscriber implements org.reactivestreams.Subscriber<Object> {
+    private static final class CancelImmediatelySubscriber implements io.servicetalk.concurrent.PublisherSource.Subscriber<Object> {
         private static final Logger LOGGER = LoggerFactory.getLogger(CancelImmediatelySubscriber.class);
         static final CancelImmediatelySubscriber INSTANCE = new CancelImmediatelySubscriber();
 

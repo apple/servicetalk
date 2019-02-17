@@ -15,6 +15,7 @@
  */
 package io.servicetalk.concurrent.api.completable;
 
+import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.api.Completable;
 
 import org.junit.Before;
@@ -51,7 +52,7 @@ public class CompletableDeferTest {
     }
 
     private static void listenAndVerify(Completable source) {
-        Completable.Subscriber subscriber = mock(Completable.Subscriber.class);
+        CompletableSource.Subscriber subscriber = mock(CompletableSource.Subscriber.class);
         source.subscribe(subscriber);
         verify(subscriber).onSubscribe(any());
         verify(subscriber).onComplete();

@@ -15,8 +15,6 @@
  */
 package io.servicetalk.concurrent.api;
 
-import org.reactivestreams.Subscriber;
-
 /**
  * A {@link Publisher} that could be created with an {@link Executor}.
  *

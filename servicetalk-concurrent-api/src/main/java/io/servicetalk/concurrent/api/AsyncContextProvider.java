@@ -15,7 +15,9 @@
  */
 package io.servicetalk.concurrent.api;
 
-import org.reactivestreams.Subscription;
+import io.servicetalk.concurrent.CompletableSource;
+import io.servicetalk.concurrent.PublisherSource.Subscription;
+import io.servicetalk.concurrent.SingleSource;
 
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutorService;
@@ -52,59 +54,59 @@ interface AsyncContextProvider {
     /**
      * Wrap the {@link io.servicetalk.concurrent.Cancellable} to ensure it is able to track
      * {@link AsyncContext} correctly.
-     * @param subscriber The {@link Completable.Subscriber} for which to wrap the corresponding
+     * @param subscriber The {@link CompletableSource.Subscriber} for which to wrap the corresponding
      * {@link io.servicetalk.concurrent.Cancellable}.
      * @param current The current {@link AsyncContextMap}.
-     * @return The wrapped {@link Completable.Subscriber}.
+     * @return The wrapped {@link CompletableSource.Subscriber}.
      */
-    Completable.Subscriber wrapCancellable(Completable.Subscriber subscriber, AsyncContextMap current);
+    CompletableSource.Subscriber wrapCancellable(CompletableSource.Subscriber subscriber, AsyncContextMap current);
 
     /**
-     * Wrap an {@link Completable.Subscriber} to ensure it is able to track {@link AsyncContext} correctly.
+     * Wrap an {@link CompletableSource.Subscriber} to ensure it is able to track {@link AsyncContext} correctly.
      * @param subscriber The subscriber to wrap.
      * @param current The current {@link AsyncContextMap}.
      * @return The wrapped subscriber.
      */
-    Completable.Subscriber wrap(Completable.Subscriber subscriber, AsyncContextMap current);
+    CompletableSource.Subscriber wrap(CompletableSource.Subscriber subscriber, AsyncContextMap current);
 
     /**
      * Wrap the {@link io.servicetalk.concurrent.Cancellable} to ensure it is able to track
      * {@link AsyncContext} correctly.
-     * @param subscriber The {@link Single.Subscriber} for which to wrap the corresponding
+     * @param subscriber The {@link SingleSource.Subscriber} for which to wrap the corresponding
      * {@link io.servicetalk.concurrent.Cancellable}.
      * @param current The current {@link AsyncContextMap}.
      * @param <T> Type of the {@link Single}.
-     * @return The wrapped {@link Single.Subscriber}.
+     * @return The wrapped {@link SingleSource.Subscriber}.
      */
-    <T> Single.Subscriber<T> wrapCancellable(Single.Subscriber<T> subscriber, AsyncContextMap current);
+    <T> SingleSource.Subscriber<T> wrapCancellable(SingleSource.Subscriber<T> subscriber, AsyncContextMap current);
 
     /**
-     * Wrap an {@link Single.Subscriber} to ensure it is able to track {@link AsyncContext} correctly.
+     * Wrap an {@link SingleSource.Subscriber} to ensure it is able to track {@link AsyncContext} correctly.
      * @param subscriber subscriber to wrap.
      * @param current The current {@link AsyncContextMap}.
      * @param <T> Type of the {@link Single}.
      * @return The wrapped subscriber.
      */
-    <T> Single.Subscriber<T> wrap(Single.Subscriber<T> subscriber, AsyncContextMap current);
+    <T> SingleSource.Subscriber<T> wrap(SingleSource.Subscriber<T> subscriber, AsyncContextMap current);
 
     /**
      * Wrap an {@link Subscription} to ensure it is able to track {@link AsyncContext} correctly.
-     * @param subscriber The {@link org.reactivestreams.Subscriber} for which to wrap the corresponding
+     * @param subscriber The {@link io.servicetalk.concurrent.PublisherSource.Subscriber} for which to wrap the corresponding
      * {@link Subscription}.
      * @param current The current {@link AsyncContextMap}.
-     * @return The wrapped {@link org.reactivestreams.Subscriber}.
+     * @return The wrapped {@link io.servicetalk.concurrent.PublisherSource.Subscriber}.
      */
-    <T> org.reactivestreams.Subscriber<T> wrapSubscription(org.reactivestreams.Subscriber<T> subscriber,
+    <T> io.servicetalk.concurrent.PublisherSource.Subscriber<T> wrapSubscription(io.servicetalk.concurrent.PublisherSource.Subscriber<T> subscriber,
                                                            AsyncContextMap current);
 
     /**
-     * Wrap an {@link org.reactivestreams.Subscriber} to ensure it is able to track {@link AsyncContext} correctly.
+     * Wrap an {@link io.servicetalk.concurrent.PublisherSource.Subscriber} to ensure it is able to track {@link AsyncContext} correctly.
      * @param subscriber The subscriber to wrap.
      * @param current The current {@link AsyncContextMap}.
-     * @param <T> the type of element signaled to the {@link org.reactivestreams.Subscriber}.
+     * @param <T> the type of element signaled to the {@link io.servicetalk.concurrent.PublisherSource.Subscriber}.
      * @return The wrapped subscriber.
      */
-    <T> org.reactivestreams.Subscriber<T> wrap(org.reactivestreams.Subscriber<T> subscriber, AsyncContextMap current);
+    <T> io.servicetalk.concurrent.PublisherSource.Subscriber<T> wrap(io.servicetalk.concurrent.PublisherSource.Subscriber<T> subscriber, AsyncContextMap current);
 
     /**
      * Wrap an {@link Executor} to ensure it is able to track {@link AsyncContext} correctly.

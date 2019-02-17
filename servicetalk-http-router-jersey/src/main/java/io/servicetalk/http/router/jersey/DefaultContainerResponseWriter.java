@@ -17,7 +17,7 @@ package io.servicetalk.http.router.jersey;
 
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.Cancellable;
-import io.servicetalk.concurrent.Single.Subscriber;
+import io.servicetalk.concurrent.SingleSource.Subscriber;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.internal.ConnectableOutputStream;
 import io.servicetalk.http.api.HttpExecutionStrategy;

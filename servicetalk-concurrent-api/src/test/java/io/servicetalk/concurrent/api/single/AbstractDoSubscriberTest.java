@@ -15,6 +15,7 @@
  */
 package io.servicetalk.concurrent.api.single;
 
+import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.api.MockedSingleListenerRule;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.DeliberateException;
@@ -35,12 +36,12 @@ public abstract class AbstractDoSubscriberTest {
     @Rule
     public final MockedSingleListenerRule<String> listener = new MockedSingleListenerRule<>();
 
-    private Single.Subscriber<String> subscriber;
+    private SingleSource.Subscriber<String> subscriber;
 
     @SuppressWarnings("unchecked")
     @Before
     public void setUp() throws Exception {
-        subscriber = mock(Single.Subscriber.class);
+        subscriber = mock(SingleSource.Subscriber.class);
     }
 
     @Test
@@ -57,5 +58,5 @@ public abstract class AbstractDoSubscriberTest {
         verify(subscriber).onError(DeliberateException.DELIBERATE_EXCEPTION);
     }
 
-    protected abstract <T> Single<T> doSubscriber(Single<T> single, Supplier<Single.Subscriber<? super T>> subscriberSupplier);
+    protected abstract <T> Single<T> doSubscriber(Single<T> single, Supplier<SingleSource.Subscriber<? super T>> subscriberSupplier);
 }

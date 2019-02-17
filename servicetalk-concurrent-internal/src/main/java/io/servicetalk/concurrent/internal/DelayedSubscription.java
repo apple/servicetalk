@@ -15,7 +15,7 @@
  */
 package io.servicetalk.concurrent.internal;
 
-import org.reactivestreams.Subscription;
+import io.servicetalk.concurrent.PublisherSource.Subscription;
 
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;

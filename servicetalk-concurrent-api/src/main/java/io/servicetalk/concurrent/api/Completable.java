@@ -16,6 +16,8 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
+import io.servicetalk.concurrent.CompletableSource;
+import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.internal.SignalOffloader;
 
 import org.slf4j.Logger;
@@ -46,7 +48,7 @@ import static java.util.function.Function.identity;
 /**
  * An asynchronous computation that does not emit any data. It just completes or emits an error.
  */
-public abstract class Completable implements io.servicetalk.concurrent.Completable {
+public abstract class Completable implements CompletableSource {
     private static final Logger LOGGER = LoggerFactory.getLogger(Completable.class);
 
     private final Executor executor;
@@ -954,7 +956,7 @@ public abstract class Completable implements io.servicetalk.concurrent.Completab
      *
      * @param executor {@link Executor} to use.
      * @return A new {@link Completable} that will use the passed {@link Executor} to invoke all methods of
-     * {@link Subscriber}, {@link Cancellable} and {@link #handleSubscribe(Completable.Subscriber)} both for the
+     * {@link Subscriber}, {@link Cancellable} and {@link #handleSubscribe(CompletableSource.Subscriber)} both for the
      * returned {@link Completable} as well as {@code this} {@link Completable}.
      */
     public final Completable publishOnOverride(Executor executor) {
@@ -965,7 +967,7 @@ public abstract class Completable implements io.servicetalk.concurrent.Completab
      * Creates a new {@link Completable} that will use the passed {@link Executor} to invoke the following methods:
      * <ul>
      *     <li>All {@link Cancellable} methods.</li>
-     *     <li>The {@link #handleSubscribe(Completable.Subscriber)} method.</li>
+     *     <li>The {@link #handleSubscribe(CompletableSource.Subscriber)} method.</li>
      * </ul>
      * This method does <strong>not</strong> override preceding {@link Executor}s, if any, specified for {@code this}
      * {@link Completable}. Only subsequent operations, if any, added in this execution chain will use this
@@ -973,7 +975,7 @@ public abstract class Completable implements io.servicetalk.concurrent.Completab
      *
      * @param executor {@link Executor} to use.
      * @return A new {@link Completable} that will use the passed {@link Executor} to invoke all methods of
-     * {@link Cancellable} and {@link #handleSubscribe(Completable.Subscriber)}.
+     * {@link Cancellable} and {@link #handleSubscribe(CompletableSource.Subscriber)}.
      */
     public final Completable subscribeOn(Executor executor) {
         return PublishAndSubscribeOnCompletables.subscribeOn(this, executor);
@@ -983,7 +985,7 @@ public abstract class Completable implements io.servicetalk.concurrent.Completab
      * Creates a new {@link Completable} that will use the passed {@link Executor} to invoke the following methods:
      * <ul>
      *     <li>All {@link Cancellable} methods.</li>
-     *     <li>The {@link #handleSubscribe(Completable.Subscriber)} method.</li>
+     *     <li>The {@link #handleSubscribe(CompletableSource.Subscriber)} method.</li>
      * </ul>
      * This method overrides preceding {@link Executor}s, if any, specified for {@code this} {@link Completable}.
      * That is to say preceding and subsequent operations for this execution chain will use this {@link Executor}.
@@ -991,7 +993,7 @@ public abstract class Completable implements io.servicetalk.concurrent.Completab
      *
      * @param executor {@link Executor} to use.
      * @return A new {@link Completable} that will use the passed {@link Executor} to invoke all methods of
-     * {@link Cancellable} and {@link #handleSubscribe(Completable.Subscriber)} both for the returned
+     * {@link Cancellable} and {@link #handleSubscribe(CompletableSource.Subscriber)} both for the returned
      * {@link Completable} as well as {@code this} {@link Completable}.
      */
     public final Completable subscribeOnOverride(Executor executor) {
@@ -1003,7 +1005,7 @@ public abstract class Completable implements io.servicetalk.concurrent.Completab
      * <ul>
      *     <li>All {@link Subscriber} methods.</li>
      *     <li>All {@link Cancellable} methods.</li>
-     *     <li>The {@link #handleSubscribe(Completable.Subscriber)} method.</li>
+     *     <li>The {@link #handleSubscribe(CompletableSource.Subscriber)} method.</li>
      * </ul>
      * This method does <strong>not</strong> override preceding {@link Executor}s, if any, specified for {@code this}
      * {@link Completable}. Only subsequent operations, if any, added in this execution chain will use this
@@ -1011,7 +1013,7 @@ public abstract class Completable implements io.servicetalk.concurrent.Completab
      *
      * @param executor {@link Executor} to use.
      * @return A new {@link Completable} that will use the passed {@link Executor} to invoke all methods
-     * {@link Subscriber}, {@link Cancellable} and {@link #handleSubscribe(Completable.Subscriber)}.
+     * {@link Subscriber}, {@link Cancellable} and {@link #handleSubscribe(CompletableSource.Subscriber)}.
      */
     public final Completable publishAndSubscribeOn(Executor executor) {
         return PublishAndSubscribeOnCompletables.publishAndSubscribeOn(this, executor);
@@ -1022,7 +1024,7 @@ public abstract class Completable implements io.servicetalk.concurrent.Completab
      * <ul>
      *     <li>All {@link Subscriber} methods.</li>
      *     <li>All {@link Cancellable} methods.</li>
-     *     <li>The {@link #handleSubscribe(Completable.Subscriber)} method.</li>
+     *     <li>The {@link #handleSubscribe(CompletableSource.Subscriber)} method.</li>
      * </ul>
      * This method overrides preceding {@link Executor}s, if any, specified for {@code this} {@link Completable}.
      * That is to say preceding and subsequent operations for this execution chain will use this {@link Executor}.
@@ -1030,7 +1032,7 @@ public abstract class Completable implements io.servicetalk.concurrent.Completab
      *
      * @param executor {@link Executor} to use.
      * @return A new {@link Completable} that will use the passed {@link Executor} to invoke all methods of
-     * {@link Subscriber}, {@link Cancellable} and {@link #handleSubscribe(Completable.Subscriber)} both for the
+     * {@link Subscriber}, {@link Cancellable} and {@link #handleSubscribe(CompletableSource.Subscriber)} both for the
      * returned {@link Completable} as well as {@code this} {@link Completable}.
      */
     public final Completable publishAndSubscribeOnOverride(Executor executor) {
@@ -1062,7 +1064,7 @@ public abstract class Completable implements io.servicetalk.concurrent.Completab
     /**
      * Converts this {@code Completable} to a {@link Publisher}.
      * <p>
-     * No {@link org.reactivestreams.Subscriber#onNext(Object)} signals will be delivered to the returned
+     * No {@link io.servicetalk.concurrent.PublisherSource.Subscriber#onNext(Object)} signals will be delivered to the returned
      * {@link Publisher}. Only terminal signals will be delivered. If you need more control you should consider using
      * {@link #concatWith(Publisher)}.
      * @param <T> The value type of the resulting {@link Publisher}.
@@ -1075,8 +1077,8 @@ public abstract class Completable implements io.servicetalk.concurrent.Completab
     /**
      * Converts this {@code Completable} to a {@link Single}.
      * <p>
-     * The return value's {@link Single.Subscriber#onSuccess(Object)} value is undefined. If you need a specific value
-     * you can also use {@link #concatWith(Single)} with a {@link Single#success(Object)}.
+     * The return value's {@link SingleSource.Subscriber#onSuccess(Object)} value is undefined. If you need a specific
+     * value you can also use {@link #concatWith(Single)} with a {@link Single#success(Object)}.
      * @param <T> The value type of the resulting {@link Single}.
      * @return A {@link Single} that mirrors the terminal signal from this {@link Completable}.
      */
@@ -1529,7 +1531,7 @@ public abstract class Completable implements io.servicetalk.concurrent.Completab
      *
      * @param subscriber the subscriber.
      * @param signalOffloader {@link SignalOffloader} to use for this {@link Subscriber}.
-     * @param contextMap the {@link AsyncContextMap} to use for this {@link org.reactivestreams.Subscriber}.
+     * @param contextMap the {@link AsyncContextMap} to use for this {@link io.servicetalk.concurrent.PublisherSource.Subscriber}.
      * @param contextProvider the {@link AsyncContextProvider} used to wrap any objects to preserve
      */
     void handleSubscribe(Subscriber subscriber, SignalOffloader signalOffloader, AsyncContextMap contextMap,

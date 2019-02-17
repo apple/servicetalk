@@ -15,10 +15,9 @@
  */
 package io.servicetalk.redis.api;
 
+import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.transport.api.ConnectionContext;
-
-import org.reactivestreams.Subscriber;
 
 import static java.util.Objects.requireNonNull;
 

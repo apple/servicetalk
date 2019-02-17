@@ -15,6 +15,7 @@
  */
 package io.servicetalk.concurrent.api.publisher;
 
+import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.api.MockedSubscriberRule;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.internal.DeliberateException;
@@ -22,7 +23,6 @@ import io.servicetalk.concurrent.internal.DeliberateException;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.reactivestreams.Subscriber;
 
 import java.util.function.Supplier;
 

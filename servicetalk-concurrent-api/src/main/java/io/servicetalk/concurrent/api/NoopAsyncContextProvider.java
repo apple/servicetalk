@@ -15,9 +15,9 @@
  */
 package io.servicetalk.concurrent.api;
 
-import io.servicetalk.concurrent.Single;
-
-import org.reactivestreams.Subscriber;
+import io.servicetalk.concurrent.CompletableSource;
+import io.servicetalk.concurrent.PublisherSource.Subscriber;
+import io.servicetalk.concurrent.SingleSource;
 
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
@@ -53,24 +53,24 @@ final class NoopAsyncContextProvider implements AsyncContextProvider {
     }
 
     @Override
-    public Completable.Subscriber wrapCancellable(final Completable.Subscriber subscriber,
-                                                  final AsyncContextMap current) {
+    public CompletableSource.Subscriber wrapCancellable(final CompletableSource.Subscriber subscriber,
+                                                        final AsyncContextMap current) {
         return subscriber;
     }
 
     @Override
-    public Completable.Subscriber wrap(final Completable.Subscriber subscriber, final AsyncContextMap current) {
+    public CompletableSource.Subscriber wrap(final CompletableSource.Subscriber subscriber, final AsyncContextMap current) {
         return subscriber;
     }
 
     @Override
-    public <T> Single.Subscriber<T> wrapCancellable(final Single.Subscriber<T> subscriber,
-                                                    final AsyncContextMap current) {
+    public <T> SingleSource.Subscriber<T> wrapCancellable(final SingleSource.Subscriber<T> subscriber,
+                                                          final AsyncContextMap current) {
         return subscriber;
     }
 
     @Override
-    public <T> Single.Subscriber<T> wrap(final Single.Subscriber<T> subscriber, final AsyncContextMap current) {
+    public <T> SingleSource.Subscriber<T> wrap(final SingleSource.Subscriber<T> subscriber, final AsyncContextMap current) {
         return subscriber;
     }
 

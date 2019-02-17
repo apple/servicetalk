@@ -15,7 +15,7 @@
  */
 package io.servicetalk.concurrent.api;
 
-import org.reactivestreams.Subscriber;
+import io.servicetalk.concurrent.PublisherSource.Subscriber;
 
 import java.util.function.Function;
 

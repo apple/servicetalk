@@ -16,6 +16,7 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
+import io.servicetalk.concurrent.CompletableSource;
 
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
@@ -41,7 +42,7 @@ import static org.mockito.Mockito.verifyZeroInteractions;
 
 public class MockedCompletableListenerRule implements TestRule {
     @Nullable
-    private Completable.Subscriber subscriber;
+    private CompletableSource.Subscriber subscriber;
     @Nullable
     private Cancellable cancellable;
 
@@ -152,7 +153,7 @@ public class MockedCompletableListenerRule implements TestRule {
     }
 
     public MockedCompletableListenerRule reset() {
-        subscriber = mock(Completable.Subscriber.class);
+        subscriber = mock(CompletableSource.Subscriber.class);
         return this;
     }
 
@@ -162,7 +163,7 @@ public class MockedCompletableListenerRule implements TestRule {
     }
 
     private void createSubscriber() {
-        subscriber = mock(Completable.Subscriber.class);
+        subscriber = mock(CompletableSource.Subscriber.class);
     }
 
     private InOrder inOrderVerifier() {

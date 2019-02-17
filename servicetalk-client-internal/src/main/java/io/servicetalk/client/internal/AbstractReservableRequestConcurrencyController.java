@@ -16,6 +16,7 @@
 package io.servicetalk.client.internal;
 
 import io.servicetalk.concurrent.Cancellable;
+import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.internal.LatestValueSubscriber;
@@ -49,7 +50,7 @@ abstract class AbstractReservableRequestConcurrencyController implements Reserva
                                                    final Completable onClose) {
         maxConcurrencyHolder = new LatestValueSubscriber<>();
         maxConcurrencySettingStream.subscribe(maxConcurrencyHolder);
-        onClose.subscribe(new Completable.Subscriber() {
+        onClose.subscribe(new CompletableSource.Subscriber() {
             @Override
             public void onSubscribe(Cancellable cancellable) {
                 // No op

@@ -15,6 +15,8 @@
  */
 package io.servicetalk.concurrent.internal;
 
+import io.servicetalk.concurrent.PublisherSource.Subscriber;
+import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Executors;
@@ -25,8 +27,6 @@ import org.junit.Test;
 import org.junit.rules.Timeout;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
 import org.slf4j.Logger;
 
 import java.util.ArrayList;
@@ -217,7 +217,7 @@ public class SignalOffloaderConcurrentPublisherTest {
         }
     }
 
-    private static final class SubscriberImpl implements org.reactivestreams.Subscriber<Integer> {
+    private static final class SubscriberImpl implements io.servicetalk.concurrent.PublisherSource.Subscriber<Integer> {
 
         private final CountDownLatch awaitOnSubscribe = new CountDownLatch(1);
         @Nullable

@@ -21,6 +21,8 @@ import io.servicetalk.client.api.partition.PartitionAttributes;
 import io.servicetalk.client.api.partition.PartitionMap;
 import io.servicetalk.client.api.partition.PartitionMapFactory;
 import io.servicetalk.client.api.partition.PartitionedServiceDiscovererEvent;
+import io.servicetalk.concurrent.PublisherSource.Subscriber;
+import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.api.AsyncCloseable;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.GroupedPublisher;
@@ -28,8 +30,6 @@ import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.internal.SequentialCancellable;
 
-import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,6 +38,7 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
@@ -267,12 +268,13 @@ public final class DefaultPartitionedClientGroup<U, R, Client extends Listenable
             // have to wrap the Subscription in a ConcurrentSubscription which is costly.
             // Since, we synchronously process onNexts we do not really care about flow control.
             s.request(Long.MAX_VALUE);
-            sequentialCancellable.setNextCancellable(s::cancel);
+            sequentialCancellable.setNextCancellable(s);
         }
 
         @Override
-        public void onNext(final GroupedPublisher<Partition<Client>,
-                ? extends PartitionedServiceDiscovererEvent<R>> newGroup) {
+        public void onNext(@Nonnull final GroupedPublisher<Partition<Client>,
+                        ? extends PartitionedServiceDiscovererEvent<R>> newGroup) {
+            requireNonNull(newGroup);
             Client newClient = requireNonNull(clientFactory.apply(newGroup.getKey().attributes,
                     new PartitionServiceDiscoverer<>(newGroup)), "<null> Client created for partition");
             newGroup.getKey().client(newClient);

@@ -15,11 +15,10 @@
  */
 package io.servicetalk.http.api;
 
+import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.http.api.StreamingHttpConnection.SettingKey;
 import io.servicetalk.transport.api.ConnectionContext;
-
-import org.reactivestreams.Subscriber;
 
 /**
  * Represents a single fixed connection to a HTTP server.

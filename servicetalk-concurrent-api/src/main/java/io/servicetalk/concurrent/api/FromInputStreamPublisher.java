@@ -17,8 +17,6 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.internal.DuplicateSubscribeException;
 
-import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

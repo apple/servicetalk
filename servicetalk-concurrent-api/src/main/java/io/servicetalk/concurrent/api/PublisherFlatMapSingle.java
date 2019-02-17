@@ -16,13 +16,12 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
+import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.internal.ConcurrentSubscription;
 import io.servicetalk.concurrent.internal.FlowControlUtil;
 import io.servicetalk.concurrent.internal.QueueFullException;
 import io.servicetalk.concurrent.internal.TerminalNotification;
 
-import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -79,7 +78,7 @@ final class PublisherFlatMapSingle<T, R> extends AbstractAsynchronousPublisherOp
         return new FlatMapSubscriber<>(this, subscriber);
     }
 
-    private static final class FlatMapSubscriber<T, R> implements org.reactivestreams.Subscriber<T>, Subscription {
+    private static final class FlatMapSubscriber<T, R> implements io.servicetalk.concurrent.PublisherSource.Subscriber<T>, Subscription {
         private static final AtomicReferenceFieldUpdater<FlatMapSubscriber, CompositeException> delayedErrorUpdater =
                 newUpdater(FlatMapSubscriber.class, CompositeException.class, "delayedError");
         private static final AtomicIntegerFieldUpdater<FlatMapSubscriber> emittingUpdater =
@@ -124,14 +123,14 @@ final class PublisherFlatMapSingle<T, R> extends AbstractAsynchronousPublisherOp
         private final Queue<Object> pending;
         private final DynamicCompositeCancellable cancellable = new MapDynamicCompositeCancellable();
         private final PublisherFlatMapSingle<T, R> source;
-        private final org.reactivestreams.Subscriber<? super R> target;
+        private final io.servicetalk.concurrent.PublisherSource.Subscriber<? super R> target;
 
         /*
          * An indicator in the pending queue that a Single terminated with error.
          */
         private static final Object SINGLE_ERROR = new Object();
 
-        FlatMapSubscriber(PublisherFlatMapSingle<T, R> source, org.reactivestreams.Subscriber<? super R> target) {
+        FlatMapSubscriber(PublisherFlatMapSingle<T, R> source, io.servicetalk.concurrent.PublisherSource.Subscriber<? super R> target) {
             this.source = source;
             this.target = target;
             // Start with a small capacity as maxConcurrency can be large.
@@ -294,7 +293,7 @@ final class PublisherFlatMapSingle<T, R> extends AbstractAsynchronousPublisherOp
             }
         }
 
-        private final class FlatMapSingleSubscriber implements Single.Subscriber<R> {
+        private final class FlatMapSingleSubscriber implements SingleSource.Subscriber<R> {
             @Nullable
             private Cancellable singleCancellable;
 

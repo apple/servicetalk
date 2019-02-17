@@ -16,6 +16,7 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
+import io.servicetalk.concurrent.SingleSource;
 
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
@@ -41,7 +42,7 @@ import static org.mockito.Mockito.verifyZeroInteractions;
 
 public class MockedSingleListenerRule<T> implements TestRule {
     @Nullable
-    private Single.Subscriber<? super T> subscriber;
+    private SingleSource.Subscriber<? super T> subscriber;
     @Nullable
     private volatile Cancellable onSubscribeResult;
 
@@ -58,7 +59,7 @@ public class MockedSingleListenerRule<T> implements TestRule {
     }
 
     public MockedSingleListenerRule<T> resetSubscriberMock() {
-        subscriber = mock(Single.Subscriber.class);
+        subscriber = mock(SingleSource.Subscriber.class);
         doAnswer((Answer<Void>) invocation -> {
             onSubscribeResult = invocation.getArgument(0);
             return null;

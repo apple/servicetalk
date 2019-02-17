@@ -16,15 +16,16 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
+import io.servicetalk.concurrent.CompletableSource;
 
 import static io.servicetalk.concurrent.api.DefaultAsyncContextProvider.INSTANCE;
 import static java.util.Objects.requireNonNull;
 
-final class ContextPreservingCompletableSubscriber implements Completable.Subscriber {
+final class ContextPreservingCompletableSubscriber implements CompletableSource.Subscriber {
     private final AsyncContextMap saved;
-    private final Completable.Subscriber subscriber;
+    private final CompletableSource.Subscriber subscriber;
 
-    ContextPreservingCompletableSubscriber(Completable.Subscriber subscriber, AsyncContextMap current) {
+    ContextPreservingCompletableSubscriber(CompletableSource.Subscriber subscriber, AsyncContextMap current) {
         this.subscriber = requireNonNull(subscriber);
         this.saved = requireNonNull(current);
     }

@@ -15,6 +15,9 @@
  */
 package io.servicetalk.concurrent.api;
 
+import io.servicetalk.concurrent.CompletableSource;
+import io.servicetalk.concurrent.PublisherSource.Subscriber;
+import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.concurrent.internal.SignalOffloader;
 
@@ -22,7 +25,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.Timeout;
-import org.reactivestreams.Subscriber;
 
 import java.util.concurrent.ExecutionException;
 
@@ -87,7 +89,7 @@ public class SubscribeThrowsTest {
     public void singleSubscriberWithOffloaderThrows() {
         SignalOffloader offloader = ((AbstractOffloaderAwareExecutor) immediate()).newSignalOffloader(immediate());
         @SuppressWarnings("unchecked")
-        Single.Subscriber<String> subscriber = (Single.Subscriber<String>) mock(Single.Subscriber.class);
+        SingleSource.Subscriber<String> subscriber = (SingleSource.Subscriber<String>) mock(SingleSource.Subscriber.class);
         Single<String> s = new Single<String>() {
             @Override
             protected void handleSubscribe(final Subscriber subscriber) {
@@ -115,7 +117,7 @@ public class SubscribeThrowsTest {
     @Test
     public void completableSubscriberWithOffloaderThrows() {
         SignalOffloader offloader = ((AbstractOffloaderAwareExecutor) immediate()).newSignalOffloader(immediate());
-        Completable.Subscriber subscriber = mock(Completable.Subscriber.class);
+        CompletableSource.Subscriber subscriber = mock(CompletableSource.Subscriber.class);
         Completable c = new Completable() {
             @Override
             protected void handleSubscribe(final Subscriber subscriber) {

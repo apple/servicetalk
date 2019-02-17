@@ -15,11 +15,11 @@
  */
 package io.servicetalk.opentracing.http;
 
+import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.http.api.HttpResponseMetaData;
 import io.servicetalk.http.api.StreamingHttpResponse;
 
 import io.opentracing.Scope;
-import org.reactivestreams.Subscription;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Predicate;
@@ -50,7 +50,7 @@ final class TracingUtils {
                                                               AtomicBoolean scopeClosed,
                                                               Predicate<HttpResponseMetaData> errorChecker) {
         return resp -> resp.transformRawPayloadBody(pub ->
-                pub.doAfterSubscriber(() -> new org.reactivestreams.Subscriber<Object>() {
+                pub.doAfterSubscriber(() -> new io.servicetalk.concurrent.PublisherSource.Subscriber<Object>() {
                     @Override
                     public void onSubscribe(final Subscription s) {
                     }

@@ -21,6 +21,7 @@ import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.api.LoadBalancerFactory;
 import io.servicetalk.client.api.NoAvailableHostException;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
+import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.api.AsyncCloseable;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.CompositeCloseable;
@@ -30,8 +31,6 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.DuplicateSubscribeException;
 import io.servicetalk.concurrent.internal.SequentialCancellable;
 
-import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -131,7 +130,7 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends ListenableA
                 comparing(host -> host instanceof MutableAddressHost ?
                         ((MutableAddressHost<ResolvedAddress, C>) host).mutableAddress : host.address, comparator);
 
-        eventPublisher.subscribe(new org.reactivestreams.Subscriber<ServiceDiscovererEvent<ResolvedAddress>>() {
+        eventPublisher.subscribe(new io.servicetalk.concurrent.PublisherSource.Subscriber<ServiceDiscovererEvent<ResolvedAddress>>() {
 
             @Override
             public void onSubscribe(final Subscription s) {

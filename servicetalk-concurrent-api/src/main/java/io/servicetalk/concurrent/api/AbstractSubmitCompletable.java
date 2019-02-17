@@ -16,6 +16,7 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
+import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.internal.DelayedCancellable;
 
 import static java.util.Objects.requireNonNull;
@@ -30,7 +31,7 @@ abstract class AbstractSubmitCompletable extends Completable {
     abstract Runnable getRunnable();
 
     @Override
-    protected final void handleSubscribe(final Completable.Subscriber subscriber) {
+    protected final void handleSubscribe(final CompletableSource.Subscriber subscriber) {
         DelayedCancellable cancellable = new DelayedCancellable();
         subscriber.onSubscribe(cancellable);
         final Cancellable eCancellable;

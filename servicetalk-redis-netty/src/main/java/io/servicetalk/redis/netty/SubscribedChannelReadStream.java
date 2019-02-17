@@ -28,9 +28,6 @@ import io.servicetalk.redis.api.RedisData.CompleteRedisData;
 import io.servicetalk.redis.api.RedisData.FirstBulkStringChunk;
 import io.servicetalk.redis.api.RedisData.SimpleString;
 
-import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
-
 import javax.annotation.Nullable;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
@@ -209,8 +206,8 @@ final class SubscribedChannelReadStream extends Publisher<SubscribedChannelReadS
      * <strong>Important:</strong>
      * We realize the restrictions of <a href="https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.1/README.md#2.13">Reactive Streams 2.13</a>,
      * but in this case the "source publisher" is internal and known to handle exceptions in such a way that the exception
-     * will be pushed to {@link org.reactivestreams.Subscriber#onError(Throwable)} and untimely to the user.
-     * This is decided to be a better alternative than just cancelling the {@link org.reactivestreams.Subscription} and logging an
+     * will be pushed to {@link io.servicetalk.concurrent.PublisherSource.Subscriber#onError(Throwable)} and untimely to the user.
+     * This is decided to be a better alternative than just cancelling the {@link io.servicetalk.concurrent.PublisherSource.Subscription} and logging an
      * error because it provides more visibility and direct feedback for users.
      */
     private static final class AggregatingSubscriber implements Subscriber<RedisData> {

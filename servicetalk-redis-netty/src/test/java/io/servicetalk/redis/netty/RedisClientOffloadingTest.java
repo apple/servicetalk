@@ -16,9 +16,11 @@
 package io.servicetalk.redis.netty;
 
 import io.servicetalk.concurrent.Cancellable;
-import io.servicetalk.concurrent.Completable;
+import io.servicetalk.concurrent.CompletableSource;
+import io.servicetalk.concurrent.PublisherSource.Subscriber;
+import io.servicetalk.concurrent.PublisherSource.Subscription;
+import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.redis.api.RedisClient.ReservedRedisConnection;
 import io.servicetalk.redis.api.RedisData;
@@ -33,8 +35,6 @@ import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
-import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
 
 import java.util.Collection;
 import java.util.Queue;
@@ -109,7 +109,7 @@ public class RedisClientOffloadingTest {
     @Test
     public void reserveConnectionIsOffloaded() throws Exception {
         getEnv().client.reserveConnection(PING).doAfterFinally(terminated::countDown)
-                .subscribe(new Single.Subscriber<ReservedRedisConnection>() {
+                .subscribe(new SingleSource.Subscriber<ReservedRedisConnection>() {
                     @Override
                     public void onSubscribe(final Cancellable cancellable) {
                         if (isInClientEventLoop(currentThread())) {
@@ -180,8 +180,8 @@ public class RedisClientOffloadingTest {
         assertThat("Unexpected errors.", errors, is(empty()));
     }
 
-    private void subscribeTo(Predicate<Thread> notExpectedThread, Collection<Throwable> errors, Completable source) {
-        source.subscribe(new Completable.Subscriber() {
+    private void subscribeTo(Predicate<Thread> notExpectedThread, Collection<Throwable> errors, CompletableSource source) {
+        source.subscribe(new CompletableSource.Subscriber() {
             @Override
             public void onSubscribe(final Cancellable cancellable) {
                 if (notExpectedThread.test(currentThread())) {

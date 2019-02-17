@@ -16,6 +16,9 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
+import io.servicetalk.concurrent.CompletableSource;
+import io.servicetalk.concurrent.PublisherSource.Subscription;
+import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.api.AsyncContextMap.Key;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 
@@ -26,7 +29,6 @@ import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
-import org.reactivestreams.Subscription;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -92,14 +94,14 @@ public class DefaultAsyncContextProviderTest {
         AsyncContext.clear();
     }
 
-    private static void completeOnExecutor(Completable.Subscriber subscriber) {
+    private static void completeOnExecutor(CompletableSource.Subscriber subscriber) {
         executor.execute(() -> {
             subscriber.onSubscribe(IGNORE_CANCEL);
             subscriber.onComplete();
         });
     }
 
-    private static <T> void completeOnExecutor(Single.Subscriber<? super T> subscriber, T value) {
+    private static <T> void completeOnExecutor(SingleSource.Subscriber<? super T> subscriber, T value) {
         executor.execute(() -> {
             subscriber.onSubscribe(IGNORE_CANCEL);
             subscriber.onSuccess(value);
@@ -909,7 +911,7 @@ public class DefaultAsyncContextProviderTest {
         assertEquals(size == 0, AsyncContext.current().isEmpty());
     }
 
-    private static class ContextCaptureCompletableSubscriber implements Completable.Subscriber {
+    private static class ContextCaptureCompletableSubscriber implements CompletableSource.Subscriber {
         final CountDownLatch latch = new CountDownLatch(2);
 
         @Nullable
@@ -948,7 +950,7 @@ public class DefaultAsyncContextProviderTest {
         }
     }
 
-    private static class ContextCaptureSingleSubscriber<T> implements Single.Subscriber<T> {
+    private static class ContextCaptureSingleSubscriber<T> implements SingleSource.Subscriber<T> {
         final CountDownLatch latch = new CountDownLatch(2);
 
         @Nullable
@@ -993,7 +995,7 @@ public class DefaultAsyncContextProviderTest {
         AsyncContextMap cancelContext;
 
         @Override
-        protected void handleSubscribe(org.reactivestreams.Subscriber s) {
+        protected void handleSubscribe(io.servicetalk.concurrent.PublisherSource.Subscriber s) {
             // Introduce some asynchrony here and there
             executor.execute(() -> s.onSubscribe(new Subscription() {
                 @Override
@@ -1024,7 +1026,7 @@ public class DefaultAsyncContextProviderTest {
         }
     }
 
-    private static class ContextCaptureSubscriber<T> implements org.reactivestreams.Subscriber<T> {
+    private static class ContextCaptureSubscriber<T> implements io.servicetalk.concurrent.PublisherSource.Subscriber<T> {
         final CountDownLatch latch = new CountDownLatch(1);
 
         @Nullable

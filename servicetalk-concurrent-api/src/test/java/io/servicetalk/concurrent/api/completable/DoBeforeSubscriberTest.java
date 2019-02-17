@@ -15,13 +15,15 @@
  */
 package io.servicetalk.concurrent.api.completable;
 
+import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.api.Completable;
 
 import java.util.function.Supplier;
 
 public class DoBeforeSubscriberTest extends AbstractDoSubscriberTest {
     @Override
-    protected Completable doSubscriber(Completable completable, Supplier<Completable.Subscriber> subscriberSupplier) {
+    protected Completable doSubscriber(Completable completable,
+                                       Supplier<CompletableSource.Subscriber> subscriberSupplier) {
         return completable.doBeforeSubscriber(subscriberSupplier);
     }
 }
