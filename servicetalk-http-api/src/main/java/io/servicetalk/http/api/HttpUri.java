@@ -47,7 +47,7 @@ final class HttpUri {
     @Nullable
     private final String hostHeader;
     private final String relativeReference;
-    private final boolean ssl;
+    private final boolean sslEnabled;
     @Nullable
     private final String scheme;
     @Nullable
@@ -241,8 +241,8 @@ final class HttpUri {
         scheme = parsedScheme == 0 ? "http" : parsedScheme == 1 ? "https" : null;
         host = parsedHost;
         hostHeader = parsedHostHeader;
-        ssl = parsedScheme == 1;
-        port = parsedPort > 0 ? parsedPort : (ssl ? DEFAULT_PORT_HTTPS : DEFAULT_PORT_HTTP);
+        sslEnabled = parsedScheme == 1;
+        port = parsedPort > 0 ? parsedPort : (sslEnabled ? DEFAULT_PORT_HTTPS : DEFAULT_PORT_HTTP);
         explicitPort = parsedPort > 0;
         this.uri = uri;
     }
@@ -332,8 +332,8 @@ final class HttpUri {
         return hostHeader;
     }
 
-    boolean ssl() {
-        return ssl;
+    boolean sslEnabled() {
+        return sslEnabled;
     }
 
     boolean hostAndPortEqual(final HttpUri rhs) {

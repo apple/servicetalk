@@ -162,7 +162,7 @@ public class HttpUriTest {
         assertEquals("", hp.rawPath());
         assertEquals("", hp.path());
         assertEquals("", hp.rawQuery());
-        assertFalse(hp.ssl());
+        assertFalse(hp.sslEnabled());
         assertEquals(81, hp.port());
     }
 
@@ -176,7 +176,7 @@ public class HttpUriTest {
         assertEquals("", hp.rawPath());
         assertEquals("", hp.path());
         assertEquals("", hp.rawQuery());
-        assertFalse(hp.ssl());
+        assertFalse(hp.sslEnabled());
         assertEquals(81, hp.port());
     }
 
@@ -190,7 +190,7 @@ public class HttpUriTest {
         assertEquals("/@foo", hp.rawPath());
         assertEquals("/@foo", hp.path());
         assertEquals("", hp.rawQuery());
-        assertFalse(hp.ssl());
+        assertFalse(hp.sslEnabled());
         assertEquals(80, hp.port());
     }
 
@@ -204,7 +204,7 @@ public class HttpUriTest {
         assertEquals("", hp.rawPath());
         assertEquals("", hp.path());
         assertEquals("", hp.rawQuery());
-        assertFalse(hp.ssl());
+        assertFalse(hp.sslEnabled());
         assertEquals(80, hp.port());
     }
 
@@ -218,7 +218,7 @@ public class HttpUriTest {
         assertEquals("/path", hp.rawPath());
         assertEquals("/path", hp.path());
         assertEquals("query", hp.rawQuery());
-        assertFalse(hp.ssl());
+        assertFalse(hp.sslEnabled());
         assertEquals(DEFAULT_PORT_HTTP, hp.port());
     }
 
@@ -232,7 +232,7 @@ public class HttpUriTest {
         assertEquals("f//foo.com/path", hp.rawPath());
         assertEquals("f//foo.com/path", hp.path());
         assertEquals("query", hp.rawQuery());
-        assertFalse(hp.ssl());
+        assertFalse(hp.sslEnabled());
         assertEquals(DEFAULT_PORT_HTTP, hp.port());
     }
 
@@ -246,7 +246,7 @@ public class HttpUriTest {
         assertEquals("user/mode@apple.com:8080/path/is/here", hp.rawPath());
         assertEquals("user/mode@apple.com:8080/path/is/here", hp.path());
         assertEquals("queryname=value", hp.rawQuery());
-        assertFalse(hp.ssl());
+        assertFalse(hp.sslEnabled());
         assertEquals(DEFAULT_PORT_HTTP, hp.port());
     }
 
@@ -260,7 +260,7 @@ public class HttpUriTest {
         assertEquals("user/apple.com/path/is/here", hp.rawPath());
         assertEquals("user/apple.com/path/is/here", hp.path());
         assertEquals("queryname=value", hp.rawQuery());
-        assertFalse(hp.ssl());
+        assertFalse(hp.sslEnabled());
         assertEquals(DEFAULT_PORT_HTTP, hp.port());
     }
 
@@ -274,7 +274,7 @@ public class HttpUriTest {
         assertEquals("apple.com", hp.rawPath());
         assertEquals("apple.com", hp.path());
         assertEquals("", hp.rawQuery());
-        assertFalse(hp.ssl());
+        assertFalse(hp.sslEnabled());
         assertEquals(DEFAULT_PORT_HTTP, hp.port());
     }
 
@@ -288,7 +288,7 @@ public class HttpUriTest {
         assertEquals("/", hp.rawPath());
         assertEquals("/", hp.path());
         assertEquals("", hp.rawQuery());
-        assertFalse(hp.ssl());
+        assertFalse(hp.sslEnabled());
         assertEquals(DEFAULT_PORT_HTTP, hp.port());
     }
 
@@ -302,7 +302,7 @@ public class HttpUriTest {
         assertEquals("", hp.rawPath());
         assertEquals("", hp.path());
         assertEquals("", hp.rawQuery());
-        assertFalse(hp.ssl());
+        assertFalse(hp.sslEnabled());
         assertEquals(DEFAULT_PORT_HTTP, hp.port());
     }
 
@@ -316,7 +316,7 @@ public class HttpUriTest {
         assertEquals("", hp.rawPath());
         assertEquals("", hp.path());
         assertEquals("", hp.rawQuery());
-        assertFalse(hp.ssl());
+        assertFalse(hp.sslEnabled());
         assertEquals(DEFAULT_PORT_HTTP, hp.port());
     }
 
@@ -330,7 +330,7 @@ public class HttpUriTest {
         assertEquals("example.com", hp.rawPath());
         assertEquals("example.com", hp.path());
         assertEquals("", hp.rawQuery());
-        assertFalse(hp.ssl());
+        assertFalse(hp.sslEnabled());
         assertEquals(DEFAULT_PORT_HTTP, hp.port());
     }
 
@@ -344,7 +344,7 @@ public class HttpUriTest {
         assertEquals("/app.css", hp.rawPath());
         assertEquals("/app.css", hp.path());
         assertEquals("v1", hp.rawQuery());
-        assertFalse(hp.ssl());
+        assertFalse(hp.sslEnabled());
         assertEquals(8080, hp.port());
     }
 
@@ -358,7 +358,7 @@ public class HttpUriTest {
         assertEquals("/path%20/is/here", hp.rawPath());
         assertEquals("/path /is/here", hp.path());
         assertEquals("queryname=value", hp.rawQuery());
-        assertTrue(hp.ssl());
+        assertTrue(hp.sslEnabled());
         assertEquals(DEFAULT_PORT_HTTPS, hp.port());
     }
 
@@ -372,7 +372,7 @@ public class HttpUriTest {
         assertEquals("/path/is/here", hp.rawPath());
         assertEquals("/path/is/here", hp.path());
         assertEquals("queryname=value", hp.rawQuery());
-        assertFalse(hp.ssl());
+        assertFalse(hp.sslEnabled());
         assertEquals(DEFAULT_PORT_HTTP, hp.port());
     }
 
@@ -386,7 +386,7 @@ public class HttpUriTest {
         assertEquals("/", hp.rawPath());
         assertEquals("/", hp.path());
         assertEquals("", hp.rawQuery());
-        assertFalse(hp.ssl());
+        assertFalse(hp.sslEnabled());
         assertEquals(DEFAULT_PORT_HTTP, hp.port());
     }
 
@@ -400,7 +400,7 @@ public class HttpUriTest {
         assertEquals("", hp.rawPath());
         assertEquals("", hp.path());
         assertEquals("", hp.rawQuery());
-        assertFalse(hp.ssl());
+        assertFalse(hp.sslEnabled());
         assertEquals(DEFAULT_PORT_HTTP, hp.port());
     }
 
@@ -414,7 +414,7 @@ public class HttpUriTest {
         assertEquals("/path/is/here", hp.rawPath());
         assertEquals("/path/is/here", hp.path());
         assertEquals("queryname=value", hp.rawQuery());
-        assertFalse(hp.ssl());
+        assertFalse(hp.sslEnabled());
         assertEquals(DEFAULT_PORT_HTTP, hp.port());
     }
 
@@ -428,7 +428,7 @@ public class HttpUriTest {
         assertEquals("", hp.rawPath());
         assertEquals("", hp.path());
         assertEquals("", hp.rawQuery());
-        assertFalse(hp.ssl());
+        assertFalse(hp.sslEnabled());
         assertEquals(80, hp.port());
     }
 
@@ -442,7 +442,7 @@ public class HttpUriTest {
         assertEquals("", hp.rawPath());
         assertEquals("", hp.path());
         assertEquals("foo", hp.rawQuery());
-        assertFalse(hp.ssl());
+        assertFalse(hp.sslEnabled());
         assertEquals(8080, hp.port());
     }
 
@@ -456,7 +456,7 @@ public class HttpUriTest {
         assertEquals("", hp.rawPath());
         assertEquals("", hp.path());
         assertEquals("", hp.rawQuery());
-        assertFalse(hp.ssl());
+        assertFalse(hp.sslEnabled());
         assertEquals(8080, hp.port());
     }
 
@@ -470,7 +470,7 @@ public class HttpUriTest {
         assertEquals("", hp.rawPath());
         assertEquals("", hp.path());
         assertEquals("", hp.rawQuery());
-        assertFalse(hp.ssl());
+        assertFalse(hp.sslEnabled());
         assertEquals(8080, hp.port());
     }
 
@@ -484,7 +484,7 @@ public class HttpUriTest {
         assertEquals("", hp.rawPath());
         assertEquals("", hp.path());
         assertEquals("", hp.rawQuery());
-        assertFalse(hp.ssl());
+        assertFalse(hp.sslEnabled());
         assertEquals(8080, hp.port());
     }
 
@@ -498,7 +498,7 @@ public class HttpUriTest {
         assertEquals("", hp.rawPath());
         assertEquals("", hp.path());
         assertEquals("", hp.rawQuery());
-        assertFalse(hp.ssl());
+        assertFalse(hp.sslEnabled());
         assertEquals(8080, hp.port());
     }
 
@@ -512,7 +512,7 @@ public class HttpUriTest {
         assertEquals("/html/rfc3986", hp.rawPath());
         assertEquals("/html/rfc3986", hp.path());
         assertEquals("", hp.rawQuery());
-        assertTrue(hp.ssl());
+        assertTrue(hp.sslEnabled());
         assertEquals(DEFAULT_PORT_HTTPS, hp.port());
     }
 
@@ -526,7 +526,7 @@ public class HttpUriTest {
         assertEquals("", hp.rawPath());
         assertEquals("", hp.path());
         assertEquals("", hp.rawQuery());
-        assertTrue(hp.ssl());
+        assertTrue(hp.sslEnabled());
         assertEquals(9, hp.port());
     }
 
@@ -540,7 +540,7 @@ public class HttpUriTest {
         assertEquals("", hp.rawPath());
         assertEquals("", hp.path());
         assertEquals("", hp.rawQuery());
-        assertTrue(hp.ssl());
+        assertTrue(hp.sslEnabled());
         assertEquals(DEFAULT_PORT_HTTPS, hp.port());
     }
 
@@ -554,7 +554,7 @@ public class HttpUriTest {
         assertEquals("", hp.rawPath());
         assertEquals("", hp.path());
         assertEquals("", hp.rawQuery());
-        assertTrue(hp.ssl());
+        assertTrue(hp.sslEnabled());
         assertEquals(988, hp.port());
     }
 
@@ -568,7 +568,7 @@ public class HttpUriTest {
         assertEquals("", hp.rawPath());
         assertEquals("", hp.path());
         assertEquals("", hp.rawQuery());
-        assertTrue(hp.ssl());
+        assertTrue(hp.sslEnabled());
         assertEquals(65535, hp.port());
     }
 
@@ -582,7 +582,7 @@ public class HttpUriTest {
         assertEquals("", hp.rawPath());
         assertEquals("", hp.path());
         assertEquals("", hp.rawQuery());
-        assertTrue(hp.ssl());
+        assertTrue(hp.sslEnabled());
         assertEquals(DEFAULT_PORT_HTTPS, hp.port());
     }
 
@@ -597,7 +597,7 @@ public class HttpUriTest {
         assertEquals("/path", hp.rawPath());
         assertEquals("/path", hp.path());
         assertEquals("param=value", hp.rawQuery());
-        assertTrue(hp.ssl());
+        assertTrue(hp.sslEnabled());
     }
 
     @Test
@@ -611,7 +611,7 @@ public class HttpUriTest {
         assertEquals("/path", hp.rawPath());
         assertEquals("/path", hp.path());
         assertEquals("param=value", hp.rawQuery());
-        assertTrue(hp.ssl());
+        assertTrue(hp.sslEnabled());
     }
 
     @Test
@@ -625,7 +625,7 @@ public class HttpUriTest {
         assertEquals("/path", hp.rawPath());
         assertEquals("/path", hp.path());
         assertEquals("param=value", hp.rawQuery());
-        assertFalse(hp.ssl());
+        assertFalse(hp.sslEnabled());
     }
 
     @Test
@@ -639,7 +639,7 @@ public class HttpUriTest {
         assertEquals("/path", hp.rawPath());
         assertEquals("/path", hp.path());
         assertEquals("param=value", hp.rawQuery());
-        assertFalse(hp.ssl());
+        assertFalse(hp.sslEnabled());
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -658,7 +658,7 @@ public class HttpUriTest {
         assertEquals("/path", hp.rawPath());
         assertEquals("/path", hp.path());
         assertEquals("param=value", hp.rawQuery());
-        assertFalse(hp.ssl());
+        assertFalse(hp.sslEnabled());
     }
 
     @Test
@@ -672,7 +672,7 @@ public class HttpUriTest {
         assertEquals("/path", hp.rawPath());
         assertEquals("/path", hp.path());
         assertEquals("param=value", hp.rawQuery());
-        assertFalse(hp.ssl());
+        assertFalse(hp.sslEnabled());
     }
 
     @Test
@@ -686,7 +686,7 @@ public class HttpUriTest {
         assertEquals("/path", hp.rawPath());
         assertEquals("/path", hp.path());
         assertEquals("param=value", hp.rawQuery());
-        assertFalse(hp.ssl());
+        assertFalse(hp.sslEnabled());
     }
 
     @Test
@@ -700,7 +700,7 @@ public class HttpUriTest {
         assertEquals("/path", hp.rawPath());
         assertEquals("/path", hp.path());
         assertEquals("param=value", hp.rawQuery());
-        assertFalse(hp.ssl());
+        assertFalse(hp.sslEnabled());
     }
 
     @Test
@@ -714,7 +714,7 @@ public class HttpUriTest {
         assertEquals("/path", hp.rawPath());
         assertEquals("/path", hp.path());
         assertEquals("param=value", hp.rawQuery());
-        assertFalse(hp.ssl());
+        assertFalse(hp.sslEnabled());
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -748,7 +748,7 @@ public class HttpUriTest {
         assertEquals("/path/is/here", hp.rawPath());
         assertEquals("/path/is/here", hp.path());
         assertEquals("queryname=value", hp.rawQuery());
-        assertEquals(isSsl, hp.ssl());
+        assertEquals(isSsl, hp.sslEnabled());
         assertEquals(port, hp.port());
     }
 }
