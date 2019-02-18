@@ -19,8 +19,6 @@ import io.servicetalk.concurrent.api.Single;
 
 import java.util.function.Predicate;
 
-import static io.servicetalk.concurrent.api.Single.error;
-
 final class ConditionalHttpServiceFilter extends StreamingHttpServiceFilter {
     private final Predicate<StreamingHttpRequest> predicate;
     private final StreamingHttpServiceFilter predicatedFilter;
@@ -37,28 +35,9 @@ final class ConditionalHttpServiceFilter extends StreamingHttpServiceFilter {
     public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
                                                 final StreamingHttpRequest req,
                                                 final StreamingHttpResponseFactory resFactory) {
-        return new Single<StreamingHttpResponse>() {
-            @Override
-            protected void handleSubscribe(final Subscriber<? super StreamingHttpResponse> subscriber) {
-                predicatedRequest(ctx, req, resFactory).subscribe(subscriber);
-            }
-        };
-    }
-
-    private Single<StreamingHttpResponse> predicatedRequest(final HttpServiceContext ctx,
-                                                            final StreamingHttpRequest req,
-                                                            final StreamingHttpResponseFactory resFactory) {
-        boolean b;
-        try {
-            b = predicate.test(req);
-        } catch (Throwable t) {
-            return error(new RuntimeException("Unexpected predicate failure", t));
-        }
-
-        if (b) {
+        if (predicate.test(req)) {
             return predicatedFilter.handle(ctx, req, resFactory);
         }
-
         return delegate().handle(ctx, req, resFactory);
     }
 }

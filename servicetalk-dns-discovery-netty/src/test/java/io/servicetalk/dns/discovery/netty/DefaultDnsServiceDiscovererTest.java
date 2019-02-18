@@ -45,7 +45,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static io.servicetalk.concurrent.api.Completable.error;
-import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.dns.discovery.netty.DnsTestUtils.nextIp;
 import static io.servicetalk.dns.discovery.netty.DnsTestUtils.nextIp6;
@@ -90,9 +89,9 @@ public class DefaultDnsServiceDiscovererTest {
 
     @After
     public void tearDown() throws Exception {
-        awaitIndefinitely(discoverer.closeAsync());
+        discoverer.closeAsync().toFuture().get();
         dnsServer.stop();
-        awaitIndefinitely(nettyIoExecutor.closeAsync());
+        nettyIoExecutor.closeAsync().toFuture().get();
     }
 
     @Test
@@ -122,7 +121,7 @@ public class DefaultDnsServiceDiscovererTest {
             assertThat(subscriber.getActiveCount(), equalTo(0));
             assertThat(subscriber.getInactiveCount(), equalTo(0));
         } finally {
-            awaitIndefinitely(discoverer.closeAsync());
+            discoverer.closeAsync().toFuture().get();
         }
     }
 
@@ -359,7 +358,7 @@ public class DefaultDnsServiceDiscovererTest {
             assertThat(subscriber.getActiveCount(), equalTo(expectedActiveCount));
             assertThat(subscriber.getInactiveCount(), equalTo(expectedInactiveCount));
         } finally {
-            awaitIndefinitely(discoverer.closeAsync());
+            discoverer.closeAsync().toFuture().get();
         }
     }
 
@@ -441,7 +440,7 @@ public class DefaultDnsServiceDiscovererTest {
             assertThat(subscriber.getInactiveCount(), equalTo(expectedInactiveCount));
         } finally {
             responseLatch.countDown();
-            awaitIndefinitely(discoverer.closeAsync());
+            discoverer.closeAsync().toFuture().get();
         }
     }
 
@@ -462,7 +461,7 @@ public class DefaultDnsServiceDiscovererTest {
 
         latch.await();
         assertNull(throwableRef.get());
-        assertThat(subscriber.activeEventAddresses.size(), equalTo(expectedActiveCount));
+        assertThat(subscriber.activeEventAddresses.size(), greaterThanOrEqualTo(expectedActiveCount));
         assertThat(subscriber.activeEventAddresses.get(0), equalTo(ipv4));
         assertThat(subscriber.inactiveEventAddresses.size(), equalTo(expectedInactiveCount));
     }
@@ -512,7 +511,7 @@ public class DefaultDnsServiceDiscovererTest {
             latchOnSubscribe.await();
         } finally {
             try {
-                awaitIndefinitely(discoverer.closeAsync());
+                discoverer.closeAsync().toFuture().get();
                 fail("Expected exception");
             } catch (ExecutionException e) {
                 assertThat(e.getCause().getCause(), equalTo(DELIBERATE_EXCEPTION));

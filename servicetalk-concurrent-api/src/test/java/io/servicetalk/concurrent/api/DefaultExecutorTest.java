@@ -47,10 +47,9 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.api.BlockingTestUtils.awaitIndefinitelyNonNull;
 import static io.servicetalk.concurrent.api.Executors.from;
 import static io.servicetalk.concurrent.api.Executors.newFixedSizeExecutor;
-import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
-import static io.servicetalk.concurrent.internal.Await.awaitIndefinitelyNonNull;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
 import static io.servicetalk.concurrent.internal.TerminalNotification.error;
@@ -182,12 +181,12 @@ public final class DefaultExecutorTest {
 
     @Test
     public void timerRaw() throws Exception {
-        awaitIndefinitely(executor.timer(1, NANOSECONDS));
+        executor.timer(1, NANOSECONDS).toFuture().get();
     }
 
     @Test
     public void timerDuration() throws Exception {
-        awaitIndefinitely(executor.timer(ofNanos(1)));
+        executor.timer(ofNanos(1)).toFuture().get();
     }
 
     @Test
@@ -235,7 +234,7 @@ public final class DefaultExecutorTest {
         Executor executor = from(new RejectAllScheduler());
         expected.expect(ExecutionException.class);
         expected.expectCause(instanceOf(RejectedExecutionException.class));
-        awaitIndefinitely(executor.timer(1, NANOSECONDS));
+        executor.timer(1, NANOSECONDS).toFuture().get();
     }
 
     @Test
@@ -243,13 +242,13 @@ public final class DefaultExecutorTest {
         Executor executor = from(new RejectAllScheduler());
         expected.expect(ExecutionException.class);
         expected.expectCause(instanceOf(RejectedExecutionException.class));
-        awaitIndefinitely(executor.timer(ofNanos(1)));
+        executor.timer(ofNanos(1)).toFuture().get();
     }
 
     @Test
     public void submitRunnable() throws Throwable {
         Task submitted = new Task();
-        awaitIndefinitely(executor.submit(submitted));
+        executor.submit(submitted).toFuture().get();
         submitted.awaitDone();
     }
 
@@ -259,9 +258,9 @@ public final class DefaultExecutorTest {
         Task submitted2 = new Task();
         AtomicBoolean returnedSubmitted1 = new AtomicBoolean();
         Supplier<Runnable> runnableSupplier = () -> returnedSubmitted1.getAndSet(true) ? submitted2 : submitted1;
-        awaitIndefinitely(executor.submitRunnable(runnableSupplier));
+        executor.submitRunnable(runnableSupplier).toFuture().get();
         submitted1.awaitDone();
-        awaitIndefinitely(executor.submitRunnable(runnableSupplier));
+        executor.submitRunnable(runnableSupplier).toFuture().get();
         submitted2.awaitDone();
     }
 
@@ -270,7 +269,7 @@ public final class DefaultExecutorTest {
         Executor executor = from(new RejectAllExecutor());
         expected.expect(ExecutionException.class);
         expected.expectCause(instanceOf(RejectedExecutionException.class));
-        awaitIndefinitely(executor.submit(() -> { }));
+        executor.submit(() -> { }).toFuture().get();
     }
 
     @Test
@@ -278,25 +277,25 @@ public final class DefaultExecutorTest {
         Executor executor = from(new RejectAllExecutor());
         expected.expect(ExecutionException.class);
         expected.expectCause(instanceOf(RejectedExecutionException.class));
-        awaitIndefinitely(executor.submitRunnable(() -> () -> { }));
+        executor.submitRunnable(() -> () -> { }).toFuture().get();
     }
 
     @Test
     public void submitRunnableThrows() throws Throwable {
         expected.expect(ExecutionException.class);
         expected.expectCause(instanceOf(DeliberateException.class));
-        awaitIndefinitely(executor.submit((Runnable) () -> {
+        executor.submit((Runnable) () -> {
             throw DELIBERATE_EXCEPTION;
-        }));
+        }).toFuture().get();
     }
 
     @Test
     public void submitRunnableSupplierThrows() throws Throwable {
         expected.expect(ExecutionException.class);
         expected.expectCause(instanceOf(DeliberateException.class));
-        awaitIndefinitely(executor.submitRunnable(() -> () -> {
+        executor.submitRunnable(() -> () -> {
             throw DELIBERATE_EXCEPTION;
-        }));
+        }).toFuture().get();
     }
 
     @Test
@@ -327,7 +326,7 @@ public final class DefaultExecutorTest {
         Executor executor = from(new RejectAllExecutor());
         expected.expect(ExecutionException.class);
         expected.expectCause(instanceOf(RejectedExecutionException.class));
-        awaitIndefinitely(executor.submit(() -> 1));
+        executor.submit(() -> 1).toFuture().get();
     }
 
     @Test
@@ -335,25 +334,25 @@ public final class DefaultExecutorTest {
         Executor executor = from(new RejectAllExecutor());
         expected.expect(ExecutionException.class);
         expected.expectCause(instanceOf(RejectedExecutionException.class));
-        awaitIndefinitely(executor.submitCallable(() -> () -> 1));
+        executor.submitCallable(() -> () -> 1).toFuture().get();
     }
 
     @Test
     public void submitCallableThrows() throws Throwable {
         expected.expect(ExecutionException.class);
         expected.expectCause(instanceOf(DeliberateException.class));
-        awaitIndefinitely(executor.submit((Callable<Integer>) () -> {
+        executor.submit((Callable<Integer>) () -> {
             throw DELIBERATE_EXCEPTION;
-        }));
+        }).toFuture().get();
     }
 
     @Test
     public void submitCallableSupplierThrows() throws Throwable {
         expected.expect(ExecutionException.class);
         expected.expectCause(instanceOf(DeliberateException.class));
-        awaitIndefinitely(executor.submitCallable(() -> (Callable<Integer>) () -> {
+        executor.submitCallable(() -> (Callable<Integer>) () -> {
             throw DELIBERATE_EXCEPTION;
-        }));
+        }).toFuture().get();
     }
 
     private static Object[] newParams(Supplier<Executor> executorSupplier, String name, boolean supportsCancellation,

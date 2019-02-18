@@ -29,7 +29,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.LinkedBlockingQueue;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
 import static io.servicetalk.concurrent.internal.TerminalNotification.error;
 import static java.util.Objects.requireNonNull;
@@ -174,7 +173,7 @@ public final class BlockingSubscriber<T> implements Subscriber<T> {
 
         @Nullable
         T awaitResult() throws ExecutionException, InterruptedException {
-            return awaitIndefinitely(single);
+            return single.toFuture().get();
         }
     }
 }

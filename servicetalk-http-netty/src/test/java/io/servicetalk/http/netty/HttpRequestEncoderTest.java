@@ -22,7 +22,6 @@ import io.servicetalk.concurrent.api.CompletableProcessor;
 import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.concurrent.api.DefaultThreadFactory;
 import io.servicetalk.concurrent.api.Executors;
-import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.DefaultHttpHeadersFactory;
 import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
@@ -35,14 +34,15 @@ import io.servicetalk.tcp.netty.internal.ReadOnlyTcpServerConfig;
 import io.servicetalk.tcp.netty.internal.TcpClientChannelInitializer;
 import io.servicetalk.tcp.netty.internal.TcpClientConfig;
 import io.servicetalk.tcp.netty.internal.TcpConnector;
+import io.servicetalk.tcp.netty.internal.TcpServerBinder;
 import io.servicetalk.tcp.netty.internal.TcpServerChannelInitializer;
 import io.servicetalk.tcp.netty.internal.TcpServerConfig;
-import io.servicetalk.tcp.netty.internal.TcpServerInitializer;
 import io.servicetalk.transport.api.ServerContext;
-import io.servicetalk.transport.netty.internal.ChannelInitializer;
 import io.servicetalk.transport.netty.internal.CloseHandler;
+import io.servicetalk.transport.netty.internal.DefaultNettyConnection;
 import io.servicetalk.transport.netty.internal.ExecutionContextRule;
 import io.servicetalk.transport.netty.internal.NettyConnection;
+import io.servicetalk.transport.netty.internal.NettyConnection.TerminalPredicate;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
@@ -61,14 +61,11 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Predicate;
 
 import static io.servicetalk.buffer.api.EmptyBuffer.EMPTY_BUFFER;
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.concurrent.api.Publisher.from;
-import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
-import static io.servicetalk.concurrent.internal.Await.awaitIndefinitelyNonNull;
 import static io.servicetalk.http.api.DefaultHttpHeadersFactory.INSTANCE;
 import static io.servicetalk.http.api.HttpHeaderNames.CONNECTION;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
@@ -82,7 +79,10 @@ import static io.servicetalk.http.api.HttpRequestMethods.GET;
 import static io.servicetalk.transport.api.ConnectionAcceptor.ACCEPT_ALL;
 import static io.servicetalk.transport.netty.NettyIoExecutors.createIoExecutor;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
-import static java.lang.Boolean.TRUE;
+import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
+import static io.servicetalk.transport.netty.internal.CloseHandler.UNSUPPORTED_PROTOCOL_CLOSE_HANDLER;
+import static io.servicetalk.transport.netty.internal.CloseHandler.forPipelinedRequestResponse;
+import static io.servicetalk.transport.netty.internal.FlushStrategies.defaultFlushStrategy;
 import static java.lang.Integer.toHexString;
 import static java.lang.String.valueOf;
 import static java.lang.Thread.NORM_PRIORITY;
@@ -93,8 +93,8 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 
 public class HttpRequestEncoderTest {
@@ -398,50 +398,54 @@ public class HttpRequestEncoderTest {
 
     @Test
     public void protocolPayloadEndOutboundShouldNotTriggerOnFailedFlush() throws Exception {
-
-        CloseHandler closeHandler = mock(CloseHandler.class);
-
+        AtomicReference<CloseHandler> closeHandlerRef = new AtomicReference<>();
         try (CompositeCloseable resources = newCompositeCloseable()) {
-
             CompletableProcessor serverCloseTrigger = new CompletableProcessor();
             CountDownLatch serverChannelLatch = new CountDownLatch(1);
             AtomicReference<Channel> serverChannelRef = new AtomicReference<>();
 
-            ReadOnlyTcpServerConfig sConfig = new TcpServerConfig(true)
-                    .enableWireLogging("servicetalk-tests-server-wire-logger").asReadOnly();
-            ServerContext serverContext = resources.prepend(awaitIndefinitelyNonNull(
-                    new TcpServerInitializer(SEC, sConfig).start(localAddress(0),
-                            context -> Single.success(TRUE),
-                            new TcpServerChannelInitializer(sConfig, ACCEPT_ALL).andThen((c, cc) -> {
-                                serverChannelRef.compareAndSet(null, c);
-                                serverChannelLatch.countDown();
-                                return cc;
-                            }), false, true)));
+            ReadOnlyTcpServerConfig sConfig = new TcpServerConfig(true).asReadOnly();
+            ServerContext serverContext = resources.prepend(
+                    TcpServerBinder.bind(localAddress(0), sConfig,
+                            SEC, ACCEPT_ALL,
+                            channel -> DefaultNettyConnection.initChannel(channel, SEC.bufferAllocator(),
+                                    SEC.executor(), new TerminalPredicate<>(o -> o instanceof HttpHeaders),
+                                    UNSUPPORTED_PROTOCOL_CLOSE_HANDLER, defaultFlushStrategy(),
+                                    new TcpServerChannelInitializer(sConfig).andThen(
+                                            (c, cc) -> {
+                                                serverChannelRef.compareAndSet(null, c);
+                                                serverChannelLatch.countDown();
+                                                return cc;
+                                            })),
+                            connection -> { }).toFuture().get());
+            HttpClientConfig cConfig = new HttpClientConfig(new TcpClientConfig(true));
 
-            HttpClientConfig cConfig = new HttpClientConfig(new TcpClientConfig(true)
-                    .enableWireLogging("servicetalk-tests-client-wire-logger"));
-
-            final ChannelInitializer initializer = new TcpClientChannelInitializer(cConfig.getTcpClientConfig())
-                    .andThen(new HttpClientChannelInitializer(cConfig.asReadOnly(), closeHandler))
-                    .andThen((channel, context) -> {
-                        channel.pipeline().addLast(new ChannelInboundHandlerAdapter() {
-                            @Override
-                            public void userEventTriggered(ChannelHandlerContext ctx, Object evt) {
-                                // Propagate the user event in the pipeline before triggering the test condition.
-                                ctx.fireUserEventTriggered(evt);
-                                if (evt instanceof ChannelInputShutdownReadComplete) {
-                                    serverCloseTrigger.onComplete();
-                                }
-                            }
-                        });
-                        return context;
-                    });
-
-            Predicate<Object> predicate = (Object h) -> h instanceof HttpHeaders;
-
-            NettyConnection<Object, Object> conn = resources.prepend(awaitIndefinitelyNonNull(
-                    new TcpConnector<>(cConfig.getTcpClientConfig().asReadOnly(), initializer, () -> predicate, null,
-                            closeHandler).connect(CEC, serverContext.listenAddress(), false)));
+            NettyConnection<Object, Object> conn = resources.prepend(
+            TcpConnector.connect(null, serverHostAndPort(serverContext),
+                    cConfig.getTcpClientConfig().asReadOnly(), CEC)
+            .flatMap(channel -> {
+                CloseHandler closeHandler = spy(forPipelinedRequestResponse(true, channel.config()));
+                closeHandlerRef.compareAndSet(null, closeHandler);
+                return DefaultNettyConnection.initChannel(channel, CEC.bufferAllocator(), CEC.executor(),
+                        new TerminalPredicate<>(o -> o instanceof HttpHeaders), closeHandler, defaultFlushStrategy(),
+                        new TcpClientChannelInitializer(cConfig.getTcpClientConfig())
+                            .andThen(new HttpClientChannelInitializer(cConfig.asReadOnly(), closeHandler))
+                            .andThen((channel2, context) -> {
+                                channel2.pipeline().addLast(new ChannelInboundHandlerAdapter() {
+                                    @Override
+                                    public void userEventTriggered(ChannelHandlerContext ctx, Object evt) {
+                                        // Propagate the user event in the pipeline before triggering the test
+                                        // condition.
+                                        ctx.fireUserEventTriggered(evt);
+                                        if (evt instanceof ChannelInputShutdownReadComplete) {
+                                            serverCloseTrigger.onComplete();
+                                        }
+                                    }
+                                });
+                                return context;
+                            }));
+                    }
+            ).toFuture().get());
 
             // The server needs to wait to close the conneciton until after the client has established the connection.
             serverChannelLatch.await();
@@ -452,13 +456,15 @@ public class HttpRequestEncoderTest {
 
             StreamingHttpRequest request = reqRespFactory.post("/closeme");
 
-            awaitIndefinitely(serverCloseTrigger);
+            serverCloseTrigger.toFuture().get();
             Completable write = conn.write(from(request, allocator.fromAscii("Bye"), EmptyHttpHeaders.INSTANCE));
 
             try {
-                awaitIndefinitely(write);
+                write.toFuture().get();
                 fail("Should not complete normally");
             } catch (ExecutionException e) {
+                CloseHandler closeHandler = closeHandlerRef.get();
+                assertNotNull(closeHandler);
                 verify(closeHandler, never()).protocolPayloadEndOutbound(any());
             }
         }

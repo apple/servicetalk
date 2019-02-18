@@ -41,7 +41,6 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Single.error;
 import static io.servicetalk.concurrent.api.Single.success;
-import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderValues.ZERO;
@@ -66,10 +65,10 @@ public class HttpAuthConnectionFactoryClientTest {
     @After
     public void teardown() throws Exception {
         if (client != null) {
-            awaitIndefinitely(client.closeAsync());
+            client.closeAsync().toFuture().get();
         }
         if (serverContext != null) {
-            awaitIndefinitely(serverContext.closeAsync());
+            serverContext.closeAsync().toFuture().get();
         }
     }
 
@@ -98,7 +97,7 @@ public class HttpAuthConnectionFactoryClientTest {
                 .executionStrategy(noOffloadsStrategy())
                 .buildStreaming();
 
-        StreamingHttpResponse response = awaitIndefinitely(client.request(newTestRequest(client, "/foo")));
+        StreamingHttpResponse response = client.request(newTestRequest(client, "/foo")).toFuture().get();
         assertEquals(OK, response.status());
     }
 

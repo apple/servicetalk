@@ -21,8 +21,6 @@ import io.servicetalk.concurrent.internal.ThreadInterruptingCancellable;
 
 import java.util.concurrent.ExecutionException;
 
-import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
-import static io.servicetalk.concurrent.internal.Await.awaitIndefinitelyNonNull;
 import static io.servicetalk.concurrent.internal.PlatformDependent.throwException;
 import static java.lang.Thread.currentThread;
 
@@ -135,7 +133,7 @@ final class BlockingUtils {
         // It is assumed that users will always apply timeouts at the StreamingHttpService layer (e.g. via filter). So
         // we don't apply any explicit timeout here and just wait forever.
         try {
-            return awaitIndefinitelyNonNull(source);
+            return source.toFuture().get();
         } catch (final ExecutionException e) {
             throwException(e.getCause());
             return uncheckedCast(); // Used to fool the compiler, but actually should never be invoked at runtime.
@@ -146,7 +144,7 @@ final class BlockingUtils {
         // It is assumed that users will always apply timeouts at the StreamingHttpService layer (e.g. via filter). So
         // we don't apply any explicit timeout here and just wait forever.
         try {
-            awaitIndefinitely(source);
+            source.toFuture().get();
         } catch (final ExecutionException e) {
             throwException(e.getCause());
         }

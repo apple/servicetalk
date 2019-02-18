@@ -31,7 +31,7 @@ import java.util.concurrent.ThreadFactory;
 import java.util.function.Supplier;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
-import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
+import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.transport.netty.internal.NettyIoExecutors.createIoExecutor;
 
 /**
@@ -40,7 +40,7 @@ import static io.servicetalk.transport.netty.internal.NettyIoExecutors.createIoE
  * Can be used with a @{@link Rule} field and a {@code static} field with @{@link ClassRule}.
  */
 public final class ExecutionContextRule extends ExternalResource implements ExecutionContext {
-
+    private static final String IO_THREAD_PREFIX = "exec-ctx-rule-io-";
     private final Supplier<Executor> executorSupplier;
     private final Supplier<IoExecutor> ioExecutorSupplier;
     private final Supplier<BufferAllocator> allocatorSupplier;
@@ -56,7 +56,7 @@ public final class ExecutionContextRule extends ExternalResource implements Exec
     }
 
     public static ExecutionContextRule immediate() {
-        return immediate(new DefaultThreadFactory());
+        return immediate(new DefaultThreadFactory(IO_THREAD_PREFIX));
     }
 
     public static ExecutionContextRule immediate(ThreadFactory ioThreadFactory) {
@@ -65,7 +65,7 @@ public final class ExecutionContextRule extends ExternalResource implements Exec
     }
 
     public static ExecutionContextRule cached() {
-        return cached(new DefaultThreadFactory());
+        return cached(new DefaultThreadFactory(IO_THREAD_PREFIX));
     }
 
     public static ExecutionContextRule cached(ThreadFactory ioThreadFactory) {
@@ -75,7 +75,7 @@ public final class ExecutionContextRule extends ExternalResource implements Exec
     }
 
     public static ExecutionContextRule fixed(int size) {
-        return fixed(size, new DefaultThreadFactory());
+        return fixed(size, new DefaultThreadFactory(IO_THREAD_PREFIX));
     }
 
     public static ExecutionContextRule fixed(int size, ThreadFactory ioThreadFactory) {
@@ -100,8 +100,7 @@ public final class ExecutionContextRule extends ExternalResource implements Exec
     @Override
     protected void after() {
         try {
-            awaitIndefinitely(ctx.ioExecutor().closeAsync()
-                    .mergeDelayError(ctx.executor().closeAsync()));
+            newCompositeCloseable().appendAll(ctx.ioExecutor(), ctx.executor()).close();
         } catch (Throwable t) {
             throw new RuntimeException(t);
         }

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,38 +15,51 @@
  */
 package io.servicetalk.transport.netty.internal;
 
+import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.Completable.Subscriber;
+import io.servicetalk.concurrent.api.AsyncCloseable;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.CompletableProcessor;
+import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.SingleProcessor;
-import io.servicetalk.transport.api.ConnectionContext;
-import io.servicetalk.transport.api.ConnectionContextAdapter;
+import io.servicetalk.concurrent.internal.DelayedCancellable;
+import io.servicetalk.transport.api.DefaultExecutionContext;
+import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.netty.internal.CloseHandler.CloseEvent;
 
 import io.netty.channel.AbstractChannel;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandler;
+import io.netty.channel.ChannelPipeline;
 import io.netty.channel.EventLoop;
+import io.netty.channel.socket.ChannelInputShutdownReadComplete;
 import io.netty.channel.socket.ChannelOutputShutdownEvent;
+import io.netty.handler.ssl.SniHandler;
+import io.netty.handler.ssl.SslHandler;
+import io.netty.handler.ssl.SslHandshakeCompletionEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.net.SocketAddress;
 import java.nio.channels.ClosedChannelException;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 import javax.annotation.Nullable;
+import javax.net.ssl.SSLSession;
 
 import static io.netty.util.ReferenceCountUtil.release;
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.api.Executors.immediate;
+import static io.servicetalk.concurrent.api.Publisher.error;
 import static io.servicetalk.concurrent.internal.ThrowableUtil.unknownStackTrace;
 import static io.servicetalk.transport.netty.internal.CloseHandler.UNSUPPORTED_PROTOCOL_CLOSE_HANDLER;
 import static io.servicetalk.transport.netty.internal.Flush.composeFlushes;
+import static io.servicetalk.transport.netty.internal.NettyIoExecutors.fromNettyEventLoop;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater;
 
@@ -56,7 +69,7 @@ import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater
  * @param <Read> Type of objects read from this connection.
  * @param <Write> Type of objects written to this connection.
  */
-public class DefaultNettyConnection<Read, Write> extends ConnectionContextAdapter
+public final class DefaultNettyConnection<Read, Write> extends NettyChannelListenableAsyncCloseable
         implements NettyConnection<Read, Write> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DefaultNettyConnection.class);
@@ -66,28 +79,28 @@ public class DefaultNettyConnection<Read, Write> extends ConnectionContextAdapte
     private static final WritableListener PLACE_HOLDER_WRITABLE_LISTENER = new NoopWritableListener();
     private static final WritableListener SINGLE_ITEM_WRITABLE_LISTENER = new NoopWritableListener();
 
-    private static final ClosedChannelException CLOSED_CHANNEL_INACTIVE =
-            unknownStackTrace(new ClosedChannelException(), DefaultNettyConnection.class, "channelInactive(..)");
+    private static final ClosedChannelException CLOSED_CHANNEL_INACTIVE = unknownStackTrace(
+            new ClosedChannelException(), NettyToStChannelInboundHandler.class, "channelInactive(..)");
     private static final ClosedChannelException CLOSED_FAIL_ACTIVE =
             unknownStackTrace(new ClosedChannelException(), DefaultNettyConnection.class, "failIfWriteActive(..)");
+    private static final ClosedChannelException CLOSED_HANDLER_REMOVED =
+            unknownStackTrace(new ClosedChannelException(), NettyToStChannelInboundHandler.class, "handlerRemoved(..)");
     private static final AtomicReferenceFieldUpdater<DefaultNettyConnection, WritableListener> writableListenerUpdater =
             newUpdater(DefaultNettyConnection.class, WritableListener.class, "writableListener");
     private static final AtomicReferenceFieldUpdater<DefaultNettyConnection, FlushStrategy> flushStrategyUpdater =
             newUpdater(DefaultNettyConnection.class, FlushStrategy.class, "flushStrategy");
-    private volatile WritableListener writableListener = PLACE_HOLDER_WRITABLE_LISTENER;
 
-    private final Channel channel;
-    private final Publisher<Read> read;
     private final TerminalPredicate<Read> terminalMsgPredicate;
     private final CloseHandler closeHandler;
-
+    private final NettyChannelPublisher<Read> nettyChannelPublisher;
+    private final Publisher<Read> readPublisher;
+    private final ExecutionContext executionContext;
     @Nullable
     private final CompletableProcessor onClosing;
-
     private final SingleProcessor<Throwable> transportError = new SingleProcessor<>();
 
     private volatile FlushStrategy flushStrategy;
-
+    private volatile WritableListener writableListener = PLACE_HOLDER_WRITABLE_LISTENER;
     /**
      * Potentially contains more information when a protocol or channel level close event was observed.
      * <p>
@@ -95,38 +108,26 @@ public class DefaultNettyConnection<Read, Write> extends ConnectionContextAdapte
      */
     @Nullable
     private CloseEvent closeReason;
-
     /**
-     * Create a new instance.
-     *
-     * @param channel Netty channel which represents the connection.
-     * @param context The ServiceTalk entity which represents the connection.
-     * @param read {@link Publisher} which emits all data read from the underlying channel.
-     * @param flushStrategy {@link FlushStrategy} for this connection.
+     * This doesn't need to be volatile because this object is only accessed in the following scenarios:
+     * <ul>
+     * <li>it is set on the EventLoop</li>
+     * <li>it maybe read on the same EventLoop thread</li>
+     * <li>it may be read in a {@link Single.Subscriber} and we rely upon the {@link Single} visibility constraints</li>
+     * </ul>
      */
-    @SuppressWarnings("unchecked")
-    public DefaultNettyConnection(Channel channel, ConnectionContext context, Publisher<Read> read,
-                                  FlushStrategy flushStrategy) {
-        this(channel, context, read, PIPELINE_UNSUPPORTED_PREDICATE, UNSUPPORTED_PROTOCOL_CLOSE_HANDLER, flushStrategy);
-    }
+    @Nullable
+    private SSLSession sslSession;
 
-    /**
-     * Create a new instance.
-     *
-     * @param channel Netty channel which represents the connection.
-     * @param context The ServiceTalk entity which represents the connection.
-     * @param read {@link Publisher} which emits all data read from the underlying channel.
-     * @param terminalMsgPredicate {@link TerminalPredicate} to detect end of a <i>response</i>.
-     * @param closeHandler handles connection closure and half-closure.
-     * @param flushStrategy {@link FlushStrategy} for this connection.
-     */
-    public DefaultNettyConnection(Channel channel, ConnectionContext context, Publisher<Read> read,
-                                  TerminalPredicate<Read> terminalMsgPredicate, CloseHandler closeHandler,
-                                  FlushStrategy flushStrategy) {
-        super(requireNonNull(context));
-        this.channel = requireNonNull(channel);
-        this.read = read.onErrorResume(this::enrichErrorPublisher);
+    private DefaultNettyConnection(Channel channel, BufferAllocator allocator, Executor executor,
+                                   TerminalPredicate<Read> terminalMsgPredicate, CloseHandler closeHandler,
+                                   FlushStrategy flushStrategy) {
+        super(channel, executor);
+        nettyChannelPublisher = new NettyChannelPublisher<>(channel, terminalMsgPredicate, closeHandler);
+        this.readPublisher = nettyChannelPublisher.onErrorResume(this::enrichErrorPublisher);
         this.terminalMsgPredicate = requireNonNull(terminalMsgPredicate);
+        this.executionContext = new DefaultExecutionContext(allocator, fromNettyEventLoop(channel.eventLoop()),
+                executor);
         this.closeHandler = requireNonNull(closeHandler);
         this.flushStrategy = requireNonNull(flushStrategy);
         if (closeHandler != UNSUPPORTED_PROTOCOL_CLOSE_HANDLER) {
@@ -145,7 +146,7 @@ public class DefaultNettyConnection<Read, Write> extends ConnectionContextAdapte
             // An alternative would be to intercept channelInactive() in the pipeline but adding a pipeline handler
             // in the pipeline may race with closure as we have already created the channel. If that happens, we may
             // miss channelInactive event.
-            context.onClose()
+            onClose()
                     // If we do offload subscribe, we will hold up a thread for the lifetime of the connection.
                     // As we do offload "publish" for "onClosing", we can avoid offloading of "onClose" as we know
                     // Subscriber end of CompletableProcessor (onClosing) will not block.
@@ -154,70 +155,72 @@ public class DefaultNettyConnection<Read, Write> extends ConnectionContextAdapte
         } else {
             onClosing = null;
         }
-        channel.pipeline().addLast(new ChannelInboundHandler() {
+    }
+
+    @SuppressWarnings("unchecked")
+    static <Read, Write> Single<DefaultNettyConnection<Read, Write>> initChannel(
+            Channel channel, BufferAllocator allocator, Executor executor, FlushStrategy flushStrategy,
+            ChannelInitializer initializer) {
+        return initChannel(channel, allocator, executor, PIPELINE_UNSUPPORTED_PREDICATE,
+                UNSUPPORTED_PROTOCOL_CLOSE_HANDLER, flushStrategy, initializer);
+    }
+
+    /**
+     * Given a {@link Channel} this will initialize the {@link ChannelPipeline} and create a
+     * {@link DefaultNettyConnection}. The resulting single will complete after the TLS handshake has completed
+     * (if applicable) or otherwise after the channel is active and ready to use.
+     * @param channel A newly created {@link Channel}.
+     * @param allocator The {@link BufferAllocator} to use for the {@link DefaultNettyConnection}.
+     * @param executor The {@link Executor} to use for the {@link DefaultNettyConnection}.
+     * @param terminalMsgPredicate Used to determine which inbound signal on the {@link #read()} stream terminates the
+     * current message framing and will allow a resubscribe to consume the next framing.
+     * @param closeHandler Manages the half closure of the {@link DefaultNettyConnection}.
+     * @param flushStrategy Manages flushing of data for the {@link DefaultNettyConnection}.
+     * @param initializer Synchronously initializes the pipeline upon subscribe.
+     * @param <Read> Type of objects read from the {@link NettyConnection}.
+     * @param <Write> Type of objects written to the {@link NettyConnection}.
+     * @return A {@link Single} that completes with a {@link DefaultNettyConnection} after the channel is activated and
+     * ready to use.
+     */
+    public static <Read, Write> Single<DefaultNettyConnection<Read, Write>> initChannel(
+            Channel channel, BufferAllocator allocator, Executor executor, TerminalPredicate<Read> terminalMsgPredicate,
+            CloseHandler closeHandler, FlushStrategy flushStrategy, ChannelInitializer initializer) {
+        return new Single<DefaultNettyConnection<Read, Write>>() {
             @Override
-            public void channelWritabilityChanged(ChannelHandlerContext ctx) {
-                if (ctx.channel().isWritable()) {
-                    writableListener.channelWritable();
-                } else if (DefaultNettyConnection.this.flushStrategy.flushOnUnwritable()) {
-                    channel.flush();
+            protected void handleSubscribe(final Subscriber<? super DefaultNettyConnection<Read, Write>> subscriber) {
+                final NettyToStChannelInboundHandler<Read, Write> nettyInboundHandler;
+                final DelayedCancellable delayedCancellable;
+                try {
+                    delayedCancellable = new DelayedCancellable();
+                    DefaultNettyConnection<Read, Write> connection = new DefaultNettyConnection<>(channel, allocator,
+                            executor, terminalMsgPredicate, closeHandler, flushStrategy);
+                    // We need the NettyToStChannelInboundHandler to be last in the pipeline. We accomplish that by
+                    // calling the ChannelInitializer before we do addLast for the NettyToStChannelInboundHandler.
+                    // This could mean if there are any synchronous events generated via ChannelInitializer handlers
+                    // that NettyToStChannelInboundHandler will not see them. This is currently not an issue and would
+                    // require some pipeline modifications if we wanted to insert NettyToStChannelInboundHandler first,
+                    // but not allow any other handlers to be after it.
+                    initializer.init(channel, connection);
+                    ChannelPipeline pipeline = connection.channel().pipeline();
+                    nettyInboundHandler = new NettyToStChannelInboundHandler<>(connection, subscriber,
+                            delayedCancellable,
+                            pipeline.get(SslHandler.class) != null || pipeline.get(SniHandler.class) != null);
+                } catch (Throwable cause) {
+                    channel.close();
+                    subscriber.onSubscribe(IGNORE_CANCEL);
+                    subscriber.onError(cause);
+                    return;
                 }
+                subscriber.onSubscribe(delayedCancellable);
+                // We have to add to the pipeline AFTER we call onSubscribe, because adding to the pipeline may invoke
+                // callbacks that interact with the subscriber.
+                channel.pipeline().addLast(nettyInboundHandler);
             }
-
-            @Override
-            public void handlerAdded(ChannelHandlerContext ctx) {
-            }
-
-            @Override
-            public void handlerRemoved(ChannelHandlerContext ctx) {
-            }
-
-            @Override
-            public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-                LOGGER.error("unexpected exception reached the end of the pipeline for channel={}", ctx.channel(),
-                        cause);
-            }
-
-            @Override
-            public void channelRead(ChannelHandlerContext ctx, Object msg) {
-                release(msg);
-            }
-
-            @Override
-            public void channelReadComplete(ChannelHandlerContext ctx) {
-            }
-
-            @Override
-            public void userEventTriggered(ChannelHandlerContext ctx, Object evt) {
-                // Inbound shutdown event is handled in AbstractChannelReadHandler
-                if (evt == ChannelOutputShutdownEvent.INSTANCE) {
-                    closeHandler.channelClosedOutbound(ctx);
-                    writableListener.channelClosedOutbound();
-                }
-                release(evt);
-            }
-
-            @Override
-            public void channelRegistered(ChannelHandlerContext ctx) {
-            }
-
-            @Override
-            public void channelUnregistered(ChannelHandlerContext ctx) {
-            }
-
-            @Override
-            public void channelActive(ChannelHandlerContext ctx) {
-            }
-
-            @Override
-            public void channelInactive(ChannelHandlerContext ctx) {
-                writableListener.channelClosed(CLOSED_CHANNEL_INACTIVE);
-            }
-        });
+        };
     }
 
     private Publisher<Read> enrichErrorPublisher(final Throwable t) {
-        return Publisher.error(enrichError(t));
+        return error(enrichError(t));
     }
 
     private Completable enrichErrorCompletable(final Throwable t) {
@@ -225,7 +228,7 @@ public class DefaultNettyConnection<Read, Write> extends ConnectionContextAdapte
     }
 
     private Throwable enrichError(final Throwable t) {
-        Throwable throwable = closeReason != null ? closeReason.wrapError(t, channel) : t;
+        Throwable throwable = closeReason != null ? closeReason.wrapError(t, channel()) : t;
         transportError.onSuccess(throwable);
         return throwable;
     }
@@ -236,7 +239,7 @@ public class DefaultNettyConnection<Read, Write> extends ConnectionContextAdapte
 
     @Override
     public Publisher<Read> read() {
-        return read;
+        return readPublisher;
     }
 
     @Override
@@ -254,10 +257,10 @@ public class DefaultNettyConnection<Read, Write> extends ConnectionContextAdapte
         return cleanupStateWhenDone(new Completable() {
             @Override
             protected void handleSubscribe(Subscriber completableSubscriber) {
-                WriteStreamSubscriber subscriber = new WriteStreamSubscriber(channel, requestNSupplierFactory.get(),
+                WriteStreamSubscriber subscriber = new WriteStreamSubscriber(channel(), requestNSupplierFactory.get(),
                         completableSubscriber, closeHandler);
                 if (failIfWriteActive(subscriber, completableSubscriber)) {
-                    composeFlushes(channel, write, flushStrategy).subscribe(subscriber);
+                    composeFlushes(channel(), write, flushStrategy).subscribe(subscriber);
                 }
             }
         }).onErrorResume(this::enrichErrorCompletable);
@@ -270,7 +273,7 @@ public class DefaultNettyConnection<Read, Write> extends ConnectionContextAdapte
             @Override
             protected void handleSubscribe(Subscriber completableSubscriber) {
                 WriteSingleSubscriber subscriber = new WriteSingleSubscriber(
-                        channel, requireNonNull(completableSubscriber), closeHandler);
+                        channel(), requireNonNull(completableSubscriber), closeHandler);
                 if (failIfWriteActive(subscriber, completableSubscriber)) {
                     write.subscribe(subscriber);
                 }
@@ -284,9 +287,10 @@ public class DefaultNettyConnection<Read, Write> extends ConnectionContextAdapte
         return cleanupStateWhenDone(new NettyFutureCompletable(() -> {
             if (writableListenerUpdater.compareAndSet(DefaultNettyConnection.this, PLACE_HOLDER_WRITABLE_LISTENER,
                     SINGLE_ITEM_WRITABLE_LISTENER)) {
-                return channel.writeAndFlush(write);
+                return channel().writeAndFlush(write);
             }
-            return channel.newFailedFuture(new IllegalStateException("A write is already active on this connection."));
+            return channel().newFailedFuture(
+                    new IllegalStateException("A write is already active on this connection."));
         })).onErrorResume(this::enrichErrorCompletable);
     }
 
@@ -300,28 +304,37 @@ public class DefaultNettyConnection<Read, Write> extends ConnectionContextAdapte
     }
 
     @Override
-    public Completable closeAsyncGracefully() {
-        return new Completable() {
-            @Override
-            protected void handleSubscribe(final Subscriber subscriber) {
-                onClose().subscribe(subscriber);
-                EventLoop eventLoop = channel.eventLoop();
-                if (eventLoop.inEventLoop()) {
-                    invokeUserCloseHandler();
-                } else {
-                    eventLoop.execute(DefaultNettyConnection.this::invokeUserCloseHandler);
-                }
-            }
-        };
+    void doCloseAsyncGracefully() {
+        EventLoop eventLoop = channel().eventLoop();
+        if (eventLoop.inEventLoop()) {
+            invokeUserCloseHandler();
+        } else {
+            eventLoop.execute(DefaultNettyConnection.this::invokeUserCloseHandler);
+        }
     }
 
     @Override
-    public Single<Throwable> transportError() {
-        return transportError.publishOn(executionContext().executor());
+    public SocketAddress localAddress() {
+        return channel().localAddress();
+    }
+
+    @Override
+    public SocketAddress remoteAddress() {
+        return channel().remoteAddress();
+    }
+
+    @Override
+    public SSLSession sslSession() {
+        return sslSession;
+    }
+
+    @Override
+    public ExecutionContext executionContext() {
+        return executionContext;
     }
 
     private void invokeUserCloseHandler() {
-        closeHandler.userClosing(channel);
+        closeHandler.userClosing(channel());
     }
 
     @Override
@@ -331,7 +344,7 @@ public class DefaultNettyConnection<Read, Write> extends ConnectionContextAdapte
 
     @Override
     public String toString() {
-        return channel.toString();
+        return channel().toString();
     }
 
     private Completable cleanupStateWhenDone(Completable completable) {
@@ -344,7 +357,7 @@ public class DefaultNettyConnection<Read, Write> extends ConnectionContextAdapte
             // It is possible that we have set the writeSubscriber, then the channel becomes inactive, and we will
             // never notify the write writeSubscriber of the inactive event. So if the channel is inactive we notify
             // the writeSubscriber.
-            if (!channel.isActive()) {
+            if (!channel().isActive()) {
                 newWritableListener.channelClosed(CLOSED_FAIL_ACTIVE);
                 return false;
             }
@@ -359,6 +372,11 @@ public class DefaultNettyConnection<Read, Write> extends ConnectionContextAdapte
     public Cancellable updateFlushStrategy(final UnaryOperator<FlushStrategy> strategyProvider) {
         FlushStrategy old = flushStrategyUpdater.getAndUpdate(this, strategyProvider);
         return () -> updateFlushStrategy(__ -> old);
+    }
+
+    @Override
+    public Single<Throwable> transportError() {
+        return transportError.publishOn(executionContext().executor());
     }
 
     interface WritableListener {
@@ -397,6 +415,155 @@ public class DefaultNettyConnection<Read, Write> extends ConnectionContextAdapte
 
         @Override
         public void channelClosed(Throwable closedException) {
+        }
+    }
+
+    private static final class NettyToStChannelInboundHandler<Read, Write> implements ChannelInboundHandler,
+                                                                                  AsyncCloseableHolderChannelHandler {
+        private final DefaultNettyConnection<Read, Write> connection;
+        private final boolean waitForSslHandshake;
+        private final DelayedCancellable delayedCancellable;
+        @Nullable
+        private Single.Subscriber<? super DefaultNettyConnection<Read, Write>> subscriber;
+
+        NettyToStChannelInboundHandler(DefaultNettyConnection<Read, Write> connection,
+                                       Single.Subscriber<? super DefaultNettyConnection<Read, Write>> subscriber,
+                                       DelayedCancellable delayedCancellable,
+                                       boolean waitForSslHandshake) {
+            this.connection = connection;
+            this.subscriber = requireNonNull(subscriber);
+            this.delayedCancellable = delayedCancellable;
+            this.waitForSslHandshake = waitForSslHandshake;
+        }
+
+        @Override
+        public void channelWritabilityChanged(ChannelHandlerContext ctx) {
+            if (ctx.channel().isWritable()) {
+                connection.writableListener.channelWritable();
+            } else if (connection.flushStrategy.flushOnUnwritable()) {
+                ctx.flush();
+            }
+        }
+
+        @Override
+        public void handlerAdded(ChannelHandlerContext ctx) {
+            delayedCancellable.setDelayedCancellable(ctx.channel()::close);
+            // Double check In the event of a late handler (or test utility like EmbeddedChannel) check activeness.
+            if (ctx.channel().isActive()) {
+                doChannelActive(ctx);
+            }
+        }
+
+        @Override
+        public void handlerRemoved(ChannelHandlerContext ctx) {
+            tryFailSubscriber(CLOSED_HANDLER_REMOVED);
+        }
+
+        // AsyncCloseableHolderChannelHandler brings in ChannelHandler which deprecates this API, but it is still
+        // useful for the ChannelInboundHandler.
+        @SuppressWarnings("deprecation")
+        @Override
+        public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
+            connection.nettyChannelPublisher.exceptionCaught(cause);
+        }
+
+        @Override
+        public void channelRead(ChannelHandlerContext ctx, Object msg) {
+            @SuppressWarnings("unchecked")
+            final Read t = (Read) msg;
+            connection.nettyChannelPublisher.channelRead(t);
+        }
+
+        @Override
+        public void channelReadComplete(ChannelHandlerContext ctx) {
+            connection.nettyChannelPublisher.onReadComplete();
+        }
+
+        @Override
+        public void userEventTriggered(ChannelHandlerContext ctx, Object evt) {
+            try {
+                if (evt == ChannelOutputShutdownEvent.INSTANCE) {
+                    connection.closeHandler.channelClosedOutbound(ctx);
+                    connection.writableListener.channelClosedOutbound();
+                } else if (evt == ChannelInputShutdownReadComplete.INSTANCE) {
+                    // Notify close handler first to enhance error reporting
+                    connection.closeHandler.channelClosedInbound(ctx);
+                    // ChannelInputShutdownEvent is not always triggered and can get triggered before we tried to read
+                    // all the available data. ChannelInputShutdownReadComplete is the one that seems to (at least in
+                    // the current netty version) gets triggered reliably at the appropriate time.
+                    connection.nettyChannelPublisher.channelInboundClosed();
+                } else if (evt instanceof SslHandshakeCompletionEvent) {
+                    SslHandshakeCompletionEvent sslEvent = ((SslHandshakeCompletionEvent) evt);
+                    if (sslEvent.isSuccess()) {
+                        final SslHandler sslHandler = ctx.pipeline().get(SslHandler.class);
+                        if (sslHandler != null) {
+                            connection.sslSession = sslHandler.engine().getSession();
+                            if (subscriber != null) {
+                                assert waitForSslHandshake;
+                                completeSubscriber();
+                            }
+                        } else {
+                            final String errMsg = "Unable to find " + SslHandler.class.getName() + " in the pipeline.";
+                            tryFailSubscriber(new IllegalStateException(errMsg));
+                            LOGGER.error(errMsg);
+                        }
+                    } else {
+                        tryFailSubscriber(sslEvent.cause());
+                    }
+                }
+            } finally {
+                release(evt);
+            }
+        }
+
+        @Override
+        public void channelRegistered(ChannelHandlerContext ctx) {
+        }
+
+        @Override
+        public void channelUnregistered(ChannelHandlerContext ctx) {
+        }
+
+        @Override
+        public void channelActive(ChannelHandlerContext ctx) {
+            doChannelActive(ctx);
+        }
+
+        @Override
+        public void channelInactive(ChannelHandlerContext ctx) {
+            tryFailSubscriber(CLOSED_CHANNEL_INACTIVE);
+            connection.writableListener.channelClosed(CLOSED_CHANNEL_INACTIVE);
+            connection.nettyChannelPublisher.channelInboundClosed();
+        }
+
+        private void doChannelActive(ChannelHandlerContext ctx) {
+            if (waitForSslHandshake) {
+                // Force a read to get the SSL handshake started, any application data that makes it past the SslHandler
+                // will be queued in the NettyChannelPublisher.
+                ctx.read();
+            } else if (subscriber != null) {
+                completeSubscriber();
+            }
+        }
+
+        private void completeSubscriber() {
+            assert subscriber != null;
+            Single.Subscriber<? super DefaultNettyConnection<Read, Write>> subscriberCopy = subscriber;
+            subscriber = null;
+            subscriberCopy.onSuccess(connection);
+        }
+
+        private void tryFailSubscriber(Throwable cause) {
+            if (subscriber != null) {
+                Single.Subscriber<? super DefaultNettyConnection<Read, Write>> subscriberCopy = subscriber;
+                subscriber = null;
+                subscriberCopy.onError(cause);
+            }
+        }
+
+        @Override
+        public AsyncCloseable asyncClosable() {
+            return connection;
         }
     }
 }

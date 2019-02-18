@@ -28,7 +28,7 @@ import javax.annotation.Nullable;
 /**
  * SSL {@link ChannelInitializer} for servers.
  */
-public class SslServerChannelInitializer extends AbstractSslChannelInitializer {
+public class SslServerChannelInitializer implements ChannelInitializer {
 
     @Nullable
     private final DomainNameMapping<SslContext> domainNameMapping;
@@ -53,16 +53,14 @@ public class SslServerChannelInitializer extends AbstractSslChannelInitializer {
         sslContext = null;
     }
 
-    @Nullable
     @Override
-    protected SslHandler addNettySslHandler(Channel channel, ConnectionContext context) {
+    public ConnectionContext init(Channel channel, ConnectionContext context) {
         if (sslContext != null) {
             SslHandler sslHandler = SslUtils.newHandler(sslContext, channel.alloc());
             channel.pipeline().addLast(sslHandler);
-            return sslHandler;
         } else if (domainNameMapping != null) {
             channel.pipeline().addLast(new SniHandler(domainNameMapping));
         }
-        return null;
+        return context;
     }
 }

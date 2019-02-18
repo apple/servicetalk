@@ -38,7 +38,6 @@ import java.net.InetSocketAddress;
 import java.util.function.Function;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
-import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.transport.api.ConnectionAcceptor.ACCEPT_ALL;
 import static io.servicetalk.transport.netty.NettyIoExecutors.createIoExecutor;
 
@@ -85,7 +84,7 @@ public abstract class AbstractTcpServerTest {
     @Before
     public void startServer() throws Exception {
         server = createServer();
-        serverContext = server.start(SERVER_CTX, 0, connectionAcceptor, service);
+        serverContext = server.bind(SERVER_CTX, 0, connectionAcceptor, service);
         serverAddress = (InetSocketAddress) serverContext.listenAddress();
         client = createClient();
     }
@@ -126,6 +125,6 @@ public abstract class AbstractTcpServerTest {
 
     @After
     public void stopServer() throws Exception {
-        awaitIndefinitely(serverContext.closeAsync());
+        serverContext.closeAsync().toFuture().get();
     }
 }

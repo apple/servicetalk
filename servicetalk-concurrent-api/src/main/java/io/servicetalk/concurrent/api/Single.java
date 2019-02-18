@@ -38,7 +38,6 @@ import javax.annotation.Nullable;
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.NeverSingle.neverSingle;
-import static io.servicetalk.concurrent.api.Publisher.empty;
 import static io.servicetalk.concurrent.api.SingleDoOnUtils.doOnErrorSupplier;
 import static io.servicetalk.concurrent.api.SingleDoOnUtils.doOnSubscribeSupplier;
 import static io.servicetalk.concurrent.api.SingleDoOnUtils.doOnSuccessSupplier;
@@ -403,8 +402,7 @@ public abstract class Single<T> implements io.servicetalk.concurrent.Single<T> {
      * terminates successfully.
      */
     public final Single<T> concatWith(Completable next) {
-        // We cannot use next.toPublisher() as that returns Publisher<Void> which can not be concatenated with Single<T>
-        return concatWith(next.concatWith(empty())).first();
+        return toPublisher().concatWith(next).first();
     }
 
     /**
@@ -1040,7 +1038,7 @@ public abstract class Single<T> implements io.servicetalk.concurrent.Single<T> {
      * @return {@link Cancellable} used to invoke {@link Cancellable#cancel()} on the parameter of
      * {@link Subscriber#onSubscribe(Cancellable)} for this {@link Single}.
      */
-    public final Cancellable subscribe(Consumer<T> resultConsumer) {
+    public final Cancellable subscribe(Consumer<? super T> resultConsumer) {
         SimpleSingleSubscriber<T> subscriber = new SimpleSingleSubscriber<>(resultConsumer);
         subscribe(subscriber);
         return subscriber;
@@ -1102,23 +1100,7 @@ public abstract class Single<T> implements io.servicetalk.concurrent.Single<T> {
      * {@link Subscriber}.
      */
     public static <T> Single<T> defer(Supplier<? extends Single<T>> singleSupplier) {
-        return new SingleDefer<>(singleSupplier, false);
-    }
-
-    /**
-     * Defer creation of a {@link Single} till it is subscribed to. The {@link Single}s returned from
-     * {@code singleSupplier} will share the same {@link AsyncContextMap} as the {@link Single} return from this method.
-     * A typical use case for this is if the {@link Single}s returned from {@code singleSupplier} only modify existing
-     * behavior with additional state, but not if the {@link Single}s may come from an unrelated independent source.
-     * @param singleSupplier {@link Supplier} to create a new {@link Single} for every call to
-     * {@link #subscribe(Subscriber)} to the returned {@link Single}.
-     * @param <T> Type of the {@link Single}.
-     * @return A new {@link Single} that creates a new {@link Single} using {@code singleFactory} for every call to
-     * {@link #subscribe(Subscriber)} and forwards the result or error from the newly created {@link Single} to its
-     * {@link Subscriber}.
-     */
-    public static <T> Single<T> deferShareContext(Supplier<? extends Single<T>> singleSupplier) {
-        return new SingleDefer<>(singleSupplier, true);
+        return new SingleDefer<>(singleSupplier);
     }
 
     /**

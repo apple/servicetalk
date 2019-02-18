@@ -37,10 +37,9 @@ import java.util.function.Function;
 import javax.annotation.Nullable;
 import javax.net.ssl.SSLSession;
 
+import static io.servicetalk.concurrent.api.BlockingTestUtils.awaitIndefinitelyNonNull;
 import static io.servicetalk.concurrent.api.Single.error;
 import static io.servicetalk.concurrent.api.Single.success;
-import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
-import static io.servicetalk.concurrent.internal.Await.awaitIndefinitelyNonNull;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -48,7 +47,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
 @RunWith(Parameterized.class)
-public class TcpServerInitializerConnectionAcceptorTest extends AbstractTcpServerTest {
+public class TcpServerBinderConnectionAcceptorTest extends AbstractTcpServerTest {
 
     enum FilterMode {
         ACCEPT_ALL(true, false, (executor, context) -> success(true)),
@@ -94,7 +93,7 @@ public class TcpServerInitializerConnectionAcceptorTest extends AbstractTcpServe
     @Nullable
     private volatile SSLSession sslSession;
 
-    public TcpServerInitializerConnectionAcceptorTest(final boolean enableSsl, final FilterMode filterMode) {
+    public TcpServerBinderConnectionAcceptorTest(final boolean enableSsl, final FilterMode filterMode) {
         this.filterMode = filterMode;
         setSslEnabled(enableSsl);
         setService(conn -> {
@@ -141,15 +140,14 @@ public class TcpServerInitializerConnectionAcceptorTest extends AbstractTcpServe
     }
 
     @Test
-    public void testAcceptConnection() throws Exception {
-        NettyConnection<Buffer, Buffer> connection = client.connectBlocking(CLIENT_CTX, serverAddress);
-        final Buffer buffer = connection.executionContext().bufferAllocator().fromAscii("Hello");
-
+    public void testAcceptConnection() {
         // Write something, then try to read something and wait for a result.
         // We do this to ensure that the server has had a chance to execute code if the connection was accepted.
         // This is necessary for the delayed tests to see the correct state of the acceptedConnection flag.
         try {
-            awaitIndefinitely(connection.writeAndFlush(buffer));
+            NettyConnection<Buffer, Buffer> connection = client.connectBlocking(CLIENT_CTX, serverAddress);
+            final Buffer buffer = connection.executionContext().bufferAllocator().fromAscii("Hello");
+            connection.writeAndFlush(buffer).toFuture().get();
             Single<Buffer> read = connection.read().first();
             Buffer responseBuffer = awaitIndefinitelyNonNull(read);
             assertEquals("Did not receive response payload echoing request",

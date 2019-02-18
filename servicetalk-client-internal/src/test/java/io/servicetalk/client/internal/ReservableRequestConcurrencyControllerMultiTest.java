@@ -23,7 +23,6 @@ import org.junit.Test;
 import static io.servicetalk.client.internal.RequestConcurrencyController.Result.Accepted;
 import static io.servicetalk.concurrent.api.Completable.never;
 import static io.servicetalk.concurrent.api.Publisher.just;
-import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
@@ -49,7 +48,7 @@ public class ReservableRequestConcurrencyControllerMultiTest extends AbstractReq
             // Test coldness
             assertFalse(controller.tryReserve());
 
-            awaitIndefinitely(release);
+            release.toFuture().get();
         }
     }
 

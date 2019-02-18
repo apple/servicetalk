@@ -57,7 +57,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Completable.completed;
-import static io.servicetalk.concurrent.api.Single.deferShareContext;
+import static io.servicetalk.concurrent.api.Single.defer;
 import static io.servicetalk.concurrent.api.Single.error;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static java.util.Objects.requireNonNull;
@@ -133,7 +133,7 @@ class DefaultPartitionedHttpClientBuilder<U, R> extends PartitionedHttpClientBui
         @Override
         public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
                                                      final StreamingHttpRequest request) {
-            return deferShareContext(() -> selectClient(request).request(strategy, request));
+            return defer(() -> selectClient(request).request(strategy, request).subscribeShareContext());
         }
 
         @Nonnull
@@ -142,9 +142,9 @@ class DefaultPartitionedHttpClientBuilder<U, R> extends PartitionedHttpClientBui
         }
 
         @Override
-        public Single<? extends ReservedStreamingHttpConnection> reserveConnection(final HttpExecutionStrategy strategy,
-                                                                                   final HttpRequestMetaData metaData) {
-            return deferShareContext(() -> selectClient(metaData).reserveConnection(strategy, metaData));
+        public Single<ReservedStreamingHttpConnection> reserveConnection(final HttpExecutionStrategy strategy,
+                                                                         final HttpRequestMetaData metaData) {
+            return defer(() -> selectClient(metaData).reserveConnection(strategy, metaData).subscribeShareContext());
         }
 
         @Override
@@ -182,8 +182,8 @@ class DefaultPartitionedHttpClientBuilder<U, R> extends PartitionedHttpClientBui
         }
 
         @Override
-        public Single<? extends ReservedStreamingHttpConnection> reserveConnection(final HttpExecutionStrategy strategy,
-                                                                                   final HttpRequestMetaData metaData) {
+        public Single<ReservedStreamingHttpConnection> reserveConnection(final HttpExecutionStrategy strategy,
+                                                                         final HttpRequestMetaData metaData) {
             return error(ex);
         }
 

@@ -39,6 +39,7 @@ import static io.opentracing.tag.Tags.HTTP_METHOD;
 import static io.opentracing.tag.Tags.HTTP_URL;
 import static io.opentracing.tag.Tags.SPAN_KIND;
 import static io.opentracing.tag.Tags.SPAN_KIND_SERVER;
+import static io.servicetalk.concurrent.api.Single.defer;
 import static io.servicetalk.opentracing.http.TracingHttpHeadersFormatter.traceStateFormatter;
 import static io.servicetalk.opentracing.http.TracingUtils.handlePrematureException;
 import static io.servicetalk.opentracing.http.TracingUtils.tagErrorAndClose;
@@ -87,7 +88,7 @@ public class TracingHttpServiceFilter implements StreamingHttpRequestHandler {
     public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
                                                 final StreamingHttpRequest request,
                                                 final StreamingHttpResponseFactory responseFactory) {
-        return Single.deferShareContext(() -> {
+        return defer(() -> {
             Scope tempScope = null;
             // We may interact with the Scope/Span from multiple threads (Subscriber & Subscription), and the
             // Scope/Span class does not provide thread safe behavior. So we ensure that we only close (and add
@@ -120,7 +121,8 @@ public class TracingHttpServiceFilter implements StreamingHttpRequestHandler {
                 }
                 return tracingMapper(resp, currentScope, scopeClosed, TracingHttpServiceFilter.this::isError);
             }).doOnError(cause -> tagErrorAndClose(currentScope, scopeClosed))
-              .doOnCancel(() -> tagErrorAndClose(currentScope, scopeClosed));
+              .doOnCancel(() -> tagErrorAndClose(currentScope, scopeClosed))
+              .subscribeShareContext();
         });
     }
 

@@ -127,13 +127,14 @@ public final class DefaultNettyPipelinedConnection<Req, Resp> implements NettyPi
 
     private Publisher<Resp> requestWithWriter(Writer writer,
                                               @Nullable Supplier<Predicate<Resp>> terminalMsgPredicateSupplier) {
-        return writeOrQueue(Completable.deferShareContext(() -> writer.write()), terminalMsgPredicateSupplier);
+        return writeOrQueue(Completable.defer(() -> writer.write().subscribeShareContext()),
+                terminalMsgPredicateSupplier);
     }
 
     private Publisher<Resp> writeOrQueue(Completable completable,
                                          @Nullable Supplier<Predicate<Resp>> terminalMsgPredicateSupplier) {
-        return Publisher.deferShareContext(() -> writeOrQueueRequest(completable, terminalMsgPredicateSupplier == null ?
-                null : terminalMsgPredicateSupplier.get()));
+        return Publisher.defer(() -> writeOrQueueRequest(completable, terminalMsgPredicateSupplier == null ?
+                null : terminalMsgPredicateSupplier.get()).subscribeShareContext());
     }
 
     private Publisher<Resp> writeOrQueueRequest(Completable completable,

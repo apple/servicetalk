@@ -17,13 +17,37 @@ package io.servicetalk.concurrent.api.single;
 
 import io.servicetalk.concurrent.api.Single;
 
+import org.junit.Test;
+
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 
 import static io.servicetalk.concurrent.api.Single.fromFuture;
+import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
 
 public class FutureToSingleTest extends AbstractFutureToSingleTest {
     @Override
     Single<String> from(final CompletableFuture<String> future) {
         return fromFuture(future);
+    }
+
+    @Test
+    public void failure() throws Exception {
+        CompletableFuture<String> future = new CompletableFuture<>();
+        Single<String> single = from(future);
+        jdkExecutor.execute(() -> future.completeExceptionally(DELIBERATE_EXCEPTION));
+        try {
+            single.toFuture().get();
+            fail("Single expected to fail.");
+        } catch (ExecutionException e) {
+            Throwable cause = e.getCause();
+            assertThat("Unexpected cause.", cause, instanceOf(ExecutionException.class));
+            Throwable nestedCause = cause.getCause();
+            assertThat("Unexpected nested cause.", nestedCause, is(DELIBERATE_EXCEPTION));
+        }
     }
 }

@@ -41,13 +41,13 @@ public class StreamingHttpClientFilter extends StreamingHttpClient {
     }
 
     @Override
-    public final Single<? extends ReservedStreamingHttpConnection> reserveConnection(
+    public final Single<ReservedStreamingHttpConnection> reserveConnection(
             final HttpRequestMetaData metaData) {
         return reserveConnection(defaultStrategy, metaData);
     }
 
     @Override
-    public final Single<? extends ReservedStreamingHttpConnection> reserveConnection(
+    public final Single<ReservedStreamingHttpConnection> reserveConnection(
             final HttpExecutionStrategy strategy, final HttpRequestMetaData metaData) {
         return reserveConnection(delegate, strategy, metaData);
     }
@@ -88,9 +88,9 @@ public class StreamingHttpClientFilter extends StreamingHttpClient {
      * @param metaData the {@link HttpRequestMetaData} for reserving a connection.
      * @return a {@link Single} that provides the {@link ReservedStreamingHttpConnection} upon completion.
      */
-    protected Single<? extends ReservedStreamingHttpConnection> reserveConnection(final StreamingHttpClient delegate,
-                                                                                  final HttpExecutionStrategy strategy,
-                                                                                  final HttpRequestMetaData metaData) {
+    protected Single<ReservedStreamingHttpConnection> reserveConnection(final StreamingHttpClient delegate,
+                                                                        final HttpExecutionStrategy strategy,
+                                                                        final HttpRequestMetaData metaData) {
         return delegate.reserveConnection(strategy, metaData).map(ClientFilterToReservedConnectionFilter::new);
     }
 

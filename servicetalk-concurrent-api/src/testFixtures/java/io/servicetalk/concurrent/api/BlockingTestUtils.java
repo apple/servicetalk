@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,48 +13,38 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.concurrent.internal;
+package io.servicetalk.concurrent.api;
 
-import io.servicetalk.concurrent.Cancellable;
-import io.servicetalk.concurrent.Completable;
-import io.servicetalk.concurrent.Single;
-
-import org.reactivestreams.Publisher;
-import org.reactivestreams.Subscription;
+import io.servicetalk.concurrent.internal.PlatformDependent;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
-import java.util.concurrent.CancellationException;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
-import static io.servicetalk.concurrent.internal.ConcurrentSubscription.wrap;
 import static io.servicetalk.concurrent.internal.ThrowableUtil.unknownStackTrace;
 
 /**
  * Utilities to await results of an asynchronous computation either by blocking the calling thread.
  */
-public final class Await {
+public final class BlockingTestUtils {
     private static final NullPointerException AWAIT_PUBLISHER_NPE =
-            unknownStackTrace(new NullPointerException(), Await.class,
+            unknownStackTrace(new NullPointerException(), BlockingTestUtils.class,
                     "awaitIndefinitelyNonNull(" + Publisher.class.getSimpleName() + ")");
     private static final NullPointerException AWAIT_PUBLISHER_TIMEOUT_NPE =
-            unknownStackTrace(new NullPointerException(), Await.class,
+            unknownStackTrace(new NullPointerException(), BlockingTestUtils.class,
                     "awaitNonNull(" + Publisher.class.getSimpleName() + ", ..)");
     private static final NullPointerException AWAIT_SINGLE_NPE =
-            unknownStackTrace(new NullPointerException(), Await.class,
+            unknownStackTrace(new NullPointerException(), BlockingTestUtils.class,
                     "awaitIndefinitelyNonNull(" + Single.class.getSimpleName() + ")");
     private static final NullPointerException AWAIT_SINGLE_TIMEOUT_NPE =
-            unknownStackTrace(new NullPointerException(), Await.class,
+            unknownStackTrace(new NullPointerException(), BlockingTestUtils.class,
                     "awaitNonNull(" + Single.class.getSimpleName() + ", ..)");
 
-    private Await() {
+    private BlockingTestUtils() {
         // No instances.
     }
 
@@ -70,7 +60,8 @@ public final class Await {
      */
     @Nullable
     public static <T> List<T> awaitIndefinitely(Publisher<T> source) throws ExecutionException, InterruptedException {
-        return subscribe(source).blockingGet();
+        Collection<T> c = source.toFuture().get();
+        return c == null ? null : new ArrayList<>(c);
     }
 
     /**
@@ -107,7 +98,8 @@ public final class Await {
     @Nullable
     public static <T> List<T> await(Publisher<T> source, long timeout, TimeUnit timeoutUnit)
             throws ExecutionException, InterruptedException, TimeoutException {
-        return subscribe(source).blockingGet(timeout, timeoutUnit);
+        Collection<T> c = source.toFuture().get(timeout, timeoutUnit);
+        return c == null ? null : new ArrayList<>(c);
     }
 
     /**
@@ -143,7 +135,7 @@ public final class Await {
      */
     @Nullable
     public static <T> T awaitIndefinitely(Single<T> source) throws ExecutionException, InterruptedException {
-        return subscribe(source).blockingGet();
+        return source.toFuture().get();
     }
 
     /**
@@ -178,7 +170,7 @@ public final class Await {
     @Nullable
     public static <T> T await(Single<T> source, long timeout, TimeUnit timeoutUnit)
             throws ExecutionException, InterruptedException, TimeoutException {
-        return subscribe(source).blockingGet(timeout, timeoutUnit);
+        return source.toFuture().get(timeout, timeoutUnit);
     }
 
     /**
@@ -210,7 +202,7 @@ public final class Await {
      * @throws InterruptedException if the thread was interrupted while waiting for termination.
      */
     public static void awaitIndefinitely(Completable source) throws ExecutionException, InterruptedException {
-        subscribe(source).blockAndThrowIfFailed();
+        source.toFuture().get();
     }
 
     /**
@@ -241,32 +233,7 @@ public final class Await {
      */
     public static void await(Completable source, long timeout, TimeUnit timeoutUnit)
             throws ExecutionException, InterruptedException, TimeoutException {
-        subscribe(source).blockAndThrowIfFailed(timeout, timeoutUnit);
-    }
-
-    private static <T> ResultProvider<List<T>> subscribe(Publisher<T> source) {
-        assertNotInEventloop();
-        SubscriberImpl<T> subscriber = new SubscriberImpl<>();
-        source.subscribe(subscriber);
-        return subscriber;
-    }
-
-    private static <T> ResultProvider<T> subscribe(Single<T> source) {
-        assertNotInEventloop();
-        SingleSubscriberImpl<T> subscriber = new SingleSubscriberImpl<>();
-        source.subscribe(subscriber);
-        return subscriber;
-    }
-
-    private static ResultProvider<Void> subscribe(Completable source) {
-        assertNotInEventloop();
-        SingleSubscriberImpl<Void> subscriber = new SingleSubscriberImpl<>();
-        source.subscribe(subscriber);
-        return subscriber;
-    }
-
-    private static void assertNotInEventloop() {
-        //TODO: Check if the current thread is an eventloop, if so, throw.
+        source.toFuture().get(timeout, timeoutUnit);
     }
 
     private static <T> T enforceNonNull(@Nullable T result, NullPointerException npe) throws ExecutionException {
@@ -274,141 +241,5 @@ public final class Await {
             throw new ExecutionException("null return value not supported", npe);
         }
         return result;
-    }
-
-    private abstract static class ResultProvider<T> {
-
-        @Nullable
-        private T result;
-        @Nullable
-        private Throwable cause;
-
-        private final AtomicReference<Cancellable> cancellable = new AtomicReference<>();
-        private final AtomicBoolean terminated = new AtomicBoolean();
-        private final CountDownLatch latch = new CountDownLatch(1);
-
-        protected void setSuccess(@Nullable T result) {
-            if (terminated.compareAndSet(false, true)) {
-                this.result = result;
-                latch.countDown();
-            }
-        }
-
-        protected void setFailure(Throwable cause) {
-            if (terminated.compareAndSet(false, true)) {
-                this.cause = cause;
-                latch.countDown();
-            }
-        }
-
-        @Nullable
-        T blockingGet() throws ExecutionException, InterruptedException {
-            latch.await();
-            return get();
-        }
-
-        @Nullable
-        T blockingGet(long timeout, TimeUnit timeoutUnit) throws ExecutionException, InterruptedException, TimeoutException {
-            if (latch.await(timeout, timeoutUnit)) {
-                return get();
-            } else {
-                return timeout(timeout, timeoutUnit);
-            }
-        }
-
-        void blockAndThrowIfFailed() throws ExecutionException, InterruptedException {
-            latch.await();
-            throwIfFailed();
-        }
-
-        void blockAndThrowIfFailed(long timeout, TimeUnit timeoutUnit) throws ExecutionException, InterruptedException, TimeoutException {
-            if (latch.await(timeout, timeoutUnit)) {
-                throwIfFailed();
-            } else {
-                timeout(timeout, timeoutUnit);
-            }
-        }
-
-        void setCancellable(Cancellable cancellable) {
-            if (!this.cancellable.compareAndSet(null, cancellable)) {
-                cancellable.cancel();
-            }
-        }
-
-        private T timeout(long timeout, TimeUnit timeoutUnit) throws TimeoutException {
-            Cancellable oldVal = cancellable.getAndSet(IGNORE_CANCEL);
-            if (oldVal != null) {
-                oldVal.cancel();
-            }
-            setFailure(new CancellationException("Source is cancelled."));
-            throw new TimeoutException(String.format("No terminal signal received after waiting for %s %s.", timeout, timeoutUnit));
-        }
-
-        @Nullable
-        private T get() throws ExecutionException {
-            throwIfFailed();
-            return result;
-        }
-
-        private void throwIfFailed() throws ExecutionException {
-            if (cause != null) {
-                throw cause instanceof ExecutionException ? (ExecutionException) cause : new ExecutionException(cause);
-            }
-        }
-    }
-
-    private static final class SingleSubscriberImpl<T> extends ResultProvider<T> implements Single.Subscriber<T>, Completable.Subscriber {
-        @Override
-        public void onSubscribe(Cancellable cancellable) {
-            setCancellable(cancellable);
-        }
-
-        @Override
-        public void onSuccess(@Nullable T result) {
-            setSuccess(result);
-        }
-
-        @Override
-        public void onComplete() {
-            setSuccess(null);
-        }
-
-        @Override
-        public void onError(Throwable t) {
-            setFailure(t);
-        }
-    }
-
-    private static final class SubscriberImpl<T> extends ResultProvider<List<T>> implements org.reactivestreams.Subscriber<T> {
-
-        private final List<T> data = new ArrayList<>();
-
-        @Override
-        public void onSubscribe(Subscription s) {
-            // Since, cancel() from timeout can be concurrent with the below request(Long.MAX_VALUE), we wrap the
-            // Subscription in a ConcurrentSubscription.
-            ConcurrentSubscription cs = wrap(s);
-            setCancellable(cs::cancel);
-            cs.request(Long.MAX_VALUE);
-        }
-
-        @Override
-        public void onNext(T t) {
-            data.add(t);
-        }
-
-        @Override
-        public void onError(Throwable t) {
-            if (data.isEmpty()) {
-                setFailure(t);
-            } else {
-                setFailure(new ExecutionException("Source failed after emitting some items: " + data, t));
-            }
-        }
-
-        @Override
-        public void onComplete() {
-            setSuccess(data);
-        }
     }
 }

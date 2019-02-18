@@ -31,7 +31,6 @@ import java.util.function.Function;
 
 import static io.servicetalk.concurrent.api.Publisher.error;
 import static io.servicetalk.concurrent.api.Publisher.just;
-import static io.servicetalk.concurrent.api.Single.success;
 import static io.servicetalk.http.api.StreamingHttpResponses.newResponseWithTrailers;
 import static io.servicetalk.http.netty.HeaderUtils.addRequestTransferEncodingIfNecessary;
 import static java.util.Objects.requireNonNull;
@@ -44,12 +43,15 @@ abstract class AbstractStreamingHttpConnection<CC extends ConnectionContext> ext
     private final Publisher<Integer> maxConcurrencySetting;
 
     protected AbstractStreamingHttpConnection(
-            CC conn, Completable onClosing, ReadOnlyHttpClientConfig config, ExecutionContext executionContext,
+            CC conn, ReadOnlyHttpClientConfig config, ExecutionContext executionContext,
             StreamingHttpRequestResponseFactory reqRespFactory, HttpExecutionStrategy strategy) {
         super(reqRespFactory, strategy);
         this.connection = requireNonNull(conn);
         this.executionContext = requireNonNull(executionContext);
-        maxConcurrencySetting = just(config.getMaxPipelinedRequests()).concatWith(onClosing.concatWith(success(0)));
+        // TODO(jayv) we should concat with NettyConnectionContext.onClosing() once it's exposed such that both
+        // this class and ConcurrentRequestsHttpConnectionFilter can listen to the same event to reduce ambiguity
+        maxConcurrencySetting = just(config.getMaxPipelinedRequests())
+                .concatWith(connection.onClose()).concatWith(Single.success(0));
     }
 
     @Override

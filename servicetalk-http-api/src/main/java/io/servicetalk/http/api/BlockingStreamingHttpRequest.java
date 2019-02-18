@@ -203,7 +203,7 @@ public interface BlockingStreamingHttpRequest extends HttpRequestMetaData {
      * @return a {@link Single} that completes with a {@link HttpRequest} representation of this
      * {@link BlockingStreamingHttpRequest}.
      */
-    Single<? extends HttpRequest> toRequest();
+    Single<HttpRequest> toRequest();
 
     /**
      * Translates this {@link BlockingStreamingHttpRequest} to a {@link StreamingHttpRequest}.

@@ -24,7 +24,6 @@ import static io.servicetalk.client.internal.RequestConcurrencyController.Result
 import static io.servicetalk.client.internal.ReservableRequestConcurrencyControllers.newSingleController;
 import static io.servicetalk.concurrent.api.Completable.never;
 import static io.servicetalk.concurrent.api.Publisher.just;
-import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
@@ -50,7 +49,7 @@ public class ReservableRequestConcurrencyControllerOnlySingleTest
             // Test coldness
             assertFalse(controller.tryReserve());
 
-            awaitIndefinitely(release);
+            release.toFuture().get();
         }
     }
 

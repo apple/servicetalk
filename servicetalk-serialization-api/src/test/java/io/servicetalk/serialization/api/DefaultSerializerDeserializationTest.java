@@ -32,8 +32,8 @@ import org.junit.rules.Timeout;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import static io.servicetalk.concurrent.api.BlockingTestUtils.awaitIndefinitely;
 import static io.servicetalk.concurrent.api.Publisher.from;
-import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;

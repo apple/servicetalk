@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ import io.servicetalk.http.api.StreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpConnectionFilter;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
+import io.servicetalk.http.utils.DoBeforeFinallyOnHttpResponseOperator;
 import io.servicetalk.transport.netty.internal.NettyConnectionContext;
 
 import static io.servicetalk.client.internal.RequestConcurrencyControllers.newController;
@@ -62,7 +63,7 @@ final class ConcurrentRequestsHttpConnectionFilter extends StreamingHttpConnecti
                 switch (result) {
                     case Accepted:
                         delegate().request(strategy, request)
-                                .liftSynchronous(new ConcurrencyControlSingleOperator(limiter))
+                                .liftSynchronous(new DoBeforeFinallyOnHttpResponseOperator(limiter::requestFinished))
                                 .subscribe(subscriber);
                         return;
                     case RejectedTemporary:

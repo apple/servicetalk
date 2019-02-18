@@ -56,6 +56,7 @@ import static io.servicetalk.http.api.HttpExecutionStrategies.customStrategyBuil
 import static io.servicetalk.http.api.HttpResponseStatuses.OK;
 import static io.servicetalk.http.api.HttpResponseStatuses.SERVICE_UNAVAILABLE;
 import static io.servicetalk.http.netty.HttpClients.forSingleAddress;
+import static io.servicetalk.http.netty.HttpServers.forAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -134,13 +135,13 @@ public class InsufficientlySizedExecutorHttpTest {
         final HttpExecutionStrategy strategy = threadBased ? strategyBuilder.offloadWithThreadAffinity().build() :
                 strategyBuilder.build();
         if (clientUnderProvisioned) {
-            server = HttpServers.forAddress(localAddress(0))
+            server = forAddress(localAddress(0))
                     .listenStreamingAndAwait((ctx, request, responseFactory) -> success(responseFactory.ok()));
             client = forSingleAddress(serverHostAndPort(server))
                     .executionStrategy(strategy)
                     .buildStreaming();
         } else {
-            server = HttpServers.forAddress(localAddress(0))
+            server = forAddress(localAddress(0))
                     .listenStreamingAndAwait(new StreamingHttpService() {
                         @Override
                         public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,

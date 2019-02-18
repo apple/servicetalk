@@ -60,7 +60,7 @@ import javax.annotation.Nullable;
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.concurrent.api.AsyncCloseables.toListenableAsyncCloseable;
-import static io.servicetalk.concurrent.api.Single.deferShareContext;
+import static io.servicetalk.concurrent.api.Single.defer;
 import static io.servicetalk.http.api.HttpHeaderNames.HOST;
 import static io.servicetalk.http.api.HttpScheme.schemeForValue;
 import static io.servicetalk.http.api.SslConfigProviders.plainByDefault;
@@ -301,15 +301,15 @@ final class DefaultMultiAddressUrlHttpClientBuilder extends MultiAddressHttpClie
         }
 
         @Override
-        public Single<? extends ReservedStreamingHttpConnection> reserveConnection(final HttpExecutionStrategy strategy,
-                                                                                   final HttpRequestMetaData metaData) {
-            return deferShareContext(() -> selectClient(metaData).reserveConnection(strategy, metaData));
+        public Single<ReservedStreamingHttpConnection> reserveConnection(final HttpExecutionStrategy strategy,
+                                                                         final HttpRequestMetaData metaData) {
+            return defer(() -> selectClient(metaData).reserveConnection(strategy, metaData).subscribeShareContext());
         }
 
         @Override
         public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
                                                      final StreamingHttpRequest request) {
-            return deferShareContext(() -> selectClient(request).request(strategy, request));
+            return defer(() -> selectClient(request).request(strategy, request).subscribeShareContext());
         }
 
         @Override
@@ -349,8 +349,8 @@ final class DefaultMultiAddressUrlHttpClientBuilder extends MultiAddressHttpClie
         }
 
         @Override
-        public Single<? extends ReservedStreamingHttpConnection> reserveConnection(final HttpExecutionStrategy strategy,
-                                                                                   final HttpRequestMetaData metaData) {
+        public Single<ReservedStreamingHttpConnection> reserveConnection(final HttpExecutionStrategy strategy,
+                                                                         final HttpRequestMetaData metaData) {
             return httpClient.reserveConnection(strategy, metaData);
         }
 

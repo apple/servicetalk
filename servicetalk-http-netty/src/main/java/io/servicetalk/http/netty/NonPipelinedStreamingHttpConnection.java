@@ -28,7 +28,7 @@ final class NonPipelinedStreamingHttpConnection extends AbstractStreamingHttpCon
                                         final ExecutionContext executionContext,
                                         final StreamingHttpRequestResponseFactory reqRespFactory,
                                         final HttpExecutionStrategy strategy) {
-        super(connection, connection.onClosing(), config, executionContext, reqRespFactory, strategy);
+        super(connection, config, executionContext, reqRespFactory, strategy);
     }
 
     @Override

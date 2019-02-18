@@ -24,14 +24,15 @@ import io.servicetalk.concurrent.api.MockedSubscriberRule;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.TestPublisher;
-import io.servicetalk.transport.api.ConnectionContext;
-import io.servicetalk.transport.api.ExecutionContext;
+import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
+import io.servicetalk.transport.netty.internal.NettyConnection.TerminalPredicate;
 
 import io.netty.channel.ChannelOutboundBuffer;
 import io.netty.channel.embedded.EmbeddedChannel;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.Timeout;
 import org.mockito.ArgumentCaptor;
 
 import java.nio.channels.ClosedChannelException;
@@ -46,7 +47,6 @@ import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Publisher.just;
 import static io.servicetalk.concurrent.api.Publisher.never;
-import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.transport.netty.internal.CloseHandler.UNSUPPORTED_PROTOCOL_CLOSE_HANDLER;
 import static io.servicetalk.transport.netty.internal.CloseHandler.forPipelinedRequestResponse;
@@ -55,6 +55,7 @@ import static io.servicetalk.transport.netty.internal.FlushStrategies.defaultFlu
 import static io.servicetalk.transport.netty.internal.FlushStrategies.flushOnEnd;
 import static java.lang.Integer.MAX_VALUE;
 import static java.nio.charset.Charset.defaultCharset;
+import static java.nio.charset.StandardCharsets.US_ASCII;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
@@ -66,7 +67,6 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 public class DefaultNettyConnectionTest {
@@ -80,40 +80,37 @@ public class DefaultNettyConnectionTest {
     public final MockedCompletableListenerRule closeListener = new MockedCompletableListenerRule();
     @Rule
     public final MockedSubscriberRule<Buffer> subscriberRule = new MockedSubscriberRule<>();
+    @Rule
+    public final Timeout timeout = new ServiceTalkTestTimeout();
 
     private BufferAllocator allocator;
     private EmbeddedChannel channel;
-    private ConnectionContext context;
     private NettyConnection.RequestNSupplier requestNSupplier;
     private int requestNext = MAX_VALUE;
     private DefaultNettyConnection<Buffer, Buffer> conn;
-    private NettyConnection.TerminalPredicate<Buffer> terminalPredicate;
-    private TestPublisher<Buffer> readPublisher;
 
     @Before
-    public void setUp() {
+    public void setUp() throws Exception {
         setupWithCloseHandler(UNSUPPORTED_PROTOCOL_CLOSE_HANDLER);
     }
 
-    private void setupWithCloseHandler(final CloseHandler closeHandler) {
+    private void setupWithCloseHandler(final CloseHandler closeHandler) throws Exception {
         setupWithCloseHandler(closeHandler, immediate());
     }
 
-    private void setupWithCloseHandler(final CloseHandler closeHandler, Executor executor) {
-        ExecutionContext executionContext = mock(ExecutionContext.class);
-        when(executionContext.executor()).thenReturn(executor);
+    private void setupWithCloseHandler(final CloseHandler closeHandler, Executor executor) throws Exception {
         allocator = DEFAULT_ALLOCATOR;
         channel = new EmbeddedChannel();
-        context = mock(ConnectionContext.class);
-        when(context.onClose()).thenReturn(new NettyFutureCompletable(channel::closeFuture).publishOn(executor));
-        when(context.closeAsync()).thenReturn(new NettyFutureCompletable(channel::close));
-        when(context.executionContext()).thenReturn(executionContext);
         requestNSupplier = mock(NettyConnection.RequestNSupplier.class);
         when(requestNSupplier.requestNFor(anyLong())).then(invocation1 -> (long) requestNext);
-        terminalPredicate = new NettyConnection.TerminalPredicate<>(o -> false);
-        readPublisher = new TestPublisher<Buffer>().sendOnSubscribe();
-        conn = new DefaultNettyConnection<>(channel, context, readPublisher, terminalPredicate, closeHandler,
-                defaultFlushStrategy());
+        final TerminalPredicate<Buffer> terminalPredicate = new TerminalPredicate<>(buffer -> {
+            if ("DELIBERATE_EXCEPTION".equals(buffer.toString(US_ASCII))) {
+                throw DELIBERATE_EXCEPTION;
+            }
+            return true;
+        });
+        conn = DefaultNettyConnection.<Buffer, Buffer>initChannel(channel, allocator, executor, terminalPredicate,
+                closeHandler, defaultFlushStrategy(), (channel, context) -> context).toFuture().get();
         publisher = new TestPublisher<Buffer>().sendOnSubscribe();
     }
 
@@ -140,9 +137,12 @@ public class DefaultNettyConnectionTest {
     @Test
     public void testAsPipelinedConnection() {
         final NettyPipelinedConnection<Buffer, Buffer> c = new DefaultNettyPipelinedConnection<>(conn, 2);
-        subscriberRule.subscribe(c.request(newBuffer("Hello"))).request(1);
-        readPublisher.onComplete();
-        subscriberRule.verifySuccess();
+        subscriberRule.subscribe(c.request(newBuffer("Hello")));
+        subscriberRule.verifyNoEmissions();
+        subscriberRule.request(1);
+        Buffer expected = newBuffer("Hi");
+        channel.writeInbound(expected.duplicate());
+        subscriberRule.verifySuccess(expected);
     }
 
     @Test
@@ -333,8 +333,11 @@ public class DefaultNettyConnectionTest {
     @Test
     public void testRead() {
         subscriberRule.subscribe(conn.read());
-        readPublisher.onComplete();
-        subscriberRule.verifySuccess();
+        Buffer expected = allocator.fromAscii("data");
+        channel.writeInbound(expected.duplicate());
+        subscriberRule.verifyNoEmissions();
+        subscriberRule.request(1);
+        subscriberRule.verifySuccess(expected);
     }
 
     @Test
@@ -353,51 +356,29 @@ public class DefaultNettyConnectionTest {
 
     @Test
     public void testOnClosingWithGracefulClose() throws Exception {
-        CloseHandler closeHandler = forPipelinedRequestResponse(true);
+        CloseHandler closeHandler = forPipelinedRequestResponse(true, channel.config());
         setupWithCloseHandler(closeHandler);
         closeListener.listen(conn.onClosing());
-        awaitIndefinitely(conn.closeAsyncGracefully());
+        conn.closeAsyncGracefully().toFuture().get();
         closeListener.verifyCompletion();
     }
 
     @Test
     public void testOnClosingWithHardClose() throws Exception {
-        CloseHandler closeHandler = forPipelinedRequestResponse(true);
+        CloseHandler closeHandler = forPipelinedRequestResponse(true, channel.config());
         setupWithCloseHandler(closeHandler);
         closeListener.listen(conn.onClosing());
-        awaitIndefinitely(conn.closeAsync());
+        conn.closeAsync().toFuture().get();
         closeListener.verifyCompletion();
     }
 
     @Test
     public void testOnClosingWithoutUserInitiatedClose() throws Exception {
-        CloseHandler closeHandler = forPipelinedRequestResponse(true);
+        CloseHandler closeHandler = forPipelinedRequestResponse(true, channel.config());
         setupWithCloseHandler(closeHandler);
         closeListener.listen(conn.onClosing());
         channel.close().get(); // Close and await closure.
         closeListener.verifyCompletion();
-    }
-
-    @Test
-    public void testContextDelegation() {
-        conn.executionContext();
-        verify(context).executionContext();
-        verifyNoMoreInteractions(context);
-        conn.localAddress();
-        verify(context).localAddress();
-        verifyNoMoreInteractions(context);
-        conn.remoteAddress();
-        verify(context).remoteAddress();
-        verifyNoMoreInteractions(context);
-        conn.sslSession();
-        verify(context).sslSession();
-        verifyNoMoreInteractions(context);
-        conn.closeAsync().subscribe();
-        verify(context).closeAsync();
-        verifyNoMoreInteractions(context);
-        conn.onClose();
-        verify(context, times(1)).onClose();
-        verifyNoMoreInteractions(context);
     }
 
     private Buffer newBuffer(String data) {
@@ -429,8 +410,8 @@ public class DefaultNettyConnectionTest {
     }
 
     @Test
-    public void testErrorEnrichmentWithCloseHandlerOnWriteError() {
-        CloseHandler closeHandler = forPipelinedRequestResponse(true);
+    public void testErrorEnrichmentWithCloseHandlerOnWriteError() throws Exception {
+        CloseHandler closeHandler = forPipelinedRequestResponse(true, channel.config());
         setupWithCloseHandler(closeHandler);
         closeHandler.channelClosedOutbound(channel.pipeline().firstContext());
         assertThat(channel.isActive(), is(false));
@@ -449,23 +430,19 @@ public class DefaultNettyConnectionTest {
     }
 
     @Test
-    public void testErrorEnrichmentWithCloseHandlerOnReadError() {
-        CloseHandler closeHandler = forPipelinedRequestResponse(true);
+    public void testTerminalPredicateThrowTerminatesReadPublisher() throws Exception {
+        CloseHandler closeHandler = forPipelinedRequestResponse(true, channel.config());
         setupWithCloseHandler(closeHandler);
-        closeHandler.channelClosedInbound(channel.pipeline().firstContext());
-        assertThat(channel.isActive(), is(false));
 
         ArgumentCaptor<Throwable> exCaptor = ArgumentCaptor.forClass(Throwable.class);
-        subscriberRule.subscribe(conn.read());
-        readPublisher.onError(DELIBERATE_EXCEPTION);
+        subscriberRule.subscribe(conn.read()).request(1);
+        channel.writeInbound(allocator.fromAscii("DELIBERATE_EXCEPTION"));
+        closeHandler.channelClosedInbound(channel.pipeline().firstContext());
         subscriberRule.verifyFailure(exCaptor); // DELIBERATE_EXCEPTION was translated
 
-        // Exception should be of type CloseEventObservedException
-        assertThat(exCaptor.getValue(), instanceOf(ClosedChannelException.class));
-        assertThat(exCaptor.getValue().getCause(), equalTo(DELIBERATE_EXCEPTION));
-        assertThat(exCaptor.getValue().getMessage(), equalTo(
-                "CHANNEL_CLOSED_INBOUND(The transport backing this connection has been shutdown (read)) " +
-                        "[id: 0xembedded, L:embedded ! R:embedded]"));
+        // TODO(scott): EmbeddedChannel doesn't support half closure so we need an alternative approach to fully
+        // test half closure.
+        assertThat(exCaptor.getValue(), is(DELIBERATE_EXCEPTION));
     }
 
     @Test
@@ -483,11 +460,11 @@ public class DefaultNettyConnectionTest {
     }
 
     @Test
-    public void testConnectionDoesNotHoldAThread() {
+    public void testConnectionDoesNotHoldAThread() throws Exception {
         AtomicInteger taskSubmitted = new AtomicInteger();
         ExecutorService executor = java.util.concurrent.Executors.newCachedThreadPool();
         try {
-            setupWithCloseHandler(forPipelinedRequestResponse(true), from(task -> {
+            setupWithCloseHandler(forPipelinedRequestResponse(true, channel.config()), from(task -> {
                 taskSubmitted.incrementAndGet();
                 executor.submit(task);
             }));
@@ -495,5 +472,21 @@ public class DefaultNettyConnectionTest {
         } finally {
             executor.shutdownNow();
         }
+    }
+
+    @Test
+    public void testExceptionWithNoSubscriberIsQueued() throws Exception {
+        channel.pipeline().fireExceptionCaught(DELIBERATE_EXCEPTION);
+        subscriberRule.subscribe(conn.read());
+        subscriberRule.verifyFailure(DELIBERATE_EXCEPTION);
+        conn.onClose().toFuture().get();
+    }
+
+    @Test
+    public void testChannelInactiveWithNoSubscriberIsQueued() throws Exception {
+        channel.close().get();
+        subscriberRule.subscribe(conn.read());
+        subscriberRule.verifyFailure(ClosedChannelException.class);
+        conn.onClose().toFuture().get();
     }
 }

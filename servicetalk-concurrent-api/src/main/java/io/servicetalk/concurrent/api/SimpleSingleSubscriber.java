@@ -30,9 +30,9 @@ final class SimpleSingleSubscriber<T> extends SequentialCancellable implements S
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SimpleSingleSubscriber.class);
 
-    private final Consumer<T> resultConsumer;
+    private final Consumer<? super T> resultConsumer;
 
-    SimpleSingleSubscriber(Consumer<T> resultConsumer) {
+    SimpleSingleSubscriber(Consumer<? super T> resultConsumer) {
         this.resultConsumer = requireNonNull(resultConsumer);
     }
 

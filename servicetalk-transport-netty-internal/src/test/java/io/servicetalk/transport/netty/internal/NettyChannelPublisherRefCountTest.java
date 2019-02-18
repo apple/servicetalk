@@ -20,7 +20,6 @@ import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.embedded.EmbeddedChannel;
 import org.junit.After;
 import org.junit.Before;
@@ -30,8 +29,10 @@ import org.junit.rules.Timeout;
 
 import java.util.concurrent.TimeUnit;
 
+import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
+import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.internal.ServiceTalkTestTimeout.DEFAULT_TIMEOUT_SECONDS;
-import static io.servicetalk.transport.netty.internal.CloseHandler.UNSUPPORTED_PROTOCOL_CLOSE_HANDLER;
+import static io.servicetalk.transport.netty.internal.FlushStrategies.defaultFlushStrategy;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
@@ -43,19 +44,12 @@ public class NettyChannelPublisherRefCountTest {
 
     private Publisher<Object> publisher;
     private EmbeddedChannel channel;
-    private AbstractChannelReadHandler<Object> handler;
-    private ChannelHandlerContext handlerCtx;
 
     @Before
-    public void setUp() {
-        handler = new AbstractChannelReadHandler<Object>(integer -> true, UNSUPPORTED_PROTOCOL_CLOSE_HANDLER) {
-            @Override
-            protected void onPublisherCreation(ChannelHandlerContext ctx, Publisher<Object> newPublisher) {
-                publisher = newPublisher;
-            }
-        };
-        channel = new EmbeddedChannel(handler);
-        handlerCtx = channel.pipeline().context(handler);
+    public void setUp() throws Exception {
+        channel = new EmbeddedChannel();
+        publisher = DefaultNettyConnection.initChannel(channel, DEFAULT_ALLOCATOR, immediate(), defaultFlushStrategy(),
+                (channel, context) -> context).toFuture().get().read();
     }
 
     @After
@@ -68,9 +62,9 @@ public class NettyChannelPublisherRefCountTest {
     @Test
     public void testRefCountedLeaked() {
         subscriber.subscribe(publisher).request(3);
-        ByteBuf buffer = handlerCtx.alloc().buffer();
-        handler.channelRead(handlerCtx, buffer);
-        subscriber.verifyFailure(IllegalStateException.class);
+        ByteBuf buffer = channel.alloc().buffer();
+        channel.writeInbound(buffer);
+        subscriber.verifyFailure(IllegalArgumentException.class);
         assertThat("Buffer not released.", buffer.refCnt(), is(0));
         assertThat("Channel not closed post ref count leaked.", channel.closeFuture().isDone(), is(true));
     }

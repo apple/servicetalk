@@ -165,7 +165,7 @@ public interface StreamingHttpResponse extends HttpResponseMetaData {
      * @return a {@link Single} that completes with a {@link HttpResponse} representation of this
      * {@link StreamingHttpResponse}.
      */
-    Single<? extends HttpResponse> toResponse();
+    Single<HttpResponse> toResponse();
 
     /**
      * Translates this {@link StreamingHttpResponse} to a {@link BlockingStreamingHttpResponse}.
