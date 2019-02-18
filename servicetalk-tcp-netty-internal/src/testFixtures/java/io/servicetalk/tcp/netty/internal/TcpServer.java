@@ -17,19 +17,15 @@ package io.servicetalk.tcp.netty.internal;
 
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.api.Completable;
-import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.transport.api.ConnectionAcceptor;
-import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.ServerContext;
-import io.servicetalk.transport.netty.internal.AbstractContextFilterAwareChannelReadHandler;
 import io.servicetalk.transport.netty.internal.BufferHandler;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
 import io.servicetalk.transport.netty.internal.DefaultNettyConnection;
-import io.servicetalk.transport.netty.internal.FlushStrategy;
 import io.servicetalk.transport.netty.internal.NettyConnection;
+import io.servicetalk.transport.netty.internal.NettyConnection.TerminalPredicate;
 
-import io.netty.channel.ChannelHandlerContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,9 +33,7 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
-import javax.annotation.Nullable;
 
-import static io.servicetalk.concurrent.api.BlockingTestUtils.awaitIndefinitelyNonNull;
 import static io.servicetalk.transport.api.ConnectionAcceptor.ACCEPT_ALL;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.CloseHandler.UNSUPPORTED_PROTOCOL_CLOSE_HANDLER;
@@ -79,10 +73,10 @@ public class TcpServer {
      * @throws ExecutionException If the server start failed.
      * @throws InterruptedException If the calling thread was interrupted waiting for the server to start.
      */
-    public ServerContext start(ExecutionContext executionContext, int port,
-                               Function<NettyConnection<Buffer, Buffer>, Completable> service)
+    public ServerContext bind(ExecutionContext executionContext, int port,
+                              Function<NettyConnection<Buffer, Buffer>, Completable> service)
             throws ExecutionException, InterruptedException {
-        return start(executionContext, port, ACCEPT_ALL, service);
+        return bind(executionContext, port, ACCEPT_ALL, service);
     }
 
     /**
@@ -98,23 +92,30 @@ public class TcpServer {
      * @throws ExecutionException If the server start failed.
      * @throws InterruptedException If the calling thread was interrupted waiting for the server to start.
      */
-    public ServerContext start(ExecutionContext executionContext, int port, ConnectionAcceptor connectionAcceptor,
-                               Function<NettyConnection<Buffer, Buffer>, Completable> service)
+    public ServerContext bind(ExecutionContext executionContext, int port, ConnectionAcceptor connectionAcceptor,
+                              Function<NettyConnection<Buffer, Buffer>, Completable> service)
             throws ExecutionException, InterruptedException {
-        TcpServerInitializer initializer = new TcpServerInitializer(executionContext, config);
-        return awaitIndefinitelyNonNull(initializer.start(localAddress(port),
-                connectionAcceptor, new TcpServerChannelInitializer(config, connectionAcceptor)
-                        .andThen(getChannelInitializer(service, executionContext)), false, false)
+        return TcpServerBinder.bind(localAddress(port), config,
+                executionContext, connectionAcceptor,
+                channel -> DefaultNettyConnection.<Buffer, Buffer>initChannel(channel,
+                        executionContext.bufferAllocator(), executionContext.executor(),
+                        new TerminalPredicate<>(buffer -> false), UNSUPPORTED_PROTOCOL_CLOSE_HANDLER,
+                        config.flushStrategy(), new TcpServerChannelInitializer(config)
+                                .andThen(getChannelInitializer(service, executionContext))),
+                serverConnection -> service.apply(serverConnection)
+                        .doBeforeError(throwable -> LOGGER.error("Error handling a connection.", throwable))
+                        .doBeforeFinally(() -> serverConnection.closeAsync().subscribe())
+                        .subscribe())
                 .doBeforeSuccess(ctx -> LOGGER.info("Server started on port {}.", getServerPort(ctx)))
-                .doBeforeError(throwable -> LOGGER.error("Failed starting server on port {}.", port)));
+                .doBeforeError(throwable -> LOGGER.error("Failed starting server on port {}.", port))
+                .toFuture().get();
     }
 
     // Visible to allow tests to override.
     ChannelInitializer getChannelInitializer(final Function<NettyConnection<Buffer, Buffer>, Completable> service,
                                              final ExecutionContext executionContext) {
         return (channel, context) -> {
-            channel.pipeline().addLast(new BufferHandler(executionContext.bufferAllocator()));
-            channel.pipeline().addLast(new TcpServerChannelReadHandler(context, service, config.flushStrategy()));
+            channel.pipeline().addLast(BufferHandler.INSTANCE);
             return context;
         };
     }
@@ -129,36 +130,5 @@ public class TcpServer {
      */
     public static int getServerPort(ServerContext context) {
         return ((InetSocketAddress) context.listenAddress()).getPort();
-    }
-
-    private static class TcpServerChannelReadHandler extends AbstractContextFilterAwareChannelReadHandler<Buffer> {
-
-        private final ConnectionContext context;
-        private final Function<NettyConnection<Buffer, Buffer>, Completable> service;
-        private final FlushStrategy flushStrategy;
-        @Nullable
-        private NettyConnection<Buffer, Buffer> conn;
-
-        TcpServerChannelReadHandler(final ConnectionContext context,
-                                    final Function<NettyConnection<Buffer, Buffer>, Completable> service,
-                                    final FlushStrategy flushStrategy) {
-            super(buffer -> false, UNSUPPORTED_PROTOCOL_CLOSE_HANDLER);
-            this.context = context;
-            this.service = service;
-            this.flushStrategy = flushStrategy;
-        }
-
-        @Override
-        protected void onPublisherCreation(ChannelHandlerContext ctx, Publisher<Buffer> newPublisher) {
-            conn = new DefaultNettyConnection<>(ctx.channel(), context, newPublisher, flushStrategy);
-        }
-
-        @Override
-        protected void onContextFilterSuccess(final ChannelHandlerContext ctx) {
-            service.apply(conn)
-                    .doBeforeError(throwable -> LOGGER.error("Error handling a connection.", throwable))
-                    .doBeforeFinally(() -> ctx.channel().close())
-                    .subscribe();
-        }
     }
 }

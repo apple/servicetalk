@@ -16,12 +16,12 @@
 package io.servicetalk.tcp.netty.internal;
 
 import io.servicetalk.buffer.api.Buffer;
-import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.FileDescriptorSocketAddress;
 import io.servicetalk.transport.netty.internal.BufferHandler;
-import io.servicetalk.transport.netty.internal.ChannelInitializer;
+import io.servicetalk.transport.netty.internal.DefaultNettyConnection;
 import io.servicetalk.transport.netty.internal.NettyConnection;
+import io.servicetalk.transport.netty.internal.NettyConnection.TerminalPredicate;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
@@ -41,6 +41,7 @@ import java.net.StandardSocketOptions;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static io.servicetalk.transport.netty.internal.CloseHandler.UNSUPPORTED_PROTOCOL_CLOSE_HANDLER;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assume.assumeTrue;
@@ -68,15 +69,6 @@ public final class TcpClient {
         this.config = config.asReadOnly();
     }
 
-    private TcpConnector<Buffer, Buffer> createConnector(BufferAllocator allocator) {
-        ChannelInitializer initializer = new TcpClientChannelInitializer(config);
-        initializer = initializer.andThen((channel, context) -> {
-            channel.pipeline().addLast(new BufferHandler(allocator));
-            return context;
-        });
-        return new TcpConnector<>(config, initializer, () -> buffer -> false);
-    }
-
     /**
      * Connect and await for the connection.
      *
@@ -88,8 +80,15 @@ public final class TcpClient {
      */
     public NettyConnection<Buffer, Buffer> connectBlocking(ExecutionContext executionContext, SocketAddress address)
             throws ExecutionException, InterruptedException {
-        TcpConnector<Buffer, Buffer> connector = createConnector(executionContext.bufferAllocator());
-        return connector.connect(executionContext, address).toFuture().get();
+        return TcpConnector.connect(null, address, config, executionContext)
+                .flatMap(channel -> DefaultNettyConnection.<Buffer, Buffer>initChannel(channel,
+                        executionContext.bufferAllocator(), executionContext.executor(),
+                        new TerminalPredicate<>(buffer -> false), UNSUPPORTED_PROTOCOL_CLOSE_HANDLER,
+                        config.getFlushStrategy(), new TcpClientChannelInitializer(config)
+                                .andThen((channel2, context) -> {
+                            channel2.pipeline().addLast(BufferHandler.INSTANCE);
+                            return context;
+                }))).toFuture().get();
     }
 
     /**

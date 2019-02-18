@@ -33,6 +33,11 @@ plugins {
 
 apply plugin: "servicetalk-core"
 
+project.configure(project) {
+  io.servicetalk.gradle.plugin.internal.ServiceTalkLibraryPlugin.applyCheckstylePlugin(gradle.rootProject)
+  io.servicetalk.gradle.plugin.internal.ServiceTalkLibraryPlugin.addQualityTask(gradle.rootProject)
+}
+
 dependencyManagement {
   dependencies {
     // First Party ServiceTalk Dependencies

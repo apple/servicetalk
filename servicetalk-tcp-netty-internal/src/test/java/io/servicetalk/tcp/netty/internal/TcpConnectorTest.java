@@ -17,6 +17,7 @@ package io.servicetalk.tcp.netty.internal;
 
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.client.api.RetryableConnectException;
+import io.servicetalk.transport.netty.internal.DefaultNettyConnection;
 import io.servicetalk.transport.netty.internal.NettyConnection;
 
 import io.netty.channel.ChannelHandlerContext;
@@ -29,6 +30,8 @@ import java.nio.channels.ClosedChannelException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 
+import static io.servicetalk.transport.netty.internal.CloseHandler.UNSUPPORTED_PROTOCOL_CLOSE_HANDLER;
+import static io.servicetalk.transport.netty.internal.FlushStrategies.defaultFlushStrategy;
 import static java.net.InetSocketAddress.createUnresolved;
 import static java.nio.charset.Charset.defaultCharset;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -83,26 +86,28 @@ public final class TcpConnectorTest extends AbstractTcpServerTest {
         final CountDownLatch registeredLatch = new CountDownLatch(1);
         final CountDownLatch activeLatch = new CountDownLatch(1);
 
-        TcpConnector<Buffer, Buffer> connector = new TcpConnector<>(new ReadOnlyTcpClientConfig(true),
-                (channel, context) -> {
-                    channel.pipeline().addLast(new ChannelInboundHandlerAdapter() {
-                        @Override
-                        public void channelRegistered(ChannelHandlerContext ctx) {
-                            registeredLatch.countDown();
-                            ctx.fireChannelRegistered();
-                        }
+        NettyConnection<Buffer, Buffer> connection = TcpConnector.connect(null,
+                serverContext.listenAddress(), new ReadOnlyTcpClientConfig(true), CLIENT_CTX)
+                .flatMap(channel -> DefaultNettyConnection.<Buffer, Buffer>initChannel(channel,
+                        CLIENT_CTX.bufferAllocator(), CLIENT_CTX.executor(),
+                        new NettyConnection.TerminalPredicate<>(o -> true), UNSUPPORTED_PROTOCOL_CLOSE_HANDLER,
+                        defaultFlushStrategy(), (channel2, context) -> {
+                            channel2.pipeline().addLast(new ChannelInboundHandlerAdapter() {
+                                @Override
+                                public void channelRegistered(ChannelHandlerContext ctx) {
+                                    registeredLatch.countDown();
+                                    ctx.fireChannelRegistered();
+                                }
 
-                        @Override
-                        public void channelActive(ChannelHandlerContext ctx) {
-                            activeLatch.countDown();
-                            ctx.fireChannelActive();
-                        }
-                    });
-                    return context;
-                }, () -> v -> true);
-        NettyConnection<Buffer, Buffer> connection =
-                connector.connect(CLIENT_CTX, serverContext.listenAddress()).toFuture().get();
-        assert connection != null;
+                                @Override
+                                public void channelActive(ChannelHandlerContext ctx) {
+                                    activeLatch.countDown();
+                                    ctx.fireChannelActive();
+                                }
+                            });
+                            return context;
+                        })
+                ).toFuture().get();
         connection.closeAsync().toFuture().get();
 
         registeredLatch.await();

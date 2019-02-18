@@ -33,7 +33,7 @@ import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 /**
  * Implements {@link ListenableAsyncCloseable} using a netty {@link Channel}.
  */
-final class NettyChannelListenableAsyncCloseable implements ListenableAsyncCloseable {
+class NettyChannelListenableAsyncCloseable implements ListenableAsyncCloseable {
     private static final AtomicIntegerFieldUpdater<NettyChannelListenableAsyncCloseable> stateUpdater =
             newUpdater(NettyChannelListenableAsyncCloseable.class, "state");
     private final Channel channel;
@@ -62,7 +62,7 @@ final class NettyChannelListenableAsyncCloseable implements ListenableAsyncClose
     }
 
     @Override
-    public Completable closeAsync() {
+    public final Completable closeAsync() {
         return new Completable() {
             @Override
             protected void handleSubscribe(final Subscriber subscriber) {
@@ -75,30 +75,28 @@ final class NettyChannelListenableAsyncCloseable implements ListenableAsyncClose
     }
 
     @Override
-    public Completable closeAsyncGracefully() {
+    public final Completable closeAsyncGracefully() {
         return new Completable() {
             @Override
             protected void handleSubscribe(final Subscriber subscriber) {
-                if (!stateUpdater.compareAndSet(NettyChannelListenableAsyncCloseable.this, OPEN, GRACEFULLY_CLOSING)) {
-                    onClose().subscribe(subscriber);
-                    return;
+                if (stateUpdater.compareAndSet(NettyChannelListenableAsyncCloseable.this, OPEN, GRACEFULLY_CLOSING)) {
+                    doCloseAsyncGracefully();
                 }
-
-                final ConnectionHolderChannelHandler<?, ?> holder =
-                        channel.pipeline().get(ConnectionHolderChannelHandler.class);
-                NettyConnection<?, ?> connection = holder == null ? null : holder.connection();
-                if (connection != null) {
-                    connection.closeAsyncGracefully().subscribe(subscriber);
-                } else {
-                    onClose().subscribe(subscriber);
-                    channel.close();
-                }
+                onClose().subscribe(subscriber);
             }
         };
     }
 
     @Override
-    public Completable onClose() {
+    public final Completable onClose() {
         return onClose;
+    }
+
+    final Channel channel() {
+        return channel;
+    }
+
+    void doCloseAsyncGracefully() {
+        channel.close();
     }
 }

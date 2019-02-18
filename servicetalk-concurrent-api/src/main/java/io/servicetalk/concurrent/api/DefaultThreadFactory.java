@@ -40,7 +40,7 @@ public final class DefaultThreadFactory implements ThreadFactory {
      * New instance that creates daemon threads with {@link Thread#NORM_PRIORITY} priority.
      */
     public DefaultThreadFactory() {
-        this(true, NORM_PRIORITY);
+        this(true);
     }
 
     /**
@@ -62,13 +62,22 @@ public final class DefaultThreadFactory implements ThreadFactory {
     }
 
     /**
+     * Create a new instance.
+     *
+     * @param namePrefix for all created threads.
+     */
+    public DefaultThreadFactory(String namePrefix) {
+        this(calculateName(namePrefix), true, NORM_PRIORITY);
+    }
+
+    /**
      * New instance.
      *
      * @param daemon {@code true} if the created threads should be daemons.
      * @param priority for the created threads.
      */
     public DefaultThreadFactory(boolean daemon, int priority) {
-        this(DEFAULT_NAME_PREFIX + factoryCount.incrementAndGet() + '-', daemon, priority);
+        this(calculateName(DEFAULT_NAME_PREFIX), daemon, priority);
     }
 
     /**
@@ -82,6 +91,10 @@ public final class DefaultThreadFactory implements ThreadFactory {
         this.daemon = daemon;
         this.priority = priority;
         this.namePrefix = requireNonNull(namePrefix);
+    }
+
+    private static String calculateName(String prefix) {
+        return prefix + factoryCount.incrementAndGet() + '-';
     }
 
     @Override

@@ -21,10 +21,10 @@ import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.DuplicateSubscribeException;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
+import io.servicetalk.transport.netty.internal.NettyConnection.TerminalPredicate;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelOutboundHandlerAdapter;
-import io.netty.channel.DefaultChannelId;
 import io.netty.channel.embedded.EmbeddedChannel;
 import org.junit.After;
 import org.junit.Before;
@@ -40,11 +40,15 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
+import java.util.stream.IntStream;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
+import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.concurrent.internal.ServiceTalkTestTimeout.DEFAULT_TIMEOUT_SECONDS;
 import static io.servicetalk.transport.netty.internal.CloseHandler.UNSUPPORTED_PROTOCOL_CLOSE_HANDLER;
+import static io.servicetalk.transport.netty.internal.FlushStrategies.defaultFlushStrategy;
 import static java.util.Objects.requireNonNull;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
@@ -70,8 +74,6 @@ public class NettyChannelPublisherTest {
     private Publisher<Integer> publisher;
     private EmbeddedChannel channel;
     private boolean nextItemTerminal;
-    private AbstractChannelReadHandler<Integer> handler;
-    private ChannelHandlerContext handlerCtx;
     private boolean readRequested;
 
     @Before
@@ -80,23 +82,21 @@ public class NettyChannelPublisherTest {
     }
 
     public void setUp(Predicate<Integer> terminalPredicate) throws Exception {
-        handler = new AbstractChannelReadHandler<Integer>(terminalPredicate, UNSUPPORTED_PROTOCOL_CLOSE_HANDLER) {
-            @Override
-            protected void onPublisherCreation(ChannelHandlerContext ctx, Publisher<Integer> newPublisher) {
-                publisher = newPublisher;
-            }
-        };
-        channel = new EmbeddedChannel(DefaultChannelId.newInstance(), false, false, handler,
-                new ChannelOutboundHandlerAdapter() {
-                    @Override
-                    public void read(ChannelHandlerContext ctx) throws Exception {
-                        readRequested = true;
-                        super.read(ctx);
-                    }
-                });
+        channel = new EmbeddedChannel();
+        NettyConnection<Integer, Object> connection = DefaultNettyConnection.initChannel(channel, DEFAULT_ALLOCATOR,
+            immediate(), new TerminalPredicate<>(terminalPredicate), UNSUPPORTED_PROTOCOL_CLOSE_HANDLER,
+            defaultFlushStrategy(), (channel, context) -> {
+                    channel.pipeline().addLast(new ChannelOutboundHandlerAdapter() {
+                        @Override
+                        public void read(ChannelHandlerContext ctx) throws Exception {
+                            readRequested = true;
+                            super.read(ctx);
+                        }
+                    });
+                    return context;
+                }).toFuture().get();
+        publisher = connection.read();
         channel.config().setAutoRead(false);
-        channel.register();
-        handlerCtx = channel.pipeline().context(handler);
     }
 
     @After
@@ -112,7 +112,7 @@ public class NettyChannelPublisherTest {
         fireChannelRead(1, 2);
         subscriber.verifyItems(1, 2);
         nextItemTerminal = true;
-        fireChannelRead(3);
+        fireChannelRead(false, 3);
         subscriber.verifySuccessNoRequestN(1, 2, 3);
     }
 
@@ -122,7 +122,7 @@ public class NettyChannelPublisherTest {
         fireChannelRead(1, 2);
         subscriber.verifyItems(1, 2);
         nextItemTerminal = true;
-        fireChannelRead(3);
+        fireChannelRead(false, 3);
         subscriber.verifySuccessNoRequestN(1, 2, 3);
     }
 
@@ -149,7 +149,7 @@ public class NettyChannelPublisherTest {
     public void testErrorBufferedWithExactDemand() {
         subscriber.subscribe(publisher).request(1);
         fireChannelRead(1, 2);
-        handler.exceptionCaught(handlerCtx, DELIBERATE_EXCEPTION);
+        channel.pipeline().fireExceptionCaught(DELIBERATE_EXCEPTION);
         subscriber.verifyItems(1).request(1).verifyItems(1, 2).verifyFailure(DELIBERATE_EXCEPTION);
     }
 
@@ -157,14 +157,14 @@ public class NettyChannelPublisherTest {
     public void testErrorBufferedWithMoreDemand() {
         subscriber.subscribe(publisher).request(1);
         fireChannelRead(1, 2);
-        handler.exceptionCaught(handlerCtx, DELIBERATE_EXCEPTION);
+        channel.pipeline().fireExceptionCaught(DELIBERATE_EXCEPTION);
         subscriber.verifyItems(1).request(2).verifyItems(1, 2).verifyFailure(DELIBERATE_EXCEPTION);
     }
 
     @Test
     public void testErrorWithNoDemandNoBuffer() {
         subscriber.subscribe(publisher);
-        handler.exceptionCaught(handlerCtx, DELIBERATE_EXCEPTION);
+        channel.pipeline().fireExceptionCaught(DELIBERATE_EXCEPTION);
         subscriber.verifyFailure(DELIBERATE_EXCEPTION);
     }
 
@@ -172,14 +172,14 @@ public class NettyChannelPublisherTest {
     public void testErrorWithNoDemandAndBuffer() {
         subscriber.subscribe(publisher);
         fireChannelReadToBuffer(1);
-        handler.exceptionCaught(handlerCtx, DELIBERATE_EXCEPTION);
+        channel.pipeline().fireExceptionCaught(DELIBERATE_EXCEPTION);
         subscriber.request(1).verifyItems(1).verifyFailure(DELIBERATE_EXCEPTION);
     }
 
     @Test
     public void testErrorNoEmission() {
         subscriber.subscribe(publisher).request(1);
-        handler.exceptionCaught(handlerCtx, DELIBERATE_EXCEPTION);
+        channel.pipeline().fireExceptionCaught(DELIBERATE_EXCEPTION);
         subscriber.verifyFailure(DELIBERATE_EXCEPTION);
     }
 
@@ -225,7 +225,7 @@ public class NettyChannelPublisherTest {
         subscriber.subscribe(publisher).request(2);
         fireChannelRead(2);
         nextItemTerminal = true;
-        fireChannelRead(3);
+        fireChannelRead(false, 3);
         subscriber.verifySuccessNoRequestN(2, 3);
     }
 
@@ -449,7 +449,7 @@ public class NettyChannelPublisherTest {
 
         // queue up data and trigger terminal failure
         fireChannelReadToBuffer(1);
-        handler.exceptionCaught(handlerCtx, DELIBERATE_EXCEPTION);
+        channel.pipeline().fireExceptionCaught(DELIBERATE_EXCEPTION);
 
         subscriber.subscribe(publisher
                 .doAfterFinally(() ->
@@ -515,7 +515,7 @@ public class NettyChannelPublisherTest {
         if (!requestLate) {
             subscription.request(1);
         }
-        assertTrue(channel.writeInbound(1));
+        assertFalse(channel.writeInbound(1));
         if (requestLate) {
             subscription.request(1);
         }
@@ -537,11 +537,8 @@ public class NettyChannelPublisherTest {
             assertThat("Received an unexpected channel read() after the last invocation of channelReadComplete().",
                     readRequested, is(false));
         }
-        for (int item : items) {
-            handler.channelRead(handlerCtx, item);
-        }
+        channel.writeInbound(IntStream.of(items).boxed().toArray(Object[]::new));
         readRequested = false;
-        handler.channelReadComplete(handlerCtx);
     }
 
     private void fireChannelRead(int... items) {

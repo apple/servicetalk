@@ -16,15 +16,15 @@
 package io.servicetalk.transport.netty.internal;
 
 import io.servicetalk.buffer.api.Buffer;
-import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.buffer.api.BufferHolder;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufHolder;
+import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandler;
+import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
-import io.netty.channel.EventLoop;
 
 import static io.servicetalk.buffer.netty.BufferUtil.extractByteBufOrCreate;
 import static io.servicetalk.buffer.netty.BufferUtil.newBufferFrom;
@@ -41,28 +41,25 @@ import static io.servicetalk.buffer.netty.BufferUtil.newBufferFrom;
  *
  * This also releases any {@link ByteBuf} once converted to {@link Buffer}.
  */
-public final class BufferHandler extends RefCountedTrapper {
+@Sharable
+public final class BufferHandler extends ChannelDuplexHandler {
+    public static final ChannelDuplexHandler INSTANCE = new BufferHandler();
 
-    /**
-     * New instance.
-     *
-     * @param allocator to use for any new {@link Buffer}s.
-     */
-    public BufferHandler(BufferAllocator allocator) {
-        super(allocator);
+    private BufferHandler() {
+        // singleton
     }
 
     @Override
-    protected Object decode(EventLoop eventLoop, BufferAllocator allocator, Object msg) {
+    public void channelRead(ChannelHandlerContext ctx, Object msg) {
         if (msg instanceof ByteBuf) {
-            return newBufferFrom((ByteBuf) msg);
-        }
-        if (msg instanceof ByteBufHolder) {
+            ctx.fireChannelRead(newBufferFrom((ByteBuf) msg));
+        } else if (msg instanceof ByteBufHolder) {
             ByteBufHolder holder = (ByteBufHolder) msg;
             ByteBuf byteBuf = holder.content();
-            return newBufferFrom(byteBuf);
+            ctx.fireChannelRead(newBufferFrom(byteBuf));
+        } else {
+            ctx.fireChannelRead(msg);
         }
-        return msg;
     }
 
     @Override

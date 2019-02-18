@@ -28,8 +28,11 @@ import io.servicetalk.tcp.netty.internal.TcpClientChannelInitializer;
 import io.servicetalk.tcp.netty.internal.TcpClientConfig;
 import io.servicetalk.tcp.netty.internal.TcpConnector;
 import io.servicetalk.transport.api.DefaultExecutionContext;
+import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
+import io.servicetalk.transport.netty.internal.DefaultNettyConnection;
 import io.servicetalk.transport.netty.internal.NettyConnection;
+import io.servicetalk.transport.netty.internal.NettyConnection.TerminalPredicate;
 import io.servicetalk.transport.netty.internal.NettyIoExecutor;
 
 import io.netty.buffer.ByteBuf;
@@ -64,6 +67,7 @@ import static io.servicetalk.redis.api.RedisProtocolSupport.Command.SUBSCRIBE;
 import static io.servicetalk.redis.netty.InternalSubscribedRedisConnection.newSubscribedConnection;
 import static io.servicetalk.redis.netty.PipelinedRedisConnection.newPipelinedConnection;
 import static io.servicetalk.transport.netty.NettyIoExecutors.createIoExecutor;
+import static io.servicetalk.transport.netty.internal.CloseHandler.UNSUPPORTED_PROTOCOL_CLOSE_HANDLER;
 import static io.servicetalk.transport.netty.internal.NettyIoExecutors.toNettyIoExecutor;
 import static io.servicetalk.transport.netty.internal.RandomDataUtils.randomCharSequenceOfByteLength;
 import static java.lang.Long.MAX_VALUE;
@@ -198,7 +202,7 @@ public class PingerTest {
         Thread.sleep(PING_PERIOD.toMillis() * durationCount);
     }
 
-    private static Single<NettyConnection<RedisData, ByteBuf>> connect(Queue<Object> commandsWritten) {
+    private static Single<? extends NettyConnection<RedisData, ByteBuf>> connect(Queue<Object> commandsWritten) {
         assert config != null;
         assert nettyIoExecutor != null;
         assert serverAddress != null;
@@ -236,10 +240,13 @@ public class PingerTest {
                     return context;
                 });
 
-        final TcpConnector<RedisData, ByteBuf> connector =
-                new TcpConnector<>(roTcpConfig, initializer, () -> o -> false);
-
-        return connector.connect(new DefaultExecutionContext(DEFAULT_ALLOCATOR, nettyIoExecutor, immediate()),
-                serverAddress);
+        ExecutionContext executionContext =
+                new DefaultExecutionContext(DEFAULT_ALLOCATOR, nettyIoExecutor, immediate());
+        return TcpConnector.connect(null, serverAddress, roTcpConfig, executionContext).flatMap(channel ->
+                DefaultNettyConnection.initChannel(channel,
+                        executionContext.bufferAllocator(), executionContext.executor(),
+                        new TerminalPredicate<>(o -> false), UNSUPPORTED_PROTOCOL_CLOSE_HANDLER,
+                        config.getTcpClientConfig().getFlushStrategy(), initializer
+                ));
     }
 }

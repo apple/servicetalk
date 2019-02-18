@@ -1,24 +1,17 @@
 /*
  * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
  *
- * Licensed under the Creative Commons Attribution Unported, Version 3.0 (the "License");
+ * Licensed under the Creative Commons Attribution-ShareAlike 3.0 Unported (CC BY-SA 3.0) (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
  *   https://creativecommons.org/licenses/by-sa/3.0/us/legalcode
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License
- *
  * Derivative work of:
  * https://stackoverflow.com/questions/1306727/way-to-get-number-of-digits-in-an-int/1308407#1308407
- *   (The fastest approach: divide and conquer)
+ * (The fastest approach: divide and conquer.)
  *
- * Original Author:
- * Marian
+ * Original Author: Marian (https://stackoverflow.com/users/156116/marian)
  */
 package io.servicetalk.redis.api;
 

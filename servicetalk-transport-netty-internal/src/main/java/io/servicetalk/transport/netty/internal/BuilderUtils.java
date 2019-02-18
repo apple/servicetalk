@@ -16,6 +16,7 @@
 package io.servicetalk.transport.netty.internal;
 
 import io.servicetalk.transport.api.FileDescriptorSocketAddress;
+import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.ServiceTalkSocketOptions;
 
 import io.netty.channel.Channel;
@@ -152,6 +153,10 @@ public final class BuilderUtils {
         }
         if (address instanceof SocketAddress) {
             return (SocketAddress) address;
+        }
+        if (address instanceof HostAndPort) {
+            HostAndPort hostAndPort = (HostAndPort) address;
+            return new InetSocketAddress(hostAndPort.getHostName(), hostAndPort.getPort());
         }
         throw new IllegalArgumentException("Unsupported address: " + address);
     }

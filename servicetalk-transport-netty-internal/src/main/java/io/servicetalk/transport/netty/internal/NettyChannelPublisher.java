@@ -84,7 +84,7 @@ final class NettyChannelPublisher<T> extends Publisher<T> {
              * in error conditions. Hence we fail-fast when we see such objects.
              */
             ReferenceCountUtil.release(data);
-            exceptionCaught(new IllegalStateException("Reference counted leaked netty's pipeline. Object: " +
+            exceptionCaught(new IllegalArgumentException("Reference counted leaked netty's pipeline. Object: " +
                     data.getClass().getSimpleName()));
             channel.close();
             return;

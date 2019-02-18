@@ -81,18 +81,6 @@ public final class AsyncContext {
     }
 
     /**
-     * Replace the current context with a new {@link AsyncContextMap} that is empty and return the {@link #current()}.
-     * @return the {@link #current()} {@link AsyncContextMap} value.
-     */
-    public static AsyncContextMap getAndReset() {
-        AsyncContextProvider provider = provider();
-        AsyncContextMap oldMap = provider.contextMap();
-        AsyncContextMap newMap = provider.newContextMap();
-        provider.contextMap(newMap);
-        return oldMap;
-    }
-
-    /**
      * Convenience method for adding a value to the current context.
      *
      * @param key   the key used to index {@code value}. Cannot be {@code null}.
