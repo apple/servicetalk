@@ -29,7 +29,7 @@ import static java.util.Objects.requireNonNull;
 /**
  * SSL {@link ChannelInitializer} for clients.
  */
-public class SslClientChannelInitializer extends AbstractSslChannelInitializer {
+public class SslClientChannelInitializer implements ChannelInitializer {
 
     @Nullable
     private final String hostnameVerificationAlgorithm;
@@ -53,12 +53,11 @@ public class SslClientChannelInitializer extends AbstractSslChannelInitializer {
         this.hostnameVerificationPort = hostnameVerificationPort;
     }
 
-    @Nullable
     @Override
-    protected SslHandler addNettySslHandler(Channel channel, ConnectionContext context) {
+    public ConnectionContext init(Channel channel, ConnectionContext context) {
         SslHandler sslHandler = newHandler(sslContext, channel.alloc(), hostnameVerificationAlgorithm,
                                            hostnameVerificationHost, hostnameVerificationPort);
         channel.pipeline().addFirst(sslHandler);
-        return sslHandler;
+        return context;
     }
 }

@@ -38,7 +38,6 @@ import javax.annotation.Nullable;
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.NeverSingle.neverSingle;
-import static io.servicetalk.concurrent.api.Publisher.empty;
 import static io.servicetalk.concurrent.api.SingleDoOnUtils.doOnErrorSupplier;
 import static io.servicetalk.concurrent.api.SingleDoOnUtils.doOnSubscribeSupplier;
 import static io.servicetalk.concurrent.api.SingleDoOnUtils.doOnSuccessSupplier;
@@ -403,8 +402,7 @@ public abstract class Single<T> implements io.servicetalk.concurrent.Single<T> {
      * terminates successfully.
      */
     public final Single<T> concatWith(Completable next) {
-        // We cannot use next.toPublisher() as that returns Publisher<Void> which can not be concatenated with Single<T>
-        return concatWith(next.concatWith(empty())).first();
+        return toPublisher().concatWith(next).first();
     }
 
     /**
@@ -1040,7 +1038,7 @@ public abstract class Single<T> implements io.servicetalk.concurrent.Single<T> {
      * @return {@link Cancellable} used to invoke {@link Cancellable#cancel()} on the parameter of
      * {@link Subscriber#onSubscribe(Cancellable)} for this {@link Single}.
      */
-    public final Cancellable subscribe(Consumer<T> resultConsumer) {
+    public final Cancellable subscribe(Consumer<? super T> resultConsumer) {
         SimpleSingleSubscriber<T> subscriber = new SimpleSingleSubscriber<>(resultConsumer);
         subscribe(subscriber);
         return subscriber;

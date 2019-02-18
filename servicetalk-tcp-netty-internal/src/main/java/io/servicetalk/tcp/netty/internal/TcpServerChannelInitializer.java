@@ -15,7 +15,6 @@
  */
 package io.servicetalk.tcp.netty.internal;
 
-import io.servicetalk.transport.api.ConnectionAcceptor;
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
 import io.servicetalk.transport.netty.internal.IdleTimeoutInitializer;
@@ -34,9 +33,8 @@ public class TcpServerChannelInitializer implements ChannelInitializer {
      * Creates a {@link ChannelInitializer} for the {@code config}.
      *
      * @param config to use for initialization.
-     * @param connectionAcceptor the {@link ConnectionAcceptor} to use for filtering connections.
      */
-    public TcpServerChannelInitializer(ReadOnlyTcpServerConfig config, ConnectionAcceptor connectionAcceptor) {
+    public TcpServerChannelInitializer(ReadOnlyTcpServerConfig config) {
         ChannelInitializer delegate = ChannelInitializer.defaultInitializer();
         if (config.getWireLoggingInitializer() != null) {
             delegate = delegate.andThen(config.getWireLoggingInitializer());
@@ -44,15 +42,13 @@ public class TcpServerChannelInitializer implements ChannelInitializer {
         if (config.getIdleTimeoutMs() > 0) {
             delegate = delegate.andThen(new IdleTimeoutInitializer(config.getIdleTimeoutMs()));
         }
-        boolean enableSsl = true;
         if (config.getSslContext() != null) {
-            delegate = delegate.andThen(new SslServerChannelInitializer(config.getSslContext()));
+            this.delegate = delegate.andThen(new SslServerChannelInitializer(config.getSslContext()));
         } else if (config.getDomainNameMapping() != null) {
-            delegate = delegate.andThen(new SslServerChannelInitializer(config.getDomainNameMapping()));
+            this.delegate = delegate.andThen(new SslServerChannelInitializer(config.getDomainNameMapping()));
         } else {
-            enableSsl = false;
+            this.delegate = delegate;
         }
-        this.delegate = delegate.andThen(new ContextFilterChannelInitializer(connectionAcceptor, enableSsl));
     }
 
     @Override
