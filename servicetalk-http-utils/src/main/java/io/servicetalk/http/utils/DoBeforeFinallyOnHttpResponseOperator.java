@@ -115,15 +115,16 @@ public final class DoBeforeFinallyOnHttpResponseOperator
             } else if (stateUpdater.compareAndSet(this, IDLE, TERMINATED)) {
                 subscriber.onSuccess(response.transformRawPayloadBody(payload ->
                         payload.doBeforeFinally(doBeforeFinally)));
-            } else if (state == CANCELLED) {
+            } else {
+                // Invoking a terminal method multiple times is not allowed by the RS spec, so we assume we have been
+                // cancelled.
+                assert state == CANCELLED;
                 subscriber.onSuccess(response.transformRawPayloadBody(payload -> {
                     // We have been cancelled. Subscribe and cancel the content so that we do not hold up the
                     // connection and indicate that there is no one else that will subscribe.
                     payload.subscribe(CancelImmediatelySubscriber.INSTANCE);
                     return Publisher.error(new CancellationException("Received response post cancel."));
                 }));
-                // If state != CANCELLED then it has to be TERMINATED since we failed the CAS from IDLE -> TERMINATED.
-                // Hence, we do not need to do anything special.
             }
         }
 
@@ -141,7 +142,9 @@ public final class DoBeforeFinallyOnHttpResponseOperator
         private void sendNullResponse() {
             try {
                 // Since, we are not giving out a response, no subscriber will arrive for the payload Publisher.
-                doBeforeFinally.run();
+                if (stateUpdater.compareAndSet(this, IDLE, TERMINATED)) {
+                    doBeforeFinally.run();
+                }
             } catch (Throwable cause) {
                 subscriber.onError(cause);
                 return;
