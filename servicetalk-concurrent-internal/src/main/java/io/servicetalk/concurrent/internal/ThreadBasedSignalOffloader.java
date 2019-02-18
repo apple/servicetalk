@@ -900,7 +900,7 @@ final class ThreadBasedSignalOffloader implements SignalOffloader, Runnable {
             // Intention here is to avoid notifying executor if there are repeated cancels (which are expected to be
             // NOOPs). Since Cancellable should not be shared across threads without external synchronization, for that
             // case we are assured that there is no concurrency.
-            // There can still be concurrency with done() but then we do not care as one of cancel() and done()
+            // There can still be concurrency with markDone() but then we do not care as one of cancel() and markDone()
             // will notify.
             if (oldResult == UNAVAILABLE) {
                 notifyExecutor();
@@ -923,7 +923,7 @@ final class ThreadBasedSignalOffloader implements SignalOffloader, Runnable {
             }
         }
 
-        final void done() {
+        final void markDone() {
             final byte oldResult = result;
             result = DONE;
             // Why don't we do it atomically?
@@ -953,13 +953,13 @@ final class ThreadBasedSignalOffloader implements SignalOffloader, Runnable {
 
         @Override
         public void onSuccess(@Nullable T result) {
-            done();
+            markDone();
             original.onSuccess(result);
         }
 
         @Override
         public void onError(Throwable t) {
-            done();
+            markDone();
             original.onError(t);
         }
     }
@@ -982,13 +982,13 @@ final class ThreadBasedSignalOffloader implements SignalOffloader, Runnable {
 
         @Override
         public void onComplete() {
-            done();
+            markDone();
             original.onComplete();
         }
 
         @Override
         public void onError(Throwable t) {
-            done();
+            markDone();
             original.onError(t);
         }
     }
