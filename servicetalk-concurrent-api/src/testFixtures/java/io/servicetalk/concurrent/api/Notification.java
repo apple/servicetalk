@@ -47,7 +47,7 @@ public final class Notification<T> {
      *
      * @return {@link Type} of this {@link Notification}.
      */
-    public Type getType() {
+    public Type type() {
         return type;
     }
 
@@ -56,8 +56,7 @@ public final class Notification<T> {
      *
      * @return data, for this {@link Notification}.
      */
-    @Nullable
-    public Optional<T> getData() {
+    public Optional<T> data() {
         return ofNullable(data);
     }
 

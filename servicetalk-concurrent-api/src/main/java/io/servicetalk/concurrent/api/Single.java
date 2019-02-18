@@ -1546,7 +1546,7 @@ public abstract class Single<T> implements io.servicetalk.concurrent.Single<T> {
      *
      * @return {@link Executor} used for this {@link Single} via {@link #Single(Executor)}.
      */
-    final Executor getExecutor() {
+    final Executor executor() {
         return executor;
     }
 

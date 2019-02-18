@@ -166,8 +166,8 @@ interface BaseSingleAddressHttpClientBuilder<U, R, SDE extends ServiceDiscoverer
      *
      * @param sslConfig the {@link SslConfig}.
      * @return this.
-     * @throws IllegalStateException if the {@link SslConfig#getKeyCertChainSupplier()},
-     * {@link SslConfig#getKeySupplier()}, or {@link SslConfig#getTrustCertChainSupplier()}
+     * @throws IllegalStateException if the {@link SslConfig#keyCertChainSupplier()}, {@link SslConfig#keySupplier()},
+     * or {@link SslConfig#trustCertChainSupplier()}
      * throws when {@link InputStream#close()} is called.
      */
     BaseSingleAddressHttpClientBuilder<U, R, SDE> sslConfig(@Nullable SslConfig sslConfig);

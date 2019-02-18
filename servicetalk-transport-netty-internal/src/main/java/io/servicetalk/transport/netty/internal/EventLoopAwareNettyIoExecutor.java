@@ -28,14 +28,14 @@ public interface EventLoopAwareNettyIoExecutor extends NettyIoExecutor {
      *
      * @return {@code true} if the calling thread is an I/O thread manager by this {@link NettyIoExecutor}.
      */
-    boolean isCurrentThreadEventLoop();
+    boolean currentThreadEventLoop();
 
     /**
      * Returns the underlying {@link EventLoopGroup}.
      *
      * @return {@link EventLoopGroup} used by this {@link EventLoopAwareNettyIoExecutor}.
      */
-    EventLoopGroup getEventLoopGroup();
+    EventLoopGroup eventLoopGroup();
 
     /**
      * Returns a {@link EventLoopAwareNettyIoExecutor} that is tied to a single {@link EventLoop} and not a {@link EventLoopGroup}.

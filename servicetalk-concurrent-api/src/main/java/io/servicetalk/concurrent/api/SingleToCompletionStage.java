@@ -55,7 +55,7 @@ final class SingleToCompletionStage<T> extends ExecutorCompletionStage<T>
 
     @Override
     public void onSubscribe(final Cancellable cancellable) {
-        this.cancellable.setDelayedCancellable(cancellable);
+        this.cancellable.delayedCancellable(cancellable);
     }
 
     @Override

@@ -81,7 +81,7 @@ final class HttpRequestDecoder extends HttpObjectDecoder<HttpRequestMetaData> {
         return newRequestMetaData(nettyBufferToHttpVersion(third),
                                   nettyBufferToHttpMethod(first),
                                   second.toString(US_ASCII),
-                                  getHeadersFactory().newHeaders());
+                                  headersFactory().newHeaders());
     }
 
     @Override

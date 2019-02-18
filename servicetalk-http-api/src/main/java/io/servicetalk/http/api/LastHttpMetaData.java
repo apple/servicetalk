@@ -23,7 +23,8 @@ package io.servicetalk.http.api;
 public interface LastHttpMetaData {
     /**
      * Get the <a href="https://tools.ietf.org/html/rfc7230#section-4.4">trailer headers</a>.
-     * @return the <a href="https://tools.ietf.org/html/rfc7230#section-4.4">trailer headers</a>.
+     *
+     * @return the <a href="https://tools.ietf.org/html/rfc7230#section-4.4">trailer headers</a>
      */
-    HttpHeaders getTrailers();
+    HttpHeaders trailers();
 }

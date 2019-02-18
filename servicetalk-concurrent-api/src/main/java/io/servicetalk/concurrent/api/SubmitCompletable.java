@@ -27,7 +27,7 @@ final class SubmitCompletable extends AbstractSubmitCompletable {
     }
 
     @Override
-    Runnable getRunnable() {
+    Runnable runnable() {
         return runnable;
     }
 }

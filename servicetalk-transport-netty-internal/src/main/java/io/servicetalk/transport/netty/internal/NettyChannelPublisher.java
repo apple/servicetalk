@@ -163,7 +163,7 @@ final class NettyChannelPublisher<T> extends Publisher<T> {
                     break;
                 }
                 if (p instanceof TerminalNotification) {
-                    Throwable throwable = ((TerminalNotification) p).getCause();
+                    Throwable throwable = ((TerminalNotification) p).cause();
                     assert throwable != null : "onComplete notification can not be enqueued.";
                     sendErrorToTarget(target, throwable);
                     return true;
@@ -179,7 +179,7 @@ final class NettyChannelPublisher<T> extends Publisher<T> {
             }
             if (pending.peek() instanceof TerminalNotification) {
                 TerminalNotification terminal = (TerminalNotification) pending.poll();
-                Throwable throwable = terminal.getCause();
+                Throwable throwable = terminal.cause();
                 assert throwable != null : "onComplete notification can not be enqueued.";
                 sendErrorToTarget(target, throwable);
                 return true;

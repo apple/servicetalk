@@ -36,7 +36,7 @@ public class DoBeforeFinallyTest extends AbstractDoFinallyTest {
     @Test
     public void testCallbackThrowsErrorOnComplete() {
         AtomicInteger invocationCount = new AtomicInteger();
-        subscriber.subscribe(doFinally(publisher.getPublisher(), () -> {
+        subscriber.subscribe(doFinally(publisher.publisher(), () -> {
             invocationCount.incrementAndGet();
             throw DELIBERATE_EXCEPTION;
         }));
@@ -51,7 +51,7 @@ public class DoBeforeFinallyTest extends AbstractDoFinallyTest {
     public void testCallbackThrowsErrorOnError() {
         DeliberateException exception = new DeliberateException();
         AtomicInteger invocationCount = new AtomicInteger();
-        subscriber.subscribe(doFinally(publisher.getPublisher(), () -> {
+        subscriber.subscribe(doFinally(publisher.publisher(), () -> {
             invocationCount.incrementAndGet();
             throw exception;
         }));

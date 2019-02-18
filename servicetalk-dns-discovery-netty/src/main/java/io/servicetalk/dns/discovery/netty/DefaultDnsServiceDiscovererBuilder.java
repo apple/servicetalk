@@ -272,9 +272,9 @@ public final class DefaultDnsServiceDiscovererBuilder {
 
             @Override
             public Publisher<ServiceDiscovererEvent<InetSocketAddress>> discover(final HostAndPort hostAndPort) {
-                return serviceDiscoverer.discover(hostAndPort.getHostName()).map(originalEvent ->
+                return serviceDiscoverer.discover(hostAndPort.hostName()).map(originalEvent ->
                         new DefaultServiceDiscovererEvent<>(new InetSocketAddress(originalEvent.address(),
-                                hostAndPort.getPort()), originalEvent.available())
+                                hostAndPort.port()), originalEvent.available())
                 );
             }
         };

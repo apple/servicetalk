@@ -120,7 +120,7 @@ final class RedoPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
             try {
                 shouldRedo = redoPublisher.shouldRedo.test(redoCount + 1, notification);
             } catch (Throwable cause) {
-                Throwable originalCause = notification.getCause();
+                Throwable originalCause = notification.cause();
                 if (originalCause != null) {
                     cause.addSuppressed(originalCause);
                 }

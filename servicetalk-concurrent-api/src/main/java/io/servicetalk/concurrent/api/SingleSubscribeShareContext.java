@@ -21,7 +21,7 @@ final class SingleSubscribeShareContext<T> extends AbstractNoHandleSubscribeSing
     private final Single<T> original;
 
     SingleSubscribeShareContext(Single<T> original) {
-        super(original.getExecutor());
+        super(original.executor());
         this.original = original;
     }
 

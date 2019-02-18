@@ -150,8 +150,8 @@ public class MultiAddressUrlHttpClientTest {
         serverCtx = startNewLocalServer(httpService, afterClassCloseables);
 
         final HostAndPort serverHostAndPort = serverHostAndPort(serverCtx);
-        serverHost = serverHostAndPort.getHostName();
-        serverPort = serverHostAndPort.getPort();
+        serverHost = serverHostAndPort.hostName();
+        serverPort = serverHostAndPort.port();
         hostHeader = hostHeader(serverHostAndPort);
     }
 

@@ -114,7 +114,7 @@ final class PublisherAsBlockingIterable<T> implements BlockingIterable<T> {
         public void onSubscribe(final Subscription s) {
             // Subscription is requested from here as well as hasNext. Also, it can be cancelled from close(). So, we
             // need to protect it from concurrent access.
-            subscription.setDelayedSubscription(ConcurrentSubscription.wrap(s));
+            subscription.delayedSubscription(ConcurrentSubscription.wrap(s));
             subscription.request(maxBufferedItems);
         }
 
@@ -202,7 +202,7 @@ final class PublisherAsBlockingIterable<T> implements BlockingIterable<T> {
             if (next instanceof TerminalNotification) {
                 terminated = true;
                 // If we have an error, return true, so that the same can be thrown from next().
-                return ((TerminalNotification) next).getCause() != null;
+                return ((TerminalNotification) next).cause() != null;
             }
             if (next == CANCELLED_SIGNAL) {
                 terminated = true;
@@ -244,7 +244,7 @@ final class PublisherAsBlockingIterable<T> implements BlockingIterable<T> {
             next = null;
             if (signal instanceof TerminalNotification) {
                 TerminalNotification terminalNotification = (TerminalNotification) signal;
-                Throwable cause = terminalNotification.getCause();
+                Throwable cause = terminalNotification.cause();
                 if (cause == null) {
                     throw new NoSuchElementException();
                 }

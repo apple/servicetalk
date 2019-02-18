@@ -121,7 +121,7 @@ final class RedoWhenPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
             try {
                 redoDecider = requireNonNull(redoPublisher.shouldRedo.apply(redoCount + 1, terminalNotification));
             } catch (Throwable cause) {
-                Throwable originalCause = terminalNotification.getCause();
+                Throwable originalCause = terminalNotification.cause();
                 if (originalCause != null) {
                     cause.addSuppressed(originalCause);
                 }
@@ -132,7 +132,7 @@ final class RedoWhenPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
             redoDecider.subscribe(new Completable.Subscriber() {
                 @Override
                 public void onSubscribe(Cancellable completableCancellable) {
-                    cancellable.setNextCancellable(completableCancellable);
+                    cancellable.nextCancellable(completableCancellable);
                 }
 
                 @Override

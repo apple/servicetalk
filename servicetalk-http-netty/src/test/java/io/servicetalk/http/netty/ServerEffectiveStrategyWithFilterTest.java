@@ -27,7 +27,7 @@ public class ServerEffectiveStrategyWithFilterTest extends AbstractServerEffecti
 
     @Test
     public void blockingService() throws Exception {
-        BlockingHttpClient client = setContext(builder.listenBlockingAndAwait((ctx, request, factory) ->
+        BlockingHttpClient client = context(builder.listenBlockingAndAwait((ctx, request, factory) ->
                 serviceExecutor.submit(() -> factory.ok().payloadBody(request.payloadBody())).toFuture().get()));
         client.request(client.get("/").payloadBody(client.executionContext().bufferAllocator().fromAscii("Hello")));
         verifyOffloadCount();
@@ -38,7 +38,7 @@ public class ServerEffectiveStrategyWithFilterTest extends AbstractServerEffecti
 
     @Test
     public void blockingStreamingService() throws Exception {
-        BlockingHttpClient client = setContext(builder.listenBlockingStreamingAndAwait((ctx, request, factory) ->
+        BlockingHttpClient client = context(builder.listenBlockingStreamingAndAwait((ctx, request, factory) ->
                 serviceExecutor.submit(() -> factory.ok().payloadBody(request.payloadBody())).toFuture().get()));
         client.request(client.get("/").payloadBody(client.executionContext().bufferAllocator().fromAscii("Hello")));
         verifyOffloadCount();
@@ -49,7 +49,7 @@ public class ServerEffectiveStrategyWithFilterTest extends AbstractServerEffecti
 
     @Test
     public void service() throws Exception {
-        BlockingHttpClient client = setContext(builder.listenAndAwait((ctx, request, factory) ->
+        BlockingHttpClient client = context(builder.listenAndAwait((ctx, request, factory) ->
                 serviceExecutor.submit(() -> factory.ok().payloadBody(request.payloadBody()))));
         client.request(client.get("/").payloadBody(client.executionContext().bufferAllocator().fromAscii("Hello")));
         verifyOffloadCount();
@@ -60,7 +60,7 @@ public class ServerEffectiveStrategyWithFilterTest extends AbstractServerEffecti
 
     @Test
     public void streamingService() throws Exception {
-        BlockingHttpClient client = setContext(builder.listenStreamingAndAwait((ctx, request, factory) ->
+        BlockingHttpClient client = context(builder.listenStreamingAndAwait((ctx, request, factory) ->
                 serviceExecutor.submit(() -> factory.ok().payloadBody(request.payloadBody()))));
         client.request(client.get("/").payloadBody(client.executionContext().bufferAllocator().fromAscii("Hello")));
         verifyOffloadCount();

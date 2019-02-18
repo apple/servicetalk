@@ -36,16 +36,16 @@ public class TcpClientChannelInitializer implements ChannelInitializer {
      */
     public TcpClientChannelInitializer(ReadOnlyTcpClientConfig config) {
         ChannelInitializer delegate = ChannelInitializer.defaultInitializer();
-        if (config.getWireLoggingInitializer() != null) {
-            delegate = delegate.andThen(config.getWireLoggingInitializer());
+        if (config.wireLoggingInitializer() != null) {
+            delegate = delegate.andThen(config.wireLoggingInitializer());
         }
-        if (config.getIdleTimeoutMs() > 0) {
-            delegate = delegate.andThen(new IdleTimeoutInitializer(config.getIdleTimeoutMs()));
+        if (config.idleTimeoutMs() > 0) {
+            delegate = delegate.andThen(new IdleTimeoutInitializer(config.idleTimeoutMs()));
         }
-        if (config.getSslContext() != null) {
-            delegate = delegate.andThen(new SslClientChannelInitializer(config.getSslContext(),
-                    config.getSslHostnameVerificationAlgorithm(), config.getSslHostnameVerificationHost(),
-                    config.getSslHostnameVerificationPort()));
+        if (config.sslContext() != null) {
+            delegate = delegate.andThen(new SslClientChannelInitializer(config.sslContext(),
+                    config.sslHostnameVerificationAlgorithm(), config.sslHostnameVerificationHost(),
+                    config.sslHostnameVerificationPort()));
         }
         this.delegate = delegate;
     }

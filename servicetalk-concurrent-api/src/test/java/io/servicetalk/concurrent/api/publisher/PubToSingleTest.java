@@ -67,7 +67,7 @@ public class PubToSingleTest {
 
     @Test
     public void testCancelled() {
-        listen(publisher.getPublisher());
+        listen(publisher.publisher());
         publisher.sendItems("Hello");
         listenerRule.verifySuccess("Hello");
         publisher.verifyCancelled();
@@ -75,7 +75,7 @@ public class PubToSingleTest {
 
     @Test
     public void testErrorPostEmit() {
-        listen(publisher.getPublisher());
+        listen(publisher.publisher());
         publisher.sendItems("Hello");
         listenerRule.verifySuccess("Hello");
         publisher.fail(true);
@@ -84,7 +84,7 @@ public class PubToSingleTest {
 
     @Test
     public void testCompletePostEmit() {
-        listen(publisher.getPublisher());
+        listen(publisher.publisher());
         publisher.sendItems("Hello");
         listenerRule.verifySuccess("Hello");
         publisher.complete(true);
@@ -122,7 +122,7 @@ public class PubToSingleTest {
                         currentThread()));
             }
             analyzed.countDown();
-        }).subscribeOn(executorRule.getExecutor()).first().toFuture().get();
+        }).subscribeOn(executorRule.executor()).first().toFuture().get();
         analyzed.await();
         assertThat("Unexpected errors observed: " + errors, errors, hasSize(0));
     }

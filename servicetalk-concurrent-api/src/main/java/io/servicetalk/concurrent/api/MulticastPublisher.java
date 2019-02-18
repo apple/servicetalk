@@ -138,7 +138,7 @@ final class MulticastPublisher<T> extends AbstractNoHandleSubscribePublisher<T> 
 
     @Override
     public void onSubscribe(Subscription s) {
-        delayedSubscription.setDelayedSubscription(s);
+        delayedSubscription.delayedSubscription(s);
     }
 
     private boolean offerNext(@Nullable Object o) {
@@ -211,10 +211,10 @@ final class MulticastPublisher<T> extends AbstractNoHandleSubscribePublisher<T> 
     }
 
     private void terminateFromQueuedEvent(TerminalNotification terminalNotification) {
-        if (terminalNotification.getCause() == null) {
+        if (terminalNotification.cause() == null) {
             onComplete0();
         } else {
-            onError0(terminalNotification.getCause());
+            onError0(terminalNotification.cause());
         }
     }
 
@@ -290,7 +290,7 @@ final class MulticastPublisher<T> extends AbstractNoHandleSubscribePublisher<T> 
     void requestIndividualSubscriber(MulticastSubscriber<T> subscriber) {
         // This is the cumulative amount requested from this Subscriber.
         // If we compare this with the cumulative amount we have requested upstream, we can deduce the delta to request.
-        final long individualSourceRequested = subscriber.getSourceRequested();
+        final long individualSourceRequested = subscriber.sourceRequested();
         for (;;) {
             final long sourceRequested = this.sourceRequested;
             if (sourceRequested >= individualSourceRequested) {

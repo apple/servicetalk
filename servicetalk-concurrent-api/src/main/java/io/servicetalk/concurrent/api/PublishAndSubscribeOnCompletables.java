@@ -41,27 +41,27 @@ final class PublishAndSubscribeOnCompletables {
     }
 
     static Completable publishAndSubscribeOn(Completable original, Executor executor) {
-        return original.getExecutor() == executor ? original : new PublishAndSubscribeOn(executor, original);
+        return original.executor() == executor ? original : new PublishAndSubscribeOn(executor, original);
     }
 
     static Completable publishAndSubscribeOnOverride(Completable original, Executor executor) {
-        return original.getExecutor() == executor ? original : new PublishAndSubscribeOnOverride(original, executor);
+        return original.executor() == executor ? original : new PublishAndSubscribeOnOverride(original, executor);
     }
 
     static Completable publishOn(Completable original, Executor executor) {
-        return original.getExecutor() == executor ? original : new PublishOn(executor, original);
+        return original.executor() == executor ? original : new PublishOn(executor, original);
     }
 
     static Completable publishOnOverride(Completable original, Executor executor) {
-        return original.getExecutor() == executor ? original : new PublishOnOverride(original, executor);
+        return original.executor() == executor ? original : new PublishOnOverride(original, executor);
     }
 
     static Completable subscribeOn(Completable original, Executor executor) {
-        return original.getExecutor() == executor ? original : new SubscribeOn(executor, original);
+        return original.executor() == executor ? original : new SubscribeOn(executor, original);
     }
 
     static Completable subscribeOnOverride(Completable original, Executor executor) {
-        return original.getExecutor() == executor ? original : new SubscribeOnOverride(original, executor);
+        return original.executor() == executor ? original : new SubscribeOnOverride(original, executor);
     }
 
     private static final class PublishAndSubscribeOn extends AbstractNoHandleSubscribeCompletable {
@@ -113,7 +113,7 @@ final class PublishAndSubscribeOnCompletables {
         private final Completable original;
 
         PublishOn(final Executor executor, final Completable original) {
-            super(mergeAndOffloadPublish(original.getExecutor(), executor));
+            super(mergeAndOffloadPublish(original.executor(), executor));
             this.original = original;
         }
 
@@ -143,7 +143,7 @@ final class PublishAndSubscribeOnCompletables {
     private static final class PublishOnOverride extends AbstractSynchronousCompletableOperator {
 
         PublishOnOverride(final Completable original, final Executor executor) {
-            super(original, mergeAndOffloadPublish(original.getExecutor(), executor));
+            super(original, mergeAndOffloadPublish(original.executor(), executor));
         }
 
         @Override
@@ -158,7 +158,7 @@ final class PublishAndSubscribeOnCompletables {
         private final Completable original;
 
         SubscribeOn(final Executor executor, final Completable original) {
-            super(mergeAndOffloadSubscribe(original.getExecutor(), executor));
+            super(mergeAndOffloadSubscribe(original.executor(), executor));
             this.original = original;
         }
 
@@ -188,7 +188,7 @@ final class PublishAndSubscribeOnCompletables {
     private static final class SubscribeOnOverride extends AbstractSynchronousCompletableOperator {
 
         SubscribeOnOverride(final Completable original, final Executor executor) {
-            super(original, mergeAndOffloadSubscribe(original.getExecutor(), executor));
+            super(original, mergeAndOffloadSubscribe(original.executor(), executor));
         }
 
         @Override

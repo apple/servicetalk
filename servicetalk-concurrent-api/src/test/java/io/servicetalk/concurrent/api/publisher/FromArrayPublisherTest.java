@@ -31,7 +31,7 @@ public final class FromArrayPublisherTest extends FromInMemoryPublisherAbstractT
         return new InMemorySource(values) {
             private final Publisher<String> publisher = from(values);
             @Override
-            protected Publisher<String> getPublisher() {
+            protected Publisher<String> publisher() {
                 return publisher;
             }
         };
@@ -40,8 +40,8 @@ public final class FromArrayPublisherTest extends FromInMemoryPublisherAbstractT
     @Test
     public void testEmptyInvalidRequestAfterCompleteDoesNotDeliverOnError() {
         InMemorySource source = newSource(0);
-        subscriber.subscribe(source.getPublisher()).verifySuccess();
+        subscriber.subscribe(source.publisher()).verifySuccess();
         subscriber.request(-1);
-        verify(subscriber.getSubscriber(), never()).onError(any());
+        verify(subscriber.subscriber(), never()).onError(any());
     }
 }

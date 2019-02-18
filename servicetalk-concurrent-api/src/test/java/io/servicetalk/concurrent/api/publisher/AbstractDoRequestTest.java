@@ -47,7 +47,7 @@ public abstract class AbstractDoRequestTest {
     public void testSingleRequest() {
         LongConsumer onRequest = mock(LongConsumer.class);
 
-        subscriber.subscribe(doRequest(publisher.getPublisher(), onRequest)).request(1);
+        subscriber.subscribe(doRequest(publisher.publisher(), onRequest)).request(1);
         publisher.sendItems("Hello").complete();
         subscriber.verifyItems("Hello");
         verify(onRequest).accept(1L);
@@ -57,7 +57,7 @@ public abstract class AbstractDoRequestTest {
     public void testMultiRequest() {
         LongConsumer onRequest = mock(LongConsumer.class);
 
-        subscriber.subscribe(doRequest(publisher.getPublisher(), onRequest)).request(1).request(1);
+        subscriber.subscribe(doRequest(publisher.publisher(), onRequest)).request(1).request(1);
         publisher.sendItems("Hello");
         subscriber.verifyItems("Hello");
         publisher.sendItems("Hello1");
@@ -69,7 +69,7 @@ public abstract class AbstractDoRequestTest {
     public void testRequestNoEmissions() {
         LongConsumer onRequest = mock(LongConsumer.class);
 
-        subscriber.subscribe(doRequest(publisher.getPublisher(), onRequest)).request(10);
+        subscriber.subscribe(doRequest(publisher.publisher(), onRequest)).request(10);
         subscriber.verifyNoEmissions();
         verify(onRequest).accept(10L);
     }

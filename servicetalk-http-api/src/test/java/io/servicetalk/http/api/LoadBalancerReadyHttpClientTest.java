@@ -146,7 +146,7 @@ public class LoadBalancerReadyHttpClientTest {
     private void verifyActionIsDelayedUntilAfterInitialized(Function<StreamingHttpClient, Single<?>> action)
             throws InterruptedException {
         LoadBalancerReadyStreamingHttpClient filter =
-                new LoadBalancerReadyStreamingHttpClient(1, loadBalancerPublisher.getPublisher(), client);
+                new LoadBalancerReadyStreamingHttpClient(1, loadBalancerPublisher.publisher(), client);
         CountDownLatch latch = new CountDownLatch(1);
         action.apply(filter).subscribe(resp -> latch.countDown());
 

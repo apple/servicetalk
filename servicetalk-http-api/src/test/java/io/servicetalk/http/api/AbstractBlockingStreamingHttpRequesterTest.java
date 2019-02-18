@@ -86,7 +86,7 @@ public abstract class AbstractBlockingStreamingHttpRequesterTest {
     protected abstract StreamingHttpRequester toStreamingRequester(BlockingStreamingHttpRequester requester);
 
     protected interface TestHttpRequester {
-        boolean isClosed();
+        boolean closed();
     }
 
     @Before
@@ -147,13 +147,13 @@ public abstract class AbstractBlockingStreamingHttpRequesterTest {
                 (strategy, req) -> Single.error(new IllegalStateException("shouldn't be called!")));
         BlockingStreamingHttpRequester syncRequester = toBlockingStreamingRequester(asyncRequester);
         syncRequester.close();
-        assertTrue(((TestHttpRequester) asyncRequester).isClosed());
+        assertTrue(((TestHttpRequester) asyncRequester).closed());
     }
 
     @Test
     public void asyncToSyncCancelPropagated() throws Exception {
         StreamingHttpRequester asyncRequester = newAsyncRequester(reqRespFactory, mockExecutionCtx,
-                (strategy, req) -> success(reqRespFactory.ok().payloadBody(publisherRule.getPublisher())));
+                (strategy, req) -> success(reqRespFactory.ok().payloadBody(publisherRule.publisher())));
         BlockingStreamingHttpRequester syncRequester = toBlockingStreamingRequester(asyncRequester);
         BlockingStreamingHttpResponse syncResponse = syncRequester.request(
                 syncRequester.get("/"));
@@ -198,7 +198,7 @@ public abstract class AbstractBlockingStreamingHttpRequesterTest {
         });
         StreamingHttpRequester asyncRequester = toStreamingRequester(syncRequester);
         asyncRequester.closeAsync().toFuture().get();
-        assertTrue(((TestHttpRequester) syncRequester).isClosed());
+        assertTrue(((TestHttpRequester) syncRequester).closed());
     }
 
     @Test

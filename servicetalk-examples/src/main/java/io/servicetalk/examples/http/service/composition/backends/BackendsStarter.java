@@ -62,22 +62,22 @@ public final class BackendsStarter {
 
             BackendStarter starter = new BackendStarter(ioExecutor, resources);
             final ServerContext recommendationService =
-                    starter.start(RECOMMENDATIONS_BACKEND_ADDRESS.getPort(), "recommendation-service",
+                    starter.start(RECOMMENDATIONS_BACKEND_ADDRESS.port(), "recommendation-service",
                             newRecommendationsService(httpSerializer));
             allServicesOnClose = allServicesOnClose.merge(recommendationService.onClose());
 
             final ServerContext metadataService =
-                    starter.start(METADATA_BACKEND_ADDRESS.getPort(), "metadata-service",
+                    starter.start(METADATA_BACKEND_ADDRESS.port(), "metadata-service",
                             newMetadataService(httpSerializer));
             allServicesOnClose = allServicesOnClose.merge(metadataService.onClose());
 
             final ServerContext userService =
-                    starter.start(USER_BACKEND_ADDRESS.getPort(), "user-service",
+                    starter.start(USER_BACKEND_ADDRESS.port(), "user-service",
                             newUserService(httpSerializer));
             allServicesOnClose = allServicesOnClose.merge(userService.onClose());
 
             final ServerContext ratingService =
-                    starter.start(RATINGS_BACKEND_ADDRESS.getPort(), "rating-service",
+                    starter.start(RATINGS_BACKEND_ADDRESS.port(), "rating-service",
                             newRatingService(httpSerializer));
             allServicesOnClose = allServicesOnClose.merge(ratingService.onClose());
 

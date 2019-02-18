@@ -129,7 +129,7 @@ public final class TcpServerInitializer {
         requireNonNull(connectionAcceptor);
         listenAddress = toNettyAddress(requireNonNull(listenAddress));
         ServerBootstrap bs = new ServerBootstrap();
-        configure(bs, nettyIoExecutor.getEventLoopGroup(), listenAddress.getClass(), enableHalfClosure);
+        configure(bs, nettyIoExecutor.eventLoopGroup(), listenAddress.getClass(), enableHalfClosure);
 
         ChannelSet channelSet = new ChannelSet(executionContext.executor());
         bs.handler(new ChannelInboundHandlerAdapter() {
@@ -184,15 +184,15 @@ public final class TcpServerInitializer {
         bs.group(eventLoopGroup);
         bs.channel(BuilderUtils.serverChannel(eventLoopGroup, bindAddressClass));
 
-        for (@SuppressWarnings("rawtypes") Map.Entry<ChannelOption, Object> opt : config.getOptions().entrySet()) {
+        for (@SuppressWarnings("rawtypes") Map.Entry<ChannelOption, Object> opt : config.options().entrySet()) {
             @SuppressWarnings("unchecked")
             ChannelOption<Object> option = opt.getKey();
             bs.childOption(option, opt.getValue());
         }
 
         // we disable auto read so we can handle stuff in the ConnectionFilter before we accept any content.
-        bs.childOption(ChannelOption.AUTO_READ, config.isAutoRead());
-        if (!config.isAutoRead()) {
+        bs.childOption(ChannelOption.AUTO_READ, config.autoRead());
+        if (!config.autoRead()) {
             bs.childOption(ChannelOption.MAX_MESSAGES_PER_READ, 1);
         }
 
@@ -201,7 +201,7 @@ public final class TcpServerInitializer {
             bs.childOption(AUTO_CLOSE, false);
         }
 
-        bs.option(ChannelOption.SO_BACKLOG, config.getBacklog());
+        bs.option(ChannelOption.SO_BACKLOG, config.backlog());
 
         // Set the correct ByteBufAllocator based on our BufferAllocator to minimize memory copies.
         bs.option(ChannelOption.ALLOCATOR, BufferUtil.getByteBufAllocator(executionContext.bufferAllocator()));

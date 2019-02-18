@@ -116,8 +116,8 @@ public abstract class HttpServerBuilder {
      * @param mappings mapping hostnames to the ssl configuration that should be used.
      * @param defaultConfig the configuration to use if no hostnames matched from {@code mappings}.
      * @return this.
-     * @throws IllegalStateException if the {@link SslConfig#getKeyCertChainSupplier()},
-     * {@link SslConfig#getKeySupplier()}, or {@link SslConfig#getTrustCertChainSupplier()} throws when
+     * @throws IllegalStateException if the {@link SslConfig#keyCertChainSupplier()}, {@link SslConfig#keySupplier()},
+     * or {@link SslConfig#trustCertChainSupplier()} throws when
      * {@link InputStream#close()} is called.
      */
     public abstract HttpServerBuilder sniConfig(@Nullable Map<String, SslConfig> mappings, SslConfig defaultConfig);
@@ -127,8 +127,8 @@ public abstract class HttpServerBuilder {
      *
      * @param sslConfig the {@link SslConfig}.
      * @return this.
-     * @throws IllegalStateException if the {@link SslConfig#getKeyCertChainSupplier()},
-     * {@link SslConfig#getKeySupplier()}, or {@link SslConfig#getTrustCertChainSupplier()} throws when
+     * @throws IllegalStateException if the {@link SslConfig#keyCertChainSupplier()}, {@link SslConfig#keySupplier()},
+     * or {@link SslConfig#trustCertChainSupplier()} throws when
      * {@link InputStream#close()} is called.
      */
     public abstract HttpServerBuilder sslConfig(@Nullable SslConfig sslConfig);

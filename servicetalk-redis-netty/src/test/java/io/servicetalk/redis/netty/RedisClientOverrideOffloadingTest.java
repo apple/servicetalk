@@ -101,7 +101,7 @@ public class RedisClientOverrideOffloadingTest {
     @Test
     public void reserveRespectsOverride() throws Exception {
         client.reserveConnection(overridingStrategy, PING).doBeforeSuccess(__ -> {
-            if (isInvalidThread()) {
+            if (invalidThread()) {
                 throw new AssertionError("Invalid thread found providing the connection. Thread: "
                         + currentThread());
             }
@@ -112,19 +112,19 @@ public class RedisClientOverrideOffloadingTest {
     public void requestRespectsOverride() throws Exception {
         ConcurrentLinkedQueue<AssertionError> errors = new ConcurrentLinkedQueue<>();
         RedisRequest req = newRequest(PING).transformContent(p -> p.doBeforeRequest(__ -> {
-            if (isInvalidThread()) {
+            if (invalidThread()) {
                 errors.add(new AssertionError("Invalid thread called request-n. Thread: "
                         + currentThread()));
             }
         }));
         client.request(overridingStrategy, req)
                 .doBeforeNext(__ -> {
-                    if (isInvalidThread()) {
+                    if (invalidThread()) {
                         errors.add(new AssertionError("Invalid thread called response onNext. Thread: " +
                                 currentThread()));
                     }
                 }).doBeforeComplete(() -> {
-                    if (isInvalidThread()) {
+                    if (invalidThread()) {
                         errors.add(new AssertionError("Invalid thread called response onComplete. Thread: "
                                 + currentThread()));
                     }
@@ -137,14 +137,14 @@ public class RedisClientOverrideOffloadingTest {
     public void requestAggregatedRespectsOverride() throws Exception {
         ConcurrentLinkedQueue<AssertionError> errors = new ConcurrentLinkedQueue<>();
         RedisRequest req = newRequest(PING).transformContent(p -> p.doBeforeRequest(n -> {
-            if (isInvalidThread()) {
+            if (invalidThread()) {
                 errors.add(new AssertionError("Invalid thread called request-n. Thread: "
                         + currentThread()));
             }
         }));
         client.request(overridingStrategy, req, CharSequence.class)
                 .doBeforeSuccess(__ -> {
-                    if (isInvalidThread()) {
+                    if (invalidThread()) {
                         errors.add(new AssertionError("Invalid thread called response onNext. Thread: " +
                                 currentThread()));
                     }
@@ -153,7 +153,7 @@ public class RedisClientOverrideOffloadingTest {
         assertThat("Unexpected errors: " + errors, errors, hasSize(0));
     }
 
-    private boolean isInvalidThread() {
+    private boolean invalidThread() {
         return isInvalidThread.test(currentThread());
     }
 }

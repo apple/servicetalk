@@ -38,7 +38,7 @@ public abstract class AbstractDoCompleteTest {
     @Test
     public void testComplete() {
         Runnable onComplete = mock(Runnable.class);
-        rule.subscribe(doComplete(publisher.getPublisher(), onComplete));
+        rule.subscribe(doComplete(publisher.publisher(), onComplete));
         publisher.complete();
         rule.verifySuccess();
         verify(onComplete).run();

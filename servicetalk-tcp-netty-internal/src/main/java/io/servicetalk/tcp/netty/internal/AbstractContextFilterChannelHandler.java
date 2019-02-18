@@ -89,7 +89,7 @@ abstract class AbstractContextFilterChannelHandler extends ChannelDuplexHandler 
             connectionAcceptor.accept(context).subscribe(new Single.Subscriber<Boolean>() {
                 @Override
                 public void onSubscribe(final Cancellable cancellable) {
-                    sequentialCancellable.setNextCancellable(cancellable);
+                    sequentialCancellable.nextCancellable(cancellable);
                 }
 
                 @Override

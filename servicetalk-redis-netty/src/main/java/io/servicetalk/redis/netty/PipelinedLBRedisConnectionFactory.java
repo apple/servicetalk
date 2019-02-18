@@ -43,6 +43,6 @@ final class PipelinedLBRedisConnectionFactory<ResolvedAddress> extends AbstractL
                 .map(filteredConnection -> new LoadBalancedRedisConnection(filteredConnection,
                         newController(filteredConnection.settingStream(MAX_CONCURRENCY),
                                    filteredConnection.onClose(),
-                                   config.getMaxPipelinedRequests())));
+                                   config.maxPipelinedRequests())));
     }
 }

@@ -60,7 +60,7 @@ public class RedisDecoderTest {
 
         RedisData.FirstBulkStringChunk firstStringChunk = channel.readInbound();
         assertEquals(6, firstStringChunk.bulkStringLength());
-        assertEquals(asciiBuffer("foobar"), firstStringChunk.getBufferValue());
+        assertEquals(asciiBuffer("foobar"), firstStringChunk.bufferValue());
         assertNull(channel.readInbound());
     }
 
@@ -70,7 +70,7 @@ public class RedisDecoderTest {
         assertTrue(channel.writeInbound(byteBufOf("\nfoobar\r\n")));
 
         RedisData.FirstBulkStringChunk firstBulkStringChunk = channel.readInbound();
-        assertEquals(asciiBuffer("foobar"), firstBulkStringChunk.getBufferValue());
+        assertEquals(asciiBuffer("foobar"), firstBulkStringChunk.bufferValue());
     }
 
     @Test
@@ -82,7 +82,7 @@ public class RedisDecoderTest {
 
         RedisData.SimpleString msg = channel.readInbound();
 
-        assertEquals("OK", msg.getCharSequenceValue());
+        assertEquals("OK", msg.charSequenceValue());
     }
 
     @Test
@@ -94,10 +94,10 @@ public class RedisDecoderTest {
         assertTrue(channel.writeInbound(byteBufOf("OND\r\n")));
 
         RedisData.SimpleString msg1 = channel.readInbound();
-        assertEquals("OK", msg1.getCharSequenceValue());
+        assertEquals("OK", msg1.charSequenceValue());
 
         RedisData.SimpleString msg2 = channel.readInbound();
-        assertEquals("SECOND", msg2.getCharSequenceValue());
+        assertEquals("SECOND", msg2.charSequenceValue());
     }
 
     @Test
@@ -110,7 +110,7 @@ public class RedisDecoderTest {
 
         RedisData.Error msg = channel.readInbound();
 
-        assertEquals(content, msg.getCharSequenceValue());
+        assertEquals(content, msg.charSequenceValue());
     }
 
     @Test
@@ -122,7 +122,7 @@ public class RedisDecoderTest {
 
         RedisData.Integer msg = channel.readInbound();
 
-        assertEquals(value, msg.getLongValue());
+        assertEquals(value, msg.longValue());
     }
 
     @Test
@@ -138,14 +138,14 @@ public class RedisDecoderTest {
         assertTrue(channel.writeInbound(byteBufOf("\r\n")));
 
         RedisData.BulkStringChunk stringChunk = channel.readInbound();
-        assertEquals("", stringChunk.getBufferValue().toString(UTF_8));
+        assertEquals("", stringChunk.bufferValue().toString(UTF_8));
         assertEquals(21, ((RedisData.FirstBulkStringChunk) stringChunk).bulkStringLength());
 
         stringChunk = channel.readInbound();
-        assertEquals(buf1, stringChunk.getBufferValue().toString(UTF_8));
+        assertEquals(buf1, stringChunk.bufferValue().toString(UTF_8));
 
         stringChunk = channel.readInbound();
-        assertEquals(buf2, stringChunk.getBufferValue().toString(UTF_8));
+        assertEquals(buf2, stringChunk.bufferValue().toString(UTF_8));
 
         assertNull(channel.readInbound());
     }
@@ -163,10 +163,10 @@ public class RedisDecoderTest {
 
             RedisData.FirstBulkStringChunk firstStringChunk = channel.readInbound();
             assertEquals(len, firstStringChunk.bulkStringLength());
-            assertEquals("", firstStringChunk.getBufferValue().toString(UTF_8));
+            assertEquals("", firstStringChunk.bufferValue().toString(UTF_8));
 
             RedisData.BulkStringChunk stringChunk = channel.readInbound();
-            assertEquals(input, stringChunk.getBufferValue().toString(UTF_8));
+            assertEquals(input, stringChunk.bufferValue().toString(UTF_8));
 
             assertNull(channel.readInbound());
         }
@@ -176,9 +176,9 @@ public class RedisDecoderTest {
     public void shouldDecodeBulkStringWithTrailingPayload() {
         assertTrue(channel.writeInbound(byteBufOf("$5\r\nabcde\r\n$7\r\ntrailer\r\n")));
         RedisData.FirstBulkStringChunk firstBulkStringChunk = channel.readInbound();
-        assertEquals("abcde", firstBulkStringChunk.getBufferValue().toString(UTF_8));
+        assertEquals("abcde", firstBulkStringChunk.bufferValue().toString(UTF_8));
         firstBulkStringChunk = channel.readInbound();
-        assertEquals("trailer", firstBulkStringChunk.getBufferValue().toString(UTF_8));
+        assertEquals("trailer", firstBulkStringChunk.bufferValue().toString(UTF_8));
     }
 
     @Test
@@ -187,18 +187,18 @@ public class RedisDecoderTest {
         assertTrue(channel.writeInbound(byteBufOf("cde\r\n$7\r\ntrailer\r\n")));
         RedisData.FirstBulkStringChunk firstBulkStringChunk = channel.readInbound();
         assertEquals(5, firstBulkStringChunk.bulkStringLength());
-        assertEquals("ab", firstBulkStringChunk.getBufferValue().toString(UTF_8));
+        assertEquals("ab", firstBulkStringChunk.bufferValue().toString(UTF_8));
         RedisData.BulkStringChunk bulkStringChunk = channel.readInbound();
-        assertEquals("cde", bulkStringChunk.getBufferValue().toString(UTF_8));
+        assertEquals("cde", bulkStringChunk.bufferValue().toString(UTF_8));
         firstBulkStringChunk = channel.readInbound();
-        assertEquals("trailer", firstBulkStringChunk.getBufferValue().toString(UTF_8));
+        assertEquals("trailer", firstBulkStringChunk.bufferValue().toString(UTF_8));
     }
 
     @Test
     public void shouldDecodeEmptyBulkString() {
         assertTrue(channel.writeInbound(byteBufOf("$0\r\n\r\n")));
         RedisData.FirstBulkStringChunk firstBulkStringChunk = channel.readInbound();
-        assertEquals(emptyBuffer(), firstBulkStringChunk.getBufferValue());
+        assertEquals(emptyBuffer(), firstBulkStringChunk.bufferValue());
     }
 
     @Test
@@ -224,14 +224,14 @@ public class RedisDecoderTest {
         assertTrue(channel.writeInbound(byteBufOf("or\r\n")));
 
         RedisData.ArraySize arraySize = channel.readInbound();
-        assertEquals(3, arraySize.getLongValue());
+        assertEquals(3, arraySize.longValue());
         RedisData.Integer integer = channel.readInbound();
-        assertEquals(1234, integer.getLongValue());
+        assertEquals(1234, integer.longValue());
 
         RedisData.SimpleString msg = channel.readInbound();
-        assertEquals("simple", msg.getCharSequenceValue());
+        assertEquals("simple", msg.charSequenceValue());
         RedisData.Error error = channel.readInbound();
-        assertEquals("error", error.getCharSequenceValue());
+        assertEquals("error", error.charSequenceValue());
     }
 
     private static byte[] bytesOf(String s) {

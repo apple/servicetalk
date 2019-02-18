@@ -104,7 +104,7 @@ final class CompletableMergeWithPublisher<T> extends AbstractNoHandleSubscribePu
 
         @Override
         public void onSubscribe(Subscription targetSubscription) {
-            subscription.setDelayedSubscription(targetSubscription);
+            subscription.delayedSubscription(targetSubscription);
         }
 
         @Override
@@ -155,7 +155,7 @@ final class CompletableMergeWithPublisher<T> extends AbstractNoHandleSubscribePu
 
             @Override
             public void onSubscribe(Cancellable cancellable) {
-                setDelayedCancellable(cancellable);
+                delayedCancellable(cancellable);
             }
 
             @Override

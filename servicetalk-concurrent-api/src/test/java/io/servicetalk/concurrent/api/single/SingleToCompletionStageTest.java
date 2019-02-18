@@ -90,7 +90,7 @@ public class SingleToCompletionStageTest {
 
     @Before
     public void beforeTest() {
-        source = new TestSingle<>(executorRule.getExecutor(), true, true);
+        source = new TestSingle<>(executorRule.executor(), true, true);
     }
 
     @Test
@@ -233,25 +233,25 @@ public class SingleToCompletionStageTest {
     @Test
     public void thenAccept() throws Exception {
         AtomicReference<String> stringRef = new AtomicReference<>();
-        thenAccept(source.toCompletionStage().thenAccept(setStThread(stringRef)), stringRef, "thenAccept");
+        thenAccept(source.toCompletionStage().thenAccept(stThread(stringRef)), stringRef, "thenAccept");
     }
 
     @Test
     public void thenAcceptNull() throws Exception {
         AtomicReference<String> stringRef = new AtomicReference<>();
-        thenAccept(source.toCompletionStage().thenAccept(setStThread(stringRef)), stringRef, null);
+        thenAccept(source.toCompletionStage().thenAccept(stThread(stringRef)), stringRef, null);
     }
 
     @Test
     public void thenAcceptAsync() throws Exception {
         AtomicReference<String> stringRef = new AtomicReference<>();
-        thenAccept(source.toCompletionStage().thenAcceptAsync(setStThread(stringRef)), stringRef, "thenAcceptAsync");
+        thenAccept(source.toCompletionStage().thenAcceptAsync(stThread(stringRef)), stringRef, "thenAcceptAsync");
     }
 
     @Test
     public void thenAcceptAsyncExecutor() throws Exception {
         AtomicReference<String> stringRef = new AtomicReference<>();
-        thenAccept(source.toCompletionStage().thenAcceptAsync(setJdkThread(stringRef), jdkExecutor), stringRef,
+        thenAccept(source.toCompletionStage().thenAcceptAsync(jdkThread(stringRef), jdkExecutor), stringRef,
                 "thenAcceptAsyncExecutor");
     }
 
@@ -265,12 +265,12 @@ public class SingleToCompletionStageTest {
 
     @Test
     public void thenAcceptConsumeData() throws Exception {
-        thenAcceptConsumeData((stage1, ref) -> stage1.thenAccept(setStThread(ref)));
+        thenAcceptConsumeData((stage1, ref) -> stage1.thenAccept(stThread(ref)));
     }
 
     @Test
     public void thenAcceptAsyncConsumeData() throws Exception {
-        thenAcceptConsumeData((stage1, ref) -> stage1.thenAcceptAsync(setJdkThread(ref), jdkExecutor));
+        thenAcceptConsumeData((stage1, ref) -> stage1.thenAcceptAsync(jdkThread(ref), jdkExecutor));
     }
 
     private void thenAcceptConsumeData(
@@ -291,19 +291,19 @@ public class SingleToCompletionStageTest {
     @Test
     public void thenRun() throws Exception {
         AtomicBoolean aBoolean = new AtomicBoolean();
-        thenRun(source.toCompletionStage().thenRun(setTrueStThread(aBoolean)), aBoolean, "thenRun");
+        thenRun(source.toCompletionStage().thenRun(trueStThread(aBoolean)), aBoolean, "thenRun");
     }
 
     @Test
     public void thenRunAsync() throws Exception {
         AtomicBoolean aBoolean = new AtomicBoolean();
-        thenRun(source.toCompletionStage().thenRunAsync(setTrueStThread(aBoolean)), aBoolean, "thenRunAsync");
+        thenRun(source.toCompletionStage().thenRunAsync(trueStThread(aBoolean)), aBoolean, "thenRunAsync");
     }
 
     @Test
     public void thenRunAsyncExecutor() throws Exception {
         AtomicBoolean aBoolean = new AtomicBoolean();
-        thenRun(source.toCompletionStage().thenRunAsync(setTrueJdkThread(aBoolean), jdkExecutor),
+        thenRun(source.toCompletionStage().thenRunAsync(trueJdkThread(aBoolean), jdkExecutor),
                 aBoolean, "thenRunAsyncExecutor");
     }
 
@@ -317,12 +317,12 @@ public class SingleToCompletionStageTest {
 
     @Test
     public void thenRunAfterData() throws Exception {
-        thenRunAfterData((stage1, ref) -> stage1.thenRun(setTrueStThread(ref)));
+        thenRunAfterData((stage1, ref) -> stage1.thenRun(trueStThread(ref)));
     }
 
     @Test
     public void thenRunAsyncAfterData() throws Exception {
-        thenRunAfterData((stage1, ref) -> stage1.thenRunAsync(setTrueJdkThread(ref), jdkExecutor));
+        thenRunAfterData((stage1, ref) -> stage1.thenRunAsync(trueJdkThread(ref), jdkExecutor));
     }
 
     private void thenRunAfterData(
@@ -516,21 +516,21 @@ public class SingleToCompletionStageTest {
     public void acceptEither() throws Exception {
         CompletableFuture<String> other = new CompletableFuture<>();
         AtomicReference<String> strRef = new AtomicReference<>();
-        acceptEither(other, source.toCompletionStage().acceptEither(other, setStThread(strRef)), strRef, "foo", "bar");
+        acceptEither(other, source.toCompletionStage().acceptEither(other, stThread(strRef)), strRef, "foo", "bar");
     }
 
     @Test
     public void acceptEitherNull() throws Exception {
         CompletableFuture<String> other = new CompletableFuture<>();
         AtomicReference<String> strRef = new AtomicReference<>();
-        acceptEither(other, source.toCompletionStage().acceptEither(other, setStThread(strRef)), strRef, null, null);
+        acceptEither(other, source.toCompletionStage().acceptEither(other, stThread(strRef)), strRef, null, null);
     }
 
     @Test
     public void acceptEitherAsync() throws Exception {
         CompletableFuture<String> other = new CompletableFuture<>();
         AtomicReference<String> strRef = new AtomicReference<>();
-        acceptEither(other, source.toCompletionStage().acceptEitherAsync(other, setStThread(strRef)), strRef, "what",
+        acceptEither(other, source.toCompletionStage().acceptEitherAsync(other, stThread(strRef)), strRef, "what",
                 "the");
     }
 
@@ -538,7 +538,7 @@ public class SingleToCompletionStageTest {
     public void acceptEitherAsyncExecutor() throws Exception {
         CompletableFuture<String> other = new CompletableFuture<>();
         AtomicReference<String> strRef = new AtomicReference<>();
-        acceptEither(other, source.toCompletionStage().acceptEitherAsync(other, setJdkThread(strRef), jdkExecutor),
+        acceptEither(other, source.toCompletionStage().acceptEitherAsync(other, jdkThread(strRef), jdkExecutor),
                 strRef, "what", "the");
     }
 
@@ -1046,28 +1046,28 @@ public class SingleToCompletionStageTest {
         return strLen(str);
     }
 
-    private static Consumer<? super String> setStThread(AtomicReference<String> ref) {
+    private static Consumer<? super String> stThread(AtomicReference<String> ref) {
         return val -> {
             verifyInStExecutorThread();
             ref.set(val);
         };
     }
 
-    private static Consumer<? super String> setJdkThread(AtomicReference<String> ref) {
+    private static Consumer<? super String> jdkThread(AtomicReference<String> ref) {
         return val -> {
             verifyInJdkExecutorThread();
             ref.set(val);
         };
     }
 
-    private static Runnable setTrueStThread(AtomicBoolean ref) {
+    private static Runnable trueStThread(AtomicBoolean ref) {
         return () -> {
             verifyInStExecutorThread();
             ref.set(true);
         };
     }
 
-    private static Runnable setTrueJdkThread(AtomicBoolean ref) {
+    private static Runnable trueJdkThread(AtomicBoolean ref) {
         return () -> {
             verifyInJdkExecutorThread();
             ref.set(true);

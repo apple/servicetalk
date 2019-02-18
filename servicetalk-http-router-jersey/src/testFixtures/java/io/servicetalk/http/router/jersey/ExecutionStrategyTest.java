@@ -194,14 +194,14 @@ public final class ExecutionStrategyTest extends AbstractJerseyStreamingHttpServ
 
     @Override
     protected HttpJerseyRouterBuilder configureBuilder(final HttpJerseyRouterBuilder builder) {
-        routerExecutionStrategy.configureRouterBuilder(builder, ROUTER_EXEC.getExecutor());
+        routerExecutionStrategy.configureRouterBuilder(builder, ROUTER_EXEC.executor());
 
         return builder.routeExecutionStrategyFactory(
-                asFactory(singletonMap("test", defaultStrategy(ROUTE_EXEC.getExecutor()))));
+                asFactory(singletonMap("test", defaultStrategy(ROUTE_EXEC.executor()))));
     }
 
     @Override
-    protected Application getApplication() {
+    protected Application application() {
         return new TestApplication();
     }
 
@@ -411,7 +411,7 @@ public final class ExecutionStrategyTest extends AbstractJerseyStreamingHttpServ
     }
 
     private static Matcher<String> isRouteExecutor() {
-        return is(ROUTE_EXEC.getExecutor().toString());
+        return is(ROUTE_EXEC.executor().toString());
     }
 
     private static Matcher<String> isRouteExecutorThread() {
@@ -419,7 +419,7 @@ public final class ExecutionStrategyTest extends AbstractJerseyStreamingHttpServ
     }
 
     private static Matcher<String> isRouterExecutor() {
-        return is(ROUTER_EXEC.getExecutor().toString());
+        return is(ROUTER_EXEC.executor().toString());
     }
 
     private static Matcher<String> isRouterExecutorThread() {

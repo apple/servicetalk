@@ -144,7 +144,7 @@ public final class DefaultPartitionedClientGroup<U, R, Client extends Listenable
 
         PartitionServiceDiscoverer(final GroupedPublisher<Partition<C>, PSDE> newGroup) {
             this.newGroup = newGroup;
-            this.partition = newGroup.getKey();
+            this.partition = newGroup.key();
             close = emptyAsyncCloseable();
         }
 
@@ -267,15 +267,15 @@ public final class DefaultPartitionedClientGroup<U, R, Client extends Listenable
             // have to wrap the Subscription in a ConcurrentSubscription which is costly.
             // Since, we synchronously process onNexts we do not really care about flow control.
             s.request(Long.MAX_VALUE);
-            sequentialCancellable.setNextCancellable(s::cancel);
+            sequentialCancellable.nextCancellable(s::cancel);
         }
 
         @Override
         public void onNext(final GroupedPublisher<Partition<Client>,
                 ? extends PartitionedServiceDiscovererEvent<R>> newGroup) {
-            Client newClient = requireNonNull(clientFactory.apply(newGroup.getKey().attributes,
+            Client newClient = requireNonNull(clientFactory.apply(newGroup.key().attributes,
                     new PartitionServiceDiscoverer<>(newGroup)), "<null> Client created for partition");
-            newGroup.getKey().client(newClient);
+            newGroup.key().client(newClient);
         }
 
         @Override

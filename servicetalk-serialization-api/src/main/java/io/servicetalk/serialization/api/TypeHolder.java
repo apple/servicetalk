@@ -20,7 +20,7 @@ import java.lang.reflect.Type;
 
 /**
  * An abstract class to infer {@link ParameterizedType}s for a child class.
- * This type can be retrieved from {@link #getType()}.
+ * This type can be retrieved from {@link #type()}.
  * <p>
  * In order to use this, one has to create an anonymous sub-class, like:
  *
@@ -54,7 +54,7 @@ public abstract class TypeHolder<T> {
      *
      * @return Inferred generic type for this {@link TypeHolder}.
      */
-    public final Type getType() {
+    public final Type type() {
         return type;
     }
 }

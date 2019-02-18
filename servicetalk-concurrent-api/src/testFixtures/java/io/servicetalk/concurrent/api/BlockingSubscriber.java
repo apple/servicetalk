@@ -102,7 +102,7 @@ public final class BlockingSubscriber<T> implements Subscriber<T> {
         if (items.length == 0) {
             assertThat("Unexpected blocked state.", awaitingResults, hasSize(0));
         } else {
-            List<T> results = awaitingResults.stream().map(Result::getExpectedResult).collect(toList());
+            List<T> results = awaitingResults.stream().map(Result::expectedResult).collect(toList());
             assertThat("Unexpected blocked state.", results, containsInAnyOrder(items));
         }
         return this;
@@ -121,7 +121,7 @@ public final class BlockingSubscriber<T> implements Subscriber<T> {
         requireNonNull(item);
         for (Iterator<Result> iterator = awaitingResults.iterator(); iterator.hasNext();) {
             Result awaitingResult = iterator.next();
-            if (item.equals(awaitingResult.getExpectedResult())) {
+            if (item.equals(awaitingResult.expectedResult())) {
                 iterator.remove();
                 awaitingResult.completeSingle();
                 return this;
@@ -162,7 +162,7 @@ public final class BlockingSubscriber<T> implements Subscriber<T> {
             this.result = result;
         }
 
-        public T getExpectedResult() {
+        public T expectedResult() {
             return result;
         }
 

@@ -80,7 +80,7 @@ final class ResumeSingle<T> extends AbstractNoHandleSubscribeSingle<T> {
             } else {
                 // Only a single re-subscribe is allowed.
                 nextFactory = null;
-                sequentialCancellable.setNextCancellable(cancellable);
+                sequentialCancellable.nextCancellable(cancellable);
             }
         }
 

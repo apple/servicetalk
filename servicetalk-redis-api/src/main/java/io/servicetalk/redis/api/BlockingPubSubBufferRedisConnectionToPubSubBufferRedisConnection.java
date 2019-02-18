@@ -49,8 +49,8 @@ final class BlockingPubSubBufferRedisConnectionToPubSubBufferRedisConnection ext
     }
 
     @Override
-    public Publisher<PubSubRedisMessage> getMessages() {
-        return blockingToPublisher(() -> reservedCnx.getMessages());
+    public Publisher<PubSubRedisMessage> messages() {
+        return blockingToPublisher(() -> reservedCnx.messages());
     }
 
     @Override

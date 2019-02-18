@@ -32,7 +32,7 @@ public interface PubSubRedisMessage extends CompleteRedisData {
         /**
          * @return the channel on which the message was received
          */
-        String getChannel();
+        String channel();
     }
 
     /**
@@ -42,7 +42,7 @@ public interface PubSubRedisMessage extends CompleteRedisData {
         /**
          * @return the pattern that matched the channel on which the message was received
          */
-        String getPattern();
+        String pattern();
     }
 
     /**
@@ -56,15 +56,15 @@ public interface PubSubRedisMessage extends CompleteRedisData {
         }
 
         @Override
-        public Buffer getBufferValue() {
-            T value = getValue();
-            return value instanceof Buffer ? (Buffer) value : super.getBufferValue();
+        public Buffer bufferValue() {
+            T value = value();
+            return value instanceof Buffer ? (Buffer) value : super.bufferValue();
         }
 
         @Override
-        public CharSequence getCharSequenceValue() {
-            T value = getValue();
-            return value instanceof CharSequence ? (CharSequence) value : super.getCharSequenceValue();
+        public CharSequence charSequenceValue() {
+            T value = value();
+            return value instanceof CharSequence ? (CharSequence) value : super.charSequenceValue();
         }
     }
 

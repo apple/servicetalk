@@ -75,11 +75,11 @@ public final class ServiceDiscovererTestSubscriber<T> implements Subscriber<Serv
         }
     }
 
-    public int getActiveCount() {
+    public int activeCount() {
         return activeCount;
     }
 
-    public int getInactiveCount() {
+    public int inactiveCount() {
         return inactiveCount;
     }
 

@@ -28,9 +28,9 @@ public class SequentialCancellableTest {
     @Test
     public void testWithIgnoreCancel() {
         SequentialCancellable sc = new SequentialCancellable();
-        sc.setNextCancellable(Cancellable.IGNORE_CANCEL);
+        sc.nextCancellable(Cancellable.IGNORE_CANCEL);
         Cancellable next = mock(Cancellable.class);
-        sc.setNextCancellable(next);
+        sc.nextCancellable(next);
         verifyZeroInteractions(next);
 
         sc.cancel();
@@ -41,9 +41,9 @@ public class SequentialCancellableTest {
     public void testWithCancel() {
         SequentialCancellable sc = new SequentialCancellable();
         Cancellable first = mock(Cancellable.class);
-        sc.setNextCancellable(first);
+        sc.nextCancellable(first);
         Cancellable second = mock(Cancellable.class);
-        sc.setNextCancellable(second);
+        sc.nextCancellable(second);
 
         verifyZeroInteractions(first);
         verifyZeroInteractions(second);

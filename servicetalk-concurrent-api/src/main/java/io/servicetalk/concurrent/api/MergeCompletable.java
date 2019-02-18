@@ -79,12 +79,12 @@ final class MergeCompletable extends AbstractMergeCompletableOperator {
         }
 
         @Override
-        boolean onTerminate() {
+        boolean terminated() {
             return completedCountUpdater.decrementAndGet(this) == 0;
         }
 
         @Override
-        boolean isDone() {
+        boolean done() {
             return completedCount == 0;
         }
     }

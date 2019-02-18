@@ -44,22 +44,22 @@ final class TestRecordStore implements RecordStore {
     private final Map<String, Map<RecordType, Supplier<List<ResourceRecord>>>> defaultRecordsByDomain =
             new HashMap<>();
 
-    public TestRecordStore setDefaultResponse(final String domain, final RecordType recordType,
-                                              final String... ipAddresses) {
-        return setDefaultResponse(domain, recordType, DEFAULT_TTL, ipAddresses);
+    public TestRecordStore defaultResponse(final String domain, final RecordType recordType,
+                                           final String... ipAddresses) {
+        return defaultResponse(domain, recordType, DEFAULT_TTL, ipAddresses);
     }
 
-    public TestRecordStore setDefaultResponse(final String domain, final RecordType recordType, final int ttl,
-                                              final String... ipAddresses) {
+    public TestRecordStore defaultResponse(final String domain, final RecordType recordType, final int ttl,
+                                           final String... ipAddresses) {
         final List<ResourceRecord> records = new ArrayList<>();
         for (final String ipAddress : ipAddresses) {
             records.add(createRecord(domain, recordType, ttl, ipAddress));
         }
-        return setDefaultResponse(domain, recordType, () -> records);
+        return defaultResponse(domain, recordType, () -> records);
     }
 
-    public TestRecordStore setDefaultResponse(final String domain, final RecordType recordType,
-                                              final Supplier<List<ResourceRecord>> records) {
+    public TestRecordStore defaultResponse(final String domain, final RecordType recordType,
+                                           final Supplier<List<ResourceRecord>> records) {
         final Map<RecordType, Supplier<List<ResourceRecord>>> defaultRecords =
                 defaultRecordsByDomain.computeIfAbsent(domain, k -> new HashMap<>());
         defaultRecords.put(recordType, records);

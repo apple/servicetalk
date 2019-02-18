@@ -27,7 +27,7 @@ public class FromIterablePublisherTest extends FromInMemoryPublisherAbstractTest
         return new InMemorySource(values) {
             private final Publisher<String> publisher = from(asList(values));
             @Override
-            protected Publisher<String> getPublisher() {
+            protected Publisher<String> publisher() {
                 return publisher;
             }
         };

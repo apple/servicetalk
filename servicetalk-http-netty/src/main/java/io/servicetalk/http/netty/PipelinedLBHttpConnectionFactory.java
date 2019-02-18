@@ -50,6 +50,6 @@ final class PipelinedLBHttpConnectionFactory<ResolvedAddress> extends AbstractLB
                 .map(filteredConnection -> new LoadBalancedStreamingHttpConnection(reqRespFactory, filteredConnection,
                         newController(filteredConnection.settingStream(MAX_CONCURRENCY),
                                    filteredConnection.onClose(),
-                                   config.getMaxPipelinedRequests()), defaultStrategy));
+                                   config.maxPipelinedRequests()), defaultStrategy));
     }
 }

@@ -91,7 +91,7 @@ final class NettyHttpServerConnection extends HttpServiceContext implements Nett
         return handleRequestAndWriteResponse(requestSingle);
     }
 
-    DefaultNettyConnection<Object, Object> getConnection() {
+    DefaultNettyConnection<Object, Object> connection() {
         return connection;
     }
 
@@ -151,7 +151,7 @@ final class NettyHttpServerConnection extends HttpServiceContext implements Nett
                     }));
 
             final HttpRequestMethod requestMethod = request2.method();
-            final HttpKeepAlive keepAlive = HttpKeepAlive.getResponseKeepAlive(request2);
+            final HttpKeepAlive keepAlive = HttpKeepAlive.responseKeepAlive(request2);
             final Completable drainRequestPayloadBody = request2.payloadBody().ignoreElements()
                     // ignore error about duplicate subscriptions, we are forcing a subscription here and the user
                     // may also subscribe, so it is OK if we fail here.

@@ -94,7 +94,7 @@ final class HttpDataSourceTranformations {
             discardedPublisher.subscribe(new Subscriber<Buffer>() {
                 @Override
                 public void onSubscribe(final Subscription s) {
-                    bridgedSubscription.setDelayedSubscription(ConcurrentSubscription.wrap(s));
+                    bridgedSubscription.delayedSubscription(ConcurrentSubscription.wrap(s));
                 }
 
                 @Override

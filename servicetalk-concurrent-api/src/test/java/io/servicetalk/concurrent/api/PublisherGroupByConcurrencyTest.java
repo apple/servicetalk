@@ -112,7 +112,7 @@ public final class PublisherGroupByConcurrencyTest {
                 sub.request(1); // Only one item ever comes on every group as each int is a new group.
             }
             subs.add(sub);
-            return grp.getKey();
+            return grp.key();
         })).request(Long.MAX_VALUE);
         return subs;
     }
@@ -244,7 +244,7 @@ public final class PublisherGroupByConcurrencyTest {
         void verifyError(Class<? extends Throwable> errorType) {
             TerminalNotification t = this.terminalNotification;
             assert t != null : "Group subscriber not terminated.";
-            assertThat("Unexpected terminal state.", t.getCause(), is(instanceOf(errorType)));
+            assertThat("Unexpected terminal state.", t.cause(), is(instanceOf(errorType)));
         }
     }
 }

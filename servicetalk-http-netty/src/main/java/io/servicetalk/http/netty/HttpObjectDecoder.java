@@ -143,7 +143,7 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
         this.maxInitialLineSize = maxInitialLineLength;
     }
 
-    final HttpHeadersFactory getHeadersFactory() {
+    final HttpHeadersFactory headersFactory() {
         return headersFactory;
     }
 
@@ -398,9 +398,9 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
 
     @Override
     protected final void discardSomeReadBytes() {
-        final int readerIndex = getCumulationReaderIndex();
+        final int readerIndex = cumulationReaderIndex();
         super.discardSomeReadBytes();
-        cumulationIndex -= readerIndex - getCumulationReaderIndex();
+        cumulationIndex -= readerIndex - cumulationReaderIndex();
     }
 
     @Override

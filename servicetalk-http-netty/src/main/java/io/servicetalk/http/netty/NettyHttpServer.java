@@ -65,9 +65,9 @@ final class NettyHttpServer {
     static Single<ServerContext> bind(final ExecutionContext executionContext, final ReadOnlyHttpServerConfig config,
                                       final SocketAddress address, final ConnectionAcceptor connectionAcceptor,
                                       final StreamingHttpService service) {
-        final TcpServerInitializer initializer = new TcpServerInitializer(executionContext, config.getTcpConfig());
+        final TcpServerInitializer initializer = new TcpServerInitializer(executionContext, config.tcpConfig());
 
-        final ChannelInitializer channelInitializer = new TcpServerChannelInitializer(config.getTcpConfig(),
+        final ChannelInitializer channelInitializer = new TcpServerChannelInitializer(config.tcpConfig(),
                 connectionAcceptor).andThen(getChannelInitializer(config, service));
 
         // The ServerContext returned by TcpServerInitializer takes care of closing the connectionAcceptor.
@@ -83,12 +83,12 @@ final class NettyHttpServer {
         return (channel, context) -> {
             final CloseHandler closeHandler = forPipelinedRequestResponse(false);
             Queue<HttpRequestMethod> methodQueue = new ArrayDeque<>(2);
-            channel.pipeline().addLast(new HttpRequestDecoder(methodQueue, config.getHeadersFactory(),
-                    config.getMaxInitialLineLength(), config.getMaxHeaderSize(), closeHandler));
-            channel.pipeline().addLast(new HttpResponseEncoder(methodQueue, config.getHeadersEncodedSizeEstimate(),
-                    config.getTrailersEncodedSizeEstimate(), closeHandler));
+            channel.pipeline().addLast(new HttpRequestDecoder(methodQueue, config.headersFactory(),
+                    config.maxInitialLineLength(), config.maxHeaderSize(), closeHandler));
+            channel.pipeline().addLast(new HttpResponseEncoder(methodQueue, config.headersEncodedSizeEstimate(),
+                    config.trailersEncodedSizeEstimate(), closeHandler));
             channel.pipeline().addLast(new HttpChannelReadHandler(closeHandler, context, service,
-                    config.getTcpConfig().getFlushStrategy(), config.getHeadersFactory()));
+                    config.tcpConfig().flushStrategy(), config.headersFactory()));
             return context;
         };
     }
@@ -166,8 +166,8 @@ final class NettyHttpServer {
         }
 
         @Override
-        public NettyConnection<Object, Object> getConnection() {
-            return connection == null ? null : connection.getConnection();
+        public NettyConnection<Object, Object> connection() {
+            return connection == null ? null : connection.connection();
         }
     }
 }

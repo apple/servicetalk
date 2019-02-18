@@ -81,7 +81,7 @@ public class ExecutionStrategyConfigurationFailuresTest {
 
         new HttpJerseyRouterBuilder()
                 .routeExecutionStrategyFactory(asFactory(
-                        singletonMap("test", defaultStrategy(TEST_EXEC.getExecutor()))))
+                        singletonMap("test", defaultStrategy(TEST_EXEC.executor()))))
                 .build(new Application() {
                     @Override
                     public Set<Class<?>> getClasses() {

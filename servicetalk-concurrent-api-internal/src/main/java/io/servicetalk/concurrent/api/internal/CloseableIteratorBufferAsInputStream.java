@@ -85,7 +85,7 @@ public final class CloseableIteratorBufferAsInputStream extends AbstractCloseabl
     }
 
     @Override
-    protected boolean isClosed() {
+    protected boolean closed() {
         return leftover == CLOSED;
     }
 

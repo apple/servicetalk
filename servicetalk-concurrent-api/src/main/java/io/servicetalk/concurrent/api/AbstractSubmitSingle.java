@@ -29,7 +29,7 @@ abstract class AbstractSubmitSingle<T> extends Single<T> {
         this.runExecutor = requireNonNull(runExecutor);
     }
 
-    abstract Callable<? extends T> getCallable();
+    abstract Callable<? extends T> callable();
 
     @Override
     protected final void handleSubscribe(final Subscriber<? super T> subscriber) {
@@ -40,7 +40,7 @@ abstract class AbstractSubmitSingle<T> extends Single<T> {
             eCancellable = runExecutor.execute(() -> {
                 final T result;
                 try {
-                    result = getCallable().call();
+                    result = callable().call();
                 } catch (Throwable cause) {
                     subscriber.onError(cause);
                     return;
@@ -53,6 +53,6 @@ abstract class AbstractSubmitSingle<T> extends Single<T> {
             subscriber.onError(cause);
             return;
         }
-        cancellable.setDelayedCancellable(eCancellable);
+        cancellable.delayedCancellable(eCancellable);
     }
 }

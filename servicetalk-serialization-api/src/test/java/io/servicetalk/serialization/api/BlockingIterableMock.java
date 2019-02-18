@@ -45,11 +45,11 @@ final class BlockingIterableMock<T> {
         });
     }
 
-    BlockingIterable<T> getIterable() {
+    BlockingIterable<T> iterable() {
         return iterable;
     }
 
-    BlockingIterator<T> getIterator() {
+    BlockingIterator<T> iterator() {
         return iterator;
     }
 }

@@ -67,7 +67,7 @@ public final class JacksonSerializationProvider implements SerializationProvider
 
     @Override
     public <T> StreamingSerializer getSerializer(final TypeHolder<T> typeToSerialize) {
-        final ObjectWriter writer = mapper.writerFor(mapper.constructType(typeToSerialize.getType()));
+        final ObjectWriter writer = mapper.writerFor(mapper.constructType(typeToSerialize.type()));
         return (toSerialize, destination) -> serialize0(writer, toSerialize, destination);
     }
 
@@ -78,7 +78,7 @@ public final class JacksonSerializationProvider implements SerializationProvider
 
     @Override
     public <T> StreamingDeserializer<T> getDeserializer(final TypeHolder<T> typeToDeserialize) {
-        return newDeserializer(mapper.readerFor(mapper.constructType(typeToDeserialize.getType())));
+        return newDeserializer(mapper.readerFor(mapper.constructType(typeToDeserialize.type())));
     }
 
     @Override

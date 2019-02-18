@@ -83,7 +83,7 @@ public class PipelinedHttpConnectionTest {
         when(connection.onClose()).thenReturn(never());
         when(connection.executionContext()).thenReturn(ctx);
         HttpClientConfig config = new HttpClientConfig(new TcpClientConfig(true));
-        config.setMaxPipelinedRequests(2);
+        config.maxPipelinedRequests(2);
         readPublisher1 = new TestPublisher<>();
         readPublisher2 = new TestPublisher<>();
         writePublisher1 = new TestPublisher<>();

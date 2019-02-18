@@ -66,7 +66,7 @@ import static java.util.Objects.requireNonNull;
  * <a href="https://tools.ietf.org/html/rfc3986#section-3.2.1">RFC3986</a>.
  * <p>
  * User info object of authenticated user could be stored in {@link AsyncContextMap}, if {@link Key} was configured via
- * {@link #setUserInfoKey(AsyncContextMap.Key)}.
+ * {@link #userInfoKey(AsyncContextMap.Key)}.
  * <p>
  * <b>Note:</b> This scheme is not considered to be a secure method of user authentication unless used in conjunction
  * with some external secure system such as TLS (Transport Layer Security,
@@ -183,7 +183,7 @@ public final class BasicAuthHttpServiceFilterBuilder<UserInfo> {
      * @param userInfoKey a key to store a user info object in {@link AsyncContextMap}
      * @return {@code this}
      */
-    public BasicAuthHttpServiceFilterBuilder<UserInfo> setUserInfoKey(final Key<UserInfo> userInfoKey) {
+    public BasicAuthHttpServiceFilterBuilder<UserInfo> userInfoKey(final Key<UserInfo> userInfoKey) {
         this.userInfoKey = userInfoKey;
         return this;
     }

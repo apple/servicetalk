@@ -47,7 +47,7 @@ final class HttpUri {
     @Nullable
     private final String hostHeader;
     private final String relativeReference;
-    private final boolean isSsl;
+    private final boolean ssl;
     @Nullable
     private final String scheme;
     @Nullable
@@ -241,40 +241,40 @@ final class HttpUri {
         scheme = parsedScheme == 0 ? "http" : parsedScheme == 1 ? "https" : null;
         host = parsedHost;
         hostHeader = parsedHostHeader;
-        isSsl = parsedScheme == 1;
-        port = parsedPort > 0 ? parsedPort : (isSsl ? DEFAULT_PORT_HTTPS : DEFAULT_PORT_HTTP);
+        ssl = parsedScheme == 1;
+        port = parsedPort > 0 ? parsedPort : (ssl ? DEFAULT_PORT_HTTPS : DEFAULT_PORT_HTTP);
         explicitPort = parsedPort > 0;
         this.uri = uri;
     }
 
-    String getUri() {
+    String uri() {
         return uri;
     }
 
     @Nullable
-    String getScheme() {
+    String scheme() {
         return scheme;
     }
 
     @Nullable
-    String getUserInfo() {
+    String userInfo() {
         return userInfo;
     }
 
     @Nullable
-    String getHost() {
+    String host() {
         return host;
     }
 
-    int getPort() {
+    int port() {
         return port;
     }
 
-    int getExplicitPort() {
+    int explicitPort() {
         return explicitPort ? port : -1;
     }
 
-    String getRawPath() {
+    String rawPath() {
         if (rawPath != null) {
             return rawPath;
         }
@@ -297,20 +297,20 @@ final class HttpUri {
         return rawPath;
     }
 
-    String getPath() {
+    String path() {
         if (path == null) {
-            final String raw = getRawPath();
+            final String raw = rawPath();
             path = decodeComponent(raw, 0, raw.length(), true, UTF_8);
         }
         return path;
     }
 
-    String getRawQuery() {
+    String rawQuery() {
         if (rawQuery != null) {
             return rawQuery;
         }
 
-        final int rawPathLength = getRawPath().length();
+        final int rawPathLength = rawPath().length();
         if (rawPathLength == relativeReference.length()) {
             rawQuery = "";
             return rawQuery;
@@ -323,17 +323,17 @@ final class HttpUri {
         return rawQuery;
     }
 
-    String getRelativeReference() {
+    String relativeReference() {
         return relativeReference;
     }
 
     @Nullable
-    String getHostHeader() {
+    String hostHeader() {
         return hostHeader;
     }
 
-    boolean isSsl() {
-        return isSsl;
+    boolean ssl() {
+        return ssl;
     }
 
     boolean hostAndPortEqual(final HttpUri rhs) {

@@ -55,16 +55,16 @@ public final class TcpClientConfig extends ReadOnlyTcpClientConfig {
      *
      * @param config the {@link SslConfig}.
      * @return this.
-     * @throws IllegalStateException if the {@link SslConfig#getKeyCertChainSupplier()},
-     * {@link SslConfig#getKeySupplier()}, or {@link SslConfig#getTrustCertChainSupplier()} throws when
+     * @throws IllegalStateException if the {@link SslConfig#keyCertChainSupplier()}, {@link SslConfig#keySupplier()},
+     * or {@link SslConfig#trustCertChainSupplier()} throws when
      * {@link InputStream#close()} is called.
      */
-    public TcpClientConfig setSslConfig(@Nullable SslConfig config) {
+    public TcpClientConfig sslConfig(@Nullable SslConfig config) {
         if (config != null) {
             sslContext = forClient(config);
-            sslHostnameVerificationAlgorithm = config.getHostnameVerificationAlgorithm();
-            sslHostnameVerificationHost = config.getHostnameVerificationHost();
-            sslHostnameVerificationPort = config.getHostnameVerificationPort();
+            sslHostnameVerificationAlgorithm = config.hostnameVerificationAlgorithm();
+            sslHostnameVerificationHost = config.hostnameVerificationHost();
+            sslHostnameVerificationPort = config.hostnameVerificationPort();
         } else {
             sslContext = null;
             sslHostnameVerificationAlgorithm = null;
@@ -82,11 +82,11 @@ public final class TcpClientConfig extends ReadOnlyTcpClientConfig {
      * @param value the value.
      * @return this.
      */
-    public <T> TcpClientConfig setSocketOption(SocketOption<T> option, T value) {
+    public <T> TcpClientConfig socketOption(SocketOption<T> option, T value) {
         if (option == ServiceTalkSocketOptions.IDLE_TIMEOUT) {
             idleTimeoutMs = (Long) value;
         } else {
-            BuilderUtils.addOption(optionMap, option, value);
+            BuilderUtils.addOption(options, option, value);
         }
         return this;
     }
@@ -120,7 +120,7 @@ public final class TcpClientConfig extends ReadOnlyTcpClientConfig {
      * @param flushStrategy {@link FlushStrategy} to use for all connections created by this client.
      * @return {@code this}.
      */
-    public TcpClientConfig setFlushStrategy(FlushStrategy flushStrategy) {
+    public TcpClientConfig flushStrategy(FlushStrategy flushStrategy) {
         this.flushStrategy = requireNonNull(flushStrategy);
         return this;
     }

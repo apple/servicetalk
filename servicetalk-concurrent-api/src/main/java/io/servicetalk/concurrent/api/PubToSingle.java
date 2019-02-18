@@ -41,7 +41,7 @@ final class PubToSingle<T> extends AbstractNoHandleSubscribeSingle<T> {
      * @param source {@link Publisher} for this {@link Single}.
      */
     PubToSingle(Publisher<T> source) {
-        super(source.getExecutor());
+        super(source.executor());
         this.source = source;
     }
 
@@ -99,7 +99,7 @@ final class PubToSingle<T> extends AbstractNoHandleSubscribeSingle<T> {
 
         @Override
         public void onComplete() {
-            if (isDone()) {
+            if (done()) {
                 // Avoid creating a new exception if we are already done.
                 return;
             }
@@ -107,7 +107,7 @@ final class PubToSingle<T> extends AbstractNoHandleSubscribeSingle<T> {
         }
 
         private void terminate(Object terminal) {
-            if (isDone()) {
+            if (done()) {
                 return;
             }
             if (state == 0) {
@@ -139,7 +139,7 @@ final class PubToSingle<T> extends AbstractNoHandleSubscribeSingle<T> {
             }
         }
 
-        private boolean isDone() {
+        private boolean done() {
             return state == STATE_SENT_ON_SUBSCRIBE_AND_DONE;
         }
     }

@@ -51,7 +51,8 @@ interface DynamicCompositeCancellable extends Cancellable {
 
     /**
      * Determine if {@link #cancel()} has been called.
+     *
      * @return {@code true} if {@link #cancel()} has been called.
      */
-    boolean isCancelled();
+    boolean cancelled();
 }

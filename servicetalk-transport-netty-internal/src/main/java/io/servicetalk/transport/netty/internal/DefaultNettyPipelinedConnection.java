@@ -287,7 +287,7 @@ public final class DefaultNettyPipelinedConnection<Req, Resp> implements NettyPi
 
         @Override
         public void onSubscribe(Cancellable cancellable) {
-            requestTask.setNextCancellable(() -> {
+            requestTask.nextCancellable(() -> {
                 cancellable.cancel();
                 safePostTaskTermination();
             });

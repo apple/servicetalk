@@ -57,7 +57,7 @@ public abstract class AbstractPublishAndSubscribeOnTest {
         CountDownLatch allDone = new CountDownLatch(1);
         AtomicReferenceArray<Thread> capturedThreads = new AtomicReferenceArray<>(4);
 
-        Publisher<String> original = new PublisherWithExecutor<>(originalSourceExecutorRule.getExecutor(),
+        Publisher<String> original = new PublisherWithExecutor<>(originalSourceExecutorRule.executor(),
                 just("Hello"))
                 .doBeforeNext(__ -> capturedThreads.set(ORIGINAL_SUBSCRIBER_THREAD, currentThread()))
                 .doBeforeRequest(__ -> capturedThreads.set(ORIGINAL_SUBSCRIPTION_THREAD, currentThread()));

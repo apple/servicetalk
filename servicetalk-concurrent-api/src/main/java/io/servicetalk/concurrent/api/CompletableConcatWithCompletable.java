@@ -83,7 +83,7 @@ final class CompletableConcatWithCompletable extends AbstractNoHandleSubscribeCo
                 this.sequentialCancellable = sequentialCancellable = new SequentialCancellable(cancellable);
                 target.onSubscribe(sequentialCancellable);
             } else {
-                sequentialCancellable.setNextCancellable(cancellable);
+                sequentialCancellable.nextCancellable(cancellable);
             }
         }
 

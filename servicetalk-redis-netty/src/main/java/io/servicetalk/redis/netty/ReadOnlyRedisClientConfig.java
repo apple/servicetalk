@@ -43,7 +43,7 @@ class ReadOnlyRedisClientConfig {
      * @param from Source to copy from.
      */
     ReadOnlyRedisClientConfig(final RedisClientConfig from) {
-        tcpClientConfig = from.getTcpClientConfig().asReadOnly();
+        tcpClientConfig = from.tcpClientConfig().asReadOnly();
         maxPipelinedRequests = from.maxPipelinedRequests;
         idleConnectionTimeout = from.idleConnectionTimeout;
         pingPeriod = from.pingPeriod;
@@ -55,7 +55,7 @@ class ReadOnlyRedisClientConfig {
      *
      * @return Maximum number of pipelined requests per {@link RedisConnection}.
      */
-    int getMaxPipelinedRequests() {
+    int maxPipelinedRequests() {
         return maxPipelinedRequests;
     }
 
@@ -65,7 +65,7 @@ class ReadOnlyRedisClientConfig {
      * @return the timeout {@link Duration} or {@code null} if no timeout configured.
      */
     @Nullable
-    Duration getIdleConnectionTimeout() {
+    Duration idleConnectionTimeout() {
         return idleConnectionTimeout;
     }
 
@@ -75,7 +75,7 @@ class ReadOnlyRedisClientConfig {
      * @return the {@link Duration} between keep-alive pings or {@code null} if disabled.
      */
     @Nullable
-    Duration getPingPeriod() {
+    Duration pingPeriod() {
         return pingPeriod;
     }
 
@@ -84,7 +84,7 @@ class ReadOnlyRedisClientConfig {
      *
      * @return the {@link TcpClientConfig}.
      */
-    ReadOnlyTcpClientConfig getTcpClientConfig() {
+    ReadOnlyTcpClientConfig tcpClientConfig() {
         return tcpClientConfig;
     }
 
@@ -93,7 +93,7 @@ class ReadOnlyRedisClientConfig {
      *
      * @return {@code true} when subscribe signal needs to be deferred until the Redis PubSub subscribe ack
      */
-    boolean isDeferSubscribeTillConnect() {
+    boolean deferSubscribeTillConnect() {
         return deferSubscribeTillConnect;
     }
 }

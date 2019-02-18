@@ -68,12 +68,12 @@ final class IterableMergeCompletable extends AbstractMergeCompletableOperator {
         }
 
         @Override
-        boolean onTerminate() {
+        boolean terminated() {
             return completedCountUpdater.incrementAndGet(this) == expectedCount;
         }
 
         @Override
-        boolean isDone() {
+        boolean done() {
             return completedCount == expectedCount;
         }
 

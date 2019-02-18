@@ -137,7 +137,7 @@ public abstract class AbstractPartitionedRedisClientTest {
         ServiceDiscoverer<String, InetSocketAddress, PartitionedServiceDiscovererEvent<InetSocketAddress>> sd =
                 (ServiceDiscoverer<String, InetSocketAddress, PartitionedServiceDiscovererEvent<InetSocketAddress>>)
                         mock(ServiceDiscoverer.class);
-        when(sd.discover(any())).thenReturn(serviceDiscoveryPublisher.getPublisher());
+        when(sd.discover(any())).thenReturn(serviceDiscoveryPublisher.publisher());
         client = RedisClients.forPartitionedAddress(sd, "ignored", partitionAttributesBuilderFactory)
                 .maxPipelinedRequests(10)
                 .pingPeriod(ofSeconds(1))
@@ -153,7 +153,7 @@ public abstract class AbstractPartitionedRedisClientTest {
                 client.request(partitionAttributesBuilder.build(), newRequest(INFO,
                         new RedisData.CompleteBulkString(buf("SERVER"))))
                         .filter(d -> d instanceof RedisData.BulkStringChunk)
-                        .reduce(StringBuilder::new, (sb, d) -> sb.append(d.getBufferValue().toString(US_ASCII))))
+                        .reduce(StringBuilder::new, (sb, d) -> sb.append(d.bufferValue().toString(US_ASCII))))
                 .toString();
 
         final java.util.regex.Matcher versionMatcher = compile("(?s).*redis_version:([\\d]+)\\.([\\d]+)\\.([\\d]+).*")
@@ -171,7 +171,7 @@ public abstract class AbstractPartitionedRedisClientTest {
         awaitIndefinitely(client.closeAsync().concatWith(ioExecutor.closeAsync()));
     }
 
-    public Function<Command, RedisPartitionAttributesBuilder> getPartitionAttributesBuilderFactory() {
+    public Function<Command, RedisPartitionAttributesBuilder> partitionAttributesBuilderFactory() {
         return partitionAttributesBuilderFactory;
     }
 

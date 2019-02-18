@@ -112,12 +112,12 @@ class RequestResponseCloseHandler extends CloseHandler {
     }
 
     // Visible for testing
-    int getState() {
+    int state() {
         return state;
     }
 
     // Visible for testing
-    int getPending() {
+    int pending() {
         return pending;
     }
 

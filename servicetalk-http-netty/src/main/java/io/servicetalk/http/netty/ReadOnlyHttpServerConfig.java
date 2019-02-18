@@ -28,40 +28,40 @@ final class ReadOnlyHttpServerConfig {
     private final int trailersEncodedSizeEstimate;
 
     ReadOnlyHttpServerConfig(final HttpServerConfig from) {
-        tcpConfig = from.getTcpConfig().asReadOnly();
-        headersFactory = from.getHeadersFactory();
-        clientCloseTimeoutMs = from.getClientCloseTimeoutMs();
-        maxInitialLineLength = from.getMaxInitialLineLength();
-        maxHeaderSize = from.getMaxHeaderSize();
-        headersEncodedSizeEstimate = from.getHeadersEncodedSizeEstimate();
-        trailersEncodedSizeEstimate = from.getTrailersEncodedSizeEstimate();
+        tcpConfig = from.tcpConfig().asReadOnly();
+        headersFactory = from.headersFactory();
+        clientCloseTimeoutMs = from.clientCloseTimeoutMs();
+        maxInitialLineLength = from.maxInitialLineLength();
+        maxHeaderSize = from.maxHeaderSize();
+        headersEncodedSizeEstimate = from.headersEncodedSizeEstimate();
+        trailersEncodedSizeEstimate = from.trailersEncodedSizeEstimate();
     }
 
-    HttpHeadersFactory getHeadersFactory() {
+    HttpHeadersFactory headersFactory() {
         return headersFactory;
     }
 
-    long getClientCloseTimeoutMs() {
+    long clientCloseTimeoutMs() {
         return clientCloseTimeoutMs;
     }
 
-    int getMaxInitialLineLength() {
+    int maxInitialLineLength() {
         return maxInitialLineLength;
     }
 
-    int getMaxHeaderSize() {
+    int maxHeaderSize() {
         return maxHeaderSize;
     }
 
-    int getHeadersEncodedSizeEstimate() {
+    int headersEncodedSizeEstimate() {
         return headersEncodedSizeEstimate;
     }
 
-    int getTrailersEncodedSizeEstimate() {
+    int trailersEncodedSizeEstimate() {
         return trailersEncodedSizeEstimate;
     }
 
-    ReadOnlyTcpServerConfig getTcpConfig() {
+    ReadOnlyTcpServerConfig tcpConfig() {
         return tcpConfig;
     }
 }

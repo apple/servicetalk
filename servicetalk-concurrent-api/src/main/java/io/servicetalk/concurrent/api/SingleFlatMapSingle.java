@@ -80,7 +80,7 @@ final class SingleFlatMapSingle<T, R> extends AbstractAsynchronousSingleOperator
             next.subscribe(new Subscriber<R>() {
                 @Override
                 public void onSubscribe(Cancellable cancellable) {
-                    sequentialCancellable.setNextCancellable(cancellable);
+                    sequentialCancellable.nextCancellable(cancellable);
                 }
 
                 @Override

@@ -171,7 +171,7 @@ public class BlockingStreamingHttpServiceTest {
             public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
                                                         final StreamingHttpRequest request,
                                                         final StreamingHttpResponseFactory factory) {
-                return success(factory.ok().payloadBody(publisherRule.getPublisher()));
+                return success(factory.ok().payloadBody(publisherRule.publisher()));
             }
         };
         BlockingStreamingHttpService syncService = asyncService.asBlockingStreamingService();

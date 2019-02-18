@@ -117,7 +117,7 @@ final class RedirectSingle extends Single<StreamingHttpResponse> {
 
         @Override
         public void onSubscribe(final Cancellable cancellable) {
-            sequentialCancellable.setNextCancellable(cancellable);
+            sequentialCancellable.nextCancellable(cancellable);
             if (redirectCount == 0) {
                 target.onSubscribe(sequentialCancellable);
             }

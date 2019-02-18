@@ -162,7 +162,7 @@ public final class TcpConnector<Read, Write> {
                     toEventLoopAwareNettyIoExecutor(executionContext.ioExecutor()).next();
 
             // next() of an EventLoop will just return itself, which is expected because we did the selection above.
-            EventLoop loop = ioExecutorThread.getEventLoopGroup().next();
+            EventLoop loop = ioExecutorThread.eventLoopGroup().next();
 
             // Create the handler here and ensure in connectWithBootstrap / initFileDescriptorBasedChannel it is added to
             // the ChannelPipeline after registration is complete as otherwise we may miss channelActive events.
@@ -198,7 +198,7 @@ public final class TcpConnector<Read, Write> {
                                     final NettyConnection<Read, Write> connection;
                                     try {
                                         connection = new DefaultNettyConnection<>(channel, context, newPublisher,
-                                                predicate, closeHandler, config.getFlushStrategy());
+                                                predicate, closeHandler, config.flushStrategy());
                                     } catch (Throwable cause) {
                                         channel.close();
                                         subscriber.onError(cause);
@@ -231,13 +231,13 @@ public final class TcpConnector<Read, Write> {
             return attachCancelSubscriber(initFileDescriptorBasedChannel(loop, channel,
                     executionContext.bufferAllocator(), handler), cancellable);
         } catch (Throwable cause) {
-            cancellable.setDelayedCancellable(IGNORE_CANCEL);
+            cancellable.delayedCancellable(IGNORE_CANCEL);
             return ImmediateEventExecutor.INSTANCE.newFailedFuture(cause);
         }
     }
 
     private static ChannelFuture attachCancelSubscriber(ChannelFuture channelFuture, DelayedCancellable cancellable) {
-        cancellable.setDelayedCancellable(() -> channelFuture.cancel(false));
+        cancellable.delayedCancellable(() -> channelFuture.cancel(false));
         return channelFuture;
     }
 
@@ -249,14 +249,14 @@ public final class TcpConnector<Read, Write> {
         bs.channel(socketChannel(loop, nettyResolvedRemote.getClass()));
         bs.handler(handler);
 
-        for (@SuppressWarnings("rawtypes") Map.Entry<ChannelOption, Object> opt : config.getOptions().entrySet()) {
+        for (@SuppressWarnings("rawtypes") Map.Entry<ChannelOption, Object> opt : config.options().entrySet()) {
             //noinspection unchecked
             bs.option(opt.getKey(), opt.getValue());
         }
 
         // we disable auto read so we can handle stuff in the ConnectionFilter before we accept any content.
-        bs.option(ChannelOption.AUTO_READ, config.isAutoRead());
-        if (!config.isAutoRead()) {
+        bs.option(ChannelOption.AUTO_READ, config.autoRead());
+        if (!config.autoRead()) {
             bs.option(ChannelOption.MAX_MESSAGES_PER_READ, 1);
         }
 
@@ -297,14 +297,14 @@ public final class TcpConnector<Read, Write> {
 
     private ChannelFuture initFileDescriptorBasedChannel(EventLoop loop, Channel channel,
                                                          BufferAllocator bufferAllocator, ChannelHandler handler) {
-        for (@SuppressWarnings("rawtypes") Map.Entry<ChannelOption, Object> opt : config.getOptions().entrySet()) {
+        for (@SuppressWarnings("rawtypes") Map.Entry<ChannelOption, Object> opt : config.options().entrySet()) {
             //noinspection unchecked
             channel.config().setOption(opt.getKey(), opt.getValue());
         }
 
         // we disable auto read so we can handle stuff in the ConnectionFilter before we accept any content.
-        channel.config().setOption(ChannelOption.AUTO_READ, config.isAutoRead());
-        if (!config.isAutoRead()) {
+        channel.config().setOption(ChannelOption.AUTO_READ, config.autoRead());
+        if (!config.autoRead()) {
             channel.config().setOption(ChannelOption.MAX_MESSAGES_PER_READ, 1);
         }
 

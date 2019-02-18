@@ -31,7 +31,7 @@ public class ConcatPublisherTest {
 
     @Test
     public void testEnoughRequests() {
-        Publisher<String> p = first.getPublisher().concatWith(second.getPublisher());
+        Publisher<String> p = first.publisher().concatWith(second.publisher());
         subscriber.subscribe(p).request(2);
         first.sendItems("Hello1", "Hello2").complete();
         subscriber.request(2);
@@ -41,7 +41,7 @@ public class ConcatPublisherTest {
 
     @Test
     public void testFirstEmitsError() {
-        Publisher<String> p = first.getPublisher().concatWith(second.getPublisher());
+        Publisher<String> p = first.publisher().concatWith(second.publisher());
         subscriber.subscribe(p).request(2);
         first.sendItems("Hello1", "Hello2").fail();
         subscriber.verifyItems("Hello1", "Hello2").verifyFailure(DELIBERATE_EXCEPTION);
@@ -49,7 +49,7 @@ public class ConcatPublisherTest {
 
     @Test
     public void testSecondEmitsError() {
-        Publisher<String> p = first.getPublisher().concatWith(second.getPublisher());
+        Publisher<String> p = first.publisher().concatWith(second.publisher());
         subscriber.subscribe(p).request(2);
         first.sendItems("Hello1", "Hello2").complete();
         second.fail();

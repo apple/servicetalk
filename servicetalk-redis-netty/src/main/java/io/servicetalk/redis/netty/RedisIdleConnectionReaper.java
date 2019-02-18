@@ -106,7 +106,7 @@ final class RedisIdleConnectionReaper implements UnaryOperator<RedisConnection> 
             timerCompletableSubscriber = new Completable.Subscriber() {
                 @Override
                 public void onSubscribe(final Cancellable cancellable) {
-                    timerCancellable.setNextCancellable(cancellable);
+                    timerCancellable.nextCancellable(cancellable);
                 }
 
                 @Override

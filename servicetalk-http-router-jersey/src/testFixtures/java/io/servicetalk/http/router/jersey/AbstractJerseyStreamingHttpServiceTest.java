@@ -94,8 +94,8 @@ public abstract class AbstractJerseyStreamingHttpServiceTest {
 
     @Before
     public final void initServerAndClient() throws Exception {
-        final StreamingHttpService router = configureBuilder(new HttpJerseyRouterBuilder()).build(getApplication());
-        final Configuration config = ((DefaultJerseyStreamingHttpRouter) router).getConfiguration();
+        final StreamingHttpService router = configureBuilder(new HttpJerseyRouterBuilder()).build(application());
+        final Configuration config = ((DefaultJerseyStreamingHttpRouter) router).configuration();
         streamingJsonEnabled = getValue(config.getProperties(), config.getRuntimeType(), JSON_FEATURE, "",
                 String.class).toLowerCase().contains("servicetalk");
 
@@ -123,13 +123,13 @@ public abstract class AbstractJerseyStreamingHttpServiceTest {
         serverContext.closeAsync().toFuture().get();
     }
 
-    protected abstract Application getApplication();
+    protected abstract Application application();
 
     protected String host() {
         return hostHeader;
     }
 
-    protected boolean isStreamingJsonEnabled() {
+    protected boolean streamingJsonEnabled() {
         return streamingJsonEnabled;
     }
 
@@ -185,7 +185,7 @@ public abstract class AbstractJerseyStreamingHttpServiceTest {
     }
 
     protected Function<String, Integer> getJsonResponseContentLengthExtractor() {
-        return isStreamingJsonEnabled() ? __ -> null : String::length;
+        return streamingJsonEnabled() ? __ -> null : String::length;
     }
 
     protected StreamingHttpResponse sendAndAssertNoResponse(final StreamingHttpRequest req,

@@ -60,7 +60,7 @@ public final class AbstractRedisConnectionTest {
         when(executionContext.bufferAllocator()).thenReturn(DEFAULT_ALLOCATOR);
         timers = new ConcurrentLinkedQueue<>();
         RedisClientConfig config = new RedisClientConfig(new TcpClientConfig(true));
-        config.setMaxPipelinedRequests(10);
+        config.maxPipelinedRequests(10);
         Executor pingTimerProvider = mock(Executor.class);
         when(pingTimerProvider.timer(anyLong(), ArgumentMatchers.any(TimeUnit.class))).thenAnswer(inv -> {
             TestCompletable timer = new TestCompletable();
@@ -147,7 +147,7 @@ public final class AbstractRedisConnectionTest {
         }
 
         @Override
-        Logger getLogger() {
+        Logger logger() {
             return LOGGER;
         }
 

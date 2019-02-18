@@ -103,7 +103,7 @@ public final class TcpClient {
      */
     public NettyConnection<Buffer, Buffer> connectWithFdBlocking(ExecutionContext executionContext, SocketAddress address)
             throws ExecutionException, InterruptedException {
-        assumeTrue(executionContext.ioExecutor().isFileDescriptorSocketAddressSupported());
+        assumeTrue(executionContext.ioExecutor().fileDescriptorSocketAddressSupported());
         assumeTrue(Epoll.isAvailable() || KQueue.isAvailable());
 
         final Class<? extends Channel> channelClass;
@@ -143,14 +143,14 @@ public final class TcpClient {
      *
      * @return {@link ReadOnlyTcpClientConfig} for this client.
      */
-    public ReadOnlyTcpClientConfig getConfig() {
+    public ReadOnlyTcpClientConfig config() {
         return config;
     }
 
     private static TcpClientConfig defaultConfig() {
         TcpClientConfig config = new TcpClientConfig(false);
         // To test coverage of options.
-        config.setSocketOption(StandardSocketOptions.SO_KEEPALIVE, true);
+        config.socketOption(StandardSocketOptions.SO_KEEPALIVE, true);
         return config;
     }
 }

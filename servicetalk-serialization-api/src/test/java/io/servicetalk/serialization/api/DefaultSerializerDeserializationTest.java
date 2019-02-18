@@ -154,14 +154,14 @@ public class DefaultSerializerDeserializationTest {
 
         final List<Buffer> data = asList(first, second);
         BlockingIterableMock<Buffer> source = new BlockingIterableMock<>(data);
-        when(deSerializer.deserialize(source.getIterable())).thenCallRealMethod();
+        when(deSerializer.deserialize(source.iterable())).thenCallRealMethod();
         final BlockingIterable<String> expected = new BlockingIterableFromIterable<>(asList("Hello1", "Hello2"));
 
-        final BlockingIterable<String> deserialized = factory.deserialize(source.getIterable(), String.class);
+        final BlockingIterable<String> deserialized = factory.deserialize(source.iterable(), String.class);
         verify(provider).getDeserializer(String.class);
-        verify(deSerializer).deserialize(source.getIterable());
+        verify(deSerializer).deserialize(source.iterable());
 
-        drainBlockingIteratorAndVerify(deserialized, source.getIterator(), expected);
+        drainBlockingIteratorAndVerify(deserialized, source.iterator(), expected);
     }
 
     @Test
@@ -174,15 +174,15 @@ public class DefaultSerializerDeserializationTest {
 
         final List<Buffer> data = asList(first, second);
         BlockingIterableMock<Buffer> source = new BlockingIterableMock<>(data);
-        when(listDeSerializer.deserialize(source.getIterable())).thenCallRealMethod();
+        when(listDeSerializer.deserialize(source.iterable())).thenCallRealMethod();
         BlockingIterable<List<String>> expected =
                 new BlockingIterableFromIterable<>(asList(singletonList("Hello1"), singletonList("Hello2")));
 
-        final BlockingIterable<List<String>> deserialized = factory.deserialize(source.getIterable(), TYPE_FOR_LIST);
+        final BlockingIterable<List<String>> deserialized = factory.deserialize(source.iterable(), TYPE_FOR_LIST);
         verify(provider).getDeserializer(TYPE_FOR_LIST);
-        verify(listDeSerializer).deserialize(source.getIterable());
+        verify(listDeSerializer).deserialize(source.iterable());
 
-        drainBlockingIteratorAndVerify(deserialized, source.getIterator(), expected);
+        drainBlockingIteratorAndVerify(deserialized, source.iterator(), expected);
     }
 
     private <T> void drainBlockingIteratorAndVerify(final BlockingIterable<T> deserialized,

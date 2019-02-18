@@ -46,73 +46,73 @@ final class DefaultHttpServerBuilder extends HttpServerBuilder {
 
     @Override
     public HttpServerBuilder headersFactory(final HttpHeadersFactory headersFactory) {
-        config.setHeadersFactory(headersFactory);
+        config.headersFactory(headersFactory);
         return this;
     }
 
     @Override
     public HttpServerBuilder clientCloseTimeout(final long clientCloseTimeoutMs) {
-        config.setClientCloseTimeout(clientCloseTimeoutMs);
+        config.clientCloseTimeout(clientCloseTimeoutMs);
         return this;
     }
 
     @Override
     public HttpServerBuilder maxInitialLineLength(final int maxInitialLineLength) {
-        config.setMaxInitialLineLength(maxInitialLineLength);
+        config.maxInitialLineLength(maxInitialLineLength);
         return this;
     }
 
     @Override
     public HttpServerBuilder maxHeaderSize(final int maxHeaderSize) {
-        config.setMaxHeaderSize(maxHeaderSize);
+        config.maxHeaderSize(maxHeaderSize);
         return this;
     }
 
     @Override
     public HttpServerBuilder headersEncodedSizeEstimate(final int headersEncodedSizeEstimate) {
-        config.setHeadersEncodedSizeEstimate(headersEncodedSizeEstimate);
+        config.headersEncodedSizeEstimate(headersEncodedSizeEstimate);
         return this;
     }
 
     @Override
     public HttpServerBuilder trailersEncodedSizeEstimate(final int trailersEncodedSizeEstimate) {
-        config.setTrailersEncodedSizeEstimate(trailersEncodedSizeEstimate);
+        config.trailersEncodedSizeEstimate(trailersEncodedSizeEstimate);
         return this;
     }
 
     @Override
     public HttpServerBuilder backlog(final int backlog) {
-        config.getTcpConfig().setBacklog(backlog);
+        config.tcpConfig().backlog(backlog);
         return this;
     }
 
     @Override
     public HttpServerBuilder sniConfig(@Nullable final Map<String, SslConfig> mappings, final SslConfig defaultConfig) {
-        config.getTcpConfig().setSniConfig(mappings, defaultConfig);
+        config.tcpConfig().sniConfig(mappings, defaultConfig);
         return this;
     }
 
     @Override
     public HttpServerBuilder sslConfig(@Nullable final SslConfig sslConfig) {
-        config.getTcpConfig().setSslConfig(sslConfig);
+        config.tcpConfig().sslConfig(sslConfig);
         return this;
     }
 
     @Override
     public <T> HttpServerBuilder socketOption(final SocketOption<T> option, final T value) {
-        config.getTcpConfig().setSocketOption(option, value);
+        config.tcpConfig().socketOption(option, value);
         return this;
     }
 
     @Override
     public HttpServerBuilder enableWireLogging(final String loggerName) {
-        config.getTcpConfig().enableWireLogging(loggerName);
+        config.tcpConfig().enableWireLogging(loggerName);
         return this;
     }
 
     @Override
     public HttpServerBuilder disableWireLogging() {
-        config.getTcpConfig().disableWireLogging();
+        config.tcpConfig().disableWireLogging();
         return this;
     }
 

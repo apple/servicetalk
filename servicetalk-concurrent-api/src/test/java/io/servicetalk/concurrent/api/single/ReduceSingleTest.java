@@ -85,14 +85,14 @@ public class ReduceSingleTest {
 
     @Test
     public void testFactoryReturnsNull() {
-        listenerRule.listen(publisherRule.getPublisher().reduce(() -> null, (o, s) -> o));
+        listenerRule.listen(publisherRule.publisher().reduce(() -> null, (o, s) -> o));
         publisherRule.sendItems("foo").complete();
         listenerRule.verifySuccess(null);
     }
 
     @Test
     public void testAggregatorReturnsNull() {
-        listenerRule.listen(publisherRule.getPublisher().reduce(() -> "", (o, s) -> null));
+        listenerRule.listen(publisherRule.publisher().reduce(() -> "", (o, s) -> null));
         publisherRule.sendItems("foo").complete();
         listenerRule.verifySuccess(null);
     }
@@ -100,7 +100,7 @@ public class ReduceSingleTest {
     @Test
     public void testReducerExceptionCleanup() {
         final RuntimeException testException = new RuntimeException("fake exception");
-        listenerRule.listen(publisherRule.getPublisher().reduce(() -> "", new BiFunction<String, String, String>() {
+        listenerRule.listen(publisherRule.publisher().reduce(() -> "", new BiFunction<String, String, String>() {
             private int callNumber;
 
             @Override
@@ -126,7 +126,7 @@ public class ReduceSingleTest {
                         currentThread()));
             }
             analyzed.countDown();
-        }).subscribeOn(executorRule.getExecutor()).reduce(ArrayList::new, (objects, s) -> {
+        }).subscribeOn(executorRule.executor()).reduce(ArrayList::new, (objects, s) -> {
             objects.add(s);
             return objects;
         }).toFuture().get();
@@ -149,7 +149,7 @@ public class ReduceSingleTest {
     private static class ReducerRule extends Verifier {
 
         ReducerRule listen(PublisherRule<String> publisherRule, MockedSingleListenerRule<String> listenerRule) {
-            listenerRule.listen(publisherRule.getPublisher().reduce(() -> "", (r, s) -> r + s));
+            listenerRule.listen(publisherRule.publisher().reduce(() -> "", (r, s) -> r + s));
             return this;
         }
     }

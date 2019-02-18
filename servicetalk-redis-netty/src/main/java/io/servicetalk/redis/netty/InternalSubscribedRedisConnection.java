@@ -76,7 +76,7 @@ final class InternalSubscribedRedisConnection extends AbstractRedisConnection {
         super(toNettyIoExecutor(connection.executionContext().ioExecutor()).asExecutor(), connection.onClosing(),
                 executionContext, roConfig);
         this.connection = connection;
-        this.deferSubscribeTillConnect = roConfig.isDeferSubscribeTillConnect();
+        this.deferSubscribeTillConnect = roConfig.deferSubscribeTillConnect();
         writeQueue = new WriteQueue(initialQueueCapacity, maxPendingRequests);
         this.readStreamSplitter = new ReadStreamSplitter(connection, maxPendingRequests, maxBufferPerGroup,
                 redisRequest -> request0(redisRequest).ignoreElements());
@@ -141,7 +141,7 @@ final class InternalSubscribedRedisConnection extends AbstractRedisConnection {
                     response = write.concatWith(readStreamSplitter.registerNewCommand(command));
                 }
                 // Unwrap PubSubChannelMessage if it wraps an SimpleString response
-                response.map(m -> m.getKeyType() == SimpleString ? m.getData() : m).subscribe(subscriber);
+                response.map(m -> m.keyType() == SimpleString ? m.data() : m).subscribe(subscriber);
             }
         };
     }
@@ -182,7 +182,7 @@ final class InternalSubscribedRedisConnection extends AbstractRedisConnection {
     }
 
     @Override
-    Logger getLogger() {
+    Logger logger() {
         return LOGGER;
     }
 

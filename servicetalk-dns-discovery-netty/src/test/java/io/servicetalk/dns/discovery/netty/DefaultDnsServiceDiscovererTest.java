@@ -118,8 +118,8 @@ public class DefaultDnsServiceDiscovererTest {
             latch.await();
             assertThat("Unexpected exception during DNS lookup.",
                     throwableRef.get(), instanceOf(UnknownHostException.class));
-            assertThat(subscriber.getActiveCount(), equalTo(0));
-            assertThat(subscriber.getInactiveCount(), equalTo(0));
+            assertThat(subscriber.activeCount(), equalTo(0));
+            assertThat(subscriber.inactiveCount(), equalTo(0));
         } finally {
             discoverer.closeAsync().toFuture().get();
         }
@@ -140,8 +140,8 @@ public class DefaultDnsServiceDiscovererTest {
 
         latch.await();
         assertNull(throwableRef.get());
-        assertThat(subscriber.getActiveCount(), equalTo(expectedActiveCount));
-        assertThat(subscriber.getInactiveCount(), equalTo(expectedInactiveCount));
+        assertThat(subscriber.activeCount(), equalTo(expectedActiveCount));
+        assertThat(subscriber.inactiveCount(), equalTo(expectedInactiveCount));
     }
 
     @Test
@@ -160,14 +160,14 @@ public class DefaultDnsServiceDiscovererTest {
 
         latch.await();
         assertNull(throwableRef.get());
-        assertThat(subscriber.getActiveCount(), equalTo(expectedActiveCount));
-        assertThat(subscriber.getInactiveCount(), equalTo(expectedInactiveCount));
+        assertThat(subscriber.activeCount(), equalTo(expectedActiveCount));
+        assertThat(subscriber.inactiveCount(), equalTo(expectedInactiveCount));
     }
 
     @Test
     public void repeatDiscoverMultipleRecords() throws Exception {
         recordStore.addResponse("apple.com", A, nextIp(), nextIp(), nextIp(), nextIp(), nextIp())
-                .setDefaultResponse("apple.com", A, nextIp(), nextIp(), nextIp(), nextIp(), nextIp());
+                .defaultResponse("apple.com", A, nextIp(), nextIp(), nextIp(), nextIp(), nextIp());
 
         final int expectedActiveCount = 10;
         final int expectedInactiveCount = 5;
@@ -181,14 +181,14 @@ public class DefaultDnsServiceDiscovererTest {
 
         latch.await();
         assertNull(throwableRef.get());
-        assertThat(subscriber.getActiveCount(), equalTo(expectedActiveCount));
-        assertThat(subscriber.getInactiveCount(), equalTo(expectedInactiveCount));
+        assertThat(subscriber.activeCount(), equalTo(expectedActiveCount));
+        assertThat(subscriber.inactiveCount(), equalTo(expectedInactiveCount));
     }
 
     @Test
     public void repeatDiscover() throws Exception {
         recordStore.addResponse("apple.com", A, nextIp())
-                .setDefaultResponse("apple.com", A, nextIp());
+                .defaultResponse("apple.com", A, nextIp());
 
         final int expectedActiveCount = 2;
         final int expectedInactiveCount = 1;
@@ -202,16 +202,16 @@ public class DefaultDnsServiceDiscovererTest {
 
         latch.await();
         assertNull(throwableRef.get());
-        assertThat(subscriber.getActiveCount(), equalTo(expectedActiveCount));
-        assertThat(subscriber.getInactiveCount(), equalTo(expectedInactiveCount));
+        assertThat(subscriber.activeCount(), equalTo(expectedActiveCount));
+        assertThat(subscriber.inactiveCount(), equalTo(expectedInactiveCount));
     }
 
     @Test
     public void repeatDiscoverMultipleHosts() throws Exception {
         recordStore.addResponse("apple.com", A, nextIp())
-                .setDefaultResponse("apple.com", A, nextIp())
+                .defaultResponse("apple.com", A, nextIp())
                 .addResponse("servicetalk.io", A, nextIp())
-                .setDefaultResponse("servicetalk.io", A, nextIp());
+                .defaultResponse("servicetalk.io", A, nextIp());
 
         final int expectedAppleActiveCount = 2;
         final int expectedAppleInactiveCount = 1;
@@ -234,10 +234,10 @@ public class DefaultDnsServiceDiscovererTest {
         appleLatch.await();
         stLatch.await();
         assertNull(throwableRef.get());
-        assertThat(appleSubscriber.getActiveCount(), equalTo(expectedAppleActiveCount));
-        assertThat(appleSubscriber.getInactiveCount(), equalTo(expectedAppleInactiveCount));
-        assertThat(stSubscriber.getActiveCount(), equalTo(expectedStActiveCount));
-        assertThat(stSubscriber.getInactiveCount(), equalTo(expectedStInactiveCount));
+        assertThat(appleSubscriber.activeCount(), equalTo(expectedAppleActiveCount));
+        assertThat(appleSubscriber.inactiveCount(), equalTo(expectedAppleInactiveCount));
+        assertThat(stSubscriber.activeCount(), equalTo(expectedStActiveCount));
+        assertThat(stSubscriber.inactiveCount(), equalTo(expectedStInactiveCount));
     }
 
     @Test
@@ -249,7 +249,7 @@ public class DefaultDnsServiceDiscovererTest {
                     firstTime.set(System.currentTimeMillis());
                     return singletonList(createRecord("apple.com", A, 2, nextIp()));
                 })
-                .setDefaultResponse("apple.com", A, () -> {
+                .defaultResponse("apple.com", A, () -> {
                     secondTime.set(System.currentTimeMillis());
                     return singletonList(createRecord("apple.com", A, 2, nextIp()));
                 });
@@ -266,8 +266,8 @@ public class DefaultDnsServiceDiscovererTest {
 
         latch.await();
         assertNull(throwableRef.get());
-        assertThat(subscriber.getActiveCount(), equalTo(expectedActiveCount));
-        assertThat(subscriber.getInactiveCount(), equalTo(expectedInactiveCount));
+        assertThat(subscriber.activeCount(), equalTo(expectedActiveCount));
+        assertThat(subscriber.inactiveCount(), equalTo(expectedInactiveCount));
         long timeBetweenQueries = secondTime.get() - firstTime.get();
         assertThat(timeBetweenQueries, greaterThanOrEqualTo(2000L));
     }
@@ -287,7 +287,7 @@ public class DefaultDnsServiceDiscovererTest {
                     return asList(createRecord("apple.com", A, 1, ipA1),
                             createRecord("apple.com", A, 10, ipA2));
                 })
-                .setDefaultResponse("apple.com", A, () -> {
+                .defaultResponse("apple.com", A, () -> {
                     secondTime.set(System.currentTimeMillis());
                     return asList(createRecord("apple.com", A, 10, ipB1),
                             createRecord("apple.com", A, 10, ipB2));
@@ -329,8 +329,8 @@ public class DefaultDnsServiceDiscovererTest {
 
         latch.await();
         assertNull(throwableRef.get());
-        assertThat(subscriber.getActiveCount(), equalTo(expectedActiveCount));
-        assertThat(subscriber.getInactiveCount(), equalTo(expectedInactiveCount));
+        assertThat(subscriber.activeCount(), equalTo(expectedActiveCount));
+        assertThat(subscriber.inactiveCount(), equalTo(expectedInactiveCount));
     }
 
     @Test
@@ -355,8 +355,8 @@ public class DefaultDnsServiceDiscovererTest {
             latch.await();
             assertThat("Unexpected exception during DNS lookup.",
                     throwableRef.get(), instanceOf(UnknownHostException.class));
-            assertThat(subscriber.getActiveCount(), equalTo(expectedActiveCount));
-            assertThat(subscriber.getInactiveCount(), equalTo(expectedInactiveCount));
+            assertThat(subscriber.activeCount(), equalTo(expectedActiveCount));
+            assertThat(subscriber.inactiveCount(), equalTo(expectedInactiveCount));
         } finally {
             discoverer.closeAsync().toFuture().get();
         }
@@ -379,12 +379,12 @@ public class DefaultDnsServiceDiscovererTest {
 
         latch1.await();
         assertNull(throwableRef.get());
-        assertThat(subscriber.getActiveCount(), equalTo(expectedActiveCount));
-        assertThat(subscriber.getInactiveCount(), equalTo(expectedInactiveCount));
+        assertThat(subscriber.activeCount(), equalTo(expectedActiveCount));
+        assertThat(subscriber.inactiveCount(), equalTo(expectedInactiveCount));
 
-        recordStore.setDefaultResponse("apple.com", A, nextIp());
+        recordStore.defaultResponse("apple.com", A, nextIp());
         latch2.await();
-        assertThat(subscriber.getActiveCount(), equalTo(expectedActiveCount + 1));
+        assertThat(subscriber.activeCount(), equalTo(expectedActiveCount + 1));
     }
 
     @Test
@@ -431,13 +431,13 @@ public class DefaultDnsServiceDiscovererTest {
 
             latch.await();
             assertNull(throwableRef.get());
-            assertThat(subscriber.getActiveCount(), equalTo(expectedActiveCount));
-            assertThat(subscriber.getInactiveCount(), equalTo(expectedInactiveCount));
+            assertThat(subscriber.activeCount(), equalTo(expectedActiveCount));
+            assertThat(subscriber.inactiveCount(), equalTo(expectedInactiveCount));
 
             timeoutLatch.await();
             assertNull(throwableRef.get());
-            assertThat(subscriber.getActiveCount(), equalTo(expectedActiveCount));
-            assertThat(subscriber.getInactiveCount(), equalTo(expectedInactiveCount));
+            assertThat(subscriber.activeCount(), equalTo(expectedActiveCount));
+            assertThat(subscriber.inactiveCount(), equalTo(expectedInactiveCount));
         } finally {
             responseLatch.countDown();
             discoverer.closeAsync().toFuture().get();
@@ -469,7 +469,7 @@ public class DefaultDnsServiceDiscovererTest {
     @Test
     public void acceptOnlyIpv6() throws InterruptedException {
         final String ipv6 = nextIp6();
-        recordStore.setDefaultResponse("apple.com", AAAA, ipv6);
+        recordStore.defaultResponse("apple.com", AAAA, ipv6);
 
         final int expectedActiveCount = 1;
         final int expectedInactiveCount = 0;
@@ -491,7 +491,7 @@ public class DefaultDnsServiceDiscovererTest {
     @SuppressWarnings("unchecked")
     @Test
     public void exceptionInSubscriberOnErrorWhileClose() throws Exception {
-        recordStore.setDefaultResponse("apple.com", A, nextIp());
+        recordStore.defaultResponse("apple.com", A, nextIp());
         CountDownLatch latchOnSubscribe = new CountDownLatch(1);
         ServiceDiscoverer<String, InetAddress, ServiceDiscovererEvent<InetAddress>> discoverer =
                 serviceDiscovererBuilderWithoutRetry()

@@ -50,7 +50,7 @@ public final class ExecutorRule extends ExternalResource {
      * @return {@link Executor} created on the last call to {@link #before()}. {@code null} if {@link #before()} has not
      * been called yet.
      */
-    public Executor getExecutor() {
+    public Executor executor() {
         return executor;
     }
 

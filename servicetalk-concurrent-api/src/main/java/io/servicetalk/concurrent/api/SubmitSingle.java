@@ -29,7 +29,7 @@ final class SubmitSingle<T> extends AbstractSubmitSingle<T> {
     }
 
     @Override
-    Callable<? extends T> getCallable() {
+    Callable<? extends T> callable() {
         return callable;
     }
 }

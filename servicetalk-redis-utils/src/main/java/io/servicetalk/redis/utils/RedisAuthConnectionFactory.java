@@ -59,7 +59,7 @@ public class RedisAuthConnectionFactory<ResolvedAddress> implements ConnectionFa
                             return error(new RedisAuthorizationException("Failed to authenticate on connection " + cnx + " to address " + resolvedAddress, cause));
                         })
                         .flatMap(response -> {
-                            if (response.contentEquals(OK.getCharSequenceValue())) {
+                            if (response.contentEquals(OK.charSequenceValue())) {
                                 return success(cnx);
                             }
                             cnx.closeAsync().subscribe();

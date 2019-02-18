@@ -60,7 +60,7 @@ final class InOrderRouter extends StreamingHttpService {
         this.strategy = strategy == null ? super.executionStrategy() : strategy;
         this.closeable = newCompositeCloseable()
                 .mergeAll(fallbackService)
-                .mergeAll(predicateServicePairs.stream().map(PredicateServicePair::getService).collect(toList()));
+                .mergeAll(predicateServicePairs.stream().map(PredicateServicePair::service).collect(toList()));
     }
 
     @Override
@@ -68,8 +68,8 @@ final class InOrderRouter extends StreamingHttpService {
                                                 final StreamingHttpRequest request,
                                                 final StreamingHttpResponseFactory factory) {
         for (final PredicateServicePair pair : predicateServicePairs) {
-            if (pair.getPredicate().test(ctx, request)) {
-                StreamingHttpService service = pair.getService();
+            if (pair.predicate().test(ctx, request)) {
+                StreamingHttpService service = pair.service();
                 return service.executionStrategy().offloadService(ctx.executionContext().executor(), service)
                         .handle(ctx, request, factory);
             }

@@ -101,7 +101,7 @@ public class TestPublisher<T> extends Publisher<T> implements Subscriber<T> {
     @SafeVarargs
     public final TestPublisher<T> sendItems(T... items) {
         Subscriber<? super T> subscriber = verifySubscriberAndStart();
-        long req = getOutstandingRequested();
+        long req = outstandingRequested();
         if (req < items.length) {
             throw new IllegalStateException("Subscriber has not requested enough. Requested: " + req + ", Expected: " + items.length);
         }
@@ -175,19 +175,19 @@ public class TestPublisher<T> extends Publisher<T> implements Subscriber<T> {
         sub.onComplete();
     }
 
-    public long getRequested() {
+    public long requested() {
         return requested.get();
     }
 
-    public long getOutstandingRequested() {
+    public long outstandingRequested() {
         return requested.get() - sent.get();
     }
 
-    public long getSent() {
+    public long sent() {
         return sent.get();
     }
 
-    public boolean isCancelled() {
+    public boolean cancelled() {
         return cancelled.get();
     }
 
@@ -197,17 +197,17 @@ public class TestPublisher<T> extends Publisher<T> implements Subscriber<T> {
     }
 
     public TestPublisher<T> verifyOutstanding(long expected) {
-        assertThat("Unexpected outstanding requested.", getOutstandingRequested(), is(expected));
+        assertThat("Unexpected outstanding requested.", outstandingRequested(), is(expected));
         return this;
     }
 
     public TestPublisher<T> verifyCancelled() {
-        assertTrue("Subscriber did not cancel.", isCancelled());
+        assertTrue("Subscriber did not cancel.", cancelled());
         return this;
     }
 
     public TestPublisher<T> verifyNotCancelled() {
-        assertFalse("Subscriber cancelled.", isCancelled());
+        assertFalse("Subscriber cancelled.", cancelled());
         return this;
     }
 

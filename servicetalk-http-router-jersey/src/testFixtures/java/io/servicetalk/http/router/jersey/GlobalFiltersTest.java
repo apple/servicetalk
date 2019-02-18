@@ -37,7 +37,7 @@ public class GlobalFiltersTest extends AbstractFilterInterceptorTest {
     }
 
     @Override
-    protected Application getApplication() {
+    protected Application application() {
         return new TestApplication();
     }
 }

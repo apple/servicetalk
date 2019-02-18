@@ -55,8 +55,8 @@ public class DelayedCancellableTest {
 
     @Test
     public void multipleDelayedSubscriptionCancels() {
-        delayedCancellable.setDelayedCancellable(c1);
-        delayedCancellable.setDelayedCancellable(c2);
+        delayedCancellable.delayedCancellable(c1);
+        delayedCancellable.delayedCancellable(c2);
         verifyNoMoreInteractions(c1);
         verify(c2).cancel();
     }
@@ -64,13 +64,13 @@ public class DelayedCancellableTest {
     @Test
     public void delayedCancelIsDelivered() {
         delayedCancellable.cancel();
-        delayedCancellable.setDelayedCancellable(c1);
+        delayedCancellable.delayedCancellable(c1);
         verify(c1).cancel();
     }
 
     @Test
     public void signalsAfterDelayedArePassedThrough() {
-        delayedCancellable.setDelayedCancellable(c1);
+        delayedCancellable.delayedCancellable(c1);
         delayedCancellable.cancel();
         verify(c1).cancel();
     }
@@ -78,7 +78,7 @@ public class DelayedCancellableTest {
     @Test
     public void setDelayedFromAnotherThreadIsVisible() throws Exception {
         delayedCancellable.cancel();
-        executor.submit(() -> delayedCancellable.setDelayedCancellable(c1)).get();
+        executor.submit(() -> delayedCancellable.delayedCancellable(c1)).get();
         verify(c1).cancel();
     }
 }

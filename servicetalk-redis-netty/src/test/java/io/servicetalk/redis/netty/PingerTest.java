@@ -98,8 +98,8 @@ public class PingerTest {
         serverAddress = new InetSocketAddress(redisHost, redisPort);
 
         nettyIoExecutor = toNettyIoExecutor(createIoExecutor());
-        config = new RedisClientConfig(new TcpClientConfig(false)).setPingPeriod(PING_PERIOD)
-                .setMaxPipelinedRequests(10).asReadOnly();
+        config = new RedisClientConfig(new TcpClientConfig(false)).pingPeriod(PING_PERIOD)
+                .maxPipelinedRequests(10).asReadOnly();
     }
 
     @AfterClass
@@ -158,7 +158,7 @@ public class PingerTest {
         assertThat("Unexpected command written.", commandsWritten, hasSize(0));
 
         connection.asCommander().subscribe(randomCharSequenceOfByteLength(32))
-                .flatMapPublisher(PubSubRedisConnection::getMessages)
+                .flatMapPublisher(PubSubRedisConnection::messages)
                 .subscribe(new Subscriber<PubSubRedisMessage>() {
                     @Override
                     public void onSubscribe(Subscription s) {
@@ -203,7 +203,7 @@ public class PingerTest {
         assert nettyIoExecutor != null;
         assert serverAddress != null;
 
-        final ReadOnlyTcpClientConfig roTcpConfig = config.getTcpClientConfig();
+        final ReadOnlyTcpClientConfig roTcpConfig = config.tcpClientConfig();
         final ChannelInitializer initializer = new TcpClientChannelInitializer(roTcpConfig)
                 .andThen(new RedisClientChannelInitializer())
                 .andThen((channel, context) -> {

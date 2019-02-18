@@ -28,10 +28,10 @@ import javax.annotation.Nullable;
 public interface ConnectionHolderChannelHandler<Read, Write> extends ChannelHandler {
 
     /**
-     * Get the {@link NettyConnection} associated with this object.
+     * Returns the {@link NettyConnection} associated with this object.
      *
      * @return the {@link NettyConnection} associated with this object.
      */
     @Nullable
-    NettyConnection<Read, Write> getConnection();
+    NettyConnection<Read, Write> connection();
 }

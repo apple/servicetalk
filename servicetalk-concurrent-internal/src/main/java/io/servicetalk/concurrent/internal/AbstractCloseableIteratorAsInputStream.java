@@ -88,7 +88,7 @@ public abstract class AbstractCloseableIteratorAsInputStream<T> extends InputStr
      * Determine if {@link #close()} has been called.
      * @return {@code true} if {@link #close()} has been called.
      */
-    protected abstract boolean isClosed();
+    protected abstract boolean closed();
 
     @Override
     public final int read(final byte[] b, int off, int len) throws IOException {
@@ -165,7 +165,7 @@ public abstract class AbstractCloseableIteratorAsInputStream<T> extends InputStr
     }
 
     private void checkAlreadyClosed() throws IOException {
-        if (isClosed()) {
+        if (closed()) {
             throw new IOException("Stream is already closed.");
         }
     }

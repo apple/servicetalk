@@ -45,9 +45,10 @@ public final class DelayedSubscription implements Subscription {
     /**
      * Set the delayed {@link Subscription}. This method can only be called a single time and
      * subsequent calls will result in {@link #cancel()} being called on {@code delayedSubscription}.
+     *
      * @param delayedSubscription The delayed {@link Subscription}.
      */
-    public void setDelayedSubscription(Subscription delayedSubscription) {
+    public void delayedSubscription(Subscription delayedSubscription) {
         // Temporarily wrap in a ConcurrentSubscription to prevent concurrent invocation between this thread and
         // a thread which may be interacting with this class's Subscription API.
         final Subscription concurrentSubscription = wrap(delayedSubscription);

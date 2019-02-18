@@ -49,7 +49,7 @@ final class HostHeaderHttpRequesterFilter implements HttpClientFilterFactory,
      * @param fallbackHost The address to use as a fallback if a {@link HttpHeaderNames#HOST} header is not present.
      */
     HostHeaderHttpRequesterFilter(HostAndPort fallbackHost) {
-        this(fallbackHost.getHostName(), fallbackHost.getPort());
+        this(fallbackHost.hostName(), fallbackHost.port());
     }
 
     /**

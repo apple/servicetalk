@@ -84,10 +84,10 @@ public class HttpClientOverrideOffloadingTest {
     @Parameterized.Parameters(name = "{index} - {0}")
     public static Collection<Object[]> params() {
         List<Object[]> params = new ArrayList<>();
-        params.add(newParam("Override no offload", th -> !isInClientEventLoop(th), noOffloadsStrategy(), null));
-        params.add(newParam("Default no offload", HttpClientOverrideOffloadingTest::isInClientEventLoop,
+        params.add(newParam("Override no offload", th -> !inClientEventLoop(th), noOffloadsStrategy(), null));
+        params.add(newParam("Default no offload", HttpClientOverrideOffloadingTest::inClientEventLoop,
                 null, noOffloadsStrategy()));
-        params.add(newParam("Both offloads", HttpClientOverrideOffloadingTest::isInClientEventLoop, null, null));
+        params.add(newParam("Both offloads", HttpClientOverrideOffloadingTest::inClientEventLoop, null, null));
         return params;
     }
 
@@ -106,7 +106,7 @@ public class HttpClientOverrideOffloadingTest {
     public void reserveRespectsDisable() throws Exception {
         ConcurrentLinkedQueue<AssertionError> errors = new ConcurrentLinkedQueue<>();
         client.reserveConnection(overridingStrategy, client.get("/")).doBeforeSuccess(__ -> {
-            if (isInvalidThread()) {
+            if (invalidThread()) {
                 errors.add(new AssertionError("Invalid thread found providing the connection. Thread: "
                         + currentThread()));
             }
@@ -119,7 +119,7 @@ public class HttpClientOverrideOffloadingTest {
         ConcurrentLinkedQueue<AssertionError> errors = new ConcurrentLinkedQueue<>();
         client.request(overridingStrategy, client.get("/"))
                 .doBeforeSuccess(__ -> {
-                    if (isInvalidThread()) {
+                    if (invalidThread()) {
                         errors.add(new AssertionError("Invalid thread called response. " +
                                 "Thread: " + currentThread()));
                     }
@@ -129,11 +129,11 @@ public class HttpClientOverrideOffloadingTest {
         assertThat("Unexpected errors: " + errors, errors, hasSize(0));
     }
 
-    private boolean isInvalidThread() {
+    private boolean invalidThread() {
         return isInvalidThread.test(currentThread());
     }
 
-    private static boolean isInClientEventLoop(Thread thread) {
+    private static boolean inClientEventLoop(Thread thread) {
         return thread.getName().startsWith(IO_EXECUTOR_THREAD_NAME_PREFIX);
     }
 }

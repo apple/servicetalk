@@ -43,7 +43,7 @@ final class ForEachSubscriber<T> extends SequentialCancellable implements Subscr
         // We wrap the subscription into ConcurrentSubscription as cancel on SequentialCancellable (this) can be
         // concurrent with the request-n below.
         ConcurrentSubscription cs = wrap(s);
-        setNextCancellable(cs::cancel);
+        nextCancellable(cs::cancel);
         cs.request(Long.MAX_VALUE);
     }
 

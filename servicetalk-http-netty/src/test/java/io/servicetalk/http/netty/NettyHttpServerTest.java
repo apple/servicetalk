@@ -297,7 +297,7 @@ public class NettyHttpServerTest extends AbstractNettyHttpServerTest {
 
         // Use a very high timeout for the graceful close. It should happen quite quickly because there are no
         // active requests/responses.
-        closeAsyncGracefully(getServerContext(), 1000, SECONDS).toFuture().get();
+        closeAsyncGracefully(serverContext(), 1000, SECONDS).toFuture().get();
         assertConnectionClosed();
     }
 
@@ -305,12 +305,12 @@ public class NettyHttpServerTest extends AbstractNettyHttpServerTest {
     public void testGracefulShutdownWhileReadingPayload() throws Exception {
         ignoreTestWhen(IMMEDIATE, IMMEDIATE);
 
-        when(publisherSupplier.apply(any())).thenReturn(publisherRule.getPublisher());
+        when(publisherSupplier.apply(any())).thenReturn(publisherRule.publisher());
 
         final StreamingHttpRequest request1 = reqRespFactory.newRequest(GET, SVC_PUBLISHER_RULE);
         final StreamingHttpResponse response1 = makeRequest(request1);
 
-        closeAsyncGracefully(getServerContext(), 1000, SECONDS).subscribe();
+        closeAsyncGracefully(serverContext(), 1000, SECONDS).subscribe();
         publisherRule.sendItems(getChunkFromString("Hello"));
         publisherRule.complete();
 
@@ -322,30 +322,30 @@ public class NettyHttpServerTest extends AbstractNettyHttpServerTest {
 
     @Test
     public void testImmediateShutdownWhileReadingPayload() throws Exception {
-        when(publisherSupplier.apply(any())).thenReturn(publisherRule.getPublisher());
+        when(publisherSupplier.apply(any())).thenReturn(publisherRule.publisher());
 
         final StreamingHttpRequest request1 = reqRespFactory.newRequest(GET, SVC_PUBLISHER_RULE);
         makeRequest(request1);
 
-        getServerContext().closeAsync().toFuture().get();
+        serverContext().closeAsync().toFuture().get();
 
         assertConnectionClosed();
     }
 
     @Test
     public void testCancelGracefulShutdownWhileReadingPayloadAndThenGracefulShutdownAgain() throws Exception {
-        when(publisherSupplier.apply(any())).thenReturn(publisherRule.getPublisher());
-        MockedCompletableListenerRule onCloseListener = completableListenerRule.listen(getServerContext().onClose());
+        when(publisherSupplier.apply(any())).thenReturn(publisherRule.publisher());
+        MockedCompletableListenerRule onCloseListener = completableListenerRule.listen(serverContext().onClose());
 
         final StreamingHttpRequest request1 = reqRespFactory.newRequest(GET, SVC_PUBLISHER_RULE);
         makeRequest(request1);
 
         // cancelling the Completable while in the timeout cancels the forceful shutdown.
-        closeAsyncGracefully(getServerContext(), 1000, SECONDS).doAfterSubscribe(Cancellable::cancel).subscribe();
+        closeAsyncGracefully(serverContext(), 1000, SECONDS).doAfterSubscribe(Cancellable::cancel).subscribe();
 
         onCloseListener.verifyNoEmissions();
 
-        closeAsyncGracefully(getServerContext(), 10, MILLISECONDS).toFuture().get();
+        closeAsyncGracefully(serverContext(), 10, MILLISECONDS).toFuture().get();
 
         onCloseListener.verifyCompletion();
 
@@ -354,18 +354,18 @@ public class NettyHttpServerTest extends AbstractNettyHttpServerTest {
 
     @Test
     public void testCancelGracefulShutdownWhileReadingPayloadAndThenShutdown() throws Exception {
-        when(publisherSupplier.apply(any())).thenReturn(publisherRule.getPublisher());
-        MockedCompletableListenerRule onCloseListener = completableListenerRule.listen(getServerContext().onClose());
+        when(publisherSupplier.apply(any())).thenReturn(publisherRule.publisher());
+        MockedCompletableListenerRule onCloseListener = completableListenerRule.listen(serverContext().onClose());
 
         final StreamingHttpRequest request1 = reqRespFactory.newRequest(GET, SVC_PUBLISHER_RULE);
         makeRequest(request1);
 
         // cancelling the Completable while in the timeout cancels the forceful shutdown.
-        closeAsyncGracefully(getServerContext(), 1000, SECONDS).doAfterSubscribe(Cancellable::cancel).subscribe();
+        closeAsyncGracefully(serverContext(), 1000, SECONDS).doAfterSubscribe(Cancellable::cancel).subscribe();
 
         onCloseListener.verifyNoEmissions();
 
-        getServerContext().closeAsync().toFuture().get();
+        serverContext().closeAsync().toFuture().get();
 
         onCloseListener.verifyCompletion();
 
@@ -374,27 +374,27 @@ public class NettyHttpServerTest extends AbstractNettyHttpServerTest {
 
     @Test
     public void testGracefulShutdownTimesOutWhileReadingPayload() throws Exception {
-        when(publisherSupplier.apply(any())).thenReturn(publisherRule.getPublisher());
+        when(publisherSupplier.apply(any())).thenReturn(publisherRule.publisher());
 
         final StreamingHttpRequest request1 = reqRespFactory.newRequest(GET, SVC_PUBLISHER_RULE);
         makeRequest(request1);
 
-        closeAsyncGracefully(getServerContext(), 500, MILLISECONDS).toFuture().get();
+        closeAsyncGracefully(serverContext(), 500, MILLISECONDS).toFuture().get();
 
         assertConnectionClosed();
     }
 
     @Test
     public void testImmediateCloseAfterGracefulShutdownWhileReadingPayload() throws Exception {
-        when(publisherSupplier.apply(any())).thenReturn(publisherRule.getPublisher());
+        when(publisherSupplier.apply(any())).thenReturn(publisherRule.publisher());
 
         final StreamingHttpRequest request1 = reqRespFactory.newRequest(GET, SVC_PUBLISHER_RULE);
         makeRequest(request1);
 
-        closeAsyncGracefully(getServerContext(), 1000, SECONDS).subscribe();
+        closeAsyncGracefully(serverContext(), 1000, SECONDS).subscribe();
         // Wait 500 millis for the "immediate" close to happen, since there are multiple threads involved.
         // If it takes any longer than that, it probably didn't work, but the graceful close would make the test pass.
-        getServerContext().closeAsync().toFuture().get();
+        serverContext().closeAsync().toFuture().get();
 
         assertConnectionClosed();
     }
@@ -512,8 +512,8 @@ public class NettyHttpServerTest extends AbstractNettyHttpServerTest {
     }
 
     @Override
-    protected void setService(final StreamingHttpService service) {
-        super.setService(new StreamingHttpServiceFilter(service) {
+    protected void service(final StreamingHttpService service) {
+        super.service(new StreamingHttpServiceFilter(service) {
             @Override
             public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
                                                         final StreamingHttpRequest request,

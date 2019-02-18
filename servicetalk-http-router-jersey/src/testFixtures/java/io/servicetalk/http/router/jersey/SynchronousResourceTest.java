@@ -32,7 +32,7 @@ import static org.hamcrest.Matchers.is;
 
 public class SynchronousResourceTest extends AbstractResourceTest {
     @Override
-    String getResourcePath() {
+    String resourcePath() {
         return PATH;
     }
 

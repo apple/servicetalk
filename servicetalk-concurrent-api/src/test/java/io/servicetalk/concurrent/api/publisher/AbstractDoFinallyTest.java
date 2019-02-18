@@ -53,7 +53,7 @@ public abstract class AbstractDoFinallyTest {
 
     @Test
     public void testForCancelPostEmissions() {
-        subscriber.subscribe(doFinally(publisher.getPublisher(), doFinally)).request(1);
+        subscriber.subscribe(doFinally(publisher.publisher(), doFinally)).request(1);
         publisher.sendItems("Hello");
         subscriber.verifyItems("Hello").cancel();
         verify(doFinally).run();
@@ -62,7 +62,7 @@ public abstract class AbstractDoFinallyTest {
 
     @Test
     public void testForCancelNoEmissions() {
-        subscriber.subscribe(doFinally(publisher.getPublisher(), doFinally));
+        subscriber.subscribe(doFinally(publisher.publisher(), doFinally));
         subscriber.cancel();
         verify(doFinally).run();
         publisher.verifyCancelled();
@@ -70,7 +70,7 @@ public abstract class AbstractDoFinallyTest {
 
     @Test
     public void testForCancelPostError() {
-        subscriber.subscribe(doFinally(publisher.getPublisher(), doFinally));
+        subscriber.subscribe(doFinally(publisher.publisher(), doFinally));
         publisher.fail();
         subscriber.cancel();
         verify(doFinally).run();
@@ -79,7 +79,7 @@ public abstract class AbstractDoFinallyTest {
 
     @Test
     public void testForCancelPostComplete() {
-        subscriber.subscribe(doFinally(publisher.getPublisher(), doFinally));
+        subscriber.subscribe(doFinally(publisher.publisher(), doFinally));
         publisher.complete();
         subscriber.cancel();
         verify(doFinally).run();
@@ -88,7 +88,7 @@ public abstract class AbstractDoFinallyTest {
 
     @Test
     public void testForCompletePostEmissions() {
-        subscriber.subscribe(doFinally(publisher.getPublisher(), doFinally)).request(1);
+        subscriber.subscribe(doFinally(publisher.publisher(), doFinally)).request(1);
         publisher.sendItems("Hello").complete();
         subscriber.verifySuccess("Hello");
         verify(doFinally).run();
@@ -97,7 +97,7 @@ public abstract class AbstractDoFinallyTest {
 
     @Test
     public void testForCompleteNoEmissions() {
-        subscriber.subscribe(doFinally(publisher.getPublisher(), doFinally)).request(1);
+        subscriber.subscribe(doFinally(publisher.publisher(), doFinally)).request(1);
         publisher.complete();
         subscriber.verifySuccess();
         verify(doFinally).run();
@@ -106,7 +106,7 @@ public abstract class AbstractDoFinallyTest {
 
     @Test
     public void testForErrorPostEmissions() {
-        subscriber.subscribe(doFinally(publisher.getPublisher(), doFinally)).request(1);
+        subscriber.subscribe(doFinally(publisher.publisher(), doFinally)).request(1);
         publisher.sendItems("Hello").fail();
         subscriber.verifyItems("Hello").verifyFailure(DELIBERATE_EXCEPTION);
         verify(doFinally).run();
@@ -115,7 +115,7 @@ public abstract class AbstractDoFinallyTest {
 
     @Test
     public void testForErrorNoEmissions() {
-        subscriber.subscribe(doFinally(publisher.getPublisher(), doFinally)).request(1);
+        subscriber.subscribe(doFinally(publisher.publisher(), doFinally)).request(1);
         publisher.fail();
         subscriber.verifyFailure(DELIBERATE_EXCEPTION);
         verify(doFinally).run();
@@ -127,7 +127,7 @@ public abstract class AbstractDoFinallyTest {
         thrown.expect(is(sameInstance(DELIBERATE_EXCEPTION)));
         AtomicInteger invocationCount = new AtomicInteger();
         try {
-            subscriber.subscribe(doFinally(publisher.getPublisher(), () -> {
+            subscriber.subscribe(doFinally(publisher.publisher(), () -> {
                 invocationCount.incrementAndGet();
                 throw DELIBERATE_EXCEPTION;
             }));

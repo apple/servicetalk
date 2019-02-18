@@ -126,7 +126,7 @@ public abstract class AbstractNettyHttpServerTest {
     @Before
     public void startServer() throws Exception {
         final InetSocketAddress bindAddress = localAddress(0);
-        setService(new TestServiceStreaming(publisherSupplier, defaultStrategy(serverExecutor)));
+        service(new TestServiceStreaming(publisherSupplier, defaultStrategy(serverExecutor)));
 
         // A small SNDBUF is needed to test that the server defers closing the connection until writes are complete.
         // However, if it is too small, tests that expect certain chunks of data will see those chunks broken up
@@ -164,7 +164,7 @@ public abstract class AbstractNettyHttpServerTest {
                         this.serverExecutorSupplier == serverExecutorSupplier, is(FALSE));
     }
 
-    protected void setService(final StreamingHttpService service) {
+    protected void service(final StreamingHttpService service) {
         this.service = service;
     }
 
@@ -178,19 +178,19 @@ public abstract class AbstractNettyHttpServerTest {
         newCompositeCloseable().appendAll(clientIoExecutor, serverIoExecutor).close();
     }
 
-    void setConnectionAcceptor(final ConnectionAcceptor connectionAcceptor) {
+    void connectionAcceptor(final ConnectionAcceptor connectionAcceptor) {
         this.connectionAcceptor = connectionAcceptor;
     }
 
-    void setSslEnabled(final boolean sslEnabled) {
+    void sslEnabled(final boolean sslEnabled) {
         this.sslEnabled = sslEnabled;
     }
 
-    boolean getSslEnabled() {
+    boolean sslEnabled() {
         return sslEnabled;
     }
 
-    ServerContext getServerContext() {
+    ServerContext serverContext() {
         return serverContext;
     }
 

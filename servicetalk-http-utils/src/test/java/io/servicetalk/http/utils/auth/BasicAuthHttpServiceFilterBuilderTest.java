@@ -84,7 +84,7 @@ public class BasicAuthHttpServiceFilterBuilderTest {
             this.userId = requireNonNull(userId);
         }
 
-        public String getUserId() {
+        public String userId() {
             return userId;
         }
     }
@@ -98,7 +98,7 @@ public class BasicAuthHttpServiceFilterBuilderTest {
                     just(ctx.executionContext().bufferAllocator().fromAscii("Hello World!")));
             BasicUserInfo userInfo = AsyncContext.get(USER_INFO_KEY);
             if (userInfo != null) {
-                response.headers().set(USER_ID_HEADER_NAME, userInfo.getUserId());
+                response.headers().set(USER_ID_HEADER_NAME, userInfo.userId());
             }
             return success(response);
         }
@@ -308,7 +308,7 @@ public class BasicAuthHttpServiceFilterBuilderTest {
             }
         };
         StreamingHttpService service = newBasicAuthBuilder(utf8CredentialsVerifier, REALM_VALUE)
-                .setUserInfoKey(USER_INFO_KEY)
+                .userInfoKey(USER_INFO_KEY)
                 .setCharsetUtf8(true)
                 .build(HELLO_WORLD_SERVICE);
 
@@ -384,7 +384,7 @@ public class BasicAuthHttpServiceFilterBuilderTest {
 
     private static void testAuthenticated(StreamingHttpRequest request) throws Exception {
         StreamingHttpService service = newBasicAuthBuilder(CREDENTIALS_VERIFIER, REALM_VALUE)
-                .setUserInfoKey(USER_INFO_KEY)
+                .userInfoKey(USER_INFO_KEY)
                 .build(HELLO_WORLD_SERVICE);
         testAuthenticated(request, service);
     }
@@ -398,7 +398,7 @@ public class BasicAuthHttpServiceFilterBuilderTest {
 
     private static void testAuthenticatedForProxy(StreamingHttpRequest request) throws Exception {
         StreamingHttpService service = newBasicAuthBuilderForProxy(CREDENTIALS_VERIFIER, REALM_VALUE)
-                .setUserInfoKey(USER_INFO_KEY)
+                .userInfoKey(USER_INFO_KEY)
                 .build(HELLO_WORLD_SERVICE);
 
         StreamingHttpResponse response = awaitIndefinitelyNonNull(service.handle(CONN_CTX, request, reqRespFactory));

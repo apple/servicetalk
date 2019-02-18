@@ -100,16 +100,16 @@ public class NettyHttpServerConnectionAcceptorTest extends AbstractNettyHttpServ
                                                  final FilterMode filterMode) {
         super(clientExecutorSupplier, serverExecutorSupplier);
         this.filterMode = filterMode;
-        setSslEnabled(enableSsl);
+        sslEnabled(enableSsl);
         if (enableSsl) {
-            setConnectionAcceptor(ctx -> {
+            connectionAcceptor(ctx -> {
                 // Asserting that the SSL Session has been set by the time the filter is called must be done from the
                 // test thread, in order to fail the test with a useful message.
                 sslSession = ctx.sslSession();
                 return filterMode.getContextFilter(serverExecutorSupplier.executorSupplier.get()).accept(ctx);
             });
         } else {
-            setConnectionAcceptor(filterMode.getContextFilter(serverExecutorSupplier.executorSupplier.get()));
+            connectionAcceptor(filterMode.getContextFilter(serverExecutorSupplier.executorSupplier.get()));
         }
     }
 
@@ -154,7 +154,7 @@ public class NettyHttpServerConnectionAcceptorTest extends AbstractNettyHttpServ
                     instanceOf(ConnectionClosedException.class)));
         }
 
-        if (getSslEnabled()) {
+        if (sslEnabled()) {
             assertNotNull("SslSession was not set by the time filter executed", sslSession);
         }
     }

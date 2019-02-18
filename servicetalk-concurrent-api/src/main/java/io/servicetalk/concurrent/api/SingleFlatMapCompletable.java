@@ -70,7 +70,7 @@ final class SingleFlatMapCompletable<T> extends AbstractNoHandleSubscribeComplet
                 this.sequentialCancellable = sequentialCancellable = new SequentialCancellable(cancellable);
                 subscriber.onSubscribe(sequentialCancellable);
             } else {
-                sequentialCancellable.setNextCancellable(cancellable);
+                sequentialCancellable.nextCancellable(cancellable);
             }
         }
 

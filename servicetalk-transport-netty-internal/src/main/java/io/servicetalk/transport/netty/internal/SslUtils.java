@@ -103,7 +103,7 @@ public final class SslUtils {
         }
 
         final ApplicationProtocolConfig.Protocol protocol;
-        switch (config.getProtocol()) {
+        switch (config.protocol()) {
             case ALPN:
                 protocol = ApplicationProtocolConfig.Protocol.ALPN;
                 break;
@@ -121,7 +121,7 @@ public final class SslUtils {
         }
 
         final ApplicationProtocolConfig.SelectedListenerFailureBehavior selectedListenerFailureBehavior;
-        switch (config.getSelectedListenerFailureBehavior()) {
+        switch (config.selectedListenerFailureBehavior()) {
             case ACCEPT:
                 selectedListenerFailureBehavior = ApplicationProtocolConfig.SelectedListenerFailureBehavior.ACCEPT;
                 break;
@@ -136,7 +136,7 @@ public final class SslUtils {
         }
 
         final ApplicationProtocolConfig.SelectorFailureBehavior selectorFailureBehavior;
-        switch (config.getSelectorFailureBehavior()) {
+        switch (config.selectorFailureBehavior()) {
             case CHOOSE_MY_LAST_PROTOCOL:
                 selectorFailureBehavior = ApplicationProtocolConfig.SelectorFailureBehavior.CHOOSE_MY_LAST_PROTOCOL;
                 break;
@@ -149,7 +149,7 @@ public final class SslUtils {
             default:
                 throw new Error();
         }
-        return new ApplicationProtocolConfig(protocol, selectorFailureBehavior, selectedListenerFailureBehavior, config.getSupportedProtocols());
+        return new ApplicationProtocolConfig(protocol, selectorFailureBehavior, selectedListenerFailureBehavior, config.supportedProtocols());
     }
 
     /**

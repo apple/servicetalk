@@ -115,7 +115,7 @@ public class BlockingStreamingHttpClientTest extends AbstractBlockingStreamingHt
         }
 
         @Override
-        public final boolean isClosed() {
+        public final boolean closed() {
             return closed.get();
         }
     }
@@ -137,7 +137,7 @@ public class BlockingStreamingHttpClientTest extends AbstractBlockingStreamingHt
         }
 
         @Override
-        public final boolean isClosed() {
+        public final boolean closed() {
             return closed.get();
         }
 

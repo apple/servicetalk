@@ -65,7 +65,7 @@ final class HttpResponseDecoder extends HttpObjectDecoder<HttpResponseMetaData> 
     protected HttpResponseMetaData createMessage(ByteBuf first, ByteBuf second, ByteBuf third) {
         return newResponseMetaData(nettyBufferToHttpVersion(first),
                 nettyBufferToHttpStatus(second, third),
-                getHeadersFactory().newHeaders());
+                headersFactory().newHeaders());
     }
 
     @Override

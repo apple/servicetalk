@@ -34,64 +34,64 @@ final class HttpServerConfig {
         tcpConfig = new TcpServerConfig(false);
     }
 
-    HttpHeadersFactory getHeadersFactory() {
+    HttpHeadersFactory headersFactory() {
         return headersFactory;
     }
 
-    void setHeadersFactory(final HttpHeadersFactory headersFactory) {
+    void headersFactory(final HttpHeadersFactory headersFactory) {
         this.headersFactory = requireNonNull(headersFactory);
     }
 
-    long getClientCloseTimeoutMs() {
+    long clientCloseTimeoutMs() {
         return clientCloseTimeoutMs;
     }
 
-    void setClientCloseTimeout(final long clientCloseTimeoutMs) {
+    void clientCloseTimeout(final long clientCloseTimeoutMs) {
         if (clientCloseTimeoutMs < 0) {
             throw new IllegalArgumentException("clientCloseTimeoutMs must be >= 0");
         }
         this.clientCloseTimeoutMs = clientCloseTimeoutMs;
     }
 
-    int getMaxInitialLineLength() {
+    int maxInitialLineLength() {
         return maxInitialLineLength;
     }
 
-    void setMaxInitialLineLength(final int maxInitialLineLength) {
+    void maxInitialLineLength(final int maxInitialLineLength) {
         if (maxInitialLineLength <= 0) {
             throw new IllegalArgumentException("maxInitialLineLength must be > 0");
         }
         this.maxInitialLineLength = maxInitialLineLength;
     }
 
-    int getHeadersEncodedSizeEstimate() {
+    int headersEncodedSizeEstimate() {
         return headersEncodedSizeEstimate;
     }
 
-    void setHeadersEncodedSizeEstimate(final int headersEncodedSizeEstimate) {
+    void headersEncodedSizeEstimate(final int headersEncodedSizeEstimate) {
         this.headersEncodedSizeEstimate = headersEncodedSizeEstimate;
     }
 
-    int getTrailersEncodedSizeEstimate() {
+    int trailersEncodedSizeEstimate() {
         return trailersEncodedSizeEstimate;
     }
 
-    void setTrailersEncodedSizeEstimate(final int trailersEncodedSizeEstimate) {
+    void trailersEncodedSizeEstimate(final int trailersEncodedSizeEstimate) {
         this.trailersEncodedSizeEstimate = trailersEncodedSizeEstimate;
     }
 
-    int getMaxHeaderSize() {
+    int maxHeaderSize() {
         return maxHeaderSize;
     }
 
-    void setMaxHeaderSize(final int maxHeaderSize) {
+    void maxHeaderSize(final int maxHeaderSize) {
         if (maxHeaderSize <= 0) {
             throw new IllegalArgumentException("maxHeaderSize must be > 0");
         }
         this.maxHeaderSize = maxHeaderSize;
     }
 
-    TcpServerConfig getTcpConfig() {
+    TcpServerConfig tcpConfig() {
         return tcpConfig;
     }
 

@@ -114,7 +114,7 @@ public class TcpServer {
                                              final ExecutionContext executionContext) {
         return (channel, context) -> {
             channel.pipeline().addLast(new BufferHandler(executionContext.bufferAllocator()));
-            channel.pipeline().addLast(new TcpServerChannelReadHandler(context, service, config.getFlushStrategy()));
+            channel.pipeline().addLast(new TcpServerChannelReadHandler(context, service, config.flushStrategy()));
             return context;
         };
     }

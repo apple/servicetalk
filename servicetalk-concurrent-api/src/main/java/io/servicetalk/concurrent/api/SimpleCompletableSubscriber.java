@@ -27,7 +27,7 @@ final class SimpleCompletableSubscriber extends SequentialCancellable implements
 
     @Override
     public void onSubscribe(Cancellable cancellable) {
-        setNextCancellable(cancellable);
+        nextCancellable(cancellable);
     }
 
     @Override

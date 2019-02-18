@@ -56,7 +56,7 @@ final class DefaultPubSubBufferRedisConnection extends PubSubBufferRedisConnecti
     }
 
     @Override
-    public Publisher<PubSubRedisMessage> getMessages() {
+    public Publisher<PubSubRedisMessage> messages() {
         return publisher;
     }
 

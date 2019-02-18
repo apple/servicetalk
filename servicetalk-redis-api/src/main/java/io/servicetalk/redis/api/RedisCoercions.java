@@ -41,7 +41,7 @@ final class RedisCoercions {
     }
 
     static String simpleStringToString(final RedisData data) {
-        return data.getCharSequenceValue().toString();
+        return data.charSequenceValue().toString();
     }
 
     @SuppressWarnings("unchecked")
@@ -49,9 +49,9 @@ final class RedisCoercions {
         return original.map(msg -> {
             V v;
             if (Buffer.class.equals(valueType)) {
-                v = (V) msg.getBufferValue();
+                v = (V) msg.bufferValue();
             } else if (String.class.equals(valueType)) {
-                v = (V) msg.getCharSequenceValue().toString();
+                v = (V) msg.charSequenceValue().toString();
             } else {
                 throw new CoercionException(msg, valueType);
             }
@@ -65,10 +65,10 @@ final class RedisCoercions {
             return null;
         }
         if (data instanceof RedisData.SimpleString) {
-            return data.getCharSequenceValue().toString();
+            return data.charSequenceValue().toString();
         }
         if (data instanceof CompleteBulkString) {
-            return data.getBufferValue().toString(UTF_8);
+            return data.bufferValue().toString(UTF_8);
         }
 
         throw new CoercionException(data, String.class);

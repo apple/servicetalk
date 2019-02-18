@@ -420,7 +420,7 @@ public class HttpRequestEncoderTest {
             HttpClientConfig cConfig = new HttpClientConfig(new TcpClientConfig(true)
                     .enableWireLogging("servicetalk-tests-client-wire-logger"));
 
-            final ChannelInitializer initializer = new TcpClientChannelInitializer(cConfig.getTcpClientConfig())
+            final ChannelInitializer initializer = new TcpClientChannelInitializer(cConfig.tcpClientConfig())
                     .andThen(new HttpClientChannelInitializer(cConfig.asReadOnly(), closeHandler))
                     .andThen((channel, context) -> {
                         channel.pipeline().addLast(new ChannelInboundHandlerAdapter() {
@@ -439,7 +439,7 @@ public class HttpRequestEncoderTest {
             Predicate<Object> predicate = (Object h) -> h instanceof HttpHeaders;
 
             NettyConnection<Object, Object> conn = resources.prepend(awaitIndefinitelyNonNull(
-                    new TcpConnector<>(cConfig.getTcpClientConfig().asReadOnly(), initializer, () -> predicate, null,
+                    new TcpConnector<>(cConfig.tcpClientConfig().asReadOnly(), initializer, () -> predicate, null,
                             closeHandler).connect(CEC, serverContext.listenAddress(), false)));
 
             // The server needs to wait to close the conneciton until after the client has established the connection.

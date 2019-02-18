@@ -41,7 +41,7 @@ public class ReadOnlyTcpServerConfig {
     //TODO 3.x: Add back attributes
     protected final boolean autoRead;
     @SuppressWarnings("rawtypes")
-    protected final Map<ChannelOption, Object> optionMap;
+    protected final Map<ChannelOption, Object> options;
     protected int backlog = NetUtil.SOMAXCONN;
     @Nullable
     protected SslContext sslContext;
@@ -59,7 +59,7 @@ public class ReadOnlyTcpServerConfig {
      */
     public ReadOnlyTcpServerConfig(boolean autoRead) {
         this.autoRead = autoRead;
-        optionMap = new LinkedHashMap<>();
+        options = new LinkedHashMap<>();
     }
 
     /**
@@ -69,7 +69,7 @@ public class ReadOnlyTcpServerConfig {
      */
     ReadOnlyTcpServerConfig(TcpServerConfig from) {
         autoRead = from.autoRead;
-        optionMap = unmodifiableMap(new HashMap<>(from.optionMap));
+        options = unmodifiableMap(new HashMap<>(from.options));
         backlog = from.backlog;
         sslContext = from.sslContext;
         idleTimeoutMs = from.idleTimeoutMs;
@@ -77,7 +77,8 @@ public class ReadOnlyTcpServerConfig {
         // Deep copy DomainNameMapping<SslContext>
         if (from.mappings != null) {
             final Map<String, SslContext> sslContextMap = from.mappings.asMap();
-            final DomainNameMappingBuilder<SslContext> builder = new DomainNameMappingBuilder<>(sslContextMap.size(), from.mappings.map(null));
+            final DomainNameMappingBuilder<SslContext> builder =
+                    new DomainNameMappingBuilder<>(sslContextMap.size(), from.mappings.map(null));
             sslContextMap.forEach(builder::add);
             this.mappings = builder.build();
         }
@@ -91,7 +92,7 @@ public class ReadOnlyTcpServerConfig {
      *
      * @return {@code true} if auto-read enabled.
      */
-    public boolean isAutoRead() {
+    public boolean autoRead() {
         return autoRead;
     }
 
@@ -100,7 +101,7 @@ public class ReadOnlyTcpServerConfig {
      *
      * @return Backlog.
      */
-    public int getBacklog() {
+    public int backlog() {
         return backlog;
     }
 
@@ -109,7 +110,7 @@ public class ReadOnlyTcpServerConfig {
      * @return {@link SslContext}.
      */
     @Nullable
-    public SslContext getSslContext() {
+    public SslContext sslContext() {
         return sslContext;
     }
 
@@ -117,7 +118,7 @@ public class ReadOnlyTcpServerConfig {
      * Returns the idle timeout as expressed via option {@link ServiceTalkSocketOptions#IDLE_TIMEOUT}.
      * @return idle timeout.
      */
-    public long getIdleTimeoutMs() {
+    public long idleTimeoutMs() {
         return idleTimeoutMs;
     }
 
@@ -125,8 +126,8 @@ public class ReadOnlyTcpServerConfig {
      * Returns the {@link ChannelOption}s for all channels accepted by the server.
      * @return Unmodifiable map of options.
      */
-    public Map<ChannelOption, Object> getOptions() {
-        return optionMap;
+    public Map<ChannelOption, Object> options() {
+        return options;
     }
 
     /**
@@ -135,7 +136,7 @@ public class ReadOnlyTcpServerConfig {
      * @return Configured mapping, {@code null} if none configured.
      */
     @Nullable
-    public DomainNameMapping<SslContext> getDomainNameMapping() {
+    public DomainNameMapping<SslContext> domainNameMapping() {
         return mappings;
     }
 
@@ -145,7 +146,7 @@ public class ReadOnlyTcpServerConfig {
      * @return {@link WireLoggingInitializer} if any.
      */
     @Nullable
-    public WireLoggingInitializer getWireLoggingInitializer() {
+    public WireLoggingInitializer wireLoggingInitializer() {
         return wireLoggingInitializer;
     }
 
@@ -153,7 +154,7 @@ public class ReadOnlyTcpServerConfig {
      * Returns the {@link FlushStrategy} for this client.
      * @return {@link FlushStrategy} for this client.
      */
-    public FlushStrategy getFlushStrategy() {
+    public FlushStrategy flushStrategy() {
         return flushStrategy;
     }
 }

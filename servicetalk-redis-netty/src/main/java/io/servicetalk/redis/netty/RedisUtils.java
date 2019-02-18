@@ -64,10 +64,10 @@ final class RedisUtils {
             return null;
         }
         if (data instanceof RedisData.SimpleString) {
-            return data.getCharSequenceValue().toString();
+            return data.charSequenceValue().toString();
         }
         if (data instanceof RedisData.CompleteBulkString) {
-            return data.getBufferValue().toString(UTF_8);
+            return data.bufferValue().toString(UTF_8);
         }
 
         throw new CoercionException(data, String.class);
@@ -84,7 +84,7 @@ final class RedisUtils {
         @Override
         public ByteBuf apply(final RedisData.RequestRedisData data) {
             if (data instanceof BulkStringChunk && !(data instanceof RedisData.CompleteBulkString)) {
-                final Buffer buffer = ((BulkStringChunk) data).getBufferValue();
+                final Buffer buffer = ((BulkStringChunk) data).bufferValue();
                 if (data instanceof FirstBulkStringChunk) {
                     remainingBulkStringBytes = ((FirstBulkStringChunk) data).bulkStringLength();
                     if (remainingBulkStringBytes == buffer.readableBytes()) {

@@ -140,7 +140,7 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends ListenableA
                 // the Subscription in a ConcurrentSubscription which is costly.
                 // Since, we synchronously process onNexts we do not really care about flow control.
                 s.request(Long.MAX_VALUE);
-                discoveryCancellable.setNextCancellable(s::cancel);
+                discoveryCancellable.nextCancellable(s::cancel);
             }
 
             @SuppressWarnings("unchecked")
@@ -300,7 +300,7 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends ListenableA
     }
 
     // Visible for testing
-    List<Entry<ResolvedAddress, List<C>>> getActiveAddresses() {
+    List<Entry<ResolvedAddress, List<C>>> activeAddresses() {
         return activeHosts.stream().map(Host::asEntry).collect(toList());
     }
 

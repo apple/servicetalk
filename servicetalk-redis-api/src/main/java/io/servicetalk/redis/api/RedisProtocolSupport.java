@@ -190,7 +190,7 @@ public final class RedisProtocolSupport {
          *
          * @return the bit size.
          */
-        public int getBitSize() {
+        public int size() {
             return size;
         }
     }

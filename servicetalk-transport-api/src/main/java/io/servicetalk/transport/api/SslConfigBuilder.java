@@ -17,6 +17,7 @@ package io.servicetalk.transport.api;
 
 import java.io.InputStream;
 import java.net.InetSocketAddress;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.Supplier;
@@ -25,6 +26,7 @@ import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLParameters;
 import javax.net.ssl.TrustManagerFactory;
 
+import static java.util.Collections.unmodifiableList;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -112,7 +114,7 @@ public final class SslConfigBuilder {
      * @return a new {@link SslConfigBuilder} for clients.
      */
     public static SslConfigBuilder forClient(HostAndPort hostAndPort) {
-        return forClient(hostAndPort.getHostName(), hostAndPort.getPort());
+        return forClient(hostAndPort.hostName(), hostAndPort.port());
     }
 
     /**
@@ -130,7 +132,8 @@ public final class SslConfigBuilder {
     /**
      * Creates a builder for new server-side {@link SslConfig}.
      *
-     * @param keyCertChainSupplier an {@link Supplier} that will provide an input stream for a X.509 certificate chain in PEM format.
+     * @param keyCertChainSupplier an {@link Supplier} that will provide an input stream for a X.509 certificate chain
+     * in PEM format.
      * <p>
      * The responsibility to call {@link InputStream#close()} is transferred to callers of the {@link Supplier}.
      * If this is not the desired behavior then wrap the {@link InputStream} and override {@link InputStream#close()}.
@@ -285,7 +288,7 @@ public final class SslConfigBuilder {
      * @param apn the configuration to use.
      * @return self.
      */
-    public SslConfigBuilder setApplicationProtocolConfig(ApplicationProtocolConfig apn) {
+    public SslConfigBuilder applicationProtocolConfig(ApplicationProtocolConfig apn) {
         this.apn = apn;
         return this;
     }
@@ -297,7 +300,7 @@ public final class SslConfigBuilder {
      * @param ciphers the ciphers to use.
      * @return self.
      */
-    public SslConfigBuilder setCiphers(@Nullable Iterable<String> ciphers) {
+    public SslConfigBuilder ciphers(@Nullable Iterable<String> ciphers) {
         this.ciphers = ciphers;
         return this;
     }
@@ -309,7 +312,7 @@ public final class SslConfigBuilder {
      * @param sessionCacheSize the cache size.
      * @return self.
      */
-    public SslConfigBuilder setSessionCacheSize(long sessionCacheSize) {
+    public SslConfigBuilder sessionCacheSize(long sessionCacheSize) {
         this.sessionCacheSize = sessionCacheSize;
         return this;
     }
@@ -321,7 +324,7 @@ public final class SslConfigBuilder {
      * @param sessionTimeout the session timeout.
      * @return self.
      */
-    public SslConfigBuilder setSessionTimeout(long sessionTimeout) {
+    public SslConfigBuilder sessionTimeout(long sessionTimeout) {
         this.sessionTimeout = sessionTimeout;
         return this;
     }
@@ -332,7 +335,7 @@ public final class SslConfigBuilder {
      * @param clientAuth the auth configuration to use.
      * @return self.
      */
-    public SslConfigBuilder setClientAuth(SslConfig.ClientAuth clientAuth) {
+    public SslConfigBuilder clientAuth(SslConfig.ClientAuth clientAuth) {
         if (!forServer) {
             throw new UnsupportedOperationException("Only supported in server mode");
         }
@@ -346,7 +349,7 @@ public final class SslConfigBuilder {
      * @param provider the provider.
      * @return self.
      */
-    public SslConfigBuilder setProvider(SslConfig.SslProvider provider) {
+    public SslConfigBuilder provider(SslConfig.SslProvider provider) {
         this.provider = requireNonNull(provider);
         return this;
     }
@@ -361,7 +364,7 @@ public final class SslConfigBuilder {
      * @return the algorithm to use for hostname verification.
      * @see SSLParameters#setEndpointIdentificationAlgorithm(String)
      */
-    public SslConfigBuilder setHostNameVerificationAlgorithm(@Nullable String hostNameVerificationAlgorithm) {
+    public SslConfigBuilder hostNameVerificationAlgorithm(@Nullable String hostNameVerificationAlgorithm) {
         if (forServer) {
             throw new UnsupportedOperationException("only supported for client mode");
         }
@@ -416,11 +419,11 @@ public final class SslConfigBuilder {
         @Nullable
         private final String hostnameVerificationAlgorithm;
         @Nullable
-        private String hostNameVerificationHost;
+        private final String hostNameVerificationHost;
         /**
          * Only valid if {@link #hostNameVerificationHost} is valid.
          */
-        private int hostNameVerificationPort = -1;
+        private final int hostNameVerificationPort;
 
         SslConfigImpl(boolean forServer, @Nullable TrustManagerFactory trustManagerFactory,
                       Supplier<InputStream> trustCertChainSupplier, @Nullable KeyManagerFactory keyManagerFactory,
@@ -442,94 +445,94 @@ public final class SslConfigBuilder {
             this.clientAuth = clientAuth;
             this.apn = apn;
             this.provider = provider;
-            this.protocols = protocols;
+            this.protocols = protocols == null ? null : unmodifiableList(new ArrayList<>(protocols));
             this.hostnameVerificationAlgorithm = hostnameVerificationAlgorithm;
             this.hostNameVerificationHost = hostNameVerificationHost;
             this.hostNameVerificationPort = hostNameVerificationPort;
         }
 
         @Override
-        public boolean isServer() {
+        public boolean forServer() {
             return forServer;
         }
 
         @Override
-        public TrustManagerFactory getTrustManagerFactory() {
+        public TrustManagerFactory trustManagerFactory() {
             return trustManagerFactory;
         }
 
         @Override
-        public KeyManagerFactory getKeyManagerFactory() {
+        public KeyManagerFactory keyManagerFactory() {
             return keyManagerFactory;
         }
 
         @Override
-        public String getKeyPassword() {
+        public String keyPassword() {
             return keyPassword;
         }
 
         @Override
-        public Iterable<String> getCiphers() {
+        public Iterable<String> ciphers() {
             return ciphers;
         }
 
         @Override
-        public long getSessionCacheSize() {
+        public long sessionCacheSize() {
             return sessionCacheSize;
         }
 
         @Override
-        public long getSessionTimeout() {
+        public long sessionTimeout() {
             return sessionTimeout;
         }
 
         @Override
-        public ClientAuth getClientAuth() {
+        public ClientAuth clientAuth() {
             return clientAuth;
         }
 
         @Override
-        public Supplier<InputStream> getTrustCertChainSupplier() {
+        public Supplier<InputStream> trustCertChainSupplier() {
             return trustCertChainSupplier;
         }
 
         @Override
-        public Supplier<InputStream> getKeyCertChainSupplier() {
+        public Supplier<InputStream> keyCertChainSupplier() {
             return keyCertChainSupplier;
         }
 
         @Override
-        public Supplier<InputStream> getKeySupplier() {
+        public Supplier<InputStream> keySupplier() {
             return keySupplier;
         }
 
         @Override
-        public ApplicationProtocolConfig getApn() {
+        public ApplicationProtocolConfig apn() {
             return apn;
         }
 
         @Override
-        public SslProvider getProvider() {
+        public SslProvider provider() {
             return provider;
         }
 
         @Override
-        public List<String> getProtocols() {
+        public List<String> protocols() {
             return protocols;
         }
 
         @Override
-        public String getHostnameVerificationAlgorithm() {
+        public String hostnameVerificationAlgorithm() {
             return hostnameVerificationAlgorithm;
         }
 
         @Override
-        public String getHostnameVerificationHost() {
+        public String hostnameVerificationHost() {
             return hostNameVerificationHost;
         }
 
         @Override
-        public int getHostnameVerificationPort() {
+        public int hostnameVerificationPort() {
             return hostNameVerificationPort;
         }
     }

@@ -75,7 +75,7 @@ public class SingleToPublisherTest {
         // The mock behavior must be applied after subscribe, because a new mock is created as part of this process.
         doAnswer(invocation -> {
             throw DELIBERATE_EXCEPTION;
-        }).when(verifier.getSubscriber()).onNext(any());
+        }).when(verifier.subscriber()).onNext(any());
         verifier.request(1).verifyItems("Hello").verifyFailure(DELIBERATE_EXCEPTION);
     }
 
@@ -94,7 +94,7 @@ public class SingleToPublisherTest {
                     }
                     analyzed.countDown();
                 })
-                .subscribeOn(executorRule.getExecutor())
+                .subscribeOn(executorRule.executor())
                 .toPublisher()
                 .forEach(__ -> { });
         // toPublisher does not subscribe to the Single, till data is requested. Since subscription is offloaded,

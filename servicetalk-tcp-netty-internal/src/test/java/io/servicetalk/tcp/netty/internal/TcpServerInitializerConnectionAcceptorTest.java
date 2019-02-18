@@ -95,20 +95,20 @@ public class TcpServerInitializerConnectionAcceptorTest extends AbstractTcpServe
 
     public TcpServerInitializerConnectionAcceptorTest(final boolean enableSsl, final FilterMode filterMode) {
         this.filterMode = filterMode;
-        setSslEnabled(enableSsl);
-        setService(conn -> {
+        sslEnabled(enableSsl);
+        service(conn -> {
             acceptedConnection = true;
             return conn.write(conn.read());
         });
         if (enableSsl) {
-            setConnectionAcceptor(ctx -> {
+            connectionAcceptor(ctx -> {
                 // Asserting that the SSL Session has been set by the time the filter is called must be done from the
                 // test thread, in order to fail the test with a useful message.
                 sslSession = ctx.sslSession();
                 return filterMode.getContextFilter(SERVER_CTX.executor()).accept(ctx);
             });
         } else {
-            setConnectionAcceptor(filterMode.getContextFilter(SERVER_CTX.executor()));
+            connectionAcceptor(filterMode.getContextFilter(SERVER_CTX.executor()));
         }
     }
 
@@ -165,7 +165,7 @@ public class TcpServerInitializerConnectionAcceptorTest extends AbstractTcpServe
                 filterMode.expectAccept, acceptedConnection);
 
         // If the initializer throws, the filter will not execute, so we can't check the SSL Session.
-        if (getSslEnabled() && !filterMode.initializerThrow) {
+        if (sslEnabled() && !filterMode.initializerThrow) {
             assertNotNull("SslSession was not set by the time filter executed", sslSession);
         }
     }

@@ -53,7 +53,7 @@ public abstract class AbstractRequestConcurrencyControllerOnlySingleTest {
 
     @Test
     public void singleRequestEventIfLimitIsHigher() {
-        RequestConcurrencyController controller = newController(limitRule.getPublisher(), never());
+        RequestConcurrencyController controller = newController(limitRule.publisher(), never());
         for (int i = 1; i < 100; ++i) {
             limitRule.sendItems(i);
             assertThat(controller.tryRequest(), is(Accepted));
@@ -64,7 +64,7 @@ public abstract class AbstractRequestConcurrencyControllerOnlySingleTest {
 
     @Test
     public void singleRequestEventIfLimitIsLower() {
-        RequestConcurrencyController controller = newController(limitRule.getPublisher(), never());
+        RequestConcurrencyController controller = newController(limitRule.publisher(), never());
         limitRule.sendItems(0);
         assertThat(controller.tryRequest(), is(RejectedPermanently));
 

@@ -55,7 +55,7 @@ public class SequentialCancellable implements Cancellable {
      *
      * @param next to set.
      */
-    public final void setNextCancellable(Cancellable next) {
+    public final void nextCancellable(Cancellable next) {
         Cancellable oldVal = currentUpdater.getAndSet(this, requireNonNull(next));
         if (oldVal == CANCELLED) {
             next.cancel();
@@ -75,7 +75,7 @@ public class SequentialCancellable implements Cancellable {
      *
      * @return {@code true} if this {@link Cancellable} is cancelled.
      */
-    public boolean isCancelled() {
+    public boolean cancelled() {
         return current == CANCELLED;
     }
 }

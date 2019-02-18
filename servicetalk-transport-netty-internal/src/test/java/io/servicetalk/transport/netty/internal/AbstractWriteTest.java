@@ -92,19 +92,19 @@ public abstract class AbstractWriteTest {
         }
 
         @Nullable
-        ChannelFuture getFuture() {
+        ChannelFuture future() {
             return future;
         }
 
-        long getWriteCapacityBefore() {
+        long writeCapacityBefore() {
             return writeCapacityBefore;
         }
 
-        long getWriteCapacityAfter() {
+        long writeCapacityAfter() {
             return writeCapacityAfter;
         }
 
-        String getMesssage() {
+        String messsage() {
             return msg;
         }
     }

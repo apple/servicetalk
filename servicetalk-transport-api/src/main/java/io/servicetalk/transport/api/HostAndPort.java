@@ -22,16 +22,18 @@ import java.net.InetSocketAddress;
  */
 public interface HostAndPort {
     /**
-     * Get the host name.
-     * @return The hostname.
+     * Returns the host name.
+     *
+     * @return The hostname
      */
-    String getHostName();
+    String hostName();
 
     /**
-     * Get the port.
-     * @return The port.
+     * Returns the port.
+     *
+     * @return The port
      */
-    int getPort();
+    int port();
 
     /**
      * Returns a {@link HostAndPort} object for the specified values.

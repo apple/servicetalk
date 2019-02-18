@@ -65,19 +65,19 @@ public abstract class AbstractTcpServerTest {
     protected TcpClient client;
     protected TcpServer server;
 
-    void setConnectionAcceptor(final ConnectionAcceptor connectionAcceptor) {
+    void connectionAcceptor(final ConnectionAcceptor connectionAcceptor) {
         this.connectionAcceptor = connectionAcceptor;
     }
 
-    void setService(final Function<NettyConnection<Buffer, Buffer>, Completable> service) {
+    void service(final Function<NettyConnection<Buffer, Buffer>, Completable> service) {
         this.service = service;
     }
 
-    void setSslEnabled(final boolean sslEnabled) {
+    void sslEnabled(final boolean sslEnabled) {
         this.sslEnabled = sslEnabled;
     }
 
-    boolean getSslEnabled() {
+    boolean sslEnabled() {
         return sslEnabled;
     }
 
@@ -100,7 +100,7 @@ public abstract class AbstractTcpServerTest {
         if (sslEnabled) {
             final SslConfig sslConfig = SslConfigBuilder.forClientWithoutServerIdentity()
                     .trustManager(DefaultTestCerts::loadMutualAuthCaPem).build();
-            tcpClientConfig = tcpClientConfig.setSslConfig(sslConfig);
+            tcpClientConfig = tcpClientConfig.sslConfig(sslConfig);
         }
         return tcpClientConfig;
     }
@@ -118,7 +118,7 @@ public abstract class AbstractTcpServerTest {
                     DefaultTestCerts::loadServerPem,
                     DefaultTestCerts::loadServerKey)
                     .build();
-            tcpServerConfig = tcpServerConfig.setSslConfig(sslConfig);
+            tcpServerConfig = tcpServerConfig.sslConfig(sslConfig);
         }
         return tcpServerConfig;
     }

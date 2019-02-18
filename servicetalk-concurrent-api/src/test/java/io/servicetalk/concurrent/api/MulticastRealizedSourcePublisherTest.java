@@ -164,7 +164,7 @@ public class MulticastRealizedSourcePublisherTest {
 
         MulticastSubscriber verifyOnError(Throwable expected) {
             assertThat("Unexpected item emitted.", terminalNotification, is(notNullValue()));
-            assertThat("Unexpected item emitted.", expected, is(terminalNotification.getCause()));
+            assertThat("Unexpected item emitted.", expected, is(terminalNotification.cause()));
             return this;
         }
 

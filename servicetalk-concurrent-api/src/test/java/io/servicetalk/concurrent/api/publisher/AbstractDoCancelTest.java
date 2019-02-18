@@ -43,7 +43,7 @@ public abstract class AbstractDoCancelTest {
     @Test
     public void testCancelAfterEmissions() {
         Runnable onCancel = mock(Runnable.class);
-        subscriber.subscribe(doCancel(publisher.getPublisher(), onCancel)).request(1);
+        subscriber.subscribe(doCancel(publisher.publisher(), onCancel)).request(1);
         publisher.sendItems("Hello");
         subscriber.verifyItems("Hello").cancel();
         verify(onCancel).run();
@@ -53,7 +53,7 @@ public abstract class AbstractDoCancelTest {
     @Test
     public void testCancelNoEmissions() {
         Runnable onCancel = mock(Runnable.class);
-        subscriber.subscribe(doCancel(publisher.getPublisher(), onCancel));
+        subscriber.subscribe(doCancel(publisher.publisher(), onCancel));
         subscriber.cancel();
         verify(onCancel).run();
         publisher.verifyCancelled();
@@ -64,7 +64,7 @@ public abstract class AbstractDoCancelTest {
         thrown.expect(is(sameInstance(DELIBERATE_EXCEPTION)));
 
         try {
-            subscriber.subscribe(doCancel(publisher.getPublisher(), () -> {
+            subscriber.subscribe(doCancel(publisher.publisher(), () -> {
                 throw DELIBERATE_EXCEPTION;
             }));
             subscriber.cancel();

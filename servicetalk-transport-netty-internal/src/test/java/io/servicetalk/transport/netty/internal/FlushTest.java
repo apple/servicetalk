@@ -40,7 +40,7 @@ public class FlushTest extends AbstractFlushTest {
     @Before
     public void setUp() {
         strategy = new MockFlushStrategy();
-        subscriber.subscribe(super.setup(source.getPublisher(), strategy));
+        subscriber.subscribe(super.setup(source.publisher(), strategy));
         flushSender = strategy.verifyApplied();
     }
 

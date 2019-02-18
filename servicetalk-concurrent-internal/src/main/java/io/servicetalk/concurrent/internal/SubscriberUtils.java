@@ -272,7 +272,7 @@ public final class SubscriberUtils {
                 return false;
             } else if (curr == null && terminalNotificationUpdater.compareAndSet(flagOwner, null, toSet)) {
                 return true;
-            } else if (curr != null && curr.getCause() == null) {
+            } else if (curr != null && curr.cause() == null) {
                 // Override complete
                 if (terminalNotificationUpdater.compareAndSet(flagOwner, curr, toSet)) {
                     return true;

@@ -139,7 +139,7 @@ public class ExceptionMapperTest extends AbstractJerseyStreamingHttpServiceTest 
     }
 
     @Override
-    protected Application getApplication() {
+    protected Application application() {
         return new TestApplication();
     }
 
@@ -165,7 +165,7 @@ public class ExceptionMapperTest extends AbstractJerseyStreamingHttpServiceTest 
 
     @Test
     public void singleMapResponse() {
-        assumeThat(isStreamingJsonEnabled(), is(true));
+        assumeThat(streamingJsonEnabled(), is(true));
         testJsonResponse(SMAP);
     }
 

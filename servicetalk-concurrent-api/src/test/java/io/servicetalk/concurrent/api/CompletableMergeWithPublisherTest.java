@@ -30,7 +30,7 @@ public class CompletableMergeWithPublisherTest {
     @Test
     public void testDelayedPublisherSubscriptionForReqNBuffering() {
         TestCompletable completable = new TestCompletable();
-        subscriber.subscribe(completable.merge(publisher.getPublisher(true)));
+        subscriber.subscribe(completable.merge(publisher.publisher(true)));
         subscriber.verifySubscribe();
         subscriber.request(5);
         publisher.sendOnSubscribe();
@@ -44,7 +44,7 @@ public class CompletableMergeWithPublisherTest {
     @Test
     public void testDelayedPublisherSubscriptionForCancelBuffering() {
         TestCompletable completable = new TestCompletable();
-        subscriber.subscribe(completable.merge(publisher.getPublisher(true)));
+        subscriber.subscribe(completable.merge(publisher.publisher(true)));
         subscriber.verifySubscribe();
         subscriber.request(5);
         publisher.sendOnSubscribe();
@@ -56,7 +56,7 @@ public class CompletableMergeWithPublisherTest {
     @Test
     public void testDelayedCompletableSubscriptionForCancelBuffering() {
         TestCompletable completable = new TestCompletable(false, true);
-        subscriber.subscribe(completable.merge(publisher.getPublisher(true)));
+        subscriber.subscribe(completable.merge(publisher.publisher(true)));
         subscriber.verifySubscribe();
         subscriber.request(5);
         completable.sendOnSubscribe();
@@ -70,7 +70,7 @@ public class CompletableMergeWithPublisherTest {
     @Test
     public void testCompletableFailCancelsPublisher() {
         TestCompletable completable = new TestCompletable();
-        subscriber.subscribe(completable.merge(publisher.getPublisher()));
+        subscriber.subscribe(completable.merge(publisher.publisher()));
         subscriber.verifySubscribe();
         completable.onError(DELIBERATE_EXCEPTION);
         publisher.verifyCancelled();
@@ -80,7 +80,7 @@ public class CompletableMergeWithPublisherTest {
     @Test
     public void testPublisherFailCancelsCompletable() {
         TestCompletable completable = new TestCompletable();
-        subscriber.subscribe(completable.merge(publisher.getPublisher()));
+        subscriber.subscribe(completable.merge(publisher.publisher()));
         subscriber.verifySubscribe();
         publisher.fail(false, DELIBERATE_EXCEPTION);
         completable.verifyCancelled();
@@ -91,7 +91,7 @@ public class CompletableMergeWithPublisherTest {
     @Test
     public void testCancelCancelsPendingSourceSubscription() {
         TestCompletable completable = new TestCompletable();
-        subscriber.subscribe(completable.merge(publisher.getPublisher()));
+        subscriber.subscribe(completable.merge(publisher.publisher()));
         subscriber.verifySubscribe();
         subscriber.cancel();
         publisher.verifyCancelled();
@@ -102,7 +102,7 @@ public class CompletableMergeWithPublisherTest {
     @Test
     public void testCancelCompletableCompletePublisherPendingCancelsNoMoreInteraction() {
         TestCompletable completable = new TestCompletable();
-        subscriber.subscribe(completable.merge(publisher.getPublisher()));
+        subscriber.subscribe(completable.merge(publisher.publisher()));
         subscriber.verifySubscribe();
         completable.onComplete();
         subscriber.request(2);
@@ -116,7 +116,7 @@ public class CompletableMergeWithPublisherTest {
     @Test
     public void testCancelPublisherCompleteCompletablePendingCancelsNoMoreInteraction() {
         TestCompletable completable = new TestCompletable();
-        subscriber.subscribe(completable.merge(publisher.getPublisher()));
+        subscriber.subscribe(completable.merge(publisher.publisher()));
         subscriber.verifySubscribe();
         subscriber.request(2);
         publisher.sendItems("one", "two");
@@ -130,7 +130,7 @@ public class CompletableMergeWithPublisherTest {
     @Test
     public void testCompletableAndPublisherCompleteSingleCompleteSignal() {
         TestCompletable completable = new TestCompletable();
-        subscriber.subscribe(completable.merge(publisher.getPublisher()));
+        subscriber.subscribe(completable.merge(publisher.publisher()));
         subscriber.verifySubscribe();
         subscriber.request(2);
         completable.onComplete();
@@ -143,7 +143,7 @@ public class CompletableMergeWithPublisherTest {
     @Test
     public void testCompletableAndPublisherFailOnlySingleErrorSignal() {
         TestCompletable completable = new TestCompletable();
-        subscriber.subscribe(completable.merge(publisher.getPublisher()));
+        subscriber.subscribe(completable.merge(publisher.publisher()));
         subscriber.verifySubscribe();
         subscriber.request(3);
         publisher.sendItems("one", "two");
@@ -156,7 +156,7 @@ public class CompletableMergeWithPublisherTest {
     @Test
     public void testCompletableFailsAndPublisherCompletesSingleErrorSignal() {
         TestCompletable completable = new TestCompletable();
-        subscriber.subscribe(completable.merge(publisher.getPublisher()));
+        subscriber.subscribe(completable.merge(publisher.publisher()));
         subscriber.verifySubscribe();
         subscriber.request(2);
         publisher.sendItems("one", "two");
@@ -169,7 +169,7 @@ public class CompletableMergeWithPublisherTest {
     @Test
     public void testPublisherFailsAndCompletableCompletesSingleErrorSignal() {
         TestCompletable completable = new TestCompletable();
-        subscriber.subscribe(completable.merge(publisher.getPublisher()));
+        subscriber.subscribe(completable.merge(publisher.publisher()));
         subscriber.verifySubscribe();
         subscriber.request(2);
         publisher.sendItems("one", "two");

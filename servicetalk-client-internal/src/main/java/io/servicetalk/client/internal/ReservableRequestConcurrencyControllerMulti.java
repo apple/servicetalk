@@ -34,9 +34,9 @@ final class ReservableRequestConcurrencyControllerMulti extends AbstractReservab
 
     @Override
     public Result tryRequest() {
-        final int maxConcurrency = getLastSeenMaxValue(maxRequests);
+        final int maxConcurrency = lastSeenMaxValue(maxRequests);
         for (;;) {
-            final int currentPending = getPendingRequests();
+            final int currentPending = pendingRequests();
             if (currentPending < 0) {
                 return RejectedPermanently;
             }

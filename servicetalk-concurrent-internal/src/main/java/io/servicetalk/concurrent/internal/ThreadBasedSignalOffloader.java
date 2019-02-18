@@ -210,10 +210,10 @@ final class ThreadBasedSignalOffloader implements SignalOffloader, Runnable {
                 OffloadedEntity entity = entities[i];
                 // terminated state is only touched from within sendSignals so there are no concurrent mutation,
                 // hence no need for atomic operation.
-                if (!entity.isTerminated()) {
+                if (!entity.terminated()) {
                     // sendSignals() never throws.
                     entity.sendSignals();
-                    if (entity.isTerminated()) {
+                    if (entity.terminated()) {
                         terminatedEntities++;
                     }
                 } else {
@@ -256,7 +256,7 @@ final class ThreadBasedSignalOffloader implements SignalOffloader, Runnable {
         final int lastIndex = lastEntityIndex;
         if (lastIndex == INDEX_OFFLOADER_TERMINATED) {
             IllegalStateException iae = new IllegalStateException("Signal offloader: " +
-                    getExecutorThreadName() + " has already terminated.");
+                    executorThreadName() + " has already terminated.");
             throw wrapEnqueueFailure ? new EnqueueForOffloadingFailed(iae) : iae;
         }
 
@@ -274,7 +274,7 @@ final class ThreadBasedSignalOffloader implements SignalOffloader, Runnable {
         if (!lastEntityIndexUpdater.compareAndSet(this, lastIndex, nextIndex)) {
             if (lastEntityIndex == INDEX_OFFLOADER_TERMINATED) {
                 IllegalStateException iae = new IllegalStateException("Signal offloader: " +
-                        getExecutorThreadName() + " has already terminated.");
+                        executorThreadName() + " has already terminated.");
                 throw wrapEnqueueFailure ? new EnqueueForOffloadingFailed(iae) : iae;
             }
             // concurrent registration of entities is not allowed by this class as new offload entities are added in
@@ -306,7 +306,7 @@ final class ThreadBasedSignalOffloader implements SignalOffloader, Runnable {
         return offloadedEntity;
     }
 
-    private String getExecutorThreadName() {
+    private String executorThreadName() {
         final Thread executorThread = this.executorThread;
         return executorThread == null ? UNKNOWN_EXECUTOR_THREAD_NAME : executorThread.getName();
     }
@@ -319,7 +319,7 @@ final class ThreadBasedSignalOffloader implements SignalOffloader, Runnable {
          */
         void sendSignals();
 
-        boolean isTerminated();
+        boolean terminated();
     }
 
     private static final class OffloadedSignalEntity<T> implements OffloadedEntity {
@@ -345,7 +345,7 @@ final class ThreadBasedSignalOffloader implements SignalOffloader, Runnable {
         }
 
         @Override
-        public boolean isTerminated() {
+        public boolean terminated() {
             return terminated;
         }
     }
@@ -382,7 +382,7 @@ final class ThreadBasedSignalOffloader implements SignalOffloader, Runnable {
         }
 
         @Override
-        public final boolean isTerminated() {
+        public final boolean terminated() {
             return terminated;
         }
 
@@ -489,8 +489,8 @@ final class ThreadBasedSignalOffloader implements SignalOffloader, Runnable {
                 } else if (signal instanceof TerminalNotification) {
                     setTerminated();
                     TerminalNotification terminalNotification = (TerminalNotification) signal;
-                    if (terminalNotification.getCause() != null) {
-                        sendOnErrorToOriginal(terminalNotification.getCause());
+                    if (terminalNotification.cause() != null) {
+                        sendOnErrorToOriginal(terminalNotification.cause());
                     } else {
                         sendOnCompleteToOriginal();
                     }
@@ -548,7 +548,7 @@ final class ThreadBasedSignalOffloader implements SignalOffloader, Runnable {
 
         private void offerSignal(Object signal) {
             if (!signals.offer(signal)) {
-                throw new QueueFullException(offloader.getExecutorThreadName() + "-" + original.getClass().getName());
+                throw new QueueFullException(offloader.executorThreadName() + "-" + original.getClass().getName());
             }
             notifyExecutor();
         }
@@ -611,7 +611,7 @@ final class ThreadBasedSignalOffloader implements SignalOffloader, Runnable {
             }
             setTerminated();
             if (result instanceof TerminalNotification) {
-                Throwable cause = ((TerminalNotification) result).getCause();
+                Throwable cause = ((TerminalNotification) result).cause();
                 assert cause != null;
                 sendError(cause);
             } else if (result != CANCELLED) {
@@ -625,7 +625,7 @@ final class ThreadBasedSignalOffloader implements SignalOffloader, Runnable {
 
         abstract void sendError(Throwable t);
 
-        final void setResult(@Nullable Object result) {
+        final void result(@Nullable Object result) {
             // Unconditionally set result to prefer result over cancellation if we have not already terminated.
             this.result = result;
             notifyExecutor();
@@ -644,12 +644,12 @@ final class ThreadBasedSignalOffloader implements SignalOffloader, Runnable {
 
         @Override
         public void onSuccess(@Nullable T t) {
-            setResult(t);
+            result(t);
         }
 
         @Override
         public void onError(Throwable t) {
-            setResult(error(t));
+            result(error(t));
         }
 
         @Override
@@ -708,12 +708,12 @@ final class ThreadBasedSignalOffloader implements SignalOffloader, Runnable {
 
         @Override
         public void onComplete() {
-            setResult(COMPLETE_SIGNAL);
+            result(COMPLETE_SIGNAL);
         }
 
         @Override
         public void onError(Throwable t) {
-            setResult(error(t));
+            result(error(t));
         }
 
         @Override
@@ -809,7 +809,7 @@ final class ThreadBasedSignalOffloader implements SignalOffloader, Runnable {
 
                 @Override
                 public void cancel() {
-                    setRequested(CANCELLED);
+                    requested(CANCELLED);
                 }
             });
         }
@@ -821,13 +821,13 @@ final class ThreadBasedSignalOffloader implements SignalOffloader, Runnable {
 
         @Override
         public void onError(Throwable t) {
-            setRequested(TERMINATED);
+            requested(TERMINATED);
             original.onError(t);
         }
 
         @Override
         public void onComplete() {
-            setRequested(TERMINATED);
+            requested(TERMINATED);
             original.onComplete();
         }
 
@@ -860,7 +860,7 @@ final class ThreadBasedSignalOffloader implements SignalOffloader, Runnable {
             }
         }
 
-        private void setRequested(long newValue) {
+        private void requested(long newValue) {
             requested = newValue;
             notifyExecutor();
         }
@@ -888,7 +888,7 @@ final class ThreadBasedSignalOffloader implements SignalOffloader, Runnable {
             super(offloader);
         }
 
-        final void setCancellable(Cancellable cancellable) {
+        final void cancellable(Cancellable cancellable) {
             this.cancellable = cancellable;
         }
 
@@ -900,7 +900,7 @@ final class ThreadBasedSignalOffloader implements SignalOffloader, Runnable {
             // Intention here is to avoid notifying executor if there are repeated cancels (which are expected to be
             // NOOPs). Since Cancellable should not be shared across threads without external synchronization, for that
             // case we are assured that there is no concurrency.
-            // There can still be concurrency with setDone() but then we do not care as one of cancel() and setDone()
+            // There can still be concurrency with done() but then we do not care as one of cancel() and done()
             // will notify.
             if (oldResult == UNAVAILABLE) {
                 notifyExecutor();
@@ -923,7 +923,7 @@ final class ThreadBasedSignalOffloader implements SignalOffloader, Runnable {
             }
         }
 
-        final void setDone() {
+        final void done() {
             final byte oldResult = result;
             result = DONE;
             // Why don't we do it atomically?
@@ -947,19 +947,19 @@ final class ThreadBasedSignalOffloader implements SignalOffloader, Runnable {
 
         @Override
         public void onSubscribe(Cancellable cancellable) {
-            setCancellable(cancellable);
+            cancellable(cancellable);
             original.onSubscribe(this);
         }
 
         @Override
         public void onSuccess(@Nullable T result) {
-            setDone();
+            done();
             original.onSuccess(result);
         }
 
         @Override
         public void onError(Throwable t) {
-            setDone();
+            done();
             original.onError(t);
         }
     }
@@ -976,19 +976,19 @@ final class ThreadBasedSignalOffloader implements SignalOffloader, Runnable {
 
         @Override
         public void onSubscribe(Cancellable cancellable) {
-            setCancellable(cancellable);
+            cancellable(cancellable);
             original.onSubscribe(this);
         }
 
         @Override
         public void onComplete() {
-            setDone();
+            done();
             original.onComplete();
         }
 
         @Override
         public void onError(Throwable t) {
-            setDone();
+            done();
             original.onError(t);
         }
     }

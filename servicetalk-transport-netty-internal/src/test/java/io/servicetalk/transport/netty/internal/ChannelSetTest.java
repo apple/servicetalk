@@ -92,7 +92,7 @@ public class ChannelSetTest {
         when(channelCloseFuture.channel()).thenReturn(channel);
         when(channel.pipeline()).thenReturn(channelPipeline);
         when(channelPipeline.get(ConnectionHolderChannelHandler.class)).thenReturn(connectionHolderChannelHandler);
-        when(connectionHolderChannelHandler.getConnection()).thenReturn(defaultNettyConnection);
+        when(connectionHolderChannelHandler.connection()).thenReturn(defaultNettyConnection);
         when(defaultNettyConnection.closeAsync()).thenReturn(closeAsyncCompletable);
         when(defaultNettyConnection.closeAsyncGracefully()).thenReturn(closeAsyncGracefullyCompletable);
         when(channelCloseFuture.addListener(any())).then((invocation) -> {

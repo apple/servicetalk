@@ -47,11 +47,11 @@ final class FlushStrategyAndVerifier {
                 index -> (index + 1) % (batchSize + 1) == 0);
     }
 
-    FlushStrategy getFlushStrategy() {
+    FlushStrategy flushStrategy() {
         return flushStrategy;
     }
 
-    IntPredicate getExpectFlushAtIndex() {
+    IntPredicate expectFlushAtIndex() {
         return expectFlushAtIndex;
     }
 

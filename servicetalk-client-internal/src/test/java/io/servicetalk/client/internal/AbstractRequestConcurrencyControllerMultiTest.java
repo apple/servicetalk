@@ -60,7 +60,7 @@ public abstract class AbstractRequestConcurrencyControllerMultiTest {
 
     @Test
     public void limitIsAllowedToIncrease() {
-        RequestConcurrencyController controller = newController(limitRule.getPublisher(), never(), 10);
+        RequestConcurrencyController controller = newController(limitRule.publisher(), never(), 10);
         for (int i = 1; i < 100; ++i) {
             limitRule.sendItems(i);
             for (int j = 0; j < i; ++j) {
@@ -76,7 +76,7 @@ public abstract class AbstractRequestConcurrencyControllerMultiTest {
     @Test
     public void limitIsAllowedToDecrease() {
         int maxRequestCount = 10;
-        RequestConcurrencyController controller = newController(limitRule.getPublisher(), never(), 10);
+        RequestConcurrencyController controller = newController(limitRule.publisher(), never(), 10);
 
         for (int j = 0; j < maxRequestCount; ++j) {
             assertThat(controller.tryRequest(), is(Accepted));
@@ -100,7 +100,7 @@ public abstract class AbstractRequestConcurrencyControllerMultiTest {
     @Test
     public void defaultValueIsUsed() {
         final int maxRequestCount = 10;
-        RequestConcurrencyController controller = newController(limitRule.getPublisher(), never(), 10);
+        RequestConcurrencyController controller = newController(limitRule.publisher(), never(), 10);
         for (int j = 0; j < maxRequestCount; ++j) {
             assertThat(controller.tryRequest(), is(Accepted));
         }

@@ -56,7 +56,7 @@ public class CompletableToSingleTest {
                         currentThread()));
             }
             analyzed.countDown();
-        }).subscribeOn(executorRule.getExecutor()).toSingle().subscribe(__ -> { }).cancel();
+        }).subscribeOn(executorRule.executor()).toSingle().subscribe(__ -> { }).cancel();
         analyzed.await();
         assertThat("Unexpected errors observed: " + errors, errors, hasSize(0));
     }

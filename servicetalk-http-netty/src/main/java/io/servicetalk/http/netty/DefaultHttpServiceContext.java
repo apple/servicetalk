@@ -87,7 +87,7 @@ final class DefaultHttpServiceContext extends HttpServiceContext {
         return connectionContext.closeAsyncGracefully();
     }
 
-    StreamingHttpResponseFactory getStreamingFactory() {
+    StreamingHttpResponseFactory streamingFactory() {
         return streamingFactory;
     }
 

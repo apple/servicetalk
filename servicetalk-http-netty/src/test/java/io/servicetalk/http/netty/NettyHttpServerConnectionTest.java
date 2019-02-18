@@ -99,7 +99,7 @@ public class NettyHttpServerConnectionTest {
         when(httpService.handle(any(), any(), any())).thenReturn(responseSingle);
         originalStrategy = new MockFlushStrategy();
         customStrategy = new MockFlushStrategy();
-        final NettyHttpServerConnection conn = newConnection(channel, connReadPublisherRule.getPublisher(),
+        final NettyHttpServerConnection conn = newConnection(channel, connReadPublisherRule.publisher(),
                 new TerminalPredicate<>(obj -> obj instanceof HttpHeaders), UNSUPPORTED_PROTOCOL_CLOSE_HANDLER,
                 serviceContext, httpService, originalStrategy, DefaultHttpHeadersFactory.INSTANCE);
         conn.process().subscribe();
@@ -147,7 +147,7 @@ public class NettyHttpServerConnectionTest {
     }
 
     private void sendResponse() {
-        responseSingle.onSuccess(requestResponseFactory.ok().payloadBody(responsePublisherRule.getPublisher()));
+        responseSingle.onSuccess(requestResponseFactory.ok().payloadBody(responsePublisherRule.publisher()));
     }
 
     private static final class WriteTracker extends ChannelOutboundHandlerAdapter {

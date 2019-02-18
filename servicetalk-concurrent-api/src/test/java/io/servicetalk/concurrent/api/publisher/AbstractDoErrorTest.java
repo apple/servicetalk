@@ -44,7 +44,7 @@ public abstract class AbstractDoErrorTest {
     public void testError() {
         @SuppressWarnings("unchecked")
         Consumer<Throwable> onError = mock(Consumer.class);
-        rule.subscribe(doError(publisher.getPublisher(), onError));
+        rule.subscribe(doError(publisher.publisher(), onError));
         publisher.fail();
         rule.verifyFailure(DELIBERATE_EXCEPTION);
 
