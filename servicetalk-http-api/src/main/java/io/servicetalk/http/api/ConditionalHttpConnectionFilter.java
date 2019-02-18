@@ -35,21 +35,11 @@ final class ConditionalHttpConnectionFilter extends StreamingHttpConnectionFilte
 
     @Override
     public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy, final StreamingHttpRequest req) {
-        return new Single<StreamingHttpResponse>() {
-            @Override
-            protected void handleSubscribe(final Subscriber<? super StreamingHttpResponse> subscriber) {
-                predicatedRequest(strategy, req).subscribe(subscriber);
-            }
-        };
-    }
-
-    private Single<StreamingHttpResponse> predicatedRequest(final HttpExecutionStrategy strategy,
-                                                            final StreamingHttpRequest req) {
         boolean b;
         try {
             b = predicate.test(req);
         } catch (Throwable t) {
-            return error(new RuntimeException("Unexpected predicate failure", t));
+            return error(t);
         }
 
         if (b) {
