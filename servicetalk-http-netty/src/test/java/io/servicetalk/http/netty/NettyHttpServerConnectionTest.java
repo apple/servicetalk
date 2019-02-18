@@ -121,12 +121,12 @@ public class NettyHttpServerConnectionTest {
                                                                 final StreamingHttpResponseFactory responseFactory) {
                         if (handledFirstRequest.compareAndSet(false, true)) {
                             customStrategy.doAfterFirstWrite(FlushStrategy.FlushSender::flush);
-                            return success(responseFactory.ok().payloadBody(responsePublisherRule.getPublisher())
+                            return success(responseFactory.ok().payloadBody(responsePublisherRule.publisher())
                             .transformRawPayloadBody(pub -> pub.doAfterSubscribe(subscription -> {
                                 response1PayloadConsumedLatch.countDown();
                             })));
                         }
-                        return success(responseFactory.ok().payloadBody(responsePublisherRule2.getPublisher())
+                        return success(responseFactory.ok().payloadBody(responsePublisherRule2.publisher())
                                 .transformRawPayloadBody(pub -> pub.doAfterSubscribe(subscription -> {
                             response2PayloadConsumedLatch.countDown();
                         })));

@@ -156,7 +156,7 @@ public final class BuilderUtils {
         }
         if (address instanceof HostAndPort) {
             HostAndPort hostAndPort = (HostAndPort) address;
-            return new InetSocketAddress(hostAndPort.getHostName(), hostAndPort.getPort());
+            return new InetSocketAddress(hostAndPort.hostName(), hostAndPort.port());
         }
         throw new IllegalArgumentException("Unsupported address: " + address);
     }

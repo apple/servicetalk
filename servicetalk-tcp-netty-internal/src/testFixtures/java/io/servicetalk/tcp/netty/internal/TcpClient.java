@@ -84,7 +84,7 @@ public final class TcpClient {
                 .flatMap(channel -> DefaultNettyConnection.<Buffer, Buffer>initChannel(channel,
                         executionContext.bufferAllocator(), executionContext.executor(),
                         new TerminalPredicate<>(buffer -> false), UNSUPPORTED_PROTOCOL_CLOSE_HANDLER,
-                        config.getFlushStrategy(), new TcpClientChannelInitializer(config)
+                        config.flushStrategy(), new TcpClientChannelInitializer(config)
                                 .andThen((channel2, context) -> {
                             channel2.pipeline().addLast(BufferHandler.INSTANCE);
                             return context;

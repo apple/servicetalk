@@ -246,7 +246,7 @@ public class PingerTest {
                 DefaultNettyConnection.initChannel(channel,
                         executionContext.bufferAllocator(), executionContext.executor(),
                         new TerminalPredicate<>(o -> false), UNSUPPORTED_PROTOCOL_CLOSE_HANDLER,
-                        config.getTcpClientConfig().getFlushStrategy(), initializer
+                        config.tcpClientConfig().flushStrategy(), initializer
                 ));
     }
 }

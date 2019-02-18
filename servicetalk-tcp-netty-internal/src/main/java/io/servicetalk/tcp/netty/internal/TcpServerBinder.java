@@ -90,7 +90,7 @@ public final class TcpServerBinder {
         listenAddress = toNettyAddress(listenAddress);
         EventLoopAwareNettyIoExecutor nettyIoExecutor = toEventLoopAwareNettyIoExecutor(executionContext.ioExecutor());
         ServerBootstrap bs = new ServerBootstrap();
-        configure(config, executionContext.bufferAllocator(), bs, nettyIoExecutor.getEventLoopGroup(),
+        configure(config, executionContext.bufferAllocator(), bs, nettyIoExecutor.eventLoopGroup(),
                 listenAddress.getClass());
 
         ChannelSet channelSet = new ChannelSet(executionContext.executor());
@@ -170,19 +170,19 @@ public final class TcpServerBinder {
         bs.group(eventLoopGroup);
         bs.channel(BuilderUtils.serverChannel(eventLoopGroup, bindAddressClass));
 
-        for (@SuppressWarnings("rawtypes") Map.Entry<ChannelOption, Object> opt : config.getOptions().entrySet()) {
+        for (@SuppressWarnings("rawtypes") Map.Entry<ChannelOption, Object> opt : config.options().entrySet()) {
             @SuppressWarnings("unchecked")
             ChannelOption<Object> option = opt.getKey();
             bs.childOption(option, opt.getValue());
         }
 
         // we disable auto read so we can handle stuff in the ConnectionFilter before we accept any content.
-        bs.childOption(ChannelOption.AUTO_READ, config.isAutoRead());
-        if (!config.isAutoRead()) {
+        bs.childOption(ChannelOption.AUTO_READ, config.autoRead());
+        if (!config.autoRead()) {
             bs.childOption(ChannelOption.MAX_MESSAGES_PER_READ, 1);
         }
 
-        bs.option(ChannelOption.SO_BACKLOG, config.getBacklog());
+        bs.option(ChannelOption.SO_BACKLOG, config.backlog());
 
         // Set the correct ByteBufAllocator based on our BufferAllocator to minimize memory copies.
         ByteBufAllocator byteBufAllocator = BufferUtil.getByteBufAllocator(bufferAllocator);

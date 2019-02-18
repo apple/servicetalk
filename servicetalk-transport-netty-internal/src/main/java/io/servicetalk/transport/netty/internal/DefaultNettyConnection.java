@@ -447,7 +447,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
 
         @Override
         public void handlerAdded(ChannelHandlerContext ctx) {
-            delayedCancellable.setDelayedCancellable(ctx.channel()::close);
+            delayedCancellable.delayedCancellable(ctx.channel()::close);
             // Double check In the event of a late handler (or test utility like EmbeddedChannel) check activeness.
             if (ctx.channel().isActive()) {
                 doChannelActive(ctx);
