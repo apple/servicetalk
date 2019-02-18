@@ -17,7 +17,6 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.Cancellable;
-import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.PublisherRule;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
@@ -42,7 +41,9 @@ import org.junit.rules.Timeout;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -56,7 +57,6 @@ import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static io.servicetalk.transport.netty.internal.ExecutionContextRule.immediate;
 import static java.nio.charset.StandardCharsets.US_ASCII;
-import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
@@ -85,7 +85,7 @@ public class NettyHttpServerConnectionTest {
 
     @Parameterized.Parameters(name = "server={0} client={1}")
     public static Collection<HttpExecutionStrategy[]> executionStrategies() {
-        return asList(
+        return Arrays.asList(
                 new HttpExecutionStrategy[]{defaultStrategy(), defaultStrategy()},
                 new HttpExecutionStrategy[]{noOffloadsStrategy(), defaultStrategy()},
                 new HttpExecutionStrategy[]{defaultStrategy(), noOffloadsStrategy()},
@@ -103,6 +103,8 @@ public class NettyHttpServerConnectionTest {
         customStrategy = new MockFlushStrategy();
         AtomicReference<Cancellable> customCancellableRef = new AtomicReference<>();
         AtomicBoolean handledFirstRequest = new AtomicBoolean();
+        CountDownLatch response1PayloadConsumedLatch = new CountDownLatch(1);
+        CountDownLatch response2PayloadConsumedLatch = new CountDownLatch(1);
 
         serverContext = HttpServers.forAddress(localAddress(0))
                 .ioExecutor(contextRule.ioExecutor())
@@ -118,17 +120,16 @@ public class NettyHttpServerConnectionTest {
                                                                 final StreamingHttpRequest request,
                                                                 final StreamingHttpResponseFactory responseFactory) {
                         if (handledFirstRequest.compareAndSet(false, true)) {
-                            return success(responseFactory.ok().payloadBody(responsePublisherRule.getPublisher()))
-                                    .concatWith(Completable.defer(() -> {
-                                        try {
-                                            customStrategy.verifyApplied().flush();
-                                        } catch (Throwable cause) {
-                                            return Completable.error(cause);
-                                        }
-                                        return Completable.completed();
-                                }));
+                            customStrategy.doAfterFirstWrite(FlushStrategy.FlushSender::flush);
+                            return success(responseFactory.ok().payloadBody(responsePublisherRule.getPublisher())
+                            .transformRawPayloadBody(pub -> pub.doAfterSubscribe(subscription -> {
+                                response1PayloadConsumedLatch.countDown();
+                            })));
                         }
-                        return success(responseFactory.ok().payloadBody(responsePublisherRule2.getPublisher()));
+                        return success(responseFactory.ok().payloadBody(responsePublisherRule2.getPublisher())
+                                .transformRawPayloadBody(pub -> pub.doAfterSubscribe(subscription -> {
+                            response2PayloadConsumedLatch.countDown();
+                        })));
                     }
 
                     @Override
@@ -150,6 +151,7 @@ public class NettyHttpServerConnectionTest {
         customStrategy.verifyItemWritten(1);
         customStrategy.verifyNoMoreInteractions();
 
+        response1PayloadConsumedLatch.await();
         String payloadBodyString = "foo";
         responsePublisherRule.sendItems(DEFAULT_ALLOCATOR.fromAscii(payloadBodyString));
         responsePublisherRule.complete();
@@ -165,6 +167,7 @@ public class NettyHttpServerConnectionTest {
         // Restore the default flush strategy, which should flush on each
         customCancellable.cancel();
         StreamingHttpResponse response2 = client.request(client.newRequest(GET, "/2")).toFuture().get();
+        response2PayloadConsumedLatch.await();
         responsePublisherRule2.sendItems(DEFAULT_ALLOCATOR.fromAscii(payloadBodyString));
         responsePublisherRule2.complete();
         responsePayload = response2.payloadBody().reduce(DEFAULT_ALLOCATOR::newBuffer, (results, current) -> {

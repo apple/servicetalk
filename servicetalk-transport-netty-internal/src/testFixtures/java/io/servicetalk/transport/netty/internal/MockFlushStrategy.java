@@ -18,9 +18,14 @@ package io.servicetalk.transport.netty.internal;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 import org.mockito.Mockito;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
+
+import java.util.function.Consumer;
 
 import static org.mockito.ArgumentCaptor.forClass;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -103,5 +108,23 @@ public final class MockFlushStrategy implements FlushStrategy {
     @Override
     public WriteEventsListener apply(final FlushSender sender) {
         return mock.apply(sender);
+    }
+
+    /**
+     * Invoke some code on the first invocation of {@link WriteEventsListener#itemWritten()}.
+     * @param senderConsumer A {@link Consumer} that is given the {@link FlushSender} after
+     * {@link WriteEventsListener#itemWritten()}.
+     */
+    public void doAfterFirstWrite(Consumer<FlushSender> senderConsumer) {
+        doAnswer(new Answer<Void>() {
+            private int count;
+            @Override
+            public Void answer(final InvocationOnMock invocation) {
+                if (++count == 1) {
+                    senderConsumer.accept(verifyApplied());
+                }
+                return null;
+            }
+        }).when(writeListener).itemWritten();
     }
 }
