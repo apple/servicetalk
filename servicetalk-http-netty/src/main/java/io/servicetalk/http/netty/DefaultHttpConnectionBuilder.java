@@ -71,10 +71,6 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress> extends HttpCon
         config = new HttpClientConfig(new TcpClientConfig(false));
     }
 
-    private static Predicate<Object> lastChunkPredicate() {
-        return LAST_CHUNK_PREDICATE;
-    }
-
     @Override
     public DefaultHttpConnectionBuilder<ResolvedAddress> ioExecutor(final IoExecutor ioExecutor) {
         executionContextBuilder.ioExecutor(ioExecutor);
@@ -143,13 +139,13 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress> extends HttpCon
             final ExecutionContext executionContext, ResolvedAddress resolvedAddress,
             ReadOnlyHttpClientConfig roConfig) {
         // This state is read only, so safe to keep a copy across Subscribers
-        final ReadOnlyTcpClientConfig tcpClientConfig = roConfig.getTcpClientConfig();
-        return TcpConnector.connect(null, resolvedAddress, tcpClientConfig, executionContext)
+        final ReadOnlyTcpClientConfig roTcpClientConfig = roConfig.getTcpClientConfig();
+        return TcpConnector.connect(null, resolvedAddress, roTcpClientConfig, executionContext)
                 .flatMap(channel -> {
                     CloseHandler closeHandler = forPipelinedRequestResponse(true, channel.config());
                     return DefaultNettyConnection.initChannel(channel, executionContext.bufferAllocator(),
                             executionContext.executor(), new TerminalPredicate<>(LAST_CHUNK_PREDICATE), closeHandler,
-                            tcpClientConfig.getFlushStrategy(), new TcpClientChannelInitializer(
+                            roTcpClientConfig.getFlushStrategy(), new TcpClientChannelInitializer(
                                     roConfig.getTcpClientConfig()).andThen(new HttpClientChannelInitializer(roConfig,
                                     closeHandler)));
                 });

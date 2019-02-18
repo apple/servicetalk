@@ -138,8 +138,8 @@ public final class ChannelSet implements ListenableAsyncCloseable {
                 for (final Channel channel : channelMap.values()) {
                     final AsyncCloseableHolderChannelHandler holder =
                             channel.pipeline().get(AsyncCloseableHolderChannelHandler.class);
-                    AsyncCloseable connection = holder == null ? null : holder.asyncClosable();
-                    if (connection != null) {
+                    AsyncCloseable closable = holder == null ? null : holder.asyncClosable();
+                    if (closable != null) {
                         // Upon shutdown of the set, we will close all live channels. If close of individual channels
                         // are offloaded, then this would trigger a surge in threads required to offload these closures.
                         // Here we assume that if there is any offloading required, it is done by offloading the
@@ -149,12 +149,12 @@ public final class ChannelSet implements ListenableAsyncCloseable {
                         closeable.merge(new AsyncCloseable() {
                             @Override
                             public Completable closeAsync() {
-                                return connection.closeAsync().publishOnOverride(immediate());
+                                return closable.closeAsync().publishOnOverride(immediate());
                             }
 
                             @Override
                             public Completable closeAsyncGracefully() {
-                                return connection.closeAsyncGracefully().publishOnOverride(immediate());
+                                return closable.closeAsyncGracefully().publishOnOverride(immediate());
                             }
                         });
                     } else {

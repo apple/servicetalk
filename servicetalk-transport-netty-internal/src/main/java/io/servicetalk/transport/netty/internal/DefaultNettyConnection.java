@@ -481,35 +481,39 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
 
         @Override
         public void userEventTriggered(ChannelHandlerContext ctx, Object evt) {
-            if (evt == ChannelOutputShutdownEvent.INSTANCE) {
-                connection.closeHandler.channelClosedOutbound(ctx);
-                connection.writableListener.channelClosedOutbound();
-            } else if (evt == ChannelInputShutdownReadComplete.INSTANCE) {
-                // Notify close handler first to enhance error reporting
-                connection.closeHandler.channelClosedInbound(ctx);
-                // ChannelInputShutdownEvent is not always triggered and can get triggered before we tried to read
-                // all the available data. ChannelInputShutdownReadComplete is the one that seems to (at least in
-                // the current netty version) gets triggered reliably at the appropriate time.
-                connection.nettyChannelPublisher.channelInboundClosed();
-            } else if (evt instanceof SslHandshakeCompletionEvent) {
-                SslHandshakeCompletionEvent sslEvent = ((SslHandshakeCompletionEvent) evt);
-                if (sslEvent.isSuccess()) {
-                    final SslHandler sslHandler = ctx.pipeline().get(SslHandler.class);
-                    if (sslHandler != null) {
-                        connection.sslSession = sslHandler.engine().getSession();
-                        if (waitForSslHandshake && subscriber != null) {
-                            completeSubscriber();
+            try {
+                if (evt == ChannelOutputShutdownEvent.INSTANCE) {
+                    connection.closeHandler.channelClosedOutbound(ctx);
+                    connection.writableListener.channelClosedOutbound();
+                } else if (evt == ChannelInputShutdownReadComplete.INSTANCE) {
+                    // Notify close handler first to enhance error reporting
+                    connection.closeHandler.channelClosedInbound(ctx);
+                    // ChannelInputShutdownEvent is not always triggered and can get triggered before we tried to read
+                    // all the available data. ChannelInputShutdownReadComplete is the one that seems to (at least in
+                    // the current netty version) gets triggered reliably at the appropriate time.
+                    connection.nettyChannelPublisher.channelInboundClosed();
+                } else if (evt instanceof SslHandshakeCompletionEvent) {
+                    SslHandshakeCompletionEvent sslEvent = ((SslHandshakeCompletionEvent) evt);
+                    if (sslEvent.isSuccess()) {
+                        final SslHandler sslHandler = ctx.pipeline().get(SslHandler.class);
+                        if (sslHandler != null) {
+                            connection.sslSession = sslHandler.engine().getSession();
+                            if (subscriber != null) {
+                                assert waitForSslHandshake;
+                                completeSubscriber();
+                            }
+                        } else {
+                            final String errMsg = "Unable to find " + SslHandler.class.getName() + " in the pipeline.";
+                            tryFailSubscriber(new IllegalStateException(errMsg));
+                            LOGGER.error(errMsg);
                         }
                     } else {
-                        final String errorMsg = "Unable to find " + SslHandler.class.getName() + " in the pipeline.";
-                        tryFailSubscriber(new IllegalStateException(errorMsg));
-                        LOGGER.error(errorMsg);
+                        tryFailSubscriber(sslEvent.cause());
                     }
-                } else {
-                    tryFailSubscriber(sslEvent.cause());
                 }
+            } finally {
+                release(evt);
             }
-            release(evt);
         }
 
         @Override
