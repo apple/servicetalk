@@ -29,6 +29,7 @@ import io.servicetalk.http.api.DefaultHttpHeadersFactory;
 import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.StreamingHttpResponse;
+import io.servicetalk.http.utils.DoBeforeOnFinallyOnHttpResponseOperator.OnFinally;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -59,7 +60,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
 
 @RunWith(MockitoJUnitRunner.class)
-public class DoBeforeFinallyOnHttpResponseOperatorTest {
+public class DoBeforeOnFinallyOnHttpResponseOperatorTest {
     private static final BufferAllocator allocator = DEFAULT_ALLOCATOR;
     private static final StreamingHttpRequestResponseFactory reqRespFactory =
             new DefaultStreamingHttpRequestResponseFactory(allocator, DefaultHttpHeadersFactory.INSTANCE);
@@ -69,13 +70,13 @@ public class DoBeforeFinallyOnHttpResponseOperatorTest {
     public final ExpectedException expectedException = ExpectedException.none();
 
     @Mock
-    private Runnable doBeforeFinally;
+    private OnFinally doBeforeFinally;
 
     private SingleOperator<StreamingHttpResponse, StreamingHttpResponse> operator;
 
     @Before
     public void setUp() {
-        operator = new DoBeforeFinallyOnHttpResponseOperator(doBeforeFinally);
+        operator = new DoBeforeOnFinallyOnHttpResponseOperator(doBeforeFinally);
     }
 
     @Test
@@ -84,7 +85,7 @@ public class DoBeforeFinallyOnHttpResponseOperatorTest {
 
         toSource(Single.<StreamingHttpResponse>success(null).liftSynchronous(operator)).subscribe(subscriber);
         assertThat("onSubscribe not called.", subscriber.cancellable, is(notNullValue()));
-        verify(doBeforeFinally).run();
+        verify(doBeforeFinally).succeeded();
 
         subscriber.verifyNullResponseReceived();
         verifyNoMoreInteractions(doBeforeFinally);
@@ -109,13 +110,21 @@ public class DoBeforeFinallyOnHttpResponseOperatorTest {
 
         final StreamingHttpResponse response = reqRespFactory.newResponse(OK);
         subRef.get().onSuccess(response);
-        subscriber.verifyResponseReceived();
+        final StreamingHttpResponse received = subscriber.verifyResponseReceived();
         verifyZeroInteractions(doBeforeFinally);
 
         final StreamingHttpResponse response2 = reqRespFactory.newResponse(OK);
 
-        expectedException.expect(AssertionError.class);
-        subRef.get().onSuccess(response2);
+        try {
+            subRef.get().onSuccess(response2);
+        } catch (AssertionError e) {
+            // silence assert on dupe success when not canceled
+        }
+
+        final StreamingHttpResponse received2 = subscriber.verifyResponseReceived();
+        // Old response should be preserved.
+        assertThat("Duplicate response received.", received2, is(received));
+        verifyZeroInteractions(doBeforeFinally);
     }
 
     @Test
@@ -126,7 +135,7 @@ public class DoBeforeFinallyOnHttpResponseOperatorTest {
         assertThat("onSubscribe not called.", subscriber.cancellable, is(notNullValue()));
 
         subscriber.cancellable.cancel();
-        verify(doBeforeFinally).run();
+        verify(doBeforeFinally).canceled();
         responseSingle.verifyCancelled();
 
         final StreamingHttpResponse response = reqRespFactory.newResponse(OK);
@@ -147,7 +156,7 @@ public class DoBeforeFinallyOnHttpResponseOperatorTest {
         assertThat("onSubscribe not called.", subscriber.cancellable, is(notNullValue()));
 
         subscriber.cancellable.cancel();
-        verify(doBeforeFinally).run();
+        verify(doBeforeFinally).canceled();
         responseSingle.verifyCancelled();
 
         responseSingle.onError(DELIBERATE_EXCEPTION);
@@ -184,7 +193,7 @@ public class DoBeforeFinallyOnHttpResponseOperatorTest {
 
         responseSingle.onError(DELIBERATE_EXCEPTION);
 
-        verify(doBeforeFinally).run();
+        verify(doBeforeFinally).failed(DELIBERATE_EXCEPTION);
         assertThat("onError not called.", subscriber.error, is(DELIBERATE_EXCEPTION));
 
         subscriber.cancellable.cancel();
@@ -214,7 +223,7 @@ public class DoBeforeFinallyOnHttpResponseOperatorTest {
 
         payload.onComplete();
 
-        verify(doBeforeFinally).run();
+        verify(doBeforeFinally).succeeded();
     }
 
     private static final class ResponseSubscriber implements SingleSource.Subscriber<StreamingHttpResponse> {

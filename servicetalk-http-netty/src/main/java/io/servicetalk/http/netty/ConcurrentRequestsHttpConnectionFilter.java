@@ -26,7 +26,7 @@ import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.StreamingHttpConnectionFilter;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
-import io.servicetalk.http.utils.DoBeforeFinallyOnHttpResponseOperator;
+import io.servicetalk.http.utils.DoBeforeOnFinallyOnHttpResponseOperator;
 import io.servicetalk.transport.netty.internal.NettyConnectionContext;
 
 import static io.servicetalk.client.internal.RequestConcurrencyControllers.newController;
@@ -81,7 +81,7 @@ final class ConcurrentRequestsHttpConnectionFilter implements HttpConnectionFilt
                     switch (result) {
                         case Accepted:
                             toSource(delegate.request(strategy, request)
-                                    .liftSynchronous(new DoBeforeFinallyOnHttpResponseOperator(
+                                    .liftSynchronous(new DoBeforeOnFinallyOnHttpResponseOperator(
                                             limiter::requestFinished)))
                                     .subscribe(subscriber);
                             return;

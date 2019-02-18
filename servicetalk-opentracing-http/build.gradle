@@ -33,6 +33,7 @@ dependencies {
 
   api "io.opentracing:opentracing-api"
   api "io.servicetalk:servicetalk-http-api:$project.version"
+  api "io.servicetalk:servicetalk-http-utils:$project.version"
 
   implementation "com.google.code.findbugs:jsr305"
   implementation "io.servicetalk:servicetalk-annotations:$project.version"
