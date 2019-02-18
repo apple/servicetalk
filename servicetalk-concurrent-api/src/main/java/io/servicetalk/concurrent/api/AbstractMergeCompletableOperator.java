@@ -109,7 +109,7 @@ abstract class AbstractMergeCompletableOperator extends AbstractNoHandleSubscrib
 
         @Override
         public final void onComplete() {
-            if (terminated()) {
+            if (onTerminate()) {
                 tryToCompleteSubscriber();
             }
         }
@@ -139,7 +139,7 @@ abstract class AbstractMergeCompletableOperator extends AbstractNoHandleSubscrib
             // and we do this with a two phase atomic set to DELIVERED_DELAYED_ERROR.
             // If we don't delay the error then we never increase the total completion count, so we don't have to worry
             // about concurrent invocation.
-            if (!delayError || (terminated() &&
+            if (!delayError || (onTerminate() &&
                     t == terminalNotificationUpdater.getAndSet(this, DELIVERED_DELAYED_ERROR))) {
                 onError0(t);
             }
@@ -173,7 +173,7 @@ abstract class AbstractMergeCompletableOperator extends AbstractNoHandleSubscrib
          *
          * @return {@code true} if we are done processing after changing state due to receiving a terminal event.
          */
-        abstract boolean terminated();
+        abstract boolean onTerminate();
 
         /**
          * Determine if we are currently done.
