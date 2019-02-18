@@ -16,6 +16,7 @@
 package io.servicetalk.redis.api;
 
 import io.servicetalk.buffer.api.Buffer;
+import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.api.Single;
@@ -39,7 +40,7 @@ final class RedisRequesterUtils {
     private RedisRequesterUtils() {
     }
 
-    abstract static class AggregatingSubscriber<R> implements io.servicetalk.concurrent.PublisherSource.Subscriber<RedisData> {
+    abstract static class AggregatingSubscriber<R> implements Subscriber<RedisData> {
         final SingleSource.Subscriber<? super R> singleSubscriber;
 
         AggregatingSubscriber(SingleSource.Subscriber<? super R> singleSubscriber) {
@@ -49,7 +50,7 @@ final class RedisRequesterUtils {
         @Override
         public final void onSubscribe(Subscription s) {
             ConcurrentSubscription cs = wrap(s);
-            singleSubscriber.onSubscribe(cs::cancel);
+            singleSubscriber.onSubscribe(cs);
             cs.request(Long.MAX_VALUE);
         }
     }

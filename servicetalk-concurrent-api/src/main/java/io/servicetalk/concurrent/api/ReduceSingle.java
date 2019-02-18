@@ -15,6 +15,7 @@
  */
 package io.servicetalk.concurrent.api;
 
+import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.internal.ConcurrentSubscription;
 import io.servicetalk.concurrent.internal.SignalOffloader;
@@ -44,7 +45,8 @@ final class ReduceSingle<R, T> extends AbstractNoHandleSubscribeSingle<R> {
      * @param source {@link Publisher} to reduce.
      * @param resultFactory Factory for the result which collects all items emitted by {@code source}.
      *                      This will be called every time the returned {@link Single} is subscribed.
-     * @param reducer Invoked for every item emitted by the {@code source} and returns the same or altered {@code result} object.
+     * @param reducer Invoked for every item emitted by the {@code source} and returns the same or altered
+     * {@code result} object.
      */
     ReduceSingle(Publisher<T> source, Supplier<R> resultFactory, BiFunction<R, ? super T, R> reducer) {
         super(source.getExecutor());
@@ -66,14 +68,14 @@ final class ReduceSingle<R, T> extends AbstractNoHandleSubscribeSingle<R> {
         // We are now subscribing to the original Publisher chain for the first time, re-using the SignalOffloader.
         // Using the special subscribe() method means it will not offload the Subscription (done in the public
         // subscribe() method). So, we use the SignalOffloader to offload subscription if required.
-        io.servicetalk.concurrent.PublisherSource.Subscriber<? super T> offloadedSubscription = signalOffloader.offloadSubscription(
+        PublisherSource.Subscriber<? super T> offloadedSubscription = signalOffloader.offloadSubscription(
                 contextProvider.wrapSubscription(new ReduceSubscriber<>(r, reducer, singleSubscriber), contextMap));
         // Since we are not creating any new sources by reducing, we should use the same offloader to subscribe to the
         // original Publisher.
         source.subscribeWithOffloaderAndContext(offloadedSubscription, signalOffloader, contextMap, contextProvider);
     }
 
-    private static final class ReduceSubscriber<R, T> implements io.servicetalk.concurrent.PublisherSource.Subscriber<T> {
+    private static final class ReduceSubscriber<R, T> implements PublisherSource.Subscriber<T> {
 
         private final BiFunction<R, ? super T, R> reducer;
         private final Subscriber<? super R> subscriber;
@@ -89,7 +91,7 @@ final class ReduceSingle<R, T> extends AbstractNoHandleSubscribeSingle<R> {
         @Override
         public void onSubscribe(final Subscription s) {
             final ConcurrentSubscription cs = wrap(s);
-            subscriber.onSubscribe(cs::cancel);
+            subscriber.onSubscribe(cs);
             s.request(Long.MAX_VALUE);
         }
 

@@ -21,6 +21,7 @@ import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.api.LoadBalancerFactory;
 import io.servicetalk.client.api.NoAvailableHostException;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
+import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.api.AsyncCloseable;
 import io.servicetalk.concurrent.api.Completable;
@@ -130,7 +131,7 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends ListenableA
                 comparing(host -> host instanceof MutableAddressHost ?
                         ((MutableAddressHost<ResolvedAddress, C>) host).mutableAddress : host.address, comparator);
 
-        eventPublisher.subscribe(new io.servicetalk.concurrent.PublisherSource.Subscriber<ServiceDiscovererEvent<ResolvedAddress>>() {
+        eventPublisher.subscribe(new Subscriber<ServiceDiscovererEvent<ResolvedAddress>>() {
 
             @Override
             public void onSubscribe(final Subscription s) {
@@ -139,7 +140,7 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends ListenableA
                 // the Subscription in a ConcurrentSubscription which is costly.
                 // Since, we synchronously process onNexts we do not really care about flow control.
                 s.request(Long.MAX_VALUE);
-                discoveryCancellable.setNextCancellable(s::cancel);
+                discoveryCancellable.setNextCancellable(s);
             }
 
             @SuppressWarnings("unchecked")

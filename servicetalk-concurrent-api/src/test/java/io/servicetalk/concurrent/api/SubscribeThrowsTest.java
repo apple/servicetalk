@@ -89,7 +89,8 @@ public class SubscribeThrowsTest {
     public void singleSubscriberWithOffloaderThrows() {
         SignalOffloader offloader = ((AbstractOffloaderAwareExecutor) immediate()).newSignalOffloader(immediate());
         @SuppressWarnings("unchecked")
-        SingleSource.Subscriber<String> subscriber = (SingleSource.Subscriber<String>) mock(SingleSource.Subscriber.class);
+        SingleSource.Subscriber<String> subscriber =
+                (SingleSource.Subscriber<String>) mock(SingleSource.Subscriber.class);
         Single<String> s = new Single<String>() {
             @Override
             protected void handleSubscribe(final Subscriber subscriber) {

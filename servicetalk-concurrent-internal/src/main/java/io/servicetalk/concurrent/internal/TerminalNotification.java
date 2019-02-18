@@ -16,6 +16,7 @@
 package io.servicetalk.concurrent.internal;
 
 import io.servicetalk.concurrent.CompletableSource.Subscriber;
+import io.servicetalk.concurrent.PublisherSource;
 
 import javax.annotation.Nullable;
 
@@ -48,11 +49,12 @@ public final class TerminalNotification {
     }
 
     /**
-     * Invoke {@link io.servicetalk.concurrent.PublisherSource.Subscriber#onComplete()} or {@link io.servicetalk.concurrent.PublisherSource.Subscriber#onError(Throwable)} on the passed {@code subscriber}.
+     * Invoke {@link PublisherSource.Subscriber#onComplete()} or {@link PublisherSource.Subscriber#onError(Throwable)}
+     * on the passed {@code subscriber}.
      *
      * @param subscriber to terminate.
      */
-    public void terminate(io.servicetalk.concurrent.PublisherSource.Subscriber<?> subscriber) {
+    public void terminate(PublisherSource.Subscriber<?> subscriber) {
         if (this == COMPLETE) {
             subscriber.onComplete();
         } else {
@@ -61,15 +63,18 @@ public final class TerminalNotification {
     }
 
     /**
-     * Invoke {@link io.servicetalk.concurrent.PublisherSource.Subscriber#onError(Throwable)} with the passed {@link Throwable} if this {@link TerminalNotification} is for completion.<p>
-     * If this {@link TerminalNotification} is for error, then the passed {@link Throwable} will be added as a suppressed cause to the existing {@link Throwable}.
+     * Invoke {@link PublisherSource.Subscriber#onError(Throwable)} with the passed {@link Throwable} if this
+     * {@link TerminalNotification} is for completion.
+     * <p>
+     * If this {@link TerminalNotification} is for error, then the passed {@link Throwable} will be added as a
+     * suppressed cause to the existing {@link Throwable}.
      *
      * <b>If this is an error notification, the associated cause will get updated with the {@code additionalCause}.</b>
      *
      * @param subscriber to terminate.
      * @param additionalCause {@link Throwable} which is used as the caus
      */
-    public void terminate(io.servicetalk.concurrent.PublisherSource.Subscriber<?> subscriber, Throwable additionalCause) {
+    public void terminate(PublisherSource.Subscriber<?> subscriber, Throwable additionalCause) {
         if (this == COMPLETE) {
             subscriber.onError(additionalCause);
         } else {
@@ -80,8 +85,11 @@ public final class TerminalNotification {
     }
 
     /**
-     * Invoke {@link Subscriber#onError(Throwable)} with the passed {@link Throwable} if this {@link TerminalNotification} is for completion.<p>
-     * If this {@link TerminalNotification} is for error, then the passed {@link Throwable} will be added as a suppressed cause to the existing {@link Throwable}.
+     * Invoke {@link Subscriber#onError(Throwable)} with the passed {@link Throwable} if this
+     * {@link TerminalNotification} is for completion.
+     * <p>
+     * If this {@link TerminalNotification} is for error, then the passed {@link Throwable} will be added as a
+     * suppressed cause to the existing {@link Throwable}.
      *
      * <b>If this is an error notification, the associated cause will get updated with the {@code additionalCause}.</b>
      *

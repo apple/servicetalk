@@ -798,8 +798,8 @@ public abstract class Single<T> implements SingleSource<T> {
      *
      * @param executor {@link Executor} to use.
      * @return A new {@link Single} that will use the passed {@link Executor} to invoke all methods of
-     * {@link Subscriber}, {@link Cancellable} and {@link #handleSubscribe(SingleSource.Subscriber)} both for the returned
-     * {@link Single} as well as {@code this} {@link Single}.
+     * {@link Subscriber}, {@link Cancellable} and {@link #handleSubscribe(SingleSource.Subscriber)} both for the
+     * returned {@link Single} as well as {@code this} {@link Single}.
      */
     public final Single<T> publishOnOverride(Executor executor) {
         return PublishAndSubscribeOnSingles.publishOnOverride(this, executor);
@@ -875,8 +875,8 @@ public abstract class Single<T> implements SingleSource<T> {
      *
      * @param executor {@link Executor} to use.
      * @return A new {@link Single} that will use the passed {@link Executor} to invoke all methods of
-     * {@link Subscriber}, {@link Cancellable} and {@link #handleSubscribe(SingleSource.Subscriber)} both for the returned
-     * {@link Single} as well as {@code this} {@link Single}.
+     * {@link Subscriber}, {@link Cancellable} and {@link #handleSubscribe(SingleSource.Subscriber)} both for the
+     * returned {@link Single} as well as {@code this} {@link Single}.
      */
     public final Single<T> publishAndSubscribeOnOverride(Executor executor) {
         return PublishAndSubscribeOnSingles.publishAndSubscribeOnOverride(this, executor);
@@ -1459,8 +1459,8 @@ public abstract class Single<T> implements SingleSource<T> {
         final SignalOffloader signalOffloader;
         final Subscriber<? super T> offloadedSubscriber;
         try {
-            // This is a user-driven subscribe i.e. there is no SignalOffloader override, so create a new SignalOffloader
-            // to use.
+            // This is a user-driven subscribe i.e. there is no SignalOffloader override, so create a new
+            // SignalOffloader to use.
             signalOffloader = newOffloaderFor(executor);
             // Since this is a user-driven subscribe (end of the execution chain), offload Cancellable
             offloadedSubscriber = signalOffloader.offloadCancellable(
@@ -1477,8 +1477,8 @@ public abstract class Single<T> implements SingleSource<T> {
      * Replicating a call to {@link #subscribe(Subscriber)} but with a materialized {@link SignalOffloader} and
      * {@link AsyncContextMap}.
      * @param subscriber the subscriber.
-     * @param signalOffloader {@link SignalOffloader} to use for this {@link io.servicetalk.concurrent.PublisherSource.Subscriber}.
-     * @param contextMap the {@link AsyncContextMap} to use for this {@link io.servicetalk.concurrent.PublisherSource.Subscriber}.
+     * @param signalOffloader {@link SignalOffloader} to use for this {@link Subscriber}.
+     * @param contextMap the {@link AsyncContextMap} to use for this {@link Subscriber}.
      * @param contextProvider the {@link AsyncContextProvider} used to wrap any objects to preserve
      * {@link AsyncContextMap}.
      */
@@ -1506,7 +1506,7 @@ public abstract class Single<T> implements SingleSource<T> {
      *
      * @param subscriber the subscriber.
      * @param signalOffloader {@link SignalOffloader} to use for this {@link Subscriber}.
-     * @param contextMap the {@link AsyncContextMap} to use for this {@link io.servicetalk.concurrent.PublisherSource.Subscriber}.
+     * @param contextMap the {@link AsyncContextMap} to use for this {@link Subscriber}.
      * @param contextProvider the {@link AsyncContextProvider} used to wrap any objects to preserve
      * {@link AsyncContextMap}.
      */

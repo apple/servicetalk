@@ -59,7 +59,8 @@ final class NoopAsyncContextProvider implements AsyncContextProvider {
     }
 
     @Override
-    public CompletableSource.Subscriber wrap(final CompletableSource.Subscriber subscriber, final AsyncContextMap current) {
+    public CompletableSource.Subscriber wrap(final CompletableSource.Subscriber subscriber,
+                                             final AsyncContextMap current) {
         return subscriber;
     }
 
@@ -70,7 +71,8 @@ final class NoopAsyncContextProvider implements AsyncContextProvider {
     }
 
     @Override
-    public <T> SingleSource.Subscriber<T> wrap(final SingleSource.Subscriber<T> subscriber, final AsyncContextMap current) {
+    public <T> SingleSource.Subscriber<T> wrap(final SingleSource.Subscriber<T> subscriber,
+                                               final AsyncContextMap current) {
         return subscriber;
     }
 

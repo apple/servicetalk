@@ -180,7 +180,8 @@ public class RedisClientOffloadingTest {
         assertThat("Unexpected errors.", errors, is(empty()));
     }
 
-    private void subscribeTo(Predicate<Thread> notExpectedThread, Collection<Throwable> errors, CompletableSource source) {
+    private void subscribeTo(Predicate<Thread> notExpectedThread, Collection<Throwable> errors,
+                             CompletableSource source) {
         source.subscribe(new CompletableSource.Subscriber() {
             @Override
             public void onSubscribe(final Cancellable cancellable) {
@@ -224,8 +225,8 @@ public class RedisClientOffloadingTest {
             @Override
             public void onNext(final T integer) {
                 if (notExpectedThread.test(currentThread())) {
-                    errors.add(new AssertionError(msgPrefix + " onNext was not offloaded for value: " + integer
-                            + ". Thread: " + currentThread().getName()));
+                    errors.add(new AssertionError(msgPrefix + " onNext was not offloaded for value: " +
+                            integer + ". Thread: " + currentThread().getName()));
                 }
             }
 

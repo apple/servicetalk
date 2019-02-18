@@ -36,7 +36,8 @@ final class NoopOffloader implements SignalOffloader {
     }
 
     @Override
-    public <T> SingleSource.Subscriber<? super T> offloadSubscriber(final SingleSource.Subscriber<? super T> subscriber) {
+    public <T> SingleSource.Subscriber<? super T> offloadSubscriber(
+            final SingleSource.Subscriber<? super T> subscriber) {
         return subscriber;
     }
 
@@ -51,7 +52,8 @@ final class NoopOffloader implements SignalOffloader {
     }
 
     @Override
-    public <T> SingleSource.Subscriber<? super T> offloadCancellable(final SingleSource.Subscriber<? super T> subscriber) {
+    public <T> SingleSource.Subscriber<? super T> offloadCancellable(
+            final SingleSource.Subscriber<? super T> subscriber) {
         return subscriber;
     }
 

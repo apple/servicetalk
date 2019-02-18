@@ -53,10 +53,12 @@ public abstract class AbstractDoSubscriberTest {
 
     @Test
     public void testOnWithOnError() {
-        listener.listen(doSubscriber(Single.error(DELIBERATE_EXCEPTION), () -> subscriber)).verifyFailure(DELIBERATE_EXCEPTION);
+        listener.listen(doSubscriber(Single.error(DELIBERATE_EXCEPTION), () -> subscriber))
+                .verifyFailure(DELIBERATE_EXCEPTION);
         verify(subscriber).onSubscribe(any());
         verify(subscriber).onError(DeliberateException.DELIBERATE_EXCEPTION);
     }
 
-    protected abstract <T> Single<T> doSubscriber(Single<T> single, Supplier<SingleSource.Subscriber<? super T>> subscriberSupplier);
+    protected abstract <T> Single<T> doSubscriber(Single<T> single,
+                                                  Supplier<SingleSource.Subscriber<? super T>> subscriberSupplier);
 }

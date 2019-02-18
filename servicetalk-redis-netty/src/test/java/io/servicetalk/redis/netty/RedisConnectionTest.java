@@ -18,6 +18,7 @@ package io.servicetalk.redis.netty;
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.CompletableSource;
+import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
@@ -145,7 +146,7 @@ public class RedisConnectionTest extends BaseRedisClientTest {
                     });
                     return cnx.request(getRequest);
                 }).subscribe(
-                new io.servicetalk.concurrent.PublisherSource.Subscriber<RedisData>() {
+                new Subscriber<RedisData>() {
                     private Subscription s;
 
                     @Override

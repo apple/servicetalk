@@ -15,6 +15,8 @@
  */
 package io.servicetalk.concurrent.api;
 
+import io.servicetalk.concurrent.SingleSource;
+
 import java.time.Duration;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
@@ -35,7 +37,7 @@ public interface Executor extends io.servicetalk.concurrent.Executor, Listenable
      * Creates a new {@link Completable} that will complete after the time duration expires.
      *
      * @param delay The time duration which is allowed to elapse between
-     * {@link Completable#subscribe(CompletableSource.Subscriber)} and {@link Subscriber#onComplete()}.
+     * {@link Completable#subscribe(Subscriber)} and {@link Subscriber#onComplete()}.
      * @param unit The units for {@code duration}.
      * @return a new {@link Completable} that will complete after the time duration expires.
      * @see <a href="http://reactivex.io/documentation/operators/timer.html">ReactiveX Timer.</a>
@@ -47,7 +49,7 @@ public interface Executor extends io.servicetalk.concurrent.Executor, Listenable
     /**
      * Creates a new {@link Completable} that will complete after the time duration expires.
      * @param delay The time duration which is allowed to elapse between
-     * {@link Completable#subscribe(CompletableSource.Subscriber)} and {@link Subscriber#onComplete()}.
+     * {@link Completable#subscribe(Subscriber)} and {@link Subscriber#onComplete()}.
      *
      * @return a new {@link Completable} that will complete after the time duration expires.
      * @see <a href="http://reactivex.io/documentation/operators/timer.html">ReactiveX Timer.</a>
@@ -58,11 +60,11 @@ public interface Executor extends io.servicetalk.concurrent.Executor, Listenable
 
     /**
      * Create a new {@link Completable} that executes the passed {@link Runnable} on each
-     * {@link Completable#subscribe(CompletableSource.Subscriber)}.
+     * {@link Completable#subscribe(Subscriber)}.
      *
-     * @param runnable The {@link Runnable} to execute on each {@link Completable#subscribe(CompletableSource.Subscriber)}.
+     * @param runnable The {@link Runnable} to execute on each {@link Completable#subscribe(Subscriber)}.
      * @return a new {@link Completable} that executes a {@link Runnable} on each
-     * {@link Completable#subscribe(CompletableSource.Subscriber)}.
+     * {@link Completable#subscribe(Subscriber)}.
      */
     default Completable submit(Runnable runnable) {
         return new SubmitCompletable(runnable, this);

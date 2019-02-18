@@ -59,5 +59,6 @@ public abstract class AbstractDoSubscriberTest {
         verify(subscriber).onError(DeliberateException.DELIBERATE_EXCEPTION);
     }
 
-    protected abstract Completable doSubscriber(Completable completable, Supplier<CompletableSource.Subscriber> subscriberSupplier);
+    protected abstract Completable doSubscriber(Completable completable,
+                                                Supplier<CompletableSource.Subscriber> subscriberSupplier);
 }

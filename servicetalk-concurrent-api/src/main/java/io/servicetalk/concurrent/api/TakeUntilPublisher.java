@@ -46,7 +46,7 @@ final class TakeUntilPublisher<T> extends AbstractSynchronousPublisherOperator<T
         return new TakeUntilSubscriber<>(subscriber, until);
     }
 
-    private static final class TakeUntilSubscriber<T> implements io.servicetalk.concurrent.PublisherSource.Subscriber<T> {
+    private static final class TakeUntilSubscriber<T> implements Subscriber<T> {
         private static final Logger LOGGER = LoggerFactory.getLogger(TakeUntilSubscriber.class);
         private static final Object CANCELLED = new Object();
         private static final AtomicIntegerFieldUpdater<TakeUntilSubscriber> subscriberStateUpdater =
@@ -70,7 +70,7 @@ final class TakeUntilPublisher<T> extends AbstractSynchronousPublisherOperator<T
         private final io.servicetalk.concurrent.PublisherSource.Subscriber<? super T> subscriber;
         private final Completable until;
 
-        TakeUntilSubscriber(io.servicetalk.concurrent.PublisherSource.Subscriber<? super T> subscriber, Completable until) {
+        TakeUntilSubscriber(Subscriber<? super T> subscriber, Completable until) {
             this.subscriber = subscriber;
             this.until = until;
         }
@@ -84,7 +84,8 @@ final class TakeUntilPublisher<T> extends AbstractSynchronousPublisherOperator<T
                 @Override
                 public void cancel() {
                     super.cancel();
-                    Cancellable untilCancellable = untilCancellableUpdater.getAndSet(TakeUntilSubscriber.this, IGNORE_CANCEL);
+                    Cancellable untilCancellable =
+                            untilCancellableUpdater.getAndSet(TakeUntilSubscriber.this, IGNORE_CANCEL);
                     if (untilCancellable != null) {
                         untilCancellable.cancel();
                     }
@@ -111,7 +112,8 @@ final class TakeUntilPublisher<T> extends AbstractSynchronousPublisherOperator<T
 
                 @Override
                 public void onError(Throwable t) {
-                    if (checkTerminationValidWithConcurrentOnNextCheck(null, t, subscriberStateUpdater, terminalNotificationUpdater, TakeUntilSubscriber.this)) {
+                    if (checkTerminationValidWithConcurrentOnNextCheck(null, t, subscriberStateUpdater,
+                            terminalNotificationUpdater, TakeUntilSubscriber.this)) {
                         // Call cancel on the actual Subscription that was passed into onSubscribe(...)
                         onError0(t);
                     }
@@ -135,7 +137,8 @@ final class TakeUntilPublisher<T> extends AbstractSynchronousPublisherOperator<T
 
         @Override
         public void onError(Throwable t) {
-            if (checkTerminationValidWithConcurrentOnNextCheck(null, t, subscriberStateUpdater, terminalNotificationUpdater, this)) {
+            if (checkTerminationValidWithConcurrentOnNextCheck(null, t, subscriberStateUpdater,
+                    terminalNotificationUpdater, this)) {
                 onError0(t);
             } else {
                 LOGGER.debug("onError ignored as the subscriber {} is already disposed.", this, t);
@@ -149,7 +152,8 @@ final class TakeUntilPublisher<T> extends AbstractSynchronousPublisherOperator<T
 
         @Override
         public void onComplete() {
-            if (checkTerminationValidWithConcurrentOnNextCheck(null, complete(), subscriberStateUpdater, terminalNotificationUpdater, this)) {
+            if (checkTerminationValidWithConcurrentOnNextCheck(null, complete(), subscriberStateUpdater,
+                    terminalNotificationUpdater, this)) {
                 onComplete0();
             }
         }

@@ -56,7 +56,8 @@ public interface SignalOffloader {
      *
      * @param subscriber {@link SingleSource.Subscriber} for which the signals are to be offloaded.
      * @param <T> Type of items received by the passed and returned {@link SingleSource.Subscriber}.
-     * @return New {@link SingleSource.Subscriber} that will offload signals to the passed {@link SingleSource.Subscriber}.
+     * @return New {@link SingleSource.Subscriber} that will offload signals to the passed
+     * {@link SingleSource.Subscriber}.
      */
     <T> SingleSource.Subscriber<? super T> offloadSubscriber(SingleSource.Subscriber<? super T> subscriber);
 
@@ -67,7 +68,8 @@ public interface SignalOffloader {
      * {@link SignalOffloader} instance.
      *
      * @param subscriber {@link CompletableSource.Subscriber} for which the signals are to be offloaded.
-     * @return New {@link CompletableSource.Subscriber} that will offload signals to the passed {@link CompletableSource.Subscriber}.
+     * @return New {@link CompletableSource.Subscriber} that will offload signals to the passed
+     * {@link CompletableSource.Subscriber}.
      */
     CompletableSource.Subscriber offloadSubscriber(CompletableSource.Subscriber subscriber);
 
@@ -85,8 +87,8 @@ public interface SignalOffloader {
     <T> Subscriber<? super T> offloadSubscription(Subscriber<? super T> subscriber);
 
     /**
-     * Decorates the passed {@link SingleSource.Subscriber} such that all method calls to its {@link Cancellable} will be
-     * offloaded.
+     * Decorates the passed {@link SingleSource.Subscriber} such that all method calls to its {@link Cancellable} will
+     * be offloaded.
      * <em>None of the {@link SingleSource.Subscriber} methods will be offloaded.</em>
      * <h2>Caution</h2>
      * This method MUST not be called concurrently with itself or other offload methods here on the same
@@ -94,20 +96,22 @@ public interface SignalOffloader {
      *
      * @param subscriber {@link SingleSource.Subscriber} for which the signals are to be offloaded.
      * @param <T> Type of items received by the passed and returned {@link SingleSource.Subscriber}.
-     * @return New {@link SingleSource.Subscriber} that will offload signals to the passed {@link SingleSource.Subscriber}.
+     * @return New {@link SingleSource.Subscriber} that will offload signals to the passed
+     * {@link SingleSource.Subscriber}.
      */
     <T> SingleSource.Subscriber<? super T> offloadCancellable(SingleSource.Subscriber<? super T> subscriber);
 
     /**
-     * Decorates the passed {@link CompletableSource.Subscriber} such that all method calls to its {@link Cancellable} will
-     * be offloaded.
+     * Decorates the passed {@link CompletableSource.Subscriber} such that all method calls to its {@link Cancellable}
+     * will be offloaded.
      * <em>None of the {@link CompletableSource.Subscriber} methods will be offloaded.</em>
      * <h2>Caution</h2>LoadBalancerReadyHttpClientTest
      * This method MUST not be called concurrently with itself or other offload methods here on the same
      * {@link SignalOffloader} instance.
      *
      * @param subscriber {@link CompletableSource.Subscriber} for which the signals are to be offloaded.
-     * @return New {@link CompletableSource.Subscriber} that will offload signals to the passed {@link CompletableSource.Subscriber}.
+     * @return New {@link CompletableSource.Subscriber} that will offload signals to the passed
+     * {@link CompletableSource.Subscriber}.
      */
     CompletableSource.Subscriber offloadCancellable(CompletableSource.Subscriber subscriber);
 
@@ -143,7 +147,8 @@ public interface SignalOffloader {
      * @param handleSubscribe {@link Consumer} to handle the offloaded subscribe call.
      * @param <T> Type of signal.
      */
-    <T> void offloadSubscribe(SingleSource.Subscriber<T> subscriber, Consumer<SingleSource.Subscriber<T>> handleSubscribe);
+    <T> void offloadSubscribe(SingleSource.Subscriber<T> subscriber,
+                              Consumer<SingleSource.Subscriber<T>> handleSubscribe);
 
     /**
      * Offloads the subscribe call for the passed {@link Subscriber}.
@@ -159,7 +164,8 @@ public interface SignalOffloader {
      * @param subscriber {@link Subscriber} for which for which subscribe call has to be offloaded.
      * @param handleSubscribe {@link Consumer} to handle the offloaded subscribe call.
      */
-    void offloadSubscribe(CompletableSource.Subscriber subscriber, Consumer<CompletableSource.Subscriber> handleSubscribe);
+    void offloadSubscribe(CompletableSource.Subscriber subscriber,
+                          Consumer<CompletableSource.Subscriber> handleSubscribe);
 
     /**
      * Offloads the consumption of the passed {@code signal} by the passed {@link Consumer}.

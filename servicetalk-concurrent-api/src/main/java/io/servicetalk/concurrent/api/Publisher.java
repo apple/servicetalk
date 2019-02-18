@@ -1296,8 +1296,9 @@ public abstract class Publisher<T> implements PublisherSource<T> {
     }
 
     /**
-     * Create a {@link Publisher} that allows exactly {@code expectedSubscribers} calls to {@link #subscribe(Subscriber)}.
-     * The events from this {@link Publisher} object will be delivered to each {@link Subscriber}.
+     * Create a {@link Publisher} that allows exactly {@code expectedSubscribers} calls to
+     * {@link #subscribe(Subscriber)}. The events from this {@link Publisher} object will be delivered to each
+     * {@link Subscriber}.
      * <p>
      * Depending on {@link Subscription#request(long)} demand it is possible that data maybe queued before being
      * delivered to each {@link Subscriber}! For example if there are 2 {@link Subscriber}s and the first calls
@@ -1949,7 +1950,8 @@ public abstract class Publisher<T> implements PublisherSource<T> {
      *
      * @return A {@link Completable} that mirrors the terminal signal from this {@code Publisher}.
      *
-     * @see <a href="http://reactivex.io/documentation/operators/ignoreelements.html">ReactiveX ignoreElements operator.</a>
+     * @see <a href="http://reactivex.io/documentation/operators/ignoreelements.html">
+     *     ReactiveX ignoreElements operator.</a>
      */
     public final Completable ignoreElements() {
         return new PubToCompletable<>(this);

@@ -1064,9 +1064,9 @@ public abstract class Completable implements CompletableSource {
     /**
      * Converts this {@code Completable} to a {@link Publisher}.
      * <p>
-     * No {@link io.servicetalk.concurrent.PublisherSource.Subscriber#onNext(Object)} signals will be delivered to the returned
-     * {@link Publisher}. Only terminal signals will be delivered. If you need more control you should consider using
-     * {@link #concatWith(Publisher)}.
+     * No {@link io.servicetalk.concurrent.PublisherSource.Subscriber#onNext(Object)} signals will be delivered to the
+     * returned {@link Publisher}. Only terminal signals will be delivered. If you need more control you should consider
+     * using {@link #concatWith(Publisher)}.
      * @param <T> The value type of the resulting {@link Publisher}.
      * @return A {@link Publisher} that mirrors the terminal signal from this {@link Completable}.
      */
@@ -1484,8 +1484,8 @@ public abstract class Completable implements CompletableSource {
         final SignalOffloader signalOffloader;
         final Subscriber offloadedSubscriber;
         try {
-            // This is a user-driven subscribe i.e. there is no SignalOffloader override, so create a new SignalOffloader
-            // to use.
+            // This is a user-driven subscribe i.e. there is no SignalOffloader override, so create a new
+            // SignalOffloader to use.
             signalOffloader = newOffloaderFor(executor);
             // Since this is a user-driven subscribe (end of the execution chain), offload Cancellable
             offloadedSubscriber = signalOffloader.offloadCancellable(
@@ -1531,7 +1531,7 @@ public abstract class Completable implements CompletableSource {
      *
      * @param subscriber the subscriber.
      * @param signalOffloader {@link SignalOffloader} to use for this {@link Subscriber}.
-     * @param contextMap the {@link AsyncContextMap} to use for this {@link io.servicetalk.concurrent.PublisherSource.Subscriber}.
+     * @param contextMap the {@link AsyncContextMap} to use for this {@link Subscriber}.
      * @param contextProvider the {@link AsyncContextProvider} used to wrap any objects to preserve
      */
     void handleSubscribe(Subscriber subscriber, SignalOffloader signalOffloader, AsyncContextMap contextMap,

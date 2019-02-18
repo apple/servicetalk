@@ -17,6 +17,8 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.CompletableSource;
+import io.servicetalk.concurrent.PublisherSource;
+import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.api.AsyncContextMap.Key;
@@ -995,7 +997,7 @@ public class DefaultAsyncContextProviderTest {
         AsyncContextMap cancelContext;
 
         @Override
-        protected void handleSubscribe(io.servicetalk.concurrent.PublisherSource.Subscriber s) {
+        protected void handleSubscribe(PublisherSource.Subscriber s) {
             // Introduce some asynchrony here and there
             executor.execute(() -> s.onSubscribe(new Subscription() {
                 @Override
@@ -1026,7 +1028,7 @@ public class DefaultAsyncContextProviderTest {
         }
     }
 
-    private static class ContextCaptureSubscriber<T> implements io.servicetalk.concurrent.PublisherSource.Subscriber<T> {
+    private static class ContextCaptureSubscriber<T> implements Subscriber<T> {
         final CountDownLatch latch = new CountDownLatch(1);
 
         @Nullable

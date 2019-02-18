@@ -77,12 +77,14 @@ import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
  * <ul>
  *     <li>No concurrent calls to {@link #registerNewCommand(Command)}.</li>
  *     <li>No concurrent calls to all {@link Publisher} returned by {@link #registerNewCommand(Command)}.</li>
- *     <li>Calls to {@link Publisher#subscribe(Subscriber)} to {@link Publisher} returned by {@link #registerNewCommand(Command)} is exactly
- *     in the same order as {@link #registerNewCommand(Command)} is called.</li>
+ *     <li>Calls to {@link Publisher#subscribe(Subscriber)} to {@link Publisher} returned by
+ *     {@link #registerNewCommand(Command)} is exactly in the same order as {@link #registerNewCommand(Command)} is
+ *     called.</li>
  * </ul>
  *
- * The above rules mean that the caller of {@link #registerNewCommand(Command)} MUST immediately subscribe to the returned {@link Publisher}
- * and then proceed to any further writes. These rules are followed by {@link InternalSubscribedRedisConnection}.
+ * The above rules mean that the caller of {@link #registerNewCommand(Command)} MUST immediately subscribe to the
+ * returned {@link Publisher} and then proceed to any further writes. These rules are followed by
+ * {@link InternalSubscribedRedisConnection}.
  */
 final class ReadStreamSplitter {
 
@@ -110,7 +112,8 @@ final class ReadStreamSplitter {
     @Nullable
     private volatile Subscription groupSubscription;
 
-    ReadStreamSplitter(NettyConnection<RedisData, ByteBuf> connection, int maxConcurrentRequests, int maxBufferPerGroup, Function<RedisRequest, Completable> unsubscribeWriter) {
+    ReadStreamSplitter(NettyConnection<RedisData, ByteBuf> connection, int maxConcurrentRequests,
+                       int maxBufferPerGroup, Function<RedisRequest, Completable> unsubscribeWriter) {
         this.connection = requireNonNull(connection);
         this.unsubscribeWriter = requireNonNull(unsubscribeWriter);
         this.original = new SubscribedChannelReadStream(connection.read(),
@@ -262,7 +265,8 @@ final class ReadStreamSplitter {
         private final String channel;
         private final boolean isPatternSubscribe;
 
-        private GroupSubscriber(Subscriber<? super PubSubChannelMessage> target, String channel, boolean isPatternSubscribe) {
+        private GroupSubscriber(Subscriber<? super PubSubChannelMessage> target, String channel,
+                                boolean isPatternSubscribe) {
             this.target = target;
             this.channel = channel;
             this.isPatternSubscribe = isPatternSubscribe;
@@ -270,8 +274,9 @@ final class ReadStreamSplitter {
 
         @Override
         public void onSubscribe(Subscription s) {
-            // Request SUBSCRIBE_ACK, since we filter this ack from the stream, this does not create a mismatch between what is requested and what is received.
-            // This request will at max emit a terminal event since ACK is always the first item and it will be filtered before this Subscriber.
+            // Request SUBSCRIBE_ACK, since we filter this ack from the stream, this does not create a mismatch between
+            // what is requested and what is received. This request will at max emit a terminal event since ACK is
+            // always the first item and it will be filtered before this Subscriber.
             s.request(1);
             target.onSubscribe(new Subscription() {
                 @Override
@@ -282,7 +287,8 @@ final class ReadStreamSplitter {
                 @Override
                 public void cancel() {
                     final Command command = isPatternSubscribe ? PUNSUBSCRIBE : UNSUBSCRIBE;
-                    final int capacity = calculateInitialCommandBufferSize(2, command) + calculateRequestArgumentSize(channel);
+                    final int capacity = calculateInitialCommandBufferSize(2, command) +
+                            calculateRequestArgumentSize(channel);
                     final Buffer buf = connection.executionContext().bufferAllocator().newBuffer(capacity);
                     writeRequestArraySize(buf, 2);
                     command.encodeTo(buf);
@@ -291,21 +297,22 @@ final class ReadStreamSplitter {
                     unsubscribeWriter.apply(request).subscribe(new CompletableSource.Subscriber() {
                         @Override
                         public void onSubscribe(final Cancellable cancellable) {
-                            // The cancel cannot be propagated because we don't want to cancel outside the scope of this group.
+                            // The cancel cannot be propagated because we don't want to cancel outside the scope of this
+                            // group.
                         }
 
                         @Override
                         public void onComplete() {
-                            // Cancel the group subscription. Unsubscribe ACKs come and gets processed on the main channel
-                            // stream and this cancellation does not stop those messages from flowing in.
+                            // Cancel the group subscription. Unsubscribe ACKs come and gets processed on the main
+                            // channel stream and this cancellation does not stop those messages from flowing in.
                             s.cancel();
                         }
 
                         @Override
                         public void onError(final Throwable t) {
                             LOGGER.debug("Failed sending unsubscribe to the server.", t);
-                            // Cancel the group subscription. Unsubscribe ACKs come and gets processed on the main channel
-                            // stream and this cancellation does not stop those messages from flowing in.
+                            // Cancel the group subscription. Unsubscribe ACKs come and gets processed on the main
+                            // channel stream and this cancellation does not stop those messages from flowing in.
                             s.cancel();
                         }
                     });
@@ -373,7 +380,8 @@ final class ReadStreamSplitter {
                 handleNonSubscribeCommand(pubSubChannelMessage, keyType);
                 return Key.IGNORE_GROUP; // Special value to signal ignore
             }
-            final String pChannel = keyType == Pattern ? pubSubChannelMessage.getPattern() : pubSubChannelMessage.getChannel();
+            final String pChannel = keyType == Pattern ? pubSubChannelMessage.getPattern() :
+                    pubSubChannelMessage.getChannel();
             assert pChannel != null;
             Key key = pChannelToKey.get(pChannel);
             if (key == null) {
@@ -397,10 +405,12 @@ final class ReadStreamSplitter {
         private void failDuplicateSubscriber(String channelStr) {
             Subscriber<? super PubSubChannelMessage> duplicate = subscribers.poll();
             if (duplicate == null) {
-                throw new IllegalStateException("Duplicate subscribe ack received for channel: " + channelStr + " but no subscriber found.");
+                throw new IllegalStateException("Duplicate subscribe ack received for channel: " + channelStr +
+                        " but no subscriber found.");
             }
             duplicate.onSubscribe(EMPTY_SUBSCRIPTION);
-            duplicate.onError(new RejectedSubscribeException("A subscription to channel " + channelStr + " already exists."));
+            duplicate.onError(new RejectedSubscribeException("A subscription to channel " + channelStr +
+                    " already exists."));
         }
 
         private void handleNonSubscribeCommand(PubSubChannelMessage pubSubChannelMessage, KeyType keyType) {
@@ -408,7 +418,8 @@ final class ReadStreamSplitter {
             // all other responses must only contain a single message.
             Subscriber<? super PubSubChannelMessage> nextSub = subscribers.poll();
             if (nextSub == null) {
-                throw new IllegalStateException("New message received for key: " + keyType + " but no subscriber found.");
+                throw new IllegalStateException("New message received for key: " + keyType +
+                        " but no subscriber found.");
             }
             nextSub.onSubscribe(new ScalarValueSubscription<>(pubSubChannelMessage, nextSub));
         }

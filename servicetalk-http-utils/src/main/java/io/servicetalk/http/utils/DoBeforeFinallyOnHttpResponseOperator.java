@@ -16,6 +16,7 @@
 package io.servicetalk.http.utils;
 
 import io.servicetalk.concurrent.Cancellable;
+import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.SingleSource.Subscriber;
@@ -153,7 +154,7 @@ public final class DoBeforeFinallyOnHttpResponseOperator
         }
     }
 
-    private static final class CancelImmediatelySubscriber implements io.servicetalk.concurrent.PublisherSource.Subscriber<Object> {
+    private static final class CancelImmediatelySubscriber implements PublisherSource.Subscriber<Object> {
         private static final Logger LOGGER = LoggerFactory.getLogger(CancelImmediatelySubscriber.class);
         static final CancelImmediatelySubscriber INSTANCE = new CancelImmediatelySubscriber();
 

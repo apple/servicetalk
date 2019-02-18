@@ -15,6 +15,7 @@
  */
 package io.servicetalk.opentracing.http;
 
+import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.http.api.HttpResponseMetaData;
 import io.servicetalk.http.api.StreamingHttpResponse;
@@ -50,7 +51,7 @@ final class TracingUtils {
                                                               AtomicBoolean scopeClosed,
                                                               Predicate<HttpResponseMetaData> errorChecker) {
         return resp -> resp.transformRawPayloadBody(pub ->
-                pub.doAfterSubscriber(() -> new io.servicetalk.concurrent.PublisherSource.Subscriber<Object>() {
+                pub.doAfterSubscriber(() -> new Subscriber<Object>() {
                     @Override
                     public void onSubscribe(final Subscription s) {
                     }

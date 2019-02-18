@@ -45,8 +45,7 @@ final class SingleFlatMapPublisher<T, R> extends AbstractNoHandleSubscribePublis
                         contextMap, contextProvider), signalOffloader, contextMap, contextProvider);
     }
 
-    private static final class SubscriberImpl<T, R> implements SingleSource.Subscriber<T>,
-                                                               io.servicetalk.concurrent.PublisherSource.Subscriber<R> {
+    private static final class SubscriberImpl<T, R> implements SingleSource.Subscriber<T>, Subscriber<R> {
         private final Subscriber<? super R> subscriber;
         private final Function<? super T, Publisher<? extends R>> nextFactory;
         private final SignalOffloader signalOffloader;

@@ -217,7 +217,7 @@ public class SignalOffloaderConcurrentPublisherTest {
         }
     }
 
-    private static final class SubscriberImpl implements io.servicetalk.concurrent.PublisherSource.Subscriber<Integer> {
+    private static final class SubscriberImpl implements Subscriber<Integer> {
 
         private final CountDownLatch awaitOnSubscribe = new CountDownLatch(1);
         @Nullable

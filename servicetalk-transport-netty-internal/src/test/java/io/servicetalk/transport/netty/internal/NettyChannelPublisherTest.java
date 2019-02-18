@@ -190,7 +190,7 @@ public class NettyChannelPublisherTest {
         subscriber.verifyItems(1);
 
         @SuppressWarnings("unchecked")
-        io.servicetalk.concurrent.PublisherSource.Subscriber<Integer> sub2 = mock(io.servicetalk.concurrent.PublisherSource.Subscriber.class);
+        Subscriber<Integer> sub2 = mock(io.servicetalk.concurrent.PublisherSource.Subscriber.class);
         publisher.subscribe(sub2);
         verify(sub2).onSubscribe(any(Subscription.class));
         verify(sub2).onError(any(DuplicateSubscribeException.class));
@@ -339,7 +339,7 @@ public class NettyChannelPublisherTest {
         subscriber.subscribe(publisher);
         subscriber.verifyFailure(ClosedChannelException.class);
         @SuppressWarnings("unchecked")
-        io.servicetalk.concurrent.PublisherSource.Subscriber<Integer> mock = Mockito.mock(io.servicetalk.concurrent.PublisherSource.Subscriber.class);
+        Subscriber<Integer> mock = Mockito.mock(Subscriber.class);
         publisher.subscribe(mock);
         verify(mock).onSubscribe(any());
         verify(mock).onError(any(ClosedChannelException.class));

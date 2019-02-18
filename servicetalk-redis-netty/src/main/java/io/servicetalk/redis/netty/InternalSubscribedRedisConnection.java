@@ -104,7 +104,6 @@ final class InternalSubscribedRedisConnection extends AbstractRedisConnection {
         final Publisher<ByteBuf> reqContent = RedisUtils.encodeRequestContent(request,
                 connection.executionContext().bufferAllocator());
         return new Publisher<RedisData>() {
-            @SuppressWarnings("unchecked")
             @Override
             protected void handleSubscribe(Subscriber<? super RedisData> subscriber) {
                 Completable write;
@@ -117,23 +116,30 @@ final class InternalSubscribedRedisConnection extends AbstractRedisConnection {
                  We register a new command after we have written the request completely. Following is the reason:
                  - Since we correlate a response to a request using a queue, we need to make sure that the commands are
                  registered in the same order as they are written.
-                 - writeQueue ensures that writes are properly ordered and onComplete is invoked before any other write is started.
-                 - ReadStreamSplitter subscribes synchronously hence registering the command in the same order as it was written.
+                 - writeQueue ensures that writes are properly ordered and onComplete is invoked before any other write
+                  is started.
+                 - ReadStreamSplitter subscribes synchronously hence registering the command in the same order as it was
+                  written.
 
                  The above makes sure that we do not mix the order of writes and subscribers for a command.
 
-                 Above has an implicit assumption that redis does not start sending the response before write is completed.
+                 Above has an implicit assumption that redis does not start sending the response before write is
+                  completed.
                  If it does, we get into issues in cases where a response is received on a pre-existing group.
                  These cases are the following:
                  - Duplicate (P)Subscribe
                  - Unsubscribe
 
-                 Since, the above commands are not streaming in nature i.e. they do not have data associated which can be chunked, we
+                 Since, the above commands are not streaming in nature i.e. they do not have data associated which can
+                  be chunked, we
                  can be sure that our assumption is not violated.
 
-                 In any other case, a command will emit a new group (in ReadStreamSplitter). Since we only request for a new
-                 group, after we register the Subscriber for a command, we are OK even if response is received before request completes.
-                 Since, in such a case groupBy will buffer the group and we will not see the new group in ReadStreamSplitter.
+                 In any other case, a command will emit a new group (in ReadStreamSplitter). Since we only request for a
+                  new
+                 group, after we register the Subscriber for a command, we are OK even if response is received before
+                  request completes.
+                 Since, in such a case groupBy will buffer the group and we will not see the new group in
+                  ReadStreamSplitter.
                  */
                 final Publisher<PubSubChannelMessage> response;
                 if (deferSubscribeTillConnect) {
@@ -170,10 +176,10 @@ final class InternalSubscribedRedisConnection extends AbstractRedisConnection {
         if (!writeQueue.subscribed) {
             // PING response is different (simple string) before we subscribe and hence it isn't parsed correctly.
             // So reject internal PINGs till we have subscribed.
-            // This is pessimistic as if there is a concurrent SUBSCRIBE command, we may be lucky and our PING lands after
-            // SUBSCRIBE. However, with this approach we just wait for the next ping cycle. Since, the ping frequency is not
-            // strictly defined and expected, this is an acceptable approach which reduces work done inside command execution
-            // to detect this case.
+            // This is pessimistic as if there is a concurrent SUBSCRIBE command, we may be lucky and our PING lands
+            // after SUBSCRIBE. However, with this approach we just wait for the next ping cycle. Since, the ping
+            // frequency is not strictly defined and expected, this is an acceptable approach which reduces work done
+            // inside command execution to detect this case.
             return error(new PingRejectedException());
         }
         // We send a PING with no payload so the response is a fully aggregated PubSubChannelMessage.
@@ -223,8 +229,10 @@ final class InternalSubscribedRedisConnection extends AbstractRedisConnection {
                 unknownStackTrace(new RejectedSubscribeException(new ClosedChannelException()),
                         WriteQueue.class, "quit(..)");
 
-        private static final AtomicIntegerFieldUpdater<WriteTask> taskCalledPostTermUpdater = newUpdater(WriteTask.class, "taskCalledPostTerm");
-        private static final AtomicIntegerFieldUpdater<WriteQueue> closedUpdater = newUpdater(WriteQueue.class, "closed");
+        private static final AtomicIntegerFieldUpdater<WriteTask> taskCalledPostTermUpdater =
+                newUpdater(WriteTask.class, "taskCalledPostTerm");
+        private static final AtomicIntegerFieldUpdater<WriteQueue> closedUpdater =
+                newUpdater(WriteQueue.class, "closed");
         private final int maxPendingWrites;
         // Volatile for visibility, accessed from sendPing()
         volatile boolean subscribed;
@@ -293,7 +301,8 @@ final class InternalSubscribedRedisConnection extends AbstractRedisConnection {
             @SuppressWarnings("unused")
             volatile int taskCalledPostTerm;
 
-            WriteTask(RedisProtocolSupport.Command command, Completable write, CompletableSource.Subscriber subscriber) {
+            WriteTask(RedisProtocolSupport.Command command, Completable write,
+                      CompletableSource.Subscriber subscriber) {
                 this.isSubscribedCommand = command == PSUBSCRIBE || command == SUBSCRIBE;
                 this.write = write;
                 this.subscriber = subscriber;
@@ -342,8 +351,10 @@ final class InternalSubscribedRedisConnection extends AbstractRedisConnection {
 
             private void invokePostTaskTermination() {
                 if (taskCalledPostTermUpdater.compareAndSet(this, 0, 1)) {
-                    // postTaskTermination() assumes that the caller is holding the lock, so we need to avoid duplicate calls to it.
-                    // Since, this is called from cancel as well as onError/Complete, we need to make sure, it is invoked once.
+                    // postTaskTermination() assumes that the caller is holding the lock, so we need to avoid duplicate
+                    // calls to it.
+                    // Since, this is called from cancel as well as onError/Complete, we need to make sure, it is
+                    // invoked once.
                     safePostTaskTermination();
                 }
             }
@@ -351,16 +362,18 @@ final class InternalSubscribedRedisConnection extends AbstractRedisConnection {
     }
 
     /**
-     * Defers the {@link Subscriber#onSubscribe(Subscription)} (Subscription)} signal to the {@link Subscriber} of the returned
-     * {@link Publisher} till {@code next} {@link Publisher} sends an {@link Subscriber#onSubscribe(Subscription)}.
+     * Defers the {@link Subscriber#onSubscribe(Subscription)} (Subscription)} signal to the {@link Subscriber} of the
+     * returned {@link Publisher} till {@code next} {@link Publisher} sends an
+     * {@link Subscriber#onSubscribe(Subscription)}.
      *
-     * This operator is required for in-process publisher-subscriber coordination. As a consequence a queued subscription
-     * command can't be cancelled before writing to Redis.
+     * This operator is required for in-process publisher-subscriber coordination. As a consequence a queued
+     * subscription command can't be cancelled before writing to Redis.
      *
      * @param queuedWrite the {@link Completable} tracking writing the enqueued
      *                    {@link RedisProtocolSupport.Command#SUBSCRIBE} or
      *                    {@link RedisProtocolSupport.Command#PSUBSCRIBE} commands to Redis
-     * @param next        the {@link PubSubChannelMessage} producer to subscribe to after completing the original {@link Completable}
+     * @param next the {@link PubSubChannelMessage} producer to subscribe to after completing the original
+     * {@link Completable}
      * @return the composite operator
      */
     private static Publisher<PubSubChannelMessage> concatDeferOnSubscribe(Completable queuedWrite,
@@ -373,7 +386,8 @@ final class InternalSubscribedRedisConnection extends AbstractRedisConnection {
 
                     @Override
                     public void onSubscribe(Cancellable cancellable) {
-                        // Ignore onSubscribe as we are deferring the signal till we get the same from the next Publisher.
+                        // Ignore onSubscribe as we are deferring the signal till we get the same from the next
+                        // Publisher.
                     }
 
                     @Override
