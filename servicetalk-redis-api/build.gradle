@@ -52,7 +52,3 @@ dependencies {
   testImplementation "org.hamcrest:hamcrest-library"
   testImplementation "org.mockito:mockito-core"
 }
-
-license {
-  exclude "**/StringByteSizeUtil.java"
-}

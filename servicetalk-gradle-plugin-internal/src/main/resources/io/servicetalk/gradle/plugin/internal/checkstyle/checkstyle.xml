@@ -30,6 +30,28 @@
     <property name="optional" value="true"/>
   </module>
 
+  <!-- Copyrights -->
+  <module name="RegexpHeader">
+    <property name="id" value="CopyrightHeader"/>
+    <property name="headerFile" value="${config_loc}/copyright-slashstar-style.header"/>
+    <property name="fileExtensions" value="java, groovy, kt, gradle"/>
+  </module>
+  <module name="RegexpHeader">
+    <property name="id" value="CopyrightHeader"/>
+    <property name="headerFile" value="${config_loc}/copyright-xml-style.header"/>
+    <property name="fileExtensions" value="xml, xhtml, xsd, pom"/>
+  </module>
+  <module name="RegexpHeader">
+    <property name="id" value="CopyrightHeader"/>
+    <property name="headerFile" value="${config_loc}/copyright-script-style.header"/>
+    <property name="fileExtensions" value="properties, yml, yaml"/>
+  </module>
+  <module name="RegexpHeader">
+    <property name="id" value="CopyrightHeader"/>
+    <property name="headerFile" value="${config_loc}/copyright-sh-script-style.header"/>
+    <property name="fileExtensions" value="sh"/>
+  </module>
+
   <!-- Prohibit trailing whitespace -->
   <module name="RegexpSingleline">
     <property name="id" value="TrailingWhitespace"/>

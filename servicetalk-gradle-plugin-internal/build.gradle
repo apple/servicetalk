@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 plugins {
-  id "com.github.hierynomus.license" version "0.15.0"
   id "com.jfrog.bintray" version "1.8.4"
 }
 
 apply plugin: "groovy"
 apply plugin: "idea"
 apply plugin: "maven-publish"
+apply plugin: "checkstyle"
 
 repositories {
   jcenter()
@@ -32,48 +32,45 @@ dependencies {
   compile localGroovy()
   // these are plugins that are applied by the plugin
   compile "org.asciidoctor:asciidoctor-gradle-plugin:1.5.8.1"
-  compile "gradle.plugin.nl.javadude.gradle.plugins:license-gradle-plugin:0.14.0"
   compile "gradle.plugin.com.github.spotbugs:spotbugs-gradle-plugin:1.6.9"
   compile "com.jfrog.bintray.gradle:gradle-bintray-plugin:1.8.4"
 }
 
-license {
-  header = file("$rootDir/src/main/resources/io/servicetalk/gradle/plugin/internal/license/HEADER.txt")
-  strictCheck = true
-  // TODO - remove after new year license check fixed
-  ignoreFailures = true
-  mapping {
-    java = 'SLASHSTAR_STYLE'
-    gradle = 'SLASHSTAR_STYLE'
-  }
-  headerDefinitions {
-    xml_style {
-      firstLine = '<!--'
-      beforeEachLine = '  ~ '
-      endLine = '  -->'
-      skipLinePattern = '^<\\?xml.*>$'
-      firstLineDetectionPattern = '(\\\\s|\\\\t)*<!--.*$'
-      lastLineDetectionPattern = '.*-->(\\\\s|\\\\t)*$'
-      allowBlankLines = true
-      isMultiline = true
-    }
+checkstyle {
+  toolVersion = "8.16"
+  configDir = file("$projectDir/src/main/resources/io/servicetalk/gradle/plugin/internal/checkstyle")
+}
+
+// Overwrite the default set of file for Checkstyle analysis from only java files to all files of the source set
+// See: https://docs.gradle.org/current/dsl/org.gradle.api.plugins.quality.Checkstyle.html#org.gradle.api.plugins.quality.Checkstyle:source
+sourceSets.all {
+  tasks.getByName(it.getTaskName("checkstyle", null)).setSource(it.getAllSource())
+}
+
+task checkstyleRoot(type: Checkstyle) {
+  description = "Run Checkstyle analysis for files in the root directory"
+  classpath = sourceSets.main.output
+  source = fileTree(".") {
+    includes = ["*.gradle", "*.properties", "gradle/**"]
+    excludes = ["gradle/wrapper/**"]
   }
 }
 
-def rootFileTree = fileTree("$rootDir") {
-  includes = ["*.gradle", "*.properties", "gradle/**"]
-  excludes = ["gradle/wrapper/**"]
+task checkstyle {
+  description = "Run Checkstyle analysis for all source sets"
+  group = "verification"
+  dependsOn tasks.withType(Checkstyle)
 }
 
-task licenseRoot(type: com.hierynomus.gradle.license.tasks.LicenseCheck) {
-  source = rootFileTree
+tasks.withType(Checkstyle) {
+  group = "verification"
 }
-tasks.license.dependsOn tasks.licenseRoot
 
-task licenseFormatRoot(type: com.hierynomus.gradle.license.tasks.LicenseFormat) {
-  source = rootFileTree
+task quality {
+  description = "Run all quality analysers for all source sets"
+  group = "verification"
+  dependsOn tasks.checkstyle
 }
-tasks.licenseFormat.dependsOn tasks.licenseFormatRoot
 
 jar {
   manifest {
@@ -119,7 +116,7 @@ idea {
     iml {
       withXml {
         // Without this, gradle/intellij sees .java files and makes it a source directory instead of a resource
-        // directory. This then causes building in intellijto fail when it tries to compile the template .java files.
+        // directory. This then causes building in intellij to fail when it tries to compile the template .java files.
         for (def sourceFolder : it.asNode().component.content.sourceFolder) {
           if (sourceFolder.@url.endsWith("/resources")) {
             sourceFolder.@type = "java-resource"
