@@ -297,7 +297,7 @@ public final class SubscriberUtils {
 
     /**
      * Deliver a terminal error to a {@link Subscriber} that has not yet had
-     * {@link Subscriber#onSubscribe(Subscription)} called.
+     * {@link Subscriber#onSubscribe(PublisherSource.Subscription)} called.
      * @param subscriber The {@link Subscriber} to terminate.
      * @param cause The terminal event.
      * @param <T> The type of {@link Subscriber}.
@@ -318,7 +318,7 @@ public final class SubscriberUtils {
 
     /**
      * Deliver a terminal complete to a {@link Subscriber} that has not yet had
-     * {@link Subscriber#onSubscribe(Subscription)} called.
+     * {@link Subscriber#onSubscribe(PublisherSource.Subscription)} called.
      * @param subscriber The {@link Subscriber} to terminate.
      * @param <T> The type of {@link Subscriber}.
      */
