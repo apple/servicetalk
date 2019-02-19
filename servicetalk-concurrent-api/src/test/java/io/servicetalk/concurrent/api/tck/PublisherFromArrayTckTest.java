@@ -23,7 +23,7 @@ import org.testng.annotations.Test;
 public class PublisherFromArrayTckTest extends AbstractPublisherTckTest<Integer> {
 
     @Override
-    public Publisher<Integer> createPublisher(long elements) {
+    public Publisher<Integer> createServiceTalkPublisher(long elements) {
         return TckUtils.newPublisher(TckUtils.requestNToInt(elements));
     }
 

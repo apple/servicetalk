@@ -15,6 +15,8 @@
  */
 package io.servicetalk.concurrent.api.publisher;
 
+import io.servicetalk.concurrent.PublisherSource.Subscriber;
+import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.ExecutorRule;
 import io.servicetalk.concurrent.api.Publisher;
@@ -24,8 +26,6 @@ import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 
 import org.junit.Rule;
 import org.junit.rules.Timeout;
-import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReferenceArray;

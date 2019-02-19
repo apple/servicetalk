@@ -15,13 +15,13 @@
  */
 package io.servicetalk.concurrent.api;
 
+import io.servicetalk.concurrent.PublisherSource.Subscriber;
+import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.internal.FlowControlUtil;
 
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
-import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
 
 import java.util.concurrent.atomic.AtomicLong;
 import javax.annotation.Nullable;

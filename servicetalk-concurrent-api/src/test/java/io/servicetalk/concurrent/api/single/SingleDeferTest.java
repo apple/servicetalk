@@ -15,6 +15,7 @@
  */
 package io.servicetalk.concurrent.api.single;
 
+import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.api.Single;
 
 import org.junit.Before;
@@ -51,7 +52,7 @@ public class SingleDeferTest {
 
     private static void listenAndVerify(Single<Integer> source) {
         @SuppressWarnings("unchecked")
-        Single.Subscriber<Integer> subscriber = mock(Single.Subscriber.class);
+        SingleSource.Subscriber<Integer> subscriber = mock(SingleSource.Subscriber.class);
         source.subscribe(subscriber);
         verify(subscriber).onSubscribe(any());
         verify(subscriber).onSuccess(1);

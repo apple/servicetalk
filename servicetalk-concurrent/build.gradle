@@ -33,5 +33,4 @@ dependencies {
 
   implementation "com.google.code.findbugs:jsr305"
   implementation "io.servicetalk:servicetalk-annotations:$project.version"
-  implementation "org.reactivestreams:reactive-streams"
 }

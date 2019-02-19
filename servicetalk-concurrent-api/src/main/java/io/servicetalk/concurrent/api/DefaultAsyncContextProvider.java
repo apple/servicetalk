@@ -15,7 +15,9 @@
  */
 package io.servicetalk.concurrent.api;
 
-import org.reactivestreams.Subscriber;
+import io.servicetalk.concurrent.CompletableSource;
+import io.servicetalk.concurrent.PublisherSource.Subscriber;
+import io.servicetalk.concurrent.SingleSource;
 
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
@@ -51,24 +53,24 @@ final class DefaultAsyncContextProvider implements AsyncContextProvider {
     }
 
     @Override
-    public Completable.Subscriber wrapCancellable(final Completable.Subscriber subscriber,
-                                                  final AsyncContextMap current) {
+    public CompletableSource.Subscriber wrapCancellable(final CompletableSource.Subscriber subscriber,
+                                                        final AsyncContextMap current) {
         return new ContextPreservingCancellableCompletableSubscriber(subscriber, current);
     }
 
     @Override
-    public Completable.Subscriber wrap(Completable.Subscriber subscriber, AsyncContextMap current) {
+    public CompletableSource.Subscriber wrap(CompletableSource.Subscriber subscriber, AsyncContextMap current) {
         return new ContextPreservingCompletableSubscriber(subscriber, current);
     }
 
     @Override
-    public <T> io.servicetalk.concurrent.Single.Subscriber<T> wrapCancellable(final Single.Subscriber<T> subscriber,
-                                                                              final AsyncContextMap current) {
+    public <T> SingleSource.Subscriber<T> wrapCancellable(final SingleSource.Subscriber<T> subscriber,
+                                                          final AsyncContextMap current) {
         return new ContextPreservingCancellableSingleSubscriber<>(subscriber, current);
     }
 
     @Override
-    public <T> Single.Subscriber<T> wrap(Single.Subscriber<T> subscriber, AsyncContextMap current) {
+    public <T> SingleSource.Subscriber<T> wrap(SingleSource.Subscriber<T> subscriber, AsyncContextMap current) {
         return new ContextPreservingSingleSubscriber<>(subscriber, current);
     }
 

@@ -16,12 +16,13 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
+import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.internal.DelayedCancellable;
 
 import javax.annotation.Nullable;
 
 final class SingleToCompletionStage<T> extends ExecutorCompletionStage<T>
-        implements io.servicetalk.concurrent.Single.Subscriber<T> {
+        implements SingleSource.Subscriber<T> {
     private final DelayedCancellable cancellable;
 
     private SingleToCompletionStage(io.servicetalk.concurrent.Executor executor) {

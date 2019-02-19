@@ -15,9 +15,10 @@
  */
 package io.servicetalk.transport.netty.internal;
 
+import io.servicetalk.concurrent.PublisherSource.Subscription;
+
 import org.junit.Before;
 import org.junit.Test;
-import org.reactivestreams.Subscription;
 
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.transport.netty.internal.CloseHandler.UNSUPPORTED_PROTOCOL_CLOSE_HANDLER;

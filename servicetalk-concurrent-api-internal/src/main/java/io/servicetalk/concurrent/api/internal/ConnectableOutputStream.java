@@ -15,12 +15,11 @@
  */
 package io.servicetalk.concurrent.api.internal;
 
+import io.servicetalk.concurrent.PublisherSource.Subscriber;
+import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.internal.DuplicateSubscribeException;
 import io.servicetalk.concurrent.internal.FlowControlUtil;
-
-import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
 
 import java.io.IOException;
 import java.io.OutputStream;

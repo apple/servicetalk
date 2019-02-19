@@ -19,6 +19,8 @@ import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.BlockingIterable;
 import io.servicetalk.concurrent.BlockingIterator;
+import io.servicetalk.concurrent.PublisherSource.Subscriber;
+import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.PublisherRule;
 import io.servicetalk.concurrent.api.Single;
@@ -30,8 +32,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
 
 import java.io.InputStream;
 import java.util.concurrent.CountDownLatch;

@@ -15,13 +15,13 @@
  */
 package io.servicetalk.transport.netty.internal;
 
+import io.servicetalk.concurrent.PublisherSource.Subscriber;
+import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.transport.netty.internal.FlushStrategy.WriteEventsListener;
 
 import io.netty.channel.Channel;
 import io.netty.util.concurrent.EventExecutor;
-import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
 
 import static io.servicetalk.concurrent.internal.EmptySubscription.EMPTY_SUBSCRIPTION;
 import static java.util.Objects.requireNonNull;

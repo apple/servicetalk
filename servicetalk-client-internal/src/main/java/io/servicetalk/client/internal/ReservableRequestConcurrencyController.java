@@ -15,7 +15,7 @@
  */
 package io.servicetalk.client.internal;
 
-import io.servicetalk.concurrent.Completable.Subscriber;
+import io.servicetalk.concurrent.CompletableSource.Subscriber;
 import io.servicetalk.concurrent.api.Completable;
 
 /**

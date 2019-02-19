@@ -15,6 +15,8 @@
  */
 package io.servicetalk.http.netty;
 
+import io.servicetalk.concurrent.PublisherSource.Subscriber;
+import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.api.AsyncCloseables;
 import io.servicetalk.concurrent.api.AsyncContext;
 import io.servicetalk.concurrent.api.AsyncContextMap;
@@ -35,7 +37,6 @@ import io.servicetalk.transport.api.ServerContext;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
-import org.reactivestreams.Subscription;
 
 import java.net.InetSocketAddress;
 import java.util.Queue;
@@ -134,7 +135,7 @@ public class HttpClientAsyncContextTest {
             }
             final CharSequence requestId = hdrRequestId;
             request = request.transformRawPayloadBody(pub ->
-                    pub.doAfterSubscriber(() -> new org.reactivestreams.Subscriber<Object>() {
+                    pub.doAfterSubscriber(() -> new Subscriber<Object>() {
                         @Override
                         public void onSubscribe(final Subscription subscription) {
                             assertAsyncContext(requestId, errorQueue);
@@ -158,7 +159,7 @@ public class HttpClientAsyncContextTest {
             return delegate.request(strategy, request).map(resp -> {
                 assertAsyncContext(requestId, errorQueue);
                 return resp.transformRawPayloadBody(pub ->
-                        pub.doAfterSubscriber(() -> new org.reactivestreams.Subscriber<Object>() {
+                        pub.doAfterSubscriber(() -> new Subscriber<Object>() {
                             @Override
                             public void onSubscribe(final Subscription subscription) {
                                 assertAsyncContext(requestId, errorQueue);

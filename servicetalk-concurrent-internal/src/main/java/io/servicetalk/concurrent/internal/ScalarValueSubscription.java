@@ -15,8 +15,9 @@
  */
 package io.servicetalk.concurrent.internal;
 
-import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
+import io.servicetalk.concurrent.PublisherSource.Subscriber;
+import io.servicetalk.concurrent.PublisherSource.Subscription;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

@@ -23,13 +23,14 @@ import org.testng.annotations.Test;
  * Abstract base class for testing operators provided by {@link Publisher} for compliance with the
  * <a href="https://github.com/reactive-streams/reactive-streams-jvm/tree/v1.0.1/tck">Reactive Streams TCK</a>.
  * <p>
- * If you need the flexibility to create the {@link Publisher} by yourself you may need to extend {@link AbstractPublisherTckTest} directly.
+ * If you need the flexibility to create the {@link Publisher} by yourself you may need to extend
+ * {@link AbstractPublisherTckTest} directly.
  */
 @Test
 public abstract class AbstractPublisherOperatorTckTest<T> extends AbstractPublisherTckTest<T> {
 
     @Override
-    public Publisher<T> createPublisher(long elements) {
+    public Publisher<T> createServiceTalkPublisher(long elements) {
         int numElements = TckUtils.requestNToInt(elements);
         return composePublisher(TckUtils.newPublisher(numElements), numElements);
     }

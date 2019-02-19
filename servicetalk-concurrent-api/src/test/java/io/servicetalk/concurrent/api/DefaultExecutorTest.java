@@ -16,6 +16,7 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
+import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.internal.DeliberateException;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.concurrent.internal.TerminalNotification;
@@ -203,7 +204,7 @@ public final class DefaultExecutorTest {
         AtomicReference<Throwable> refCause = new AtomicReference<>();
         CountDownLatch latch = new CountDownLatch(1);
         timer.doAfterCancel(latch::countDown)
-                .subscribe(new Completable.Subscriber() {
+                .subscribe(new CompletableSource.Subscriber() {
                     @Override
                     public void onSubscribe(final Cancellable cancellable) {
                         cancellable.cancel();

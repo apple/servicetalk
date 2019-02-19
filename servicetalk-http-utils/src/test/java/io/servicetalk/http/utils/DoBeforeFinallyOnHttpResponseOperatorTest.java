@@ -18,6 +18,7 @@ package io.servicetalk.http.utils;
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.Cancellable;
+import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.SingleOperator;
 import io.servicetalk.concurrent.api.TestPublisher;
@@ -89,7 +90,7 @@ public class DoBeforeFinallyOnHttpResponseOperatorTest {
 
     @Test
     public void duplicateOnSuccess() {
-        AtomicReference<Single.Subscriber<? super StreamingHttpResponse>> subRef = new AtomicReference<>();
+        AtomicReference<SingleSource.Subscriber<? super StreamingHttpResponse>> subRef = new AtomicReference<>();
 
         Single<StreamingHttpResponse> original = new Single<StreamingHttpResponse>() {
             @Override
@@ -106,16 +107,13 @@ public class DoBeforeFinallyOnHttpResponseOperatorTest {
 
         final StreamingHttpResponse response = reqRespFactory.newResponse(OK);
         subRef.get().onSuccess(response);
-        final StreamingHttpResponse received = subscriber.verifyResponseReceived();
+        subscriber.verifyResponseReceived();
         verifyZeroInteractions(doBeforeFinally);
 
         final StreamingHttpResponse response2 = reqRespFactory.newResponse(OK);
 
+        expectedException.expect(AssertionError.class);
         subRef.get().onSuccess(response2);
-        final StreamingHttpResponse received2 = subscriber.verifyResponseReceived();
-        // Old response should be preserved.
-        assertThat("Duplicate response received.", received2, is(received));
-        verifyZeroInteractions(doBeforeFinally);
     }
 
     @Test
@@ -218,7 +216,7 @@ public class DoBeforeFinallyOnHttpResponseOperatorTest {
         verify(doBeforeFinally).run();
     }
 
-    private static final class ResponseSubscriber implements Single.Subscriber<StreamingHttpResponse> {
+    private static final class ResponseSubscriber implements SingleSource.Subscriber<StreamingHttpResponse> {
 
         Cancellable cancellable;
         @Nullable

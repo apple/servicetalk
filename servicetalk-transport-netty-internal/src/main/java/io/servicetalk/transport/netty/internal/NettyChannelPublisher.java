@@ -23,8 +23,6 @@ import io.netty.channel.Channel;
 import io.netty.channel.EventLoop;
 import io.netty.util.ReferenceCountUtil;
 import io.netty.util.ReferenceCounted;
-import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
 
 import java.nio.channels.ClosedChannelException;
 import java.util.ArrayDeque;

@@ -17,13 +17,14 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.Cancellable;
+import io.servicetalk.concurrent.PublisherSource;
+import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.DuplicateSubscribeException;
 import io.servicetalk.http.api.HttpResponseMetaData;
 import io.servicetalk.http.api.StreamingHttpResponse;
 
-import org.reactivestreams.Subscription;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -73,7 +74,7 @@ final class SpliceFlatStreamToMetaSingle<Data, MetaData, Payload> extends Single
     }
 
     /* Visible for testing */
-    static final class SplicingSubscriber<Data, MetaData, Payload> implements org.reactivestreams.Subscriber<Object> {
+    static final class SplicingSubscriber<Data, MetaData, Payload> implements PublisherSource.Subscriber<Object> {
 
         private static final AtomicReferenceFieldUpdater<SplicingSubscriber, Object>
                 maybePayloadSubUpdater = AtomicReferenceFieldUpdater.newUpdater(SplicingSubscriber.class,
@@ -91,7 +92,7 @@ final class SpliceFlatStreamToMetaSingle<Data, MetaData, Payload> extends Single
          * <p>
          * One of <ul>
          *     <li>{@link null} – initial pending state before the {@link Single} is completed</li>
-         *     <li>{@link org.reactivestreams.Subscriber}&lt;{@link Payload}&gt; - when subscribed to the payload</li>
+         *     <li>{@link PublisherSource.Subscriber}&lt;{@link Payload}&gt; - when subscribed to the payload</li>
          *     <li>{@link #CANCELED} - when the {@link Single} is canceled prematurely</li>
          *     <li>{@link #PENDING} - when the {@link Single} will complete and {@link Payload} pending subscribe</li>
          *     <li>{@link #EMPTY_COMPLETED} - when the stream completed prematurely (empty) payload</li>
@@ -105,11 +106,11 @@ final class SpliceFlatStreamToMetaSingle<Data, MetaData, Payload> extends Single
         private volatile Object maybePayloadSub;
 
         /**
-         * Once a {@link #maybePayloadSub} is set to a {@link org.reactivestreams.Subscriber} we cache a copy in a
+         * Once a {@link #maybePayloadSub} is set to a {@link PublisherSource.Subscriber} we cache a copy in a
          * non-volatile field to allow caching in register and avoid instanceof and casting on the hot path.
          */
         @Nullable
-        private org.reactivestreams.Subscriber<Payload> payloadSubscriber;
+        private PublisherSource.Subscriber<Payload> payloadSubscriber;
 
         /**
          * Indicates whether the meta-data has been observed.
@@ -117,7 +118,7 @@ final class SpliceFlatStreamToMetaSingle<Data, MetaData, Payload> extends Single
         private boolean metaSeenInOnNext;
 
         /**
-         * The {@link Subscription} before wrapping to pass it to the downstream {@link org.reactivestreams.Subscriber}.
+         * The {@link Subscription} before wrapping to pass it to the downstream {@link PublisherSource.Subscriber}.
          * Doesn't need to be {@code volatile}, as it should be visible wrt JMM according to
          * <a href="https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.2/README.md#2.11>RS spec 2.11</a>
          */
@@ -169,7 +170,7 @@ final class SpliceFlatStreamToMetaSingle<Data, MetaData, Payload> extends Single
                 return;
             }
             rawSubscription = inStreamSubscription;
-            // get the first element a MetaData that we consume to complete the Single<Data>
+            // get the first element a MetaData that we consume to complete the SingleSource<Data>
             rawSubscription.request(1);
             if (!onSubscribeSent) {
                 onSubscribeSent = true;
@@ -186,8 +187,8 @@ final class SpliceFlatStreamToMetaSingle<Data, MetaData, Payload> extends Single
                     payloadSubscriber.onNext(payload);
                 } else {
                     final Object subscriber = maybePayloadSub;
-                    if (subscriber instanceof org.reactivestreams.Subscriber) {
-                        payloadSubscriber = ((org.reactivestreams.Subscriber<Payload>) subscriber);
+                    if (subscriber instanceof PublisherSource.Subscriber) {
+                        payloadSubscriber = ((PublisherSource.Subscriber<Payload>) subscriber);
                         payloadSubscriber.onNext(payload);
                     }
                 }
@@ -224,7 +225,7 @@ final class SpliceFlatStreamToMetaSingle<Data, MetaData, Payload> extends Single
         private Publisher<Payload> newPayloadPublisher() {
             return new Publisher<Payload>() {
                 @Override
-                protected void handleSubscribe(org.reactivestreams.Subscriber<? super Payload> newSubscriber) {
+                protected void handleSubscribe(PublisherSource.Subscriber<? super Payload> newSubscriber) {
                     if (maybePayloadSubUpdater.compareAndSet(SplicingSubscriber.this, PENDING, newSubscriber)) {
                         // TODO risk of a race here with terminal events, will be addressed in follow-up PR
                         newSubscriber.onSubscribe(rawSubscription);
@@ -261,11 +262,11 @@ final class SpliceFlatStreamToMetaSingle<Data, MetaData, Payload> extends Single
                 final Object maybeSubscriber = maybePayloadSubUpdater.getAndSet(this, t);
                 if (maybeSubscriber == CANCELED || !metaSeenInOnNext) {
                     dataSubscriber.onError(t);
-                } else if (maybeSubscriber instanceof org.reactivestreams.Subscriber) {
+                } else if (maybeSubscriber instanceof PublisherSource.Subscriber) {
                     if (maybePayloadSubUpdater.compareAndSet(SplicingSubscriber.this, t, EMPTY_COMPLETED_DELIVERED)) {
-                        ((org.reactivestreams.Subscriber<Payload>) maybeSubscriber).onError(t);
+                        ((PublisherSource.Subscriber<Payload>) maybeSubscriber).onError(t);
                     } else {
-                        ((org.reactivestreams.Subscriber<Payload>) maybeSubscriber).onError(new IllegalStateException(
+                        ((PublisherSource.Subscriber<Payload>) maybeSubscriber).onError(new IllegalStateException(
                                 "Duplicate Subscribers are not allowed. Existing: " + maybeSubscriber +
                                         ", failed the race with a duplicate, but neither has seen onNext()"));
                     }
@@ -283,12 +284,12 @@ final class SpliceFlatStreamToMetaSingle<Data, MetaData, Payload> extends Single
                 payloadSubscriber.onComplete();
             } else {
                 final Object maybeSubscriber = maybePayloadSubUpdater.getAndSet(this, EMPTY_COMPLETED);
-                if (maybeSubscriber instanceof org.reactivestreams.Subscriber) {
+                if (maybeSubscriber instanceof PublisherSource.Subscriber) {
                     if (maybePayloadSubUpdater.compareAndSet(SplicingSubscriber.this, EMPTY_COMPLETED,
                             EMPTY_COMPLETED_DELIVERED)) {
-                        ((org.reactivestreams.Subscriber<Payload>) maybeSubscriber).onComplete();
+                        ((PublisherSource.Subscriber<Payload>) maybeSubscriber).onComplete();
                     } else {
-                        ((org.reactivestreams.Subscriber<Payload>) maybeSubscriber).onError(new IllegalStateException(
+                        ((PublisherSource.Subscriber<Payload>) maybeSubscriber).onError(new IllegalStateException(
                                 "Duplicate Subscribers are not allowed. Existing: " + maybeSubscriber +
                                         ", failed the race with a duplicate, but neither has seen onNext()"));
                     }

@@ -24,9 +24,9 @@ public interface AsyncCloseable {
     /**
      * Used to close/shutdown a resource.
      *
-     * @return A {@link Completable} that is notified once the close is complete.
+     * @return A {@link CompletableSource} that is notified once the close is complete.
      */
-    Completable closeAsync();
+    CompletableSource closeAsync();
 
     /**
      * Used to close/shutdown a resource, similar to {@link #closeAsync()}, but attempts to cleanup state before
@@ -37,9 +37,9 @@ public interface AsyncCloseable {
      * want to wait indefinitely, and are unsure if the implementation applies a timeout, it is advisable to apply a
      * timeout and force a call to {@link #closeAsync()}.
      *
-     * @return A {@link Completable} that is notified once the close is complete.
+     * @return A {@link CompletableSource} that is notified once the close is complete.
      */
-    default Completable closeAsyncGracefully() {
+    default CompletableSource closeAsyncGracefully() {
         return closeAsync();
     }
 }

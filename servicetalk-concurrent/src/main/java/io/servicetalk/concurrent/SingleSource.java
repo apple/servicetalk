@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,29 +20,32 @@ import javax.annotation.Nullable;
 /**
  * An asynchronous computation that either completes with success giving the result or completes with an error.
  *
- * @param <T> Type of the result of the single.
+ * @param <T> Type of the result of this {@code SingleSource}.
  */
-public interface Single<T> {
+@FunctionalInterface
+public interface SingleSource<T> {
 
     /**
-     * Subscribe for the result of this {@code Single}.
+     * Subscribe for the result of this {@code SingleSource}.
      *
      * @param subscriber to subscribe for the result.
-     * @see org.reactivestreams.Publisher#subscribe(org.reactivestreams.Subscriber)
+     * @see PublisherSource#subscribe(PublisherSource.Subscriber)
      */
     void subscribe(Subscriber<? super T> subscriber);
 
     /**
-     * Subscriber of the outcome of a {@link Single}.
+     * Subscriber of the outcome of a {@link SingleSource}.
      * <p>
-     * The semantics and threading model of this interface is meant to be the same as {@link Subscriber},
-     * but simplified for the use case where the operations completes with a single data element or fails.
+     * The semantics and threading model of this interface is meant to be the same as
+     * {@link PublisherSource.Subscriber}, but simplified for the use case where the operations completes with a single
+     * data element or fails.
      *
-     * @param <T> Type of the result of the {@link Single}.
+     * @param <T> Type of the result of the {@link SingleSource}.
      */
     interface Subscriber<T> {
         /**
-         * Called when the associated {@link Single} is subscribed via {@link Single#subscribe(Subscriber)}.
+         * Called when the associated {@link SingleSource} is subscribed via {@link SingleSource#subscribe(Subscriber)}.
+         *
          * @param cancellable A {@link Cancellable} that can be used to cancel the asynchronous computation for
          * this subscriber.
          */
@@ -53,7 +56,7 @@ public interface Single<T> {
          * <p>
          * No further events will be sent.
          *
-         * @param result of the {@link Single}.
+         * @param result of the {@link SingleSource}.
          */
         void onSuccess(@Nullable T result);
 
@@ -68,11 +71,11 @@ public interface Single<T> {
     }
 
     /**
-     * An entity that is both {@link Single} and {@link Subscriber}.
-     * This is same as {@link org.reactivestreams.Processor} but for {@link Single}s.
+     * An entity that is both {@link SingleSource} and {@link Subscriber}.
+     * This is same as {@link PublisherSource.Processor} but for {@link SingleSource}s.
      * @param <T> The type of {@link Subscriber}.
-     * @param <R> The type of {@link Single}.
+     * @param <R> The type of {@link SingleSource}.
      */
-    interface Processor<T, R> extends Single<R>, Subscriber<T> {
+    interface Processor<T, R> extends SingleSource<R>, Subscriber<T> {
     }
 }

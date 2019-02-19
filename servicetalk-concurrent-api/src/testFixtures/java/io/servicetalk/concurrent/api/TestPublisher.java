@@ -15,10 +15,8 @@
  */
 package io.servicetalk.concurrent.api;
 
+import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.internal.FlowControlUtil;
-
-import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;

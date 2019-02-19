@@ -16,6 +16,7 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
+import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.internal.SequentialCancellable;
 import io.servicetalk.concurrent.internal.SignalOffloader;
 
@@ -44,7 +45,7 @@ final class SingleFlatMapCompletable<T> extends AbstractNoHandleSubscribeComplet
                         contextMap, contextProvider), signalOffloader, contextMap, contextProvider);
     }
 
-    private static final class SubscriberImpl<T> implements Single.Subscriber<T>, Subscriber {
+    private static final class SubscriberImpl<T> implements SingleSource.Subscriber<T>, Subscriber {
         private final Subscriber subscriber;
         private final Function<T, Completable> nextFactory;
         private final SignalOffloader signalOffloader;

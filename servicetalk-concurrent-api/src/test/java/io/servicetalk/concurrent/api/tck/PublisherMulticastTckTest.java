@@ -15,10 +15,10 @@
  */
 package io.servicetalk.concurrent.api.tck;
 
+import io.servicetalk.concurrent.PublisherSource.Subscriber;
+import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.api.Publisher;
 
-import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
 import org.testng.annotations.Test;
 
 import static java.lang.Math.max;

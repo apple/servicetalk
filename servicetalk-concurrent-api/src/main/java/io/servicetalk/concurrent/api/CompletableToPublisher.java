@@ -16,11 +16,9 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
+import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.internal.SequentialCancellable;
 import io.servicetalk.concurrent.internal.SignalOffloader;
-
-import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
 
 import static io.servicetalk.concurrent.internal.SubscriberUtils.isRequestNValid;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.newExceptionForInvalidRequestN;
@@ -44,7 +42,7 @@ final class CompletableToPublisher<T> extends AbstractNoHandleSubscribePublisher
                 contextProvider));
     }
 
-    private static final class ConversionSubscriber<T> implements Completable.Subscriber, Subscription {
+    private static final class ConversionSubscriber<T> implements CompletableSource.Subscriber, Subscription {
         private final SequentialCancellable sequentialCancellable;
         private final Subscriber<? super T> subscriber;
         private final SignalOffloader signalOffloader;

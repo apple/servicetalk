@@ -15,7 +15,7 @@
  */
 package io.servicetalk.concurrent.api;
 
-import io.servicetalk.concurrent.Completable.Subscriber;
+import io.servicetalk.concurrent.CompletableSource.Subscriber;
 
 import java.util.function.Function;
 

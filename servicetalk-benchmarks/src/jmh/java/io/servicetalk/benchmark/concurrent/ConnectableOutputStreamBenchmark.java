@@ -15,6 +15,8 @@
  */
 package io.servicetalk.benchmark.concurrent;
 
+import io.servicetalk.concurrent.PublisherSource.Subscriber;
+import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.internal.ConnectableOutputStream;
 
@@ -31,8 +33,6 @@ import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.Warmup;
-import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
 
 import java.io.IOException;
 import java.util.Random;

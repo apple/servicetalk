@@ -16,6 +16,7 @@
 package io.servicetalk.transport.netty.internal;
 
 import io.servicetalk.concurrent.Cancellable;
+import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
@@ -258,11 +259,11 @@ public final class DefaultNettyPipelinedConnection<Req, Resp> implements NettyPi
     private static final class Task<Resp> extends SequentialCancellable {
 
         final Completable write;
-        final Completable.Subscriber readReadyListener;
+        final CompletableSource.Subscriber readReadyListener;
         @Nullable
         final Predicate<Resp> terminalMsgPredicate;
 
-        Task(Completable write, Completable.Subscriber readReadyListener,
+        Task(Completable write, CompletableSource.Subscriber readReadyListener,
              @Nullable Predicate<Resp> terminalMsgPredicate) {
             this.write = requireNonNull(write);
             this.readReadyListener = requireNonNull(readReadyListener);
@@ -270,7 +271,7 @@ public final class DefaultNettyPipelinedConnection<Req, Resp> implements NettyPi
         }
     }
 
-    private static final class WriteSourceSubscriber<Resp> implements Completable.Subscriber {
+    private static final class WriteSourceSubscriber<Resp> implements CompletableSource.Subscriber {
 
         private static final AtomicIntegerFieldUpdater<WriteSourceSubscriber> postTaskTerminationCalledUpdater =
                 newUpdater(WriteSourceSubscriber.class, "postTaskTerminationCalled");

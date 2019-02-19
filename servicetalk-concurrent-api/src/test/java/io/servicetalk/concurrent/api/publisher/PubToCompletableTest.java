@@ -25,7 +25,6 @@ import io.servicetalk.concurrent.internal.TerminalNotification;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
-import org.reactivestreams.Subscriber;
 
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;

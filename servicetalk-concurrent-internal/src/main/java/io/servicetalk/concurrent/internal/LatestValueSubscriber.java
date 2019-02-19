@@ -15,8 +15,8 @@
  */
 package io.servicetalk.concurrent.internal;
 
-import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
+import io.servicetalk.concurrent.PublisherSource.Subscriber;
+import io.servicetalk.concurrent.PublisherSource.Subscription;
 
 import javax.annotation.Nullable;
 

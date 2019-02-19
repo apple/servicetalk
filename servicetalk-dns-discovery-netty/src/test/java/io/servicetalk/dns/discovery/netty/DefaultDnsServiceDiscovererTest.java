@@ -19,6 +19,8 @@ import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.client.api.ServiceDiscovererFilter;
 import io.servicetalk.client.servicediscoverer.ServiceDiscovererTestSubscriber;
+import io.servicetalk.concurrent.PublisherSource.Subscriber;
+import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutor;
@@ -30,8 +32,6 @@ import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
-import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;

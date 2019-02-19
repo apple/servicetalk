@@ -22,6 +22,8 @@ import org.reactivestreams.tck.PublisherVerification;
 import org.reactivestreams.tck.TestEnvironment;
 import org.testng.annotations.Test;
 
+import static io.servicetalk.concurrent.api.ReactiveStreamsAdapters.toReactiveStreamsPublisher;
+
 /**
  * Abstract base class for testing {@link Completable} for compliance with the
  * <a href="https://github.com/reactive-streams/reactive-streams-jvm/tree/v1.0.1/tck">Reactive Streams TCK</a>.
@@ -38,8 +40,15 @@ public abstract class AbstractCompletableTckTest extends PublisherVerification<O
     }
 
     @Override
+    public final org.reactivestreams.Publisher<Object> createPublisher(final long elements) {
+        return toReactiveStreamsPublisher(createServiceTalkPublisher(elements));
+    }
+
+    public abstract Publisher<Object> createServiceTalkPublisher(long elements);
+
+    @Override
     public final org.reactivestreams.Publisher<Object> createFailedPublisher() {
-        return TckUtils.newFailedPublisher();
+        return toReactiveStreamsPublisher(TckUtils.newFailedPublisher());
     }
 
     @Override

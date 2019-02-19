@@ -15,11 +15,11 @@
  */
 package io.servicetalk.concurrent.api;
 
+import io.servicetalk.concurrent.PublisherSource.Subscriber;
+import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.internal.TerminalNotification;
 
 import org.hamcrest.Matcher;
-import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
 
 import java.util.Iterator;
 import java.util.List;

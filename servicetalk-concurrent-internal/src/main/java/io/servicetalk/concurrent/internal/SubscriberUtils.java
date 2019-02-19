@@ -15,8 +15,15 @@
  */
 package io.servicetalk.concurrent.internal;
 
-import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
+import io.servicetalk.concurrent.Cancellable;
+import io.servicetalk.concurrent.CompletableSource;
+import io.servicetalk.concurrent.PublisherSource;
+import io.servicetalk.concurrent.PublisherSource.Subscriber;
+import io.servicetalk.concurrent.PublisherSource.Subscription;
+import io.servicetalk.concurrent.SingleSource;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
@@ -24,10 +31,14 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Consumer;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
+import static io.servicetalk.concurrent.internal.EmptySubscription.EMPTY_SUBSCRIPTION;
+
 /**
  * A set of utilities for common {@link Subscriber} tasks.
  */
 public final class SubscriberUtils {
+    private static final Logger LOGGER = LoggerFactory.getLogger(SubscriberUtils.class);
     public static final int SUBSCRIBER_STATE_IDLE = 0;
     public static final int SUBSCRIBER_STATE_ON_NEXT = 1;
     public static final int SUBSCRIBER_STATE_TERMINATED = 2;
@@ -61,9 +72,10 @@ public final class SubscriberUtils {
      * @param <TERM> Type of terminal notification.
      * @param <R> Type of the owner of the atomic fields.
      */
-    public static <T, TERM, R> void sendOnNextWithConcurrentTerminationCheck(Subscriber<? super T> subscriber, T next,
-                               Consumer<TERM> terminator, AtomicIntegerFieldUpdater<R> subscriberStateUpdater,
-                               AtomicReferenceFieldUpdater<R, TERM> terminalNotificationUpdater, R owner) {
+    public static <T, TERM, R> void sendOnNextWithConcurrentTerminationCheck(
+            Subscriber<? super T> subscriber, @Nullable T next, Consumer<TERM> terminator,
+            AtomicIntegerFieldUpdater<R> subscriberStateUpdater,
+            AtomicReferenceFieldUpdater<R, TERM> terminalNotificationUpdater, R owner) {
         boolean acquiredSubscriberLock = subscriberStateUpdater.compareAndSet(
                 owner, SUBSCRIBER_STATE_IDLE, SUBSCRIBER_STATE_ON_NEXT);
         // Allow reentry because we don't want to drop data.
@@ -149,8 +161,8 @@ public final class SubscriberUtils {
      * <ul>
      *     <li>{@link #sendOnNextWithConcurrentTerminationCheck(Runnable, Consumer, AtomicIntegerFieldUpdater,
      *     AtomicReferenceFieldUpdater, Object)}.</li>
-     *     <li>{@link #sendOnNextWithConcurrentTerminationCheck(Subscriber, Object, Consumer, AtomicIntegerFieldUpdater,
-     *     AtomicReferenceFieldUpdater, Object)}</li>
+     *     <li>{@link #sendOnNextWithConcurrentTerminationCheck(PublisherSource.Subscriber, Object, Consumer,
+     *     AtomicIntegerFieldUpdater, AtomicReferenceFieldUpdater, Object)}</li>
      * </ul>
      *
      * @param expect Expected value of the {@code terminalNotificationUpdater}.
@@ -280,6 +292,88 @@ public final class SubscriberUtils {
             } else {
                 return false;
             }
+        }
+    }
+
+    /**
+     * Deliver a terminal error to a {@link Subscriber} that has not yet had
+     * {@link Subscriber#onSubscribe(PublisherSource.Subscription)} called.
+     * @param subscriber The {@link Subscriber} to terminate.
+     * @param cause The terminal event.
+     * @param <T> The type of {@link Subscriber}.
+     */
+    public static <T> void deliverTerminalFromSource(Subscriber<T> subscriber, Throwable cause) {
+        try {
+            subscriber.onSubscribe(EMPTY_SUBSCRIPTION);
+        } catch (Throwable t) {
+            LOGGER.debug("Ignoring exception from onSubscribe of Subscriber {}.", subscriber, t);
+            return;
+        }
+        try {
+            subscriber.onError(cause);
+        } catch (Throwable t) {
+            LOGGER.debug("Ignoring exception from onError of Subscriber {}.", subscriber, t);
+        }
+    }
+
+    /**
+     * Deliver a terminal complete to a {@link Subscriber} that has not yet had
+     * {@link Subscriber#onSubscribe(PublisherSource.Subscription)} called.
+     * @param subscriber The {@link Subscriber} to terminate.
+     * @param <T> The type of {@link Subscriber}.
+     */
+    public static <T> void deliverTerminalFromSource(Subscriber<T> subscriber) {
+        try {
+            subscriber.onSubscribe(EMPTY_SUBSCRIPTION);
+        } catch (Throwable t) {
+            LOGGER.debug("Ignoring exception from onSubscribe of Subscriber {}.", subscriber, t);
+            return;
+        }
+        try {
+            subscriber.onComplete();
+        } catch (Throwable t) {
+            LOGGER.debug("Ignoring exception from onComplete of Subscriber {}.", subscriber, t);
+        }
+    }
+
+    /**
+     * Deliver a terminal error to a {@link SingleSource.Subscriber} that has not yet had
+     * {@link SingleSource.Subscriber#onSubscribe(Cancellable)} called.
+     * @param subscriber The {@link SingleSource.Subscriber} to terminate.
+     * @param cause The terminal event.
+     * @param <T> The type of {@link SingleSource.Subscriber}.
+     */
+    public static <T> void deliverTerminalFromSource(SingleSource.Subscriber<T> subscriber, Throwable cause) {
+        try {
+            subscriber.onSubscribe(IGNORE_CANCEL);
+        } catch (Throwable t) {
+            LOGGER.debug("Ignoring exception from onSubscribe of Subscriber {}.", subscriber, t);
+            return;
+        }
+        try {
+            subscriber.onError(cause);
+        } catch (Throwable t) {
+            LOGGER.debug("Ignoring exception from onError of Subscriber {}.", subscriber, t);
+        }
+    }
+
+    /**
+     * Deliver a terminal error to a {@link CompletableSource.Subscriber} that has not yet had
+     * {@link CompletableSource.Subscriber#onSubscribe(Cancellable)} called.
+     * @param subscriber The {@link CompletableSource.Subscriber} to terminate.
+     * @param cause The terminal event.
+     */
+    public static void deliverTerminalFromSource(CompletableSource.Subscriber subscriber, Throwable cause) {
+        try {
+            subscriber.onSubscribe(IGNORE_CANCEL);
+        } catch (Throwable t) {
+            LOGGER.debug("Ignoring exception from onSubscribe of Subscriber {}.", subscriber, t);
+            return;
+        }
+        try {
+            subscriber.onError(cause);
+        } catch (Throwable t) {
+            LOGGER.debug("Ignoring exception from onError of Subscriber {}.", subscriber, t);
         }
     }
 }

@@ -21,15 +21,15 @@ import io.servicetalk.buffer.api.CompositeBuffer;
 import io.servicetalk.concurrent.BlockingIterable;
 import io.servicetalk.concurrent.BlockingIterator;
 import io.servicetalk.concurrent.Cancellable;
+import io.servicetalk.concurrent.PublisherSource.Subscriber;
+import io.servicetalk.concurrent.PublisherSource.Subscription;
+import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.PublisherOperator;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.SingleProcessor;
 import io.servicetalk.concurrent.internal.ConcurrentSubscription;
 import io.servicetalk.concurrent.internal.DelayedSubscription;
-
-import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
 
 import java.io.IOException;
 import java.util.NoSuchElementException;
@@ -1038,7 +1038,7 @@ final class HttpDataSourceTranformations {
                                                      BiFunction<T, HttpHeaders, HttpHeaders> trailersTransformer,
                                                      SingleProcessor<HttpHeaders> outTrailersSingle,
                                                      Subscriber<?> subscriber) {
-        inTrailersSingle.subscribe(new io.servicetalk.concurrent.Single.Subscriber<HttpHeaders>() {
+        inTrailersSingle.subscribe(new SingleSource.Subscriber<HttpHeaders>() {
             @Override
             public void onSubscribe(final Cancellable cancellable) {
             }

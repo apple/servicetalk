@@ -16,15 +16,15 @@
 package io.servicetalk.concurrent.api.tck;
 
 import io.servicetalk.concurrent.api.Completable;
+import io.servicetalk.concurrent.api.Publisher;
 
-import org.reactivestreams.Publisher;
 import org.testng.annotations.Test;
 
 @Test
 public class CompletableConcatWithPublisherTckTest extends AbstractPublisherTckTest<Integer> {
 
     @Override
-    public Publisher<Integer> createPublisher(long elements) {
+    public Publisher<Integer> createServiceTalkPublisher(long elements) {
         int numElements = TckUtils.requestNToInt(elements);
         return Completable.completed().concatWith(TckUtils.newPublisher(numElements));
     }

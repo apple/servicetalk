@@ -15,8 +15,7 @@
  */
 package io.servicetalk.concurrent;
 
-import org.reactivestreams.Publisher;
-import org.reactivestreams.Subscriber;
+import io.servicetalk.concurrent.PublisherSource.Subscriber;
 
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -31,9 +30,9 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
 /**
  * An {@link Iterable} which supports generation of {@link BlockingIterator}s.
  * <p>
- * This interface is meant to be the synchronous API equivalent of {@link Publisher}. Each call to {@link #iterator()}
- * is equivalent to calling {@link Publisher#subscribe(Subscriber)} and typically has the same characteristics in terms
- * of being able to call the method multiple times and data availability in memory.
+ * This interface is meant to be the synchronous API equivalent of {@link PublisherSource}. Each call to
+ * {@link #iterator()} is equivalent to calling {@link PublisherSource#subscribe(Subscriber)} and typically has the
+ * same characteristics in terms of being able to call the method multiple times and data availability in memory.
  * @param <T> the type of elements returned by the {@link BlockingIterator}.
  */
 public interface BlockingIterable<T> extends CloseableIterable<T> {

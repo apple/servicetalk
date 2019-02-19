@@ -17,7 +17,6 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.internal.ScalarValueSubscription;
 
-import org.reactivestreams.Subscriber;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

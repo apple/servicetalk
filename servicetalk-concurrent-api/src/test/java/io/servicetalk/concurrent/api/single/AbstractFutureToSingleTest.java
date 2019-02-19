@@ -16,6 +16,7 @@
 package io.servicetalk.concurrent.api.single;
 
 import io.servicetalk.concurrent.Cancellable;
+import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 
@@ -87,7 +88,7 @@ public abstract class AbstractFutureToSingleTest {
     public void cancellation() throws InterruptedException {
         CompletableFuture<String> future = new CompletableFuture<>();
         Single<String> single = from(future);
-        single.subscribe(new io.servicetalk.concurrent.Single.Subscriber<String>() {
+        single.subscribe(new SingleSource.Subscriber<String>() {
             @Override
             public void onSubscribe(final Cancellable cancellable) {
                 cancellable.cancel();

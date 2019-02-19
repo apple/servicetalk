@@ -16,7 +16,7 @@
 package io.servicetalk.transport.netty.internal;
 
 import io.servicetalk.concurrent.Cancellable;
-import io.servicetalk.concurrent.api.Completable;
+import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.api.CompletableProcessor;
 
 import io.netty.channel.EventLoop;
@@ -39,7 +39,7 @@ public class WriteStreamSubscriberOutOfEventloopTest extends AbstractOutOfEventl
 
     @Override
     public void setup0() {
-        Completable.Subscriber completableSubscriber = mock(Completable.Subscriber.class);
+        CompletableSource.Subscriber completableSubscriber = mock(CompletableSource.Subscriber.class);
         NettyConnection.RequestNSupplier requestNSupplier = mock(NettyConnection.RequestNSupplier.class);
         subscriber = new WriteStreamSubscriber(channel, requestNSupplier, completableSubscriber,
                 UNSUPPORTED_PROTOCOL_CLOSE_HANDLER);
@@ -77,7 +77,7 @@ public class WriteStreamSubscriberOutOfEventloopTest extends AbstractOutOfEventl
     @Test
     public void testTerminalOrder() throws Exception {
         CompletableProcessor subject = new CompletableProcessor();
-        Completable.Subscriber subscriber = new Completable.Subscriber() {
+        CompletableSource.Subscriber subscriber = new CompletableSource.Subscriber() {
             @Override
             public void onSubscribe(Cancellable cancellable) {
                 // noop

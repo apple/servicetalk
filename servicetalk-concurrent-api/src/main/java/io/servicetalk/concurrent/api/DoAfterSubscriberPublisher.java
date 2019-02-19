@@ -15,9 +15,6 @@
  */
 package io.servicetalk.concurrent.api;
 
-import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
-
 import java.util.function.Supplier;
 
 import static java.util.Objects.requireNonNull;

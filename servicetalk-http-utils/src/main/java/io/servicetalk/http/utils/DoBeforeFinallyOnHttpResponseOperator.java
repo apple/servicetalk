@@ -16,14 +16,15 @@
 package io.servicetalk.http.utils;
 
 import io.servicetalk.concurrent.Cancellable;
-import io.servicetalk.concurrent.Single;
-import io.servicetalk.concurrent.Single.Subscriber;
+import io.servicetalk.concurrent.PublisherSource;
+import io.servicetalk.concurrent.PublisherSource.Subscription;
+import io.servicetalk.concurrent.SingleSource;
+import io.servicetalk.concurrent.SingleSource.Subscriber;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.SingleOperator;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
 
-import org.reactivestreams.Subscription;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,7 +38,7 @@ import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 /**
  * Helper operator for signaling the end of an HTTP Request/Response cycle.
  *
- * <p>{@link StreamingHttpRequest} and {@link StreamingHttpResponse} are nested sources ({@link Single} of meta-data
+ * <p>{@link StreamingHttpRequest} and {@link StreamingHttpResponse} are nested sources ({@link SingleSource} of meta-data
  * containing a payload {@link Publisher}), which makes it non-trivial to get a single signal at the end of this
  * Request/Response cycle. One needs to consider and coordinate between the multitude of outcomes: cancel/success/error
  * across both sources.</p>
@@ -54,20 +55,7 @@ import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
  */
 public final class DoBeforeFinallyOnHttpResponseOperator
         implements SingleOperator<StreamingHttpResponse, StreamingHttpResponse> {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(DoBeforeFinallyOnHttpResponseOperator.class);
-
-    private static final int IDLE = 0;
-    private static final int CANCELLED = 1;
-    private static final int TERMINATED = 2;
-
-    private static final AtomicIntegerFieldUpdater<DoBeforeFinallyOnHttpResponseOperator> stateUpdater =
-            newUpdater(DoBeforeFinallyOnHttpResponseOperator.class, "state");
-
     private final Runnable doBeforeFinally;
-
-    @SuppressWarnings("unused")
-    private volatile int state;
 
     /**
      * Create a new instance.
@@ -86,25 +74,38 @@ public final class DoBeforeFinallyOnHttpResponseOperator
         // the StreamingHttpResponse to the subscriber. In case, we do get an StreamingHttpResponse after we got
         // cancel(), we subscribe to the payload Publisher and cancel to indicate to the Connection that there is no
         // other Subscriber that will use the payload Publisher.
-        return new ResponseCompletionSubscriber(subscriber);
+        return new ResponseCompletionSubscriber(subscriber, doBeforeFinally);
     }
 
-    private final class ResponseCompletionSubscriber implements Subscriber<StreamingHttpResponse> {
+    private static final class ResponseCompletionSubscriber implements Subscriber<StreamingHttpResponse> {
+        private static final int IDLE = 0;
+        private static final int CANCELLED = 1;
+        private static final int TERMINATED = 2;
+        private static final AtomicIntegerFieldUpdater<ResponseCompletionSubscriber> stateUpdater =
+                newUpdater(ResponseCompletionSubscriber.class, "state");
 
         private final Subscriber<? super StreamingHttpResponse> subscriber;
+        private final Runnable doBeforeFinally;
+        @SuppressWarnings("unused")
+        private volatile int state;
 
-        ResponseCompletionSubscriber(final Subscriber<? super StreamingHttpResponse> sub) {
+        ResponseCompletionSubscriber(final Subscriber<? super StreamingHttpResponse> sub,
+                                     final Runnable doBeforeFinally) {
             this.subscriber = sub;
+            this.doBeforeFinally = doBeforeFinally;
         }
 
         @Override
         public void onSubscribe(final Cancellable cancellable) {
             subscriber.onSubscribe(() -> {
-                if (stateUpdater.compareAndSet(DoBeforeFinallyOnHttpResponseOperator.this, IDLE, CANCELLED)) {
-                    doBeforeFinally.run();
+                try {
+                    if (stateUpdater.compareAndSet(this, IDLE, CANCELLED)) {
+                        doBeforeFinally.run();
+                    }
+                } finally {
+                    // Cancel unconditionally, let the original Single handle cancel post termination, if required
+                    cancellable.cancel();
                 }
-                // Cancel unconditionally, let the original Single handle cancel post termination, if required
-                cancellable.cancel();
             });
         }
 
@@ -112,38 +113,49 @@ public final class DoBeforeFinallyOnHttpResponseOperator
         public void onSuccess(@Nullable final StreamingHttpResponse response) {
             if (response == null) {
                 sendNullResponse();
-            } else if (stateUpdater.compareAndSet(DoBeforeFinallyOnHttpResponseOperator.this, IDLE, TERMINATED)) {
+            } else if (stateUpdater.compareAndSet(this, IDLE, TERMINATED)) {
                 subscriber.onSuccess(response.transformRawPayloadBody(payload ->
                         payload.doBeforeFinally(doBeforeFinally)));
-            } else if (state == CANCELLED) {
+            } else {
+                // Invoking a terminal method multiple times is not allowed by the RS spec, so we assume we have been
+                // cancelled.
+                assert state == CANCELLED;
                 subscriber.onSuccess(response.transformRawPayloadBody(payload -> {
                     // We have been cancelled. Subscribe and cancel the content so that we do not hold up the
                     // connection and indicate that there is no one else that will subscribe.
                     payload.subscribe(CancelImmediatelySubscriber.INSTANCE);
                     return Publisher.error(new CancellationException("Received response post cancel."));
                 }));
-                // If state != CANCELLED then it has to be TERMINATED since we failed the CAS from IDLE -> TERMINATED.
-                // Hence, we do not need to do anything special.
             }
         }
 
         @Override
         public void onError(final Throwable t) {
-            if (stateUpdater.compareAndSet(DoBeforeFinallyOnHttpResponseOperator.this, IDLE, TERMINATED)) {
-                doBeforeFinally.run();
+            try {
+                if (stateUpdater.compareAndSet(this, IDLE, TERMINATED)) {
+                    doBeforeFinally.run();
+                }
+            } finally {
+                subscriber.onError(t);
             }
-            subscriber.onError(t);
         }
 
         private void sendNullResponse() {
-            // Since, we are not giving out a response, no subscriber will arrive for the payload Publisher.
-            doBeforeFinally.run();
+            try {
+                // Since, we are not giving out a response, no subscriber will arrive for the payload Publisher.
+                if (stateUpdater.compareAndSet(this, IDLE, TERMINATED)) {
+                    doBeforeFinally.run();
+                }
+            } catch (Throwable cause) {
+                subscriber.onError(cause);
+                return;
+            }
             subscriber.onSuccess(null);
         }
     }
 
-    private static final class CancelImmediatelySubscriber implements org.reactivestreams.Subscriber<Object> {
-
+    private static final class CancelImmediatelySubscriber implements PublisherSource.Subscriber<Object> {
+        private static final Logger LOGGER = LoggerFactory.getLogger(CancelImmediatelySubscriber.class);
         static final CancelImmediatelySubscriber INSTANCE = new CancelImmediatelySubscriber();
 
         private CancelImmediatelySubscriber() {

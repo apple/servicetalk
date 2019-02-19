@@ -15,16 +15,16 @@
  */
 package io.servicetalk.concurrent.api.tck;
 
+import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 
-import org.reactivestreams.Publisher;
 import org.testng.annotations.Test;
 
 @Test
 public class SingleConcatWithSingleTckTest extends AbstractSingleTckTest<Integer> {
 
     @Override
-    public Publisher<Integer> createPublisher(long elements) {
+    public Publisher<Integer> createServiceTalkPublisher(long elements) {
         if (elements == 2) {
             return Single.success(1).concatWith(Single.success(2));
         }

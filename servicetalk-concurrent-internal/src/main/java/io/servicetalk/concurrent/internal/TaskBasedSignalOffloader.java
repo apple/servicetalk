@@ -16,12 +16,12 @@
 package io.servicetalk.concurrent.internal;
 
 import io.servicetalk.concurrent.Cancellable;
-import io.servicetalk.concurrent.Completable;
+import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.Executor;
-import io.servicetalk.concurrent.Single;
+import io.servicetalk.concurrent.PublisherSource.Subscriber;
+import io.servicetalk.concurrent.PublisherSource.Subscription;
+import io.servicetalk.concurrent.SingleSource;
 
-import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -73,12 +73,12 @@ final class TaskBasedSignalOffloader implements SignalOffloader {
     }
 
     @Override
-    public <T> Single.Subscriber<? super T> offloadSubscriber(final Single.Subscriber<? super T> subscriber) {
+    public <T> SingleSource.Subscriber<? super T> offloadSubscriber(final SingleSource.Subscriber<? super T> subscriber) {
         return new OffloadedSingleSubscriber<>(executor, subscriber);
     }
 
     @Override
-    public Completable.Subscriber offloadSubscriber(final Completable.Subscriber subscriber) {
+    public CompletableSource.Subscriber offloadSubscriber(final CompletableSource.Subscriber subscriber) {
         return new OffloadedCompletableSubscriber(executor, subscriber);
     }
 
@@ -88,12 +88,12 @@ final class TaskBasedSignalOffloader implements SignalOffloader {
     }
 
     @Override
-    public <T> Single.Subscriber<? super T> offloadCancellable(final Single.Subscriber<? super T> subscriber) {
+    public <T> SingleSource.Subscriber<? super T> offloadCancellable(final SingleSource.Subscriber<? super T> subscriber) {
         return new OffloadedCancellableSingleSubscriber<>(subscriber, executor);
     }
 
     @Override
-    public Completable.Subscriber offloadCancellable(final Completable.Subscriber subscriber) {
+    public CompletableSource.Subscriber offloadCancellable(final CompletableSource.Subscriber subscriber) {
         return new OffloadedCancellableCompletableSubscriber(subscriber, executor);
     }
 
@@ -109,8 +109,8 @@ final class TaskBasedSignalOffloader implements SignalOffloader {
     }
 
     @Override
-    public <T> void offloadSubscribe(final Single.Subscriber<T> subscriber,
-                                     final Consumer<Single.Subscriber<T>> handleSubscribe) {
+    public <T> void offloadSubscribe(final SingleSource.Subscriber<T> subscriber,
+                                     final Consumer<SingleSource.Subscriber<T>> handleSubscribe) {
         try {
             executor.execute(() -> handleSubscribe.accept(subscriber));
         } catch (Throwable throwable) {
@@ -121,8 +121,8 @@ final class TaskBasedSignalOffloader implements SignalOffloader {
     }
 
     @Override
-    public void offloadSubscribe(final Completable.Subscriber subscriber,
-                                 final Consumer<Completable.Subscriber> handleSubscribe) {
+    public void offloadSubscribe(final CompletableSource.Subscriber subscriber,
+                                 final Consumer<CompletableSource.Subscriber> handleSubscribe) {
         try {
             executor.execute(() -> handleSubscribe.accept(subscriber));
         } catch (Throwable throwable) {
@@ -556,10 +556,10 @@ final class TaskBasedSignalOffloader implements SignalOffloader {
     }
 
     private static final class OffloadedSingleSubscriber<T> extends AbstractOffloadedSingleValueSubscriber
-            implements Single.Subscriber<T> {
-        private final Single.Subscriber<T> target;
+            implements SingleSource.Subscriber<T> {
+        private final SingleSource.Subscriber<T> target;
 
-        OffloadedSingleSubscriber(final Executor executor, final Single.Subscriber<T> target) {
+        OffloadedSingleSubscriber(final Executor executor, final SingleSource.Subscriber<T> target) {
             super(executor);
             this.target = requireNonNull(target);
         }
@@ -618,11 +618,11 @@ final class TaskBasedSignalOffloader implements SignalOffloader {
     }
 
     private static final class OffloadedCompletableSubscriber extends AbstractOffloadedSingleValueSubscriber
-            implements Completable.Subscriber {
+            implements CompletableSource.Subscriber {
         private static final Object COMPLETED = new Object();
-        private final Completable.Subscriber target;
+        private final CompletableSource.Subscriber target;
 
-        OffloadedCompletableSubscriber(final Executor executor, final Completable.Subscriber target) {
+        OffloadedCompletableSubscriber(final Executor executor, final CompletableSource.Subscriber target) {
             super(executor);
             this.target = requireNonNull(target);
         }
@@ -699,11 +699,11 @@ final class TaskBasedSignalOffloader implements SignalOffloader {
         }
     }
 
-    private static final class OffloadedCancellableSingleSubscriber<T> implements Single.Subscriber<T> {
-        private final Single.Subscriber<? super T> subscriber;
+    private static final class OffloadedCancellableSingleSubscriber<T> implements SingleSource.Subscriber<T> {
+        private final SingleSource.Subscriber<? super T> subscriber;
         private final Executor executor;
 
-        OffloadedCancellableSingleSubscriber(final Single.Subscriber<? super T> subscriber,
+        OffloadedCancellableSingleSubscriber(final SingleSource.Subscriber<? super T> subscriber,
                                              final Executor executor) {
             this.subscriber = requireNonNull(subscriber);
             this.executor = executor;
@@ -725,11 +725,11 @@ final class TaskBasedSignalOffloader implements SignalOffloader {
         }
     }
 
-    private static final class OffloadedCancellableCompletableSubscriber implements Completable.Subscriber {
-        private final Completable.Subscriber subscriber;
+    private static final class OffloadedCancellableCompletableSubscriber implements CompletableSource.Subscriber {
+        private final CompletableSource.Subscriber subscriber;
         private final Executor executor;
 
-        OffloadedCancellableCompletableSubscriber(final Completable.Subscriber subscriber,
+        OffloadedCancellableCompletableSubscriber(final CompletableSource.Subscriber subscriber,
                                                   final Executor executor) {
             this.subscriber = requireNonNull(subscriber);
             this.executor = executor;

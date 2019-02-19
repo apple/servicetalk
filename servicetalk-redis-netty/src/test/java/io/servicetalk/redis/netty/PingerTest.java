@@ -15,6 +15,8 @@
  */
 package io.servicetalk.redis.netty;
 
+import io.servicetalk.concurrent.PublisherSource.Subscriber;
+import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.redis.api.PubSubRedisConnection;
@@ -44,8 +46,6 @@ import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
-import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
 
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;

@@ -16,8 +16,7 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
-
-import org.reactivestreams.Subscription;
+import io.servicetalk.concurrent.PublisherSource.Subscription;
 
 import static java.util.Objects.requireNonNull;
 

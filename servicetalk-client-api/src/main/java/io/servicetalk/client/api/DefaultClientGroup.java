@@ -16,7 +16,7 @@
 package io.servicetalk.client.api;
 
 import io.servicetalk.concurrent.Cancellable;
-import io.servicetalk.concurrent.Completable.Subscriber;
+import io.servicetalk.concurrent.CompletableSource.Subscriber;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 

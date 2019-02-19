@@ -15,6 +15,8 @@
  */
 package io.servicetalk.concurrent.api;
 
+import io.servicetalk.concurrent.PublisherSource.Subscriber;
+import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.concurrent.internal.TerminalNotification;
 
@@ -23,8 +25,6 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
-import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
 
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -35,8 +35,10 @@ import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.Executors.newCachedThreadPool;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -203,7 +205,8 @@ public final class PublisherGroupByConcurrencyTest {
         }
 
         @Override
-        public void onNext(Integer integer) {
+        public void onNext(@Nonnull Integer integer) {
+            requireNonNull(integer);
             nexts.add(integer);
         }
 

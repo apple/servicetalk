@@ -15,10 +15,10 @@
  */
 package io.servicetalk.concurrent.api.publisher;
 
+import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.api.Publisher;
 
 import org.junit.Test;
-import org.reactivestreams.Subscription;
 
 import java.util.function.Consumer;
 

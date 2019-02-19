@@ -15,7 +15,7 @@
  */
 package io.servicetalk.http.router.jersey;
 
-import io.servicetalk.concurrent.Single.Subscriber;
+import io.servicetalk.concurrent.SingleSource.Subscriber;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.DelayedCancellable;

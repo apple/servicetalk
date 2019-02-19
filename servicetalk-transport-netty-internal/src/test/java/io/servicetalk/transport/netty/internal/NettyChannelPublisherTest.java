@@ -16,9 +16,11 @@
 package io.servicetalk.transport.netty.internal;
 
 import io.servicetalk.concurrent.Cancellable;
+import io.servicetalk.concurrent.PublisherSource.Subscriber;
+import io.servicetalk.concurrent.PublisherSource.Subscription;
+import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.api.MockedSubscriberRule;
 import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.DuplicateSubscribeException;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.transport.netty.internal.NettyConnection.TerminalPredicate;
@@ -32,8 +34,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
 import org.mockito.Mockito;
-import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
 
 import java.nio.channels.ClosedChannelException;
 import java.util.concurrent.TimeUnit;
@@ -190,7 +190,7 @@ public class NettyChannelPublisherTest {
         subscriber.verifyItems(1);
 
         @SuppressWarnings("unchecked")
-        org.reactivestreams.Subscriber<Integer> sub2 = mock(org.reactivestreams.Subscriber.class);
+        Subscriber<Integer> sub2 = mock(io.servicetalk.concurrent.PublisherSource.Subscriber.class);
         publisher.subscribe(sub2);
         verify(sub2).onSubscribe(any(Subscription.class));
         verify(sub2).onError(any(DuplicateSubscribeException.class));
@@ -306,7 +306,7 @@ public class NettyChannelPublisherTest {
         final AtomicReference<Object> resultRef = new AtomicReference<>();
         fireChannelReadToBuffer(1);
         nextItemTerminal = true;
-        publisher.first().subscribe(new Single.Subscriber<Integer>() {
+        publisher.first().subscribe(new SingleSource.Subscriber<Integer>() {
             @Override
             public void onSubscribe(Cancellable cancellable) {
                 //noop
@@ -339,7 +339,7 @@ public class NettyChannelPublisherTest {
         subscriber.subscribe(publisher);
         subscriber.verifyFailure(ClosedChannelException.class);
         @SuppressWarnings("unchecked")
-        org.reactivestreams.Subscriber<Integer> mock = Mockito.mock(org.reactivestreams.Subscriber.class);
+        Subscriber<Integer> mock = Mockito.mock(Subscriber.class);
         publisher.subscribe(mock);
         verify(mock).onSubscribe(any());
         verify(mock).onError(any(ClosedChannelException.class));

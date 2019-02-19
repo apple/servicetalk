@@ -16,12 +16,12 @@
 package io.servicetalk.concurrent.internal;
 
 import io.servicetalk.concurrent.Cancellable;
-import io.servicetalk.concurrent.Completable;
+import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.Executor;
-import io.servicetalk.concurrent.Single;
+import io.servicetalk.concurrent.PublisherSource.Subscriber;
+import io.servicetalk.concurrent.PublisherSource.Subscription;
+import io.servicetalk.concurrent.SingleSource;
 
-import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -109,12 +109,12 @@ final class ThreadBasedSignalOffloader implements SignalOffloader, Runnable {
     }
 
     @Override
-    public <T> Single.Subscriber<? super T> offloadSubscriber(Single.Subscriber<? super T> subscriber) {
+    public <T> SingleSource.Subscriber<? super T> offloadSubscriber(SingleSource.Subscriber<? super T> subscriber) {
         return addOffloadedEntity(new OffloadedSingleSubscriber<>(this, subscriber));
     }
 
     @Override
-    public Completable.Subscriber offloadSubscriber(Completable.Subscriber subscriber) {
+    public CompletableSource.Subscriber offloadSubscriber(CompletableSource.Subscriber subscriber) {
         return addOffloadedEntity(new OffloadedCompletableSubscriber(this, subscriber));
     }
 
@@ -124,12 +124,12 @@ final class ThreadBasedSignalOffloader implements SignalOffloader, Runnable {
     }
 
     @Override
-    public <T> Single.Subscriber<? super T> offloadCancellable(Single.Subscriber<? super T> subscriber) {
+    public <T> SingleSource.Subscriber<? super T> offloadCancellable(SingleSource.Subscriber<? super T> subscriber) {
         return addOffloadedEntity(new OffloadedSingleCancellable<>(this, subscriber));
     }
 
     @Override
-    public Completable.Subscriber offloadCancellable(Completable.Subscriber subscriber) {
+    public CompletableSource.Subscriber offloadCancellable(CompletableSource.Subscriber subscriber) {
         return addOffloadedEntity(new OffloadedCompletableCancellable(this, subscriber));
     }
 
@@ -146,8 +146,8 @@ final class ThreadBasedSignalOffloader implements SignalOffloader, Runnable {
     }
 
     @Override
-    public <T> void offloadSubscribe(Single.Subscriber<T> subscriber,
-                                     Consumer<Single.Subscriber<T>> handleSubscribe) {
+    public <T> void offloadSubscribe(SingleSource.Subscriber<T> subscriber,
+                                     Consumer<SingleSource.Subscriber<T>> handleSubscribe) {
         try {
             addOffloadedEntity(new OffloadedSignalEntity<>(handleSubscribe, subscriber), true);
         } catch (EnqueueForOffloadingFailed e) {
@@ -159,7 +159,7 @@ final class ThreadBasedSignalOffloader implements SignalOffloader, Runnable {
     }
 
     @Override
-    public void offloadSubscribe(Completable.Subscriber subscriber, Consumer<Completable.Subscriber> handleSubscribe) {
+    public void offloadSubscribe(CompletableSource.Subscriber subscriber, Consumer<CompletableSource.Subscriber> handleSubscribe) {
         try {
             addOffloadedEntity(new OffloadedSignalEntity<>(handleSubscribe, subscriber), true);
         } catch (EnqueueForOffloadingFailed e) {
@@ -633,11 +633,11 @@ final class ThreadBasedSignalOffloader implements SignalOffloader, Runnable {
     }
 
     private static final class OffloadedSingleSubscriber<T> extends AbstractOffloadedSingleValueSubscriber
-            implements Single.Subscriber<T> {
+            implements SingleSource.Subscriber<T> {
 
-        private final Single.Subscriber<? super T> original;
+        private final SingleSource.Subscriber<? super T> original;
 
-        OffloadedSingleSubscriber(ThreadBasedSignalOffloader offloader, Single.Subscriber<? super T> original) {
+        OffloadedSingleSubscriber(ThreadBasedSignalOffloader offloader, SingleSource.Subscriber<? super T> original) {
             super(offloader);
             this.original = original;
         }
@@ -695,13 +695,13 @@ final class ThreadBasedSignalOffloader implements SignalOffloader, Runnable {
     }
 
     private static final class OffloadedCompletableSubscriber extends AbstractOffloadedSingleValueSubscriber
-            implements Completable.Subscriber {
+            implements CompletableSource.Subscriber {
 
         // sendSignals0() assumes a TerminalNotification is for error, so we use a special marker for success.
         private static final Object COMPLETE_SIGNAL = new Object();
-        private final Completable.Subscriber original;
+        private final CompletableSource.Subscriber original;
 
-        OffloadedCompletableSubscriber(ThreadBasedSignalOffloader offloader, Completable.Subscriber original) {
+        OffloadedCompletableSubscriber(ThreadBasedSignalOffloader offloader, CompletableSource.Subscriber original) {
             super(offloader);
             this.original = original;
         }
@@ -936,11 +936,11 @@ final class ThreadBasedSignalOffloader implements SignalOffloader, Runnable {
     }
 
     private static final class OffloadedSingleCancellable<T> extends AbstractOffloadedCancellable
-            implements Single.Subscriber<T> {
+            implements SingleSource.Subscriber<T> {
 
-        private final Single.Subscriber<? super T> original;
+        private final SingleSource.Subscriber<? super T> original;
 
-        private OffloadedSingleCancellable(ThreadBasedSignalOffloader offloader, Single.Subscriber<? super T> original) {
+        private OffloadedSingleCancellable(ThreadBasedSignalOffloader offloader, SingleSource.Subscriber<? super T> original) {
             super(offloader);
             this.original = original;
         }
@@ -965,11 +965,11 @@ final class ThreadBasedSignalOffloader implements SignalOffloader, Runnable {
     }
 
     private static final class OffloadedCompletableCancellable extends AbstractOffloadedCancellable
-            implements Completable.Subscriber {
+            implements CompletableSource.Subscriber {
 
-        private final Completable.Subscriber original;
+        private final CompletableSource.Subscriber original;
 
-        OffloadedCompletableCancellable(ThreadBasedSignalOffloader offloader, Completable.Subscriber original) {
+        OffloadedCompletableCancellable(ThreadBasedSignalOffloader offloader, CompletableSource.Subscriber original) {
             super(offloader);
             this.original = original;
         }

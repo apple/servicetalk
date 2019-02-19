@@ -15,6 +15,8 @@
  */
 package io.servicetalk.concurrent.api.publisher;
 
+import io.servicetalk.concurrent.PublisherSource.Subscriber;
+import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.MockedSubscriberRule;
 import io.servicetalk.concurrent.api.Publisher;
@@ -22,8 +24,6 @@ import io.servicetalk.concurrent.api.Publisher;
 import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.stubbing.Answer;
-import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;

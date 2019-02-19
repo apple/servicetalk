@@ -15,6 +15,8 @@
  */
 package io.servicetalk.concurrent.api.internal;
 
+import io.servicetalk.concurrent.PublisherSource.Subscriber;
+import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.api.MockedSubscriberRule;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
@@ -24,8 +26,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.Timeout;
-import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,7 +34,6 @@ import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.IntBinaryOperator;
-
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;

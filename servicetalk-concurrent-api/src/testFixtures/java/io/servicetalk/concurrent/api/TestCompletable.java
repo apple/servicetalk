@@ -16,6 +16,7 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
+import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.internal.TerminalNotification;
 
 import java.util.Queue;
@@ -29,7 +30,7 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-public class TestCompletable extends Completable implements Completable.Subscriber {
+public class TestCompletable extends Completable implements CompletableSource.Subscriber {
     private final Queue<Subscriber> subscribers = new ConcurrentLinkedQueue<>();
     private final DynamicCompositeCancellable dynamicCancellable = new MapDynamicCompositeCancellable();
     private final boolean invokeListenerPostCancel;

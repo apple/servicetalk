@@ -21,7 +21,6 @@ import io.servicetalk.http.router.jersey.BufferPublisherInputStream;
 
 import org.glassfish.jersey.internal.PropertiesDelegate;
 import org.glassfish.jersey.message.internal.InboundMessageContext;
-import org.reactivestreams.Subscriber;
 
 import java.io.Closeable;
 import java.io.InputStream;

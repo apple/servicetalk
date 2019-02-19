@@ -16,6 +16,7 @@
 package io.servicetalk.redis.netty;
 
 import io.servicetalk.concurrent.Cancellable;
+import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.api.AsyncCloseable;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Executor;
@@ -176,7 +177,7 @@ abstract class AbstractRedisConnection extends RedisConnection {
         }
     }
 
-    private final class PingSubscriber extends SequentialCancellable implements Completable.Subscriber {
+    private final class PingSubscriber extends SequentialCancellable implements CompletableSource.Subscriber {
 
         private volatile boolean inProgress; // volatile for visibility.
 
@@ -208,7 +209,7 @@ abstract class AbstractRedisConnection extends RedisConnection {
         }
     }
 
-    private final class TimerSubscriber extends SequentialCancellable implements Completable.Subscriber {
+    private final class TimerSubscriber extends SequentialCancellable implements CompletableSource.Subscriber {
 
         private final PingSubscriber pingSubscriber;
         private final Duration pingDuration;

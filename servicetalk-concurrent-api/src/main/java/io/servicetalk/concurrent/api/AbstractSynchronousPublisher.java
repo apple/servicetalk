@@ -17,8 +17,6 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.internal.SignalOffloader;
 
-import org.reactivestreams.Subscriber;
-
 /**
  * Base class for all {@link Publisher}s that are created with already realized values and do not generate values
  * asynchronously.

@@ -16,6 +16,7 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
+import io.servicetalk.concurrent.SingleSource;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -31,7 +32,7 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-public class TestSingle<T> extends Single<T> implements Single.Subscriber<T> {
+public class TestSingle<T> extends Single<T> implements SingleSource.Subscriber<T> {
     private static final Object NULL = new Object();
     private final AtomicInteger subscribeCount = new AtomicInteger();
     private final Queue<Subscriber<? super T>> subscribers = new ConcurrentLinkedQueue<>();

@@ -23,7 +23,7 @@ import org.testng.annotations.Test;
 public class PublisherDeferFromTckTest extends PublisherFromArrayTckTest {
 
     @Override
-    public Publisher<Integer> createPublisher(long elements) {
-        return Publisher.defer(() -> PublisherDeferFromTckTest.super.createPublisher(elements));
+    public Publisher<Integer> createServiceTalkPublisher(long elements) {
+        return Publisher.defer(() -> PublisherDeferFromTckTest.super.createServiceTalkPublisher(elements));
     }
 }

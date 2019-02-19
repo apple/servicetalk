@@ -17,6 +17,8 @@
 package io.servicetalk.redis.netty;
 
 import io.servicetalk.buffer.api.Buffer;
+import io.servicetalk.concurrent.PublisherSource.Subscriber;
+import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.internal.RejectedSubscribeException;
 import io.servicetalk.concurrent.internal.TerminalNotification;
@@ -31,8 +33,6 @@ import io.servicetalk.redis.netty.SubscribedChannelReadStream.PubSubChannelMessa
 import io.servicetalk.redis.netty.SubscribedChannelReadStream.PubSubChannelMessage.KeyType;
 
 import org.junit.Test;
-import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
 
 import java.nio.channels.ClosedChannelException;
 import java.util.Deque;
@@ -50,6 +50,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.buffer.api.EmptyBuffer.EMPTY_BUFFER;
@@ -70,6 +71,7 @@ import static io.servicetalk.redis.netty.SubscribedChannelReadStream.PubSubChann
 import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.parseBoolean;
 import static java.lang.Thread.currentThread;
+import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.Matchers.emptyCollectionOf;
 import static org.hamcrest.Matchers.endsWith;
@@ -141,7 +143,8 @@ public class SubscribedRedisClientTest extends BaseRedisClientTest {
         }
 
         @Override
-        public void onNext(final T data) {
+        public void onNext(@Nonnull final T data) {
+            requireNonNull(data);
             received.offer(data);
             onNextSemaphore.release(1);
         }

@@ -16,6 +16,7 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
+import io.servicetalk.concurrent.CompletableSource;
 
 import static java.util.Objects.requireNonNull;
 
@@ -35,10 +36,10 @@ final class DoCancellableCompletable extends AbstractSynchronousCompletableOpera
     }
 
     private static final class DoCancellableCompletableSubscriber implements Subscriber {
-        private final Completable.Subscriber original;
+        private final CompletableSource.Subscriber original;
         private final DoCancellableCompletable parent;
 
-        DoCancellableCompletableSubscriber(Completable.Subscriber original, DoCancellableCompletable parent) {
+        DoCancellableCompletableSubscriber(CompletableSource.Subscriber original, DoCancellableCompletable parent) {
             this.original = original;
             this.parent = parent;
         }

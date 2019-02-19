@@ -16,7 +16,7 @@
 package io.servicetalk.concurrent.internal;
 
 import io.servicetalk.concurrent.Cancellable;
-import io.servicetalk.concurrent.Single.Subscriber;
+import io.servicetalk.concurrent.SingleSource.Subscriber;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Executors;

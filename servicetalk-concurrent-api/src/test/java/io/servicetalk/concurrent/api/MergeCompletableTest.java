@@ -16,6 +16,7 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
+import io.servicetalk.concurrent.CompletableSource;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -72,7 +73,7 @@ public class MergeCompletableTest {
     abstract static class CompletableHolder extends MockedCompletableListenerRule {
 
         Cancellable[] cancellables;
-        Completable.Subscriber[] subscribers;
+        CompletableSource.Subscriber[] subscribers;
         private Completable mergeCompletable;
         private Completable[] completables;
 
@@ -86,7 +87,7 @@ public class MergeCompletableTest {
                                @Nullable CountDownLatch doneLatch) {
             completables = new Completable[count + 1];
             cancellables = new Cancellable[count + 1];
-            subscribers = new Completable.Subscriber[count + 1];
+            subscribers = new CompletableSource.Subscriber[count + 1];
             for (int i = 0; i < cancellables.length; i++) {
                 cancellables[i] = mock(Cancellable.class);
                 final int finalI = i;
@@ -133,7 +134,7 @@ public class MergeCompletableTest {
         }
 
         CompletableHolder completeAll() {
-            for (Completable.Subscriber subscriber : subscribers) {
+            for (CompletableSource.Subscriber subscriber : subscribers) {
                 subscriber.onComplete();
             }
             return this;

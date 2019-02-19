@@ -17,6 +17,8 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.Cancellable;
+import io.servicetalk.concurrent.PublisherSource.Subscriber;
+import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.CompletableProcessor;
 import io.servicetalk.concurrent.api.Executor;
@@ -49,8 +51,6 @@ import io.servicetalk.transport.netty.internal.NettyConnection.TerminalPredicate
 import io.servicetalk.transport.netty.internal.NettyConnectionContext;
 import io.servicetalk.transport.netty.internal.WriteEventsListenerAdapter;
 
-import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

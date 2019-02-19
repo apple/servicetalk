@@ -15,9 +15,9 @@
  */
 package io.servicetalk.concurrent.api.tck;
 
+import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 
-import org.reactivestreams.Publisher;
 import org.testng.annotations.Test;
 
 /**
@@ -30,7 +30,7 @@ import org.testng.annotations.Test;
 public abstract class AbstractSingleOperatorTckTest<T> extends AbstractSingleTckTest<T> {
 
     @Override
-    public Publisher<T> createPublisher(long elements) {
+    public Publisher<T> createServiceTalkPublisher(long elements) {
         return composeSingle(Single.success(1)).toPublisher();
     }
 

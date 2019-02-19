@@ -15,14 +15,15 @@
  */
 package io.servicetalk.concurrent.api.tck;
 
-import org.reactivestreams.Publisher;
+import io.servicetalk.concurrent.api.Publisher;
+
 import org.testng.annotations.Test;
 
 @Test
 public class PublisherOnErrorResumeTckTest extends AbstractPublisherTckTest<Integer> {
 
     @Override
-    public Publisher<Integer> createPublisher(long elements) {
+    public Publisher<Integer> createServiceTalkPublisher(long elements) {
         int numElements = TckUtils.requestNToInt(elements);
 
         return TckUtils.<Integer>newFailedPublisher()

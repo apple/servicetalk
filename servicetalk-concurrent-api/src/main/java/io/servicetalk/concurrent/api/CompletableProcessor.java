@@ -16,7 +16,7 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
-import io.servicetalk.concurrent.Completable.Processor;
+import io.servicetalk.concurrent.CompletableSource.Processor;
 import io.servicetalk.concurrent.internal.QueueFullAndRejectedSubscribeException;
 import io.servicetalk.concurrent.internal.TerminalNotification;
 

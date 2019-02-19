@@ -16,11 +16,9 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
+import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.internal.SequentialCancellable;
 import io.servicetalk.concurrent.internal.SignalOffloader;
-
-import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
 
 import javax.annotation.Nullable;
 
@@ -45,7 +43,7 @@ final class SingleToPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
         subscriber.onSubscribe(new State<>(original, subscriber, signalOffloader, contextMap, contextProvider));
     }
 
-    private static final class State<T> implements Subscription, Single.Subscriber<T> {
+    private static final class State<T> implements Subscription, SingleSource.Subscriber<T> {
         private final SequentialCancellable sequentialCancellable;
         private final Subscriber<? super T> subscriber;
         private final SignalOffloader signalOffloader;

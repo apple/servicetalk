@@ -18,9 +18,6 @@ package io.servicetalk.concurrent.api;
 import io.servicetalk.concurrent.internal.SignalOffloader;
 import io.servicetalk.concurrent.internal.TerminalNotification;
 
-import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
-
 import java.util.function.BiPredicate;
 import java.util.function.IntPredicate;
 

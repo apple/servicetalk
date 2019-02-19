@@ -16,6 +16,7 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
+import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.internal.SignalOffloader;
 
 import org.slf4j.Logger;
@@ -51,7 +52,7 @@ import static java.util.function.Function.identity;
  *
  * @param <T> Type of the result of the single.
  */
-public abstract class Single<T> implements io.servicetalk.concurrent.Single<T> {
+public abstract class Single<T> implements SingleSource<T> {
     private static final Logger LOGGER = LoggerFactory.getLogger(Single.class);
 
     private final Executor executor;
@@ -797,8 +798,8 @@ public abstract class Single<T> implements io.servicetalk.concurrent.Single<T> {
      *
      * @param executor {@link Executor} to use.
      * @return A new {@link Single} that will use the passed {@link Executor} to invoke all methods of
-     * {@link Subscriber}, {@link Cancellable} and {@link #handleSubscribe(Single.Subscriber)} both for the returned
-     * {@link Single} as well as {@code this} {@link Single}.
+     * {@link Subscriber}, {@link Cancellable} and {@link #handleSubscribe(SingleSource.Subscriber)} both for the
+     * returned {@link Single} as well as {@code this} {@link Single}.
      */
     public final Single<T> publishOnOverride(Executor executor) {
         return PublishAndSubscribeOnSingles.publishOnOverride(this, executor);
@@ -808,7 +809,7 @@ public abstract class Single<T> implements io.servicetalk.concurrent.Single<T> {
      * Creates a new {@link Single} that will use the passed {@link Executor} to invoke the following methods:
      * <ul>
      *     <li>All {@link Cancellable} methods.</li>
-     *     <li>The {@link #handleSubscribe(Single.Subscriber)} method.</li>
+     *     <li>The {@link #handleSubscribe(SingleSource.Subscriber)} method.</li>
      * </ul>
      * This method does <strong>not</strong> override preceding {@link Executor}s, if any, specified for {@code this}
      * {@link Single}. Only subsequent operations, if any, added in this execution chain will use this
@@ -816,7 +817,7 @@ public abstract class Single<T> implements io.servicetalk.concurrent.Single<T> {
      *
      * @param executor {@link Executor} to use.
      * @return A new {@link Single} that will use the passed {@link Executor} to invoke all methods of
-     * {@link Cancellable} and {@link #handleSubscribe(Single.Subscriber)}.
+     * {@link Cancellable} and {@link #handleSubscribe(SingleSource.Subscriber)}.
      */
     public final Single<T> subscribeOn(Executor executor) {
         return PublishAndSubscribeOnSingles.subscribeOn(this, executor);
@@ -826,7 +827,7 @@ public abstract class Single<T> implements io.servicetalk.concurrent.Single<T> {
      * Creates a new {@link Single} that will use the passed {@link Executor} to invoke the following methods:
      * <ul>
      *     <li>All {@link Cancellable} methods.</li>
-     *     <li>The {@link #handleSubscribe(Single.Subscriber)} method.</li>
+     *     <li>The {@link #handleSubscribe(SingleSource.Subscriber)} method.</li>
      * </ul>
      * This method overrides preceding {@link Executor}s, if any, specified for {@code this} {@link Single}.
      * That is to say preceding and subsequent operations for this execution chain will use this {@link Executor} for
@@ -835,7 +836,7 @@ public abstract class Single<T> implements io.servicetalk.concurrent.Single<T> {
      *
      * @param executor {@link Executor} to use.
      * @return A new {@link Single} that will use the passed {@link Executor} to invoke all methods of
-     * {@link Cancellable} and {@link #handleSubscribe(Single.Subscriber)} both for the returned
+     * {@link Cancellable} and {@link #handleSubscribe(SingleSource.Subscriber)} both for the returned
      * {@link Single} as well as {@code this} {@link Single}.
      */
     public final Single<T> subscribeOnOverride(Executor executor) {
@@ -847,7 +848,7 @@ public abstract class Single<T> implements io.servicetalk.concurrent.Single<T> {
      * <ul>
      *     <li>All {@link Subscriber} methods.</li>
      *     <li>All {@link Cancellable} methods.</li>
-     *     <li>The {@link #handleSubscribe(Single.Subscriber)} method.</li>
+     *     <li>The {@link #handleSubscribe(SingleSource.Subscriber)} method.</li>
      * </ul>
      * This method does <strong>not</strong> override preceding {@link Executor}s, if any, specified for {@code this}
      * {@link Single}. Only subsequent operations, if any, added in this execution chain will use this
@@ -855,7 +856,7 @@ public abstract class Single<T> implements io.servicetalk.concurrent.Single<T> {
      *
      * @param executor {@link Executor} to use.
      * @return A new {@link Single} that will use the passed {@link Executor} to invoke all methods
-     * {@link Subscriber}, {@link Cancellable} and {@link #handleSubscribe(Single.Subscriber)}.
+     * {@link Subscriber}, {@link Cancellable} and {@link #handleSubscribe(SingleSource.Subscriber)}.
      */
     public final Single<T> publishAndSubscribeOn(Executor executor) {
         return PublishAndSubscribeOnSingles.publishAndSubscribeOn(this, executor);
@@ -866,7 +867,7 @@ public abstract class Single<T> implements io.servicetalk.concurrent.Single<T> {
      * <ul>
      *     <li>All {@link Subscriber} methods.</li>
      *     <li>All {@link Cancellable} methods.</li>
-     *     <li>The {@link #handleSubscribe(Single.Subscriber)} method.</li>
+     *     <li>The {@link #handleSubscribe(SingleSource.Subscriber)} method.</li>
      * </ul>
      * This method overrides preceding {@link Executor}s, if any, specified for {@code this} {@link Single}.
      * That is to say preceding and subsequent operations for this execution chain will use this {@link Executor}.
@@ -874,8 +875,8 @@ public abstract class Single<T> implements io.servicetalk.concurrent.Single<T> {
      *
      * @param executor {@link Executor} to use.
      * @return A new {@link Single} that will use the passed {@link Executor} to invoke all methods of
-     * {@link Subscriber}, {@link Cancellable} and {@link #handleSubscribe(Single.Subscriber)} both for the returned
-     * {@link Single} as well as {@code this} {@link Single}.
+     * {@link Subscriber}, {@link Cancellable} and {@link #handleSubscribe(SingleSource.Subscriber)} both for the
+     * returned {@link Single} as well as {@code this} {@link Single}.
      */
     public final Single<T> publishAndSubscribeOnOverride(Executor executor) {
         return PublishAndSubscribeOnSingles.publishAndSubscribeOnOverride(this, executor);
@@ -1458,8 +1459,8 @@ public abstract class Single<T> implements io.servicetalk.concurrent.Single<T> {
         final SignalOffloader signalOffloader;
         final Subscriber<? super T> offloadedSubscriber;
         try {
-            // This is a user-driven subscribe i.e. there is no SignalOffloader override, so create a new SignalOffloader
-            // to use.
+            // This is a user-driven subscribe i.e. there is no SignalOffloader override, so create a new
+            // SignalOffloader to use.
             signalOffloader = newOffloaderFor(executor);
             // Since this is a user-driven subscribe (end of the execution chain), offload Cancellable
             offloadedSubscriber = signalOffloader.offloadCancellable(
@@ -1476,8 +1477,8 @@ public abstract class Single<T> implements io.servicetalk.concurrent.Single<T> {
      * Replicating a call to {@link #subscribe(Subscriber)} but with a materialized {@link SignalOffloader} and
      * {@link AsyncContextMap}.
      * @param subscriber the subscriber.
-     * @param signalOffloader {@link SignalOffloader} to use for this {@link org.reactivestreams.Subscriber}.
-     * @param contextMap the {@link AsyncContextMap} to use for this {@link org.reactivestreams.Subscriber}.
+     * @param signalOffloader {@link SignalOffloader} to use for this {@link Subscriber}.
+     * @param contextMap the {@link AsyncContextMap} to use for this {@link Subscriber}.
      * @param contextProvider the {@link AsyncContextProvider} used to wrap any objects to preserve
      * {@link AsyncContextMap}.
      */
@@ -1505,7 +1506,7 @@ public abstract class Single<T> implements io.servicetalk.concurrent.Single<T> {
      *
      * @param subscriber the subscriber.
      * @param signalOffloader {@link SignalOffloader} to use for this {@link Subscriber}.
-     * @param contextMap the {@link AsyncContextMap} to use for this {@link org.reactivestreams.Subscriber}.
+     * @param contextMap the {@link AsyncContextMap} to use for this {@link Subscriber}.
      * @param contextProvider the {@link AsyncContextProvider} used to wrap any objects to preserve
      * {@link AsyncContextMap}.
      */
