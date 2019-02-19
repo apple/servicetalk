@@ -106,16 +106,13 @@ public class DoBeforeFinallyOnHttpResponseOperatorTest {
 
         final StreamingHttpResponse response = reqRespFactory.newResponse(OK);
         subRef.get().onSuccess(response);
-        final StreamingHttpResponse received = subscriber.verifyResponseReceived();
+        subscriber.verifyResponseReceived();
         verifyZeroInteractions(doBeforeFinally);
 
         final StreamingHttpResponse response2 = reqRespFactory.newResponse(OK);
 
+        expectedException.expect(AssertionError.class);
         subRef.get().onSuccess(response2);
-        final StreamingHttpResponse received2 = subscriber.verifyResponseReceived();
-        // Old response should be preserved.
-        assertThat("Duplicate response received.", received2, is(received));
-        verifyZeroInteractions(doBeforeFinally);
     }
 
     @Test
