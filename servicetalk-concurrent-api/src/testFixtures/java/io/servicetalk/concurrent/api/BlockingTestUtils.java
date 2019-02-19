@@ -60,8 +60,7 @@ public final class BlockingTestUtils {
      */
     @Nullable
     public static <T> List<T> awaitIndefinitely(Publisher<T> source) throws ExecutionException, InterruptedException {
-        Collection<T> c = source.toFuture().get();
-        return c == null ? null : new ArrayList<>(c);
+        return toList(source.toFuture().get());
     }
 
     /**
@@ -98,8 +97,7 @@ public final class BlockingTestUtils {
     @Nullable
     public static <T> List<T> await(Publisher<T> source, long timeout, TimeUnit timeoutUnit)
             throws ExecutionException, InterruptedException, TimeoutException {
-        Collection<T> c = source.toFuture().get(timeout, timeoutUnit);
-        return c == null ? null : new ArrayList<>(c);
+        return toList(source.toFuture().get(timeout, timeoutUnit));
     }
 
     /**
@@ -241,5 +239,11 @@ public final class BlockingTestUtils {
             throw new ExecutionException("null return value not supported", npe);
         }
         return result;
+    }
+
+    @Nullable
+    private static <T> List<T> toList(@Nullable Collection<T> collection) {
+        return collection instanceof List ? (List<T>) collection :
+                collection == null ? null : new ArrayList<>(collection);
     }
 }
