@@ -20,8 +20,8 @@ import org.reactivestreams.Subscription;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static io.servicetalk.concurrent.internal.EmptySubscription.EMPTY_SUBSCRIPTION;
 import static io.servicetalk.concurrent.internal.FlowControlUtil.addWithOverflowProtection;
+import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverTerminalFromSource;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.isRequestNValid;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.newExceptionForInvalidRequestN;
 import static java.lang.Math.min;
@@ -49,17 +49,7 @@ final class FromArrayPublisher<T> extends AbstractSynchronousPublisher<T> {
                 LOGGER.debug("Ignoring exception from onSubscribe of Subscriber {}.", s, t);
             }
         } else {
-            try {
-                s.onSubscribe(EMPTY_SUBSCRIPTION);
-            } catch (Throwable t) {
-                LOGGER.debug("Ignoring exception from onSubscribe of Subscriber {}.", s, t);
-                return;
-            }
-            try {
-                s.onComplete();
-            } catch (Throwable t) {
-                LOGGER.debug("Ignoring exception from onComplete of Subscriber {}.", s, t);
-            }
+            deliverTerminalFromSource(s);
         }
     }
 

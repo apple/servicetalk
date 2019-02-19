@@ -16,12 +16,10 @@
 package io.servicetalk.concurrent.api;
 
 import org.reactivestreams.Subscriber;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.function.Supplier;
 
-import static io.servicetalk.concurrent.internal.EmptySubscription.EMPTY_SUBSCRIPTION;
+import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverTerminalFromSource;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -30,9 +28,6 @@ import static java.util.Objects.requireNonNull;
  * @param <T> Type of items emitted by this {@link Publisher}.
  */
 final class PublisherDefer<T> extends Publisher<T> {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(PublisherDefer.class);
-
     private final Supplier<? extends Publisher<T>> publisherFactory;
 
     PublisherDefer(Supplier<? extends Publisher<T>> publisherFactory) {
@@ -45,17 +40,7 @@ final class PublisherDefer<T> extends Publisher<T> {
         try {
             publisher = requireNonNull(publisherFactory.get());
         } catch (Throwable cause) {
-            try {
-                subscriber.onSubscribe(EMPTY_SUBSCRIPTION);
-            } catch (Throwable t) {
-                LOGGER.debug("Ignoring exception from onSubscribe of Subscriber {}.", subscriber, t);
-                return;
-            }
-            try {
-                subscriber.onError(cause);
-            } catch (Throwable t) {
-                LOGGER.debug("Ignoring exception from onError of Subscriber {}.", subscriber, t);
-            }
+            deliverTerminalFromSource(subscriber, cause);
             return;
         }
         // There are technically two sources, this one and the one returned by the factory.

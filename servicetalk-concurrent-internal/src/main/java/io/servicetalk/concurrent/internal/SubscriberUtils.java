@@ -15,8 +15,14 @@
  */
 package io.servicetalk.concurrent.internal;
 
+import io.servicetalk.concurrent.Cancellable;
+import io.servicetalk.concurrent.Completable;
+import io.servicetalk.concurrent.Single;
+
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
@@ -24,10 +30,14 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Consumer;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
+import static io.servicetalk.concurrent.internal.EmptySubscription.EMPTY_SUBSCRIPTION;
+
 /**
  * A set of utilities for common {@link Subscriber} tasks.
  */
 public final class SubscriberUtils {
+    private static final Logger LOGGER = LoggerFactory.getLogger(SubscriberUtils.class);
     public static final int SUBSCRIBER_STATE_IDLE = 0;
     public static final int SUBSCRIBER_STATE_ON_NEXT = 1;
     public static final int SUBSCRIBER_STATE_TERMINATED = 2;
@@ -280,6 +290,88 @@ public final class SubscriberUtils {
             } else {
                 return false;
             }
+        }
+    }
+
+    /**
+     * Deliver a terminal error to a {@link Subscriber} that has not yet had
+     * {@link Subscriber#onSubscribe(Subscription)} called.
+     * @param subscriber The {@link Subscriber} to terminate.
+     * @param cause The terminal event.
+     * @param <T> The type of {@link Subscriber}.
+     */
+    public static <T> void deliverTerminalFromSource(Subscriber<T> subscriber, Throwable cause) {
+        try {
+            subscriber.onSubscribe(EMPTY_SUBSCRIPTION);
+        } catch (Throwable t) {
+            LOGGER.debug("Ignoring exception from onSubscribe of Subscriber {}.", subscriber, t);
+            return;
+        }
+        try {
+            subscriber.onError(cause);
+        } catch (Throwable t) {
+            LOGGER.debug("Ignoring exception from onError of Subscriber {}.", subscriber, t);
+        }
+    }
+
+    /**
+     * Deliver a terminal complete to a {@link Subscriber} that has not yet had
+     * {@link Subscriber#onSubscribe(Subscription)} called.
+     * @param subscriber The {@link Subscriber} to terminate.
+     * @param <T> The type of {@link Subscriber}.
+     */
+    public static <T> void deliverTerminalFromSource(Subscriber<T> subscriber) {
+        try {
+            subscriber.onSubscribe(EMPTY_SUBSCRIPTION);
+        } catch (Throwable t) {
+            LOGGER.debug("Ignoring exception from onSubscribe of Subscriber {}.", subscriber, t);
+            return;
+        }
+        try {
+            subscriber.onComplete();
+        } catch (Throwable t) {
+            LOGGER.debug("Ignoring exception from onComplete of Subscriber {}.", subscriber, t);
+        }
+    }
+
+    /**
+     * Deliver a terminal error to a {@link Single.Subscriber} that has not yet had
+     * {@link Single.Subscriber#onSubscribe(Cancellable)} called.
+     * @param subscriber The {@link Single.Subscriber} to terminate.
+     * @param cause The terminal event.
+     * @param <T> The type of {@link Single.Subscriber}.
+     */
+    public static <T> void deliverTerminalFromSource(Single.Subscriber<T> subscriber, Throwable cause) {
+        try {
+            subscriber.onSubscribe(IGNORE_CANCEL);
+        } catch (Throwable t) {
+            LOGGER.debug("Ignoring exception from onSubscribe of Subscriber {}.", subscriber, t);
+            return;
+        }
+        try {
+            subscriber.onError(cause);
+        } catch (Throwable t) {
+            LOGGER.debug("Ignoring exception from onError of Subscriber {}.", subscriber, t);
+        }
+    }
+
+    /**
+     * Deliver a terminal error to a {@link Completable.Subscriber} that has not yet had
+     * {@link Completable.Subscriber#onSubscribe(Cancellable)} called.
+     * @param subscriber The {@link Completable.Subscriber} to terminate.
+     * @param cause The terminal event.
+     */
+    public static void deliverTerminalFromSource(Completable.Subscriber subscriber, Throwable cause) {
+        try {
+            subscriber.onSubscribe(IGNORE_CANCEL);
+        } catch (Throwable t) {
+            LOGGER.debug("Ignoring exception from onSubscribe of Subscriber {}.", subscriber, t);
+            return;
+        }
+        try {
+            subscriber.onError(cause);
+        } catch (Throwable t) {
+            LOGGER.debug("Ignoring exception from onError of Subscriber {}.", subscriber, t);
         }
     }
 }
