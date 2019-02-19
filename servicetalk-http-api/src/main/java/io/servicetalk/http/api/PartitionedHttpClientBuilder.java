@@ -23,10 +23,9 @@ import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.client.api.partition.PartitionAttributes;
 import io.servicetalk.client.api.partition.PartitionMapFactory;
 import io.servicetalk.client.api.partition.PartitionedServiceDiscovererEvent;
+import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.SslConfig;
-
-import org.reactivestreams.Subscriber;
 
 import java.net.SocketOption;
 import java.util.function.BiFunction;

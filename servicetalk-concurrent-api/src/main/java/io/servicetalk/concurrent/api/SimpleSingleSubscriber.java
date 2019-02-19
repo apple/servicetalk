@@ -16,6 +16,7 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
+import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.internal.SequentialCancellable;
 
 import org.slf4j.Logger;
@@ -26,7 +27,7 @@ import javax.annotation.Nullable;
 
 import static java.util.Objects.requireNonNull;
 
-final class SimpleSingleSubscriber<T> extends SequentialCancellable implements Single.Subscriber<T> {
+final class SimpleSingleSubscriber<T> extends SequentialCancellable implements SingleSource.Subscriber<T> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SimpleSingleSubscriber.class);
 

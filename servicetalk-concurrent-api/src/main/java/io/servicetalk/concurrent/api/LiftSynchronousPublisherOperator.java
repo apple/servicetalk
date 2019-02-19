@@ -15,8 +15,6 @@
  */
 package io.servicetalk.concurrent.api;
 
-import org.reactivestreams.Subscriber;
-
 import static java.util.Objects.requireNonNull;
 
 final class LiftSynchronousPublisherOperator<T, R> extends AbstractSynchronousPublisherOperator<T, R> {

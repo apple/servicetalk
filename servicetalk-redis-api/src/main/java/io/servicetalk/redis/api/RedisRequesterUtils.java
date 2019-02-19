@@ -16,6 +16,9 @@
 package io.servicetalk.redis.api;
 
 import io.servicetalk.buffer.api.Buffer;
+import io.servicetalk.concurrent.PublisherSource.Subscriber;
+import io.servicetalk.concurrent.PublisherSource.Subscription;
+import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.ConcurrentSubscription;
 import io.servicetalk.redis.api.RedisData.BulkStringChunk;
@@ -23,8 +26,6 @@ import io.servicetalk.redis.api.RedisData.FirstBulkStringChunk;
 import io.servicetalk.redis.api.RedisData.LastBulkStringChunk;
 import io.servicetalk.redis.api.RedisData.Null;
 import io.servicetalk.redis.api.RedisData.SimpleString;
-
-import org.reactivestreams.Subscription;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -39,17 +40,17 @@ final class RedisRequesterUtils {
     private RedisRequesterUtils() {
     }
 
-    abstract static class AggregatingSubscriber<R> implements org.reactivestreams.Subscriber<RedisData> {
-        final Single.Subscriber<? super R> singleSubscriber;
+    abstract static class AggregatingSubscriber<R> implements Subscriber<RedisData> {
+        final SingleSource.Subscriber<? super R> singleSubscriber;
 
-        AggregatingSubscriber(Single.Subscriber<? super R> singleSubscriber) {
+        AggregatingSubscriber(SingleSource.Subscriber<? super R> singleSubscriber) {
             this.singleSubscriber = singleSubscriber;
         }
 
         @Override
         public final void onSubscribe(Subscription s) {
             ConcurrentSubscription cs = wrap(s);
-            singleSubscriber.onSubscribe(cs::cancel);
+            singleSubscriber.onSubscribe(cs);
             cs.request(Long.MAX_VALUE);
         }
     }

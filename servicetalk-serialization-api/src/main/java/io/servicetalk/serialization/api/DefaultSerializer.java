@@ -21,10 +21,9 @@ import io.servicetalk.concurrent.BlockingIterable;
 import io.servicetalk.concurrent.BlockingIterator;
 import io.servicetalk.concurrent.CloseableIterable;
 import io.servicetalk.concurrent.CloseableIterator;
+import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.internal.AbstractCloseableIterable;
-
-import org.reactivestreams.Subscriber;
 
 import java.util.Iterator;
 import java.util.concurrent.TimeUnit;

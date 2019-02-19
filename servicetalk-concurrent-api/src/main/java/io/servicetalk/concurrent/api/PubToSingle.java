@@ -15,9 +15,10 @@
  */
 package io.servicetalk.concurrent.api;
 
+import io.servicetalk.concurrent.PublisherSource;
+import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.internal.SignalOffloader;
 
-import org.reactivestreams.Subscription;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,7 +52,7 @@ final class PubToSingle<T> extends AbstractNoHandleSubscribeSingle<T> {
         // We are now subscribing to the original Publisher chain for the first time, re-using the SignalOffloader.
         // Using the special subscribe() method means it will not offload the Subscription (done in the public
         // subscribe() method). So, we use the SignalOffloader to offload subscription if required.
-        org.reactivestreams.Subscriber<? super T> offloadedSubscription = signalOffloader.offloadSubscription(
+        PublisherSource.Subscriber<? super T> offloadedSubscription = signalOffloader.offloadSubscription(
                 contextProvider.wrapSubscription(new PubToSingleSubscriber<>(subscriber), contextMap));
         // Since this is converting a Publisher to a Single, we should try to use the same SignalOffloader for
         // subscribing to the original Publisher to avoid thread hop. Since, it is the same source, just viewed as a
@@ -59,7 +60,7 @@ final class PubToSingle<T> extends AbstractNoHandleSubscribeSingle<T> {
         source.subscribeWithOffloaderAndContext(offloadedSubscription, signalOffloader, contextMap, contextProvider);
     }
 
-    private static final class PubToSingleSubscriber<T> implements org.reactivestreams.Subscriber<T> {
+    private static final class PubToSingleSubscriber<T> implements PublisherSource.Subscriber<T> {
 
         private static final Logger LOGGER = LoggerFactory.getLogger(PubToSingleSubscriber.class);
 
@@ -82,7 +83,7 @@ final class PubToSingle<T> extends AbstractNoHandleSubscribeSingle<T> {
                 s.request(1);
                 if (state != STATE_SENT_ON_SUBSCRIBE_AND_DONE) {
                     state = STATE_SENT_ON_SUBSCRIBE;
-                    subscriber.onSubscribe(s::cancel);
+                    subscriber.onSubscribe(s);
                 }
             }
         }

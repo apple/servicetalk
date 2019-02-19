@@ -15,11 +15,12 @@
  */
 package io.servicetalk.concurrent.internal;
 
+import io.servicetalk.concurrent.PublisherSource.Subscription;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.reactivestreams.Subscription;
 
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ExecutionException;

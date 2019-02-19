@@ -16,12 +16,10 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
+import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.internal.SequentialCancellable;
 import io.servicetalk.concurrent.internal.SignalOffloader;
 import io.servicetalk.concurrent.internal.TerminalNotification;
-
-import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
 
 import java.util.function.BiFunction;
 import java.util.function.IntFunction;
@@ -129,7 +127,7 @@ final class RedoWhenPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
                 return;
             }
 
-            redoDecider.subscribe(new Completable.Subscriber() {
+            redoDecider.subscribe(new CompletableSource.Subscriber() {
                 @Override
                 public void onSubscribe(Cancellable completableCancellable) {
                     cancellable.setNextCancellable(completableCancellable);

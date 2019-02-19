@@ -16,11 +16,10 @@
 package io.servicetalk.client.internal;
 
 import io.servicetalk.client.api.LoadBalancerReadyEvent;
+import io.servicetalk.concurrent.PublisherSource.Subscriber;
+import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.CompletableProcessor;
-
-import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
 
 import javax.annotation.Nullable;
 

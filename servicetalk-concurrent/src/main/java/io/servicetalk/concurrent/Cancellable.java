@@ -22,6 +22,7 @@ package io.servicetalk.concurrent;
  * It is up to the producer of data to take any action on cancellation or ignore the same.
  * Thus, a consumer of the result must <em>not</em> assume that it will not receive any callback post cancellation i.e. after {@link #cancel()} returns.
  */
+@FunctionalInterface
 public interface Cancellable {
 
     /**

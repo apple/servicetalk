@@ -27,7 +27,6 @@ import io.servicetalk.transport.netty.internal.NettyConnection;
 import io.servicetalk.transport.netty.internal.NettyPipelinedConnection;
 
 import io.netty.buffer.ByteBuf;
-import org.reactivestreams.Subscriber;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

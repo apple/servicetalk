@@ -15,11 +15,10 @@
  */
 package io.servicetalk.concurrent.api;
 
-import io.servicetalk.concurrent.Completable;
-import io.servicetalk.concurrent.Single;
+import io.servicetalk.concurrent.CompletableSource;
+import io.servicetalk.concurrent.PublisherSource.Subscriber;
+import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.internal.SignalOffloader;
-
-import org.reactivestreams.Subscriber;
 
 import java.util.function.Consumer;
 
@@ -37,12 +36,13 @@ final class NoopOffloader implements SignalOffloader {
     }
 
     @Override
-    public <T> Single.Subscriber<? super T> offloadSubscriber(final Single.Subscriber<? super T> subscriber) {
+    public <T> SingleSource.Subscriber<? super T> offloadSubscriber(
+            final SingleSource.Subscriber<? super T> subscriber) {
         return subscriber;
     }
 
     @Override
-    public Completable.Subscriber offloadSubscriber(final Completable.Subscriber subscriber) {
+    public CompletableSource.Subscriber offloadSubscriber(final CompletableSource.Subscriber subscriber) {
         return subscriber;
     }
 
@@ -52,12 +52,13 @@ final class NoopOffloader implements SignalOffloader {
     }
 
     @Override
-    public <T> Single.Subscriber<? super T> offloadCancellable(final Single.Subscriber<? super T> subscriber) {
+    public <T> SingleSource.Subscriber<? super T> offloadCancellable(
+            final SingleSource.Subscriber<? super T> subscriber) {
         return subscriber;
     }
 
     @Override
-    public Completable.Subscriber offloadCancellable(final Completable.Subscriber subscriber) {
+    public CompletableSource.Subscriber offloadCancellable(final CompletableSource.Subscriber subscriber) {
         return subscriber;
     }
 
@@ -68,14 +69,14 @@ final class NoopOffloader implements SignalOffloader {
     }
 
     @Override
-    public <T> void offloadSubscribe(final Single.Subscriber<T> subscriber,
-                                     final Consumer<Single.Subscriber<T>> handleSubscribe) {
+    public <T> void offloadSubscribe(final SingleSource.Subscriber<T> subscriber,
+                                     final Consumer<SingleSource.Subscriber<T>> handleSubscribe) {
         handleSubscribe.accept(subscriber);
     }
 
     @Override
-    public void offloadSubscribe(final Completable.Subscriber subscriber,
-                                 final Consumer<Completable.Subscriber> handleSubscribe) {
+    public void offloadSubscribe(final CompletableSource.Subscriber subscriber,
+                                 final Consumer<CompletableSource.Subscriber> handleSubscribe) {
         handleSubscribe.accept(subscriber);
     }
 

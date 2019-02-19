@@ -16,16 +16,15 @@
 package io.servicetalk.concurrent.api.tck;
 
 import io.servicetalk.concurrent.api.Completable;
+import io.servicetalk.concurrent.api.Publisher;
 
-import org.reactivestreams.Publisher;
 import org.testng.annotations.Test;
 
 @Test
 public class CompletableDeferTckTest extends AbstractCompletableTckTest {
-    private static final Object VALUE = new Object();
 
     @Override
-    public Publisher<Object> createPublisher(long elements) {
+    public Publisher<Object> createServiceTalkPublisher(long elements) {
         return Completable.defer(Completable::completed).toPublisher();
     }
 }

@@ -15,12 +15,11 @@
  */
 package io.servicetalk.concurrent.api;
 
-import io.servicetalk.concurrent.Completable;
-import io.servicetalk.concurrent.Single;
+import io.servicetalk.concurrent.CompletableSource;
+import io.servicetalk.concurrent.PublisherSource.Subscriber;
+import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.internal.SignalOffloader;
 import io.servicetalk.concurrent.internal.SignalOffloaderFactory;
-
-import org.reactivestreams.Subscriber;
 
 import java.util.function.Consumer;
 
@@ -66,14 +65,14 @@ final class MergedOffloadSubscribeExecutor extends DelegatingExecutor implements
         }
 
         @Override
-        public <T> io.servicetalk.concurrent.Single.Subscriber<? super T> offloadSubscriber(
-                final io.servicetalk.concurrent.Single.Subscriber<? super T> subscriber) {
+        public <T> SingleSource.Subscriber<? super T> offloadSubscriber(
+                final SingleSource.Subscriber<? super T> subscriber) {
             return fallback.offloadSubscriber(subscriber);
         }
 
         @Override
-        public io.servicetalk.concurrent.Completable.Subscriber offloadSubscriber(
-                final io.servicetalk.concurrent.Completable.Subscriber subscriber) {
+        public CompletableSource.Subscriber offloadSubscriber(
+                final CompletableSource.Subscriber subscriber) {
             return fallback.offloadSubscriber(subscriber);
         }
 
@@ -83,14 +82,14 @@ final class MergedOffloadSubscribeExecutor extends DelegatingExecutor implements
         }
 
         @Override
-        public <T> io.servicetalk.concurrent.Single.Subscriber<? super T> offloadCancellable(
-                final io.servicetalk.concurrent.Single.Subscriber<? super T> subscriber) {
+        public <T> SingleSource.Subscriber<? super T> offloadCancellable(
+                final SingleSource.Subscriber<? super T> subscriber) {
             return offloader.offloadCancellable(subscriber);
         }
 
         @Override
-        public io.servicetalk.concurrent.Completable.Subscriber offloadCancellable(
-                final io.servicetalk.concurrent.Completable.Subscriber subscriber) {
+        public CompletableSource.Subscriber offloadCancellable(
+                final CompletableSource.Subscriber subscriber) {
             return offloader.offloadCancellable(subscriber);
         }
 
@@ -101,14 +100,14 @@ final class MergedOffloadSubscribeExecutor extends DelegatingExecutor implements
         }
 
         @Override
-        public <T> void offloadSubscribe(final io.servicetalk.concurrent.Single.Subscriber<T> subscriber,
-                                         final Consumer<Single.Subscriber<T>> handleSubscribe) {
+        public <T> void offloadSubscribe(final SingleSource.Subscriber<T> subscriber,
+                                         final Consumer<SingleSource.Subscriber<T>> handleSubscribe) {
             offloader.offloadSubscribe(subscriber, handleSubscribe);
         }
 
         @Override
-        public void offloadSubscribe(final io.servicetalk.concurrent.Completable.Subscriber subscriber,
-                                     final Consumer<Completable.Subscriber> handleSubscribe) {
+        public void offloadSubscribe(final CompletableSource.Subscriber subscriber,
+                                     final Consumer<CompletableSource.Subscriber> handleSubscribe) {
             offloader.offloadSubscribe(subscriber, handleSubscribe);
         }
 

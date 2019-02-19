@@ -18,6 +18,7 @@ package io.servicetalk.transport.netty.internal;
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.Cancellable;
+import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.MockedCompletableListenerRule;
 import io.servicetalk.concurrent.api.MockedSubscriberRule;
@@ -248,7 +249,7 @@ public class DefaultNettyConnectionTest {
 
     @Test
     public void testWriteActiveWithSingle() throws Exception {
-        CompletableFuture<Single.Subscriber<? super Buffer>> capturedListener = new CompletableFuture<>();
+        CompletableFuture<SingleSource.Subscriber<? super Buffer>> capturedListener = new CompletableFuture<>();
         Single<Buffer> toWrite = new Single<Buffer>() {
             @Override
             protected void handleSubscribe(Subscriber<? super Buffer> singleSubscriber) {

@@ -15,10 +15,9 @@
  */
 package io.servicetalk.concurrent.api;
 
+import io.servicetalk.concurrent.PublisherSource.Subscriber;
+import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.internal.TerminalNotification;
-
-import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
 
 /**
  * An {@link Subscription} that only emits a {@link TerminalNotification} only upon the first call to

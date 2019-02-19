@@ -16,8 +16,7 @@
 package io.servicetalk.concurrent.api.tck;
 
 import io.servicetalk.concurrent.api.Completable;
-
-import org.reactivestreams.Publisher;
+import io.servicetalk.concurrent.api.Publisher;
 
 /**
  * Abstract base class for testing operators provided by {@link Completable} for compliance with the
@@ -28,7 +27,7 @@ import org.reactivestreams.Publisher;
 public abstract class AbstractCompletableOperatorTckTest extends AbstractCompletableTckTest {
 
     @Override
-    public Publisher<Object> createPublisher(long elements) {
+    public Publisher<Object> createServiceTalkPublisher(long elements) {
         return composeCompletable(Completable.completed()).toPublisher();
     }
 

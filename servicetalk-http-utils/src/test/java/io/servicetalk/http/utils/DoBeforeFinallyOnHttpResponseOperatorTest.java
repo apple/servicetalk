@@ -18,6 +18,7 @@ package io.servicetalk.http.utils;
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.Cancellable;
+import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.SingleOperator;
 import io.servicetalk.concurrent.api.TestPublisher;
@@ -89,7 +90,7 @@ public class DoBeforeFinallyOnHttpResponseOperatorTest {
 
     @Test
     public void duplicateOnSuccess() {
-        AtomicReference<Single.Subscriber<? super StreamingHttpResponse>> subRef = new AtomicReference<>();
+        AtomicReference<SingleSource.Subscriber<? super StreamingHttpResponse>> subRef = new AtomicReference<>();
 
         Single<StreamingHttpResponse> original = new Single<StreamingHttpResponse>() {
             @Override
@@ -215,7 +216,7 @@ public class DoBeforeFinallyOnHttpResponseOperatorTest {
         verify(doBeforeFinally).run();
     }
 
-    private static final class ResponseSubscriber implements Single.Subscriber<StreamingHttpResponse> {
+    private static final class ResponseSubscriber implements SingleSource.Subscriber<StreamingHttpResponse> {
 
         Cancellable cancellable;
         @Nullable

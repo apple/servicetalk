@@ -17,6 +17,9 @@ package io.servicetalk.redis.netty;
 
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.Cancellable;
+import io.servicetalk.concurrent.CompletableSource;
+import io.servicetalk.concurrent.PublisherSource.Subscriber;
+import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.redis.api.RedisClient;
@@ -32,7 +35,6 @@ import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ExecutionContext;
 
 import org.junit.Test;
-import org.reactivestreams.Subscription;
 
 import java.net.InetSocketAddress;
 import java.util.List;
@@ -126,7 +128,7 @@ public class RedisConnectionTest extends BaseRedisClientTest {
 
         getEnv().client.reserveConnection(PING)
                 .flatMapPublisher(cnx -> {
-                    cnx.connectionContext().onClose().subscribe(new Completable.Subscriber() {
+                    cnx.connectionContext().onClose().subscribe(new CompletableSource.Subscriber() {
                         @Override
                         public void onSubscribe(final Cancellable cancellable) {
                         }
@@ -144,7 +146,7 @@ public class RedisConnectionTest extends BaseRedisClientTest {
                     });
                     return cnx.request(getRequest);
                 }).subscribe(
-                new org.reactivestreams.Subscriber<RedisData>() {
+                new Subscriber<RedisData>() {
                     private Subscription s;
 
                     @Override

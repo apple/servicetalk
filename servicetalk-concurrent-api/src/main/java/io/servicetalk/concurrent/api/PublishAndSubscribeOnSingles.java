@@ -15,6 +15,7 @@
  */
 package io.servicetalk.concurrent.api;
 
+import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.internal.SignalOffloader;
 
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
@@ -31,7 +32,7 @@ final class PublishAndSubscribeOnSingles {
         // No instance.
     }
 
-    static <T> void deliverOnSubscribeAndOnError(io.servicetalk.concurrent.Single.Subscriber<? super T> subscriber,
+    static <T> void deliverOnSubscribeAndOnError(SingleSource.Subscriber<? super T> subscriber,
                                                  SignalOffloader signalOffloader, AsyncContextMap contextMap,
                                                  AsyncContextProvider contextProvider, Throwable cause) {
         subscriber = signalOffloader.offloadSubscriber(contextProvider.wrap(subscriber, contextMap));

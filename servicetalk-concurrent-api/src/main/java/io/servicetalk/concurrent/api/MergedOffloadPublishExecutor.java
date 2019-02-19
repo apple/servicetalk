@@ -15,10 +15,11 @@
  */
 package io.servicetalk.concurrent.api;
 
+import io.servicetalk.concurrent.CompletableSource;
+import io.servicetalk.concurrent.PublisherSource.Subscriber;
+import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.internal.SignalOffloader;
 import io.servicetalk.concurrent.internal.SignalOffloaderFactory;
-
-import org.reactivestreams.Subscriber;
 
 import java.util.function.Consumer;
 
@@ -64,12 +65,13 @@ final class MergedOffloadPublishExecutor extends DelegatingExecutor implements S
         }
 
         @Override
-        public <T> Single.Subscriber<? super T> offloadSubscriber(final Single.Subscriber<? super T> subscriber) {
+        public <T> SingleSource.Subscriber<? super T> offloadSubscriber(
+                final SingleSource.Subscriber<? super T> subscriber) {
             return offloader.offloadSubscriber(subscriber);
         }
 
         @Override
-        public Completable.Subscriber offloadSubscriber(final Completable.Subscriber subscriber) {
+        public CompletableSource.Subscriber offloadSubscriber(final CompletableSource.Subscriber subscriber) {
             return offloader.offloadSubscriber(subscriber);
         }
 
@@ -79,29 +81,31 @@ final class MergedOffloadPublishExecutor extends DelegatingExecutor implements S
         }
 
         @Override
-        public <T> Single.Subscriber<? super T> offloadCancellable(final Single.Subscriber<? super T> subscriber) {
+        public <T> SingleSource.Subscriber<? super T> offloadCancellable(
+                final SingleSource.Subscriber<? super T> subscriber) {
             return fallback.offloadCancellable(subscriber);
         }
 
         @Override
-        public Completable.Subscriber offloadCancellable(final Completable.Subscriber subscriber) {
+        public CompletableSource.Subscriber offloadCancellable(final CompletableSource.Subscriber subscriber) {
             return fallback.offloadCancellable(subscriber);
         }
 
         @Override
-        public <T> void offloadSubscribe(final Subscriber<T> subscriber, final Consumer<Subscriber<T>> handleSubscribe) {
+        public <T> void offloadSubscribe(final Subscriber<T> subscriber,
+                                         final Consumer<Subscriber<T>> handleSubscribe) {
             fallback.offloadSubscribe(subscriber, handleSubscribe);
         }
 
         @Override
-        public <T> void offloadSubscribe(final Single.Subscriber<T> subscriber,
-                                         final Consumer<Single.Subscriber<T>> handleSubscribe) {
+        public <T> void offloadSubscribe(final SingleSource.Subscriber<T> subscriber,
+                                         final Consumer<SingleSource.Subscriber<T>> handleSubscribe) {
             fallback.offloadSubscribe(subscriber, handleSubscribe);
         }
 
         @Override
-        public void offloadSubscribe(final Completable.Subscriber subscriber,
-                                     final Consumer<Completable.Subscriber> handleSubscribe) {
+        public void offloadSubscribe(final CompletableSource.Subscriber subscriber,
+                                     final Consumer<CompletableSource.Subscriber> handleSubscribe) {
             fallback.offloadSubscribe(subscriber, handleSubscribe);
         }
 

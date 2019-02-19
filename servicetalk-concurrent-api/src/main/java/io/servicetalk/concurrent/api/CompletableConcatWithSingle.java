@@ -16,6 +16,7 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
+import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.internal.SequentialCancellable;
 import io.servicetalk.concurrent.internal.SignalOffloader;
 
@@ -64,7 +65,7 @@ final class CompletableConcatWithSingle<T> extends AbstractNoHandleSubscribeSing
                 contextMap, contextProvider);
     }
 
-    private static final class ConcatWithSubscriber<T> implements Subscriber<T>, Completable.Subscriber {
+    private static final class ConcatWithSubscriber<T> implements Subscriber<T>, CompletableSource.Subscriber {
         private final Subscriber<? super T> target;
         private final Single<? extends T> next;
         @Nullable

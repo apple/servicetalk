@@ -15,6 +15,7 @@
  */
 package io.servicetalk.concurrent.api.completable;
 
+import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.MockedCompletableListenerRule;
 import io.servicetalk.concurrent.internal.DeliberateException;
@@ -35,12 +36,12 @@ public abstract class AbstractDoSubscriberTest {
     @Rule
     public final MockedCompletableListenerRule listener = new MockedCompletableListenerRule();
 
-    private Completable.Subscriber subscriber;
+    private CompletableSource.Subscriber subscriber;
 
     @SuppressWarnings("unchecked")
     @Before
     public void setUp() throws Exception {
-        subscriber = mock(Completable.Subscriber.class);
+        subscriber = mock(CompletableSource.Subscriber.class);
     }
 
     @Test
@@ -52,10 +53,12 @@ public abstract class AbstractDoSubscriberTest {
 
     @Test
     public void testOnWithOnError() {
-        listener.listen(doSubscriber(Completable.error(DELIBERATE_EXCEPTION), () -> subscriber)).verifyFailure(DELIBERATE_EXCEPTION);
+        listener.listen(doSubscriber(Completable.error(DELIBERATE_EXCEPTION), () -> subscriber))
+                .verifyFailure(DELIBERATE_EXCEPTION);
         verify(subscriber).onSubscribe(any());
         verify(subscriber).onError(DeliberateException.DELIBERATE_EXCEPTION);
     }
 
-    protected abstract Completable doSubscriber(Completable completable, Supplier<Completable.Subscriber> subscriberSupplier);
+    protected abstract Completable doSubscriber(Completable completable,
+                                                Supplier<CompletableSource.Subscriber> subscriberSupplier);
 }

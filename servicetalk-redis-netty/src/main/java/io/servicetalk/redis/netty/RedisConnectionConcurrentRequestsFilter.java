@@ -29,8 +29,6 @@ import io.servicetalk.redis.api.RedisExecutionStrategy;
 import io.servicetalk.redis.api.RedisRequest;
 import io.servicetalk.transport.netty.internal.NettyConnectionContext;
 
-import org.reactivestreams.Subscriber;
-
 import static io.servicetalk.client.internal.RequestConcurrencyControllers.newController;
 import static io.servicetalk.client.internal.RequestConcurrencyControllers.newSingleController;
 import static io.servicetalk.concurrent.internal.EmptySubscription.EMPTY_SUBSCRIPTION;

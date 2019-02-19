@@ -15,10 +15,9 @@
  */
 package io.servicetalk.client.api;
 
+import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Publisher;
-
-import org.reactivestreams.Subscription;
 
 /**
  * Represents the interaction pattern with a service discovery system. It is assumed that once {@link #discover(Object)}

@@ -16,12 +16,10 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
+import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.internal.DelayedCancellable;
 import io.servicetalk.concurrent.internal.DelayedSubscription;
 import io.servicetalk.concurrent.internal.SignalOffloader;
-
-import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
 
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
@@ -108,7 +106,7 @@ final class CompletableMergeWithPublisher<T> extends AbstractNoHandleSubscribePu
         }
 
         @Override
-        public void onNext(T t) {
+        public void onNext(@Nullable T t) {
             sendOnNextWithConcurrentTerminationCheck(offloadedSubscriber, t, this::onTerminatedConcurrently,
                     subscriberStateUpdater, terminalNotificationUpdater, this);
         }
@@ -145,7 +143,7 @@ final class CompletableMergeWithPublisher<T> extends AbstractNoHandleSubscribePu
             offloadedSubscriber.onError((Throwable) terminalNotification);
         }
 
-        private final class CompletableSubscriber extends DelayedCancellable implements Completable.Subscriber {
+        private final class CompletableSubscriber extends DelayedCancellable implements CompletableSource.Subscriber {
 
             private final Subscriber<? super T> subscriber;
 

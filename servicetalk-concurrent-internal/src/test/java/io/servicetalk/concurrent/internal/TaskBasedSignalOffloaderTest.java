@@ -16,15 +16,15 @@
 package io.servicetalk.concurrent.internal;
 
 import io.servicetalk.concurrent.Cancellable;
-import io.servicetalk.concurrent.Completable;
+import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.Executor;
-import io.servicetalk.concurrent.Single;
+import io.servicetalk.concurrent.PublisherSource.Subscriber;
+import io.servicetalk.concurrent.PublisherSource.Subscription;
+import io.servicetalk.concurrent.SingleSource;
 
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
-import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
 
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.RejectedExecutionException;
@@ -52,8 +52,8 @@ public class TaskBasedSignalOffloaderTest {
     private TaskBasedSignalOffloader offloader;
     private Cancellable cancellable;
     private Subscription subscription;
-    private Single.Subscriber<Integer> singleSub;
-    private Completable.Subscriber completableSub;
+    private SingleSource.Subscriber<Integer> singleSub;
+    private CompletableSource.Subscriber completableSub;
     private Subscriber<Integer> pubSub;
 
     @Before
@@ -62,8 +62,8 @@ public class TaskBasedSignalOffloaderTest {
         offloader = new TaskBasedSignalOffloader(executor, 2);
         cancellable = mock(Cancellable.class);
         subscription = mock(Subscription.class);
-        singleSub = uncheckedMock(Single.Subscriber.class);
-        completableSub = uncheckedMock(Completable.Subscriber.class);
+        singleSub = uncheckedMock(SingleSource.Subscriber.class);
+        completableSub = uncheckedMock(CompletableSource.Subscriber.class);
         pubSub = uncheckedMock(Subscriber.class);
     }
 
@@ -80,7 +80,7 @@ public class TaskBasedSignalOffloaderTest {
 
     @Test
     public void offloadSubscribeSingle() {
-        Consumer<Single.Subscriber<Integer>> handleSubscribe = uncheckedMock(Consumer.class);
+        Consumer<SingleSource.Subscriber<Integer>> handleSubscribe = uncheckedMock(Consumer.class);
         offloader.offloadSubscribe(singleSub, handleSubscribe);
         verify(executor.mock).execute(any());
         verifyZeroInteractions(singleSub);
@@ -91,7 +91,7 @@ public class TaskBasedSignalOffloaderTest {
 
     @Test
     public void offloadSubscribeCompletable() {
-        Consumer<Completable.Subscriber> handleSubscribe = uncheckedMock(Consumer.class);
+        Consumer<CompletableSource.Subscriber> handleSubscribe = uncheckedMock(Consumer.class);
         offloader.offloadSubscribe(completableSub, handleSubscribe);
         verify(executor.mock).execute(any());
         verifyZeroInteractions(completableSub);
@@ -102,7 +102,7 @@ public class TaskBasedSignalOffloaderTest {
 
     @Test
     public void offloadedSingleSubscriberNoSignalOverlap() {
-        Single.Subscriber<? super Integer> offloaded = offloader.offloadSubscriber(singleSub);
+        SingleSource.Subscriber<? super Integer> offloaded = offloader.offloadSubscriber(singleSub);
         verifyNoMoreInteractions(executor.mock);
         verifyNoMoreInteractions(singleSub);
 
@@ -121,7 +121,7 @@ public class TaskBasedSignalOffloaderTest {
 
     @Test
     public void offloadedSingleSubscriberNoSignalOverlapError() {
-        Single.Subscriber<? super Integer> offloaded = offloader.offloadSubscriber(singleSub);
+        SingleSource.Subscriber<? super Integer> offloaded = offloader.offloadSubscriber(singleSub);
         verifyNoMoreInteractions(executor.mock);
         verifyNoMoreInteractions(singleSub);
 
@@ -140,7 +140,7 @@ public class TaskBasedSignalOffloaderTest {
 
     @Test
     public void offloadedSingleSubscriberSignalOverlap() {
-        Single.Subscriber<? super Integer> offloaded = offloader.offloadSubscriber(singleSub);
+        SingleSource.Subscriber<? super Integer> offloaded = offloader.offloadSubscriber(singleSub);
         verifyNoMoreInteractions(executor.mock);
         verifyNoMoreInteractions(singleSub);
 
@@ -159,7 +159,7 @@ public class TaskBasedSignalOffloaderTest {
 
     @Test
     public void offloadedCompletableSubscriberNoSignalOverlap() {
-        Completable.Subscriber offloaded = offloader.offloadSubscriber(completableSub);
+        CompletableSource.Subscriber offloaded = offloader.offloadSubscriber(completableSub);
         verifyNoMoreInteractions(executor.mock);
         verifyNoMoreInteractions(completableSub);
 
@@ -178,7 +178,7 @@ public class TaskBasedSignalOffloaderTest {
 
     @Test
     public void offloadedCompletableSubscriberNoSignalOverlapError() {
-        Completable.Subscriber offloaded = offloader.offloadSubscriber(completableSub);
+        CompletableSource.Subscriber offloaded = offloader.offloadSubscriber(completableSub);
         verifyNoMoreInteractions(executor.mock);
         verifyNoMoreInteractions(completableSub);
 
@@ -197,7 +197,7 @@ public class TaskBasedSignalOffloaderTest {
 
     @Test
     public void offloadedCompletableSubscriberSignalOverlap() {
-        Completable.Subscriber offloaded = offloader.offloadSubscriber(completableSub);
+        CompletableSource.Subscriber offloaded = offloader.offloadSubscriber(completableSub);
         verifyNoMoreInteractions(executor.mock);
         verifyNoMoreInteractions(completableSub);
 
@@ -216,7 +216,7 @@ public class TaskBasedSignalOffloaderTest {
 
     @Test
     public void offloadSingleCancellable() {
-        Single.Subscriber<? super Integer> offloaded = offloader.offloadCancellable(singleSub);
+        SingleSource.Subscriber<? super Integer> offloaded = offloader.offloadCancellable(singleSub);
         verifyNoMoreInteractions(executor.mock);
         verifyNoMoreInteractions(singleSub);
 
@@ -236,7 +236,7 @@ public class TaskBasedSignalOffloaderTest {
 
     @Test
     public void offloadCompletableCancellable() {
-        Completable.Subscriber offloaded = offloader.offloadCancellable(completableSub);
+        CompletableSource.Subscriber offloaded = offloader.offloadCancellable(completableSub);
         verifyNoMoreInteractions(executor.mock);
         verifyNoMoreInteractions(completableSub);
 
@@ -528,7 +528,7 @@ public class TaskBasedSignalOffloaderTest {
         }
 
         @Override
-        public Completable closeAsync() {
+        public CompletableSource closeAsync() {
             return subscriber -> {
                 subscriber.onSubscribe(IGNORE_CANCEL);
                 subscriber.onComplete();

@@ -15,8 +15,8 @@
  */
 package io.servicetalk.concurrent;
 
-import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
+import io.servicetalk.concurrent.PublisherSource.Subscriber;
+import io.servicetalk.concurrent.PublisherSource.Subscription;
 
 import java.util.Iterator;
 import java.util.NoSuchElementException;

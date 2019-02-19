@@ -16,7 +16,9 @@
 package io.servicetalk.transport.netty.internal;
 
 import io.servicetalk.concurrent.Cancellable;
-import io.servicetalk.concurrent.Completable.Subscriber;
+import io.servicetalk.concurrent.CompletableSource.Subscriber;
+import io.servicetalk.concurrent.PublisherSource;
+import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.internal.ConcurrentSubscription;
 import io.servicetalk.concurrent.internal.EmptySubscription;
@@ -27,7 +29,6 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelPromise;
 import io.netty.util.concurrent.EventExecutor;
 import io.netty.util.concurrent.Future;
-import org.reactivestreams.Subscription;
 
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
@@ -36,7 +37,7 @@ import javax.annotation.Nullable;
 import static java.util.Objects.requireNonNull;
 
 /**
- * A {@link org.reactivestreams.Subscriber} for any {@link Publisher} written via {@link DefaultNettyConnection}.
+ * A {@link PublisherSource.Subscriber} for any {@link Publisher} written via {@link DefaultNettyConnection}.
  *
  * <h2>Flow control</h2>
  *
@@ -48,14 +49,22 @@ import static java.util.Objects.requireNonNull;
  *     <li>When {@link #channelWritable()} is invoked.</li>
  * </ul>
  *
- * When there is a need for requesting more items, it tries to determine the capacity in netty's write buffer (determined by {@link Channel#bytesBeforeUnwritable()}).<p>
+ * When there is a need for requesting more items, it tries to determine the capacity in netty's write buffer
+ * (determined by {@link Channel#bytesBeforeUnwritable()}).
+ * <p>
  *
- * If previous request for more items has been fulfilled i.e. if {@code n} items were requested then {@link #onNext(Object)} has been invoked {@code n} times. Then capacity equals {@link Channel#bytesBeforeUnwritable()}. <p>
- * If previous request for more items has not been fulfilled then the capacity is the difference between the last seen value of {@link Channel#bytesBeforeUnwritable()} and now.<p>
+ *  If previous request for more items has been fulfilled i.e. if {@code n} items were requested then
+ * {@link #onNext(Object)} has been invoked {@code n} times. Then capacity equals
+ * {@link Channel#bytesBeforeUnwritable()}.
+ * <p>
+ * If previous request for more items has not been fulfilled then the capacity is the difference between the last seen
+ * value of {@link Channel#bytesBeforeUnwritable()} and now.<p>
  *
- * If the capacity determined above is positive then invoke {@link RequestNSupplier} to determine number of items required to fill that capacity.
+ * If the capacity determined above is positive then invoke {@link RequestNSupplier} to determine number of items
+ * required to fill that capacity.
  */
-final class WriteStreamSubscriber implements org.reactivestreams.Subscriber<Object>, DefaultNettyConnection.WritableListener, Cancellable {
+final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
+                                             DefaultNettyConnection.WritableListener, Cancellable {
     private static final Subscription CANCELLED = new EmptySubscription();
     private static final AtomicLongFieldUpdater<WriteStreamSubscriber> requestedUpdater =
             AtomicLongFieldUpdater.newUpdater(WriteStreamSubscriber.class, "requested");
@@ -70,9 +79,9 @@ final class WriteStreamSubscriber implements org.reactivestreams.Subscriber<Obje
     private final EventExecutor eventLoop;
     private final RequestNSupplier requestNSupplier;
     /**
-     * It is assumed the underlying transport is ordered and reliable such that if a single write fails then the remaining
-     * writes will also fail. This allows us to only subscribe to the status of the last write operation as a summary of the
-     * status for all write operations.
+     * It is assumed the underlying transport is ordered and reliable such that if a single write fails then the
+     * remaining writes will also fail. This allows us to only subscribe to the status of the last write operation as a
+     * summary of the status for all write operations.
      */
     @Nullable
     private ChannelPromise lastWritePromise;
@@ -83,8 +92,9 @@ final class WriteStreamSubscriber implements org.reactivestreams.Subscriber<Obje
     private volatile long requested;
 
     /**
-     * This is invoked from the context of on* methods. ReactiveStreams spec says that invocations to Subscriber's on* methods,
-     * when done from multiple threads, must use external synchronization (Rule 1.3). This means, this variable does not have to be volatile.
+     * This is invoked from the context of on* methods. ReactiveStreams spec says that invocations to Subscriber's on*
+     * methods, when done from multiple threads, must use external synchronization (Rule 1.3). This means, this variable
+     * does not have to be volatile.
      */
     private boolean enqueueWrites;
     private boolean terminated;
@@ -103,11 +113,12 @@ final class WriteStreamSubscriber implements org.reactivestreams.Subscriber<Obje
     public void onSubscribe(Subscription s) {
         final Subscription concurrentSubscription = ConcurrentSubscription.wrap(s);
         if (!subscriptionUpdater.compareAndSet(this, null, concurrentSubscription)) {
-            // Either onSubscribe was called twice or Subscription is cancelled, in both cases, we cancel the new Subscription.
+            // Either onSubscribe was called twice or Subscription is cancelled, in both cases, we cancel the new
+            // Subscription.
             s.cancel();
             return;
         }
-        subscriber.onSubscribe(concurrentSubscription::cancel);
+        subscriber.onSubscribe(concurrentSubscription);
         if (eventLoop.inEventLoop()) {
             requestMoreIfRequired(concurrentSubscription);
         } else {
@@ -120,19 +131,21 @@ final class WriteStreamSubscriber implements org.reactivestreams.Subscriber<Obje
         requestedUpdater.decrementAndGet(this);
         if (!enqueueWrites && !eventLoop.inEventLoop()) {
             /*
-             * If any onNext comes from out of the eventloop, we should enqueue all subsequent writes and terminal notifications on the eventloop.
+             * If any onNext comes from out of the eventloop, we should enqueue all subsequent writes and terminal
+             * notifications on the eventloop.
              * Otherwise, the order of writes will not be preserved in the following case:
              *
              * Write1 (Thread1) -> Write2 (Eventloop)
              *
-             * If Thread1 != this channels Eventloop then Write2 may happen before Write1 as a write from the eventloop will skip the task queue
-             * and directly send the write on the pipeline.
+             * If Thread1 != this channels Eventloop then Write2 may happen before Write1 as a write from the eventloop
+              * will skip the task queue and directly send the write on the pipeline.
              */
             enqueueWrites = true;
         }
         lastWritePromise = channel.newPromise();
         if (enqueueWrites) {
-            // Make sure we save a reference to the current lastWritePromise becuase it may change by the time the Runnable below is executed.
+            // Make sure we save a reference to the current lastWritePromise becuase it may change by the time the
+            // Runnable below is executed.
             ChannelPromise lastWritePromise = this.lastWritePromise;
             eventLoop.execute(() -> {
                 doWrite(o, lastWritePromise);

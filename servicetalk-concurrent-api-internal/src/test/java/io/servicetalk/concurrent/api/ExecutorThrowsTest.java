@@ -16,6 +16,10 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
+import io.servicetalk.concurrent.CompletableSource;
+import io.servicetalk.concurrent.PublisherSource.Subscriber;
+import io.servicetalk.concurrent.PublisherSource.Subscription;
+import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.api.internal.OffloaderAwareExecutor;
 import io.servicetalk.concurrent.internal.DeliberateException;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
@@ -25,8 +29,6 @@ import org.junit.Test;
 import org.junit.rules.Timeout;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
 
 import java.util.concurrent.LinkedBlockingQueue;
 import javax.annotation.Nullable;
@@ -106,7 +108,7 @@ public class ExecutorThrowsTest {
                 subscriber.onError(new AssertionError("Offloading failed but onSubscribe passed."));
             }
         }.publishAndSubscribeOn(newAlwaysFailingExecutor());
-        s.subscribe(new io.servicetalk.concurrent.Single.Subscriber<String>() {
+        s.subscribe(new SingleSource.Subscriber<String>() {
             @Override
             public void onSubscribe(final Cancellable cancellable) {
                 // Noop
@@ -139,7 +141,7 @@ public class ExecutorThrowsTest {
                 subscriber.onError(new AssertionError("Offloading failed but onSubscribe passed."));
             }
         }.publishAndSubscribeOn(newAlwaysFailingExecutor());
-        c.subscribe(new io.servicetalk.concurrent.Completable.Subscriber() {
+        c.subscribe(new CompletableSource.Subscriber() {
             @Override
             public void onSubscribe(final Cancellable cancellable) {
                 // Noop

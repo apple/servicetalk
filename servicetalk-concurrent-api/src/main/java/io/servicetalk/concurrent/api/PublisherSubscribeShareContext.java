@@ -17,8 +17,6 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.internal.SignalOffloader;
 
-import org.reactivestreams.Subscriber;
-
 final class PublisherSubscribeShareContext<T> extends AbstractNoHandleSubscribePublisher<T> {
     private final Publisher<T> original;
 

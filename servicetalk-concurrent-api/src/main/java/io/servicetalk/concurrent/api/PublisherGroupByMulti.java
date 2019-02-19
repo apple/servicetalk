@@ -15,8 +15,6 @@
  */
 package io.servicetalk.concurrent.api;
 
-import org.reactivestreams.Subscriber;
-
 import java.util.Iterator;
 import java.util.function.Function;
 import javax.annotation.Nullable;

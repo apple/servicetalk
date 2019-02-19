@@ -15,7 +15,8 @@
  */
 package io.servicetalk.concurrent.api.tck;
 
-import org.reactivestreams.Publisher;
+import io.servicetalk.concurrent.api.Publisher;
+
 import org.testng.annotations.Test;
 
 import static io.servicetalk.concurrent.api.Publisher.from;
@@ -26,7 +27,7 @@ import static java.util.Arrays.asList;
 @Test
 public class PublisherFromIterableTckTest extends AbstractPublisherTckTest<Integer> {
     @Override
-    public Publisher<Integer> createPublisher(final long elements) {
+    public Publisher<Integer> createServiceTalkPublisher(final long elements) {
         return from(() -> asList(newArray(requestNToInt(elements))).iterator());
     }
 

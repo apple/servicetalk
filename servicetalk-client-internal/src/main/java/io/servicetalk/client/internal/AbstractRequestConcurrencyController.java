@@ -16,6 +16,7 @@
 package io.servicetalk.client.internal;
 
 import io.servicetalk.concurrent.Cancellable;
+import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.internal.LatestValueSubscriber;
@@ -40,7 +41,7 @@ abstract class AbstractRequestConcurrencyController implements RequestConcurrenc
         // Subscribe to onClose() before maxConcurrencySettingStream, this order increases the chances of capturing the
         // STATE_QUIT before observing 0 from maxConcurrencySettingStream which could lead to more ambiguous max
         // concurrency error messages for the users on connection tear-down.
-        onClose.subscribe(new Completable.Subscriber() {
+        onClose.subscribe(new CompletableSource.Subscriber() {
             @Override
             public void onSubscribe(Cancellable cancellable) {
                 // No op

@@ -16,6 +16,7 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
+import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.internal.SignalOffloader;
 
 final class CompletableToSingle<T> extends AbstractNoHandleSubscribeSingle<T> {
@@ -32,7 +33,7 @@ final class CompletableToSingle<T> extends AbstractNoHandleSubscribeSingle<T> {
         // We are not modifying the Cancellable between sources, so we do not need to take care of offloading between
         // the sources (in this operator). If the Cancellable is configured to be offloaded, it will be done when the
         // resulting Completable is subscribed.
-        parent.subscribeWithOffloaderAndContext(new Completable.Subscriber() {
+        parent.subscribeWithOffloaderAndContext(new CompletableSource.Subscriber() {
             @Override
             public void onSubscribe(Cancellable cancellable) {
                 subscriber.onSubscribe(cancellable);
