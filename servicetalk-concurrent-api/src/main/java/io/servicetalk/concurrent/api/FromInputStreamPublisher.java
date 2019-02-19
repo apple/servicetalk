@@ -15,6 +15,8 @@
  */
 package io.servicetalk.concurrent.api;
 
+import io.servicetalk.concurrent.internal.DuplicateSubscribeException;
+
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import org.slf4j.Logger;
@@ -25,8 +27,8 @@ import java.io.InputStream;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.concurrent.internal.EmptySubscription.EMPTY_SUBSCRIPTION;
 import static io.servicetalk.concurrent.internal.FlowControlUtil.addWithOverflowProtection;
+import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverTerminalFromSource;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.isRequestNValid;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.newExceptionForInvalidRequestN;
 import static java.lang.Math.min;
@@ -79,17 +81,7 @@ final class FromInputStreamPublisher extends Publisher<byte[]> {
                 LOGGER.debug("Ignoring exception from onSubscribe of Subscriber {}.", subscriber, t);
             }
         } else {
-            try {
-                subscriber.onSubscribe(EMPTY_SUBSCRIPTION);
-            } catch (Throwable t) {
-                LOGGER.debug("Ignoring exception from onSubscribe of Subscriber {}.", subscriber, t);
-                return;
-            }
-            try {
-                subscriber.onError(new IllegalStateException("Publisher already subscribed to"));
-            } catch (Throwable t) {
-                LOGGER.debug("Ignoring exception from onError of Subscriber {}.", subscriber, t);
-            }
+            deliverTerminalFromSource(subscriber, new DuplicateSubscribeException(null, subscriber));
         }
     }
 

@@ -15,6 +15,7 @@
  */
 package io.servicetalk.concurrent.api;
 
+import io.servicetalk.concurrent.internal.DuplicateSubscribeException;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 
 import org.junit.Before;
@@ -81,7 +82,7 @@ public class FromInputStreamPublisherTest {
         sub1.subscribe(pub);
 
         sub2.subscribe(pub);
-        sub2.verifyFailure(IllegalStateException.class);
+        sub2.verifyFailure(DuplicateSubscribeException.class);
 
         sub1.request(1).verifySuccess();
     }
@@ -94,7 +95,7 @@ public class FromInputStreamPublisherTest {
         sub1.request(1).verifyFailure(IOException.class);
 
         sub2.subscribe(pub);
-        sub2.verifyFailure(IllegalStateException.class);
+        sub2.verifyFailure(DuplicateSubscribeException.class);
     }
 
     @Test
@@ -105,7 +106,7 @@ public class FromInputStreamPublisherTest {
         sub1.request(1).verifySuccess();
 
         sub2.subscribe(pub);
-        sub2.verifyFailure(IllegalStateException.class);
+        sub2.verifyFailure(DuplicateSubscribeException.class);
     }
 
     @Test

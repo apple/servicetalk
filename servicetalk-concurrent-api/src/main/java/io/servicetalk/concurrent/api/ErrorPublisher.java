@@ -16,14 +16,11 @@
 package io.servicetalk.concurrent.api;
 
 import org.reactivestreams.Subscriber;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import static io.servicetalk.concurrent.internal.EmptySubscription.EMPTY_SUBSCRIPTION;
+import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverTerminalFromSource;
 import static java.util.Objects.requireNonNull;
 
 final class ErrorPublisher<T> extends AbstractSynchronousPublisher<T> {
-    private static final Logger LOGGER = LoggerFactory.getLogger(ErrorPublisher.class);
     private final Throwable cause;
 
     ErrorPublisher(Throwable cause) {
@@ -32,16 +29,6 @@ final class ErrorPublisher<T> extends AbstractSynchronousPublisher<T> {
 
     @Override
     void doSubscribe(Subscriber<? super T> subscriber) {
-        try {
-            subscriber.onSubscribe(EMPTY_SUBSCRIPTION);
-        } catch (Throwable t) {
-            LOGGER.debug("Ignoring exception from onSubscribe of Subscriber {}.", subscriber, t);
-            return;
-        }
-        try {
-            subscriber.onError(cause);
-        } catch (Throwable t) {
-            LOGGER.debug("Ignoring exception from onError of Subscriber {}.", subscriber, t);
-        }
+        deliverTerminalFromSource(subscriber, cause);
     }
 }
