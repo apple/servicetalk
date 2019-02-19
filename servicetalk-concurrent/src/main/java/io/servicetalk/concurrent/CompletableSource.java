@@ -18,6 +18,7 @@ package io.servicetalk.concurrent;
 /**
  * An asynchronous computation that does not emit any data. It just completes or emits an error.
  */
+@FunctionalInterface
 public interface CompletableSource {
 
     /**

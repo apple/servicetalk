@@ -22,6 +22,7 @@ import javax.annotation.Nullable;
  *
  * @param <T> Type of the result of this {@code SingleSource}.
  */
+@FunctionalInterface
 public interface SingleSource<T> {
 
     /**

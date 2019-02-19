@@ -32,6 +32,7 @@ import javax.annotation.Nullable;
  *
  * @param <T> Type of the items emitted by this {@code PublisherSource}.
  */
+@FunctionalInterface
 public interface PublisherSource<T> {
 
     /**
