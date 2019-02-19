@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,6 +44,7 @@ public interface SingleSource<T> {
     interface Subscriber<T> {
         /**
          * Called when the associated {@link SingleSource} is subscribed via {@link SingleSource#subscribe(Subscriber)}.
+         *
          * @param cancellable A {@link Cancellable} that can be used to cancel the asynchronous computation for
          * this subscriber.
          */

@@ -19,8 +19,6 @@ import io.servicetalk.concurrent.PublisherSource;
 
 import org.reactivestreams.Subscription;
 
-import javax.annotation.Nonnull;
-
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -82,7 +80,6 @@ public final class ReactiveStreamsAdapters {
     }
 
     @SuppressWarnings("unchecked")
-    @Nonnull
     private static <T> org.reactivestreams.Publisher<T> uncheckCast(final PublisherSource<T> source) {
         return (org.reactivestreams.Publisher<T>) source;
     }
