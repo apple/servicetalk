@@ -27,6 +27,7 @@ import java.util.function.BiFunction;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.http.api.HttpHeaderNames.HOST;
+import static io.servicetalk.http.api.HttpSchemes.HTTP;
 import static io.servicetalk.http.api.HttpUri.buildRequestTarget;
 import static io.servicetalk.http.api.QueryStringDecoder.decodeParams;
 import static java.lang.System.lineSeparator;
@@ -104,7 +105,7 @@ class DefaultHttpRequestMetaData extends AbstractHttpMetaData implements HttpReq
 
     @Nullable
     @Override
-    public final String scheme() {
+    public final HttpScheme scheme() {
         return lazyParseRequestTarget().getScheme();
     }
 
@@ -320,9 +321,9 @@ class DefaultHttpRequestMetaData extends AbstractHttpMetaData implements HttpReq
                                        @Nullable final String query,
                                        @Nullable final String relativeReference) {
         final HttpUri uri = lazyParseRequestTarget();
-        final String scheme = uri.getScheme();
+        final HttpScheme scheme = uri.getScheme();
         return buildRequestTarget(
-                scheme != null ? scheme : "http",
+                (scheme != null ? scheme : HTTP).name(),
                 uri.getHost(),
                 uri.getExplicitPort(),
                 path,

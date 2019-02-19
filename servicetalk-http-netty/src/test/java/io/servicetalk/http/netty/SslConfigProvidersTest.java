@@ -19,9 +19,8 @@ import io.servicetalk.transport.api.HostAndPort;
 
 import org.junit.Test;
 
-import static io.servicetalk.http.api.HttpScheme.HTTP;
-import static io.servicetalk.http.api.HttpScheme.HTTPS;
-import static io.servicetalk.http.api.HttpScheme.NONE;
+import static io.servicetalk.http.api.HttpSchemes.HTTP;
+import static io.servicetalk.http.api.HttpSchemes.HTTPS;
 import static io.servicetalk.http.api.SslConfigProviders.plainByDefault;
 import static io.servicetalk.http.api.SslConfigProviders.secureByDefault;
 import static org.junit.Assert.assertEquals;
@@ -33,7 +32,7 @@ public class SslConfigProvidersTest {
 
     @Test
     public void testPlainByDefault() {
-        assertEquals(HTTP.defaultPort(), plainByDefault().defaultPort(NONE, "test"));
+        assertEquals(HTTP.defaultPort(), plainByDefault().defaultPort(null, "test"));
         assertEquals(HTTP.defaultPort(), plainByDefault().defaultPort(HTTP, "test"));
         assertEquals(HTTPS.defaultPort(), plainByDefault().defaultPort(HTTPS, "test"));
 
@@ -42,7 +41,7 @@ public class SslConfigProvidersTest {
 
     @Test
     public void testSecureByDefault() {
-        assertEquals(HTTPS.defaultPort(), secureByDefault().defaultPort(NONE, "test"));
+        assertEquals(HTTPS.defaultPort(), secureByDefault().defaultPort(null, "test"));
         assertEquals(HTTP.defaultPort(), secureByDefault().defaultPort(HTTP, "test"));
         assertEquals(HTTPS.defaultPort(), secureByDefault().defaultPort(HTTPS, "test"));
 

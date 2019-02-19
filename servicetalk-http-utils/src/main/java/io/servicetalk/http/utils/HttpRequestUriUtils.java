@@ -16,10 +16,14 @@
 package io.servicetalk.http.utils;
 
 import io.servicetalk.http.api.HttpRequestMetaData;
+import io.servicetalk.http.api.HttpScheme;
 import io.servicetalk.transport.api.ConnectionContext;
 
 import java.net.InetSocketAddress;
 import javax.annotation.Nullable;
+
+import static io.servicetalk.http.api.HttpSchemes.HTTP;
+import static io.servicetalk.http.api.HttpSchemes.HTTPS;
 
 /**
  * Helper methods for computing effective request URIs according
@@ -126,7 +130,7 @@ public final class HttpRequestUriUtils {
      *
      * @param ctx the {@link ConnectionContext} to use.
      * @param metaData the {@link HttpRequestMetaData} to use.
-     * @param fixedScheme the configured fixed scheme as {@link String}, or {@code null} if none is set.
+     * @param fixedScheme the configured fixed scheme as {@link HttpScheme}, or {@code null} if none is set.
      * @param fixedAuthority the configured fixed authority as {@link String}, or {@code null} if none is set.
      * @param includeUserInfo {@code true} if the deprecated user info sub-component must be included
      * (see <a href="https://tools.ietf.org/html/rfc7230#section-2.7.1">RFC 7230, section 2.7.1</a>).
@@ -148,15 +152,10 @@ public final class HttpRequestUriUtils {
                                                    @Nullable final String path,
                                                    @Nullable final String query,
                                                    final boolean includeUserInfo) {
-
-        if (fixedScheme != null && !"http".equalsIgnoreCase(fixedScheme) && !"https".equalsIgnoreCase(fixedScheme)) {
-            throw new IllegalArgumentException("Unsupported scheme: " + fixedScheme);
-        }
-
         if (metaData.scheme() != null) {
             // absolute form
             return buildRequestUri(
-                    metaData.scheme(),
+                    metaData.scheme().name(),
                     includeUserInfo ? metaData.userInfo() : null,
                     metaData.host(),
                     metaData.port(),
@@ -164,8 +163,13 @@ public final class HttpRequestUriUtils {
                     query);
         }
 
+        if (fixedScheme != null && !HTTP.name().equalsIgnoreCase(fixedScheme)
+                && !HTTPS.name().equalsIgnoreCase(fixedScheme)) {
+            throw new IllegalArgumentException("Unsupported scheme: " + fixedScheme);
+        }
+
         final String scheme = fixedScheme != null ? fixedScheme.toLowerCase() :
-                (ctx.sslSession() != null ? "https" : "http");
+                (ctx.sslSession() != null ? HTTPS : HTTP).name();
 
         if (fixedAuthority != null) {
             return buildRequestUri(

@@ -73,7 +73,7 @@ public interface HttpRequestMetaData extends HttpMetaData {
      * from {@link #requestTarget()}, or {@code null} if none can be derived.
      */
     @Nullable
-    String scheme();
+    HttpScheme scheme();
 
     /**
      * The <a href="https://tools.ietf.org/html/rfc3986#section-3.2.1">user information component</a> derived

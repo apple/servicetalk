@@ -52,6 +52,7 @@ import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
 import java.net.SocketOption;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Function;
@@ -62,7 +63,8 @@ import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseabl
 import static io.servicetalk.concurrent.api.AsyncCloseables.toListenableAsyncCloseable;
 import static io.servicetalk.concurrent.api.Single.defer;
 import static io.servicetalk.http.api.HttpHeaderNames.HOST;
-import static io.servicetalk.http.api.HttpScheme.schemeForValue;
+import static io.servicetalk.http.api.HttpSchemes.HTTP;
+import static io.servicetalk.http.api.HttpSchemes.HTTPS;
 import static io.servicetalk.http.api.SslConfigProviders.plainByDefault;
 import static io.servicetalk.transport.api.SslConfigBuilder.forClient;
 import static java.util.Objects.requireNonNull;
@@ -154,11 +156,11 @@ final class DefaultMultiAddressUrlHttpClientBuilder extends MultiAddressHttpClie
             }
             final int effectivePort = metaData.effectivePort();
             final int port = effectivePort >= 0 ? effectivePort :
-                    sslConfigProvider.defaultPort(schemeForValue(metaData.scheme()), host);
+                    sslConfigProvider.defaultPort(metaData.scheme(), host);
             final String key = metaData.scheme() + host + ':' + port;
             final UrlKey urlKey = urlKeyCache.get(key);
             return urlKey != null ? urlKey : urlKeyCache.computeIfAbsent(key, ignore ->
-                    new UrlKey(schemeForValue(metaData.scheme()), HostAndPort.of(host, port)));
+                    new UrlKey(metaData.scheme(), HostAndPort.of(host, port)));
         }
 
         @Override
@@ -179,10 +181,11 @@ final class DefaultMultiAddressUrlHttpClientBuilder extends MultiAddressHttpClie
 
     private static class UrlKey {
 
+        @Nullable
         final HttpScheme scheme;
         final HostAndPort hostAndPort;
 
-        UrlKey(final HttpScheme scheme, final HostAndPort hostAndPort) {
+        UrlKey(@Nullable final HttpScheme scheme, final HostAndPort hostAndPort) {
             this.scheme = scheme;
             this.hostAndPort = hostAndPort;
         }
@@ -197,18 +200,12 @@ final class DefaultMultiAddressUrlHttpClientBuilder extends MultiAddressHttpClie
             }
 
             final UrlKey urlKey = (UrlKey) o;
-
-            if (scheme != urlKey.scheme) {
-                return false;
-            }
-            return hostAndPort.equals(urlKey.hostAndPort);
+            return Objects.equals(scheme, urlKey.scheme) && hostAndPort.equals(urlKey.hostAndPort);
         }
 
         @Override
         public int hashCode() {
-            int result = scheme.hashCode();
-            result = 31 * result + hostAndPort.hashCode();
-            return result;
+            return 31 * hostAndPort.hashCode() + (scheme != null ? scheme.hashCode() : 0);
         }
     }
 
@@ -242,21 +239,19 @@ final class DefaultMultiAddressUrlHttpClientBuilder extends MultiAddressHttpClie
         @Override
         public StreamingHttpClient apply(final UrlKey urlKey) {
             SslConfig sslConfig;
-            switch (urlKey.scheme) {
-                case HTTP:
-                    sslConfig = null;
-                    break;
-                case HTTPS:
-                    sslConfig = sslConfigProvider.forHostAndPort(urlKey.hostAndPort);
-                    if (sslConfig == null) {
-                        sslConfig = forClient(urlKey.hostAndPort).build();
-                    }
-                    break;
-                case NONE:
-                    sslConfig = sslConfigProvider.forHostAndPort(urlKey.hostAndPort);
-                    break;
-                default:
-                    throw new IllegalArgumentException("Unknown scheme: " + urlKey.scheme);
+
+            final HttpScheme scheme = urlKey.scheme;
+            if (scheme == null) {
+                sslConfig = sslConfigProvider.forHostAndPort(urlKey.hostAndPort);
+            } else if (HTTP.equals(scheme)) {
+                sslConfig = null;
+            } else if (HTTPS.equals(scheme)) {
+                sslConfig = sslConfigProvider.forHostAndPort(urlKey.hostAndPort);
+                if (sslConfig == null) {
+                    sslConfig = forClient(urlKey.hostAndPort).build();
+                }
+            } else {
+                throw new IllegalArgumentException("Unknown scheme: " + scheme);
             }
 
             // Copy existing builder to prevent changes at runtime when concurrently creating clients for new addresses

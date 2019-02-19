@@ -35,7 +35,7 @@ public interface SslConfigProvider {
      * @return A port number for specified {@code scheme} and {@code effectiveHost}.
      * @see HttpRequestMetaData#effectivePort()
      */
-    int defaultPort(HttpScheme scheme, String effectiveHost);
+    int defaultPort(@Nullable HttpScheme scheme, String effectiveHost);
 
     /**
      * Return a {@link SslConfig} for specified {@link HostAndPort}.

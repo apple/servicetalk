@@ -26,12 +26,14 @@ import java.util.Objects;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.http.api.HttpSchemes.HTTP;
+import static io.servicetalk.http.api.HttpSchemes.HTTPS;
 import static io.servicetalk.http.api.StringUtil.decodeHexByte;
 import static java.nio.charset.CodingErrorAction.REPLACE;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
- * Accepts a <a href="https://tools.ietf.org/html/rfc7230#section-2.7">HTTP URI</a> and breaks down the components.
+ * Accepts an <a href="https://tools.ietf.org/html/rfc7230#section-2.7">HTTP URI</a> and breaks down the components.
  * <p>
  * In some scenarios, HTTP URI parsing using {@link java.net.URI} has been in the hot-path. For HTTP, not all of the
  * complexity of {@link java.net.URI} is needed. Additionally, deriving "the correct" hostname for HTTP can be easy to
@@ -40,16 +42,13 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 final class HttpUri {
     private static final String SPACE = " ";
 
-    static final int DEFAULT_PORT_HTTP = 80;
-    static final int DEFAULT_PORT_HTTPS = 443;
-
     private final String uri;
     @Nullable
     private final String hostHeader;
     private final String relativeReference;
     private final boolean isSsl;
     @Nullable
-    private final String scheme;
+    private final HttpScheme scheme;
     @Nullable
     private String userInfo;
     @Nullable
@@ -238,11 +237,11 @@ final class HttpUri {
         } else {
             relativeReference = "";
         }
-        scheme = parsedScheme == 0 ? "http" : parsedScheme == 1 ? "https" : null;
+        scheme = parsedScheme == 0 ? HTTP : parsedScheme == 1 ? HTTPS : null;
         host = parsedHost;
         hostHeader = parsedHostHeader;
         isSsl = parsedScheme == 1;
-        port = parsedPort > 0 ? parsedPort : (isSsl ? DEFAULT_PORT_HTTPS : DEFAULT_PORT_HTTP);
+        port = parsedPort > 0 ? parsedPort : (isSsl ? HTTPS : HTTP).defaultPort();
         explicitPort = parsedPort > 0;
         this.uri = uri;
     }
@@ -252,7 +251,7 @@ final class HttpUri {
     }
 
     @Nullable
-    String getScheme() {
+    HttpScheme getScheme() {
         return scheme;
     }
 

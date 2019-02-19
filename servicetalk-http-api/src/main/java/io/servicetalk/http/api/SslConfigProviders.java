@@ -18,9 +18,10 @@ package io.servicetalk.http.api;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.SslConfig;
 
-import static io.servicetalk.http.api.HttpScheme.HTTP;
-import static io.servicetalk.http.api.HttpScheme.HTTPS;
-import static io.servicetalk.http.api.HttpScheme.NONE;
+import javax.annotation.Nullable;
+
+import static io.servicetalk.http.api.HttpSchemes.HTTP;
+import static io.servicetalk.http.api.HttpSchemes.HTTPS;
 import static io.servicetalk.transport.api.SslConfigBuilder.forClient;
 
 /**
@@ -30,8 +31,8 @@ public final class SslConfigProviders {
 
     private static final SslConfigProvider PLAIN = new SslConfigProvider() {
         @Override
-        public int defaultPort(final HttpScheme scheme, final String effectiveHost) {
-            if (scheme == NONE) {
+        public int defaultPort(@Nullable final HttpScheme scheme, final String effectiveHost) {
+            if (scheme == null) {
                 return HTTP.defaultPort();
             }
             return scheme.defaultPort();
@@ -45,8 +46,8 @@ public final class SslConfigProviders {
 
     private static final SslConfigProvider SECURE = new SslConfigProvider() {
         @Override
-        public int defaultPort(final HttpScheme scheme, final String effectiveHost) {
-            if (scheme == NONE) {
+        public int defaultPort(@Nullable final HttpScheme scheme, final String effectiveHost) {
+            if (scheme == null) {
                 return HTTPS.defaultPort();
             }
             return scheme.defaultPort();

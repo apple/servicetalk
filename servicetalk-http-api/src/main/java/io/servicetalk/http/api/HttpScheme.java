@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,74 +15,34 @@
  */
 package io.servicetalk.http.api;
 
-import javax.annotation.Nullable;
-
 /**
- * Defines the common schemes used for the HTTP protocol as defined by
- * <a href="https://tools.ietf.org/html/rfc7230">rfc7230</a>.
+ * HTTP URI Scheme as defined by <a href="https://tools.ietf.org/html/rfc7230#section-2.7">RFC 7230, section 2.7</a>.
  */
-public enum HttpScheme {
+public interface HttpScheme {
     /**
-     * Scheme for non-secure HTTP connection.
-     */
-    HTTP("http", 80),
-
-    /**
-     * Scheme for secure HTTP connection.
-     */
-    HTTPS("https", 443),
-
-    /**
-     * Constant which indicates that no scheme is present.
-     */
-    NONE(null, -1);
-
-    @Nullable
-    private final String name;
-    private final int defaultPort;
-
-    HttpScheme(@Nullable final String name, final int defaultPort) {
-        this.name = name;
-        this.defaultPort = defaultPort;
-    }
-
-    /**
-     * Returns a lower case name of this {@link HttpScheme}.
+     * Returns the name of this {@link HttpScheme}, which is case-insensitive and normally provided in lowercase.
      *
-     * @return A lower case name of this {@link HttpScheme}.
+     * @return the name of this {@link HttpScheme}.
      */
-    @Nullable
-    public String lowerCaseName() {
-        return name;
-    }
+    String name();
 
     /**
-     * Returns a default TCP port number for this {@link HttpScheme}.
+     * Returns a default port number for this {@link HttpScheme}.
      *
-     * @return A default TCP port number for this {@link HttpScheme}.
+     * @return a default port number for this {@link HttpScheme}
      */
-    public int defaultPort() {
-        return defaultPort;
-    }
+    int defaultPort();
 
     /**
-     * Converts the passed {@code scheme} to a valid {@link HttpScheme} if possible.
+     * Compares the specified object with this {@link HttpScheme} for equality.
+     * <p>
+     * Returns {@code true} if and only if the specified object is also an {@link HttpScheme}, both schemes have the
+     * same name (ignoring case) and the same default port number. This definition ensures that the {@code equals}
+     * method works properly across different implementations of the {@link HttpScheme} interface.
      *
-     * @param scheme representing an HTTP scheme.
-     * @return {@link HttpScheme} if the passed {@code scheme} is a valid HTTP scheme.
-     * @throws IllegalArgumentException If the passed {@code scheme} is an invalid HTTP scheme.
+     * @param o the object to be compared for equality with this {@link HttpScheme}
+     * @return {@code true} if the specified object is equal to this {@link HttpScheme}
      */
-    public static HttpScheme schemeForValue(@Nullable String scheme) {
-        if (scheme == null) {
-            return NONE;
-        }
-        switch (scheme) {
-            case "http":
-                return HTTP;
-            case "https":
-                return HTTPS;
-            default:
-                throw new IllegalArgumentException("Unknown scheme: " + scheme);
-        }
-    }
+    @Override
+    boolean equals(Object o);
 }
