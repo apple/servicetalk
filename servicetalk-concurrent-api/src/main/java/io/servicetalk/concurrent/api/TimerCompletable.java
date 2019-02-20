@@ -15,7 +15,7 @@
  */
 package io.servicetalk.concurrent.api;
 
-import io.servicetalk.concurrent.CompletableSource.Subscriber;
+import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.internal.DelayedCancellable;
 
 import java.time.Duration;
@@ -24,7 +24,7 @@ import java.util.concurrent.TimeUnit;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
-final class TimerCompletable extends Completable {
+final class TimerCompletable extends Completable implements CompletableSource {
     private final Executor timeoutExecutor;
     private final long delayNs;
 
@@ -51,5 +51,10 @@ final class TimerCompletable extends Completable {
         } catch (Throwable cause) {
             subscriber.onError(cause);
         }
+    }
+
+    @Override
+    public void subscribe(final Subscriber subscriber) {
+        subscribeInternal(subscriber);
     }
 }

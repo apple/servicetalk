@@ -70,7 +70,7 @@ public class ExecutorThrowsTest {
                 subscriber.onError(new AssertionError("Offloading failed but onSubscribe passed."));
             }
         }.publishAndSubscribeOn(newAlwaysFailingExecutor());
-        p.subscribe(new Subscriber<String>() {
+        p.subscribeInternal(new Subscriber<String>() {
             @Override
             public void onSubscribe(final Subscription s) {
                 // Noop
@@ -108,7 +108,7 @@ public class ExecutorThrowsTest {
                 subscriber.onError(new AssertionError("Offloading failed but onSubscribe passed."));
             }
         }.publishAndSubscribeOn(newAlwaysFailingExecutor());
-        s.subscribe(new SingleSource.Subscriber<String>() {
+        s.subscribeInternal(new SingleSource.Subscriber<String>() {
             @Override
             public void onSubscribe(final Cancellable cancellable) {
                 // Noop
@@ -141,7 +141,7 @@ public class ExecutorThrowsTest {
                 subscriber.onError(new AssertionError("Offloading failed but onSubscribe passed."));
             }
         }.publishAndSubscribeOn(newAlwaysFailingExecutor());
-        c.subscribe(new CompletableSource.Subscriber() {
+        c.subscribeInternal(new CompletableSource.Subscriber() {
             @Override
             public void onSubscribe(final Cancellable cancellable) {
                 // Noop

@@ -15,8 +15,8 @@
  */
 package io.servicetalk.transport.netty.internal;
 
-import io.servicetalk.concurrent.CompletableSource.Subscriber;
 import io.servicetalk.concurrent.api.Completable;
+import io.servicetalk.concurrent.api.internal.SubscribableCompletable;
 
 import io.netty.util.concurrent.Future;
 
@@ -25,7 +25,7 @@ import java.util.function.Supplier;
 /**
  * A {@link Completable} that wraps a netty {@link Future}.
  */
-final class NettyFutureCompletable extends Completable {
+final class NettyFutureCompletable extends SubscribableCompletable {
 
     private final Supplier<Future<?>> futureSupplier;
 

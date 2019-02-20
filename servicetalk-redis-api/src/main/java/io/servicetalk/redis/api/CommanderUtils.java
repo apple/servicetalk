@@ -21,6 +21,8 @@ import io.servicetalk.concurrent.SingleSource.Subscriber;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.SingleProcessor;
+import io.servicetalk.concurrent.api.internal.SubscribableCompletable;
+import io.servicetalk.concurrent.api.internal.SubscribableSingle;
 import io.servicetalk.concurrent.internal.DuplicateSubscribeException;
 import io.servicetalk.redis.api.RedisClient.ReservedRedisConnection;
 
@@ -146,7 +148,7 @@ final class CommanderUtils {
         });
     }
 
-    static final class DiscardSingle<T> extends Single<String> {
+    static final class DiscardSingle<T> extends SubscribableSingle<String> {
 
         private final T commander;
         private final Single<String> queued;
@@ -192,7 +194,7 @@ final class CommanderUtils {
         }
     }
 
-    static final class ExecCompletable<T> extends Completable {
+    static final class ExecCompletable<T> extends SubscribableCompletable {
 
         private final T commander;
         private final Single<List<Object>> results;

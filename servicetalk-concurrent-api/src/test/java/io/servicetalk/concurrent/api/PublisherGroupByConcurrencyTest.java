@@ -109,7 +109,7 @@ public final class PublisherGroupByConcurrencyTest {
         groupsSubscriber.subscribe(source.groupBy(integer -> integer, bufferSize).map(grp -> {
             GroupSubscriber sub = new GroupSubscriber();
             // Each group must only ever get one item.
-            grp.doBeforeNext(integer -> allItemsReceivedOnAllGroups.add(integer)).subscribe(sub);
+            grp.doBeforeNext(integer -> allItemsReceivedOnAllGroups.add(integer)).subscribeInternal(sub);
             if (requestFromEachGroupOnSubscribe) {
                 sub.request(1); // Only one item ever comes on every group as each int is a new group.
             }

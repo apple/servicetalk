@@ -18,6 +18,7 @@ package io.servicetalk.http.router.jersey;
 import io.servicetalk.concurrent.SingleSource.Subscriber;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.concurrent.api.internal.SubscribableSingle;
 import io.servicetalk.concurrent.internal.DelayedCancellable;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpServiceContext;
@@ -159,7 +160,7 @@ final class DefaultJerseyStreamingHttpRouter extends StreamingHttpService {
     public Single<StreamingHttpResponse> handle(final HttpServiceContext serviceCtx,
                                                 final StreamingHttpRequest req,
                                                 final StreamingHttpResponseFactory factory) {
-        return new Single<StreamingHttpResponse>() {
+        return new SubscribableSingle<StreamingHttpResponse>() {
             @Override
             protected void handleSubscribe(final Subscriber<? super StreamingHttpResponse> subscriber) {
                 final DelayedCancellable delayedCancellable = new DelayedCancellable();

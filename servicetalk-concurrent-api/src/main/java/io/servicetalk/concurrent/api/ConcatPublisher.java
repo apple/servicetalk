@@ -15,9 +15,6 @@
  */
 package io.servicetalk.concurrent.api;
 
-import io.servicetalk.concurrent.PublisherSource.Subscriber;
-import io.servicetalk.concurrent.PublisherSource.Subscription;
-
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -76,7 +73,7 @@ final class ConcatPublisher<T> extends AbstractAsynchronousPublisherOperator<T, 
                 target.onComplete();
             } else {
                 nextSubscribed = true;
-                next.subscribe(this);
+                next.subscribeInternal(this);
             }
         }
     }

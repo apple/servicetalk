@@ -204,7 +204,7 @@ public final class DefaultExecutorTest {
         AtomicReference<Throwable> refCause = new AtomicReference<>();
         CountDownLatch latch = new CountDownLatch(1);
         timer.doAfterCancel(latch::countDown)
-                .subscribe(new CompletableSource.Subscriber() {
+                .subscribeInternal(new CompletableSource.Subscriber() {
                     @Override
                     public void onSubscribe(final Cancellable cancellable) {
                         cancellable.cancel();

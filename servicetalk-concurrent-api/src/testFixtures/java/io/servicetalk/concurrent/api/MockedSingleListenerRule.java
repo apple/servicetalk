@@ -77,7 +77,7 @@ public class MockedSingleListenerRule<T> implements TestRule {
 
     public MockedSingleListenerRule<T> listen(Single<? extends T> src) {
         assert subscriber != null;
-        src.subscribe(subscriber);
+        src.subscribeInternal(subscriber);
         return this;
     }
 

@@ -19,8 +19,8 @@ import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.buffer.netty.BufferUtil;
 import io.servicetalk.client.api.RetryableConnectException;
 import io.servicetalk.concurrent.SingleSource;
-import io.servicetalk.concurrent.SingleSource.Subscriber;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.concurrent.api.internal.SubscribableSingle;
 import io.servicetalk.concurrent.internal.DelayedCancellable;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.FileDescriptorSocketAddress;
@@ -70,7 +70,7 @@ public final class TcpConnector {
         requireNonNull(resolvedRemoteAddress);
         requireNonNull(config);
         requireNonNull(executionContext);
-        return new Single<Channel>() {
+        return new SubscribableSingle<Channel>() {
             @Override
             protected void handleSubscribe(final Subscriber<? super Channel> subscriber) {
                 connectFutureToListener(localAddress, resolvedRemoteAddress, subscriber,

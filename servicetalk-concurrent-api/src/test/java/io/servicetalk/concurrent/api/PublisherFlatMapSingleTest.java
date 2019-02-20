@@ -422,7 +422,7 @@ public class PublisherFlatMapSingleTest {
         PublisherFlatMapSingle<Integer, String> pub = new PublisherFlatMapSingle<>(Publisher.from(expectedNumbers),
                 value -> Single.success(Integer.toString(value)),
                 1, false, immediate());
-        pub.subscribe(new Subscriber<String>() {
+        pub.subscribeInternal(new Subscriber<String>() {
             private Subscription subscription;
 
             @Override
@@ -465,7 +465,7 @@ public class PublisherFlatMapSingleTest {
             TestSingle<Integer> s = new TestSingle<>();
             emittedSingles.add(s);
             return s;
-        }, 2).subscribe(subscriber);
+        }, 2).subscribeInternal(subscriber);
         subscriber.request(Long.MAX_VALUE);
         source.sendItems(1, 1);
         assertThat("Unexpected number of Singles emitted.", emittedSingles, hasSize(2));

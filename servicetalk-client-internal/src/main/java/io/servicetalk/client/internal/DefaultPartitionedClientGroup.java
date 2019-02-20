@@ -29,6 +29,7 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.GroupedPublisher;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.concurrent.api.internal.SubscribableCompletable;
 import io.servicetalk.concurrent.internal.SequentialCancellable;
 
 import org.slf4j.Logger;
@@ -233,7 +234,7 @@ public final class DefaultPartitionedClientGroup<U, R, Client extends Listenable
         @SuppressWarnings("unchecked")
         @Override
         public Completable closeAsync() {
-            return new Completable() {
+            return new SubscribableCompletable() {
                 @Override
                 protected void handleSubscribe(CompletableSource.Subscriber subscriber) {
                     Object oldClient = clientUpdater.getAndSet(DefaultPartitionedClientGroup.Partition.this, closed);

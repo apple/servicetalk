@@ -15,13 +15,13 @@
  */
 package io.servicetalk.transport.netty.internal;
 
-import io.servicetalk.concurrent.CompletableSource.Subscriber;
 import io.servicetalk.concurrent.api.AsyncCloseable;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.CompletableProcessor;
 import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
+import io.servicetalk.concurrent.api.internal.SubscribableCompletable;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
@@ -97,7 +97,7 @@ public final class ChannelSet implements ListenableAsyncCloseable {
 
     @Override
     public Completable closeAsync() {
-        return new Completable() {
+        return new SubscribableCompletable() {
             @Override
             protected void handleSubscribe(final Subscriber subscriber) {
                 toSource(onClose).subscribe(subscriber);
@@ -121,7 +121,7 @@ public final class ChannelSet implements ListenableAsyncCloseable {
 
     @Override
     public Completable closeAsyncGracefully() {
-        return new Completable() {
+        return new SubscribableCompletable() {
             @Override
             protected void handleSubscribe(final Subscriber subscriber) {
                 if (!stateUpdater.compareAndSet(ChannelSet.this, OPEN, GRACEFULLY_CLOSING)) {

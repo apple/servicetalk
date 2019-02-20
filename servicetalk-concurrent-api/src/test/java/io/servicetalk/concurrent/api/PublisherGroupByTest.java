@@ -409,7 +409,7 @@ public class PublisherGroupByTest {
     public void testPendingGroupsQueueBreach() {
         @SuppressWarnings("unchecked")
         Subscriber<GroupedPublisher<Integer, Integer>> subscriber = mock(Subscriber.class);
-        source.groupBy(integer -> integer, 16).subscribe(subscriber);
+        source.groupBy(integer -> integer, 16).subscribeInternal(subscriber);
         ArgumentCaptor<Subscription> subscriptionCaptor = forClass(Subscription.class);
         verify(subscriber).onSubscribe(subscriptionCaptor.capture());
         Subscription subscription = subscriptionCaptor.getValue();

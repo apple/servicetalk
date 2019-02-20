@@ -71,7 +71,7 @@ public class MockedCompletableListenerRule implements TestRule {
     public MockedCompletableListenerRule listen(Completable src, boolean expectOnSubscribe) {
         createSubscriber();
         assert subscriber != null;
-        src.subscribe(subscriber);
+        src.subscribeInternal(subscriber);
         if (expectOnSubscribe) {
             ArgumentCaptor<Cancellable> cancellableCaptor = forClass(Cancellable.class);
             verify(subscriber).onSubscribe(cancellableCaptor.capture());

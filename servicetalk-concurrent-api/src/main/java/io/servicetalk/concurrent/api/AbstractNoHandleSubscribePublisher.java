@@ -15,7 +15,7 @@
  */
 package io.servicetalk.concurrent.api;
 
-import io.servicetalk.concurrent.PublisherSource.Subscriber;
+import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.internal.RejectedSubscribeException;
 import io.servicetalk.concurrent.internal.SignalOffloader;
 
@@ -27,7 +27,7 @@ import static io.servicetalk.concurrent.internal.EmptySubscription.EMPTY_SUBSCRI
  *
  * @param <T> Type of items emitted.
  */
-abstract class AbstractNoHandleSubscribePublisher<T> extends Publisher<T> {
+abstract class AbstractNoHandleSubscribePublisher<T> extends Publisher<T> implements PublisherSource<T> {
 
     AbstractNoHandleSubscribePublisher() {
     }
@@ -41,5 +41,10 @@ abstract class AbstractNoHandleSubscribePublisher<T> extends Publisher<T> {
         subscriber.onSubscribe(EMPTY_SUBSCRIPTION);
         subscriber.onError(new RejectedSubscribeException("Subscribe with no executor is not supported for "
                 + getClass()));
+    }
+
+    @Override
+    public final void subscribe(final Subscriber<? super T> subscriber) {
+        subscribeInternal(subscriber);
     }
 }

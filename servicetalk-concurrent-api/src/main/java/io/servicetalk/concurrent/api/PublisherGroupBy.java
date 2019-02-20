@@ -15,8 +15,6 @@
  */
 package io.servicetalk.concurrent.api;
 
-import io.servicetalk.concurrent.PublisherSource.Subscriber;
-
 import java.util.function.Function;
 import javax.annotation.Nullable;
 

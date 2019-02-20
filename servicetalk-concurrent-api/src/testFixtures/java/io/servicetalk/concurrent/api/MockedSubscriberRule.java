@@ -76,7 +76,7 @@ public class MockedSubscriberRule<T> implements TestRule {
     public MockedSubscriberRule<T> subscribe(Publisher<T> src, boolean verifyOnSubscribe) {
         newSubscriber();
         assert subscriber != null;
-        src.subscribe(subscriber);
+        src.subscribeInternal(subscriber);
         return verifyOnSubscribe ? verifySubscribe() : this;
     }
 

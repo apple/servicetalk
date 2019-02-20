@@ -19,8 +19,8 @@ import io.servicetalk.client.api.ConnectionClosedException;
 import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.internal.MaxRequestLimitExceededRejectedSubscribeException;
 import io.servicetalk.client.internal.RequestConcurrencyController;
-import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.concurrent.api.internal.SubscribablePublisher;
 import io.servicetalk.concurrent.internal.LatestValueSubscriber;
 import io.servicetalk.concurrent.internal.ThrowableUtil;
 import io.servicetalk.redis.api.RedisConnection;
@@ -62,7 +62,7 @@ final class RedisConnectionConcurrentRequestsFilter extends RedisConnectionFilte
 
     @Override
     public Publisher<RedisData> request(RedisExecutionStrategy strategy, RedisRequest request) {
-        return new Publisher<RedisData>() {
+        return new SubscribablePublisher<RedisData>() {
             @Override
             protected void handleSubscribe(final Subscriber<? super RedisData> subscriber) {
                 RequestConcurrencyController.Result result = limiter.tryRequest();

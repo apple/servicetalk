@@ -17,8 +17,8 @@ package io.servicetalk.http.utils;
 
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.SingleSource;
-import io.servicetalk.concurrent.SingleSource.Subscriber;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.concurrent.api.internal.SubscribableSingle;
 import io.servicetalk.concurrent.internal.SequentialCancellable;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpHeaders;
@@ -49,7 +49,7 @@ import static java.util.Objects.requireNonNull;
 /**
  * An operator, which implements redirect logic for {@link StreamingHttpClient}.
  */
-final class RedirectSingle extends Single<StreamingHttpResponse> {
+final class RedirectSingle extends SubscribableSingle<StreamingHttpResponse> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RedirectSingle.class);
 

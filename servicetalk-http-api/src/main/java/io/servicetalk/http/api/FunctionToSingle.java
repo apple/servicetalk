@@ -15,14 +15,13 @@
  */
 package io.servicetalk.http.api;
 
-import io.servicetalk.concurrent.SingleSource.Subscriber;
-import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.concurrent.api.internal.SubscribableSingle;
 
 import java.util.function.Function;
 
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 
-final class FunctionToSingle<T, R> extends Single<R> {
+final class FunctionToSingle<T, R> extends SubscribableSingle<R> {
     private final Function<T, R> func;
     private final T orig;
 

@@ -15,7 +15,7 @@
  */
 package io.servicetalk.concurrent.api;
 
-import io.servicetalk.concurrent.CompletableSource.Subscriber;
+import io.servicetalk.concurrent.CompletableSource;
 
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -59,11 +59,11 @@ public final class AsyncCloseables {
         return new ListenableAsyncCloseable() {
 
             private final CompletableProcessor onClose = new CompletableProcessor();
-            private final Completable closeAsync = new Completable() {
+            private final Completable closeAsync = new SubscribableCompletable() {
                 @Override
                 protected void handleSubscribe(final Subscriber subscriber) {
                     onClose.onComplete();
-                    onClose.subscribe(subscriber);
+                    onClose.subscribeInternal(subscriber);
                 }
             };
 
@@ -110,11 +110,11 @@ public final class AsyncCloseables {
 
             @Override
             public Completable closeAsyncGracefully() {
-                return new Completable() {
+                return new SubscribableCompletable() {
                     @Override
                     protected void handleSubscribe(final Subscriber subscriber) {
-                        asyncCloseable.closeAsyncGracefully().subscribe(onCloseProcessor);
-                        onClose.subscribe(subscriber);
+                        asyncCloseable.closeAsyncGracefully().subscribeInternal(onCloseProcessor);
+                        onClose.subscribeInternal(subscriber);
                     }
                 };
             }
@@ -126,11 +126,11 @@ public final class AsyncCloseables {
 
             @Override
             public Completable closeAsync() {
-                return new Completable() {
+                return new SubscribableCompletable() {
                     @Override
                     protected void handleSubscribe(final Subscriber subscriber) {
-                        asyncCloseable.closeAsync().subscribe(onCloseProcessor);
-                        onClose.subscribe(subscriber);
+                        asyncCloseable.closeAsync().subscribeInternal(onCloseProcessor);
+                        onClose.subscribeInternal(subscriber);
                     }
                 };
             }
@@ -194,12 +194,12 @@ public final class AsyncCloseables {
 
         @Override
         public Completable closeAsync() {
-            return new Completable() {
+            return new SubscribableCompletable() {
                 @Override
                 protected void handleSubscribe(final Subscriber subscriber) {
-                    onClose.subscribe(subscriber);
+                    onClose.subscribeInternal(subscriber);
                     if (closedUpdater.getAndSet(DefaultAsyncCloseable.this, HARD_CLOSE) != HARD_CLOSE) {
-                        closeableResource.doClose(false).subscribe(onClose);
+                        closeableResource.doClose(false).subscribeInternal(onClose);
                     }
                 }
             };
@@ -207,12 +207,12 @@ public final class AsyncCloseables {
 
         @Override
         public Completable closeAsyncGracefully() {
-            return new Completable() {
+            return new SubscribableCompletable() {
                 @Override
                 protected void handleSubscribe(final Subscriber subscriber) {
-                    onClose.subscribe(subscriber);
+                    onClose.subscribeInternal(subscriber);
                     if (closedUpdater.compareAndSet(DefaultAsyncCloseable.this, IDLE, CLOSED_GRACEFULLY)) {
-                        closeableResource.doClose(true).subscribe(onClose);
+                        closeableResource.doClose(true).subscribeInternal(onClose);
                     }
                 }
             };
@@ -221,6 +221,14 @@ public final class AsyncCloseables {
         @Override
         public Completable onClose() {
             return onClose;
+        }
+    }
+
+    private abstract static class SubscribableCompletable extends Completable implements CompletableSource {
+
+        @Override
+        public final void subscribe(final Subscriber subscriber) {
+            subscribeInternal(subscriber);
         }
     }
 }

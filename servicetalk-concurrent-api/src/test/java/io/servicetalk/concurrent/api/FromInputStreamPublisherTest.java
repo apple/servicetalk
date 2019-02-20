@@ -180,7 +180,7 @@ public class FromInputStreamPublisherTest {
         }).when(sub).onSubscribe(any());
         doThrow(DELIBERATE_EXCEPTION).when(sub).onNext(any());
 
-        pub.subscribe(sub);
+        pub.subscribeInternal(sub);
 
         verify(is).close();
         verify(sub, never()).onComplete();
@@ -202,7 +202,7 @@ public class FromInputStreamPublisherTest {
         }).when(sub).onSubscribe(any());
         doThrow(DELIBERATE_EXCEPTION).when(sub).onNext(any());
 
-        pub.subscribe(sub);
+        pub.subscribeInternal(sub);
         // triggers another delivery + failure, to ensure we only observe a single terminal event
         subRef.get().request(1);
 
@@ -225,7 +225,7 @@ public class FromInputStreamPublisherTest {
         }).when(sub).onSubscribe(any());
         doThrow(DELIBERATE_EXCEPTION).when(sub).onNext(any());
 
-        pub.subscribe(sub);
+        pub.subscribeInternal(sub);
 
         verify(sub, never()).onComplete();
         verify(sub).onError(DELIBERATE_EXCEPTION);
@@ -247,7 +247,7 @@ public class FromInputStreamPublisherTest {
             return 1;
         });
 
-        pub.subscribe(new Subscriber<byte[]>() {
+        pub.subscribeInternal(new Subscriber<byte[]>() {
             private Subscription s;
 
             @Override
@@ -473,7 +473,7 @@ public class FromInputStreamPublisherTest {
         AtomicBoolean complete = new AtomicBoolean();
         AtomicReference<Throwable> error = new AtomicReference<>();
 
-        pub.subscribe(new Subscriber<byte[]>() {
+        pub.subscribeInternal(new Subscriber<byte[]>() {
             int batch;
 
             @Override

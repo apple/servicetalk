@@ -15,7 +15,7 @@
  */
 package io.servicetalk.concurrent.api;
 
-import io.servicetalk.concurrent.CompletableSource.Subscriber;
+import io.servicetalk.concurrent.CompletableSource;
 
 import java.util.function.Supplier;
 
@@ -25,7 +25,7 @@ import static java.util.Objects.requireNonNull;
 /**
  * As returned by {@link Completable#defer(Supplier)}.
  */
-final class CompletableDefer extends Completable {
+final class CompletableDefer extends Completable implements CompletableSource {
     private final Supplier<? extends Completable> completableFactory;
 
     CompletableDefer(Supplier<? extends Completable> completableFactory) {
@@ -44,6 +44,11 @@ final class CompletableDefer extends Completable {
         // There are technically two sources, this one and the one returned by the factory.
         // Since, we are invoking user code (completableFactory) we need this method to be run using an Executor
         // and also use the configured Executor for subscribing to the Completable returned from completableFactory.
-        completable.subscribe(subscriber);
+        completable.subscribeInternal(subscriber);
+    }
+
+    @Override
+    public void subscribe(final Subscriber subscriber) {
+        subscribeInternal(subscriber);
     }
 }

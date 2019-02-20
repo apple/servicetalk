@@ -17,8 +17,6 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.CompletableSource;
-import io.servicetalk.concurrent.PublisherSource.Subscriber;
-import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.internal.ConcurrentSubscription;
 
 import org.slf4j.Logger;
@@ -95,7 +93,7 @@ final class TakeUntilPublisher<T> extends AbstractSynchronousPublisherOperator<T
             };
             this.concurrentSubscription = concurrentSubscription;
             subscriber.onSubscribe(concurrentSubscription);
-            until.subscribe(new CompletableSource.Subscriber() {
+            until.subscribeInternal(new CompletableSource.Subscriber() {
                 @Override
                 public void onSubscribe(Cancellable cancellable) {
                     if (!untilCancellableUpdater.compareAndSet(TakeUntilSubscriber.this, null, cancellable)) {

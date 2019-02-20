@@ -15,7 +15,7 @@
  */
 package io.servicetalk.concurrent.api;
 
-import io.servicetalk.concurrent.SingleSource.Subscriber;
+import io.servicetalk.concurrent.SingleSource;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,7 +24,7 @@ import java.util.concurrent.Future;
 
 import static java.util.Objects.requireNonNull;
 
-final class FutureToSingle<T> extends Single<T> {
+final class FutureToSingle<T> extends Single<T> implements SingleSource<T> {
     private static final Logger LOGGER = LoggerFactory.getLogger(FutureToSingle.class);
     private final Future<T> future;
 
@@ -52,5 +52,10 @@ final class FutureToSingle<T> extends Single<T> {
         } catch (Throwable t) {
             LOGGER.debug("Ignoring exception from onSuccess of Subscriber {}.", subscriber, t);
         }
+    }
+
+    @Override
+    public void subscribe(final Subscriber<? super T> subscriber) {
+        subscribeInternal(subscriber);
     }
 }

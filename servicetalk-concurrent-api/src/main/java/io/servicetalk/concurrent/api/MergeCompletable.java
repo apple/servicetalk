@@ -15,8 +15,6 @@
  */
 package io.servicetalk.concurrent.api;
 
-import io.servicetalk.concurrent.CompletableSource.Subscriber;
-
 import javax.annotation.Nullable;
 
 import static java.util.Objects.requireNonNull;
@@ -68,10 +66,10 @@ final class MergeCompletable extends AbstractMergeCompletableOperator {
         if (onlyOther == null) {
             assert others != null;
             for (Completable itr : others) {
-                itr.subscribe(subscriber);
+                itr.subscribeInternal(subscriber);
             }
         } else {
-            onlyOther.subscribe(subscriber);
+            onlyOther.subscribeInternal(subscriber);
         }
     }
 

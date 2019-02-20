@@ -21,6 +21,7 @@ import io.servicetalk.concurrent.api.AsyncCloseable;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.concurrent.api.internal.SubscribableCompletable;
 import io.servicetalk.concurrent.internal.SequentialCancellable;
 import io.servicetalk.redis.api.RedisConnection;
 import io.servicetalk.redis.api.RedisData;
@@ -52,7 +53,7 @@ abstract class AbstractRedisConnection extends RedisConnection {
     private final ExecutionContext executionContext;
 
     private final AsyncCloseable pinger;
-    private final Completable closeAsync = new Completable() {
+    private final Completable closeAsync = new SubscribableCompletable() {
         @Override
         protected void handleSubscribe(Subscriber subscriber) {
             toSource(pinger.closeAsync().concatWith(doClose())).subscribe(subscriber);
@@ -156,7 +157,7 @@ abstract class AbstractRedisConnection extends RedisConnection {
             timerSubscriber = new TimerSubscriber(pingSubscriber, pingPeriod,
                     () -> toSource(sendPing()).subscribe(pingSubscriber),
                     () -> pingTimerProvider.timer(pingPeriodNanos, NANOSECONDS));
-            closeAsync = new Completable() {
+            closeAsync = new SubscribableCompletable() {
                 @Override
                 protected void handleSubscribe(Subscriber subscriber) {
                     timerSubscriber.cancel();

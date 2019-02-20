@@ -940,7 +940,7 @@ public class DefaultAsyncContextProviderTest {
         }
 
         ContextCaptureCompletableSubscriber subscribeAndWait(Completable completable) throws InterruptedException {
-            completable.subscribe(this);
+            completable.subscribeInternal(this);
             latch.await();
             return this;
         }
@@ -979,7 +979,7 @@ public class DefaultAsyncContextProviderTest {
         }
 
         ContextCaptureSingleSubscriber<T> subscribeAndWait(Single<T> single) throws InterruptedException {
-            single.subscribe(this);
+            single.subscribeInternal(this);
             latch.await();
             return this;
         }
@@ -1061,7 +1061,7 @@ public class DefaultAsyncContextProviderTest {
         }
 
         ContextCaptureSubscriber<T> subscribeAndWait(Publisher<T> publisher) throws InterruptedException {
-            publisher.subscribe(this);
+            publisher.subscribeInternal(this);
             latch.await();
             return this;
         }

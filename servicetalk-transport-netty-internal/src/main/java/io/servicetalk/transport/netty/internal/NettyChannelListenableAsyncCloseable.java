@@ -15,10 +15,10 @@
  */
 package io.servicetalk.transport.netty.internal;
 
-import io.servicetalk.concurrent.CompletableSource.Subscriber;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
+import io.servicetalk.concurrent.api.internal.SubscribableCompletable;
 
 import io.netty.channel.Channel;
 
@@ -52,7 +52,7 @@ class NettyChannelListenableAsyncCloseable implements ListenableAsyncCloseable {
      */
     NettyChannelListenableAsyncCloseable(Channel channel, Executor offloadingExecutor) {
         this.channel = requireNonNull(channel);
-        onClose = new Completable() {
+        onClose = new SubscribableCompletable() {
             @Override
             protected void handleSubscribe(final Subscriber subscriber) {
                 subscriber.onSubscribe(IGNORE_CANCEL);
@@ -65,7 +65,7 @@ class NettyChannelListenableAsyncCloseable implements ListenableAsyncCloseable {
 
     @Override
     public final Completable closeAsync() {
-        return new Completable() {
+        return new SubscribableCompletable() {
             @Override
             protected void handleSubscribe(final Subscriber subscriber) {
                 toSource(onClose()).subscribe(subscriber);
@@ -78,7 +78,7 @@ class NettyChannelListenableAsyncCloseable implements ListenableAsyncCloseable {
 
     @Override
     public final Completable closeAsyncGracefully() {
-        return new Completable() {
+        return new SubscribableCompletable() {
             @Override
             protected void handleSubscribe(final Subscriber subscriber) {
                 if (stateUpdater.compareAndSet(NettyChannelListenableAsyncCloseable.this, OPEN, GRACEFULLY_CLOSING)) {
