@@ -66,7 +66,7 @@ public final class ServiceDiscovererUtils {
      * {@code sortedA}).
      * <p>
      * See <a href="https://en.wikipedia.org/wiki/Venn_diagram#Overview">Set Mathematics</a>.
-     * @param isAvailable Will be used for {@link ServiceDiscovererEvent#available()} for each
+     * @param available Will be used for {@link ServiceDiscovererEvent#isAvailable()} for each
      * {@link ServiceDiscovererEvent} in the returned {@link List}.
      * @param sortedA A sorted {@link List} of which no elements be present in the return value.
      * @param sortedB A sorted {@link List} of which elements in this set that are not in {@code sortedA} will be in the
@@ -79,7 +79,7 @@ public final class ServiceDiscovererUtils {
      */
     @Nullable
     private static <T> List<ServiceDiscovererEvent<T>> relativeComplement(
-            boolean isAvailable, List<? extends T> sortedA, List<? extends T> sortedB, Comparator<T> comparator,
+            boolean available, List<? extends T> sortedA, List<? extends T> sortedB, Comparator<T> comparator,
             @Nullable List<ServiceDiscovererEvent<T>> result) {
         if (sortedB instanceof RandomAccess) {
             for (int i = 0; i < sortedB.size(); ++i) {
@@ -88,7 +88,7 @@ public final class ServiceDiscovererUtils {
                     if (result == null) {
                         result = new ArrayList<>(4);
                     }
-                    result.add(new DefaultServiceDiscovererEvent<>(valueB, isAvailable));
+                    result.add(new DefaultServiceDiscovererEvent<>(valueB, available));
                 }
             }
         } else {
@@ -97,7 +97,7 @@ public final class ServiceDiscovererUtils {
                     if (result == null) {
                         result = new ArrayList<>(4);
                     }
-                    result.add(new DefaultServiceDiscovererEvent<>(valueB, isAvailable));
+                    result.add(new DefaultServiceDiscovererEvent<>(valueB, available));
                 }
             }
         }

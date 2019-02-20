@@ -88,17 +88,17 @@ final class DefaultHttpRequestMethod implements HttpRequestMethod {
         }
 
         @Override
-        public boolean safe() {
+        public boolean isSafe() {
             return safe;
         }
 
         @Override
-        public boolean idempotent() {
+        public boolean isIdempotent() {
             return idempotent;
         }
 
         @Override
-        public boolean cacheable() {
+        public boolean isCacheable() {
             return cacheable;
         }
 

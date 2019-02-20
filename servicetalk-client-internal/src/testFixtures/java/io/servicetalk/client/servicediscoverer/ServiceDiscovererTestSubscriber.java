@@ -51,7 +51,7 @@ public final class ServiceDiscovererTestSubscriber<T> implements Subscriber<Serv
 
     @Override
     public void onNext(@Nonnull ServiceDiscovererEvent<T> event) {
-        if (event.available()) {
+        if (event.isAvailable()) {
             processActiveEvent(event);
         } else {
             processInactiveEvent(event);

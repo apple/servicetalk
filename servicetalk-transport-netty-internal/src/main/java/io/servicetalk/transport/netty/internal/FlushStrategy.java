@@ -38,7 +38,7 @@ public interface FlushStrategy {
      *
      * @return {@code true} if pending writes, if any, MUST be flushed when the connection is not writable.
      */
-    default boolean flushOnUnwritable() {
+    default boolean shouldFlushOnUnwritable() {
         return true;
     }
 

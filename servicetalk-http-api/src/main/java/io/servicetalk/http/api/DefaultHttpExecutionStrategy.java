@@ -149,17 +149,17 @@ final class DefaultHttpExecutionStrategy implements HttpExecutionStrategy {
     }
 
     @Override
-    public boolean metadataReceiveOffloaded() {
+    public boolean isMetadataReceiveOffloaded() {
         return offloaded(OFFLOAD_RECEIVE_META);
     }
 
     @Override
-    public boolean dataReceiveOffloaded() {
+    public boolean isDataReceiveOffloaded() {
         return offloaded(OFFLOAD_RECEIVE_DATA);
     }
 
     @Override
-    public boolean sendOffloaded() {
+    public boolean isSendOffloaded() {
         return offloaded(OFFLOAD_SEND);
     }
 
@@ -180,11 +180,11 @@ final class DefaultHttpExecutionStrategy implements HttpExecutionStrategy {
 
         final byte otherOffloads;
         final boolean otherThreadAffinity;
-        otherOffloads = (byte) ((other.dataReceiveOffloaded() ? OFFLOAD_RECEIVE_DATA : 0) |
-                (other.metadataReceiveOffloaded() ? OFFLOAD_RECEIVE_META : 0) |
-                (other.sendOffloaded() ? OFFLOAD_SEND : 0));
+        otherOffloads = (byte) ((other.isDataReceiveOffloaded() ? OFFLOAD_RECEIVE_DATA : 0) |
+                (other.isMetadataReceiveOffloaded() ? OFFLOAD_RECEIVE_META : 0) |
+                (other.isSendOffloaded() ? OFFLOAD_SEND : 0));
         otherThreadAffinity = otherExecutor instanceof SignalOffloaderFactory &&
-                ((SignalOffloaderFactory) otherExecutor).threadAffinity();
+                ((SignalOffloaderFactory) otherExecutor).hasThreadAffinity();
 
         return (otherOffloads == offloads && executor == otherExecutor && otherThreadAffinity == threadAffinity) ?
                 this : new DefaultHttpExecutionStrategy(executor, (byte) (otherOffloads | offloads),
@@ -228,7 +228,7 @@ final class DefaultHttpExecutionStrategy implements HttpExecutionStrategy {
     }
 
     // Visible for testing
-    boolean isThreadAffinity() {
+    boolean hasThreadAffinity() {
         return threadAffinity;
     }
 

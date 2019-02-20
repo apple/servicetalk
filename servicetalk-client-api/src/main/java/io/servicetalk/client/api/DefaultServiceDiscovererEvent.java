@@ -41,7 +41,7 @@ public final class DefaultServiceDiscovererEvent<T> implements ServiceDiscoverer
     }
 
     @Override
-    public boolean available() {
+    public boolean isAvailable() {
         return available;
     }
 

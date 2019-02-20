@@ -158,7 +158,7 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends ListenableA
                             // which is consistent with the ordering defined by the comparator
                             final int i = binarySearch(refreshedAddresses, searchHost, activeAddressComparator);
 
-                            if (event.available()) {
+                            if (event.isAvailable()) {
                                 if (i < 0) {
                                     refreshedAddresses.add(-i - 1, new Host(event.address()));
                                 }
@@ -175,7 +175,7 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends ListenableA
                 LOGGER.debug("Load balancer {} now using {} addresses: {}", RoundRobinLoadBalancer.this,
                         activeAddresses.size(), activeAddresses);
 
-                if (event.available()) {
+                if (event.isAvailable()) {
                     if (activeAddresses.size() == 1) {
                         eventStream.sendOnNext(LOAD_BALANCER_READY_EVENT);
                     }

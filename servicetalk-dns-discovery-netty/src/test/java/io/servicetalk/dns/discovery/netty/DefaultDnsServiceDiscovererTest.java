@@ -554,7 +554,7 @@ public class DefaultDnsServiceDiscovererTest {
 
         @Override
         public void onNext(final ServiceDiscovererEvent<InetAddress> event) {
-            if (event.available()) {
+            if (event.isAvailable()) {
                 activeEventAddresses.add(event.address().getHostAddress());
             } else {
                 inactiveEventAddresses.add(event.address().getHostAddress());

@@ -100,8 +100,8 @@ public class PartitionedHttpClientTest {
                     }
 
                     @Override
-                    public boolean available() {
-                        return psde.available();
+                    public boolean isAvailable() {
+                        return psde.isAvailable();
                     }
 
                     @Override
@@ -236,7 +236,7 @@ public class PartitionedHttpClientTest {
         }
 
         @Override
-        public boolean available() {
+        public boolean isAvailable() {
             return true;
         }
     }

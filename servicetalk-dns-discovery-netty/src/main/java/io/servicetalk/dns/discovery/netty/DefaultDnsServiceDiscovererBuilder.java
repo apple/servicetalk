@@ -274,7 +274,7 @@ public final class DefaultDnsServiceDiscovererBuilder {
             public Publisher<ServiceDiscovererEvent<InetSocketAddress>> discover(final HostAndPort hostAndPort) {
                 return serviceDiscoverer.discover(hostAndPort.hostName()).map(originalEvent ->
                         new DefaultServiceDiscovererEvent<>(new InetSocketAddress(originalEvent.address(),
-                                hostAndPort.port()), originalEvent.available())
+                                hostAndPort.port()), originalEvent.isAvailable())
                 );
             }
         };

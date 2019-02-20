@@ -49,10 +49,10 @@ public class DefaultHttpExecutionStrategyMergeTest {
         DefaultHttpExecutionStrategy merged = (DefaultHttpExecutionStrategy) strategy.merge(other);
         assertThat("Unexpected merge result.", merged, is(not(sameInstance(strategy))));
         assertThat("Unexpected merge result.", merged, is(not(sameInstance(other))));
-        assertThat("Unexpected merge result for send offload.", merged.sendOffloaded(), is(true));
-        assertThat("Unexpected merge result for data receive offload.", merged.dataReceiveOffloaded(), is(false));
-        assertThat("Unexpected merge result for meta receive offload", merged.metadataReceiveOffloaded(), is(false));
-        assertThat("Unexpected merge result for thread affinity", merged.isThreadAffinity(), is(true));
+        assertThat("Unexpected merge result for send offload.", merged.isSendOffloaded(), is(true));
+        assertThat("Unexpected merge result for data receive offload.", merged.isDataReceiveOffloaded(), is(false));
+        assertThat("Unexpected merge result for meta receive offload", merged.isMetadataReceiveOffloaded(), is(false));
+        assertThat("Unexpected merge result for thread affinity", merged.hasThreadAffinity(), is(true));
         assertThat("Unexpected merge result executor", merged.executor(), is(nullValue()));
     }
 
@@ -63,9 +63,9 @@ public class DefaultHttpExecutionStrategyMergeTest {
         HttpExecutionStrategy merged = strategy.merge(other);
         assertThat("Unexpected merge result.", merged, is(not(sameInstance(strategy))));
         assertThat("Unexpected merge result.", merged, is(not(sameInstance(other))));
-        assertThat("Unexpected merge result for send offload.", merged.sendOffloaded(), is(true));
-        assertThat("Unexpected merge result for data receive offload.", merged.dataReceiveOffloaded(), is(true));
-        assertThat("Unexpected merge result for meta receive offload", merged.metadataReceiveOffloaded(), is(false));
+        assertThat("Unexpected merge result for send offload.", merged.isSendOffloaded(), is(true));
+        assertThat("Unexpected merge result for data receive offload.", merged.isDataReceiveOffloaded(), is(true));
+        assertThat("Unexpected merge result for meta receive offload", merged.isMetadataReceiveOffloaded(), is(false));
         assertThat("Unexpected merge result executor", merged.executor(), is(sameInstance(executor)));
     }
 
@@ -76,9 +76,9 @@ public class DefaultHttpExecutionStrategyMergeTest {
         HttpExecutionStrategy merged = strategy.merge(other);
         assertThat("Unexpected merge result.", merged, is(not(sameInstance(strategy))));
         assertThat("Unexpected merge result.", merged, is(not(sameInstance(other))));
-        assertThat("Unexpected merge result for send offload.", merged.sendOffloaded(), is(true));
-        assertThat("Unexpected merge result for data receive offload.", merged.dataReceiveOffloaded(), is(true));
-        assertThat("Unexpected merge result for meta receive offload", merged.metadataReceiveOffloaded(), is(false));
+        assertThat("Unexpected merge result for send offload.", merged.isSendOffloaded(), is(true));
+        assertThat("Unexpected merge result for data receive offload.", merged.isDataReceiveOffloaded(), is(true));
+        assertThat("Unexpected merge result for meta receive offload", merged.isMetadataReceiveOffloaded(), is(false));
         assertThat("Unexpected merge result executor", merged.executor(), is(sameInstance(otherExecutor)));
     }
 
@@ -100,7 +100,7 @@ public class DefaultHttpExecutionStrategyMergeTest {
     public void nonDefaultStrategyButEqual() {
         HttpExecutionStrategy strategy = customStrategyBuilder().offloadSend().executor(executor).build();
         HttpExecutionStrategy other = mock(HttpExecutionStrategy.class);
-        when(other.sendOffloaded()).thenReturn(true);
+        when(other.isSendOffloaded()).thenReturn(true);
         when(other.executor()).thenReturn(executor);
         HttpExecutionStrategy merged = strategy.merge(other);
         assertThat("Unexpected merge result.", merged, is(sameInstance(strategy)));
@@ -110,13 +110,13 @@ public class DefaultHttpExecutionStrategyMergeTest {
     public void nonDefaultStrategyAndDifferent() {
         HttpExecutionStrategy strategy = customStrategyBuilder().offloadSend().executor(executor).build();
         HttpExecutionStrategy other = mock(HttpExecutionStrategy.class);
-        when(other.dataReceiveOffloaded()).thenReturn(true);
+        when(other.isDataReceiveOffloaded()).thenReturn(true);
         HttpExecutionStrategy merged = strategy.merge(other);
         assertThat("Unexpected merge result.", merged, is(not(sameInstance(strategy))));
         assertThat("Unexpected merge result.", merged, is(not(sameInstance(other))));
-        assertThat("Unexpected merge result for send offload.", merged.sendOffloaded(), is(true));
-        assertThat("Unexpected merge result for data receive offload.", merged.dataReceiveOffloaded(), is(true));
-        assertThat("Unexpected merge result for meta receive offload", merged.metadataReceiveOffloaded(), is(false));
+        assertThat("Unexpected merge result for send offload.", merged.isSendOffloaded(), is(true));
+        assertThat("Unexpected merge result for data receive offload.", merged.isDataReceiveOffloaded(), is(true));
+        assertThat("Unexpected merge result for meta receive offload", merged.isMetadataReceiveOffloaded(), is(false));
         assertThat("Unexpected merge result executor", merged.executor(), is(sameInstance(executor)));
     }
 
@@ -124,14 +124,14 @@ public class DefaultHttpExecutionStrategyMergeTest {
     public void nonDefaultStrategyOverrideExecutorAndDifferent() {
         HttpExecutionStrategy strategy = customStrategyBuilder().offloadSend().executor(executor).build();
         HttpExecutionStrategy other = mock(HttpExecutionStrategy.class);
-        when(other.dataReceiveOffloaded()).thenReturn(true);
+        when(other.isDataReceiveOffloaded()).thenReturn(true);
         when(other.executor()).thenReturn(otherExecutor);
         HttpExecutionStrategy merged = strategy.merge(other);
         assertThat("Unexpected merge result.", merged, is(not(sameInstance(strategy))));
         assertThat("Unexpected merge result.", merged, is(not(sameInstance(other))));
-        assertThat("Unexpected merge result for send offload.", merged.sendOffloaded(), is(true));
-        assertThat("Unexpected merge result for data receive offload.", merged.dataReceiveOffloaded(), is(true));
-        assertThat("Unexpected merge result for meta receive offload", merged.metadataReceiveOffloaded(), is(false));
+        assertThat("Unexpected merge result for send offload.", merged.isSendOffloaded(), is(true));
+        assertThat("Unexpected merge result for data receive offload.", merged.isDataReceiveOffloaded(), is(true));
+        assertThat("Unexpected merge result for meta receive offload", merged.isMetadataReceiveOffloaded(), is(false));
         assertThat("Unexpected merge result executor", merged.executor(), is(sameInstance(otherExecutor)));
     }
 }

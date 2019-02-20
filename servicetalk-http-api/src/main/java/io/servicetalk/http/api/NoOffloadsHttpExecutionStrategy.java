@@ -78,17 +78,17 @@ final class NoOffloadsHttpExecutionStrategy implements HttpExecutionStrategy {
     }
 
     @Override
-    public boolean metadataReceiveOffloaded() {
+    public boolean isMetadataReceiveOffloaded() {
         return false;
     }
 
     @Override
-    public boolean dataReceiveOffloaded() {
+    public boolean isDataReceiveOffloaded() {
         return false;
     }
 
     @Override
-    public boolean sendOffloaded() {
+    public boolean isSendOffloaded() {
         return false;
     }
 

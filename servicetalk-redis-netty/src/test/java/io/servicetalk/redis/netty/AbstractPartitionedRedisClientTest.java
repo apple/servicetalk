@@ -204,7 +204,7 @@ public abstract class AbstractPartitionedRedisClientTest {
             }
 
             @Override
-            public boolean available() {
+            public boolean isAvailable() {
                 return available;
             }
         });

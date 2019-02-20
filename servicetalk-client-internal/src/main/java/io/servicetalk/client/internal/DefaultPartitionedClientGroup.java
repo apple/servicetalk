@@ -102,7 +102,7 @@ public final class DefaultPartitionedClientGroup<U, R, Client extends Listenable
         this.partitionMap = partitionMapFactory.newPartitionMap(event ->
                 new Partition<>(event, closedPartitionClient.apply(event)));
         psdEvents
-                .groupByMulti(event -> event.available() ?
+                .groupByMulti(event -> event.isAvailable() ?
                         partitionMap.add(event.partitionAddress()).iterator() :
                         partitionMap.remove(event.partitionAddress()).iterator(), psdMaxQueueSize)
                 .subscribe(new GroupedByPartitionSubscriber(clientFactory));
@@ -163,7 +163,7 @@ public final class DefaultPartitionedClientGroup<U, R, Client extends Listenable
                 public boolean test(PSDE evt) {
                     MutableInt counter = addressCount.computeIfAbsent(evt.address(), __ -> new MutableInt());
                     boolean acceptEvent;
-                    if (evt.available()) {
+                    if (evt.isAvailable()) {
                         acceptEvent = ++counter.value == 1;
                     } else {
                         acceptEvent = --counter.value == 0;

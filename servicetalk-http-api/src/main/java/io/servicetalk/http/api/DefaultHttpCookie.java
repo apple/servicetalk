@@ -83,7 +83,7 @@ final class DefaultHttpCookie implements HttpCookie {
     }
 
     @Override
-    public boolean wrapped() {
+    public boolean isWrapped() {
         return wrapped;
     }
 
@@ -112,7 +112,7 @@ final class DefaultHttpCookie implements HttpCookie {
     }
 
     @Override
-    public boolean secure() {
+    public boolean isSecure() {
         return secure;
     }
 

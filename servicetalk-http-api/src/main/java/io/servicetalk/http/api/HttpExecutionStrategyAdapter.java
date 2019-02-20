@@ -67,18 +67,18 @@ public class HttpExecutionStrategyAdapter implements HttpExecutionStrategy {
     }
 
     @Override
-    public boolean metadataReceiveOffloaded() {
-        return delegate.metadataReceiveOffloaded();
+    public boolean isMetadataReceiveOffloaded() {
+        return delegate.isMetadataReceiveOffloaded();
     }
 
     @Override
-    public boolean dataReceiveOffloaded() {
-        return delegate.dataReceiveOffloaded();
+    public boolean isDataReceiveOffloaded() {
+        return delegate.isDataReceiveOffloaded();
     }
 
     @Override
-    public boolean sendOffloaded() {
-        return delegate.sendOffloaded();
+    public boolean isSendOffloaded() {
+        return delegate.isSendOffloaded();
     }
 
     @Override

@@ -36,5 +36,5 @@ public interface SignalOffloaderFactory {
      *
      * @return {@code true} if and only if all {@link SignalOffloader} instances will always provide thread affinity.
      */
-    boolean threadAffinity();
+    boolean hasThreadAffinity();
 }

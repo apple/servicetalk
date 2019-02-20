@@ -440,7 +440,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
         public void channelWritabilityChanged(ChannelHandlerContext ctx) {
             if (ctx.channel().isWritable()) {
                 connection.writableListener.channelWritable();
-            } else if (connection.flushStrategy.flushOnUnwritable()) {
+            } else if (connection.flushStrategy.shouldFlushOnUnwritable()) {
                 ctx.flush();
             }
         }

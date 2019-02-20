@@ -743,8 +743,8 @@ public class DefaultHttpCookiesTest {
                 Objects.equals(cookie1.expires(), cookie2.expires()) &&
                 Objects.equals(cookie1.value(), cookie2.value()) &&
                 cookie1.httpOnly() == cookie2.httpOnly() &&
-                cookie1.secure() == cookie2.secure() &&
-                cookie1.wrapped() == cookie2.wrapped();
+                cookie1.isSecure() == cookie2.isSecure() &&
+                cookie1.isWrapped() == cookie2.isWrapped();
     }
 
     private static final class TestCookie implements HttpCookie {
@@ -787,7 +787,7 @@ public class DefaultHttpCookiesTest {
         }
 
         @Override
-        public boolean wrapped() {
+        public boolean isWrapped() {
             return isWrapped;
         }
 
@@ -816,7 +816,7 @@ public class DefaultHttpCookiesTest {
         }
 
         @Override
-        public boolean secure() {
+        public boolean isSecure() {
             return isSecure;
         }
 

@@ -20,10 +20,10 @@ import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.internal.SignalOffloader;
 import io.servicetalk.concurrent.internal.SignalOffloaderFactory;
+import io.servicetalk.concurrent.internal.SignalOffloaders;
 
 import java.util.function.Consumer;
 
-import static io.servicetalk.concurrent.internal.SignalOffloaders.hasThreadAffinity;
 import static io.servicetalk.concurrent.internal.SignalOffloaders.newOffloaderFor;
 
 final class MergedOffloadSubscribeExecutor extends DelegatingExecutor implements SignalOffloaderFactory {
@@ -45,8 +45,8 @@ final class MergedOffloadSubscribeExecutor extends DelegatingExecutor implements
     }
 
     @Override
-    public boolean threadAffinity() {
-        return hasThreadAffinity(delegate) && hasThreadAffinity(fallbackExecutor);
+    public boolean hasThreadAffinity() {
+        return SignalOffloaders.hasThreadAffinity(delegate) && SignalOffloaders.hasThreadAffinity(fallbackExecutor);
     }
 
     private static final class SubscribeOnlySignalOffloader implements SignalOffloader {
