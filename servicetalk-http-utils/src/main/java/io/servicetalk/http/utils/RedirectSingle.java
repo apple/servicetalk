@@ -16,6 +16,7 @@
 package io.servicetalk.http.utils;
 
 import io.servicetalk.concurrent.Cancellable;
+import io.servicetalk.concurrent.SingleSource.Subscriber;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.SequentialCancellable;
 import io.servicetalk.http.api.HttpExecutionStrategy;
@@ -32,6 +33,7 @@ import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderNames.HOST;
 import static io.servicetalk.http.api.HttpHeaderNames.LOCATION;
@@ -86,7 +88,7 @@ final class RedirectSingle extends Single<StreamingHttpResponse> {
 
     @Override
     protected void handleSubscribe(final Subscriber<? super StreamingHttpResponse> subscriber) {
-        originalResponse.subscribe(new RedirectSubscriber(subscriber, this, originalRequest));
+        toSource(originalResponse).subscribe(new RedirectSubscriber(subscriber, this, originalRequest));
     }
 
     private static final class RedirectSubscriber implements Subscriber<StreamingHttpResponse> {
@@ -155,8 +157,8 @@ final class RedirectSingle extends Single<StreamingHttpResponse> {
                         result.headers().get(LOCATION), redirectSingle.originalRequest);
             }
             // Consume any payload of the redirect response
-            result.payloadBody().ignoreElements().concatWith(
-                    redirectSingle.requester.request(redirectSingle.strategy, newRequest))
+            toSource(result.payloadBody().ignoreElements().concatWith(
+                    redirectSingle.requester.request(redirectSingle.strategy, newRequest)))
                         .subscribe(new RedirectSubscriber(
                             target, redirectSingle, newRequest, redirectCount + 1, sequentialCancellable));
         }

@@ -45,6 +45,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static io.servicetalk.concurrent.api.Completable.error;
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.dns.discovery.netty.DnsTestUtils.nextIp;
 import static io.servicetalk.dns.discovery.netty.DnsTestUtils.nextIp6;
@@ -112,7 +113,7 @@ public class DefaultDnsServiceDiscovererTest {
             final CountDownLatch latch = new CountDownLatch(1);
             ServiceDiscovererTestSubscriber<InetAddress> subscriber =
                     new ServiceDiscovererTestSubscriber<>(latch, throwableRef, Long.MAX_VALUE);
-            publisher.subscribe(subscriber);
+            toSource(publisher).subscribe(subscriber);
 
             retryLatch.await();
             latch.await();
@@ -136,7 +137,7 @@ public class DefaultDnsServiceDiscovererTest {
         Publisher<ServiceDiscovererEvent<InetAddress>> publisher = discoverer.discover("apple.com");
         ServiceDiscovererTestSubscriber<InetAddress> subscriber =
                 new ServiceDiscovererTestSubscriber<>(latch, throwableRef, expectedActiveCount);
-        publisher.subscribe(subscriber);
+        toSource(publisher).subscribe(subscriber);
 
         latch.await();
         assertNull(throwableRef.get());
@@ -156,7 +157,7 @@ public class DefaultDnsServiceDiscovererTest {
         Publisher<ServiceDiscovererEvent<InetAddress>> publisher = discoverer.discover("apple.com");
         ServiceDiscovererTestSubscriber<InetAddress> subscriber =
                 new ServiceDiscovererTestSubscriber<>(latch, throwableRef, expectedActiveCount);
-        publisher.subscribe(subscriber);
+        toSource(publisher).subscribe(subscriber);
 
         latch.await();
         assertNull(throwableRef.get());
@@ -177,7 +178,7 @@ public class DefaultDnsServiceDiscovererTest {
         Publisher<ServiceDiscovererEvent<InetAddress>> publisher = discoverer.discover("apple.com");
         ServiceDiscovererTestSubscriber<InetAddress> subscriber =
                 new ServiceDiscovererTestSubscriber<>(latch, throwableRef, Long.MAX_VALUE);
-        publisher.subscribe(subscriber);
+        toSource(publisher).subscribe(subscriber);
 
         latch.await();
         assertNull(throwableRef.get());
@@ -198,7 +199,7 @@ public class DefaultDnsServiceDiscovererTest {
         Publisher<ServiceDiscovererEvent<InetAddress>> publisher = discoverer.discover("apple.com");
         ServiceDiscovererTestSubscriber<InetAddress> subscriber =
                 new ServiceDiscovererTestSubscriber<>(latch, throwableRef, Long.MAX_VALUE);
-        publisher.subscribe(subscriber);
+        toSource(publisher).subscribe(subscriber);
 
         latch.await();
         assertNull(throwableRef.get());
@@ -228,8 +229,8 @@ public class DefaultDnsServiceDiscovererTest {
                 new ServiceDiscovererTestSubscriber<>(appleLatch, throwableRef, Long.MAX_VALUE);
         ServiceDiscovererTestSubscriber<InetAddress> stSubscriber =
                 new ServiceDiscovererTestSubscriber<>(stLatch, throwableRef, Long.MAX_VALUE);
-        applePublisher.subscribe(appleSubscriber);
-        stPublisher.subscribe(stSubscriber);
+        toSource(applePublisher).subscribe(appleSubscriber);
+        toSource(stPublisher).subscribe(stSubscriber);
 
         appleLatch.await();
         stLatch.await();
@@ -262,7 +263,7 @@ public class DefaultDnsServiceDiscovererTest {
         Publisher<ServiceDiscovererEvent<InetAddress>> publisher = discoverer.discover("apple.com");
         ServiceDiscovererTestSubscriber<InetAddress> subscriber =
                 new ServiceDiscovererTestSubscriber<>(latch, throwableRef, Long.MAX_VALUE);
-        publisher.subscribe(subscriber);
+        toSource(publisher).subscribe(subscriber);
 
         latch.await();
         assertNull(throwableRef.get());
@@ -299,7 +300,7 @@ public class DefaultDnsServiceDiscovererTest {
         CountDownLatch latch = new CountDownLatch(expectedActiveCount + expectedInactiveCount);
         Publisher<ServiceDiscovererEvent<InetAddress>> publisher = discoverer.discover("apple.com");
         final TestSubscriber subscriber = new TestSubscriber(latch);
-        publisher.subscribe(subscriber);
+        toSource(publisher).subscribe(subscriber);
 
         latch.await();
         assertNull(subscriber.throwableRef.get());
@@ -325,7 +326,7 @@ public class DefaultDnsServiceDiscovererTest {
         Publisher<ServiceDiscovererEvent<InetAddress>> publisher = discoverer.discover("apple.com");
         ServiceDiscovererTestSubscriber<InetAddress> subscriber =
                 new ServiceDiscovererTestSubscriber<>(latch, throwableRef, Long.MAX_VALUE);
-        publisher.subscribe(subscriber);
+        toSource(publisher).subscribe(subscriber);
 
         latch.await();
         assertNull(throwableRef.get());
@@ -350,7 +351,7 @@ public class DefaultDnsServiceDiscovererTest {
             Publisher<ServiceDiscovererEvent<InetAddress>> publisher = discoverer.discover("apple.com");
             ServiceDiscovererTestSubscriber<InetAddress> subscriber =
                     new ServiceDiscovererTestSubscriber<>(latch, throwableRef, Long.MAX_VALUE);
-            publisher.subscribe(subscriber);
+            toSource(publisher).subscribe(subscriber);
 
             latch.await();
             assertThat("Unexpected exception during DNS lookup.",
@@ -375,7 +376,7 @@ public class DefaultDnsServiceDiscovererTest {
         Publisher<ServiceDiscovererEvent<InetAddress>> publisher = discoverer.discover("apple.com");
         ServiceDiscovererTestSubscriber<InetAddress> subscriber =
                 new ServiceDiscovererTestSubscriber<>(latch1, throwableRef, Long.MAX_VALUE);
-        publisher.doBeforeNext(n -> latch2.countDown()).subscribe(subscriber);
+        toSource(publisher.doBeforeNext(n -> latch2.countDown())).subscribe(subscriber);
 
         latch1.await();
         assertNull(throwableRef.get());
@@ -427,7 +428,7 @@ public class DefaultDnsServiceDiscovererTest {
             Publisher<ServiceDiscovererEvent<InetAddress>> publisher = discoverer.discover("apple.com");
             ServiceDiscovererTestSubscriber<InetAddress> subscriber =
                     new ServiceDiscovererTestSubscriber<>(latch, throwableRef, Long.MAX_VALUE);
-            publisher.subscribe(subscriber);
+            toSource(publisher).subscribe(subscriber);
 
             latch.await();
             assertNull(throwableRef.get());
@@ -457,7 +458,7 @@ public class DefaultDnsServiceDiscovererTest {
         AtomicReference<Throwable> throwableRef = new AtomicReference<>();
         Publisher<ServiceDiscovererEvent<InetAddress>> publisher = discoverer.discover("apple.com");
         final TestSubscriber subscriber = new TestSubscriber(latch);
-        publisher.subscribe(subscriber);
+        toSource(publisher).subscribe(subscriber);
 
         latch.await();
         assertNull(throwableRef.get());
@@ -478,7 +479,7 @@ public class DefaultDnsServiceDiscovererTest {
         AtomicReference<Throwable> throwableRef = new AtomicReference<>();
         Publisher<ServiceDiscovererEvent<InetAddress>> publisher = discoverer.discover("apple.com");
         final TestSubscriber subscriber = new TestSubscriber(latch);
-        publisher.subscribe(subscriber);
+        toSource(publisher).subscribe(subscriber);
 
         latch.await();
         assertNull(throwableRef.get());
@@ -507,7 +508,7 @@ public class DefaultDnsServiceDiscovererTest {
             }).when(subscriber).onSubscribe(any(Subscription.class));
             doThrow(DELIBERATE_EXCEPTION).when(subscriber).onError(any());
 
-            discoverer.discover("apple.com").subscribe(subscriber);
+            toSource(discoverer.discover("apple.com")).subscribe(subscriber);
             latchOnSubscribe.await();
         } finally {
             try {

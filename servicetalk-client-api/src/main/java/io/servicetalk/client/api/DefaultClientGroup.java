@@ -30,6 +30,7 @@ import java.util.function.Function;
 import static io.servicetalk.concurrent.api.AsyncCloseables.toAsyncCloseable;
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Completable.error;
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toList;
 
@@ -127,7 +128,7 @@ final class DefaultClientGroup<Key, Client extends ListenableAsyncCloseable> imp
         }
 
         clientMap.put(key, client); // Overwrite PLACEHOLDER_CLIENT
-        client.onClose().subscribe(new RemoveClientOnClose(key, client));
+        toSource(client.onClose()).subscribe(new RemoveClientOnClose(key, client));
         LOGGER.debug("A new client {} was created", client);
 
         if (closed) {

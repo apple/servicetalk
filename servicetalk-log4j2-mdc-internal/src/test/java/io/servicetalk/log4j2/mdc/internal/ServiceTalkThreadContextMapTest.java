@@ -15,6 +15,7 @@
  */
 package io.servicetalk.log4j2.mdc.internal;
 
+import io.servicetalk.concurrent.SingleSource.Subscriber;
 import io.servicetalk.concurrent.api.Single;
 
 import org.junit.Test;

@@ -24,6 +24,7 @@ import org.junit.Test;
 import java.util.function.Supplier;
 
 import static io.servicetalk.concurrent.api.Publisher.empty;
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -53,7 +54,7 @@ public class PublisherDeferTest {
     private static void subscribeAndVerify(Publisher<Integer> source) {
         @SuppressWarnings("unchecked")
         Subscriber<Integer> subscriber = mock(Subscriber.class);
-        source.subscribe(subscriber);
+        toSource(source).subscribe(subscriber);
         verify(subscriber).onSubscribe(any());
         verify(subscriber).onComplete();
         verifyNoMoreInteractions(subscriber);

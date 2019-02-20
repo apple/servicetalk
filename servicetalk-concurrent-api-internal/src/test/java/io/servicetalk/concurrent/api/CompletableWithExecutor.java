@@ -15,6 +15,8 @@
  */
 package io.servicetalk.concurrent.api;
 
+import io.servicetalk.concurrent.CompletableSource.Subscriber;
+
 /**
  * A {@link Completable} that could be created with an {@link Executor}.
  */

@@ -37,6 +37,8 @@ import org.openjdk.jmh.annotations.Warmup;
 import java.io.IOException;
 import java.util.Random;
 
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
+
 /**
  * Multi-threaded benchmark of {@link ConnectableOutputStream} with various data sizes and flush strategies which
  * attempts to simulate some contention on the locks.
@@ -157,7 +159,7 @@ public class ConnectableOutputStreamBenchmark {
     @Group
     public void requestN(ConsumerCounter counter) {
         if (subscription == null) {
-            publisher.subscribe(new Subscriber<byte[]>() {
+            toSource(publisher).subscribe(new Subscriber<byte[]>() {
                 @Override
                 public void onSubscribe(final Subscription s) {
                     subscription = s;

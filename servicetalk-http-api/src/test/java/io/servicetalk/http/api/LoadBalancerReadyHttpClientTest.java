@@ -43,6 +43,7 @@ import static io.servicetalk.client.api.LoadBalancerReadyEvent.LOAD_BALANCER_REA
 import static io.servicetalk.concurrent.api.Single.defer;
 import static io.servicetalk.concurrent.api.Single.error;
 import static io.servicetalk.concurrent.api.Single.success;
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.http.api.DefaultHttpHeadersFactory.INSTANCE;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
@@ -116,7 +117,7 @@ public class LoadBalancerReadyHttpClientTest {
                 new LoadBalancerReadyStreamingHttpClient(1, loadBalancerPublisher, client);
         CountDownLatch latch = new CountDownLatch(2);
         AtomicReference<Throwable> causeRef = new AtomicReference<>();
-        action.apply(filter).subscribe(new Subscriber<Object>() {
+        toSource(action.apply(filter)).subscribe(new Subscriber<Object>() {
             @Override
             public void onSubscribe(final Cancellable cancellable) {
                 latch.countDown();

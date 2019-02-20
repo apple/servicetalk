@@ -18,6 +18,7 @@ package io.servicetalk.transport.netty.internal;
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.CompletableSource.Subscriber;
+import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.api.AsyncCloseable;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.CompletableProcessor;
@@ -56,6 +57,7 @@ import static io.netty.util.ReferenceCountUtil.release;
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.Publisher.error;
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.ThrowableUtil.unknownStackTrace;
 import static io.servicetalk.transport.netty.internal.CloseHandler.UNSUPPORTED_PROTOCOL_CLOSE_HANDLER;
 import static io.servicetalk.transport.netty.internal.Flush.composeFlushes;
@@ -113,7 +115,8 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
      * <ul>
      * <li>it is set on the EventLoop</li>
      * <li>it maybe read on the same EventLoop thread</li>
-     * <li>it may be read in a {@link Single.Subscriber} and we rely upon the {@link Single} visibility constraints</li>
+     * <li>it may be read in a {@link SingleSource.Subscriber} and we rely upon the {@link Single} visibility
+     * constraints</li>
      * </ul>
      */
     @Nullable
@@ -146,11 +149,11 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
             // An alternative would be to intercept channelInactive() in the pipeline but adding a pipeline handler
             // in the pipeline may race with closure as we have already created the channel. If that happens, we may
             // miss channelInactive event.
-            onClose()
+            toSource(onClose()
                     // If we do offload subscribe, we will hold up a thread for the lifetime of the connection.
                     // As we do offload "publish" for "onClosing", we can avoid offloading of "onClose" as we know
                     // Subscriber end of CompletableProcessor (onClosing) will not block.
-                    .publishAndSubscribeOnOverride(immediate())
+                    .publishAndSubscribeOnOverride(immediate()))
                     .subscribe(onClosing);
         } else {
             onClosing = null;
@@ -187,7 +190,8 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
             CloseHandler closeHandler, FlushStrategy flushStrategy, ChannelInitializer initializer) {
         return new Single<DefaultNettyConnection<Read, Write>>() {
             @Override
-            protected void handleSubscribe(final Subscriber<? super DefaultNettyConnection<Read, Write>> subscriber) {
+            protected void handleSubscribe(
+                    final SingleSource.Subscriber<? super DefaultNettyConnection<Read, Write>> subscriber) {
                 final NettyToStChannelInboundHandler<Read, Write> nettyInboundHandler;
                 final DelayedCancellable delayedCancellable;
                 try {
@@ -260,7 +264,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
                 WriteStreamSubscriber subscriber = new WriteStreamSubscriber(channel(), requestNSupplierFactory.get(),
                         completableSubscriber, closeHandler);
                 if (failIfWriteActive(subscriber, completableSubscriber)) {
-                    composeFlushes(channel(), write, flushStrategy).subscribe(subscriber);
+                    toSource(composeFlushes(channel(), write, flushStrategy)).subscribe(subscriber);
                 }
             }
         }).onErrorResume(this::enrichErrorCompletable);
@@ -275,7 +279,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
                 WriteSingleSubscriber subscriber = new WriteSingleSubscriber(
                         channel(), requireNonNull(completableSubscriber), closeHandler);
                 if (failIfWriteActive(subscriber, completableSubscriber)) {
-                    write.subscribe(subscriber);
+                    toSource(write).subscribe(subscriber);
                 }
             }
         }).onErrorResume(this::enrichErrorCompletable);
@@ -424,10 +428,10 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
         private final boolean waitForSslHandshake;
         private final DelayedCancellable delayedCancellable;
         @Nullable
-        private Single.Subscriber<? super DefaultNettyConnection<Read, Write>> subscriber;
+        private SingleSource.Subscriber<? super DefaultNettyConnection<Read, Write>> subscriber;
 
         NettyToStChannelInboundHandler(DefaultNettyConnection<Read, Write> connection,
-                                       Single.Subscriber<? super DefaultNettyConnection<Read, Write>> subscriber,
+                                       SingleSource.Subscriber<? super DefaultNettyConnection<Read, Write>> subscriber,
                                        DelayedCancellable delayedCancellable,
                                        boolean waitForSslHandshake) {
             this.connection = connection;
@@ -548,14 +552,14 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
 
         private void completeSubscriber() {
             assert subscriber != null;
-            Single.Subscriber<? super DefaultNettyConnection<Read, Write>> subscriberCopy = subscriber;
+            SingleSource.Subscriber<? super DefaultNettyConnection<Read, Write>> subscriberCopy = subscriber;
             subscriber = null;
             subscriberCopy.onSuccess(connection);
         }
 
         private void tryFailSubscriber(Throwable cause) {
             if (subscriber != null) {
-                Single.Subscriber<? super DefaultNettyConnection<Read, Write>> subscriberCopy = subscriber;
+                SingleSource.Subscriber<? super DefaultNettyConnection<Read, Write>> subscriberCopy = subscriber;
                 subscriber = null;
                 subscriberCopy.onError(cause);
             }

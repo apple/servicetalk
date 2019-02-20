@@ -55,6 +55,7 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.buffer.api.EmptyBuffer.EMPTY_BUFFER;
 import static io.servicetalk.concurrent.api.BlockingTestUtils.awaitIndefinitely;
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.ServiceTalkTestTimeout.DEFAULT_TIMEOUT_SECONDS;
 import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
 import static io.servicetalk.redis.api.RedisProtocolSupport.Command.MONITOR;
@@ -96,7 +97,7 @@ public class SubscribedRedisClientTest extends BaseRedisClientTest {
         private volatile TerminalNotification terminal;
 
         AccumulatingSubscriber<T> subscribe(final Publisher<T> publisher) {
-            publisher.subscribe(this);
+            toSource(publisher).subscribe(this);
             return this;
         }
 
@@ -171,7 +172,7 @@ public class SubscribedRedisClientTest extends BaseRedisClientTest {
         assert cnx != null : "Connection can not be null";
 
         final AccumulatingSubscriber<RedisData> subscriber = new AccumulatingSubscriber<>();
-        cnx.request(monitorRequest).subscribe(subscriber);
+        toSource(cnx.request(monitorRequest)).subscribe(subscriber);
         assertThat(subscriber.request(1).awaitUntilAtLeastNReceived(1, DEFAULT_TIMEOUT_SECONDS, SECONDS), is(true));
         assertThat(subscriber.getReceived().poll(), is(redisSimpleString("OK")));
 
@@ -314,7 +315,7 @@ public class SubscribedRedisClientTest extends BaseRedisClientTest {
 
         Publisher<RedisData> ping1 = cnx.request(newRequest(PING, new CompleteBulkString(buf("ping-1"))));
         PingSubscriber pingSubscriber = new PingSubscriber();
-        ping1.subscribe(pingSubscriber);
+        toSource(ping1).subscribe(pingSubscriber);
         pingSubscriber.awaitOnSubscribe().requestAndAwaitResponse();
     }
 

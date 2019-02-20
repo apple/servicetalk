@@ -15,14 +15,10 @@
  */
 package io.servicetalk.concurrent.api;
 
-import io.servicetalk.concurrent.SingleSource;
-
 import java.time.Duration;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
-
-import static io.servicetalk.concurrent.CompletableSource.Subscriber;
 
 /**
  * A general abstraction to execute immediate and delayed tasks.
@@ -36,8 +32,7 @@ public interface Executor extends io.servicetalk.concurrent.Executor, Listenable
     /**
      * Creates a new {@link Completable} that will complete after the time duration expires.
      *
-     * @param delay The time duration which is allowed to elapse between
-     * {@link Completable#subscribe(Subscriber)} and {@link Subscriber#onComplete()}.
+     * @param delay The time duration which is allowed to elapse between subscribe and termination.
      * @param unit The units for {@code duration}.
      * @return a new {@link Completable} that will complete after the time duration expires.
      * @see <a href="http://reactivex.io/documentation/operators/timer.html">ReactiveX Timer.</a>
@@ -48,8 +43,7 @@ public interface Executor extends io.servicetalk.concurrent.Executor, Listenable
 
     /**
      * Creates a new {@link Completable} that will complete after the time duration expires.
-     * @param delay The time duration which is allowed to elapse between
-     * {@link Completable#subscribe(Subscriber)} and {@link Subscriber#onComplete()}.
+     * @param delay The time duration which is allowed to elapse between subscribe and termination.
      *
      * @return a new {@link Completable} that will complete after the time duration expires.
      * @see <a href="http://reactivex.io/documentation/operators/timer.html">ReactiveX Timer.</a>
@@ -59,12 +53,10 @@ public interface Executor extends io.servicetalk.concurrent.Executor, Listenable
     }
 
     /**
-     * Create a new {@link Completable} that executes the passed {@link Runnable} on each
-     * {@link Completable#subscribe(Subscriber)}.
+     * Create a new {@link Completable} that executes the passed {@link Runnable} on each subscribe.
      *
-     * @param runnable The {@link Runnable} to execute on each {@link Completable#subscribe(Subscriber)}.
-     * @return a new {@link Completable} that executes a {@link Runnable} on each
-     * {@link Completable#subscribe(Subscriber)}.
+     * @param runnable The {@link Runnable} to execute on each subscribe.
+     * @return a new {@link Completable} that executes a {@link Runnable} on each subscribe.
      */
     default Completable submit(Runnable runnable) {
         return new SubmitCompletable(runnable, this);
@@ -73,10 +65,10 @@ public interface Executor extends io.servicetalk.concurrent.Executor, Listenable
     /**
      * Creates a new {@link Completable} that creates and executes a {@link Runnable} when subscribed to.
      *
-     * @param runnableSupplier {@link Supplier} to create a new {@link Runnable} for every call to
-     * {@link Completable#subscribe(Subscriber)} to the returned {@link Completable}.
+     * @param runnableSupplier {@link Supplier} to create a new {@link Runnable} for every subscribe of the returned
+     * {@link Completable}.
      * @return A new {@link Completable} that creates and executes a new {@link Runnable} using
-     * {@code runnableSupplier} for every call to {@link Completable#subscribe(Subscriber)}.
+     * {@code runnableSupplier} for every subscribe.
      */
     default Completable submitRunnable(Supplier<Runnable> runnableSupplier) {
         return new SubmitSupplierCompletable(runnableSupplier, this);
@@ -85,10 +77,10 @@ public interface Executor extends io.servicetalk.concurrent.Executor, Listenable
     /**
      * Creates a new {@link Single} that creates and executes the passed {@link Callable} when subscribed to.
      *
-     * @param callable The {@link Callable} to execute on each {@link Single#subscribe(SingleSource.Subscriber)}.
+     * @param callable The {@link Callable} to execute on each subscribe.
      * @param <T> Type of the {@link Single}.
      * @return a new {@link Single} that obtains a {@link Callable} from {@code callableSupplier} and executes it
-     * on each {@link Single#subscribe(SingleSource.Subscriber)}.
+     * on each subscribe.
      */
     default <T> Single<T> submit(Callable<? extends T> callable) {
         return new SubmitSingle<>(callable, this);
@@ -96,13 +88,13 @@ public interface Executor extends io.servicetalk.concurrent.Executor, Listenable
 
     /**
      * Create a new {@link Single} that obtains a {@link Callable} from {@code callableSupplier} and executes on each
-     * {@link Single#subscribe(SingleSource.Subscriber)}.
+     * subscribe.
      *
-     * @param callableSupplier {@link Supplier} to create a new {@link Callable} for every call to
-     * {@link Single#subscribe(SingleSource.Subscriber)} to the returned {@link Single}.
+     * @param callableSupplier {@link Supplier} to create a new {@link Callable} for every call to subscribe to the
+     * returned {@link Single}.
      * @param <T> Type of the {@link Single}.
-     * @return A new {@link Single} that creates and executes a new {@link Callable} using
-     * {@code callableSupplier} for every call to {@link Single#subscribe(SingleSource.Subscriber)}.
+     * @return A new {@link Single} that creates and executes a new {@link Callable} using {@code callableSupplier}
+     * for every subscribe.
      */
     default <T> Single<T> submitCallable(Supplier<? extends Callable<? extends T>> callableSupplier) {
         return new SubmitSupplierSingle<>(callableSupplier, this);

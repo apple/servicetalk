@@ -17,6 +17,8 @@ package io.servicetalk.redis.netty;
 
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
+import io.servicetalk.concurrent.PublisherSource.Subscriber;
+import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.internal.ConcurrentSubscription;
 import io.servicetalk.redis.api.CoercionException;
@@ -31,6 +33,7 @@ import io.servicetalk.redis.api.RedisData.SimpleString;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.checkDuplicateSubscription;
 import static io.servicetalk.redis.netty.SubscribedChannelReadStream.PubSubChannelMessage.KeyType.Channel;
 import static io.servicetalk.redis.netty.SubscribedChannelReadStream.PubSubChannelMessage.KeyType.Pattern;
@@ -80,7 +83,7 @@ final class SubscribedChannelReadStream extends Publisher<SubscribedChannelReadS
 
     @Override
     protected void handleSubscribe(Subscriber<? super PubSubChannelMessage> subscriber) {
-        original.subscribe(new AggregatingSubscriber(subscriber, allocator));
+        toSource(original).subscribe(new AggregatingSubscriber(subscriber, allocator));
     }
 
     /**

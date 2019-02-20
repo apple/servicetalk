@@ -15,6 +15,7 @@
  */
 package io.servicetalk.concurrent.internal;
 
+import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.api.Completable;
@@ -202,7 +203,7 @@ public class SignalOffloaderConcurrentPublisherTest {
 
                 return new Completable() {
                     @Override
-                    protected void handleSubscribe(Subscriber subscriber) {
+                    protected void handleSubscribe(CompletableSource.Subscriber subscriber) {
                         subscriber.onSubscribe(IGNORE_CANCEL);
                         try {
                             subscriberEmitter.get();

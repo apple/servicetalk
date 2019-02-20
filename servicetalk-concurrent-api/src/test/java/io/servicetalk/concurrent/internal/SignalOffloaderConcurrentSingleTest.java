@@ -16,6 +16,7 @@
 package io.servicetalk.concurrent.internal;
 
 import io.servicetalk.concurrent.Cancellable;
+import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.SingleSource.Subscriber;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Executor;
@@ -158,7 +159,7 @@ public class SignalOffloaderConcurrentSingleTest {
 
                 return new Completable() {
                     @Override
-                    protected void handleSubscribe(Subscriber subscriber) {
+                    protected void handleSubscribe(CompletableSource.Subscriber subscriber) {
                         subscriber.onSubscribe(IGNORE_CANCEL);
                         try {
                             subscriberEmitter.get();

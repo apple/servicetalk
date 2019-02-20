@@ -43,6 +43,7 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.BlockingTestUtils.awaitIndefinitely;
 import static io.servicetalk.concurrent.api.Executors.immediate;
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.redis.api.RedisProtocolSupport.Command.SUBSCRIBE;
 import static io.servicetalk.redis.api.RedisRequests.newRequest;
 import static io.servicetalk.redis.netty.DefaultRedisConnectionBuilder.forPipeline;
@@ -178,7 +179,7 @@ public class InternalSubscribedRedisConnectionTest {
             return null;
         }).when(responseSubscriber).onError(any());
 
-        response.subscribe(responseSubscriber);
+        toSource(response).subscribe(responseSubscriber);
         Subscription subscription = subscriptionExchanger.take();
 
         assert subscription != null : "subscription null post subscribe.";

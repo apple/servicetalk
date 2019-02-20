@@ -45,6 +45,7 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Executors.immediate;
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.concurrent.internal.ServiceTalkTestTimeout.DEFAULT_TIMEOUT_SECONDS;
 import static io.servicetalk.transport.netty.internal.CloseHandler.UNSUPPORTED_PROTOCOL_CLOSE_HANDLER;
@@ -190,8 +191,8 @@ public class NettyChannelPublisherTest {
         subscriber.verifyItems(1);
 
         @SuppressWarnings("unchecked")
-        Subscriber<Integer> sub2 = mock(io.servicetalk.concurrent.PublisherSource.Subscriber.class);
-        publisher.subscribe(sub2);
+        Subscriber<Integer> sub2 = mock(Subscriber.class);
+        toSource(publisher).subscribe(sub2);
         verify(sub2).onSubscribe(any(Subscription.class));
         verify(sub2).onError(any(DuplicateSubscribeException.class));
         verifyNoMoreInteractions(sub2);
@@ -306,7 +307,7 @@ public class NettyChannelPublisherTest {
         final AtomicReference<Object> resultRef = new AtomicReference<>();
         fireChannelReadToBuffer(1);
         nextItemTerminal = true;
-        publisher.first().subscribe(new SingleSource.Subscriber<Integer>() {
+        toSource(publisher.first()).subscribe(new SingleSource.Subscriber<Integer>() {
             @Override
             public void onSubscribe(Cancellable cancellable) {
                 //noop
@@ -340,7 +341,7 @@ public class NettyChannelPublisherTest {
         subscriber.verifyFailure(ClosedChannelException.class);
         @SuppressWarnings("unchecked")
         Subscriber<Integer> mock = Mockito.mock(Subscriber.class);
-        publisher.subscribe(mock);
+        toSource(publisher).subscribe(mock);
         verify(mock).onSubscribe(any());
         verify(mock).onError(any(ClosedChannelException.class));
         verifyNoMoreInteractions(mock);
@@ -467,7 +468,7 @@ public class NettyChannelPublisherTest {
         final AtomicReference<Subscription> subRef = new AtomicReference<>();
         final AtomicReference<AssertionError> assertErrorRef = new AtomicReference<>();
 
-        publisher.subscribe(new Subscriber<Integer>() {
+        toSource(publisher).subscribe(new Subscriber<Integer>() {
             private boolean onNextCalled;
 
             @Override

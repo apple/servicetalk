@@ -17,6 +17,7 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.PublisherSource;
 
+import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
 import static java.util.Objects.requireNonNull;
@@ -32,55 +33,84 @@ public final class ReactiveStreamsAdapters {
     }
 
     /**
-     * Converts the passed {@link PublisherSource} to a
-     * <a href="https://github.com/reactive-streams/reactive-streams-jvm">Reactive Streams</a> {@link Publisher}.
+     * Converts the passed {@link Publisher} to a
+     * <a href="https://github.com/reactive-streams/reactive-streams-jvm">Reactive Streams</a>
+     * {@link org.reactivestreams.Publisher}.
      *
      * @param source {@link PublisherSource} to convert to a {@link Publisher}.
      * @param <T> Type of items emitted from the {@code source} and the returned {@link Publisher}.
      * @return A {@link Publisher} representation of the passed {@link PublisherSource}.
      */
-    public static <T> org.reactivestreams.Publisher<T> toReactiveStreamsPublisher(PublisherSource<T> source) {
+    public static <T> org.reactivestreams.Publisher<T> toReactiveStreamsPublisher(Publisher<T> source) {
+        requireNonNull(source);
         if (source instanceof org.reactivestreams.Publisher) {
             return uncheckCast(source);
         }
-        return subscriber -> {
-            requireNonNull(subscriber);
-            source.subscribe(new PublisherSource.Subscriber<T>() {
-                @Override
-                public void onSubscribe(final PublisherSource.Subscription subscription) {
-                    subscriber.onSubscribe(new Subscription() {
-                        @Override
-                        public void request(final long n) {
-                            subscription.request(n);
-                        }
+        return subscriber -> source.subscribe(new ReactiveStreamsSubscriber<>(subscriber));
+    }
 
-                        @Override
-                        public void cancel() {
-                            subscription.cancel();
-                        }
-                    });
+    /**
+     * Converts the passed {@link PublisherSource} to a
+     * <a href="https://github.com/reactive-streams/reactive-streams-jvm">Reactive Streams</a>
+     * {@link org.reactivestreams.Publisher}.
+     *
+     * @param source {@link PublisherSource} to convert to a {@link org.reactivestreams.Publisher}.
+     * @param <T> Type of items emitted from the {@code source} and the returned {@link org.reactivestreams.Publisher}.
+     * @return A {@link org.reactivestreams.Publisher} representation of the passed {@link PublisherSource}.
+     */
+    public static <T> org.reactivestreams.Publisher<T> toReactiveStreamsPublisher(PublisherSource<T> source) {
+        requireNonNull(source);
+        if (source instanceof org.reactivestreams.Publisher) {
+            return uncheckCast(source);
+        }
+        return subscriber -> source.subscribe(new ReactiveStreamsSubscriber<>(subscriber));
+    }
+
+    private static final class ReactiveStreamsSubscriber<T> implements PublisherSource.Subscriber<T> {
+        private final Subscriber<? super T> subscriber;
+
+        ReactiveStreamsSubscriber(final Subscriber<? super T> subscriber) {
+            this.subscriber = requireNonNull(subscriber);
+        }
+
+        @Override
+        public void onSubscribe(final PublisherSource.Subscription subscription) {
+            subscriber.onSubscribe(new Subscription() {
+                @Override
+                public void request(final long n) {
+                    subscription.request(n);
                 }
 
                 @Override
-                public void onNext(final T t) {
-                    subscriber.onNext(t);
-                }
-
-                @Override
-                public void onError(final Throwable t) {
-                    subscriber.onError(t);
-                }
-
-                @Override
-                public void onComplete() {
-                    subscriber.onComplete();
+                public void cancel() {
+                    subscription.cancel();
                 }
             });
-        };
+        }
+
+        @Override
+        public void onNext(final T t) {
+            subscriber.onNext(t);
+        }
+
+        @Override
+        public void onError(final Throwable t) {
+            subscriber.onError(t);
+        }
+
+        @Override
+        public void onComplete() {
+            subscriber.onComplete();
+        }
     }
 
     @SuppressWarnings("unchecked")
     private static <T> org.reactivestreams.Publisher<T> uncheckCast(final PublisherSource<T> source) {
+        return (org.reactivestreams.Publisher<T>) source;
+    }
+
+    @SuppressWarnings("unchecked")
+    private static <T> org.reactivestreams.Publisher<T> uncheckCast(final Publisher<T> source) {
         return (org.reactivestreams.Publisher<T>) source;
     }
 }

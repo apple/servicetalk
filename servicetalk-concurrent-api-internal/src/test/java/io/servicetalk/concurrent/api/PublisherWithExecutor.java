@@ -15,6 +15,8 @@
  */
 package io.servicetalk.concurrent.api;
 
+import io.servicetalk.concurrent.PublisherSource.Subscriber;
+
 /**
  * A {@link Publisher} that could be created with an {@link Executor}.
  *

@@ -49,6 +49,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.EmptySubscription.EMPTY_SUBSCRIPTION;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.checkDuplicateSubscription;
 import static io.servicetalk.redis.api.RedisProtocolSupport.Command.PING;
@@ -77,9 +78,8 @@ import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
  * <ul>
  *     <li>No concurrent calls to {@link #registerNewCommand(Command)}.</li>
  *     <li>No concurrent calls to all {@link Publisher} returned by {@link #registerNewCommand(Command)}.</li>
- *     <li>Calls to {@link Publisher#subscribe(Subscriber)} to {@link Publisher} returned by
- *     {@link #registerNewCommand(Command)} is exactly in the same order as {@link #registerNewCommand(Command)} is
- *     called.</li>
+ *     <li>Subscribing to the {@link Publisher} returned by {@link #registerNewCommand(Command)} is exactly in the same
+ *     order as {@link #registerNewCommand(Command)} is called.</li>
  * </ul>
  *
  * The above rules mean that the caller of {@link #registerNewCommand(Command)} MUST immediately subscribe to the
@@ -192,7 +192,7 @@ final class ReadStreamSplitter {
     }
 
     private void subscribeToOriginal() {
-        original.subscribe(new Subscriber<GroupedPublisher<Key, PubSubChannelMessage>>() {
+        toSource(original).subscribe(new Subscriber<GroupedPublisher<Key, PubSubChannelMessage>>() {
 
             @Override
             public void onSubscribe(Subscription s) {
@@ -218,7 +218,7 @@ final class ReadStreamSplitter {
                     return;
                 }
 
-                group.filter(msg -> msg.getMessageType() == MessageType.DATA)
+                toSource(group.filter(msg -> msg.getMessageType() == MessageType.DATA))
                      .subscribe(new GroupSubscriber(subscriber, key.getPChannel(), key.getKeyType() == Pattern));
             }
 
@@ -294,7 +294,7 @@ final class ReadStreamSplitter {
                     command.encodeTo(buf);
                     writeRequestArgument(buf, channel);
                     final RedisRequest request = newRequest(command, buf);
-                    unsubscribeWriter.apply(request).subscribe(new CompletableSource.Subscriber() {
+                    toSource(unsubscribeWriter.apply(request)).subscribe(new CompletableSource.Subscriber() {
                         @Override
                         public void onSubscribe(final Cancellable cancellable) {
                             // The cancel cannot be propagated because we don't want to cancel outside the scope of this

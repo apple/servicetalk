@@ -26,6 +26,7 @@ import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 
 import static io.servicetalk.concurrent.api.Completable.error;
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 
 /**
  * A {@link StreamingHttpClient} filter that will account for transient failures introduced by a {@link LoadBalancer}
@@ -53,7 +54,7 @@ public final class LoadBalancerReadyStreamingHttpClient extends StreamingHttpCli
         }
         this.maxRetryCount = maxRetryCount;
         loadBalancerReadySubscriber = new LoadBalancerReadySubscriber();
-        loadBalancerEvents.subscribe(loadBalancerReadySubscriber);
+        toSource(loadBalancerEvents).subscribe(loadBalancerReadySubscriber);
     }
 
     @Override

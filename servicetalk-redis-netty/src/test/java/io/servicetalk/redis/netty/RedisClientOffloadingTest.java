@@ -20,6 +20,7 @@ import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.SingleSource;
+import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.redis.api.RedisClient.ReservedRedisConnection;
@@ -46,6 +47,7 @@ import javax.annotation.Nullable;
 import static io.servicetalk.concurrent.api.BlockingTestUtils.awaitIndefinitelyNonNull;
 import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
 import static io.servicetalk.concurrent.api.Publisher.just;
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.redis.api.RedisConnection.SettingKey.MAX_CONCURRENCY;
 import static io.servicetalk.redis.api.RedisProtocolSupport.Command.PING;
 import static io.servicetalk.redis.api.RedisRequests.newRequest;
@@ -108,7 +110,7 @@ public class RedisClientOffloadingTest {
 
     @Test
     public void reserveConnectionIsOffloaded() throws Exception {
-        getEnv().client.reserveConnection(PING).doAfterFinally(terminated::countDown)
+        toSource(getEnv().client.reserveConnection(PING).doAfterFinally(terminated::countDown))
                 .subscribe(new SingleSource.Subscriber<ReservedRedisConnection>() {
                     @Override
                     public void onSubscribe(final Cancellable cancellable) {
@@ -181,8 +183,8 @@ public class RedisClientOffloadingTest {
     }
 
     private void subscribeTo(Predicate<Thread> notExpectedThread, Collection<Throwable> errors,
-                             CompletableSource source) {
-        source.subscribe(new CompletableSource.Subscriber() {
+                             Completable source) {
+        toSource(source).subscribe(new CompletableSource.Subscriber() {
             @Override
             public void onSubscribe(final Cancellable cancellable) {
                 if (notExpectedThread.test(currentThread())) {
@@ -212,7 +214,7 @@ public class RedisClientOffloadingTest {
 
     private static <T> void subscribeTo(Predicate<Thread> notExpectedThread, Collection<Throwable> errors,
                                         Publisher<T> source, String msgPrefix) {
-        source.subscribe(new Subscriber<T>() {
+        toSource(source).subscribe(new Subscriber<T>() {
             @Override
             public void onSubscribe(final Subscription s) {
                 if (notExpectedThread.test(currentThread())) {

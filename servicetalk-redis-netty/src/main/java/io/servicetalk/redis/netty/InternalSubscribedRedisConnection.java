@@ -44,6 +44,7 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Completable.error;
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.EmptySubscription.EMPTY_SUBSCRIPTION;
 import static io.servicetalk.concurrent.internal.ThrowableUtil.matches;
 import static io.servicetalk.concurrent.internal.ThrowableUtil.unknownStackTrace;
@@ -148,7 +149,7 @@ final class InternalSubscribedRedisConnection extends AbstractRedisConnection {
                     response = write.concatWith(readStreamSplitter.registerNewCommand(command));
                 }
                 // Unwrap PubSubChannelMessage if it wraps an SimpleString response
-                response.map(m -> m.getKeyType() == SimpleString ? m.getData() : m).subscribe(subscriber);
+                toSource(response.map(m -> m.getKeyType() == SimpleString ? m.getData() : m)).subscribe(subscriber);
             }
         };
     }
@@ -248,7 +249,7 @@ final class InternalSubscribedRedisConnection extends AbstractRedisConnection {
         Completable write(Completable toWrite, RedisProtocolSupport.Command command) {
             return new Completable() {
                 @Override
-                protected void handleSubscribe(Subscriber subscriber) {
+                protected void handleSubscribe(CompletableSource.Subscriber subscriber) {
                     // Don't add more items to the queue if the connection is closed already.
                     if (closed != 0) {
                         subscriber.onSubscribe(IGNORE_CANCEL);
@@ -271,7 +272,7 @@ final class InternalSubscribedRedisConnection extends AbstractRedisConnection {
         Completable quit(Completable quitRequestWrite) {
             return new Completable() {
                 @Override
-                protected void handleSubscribe(Subscriber subscriber) {
+                protected void handleSubscribe(CompletableSource.Subscriber subscriber) {
                     if (closedUpdater.compareAndSet(WriteQueue.this, 0, 1)) {
                         WriteTask task = new WriteTask(QUIT, quitRequestWrite, subscriber);
                         if (!offerAndTryExecute(task)) {
@@ -312,7 +313,7 @@ final class InternalSubscribedRedisConnection extends AbstractRedisConnection {
                 if (isSubscribedCommand && !subscribed) {
                     subscribed = true;
                 }
-                write.subscribe(new CompletableSource.Subscriber() {
+                toSource(write).subscribe(new CompletableSource.Subscriber() {
                     @Override
                     public void onSubscribe(Cancellable cancellable) {
                         subscriber.onSubscribe(() -> {
@@ -382,7 +383,7 @@ final class InternalSubscribedRedisConnection extends AbstractRedisConnection {
         return new Publisher<PubSubChannelMessage>() {
             @Override
             protected void handleSubscribe(io.servicetalk.concurrent.PublisherSource.Subscriber<? super PubSubChannelMessage> subscriber) {
-                queuedWrite.subscribe(new CompletableSource.Subscriber() {
+                toSource(queuedWrite).subscribe(new CompletableSource.Subscriber() {
 
                     @Override
                     public void onSubscribe(Cancellable cancellable) {
@@ -392,7 +393,7 @@ final class InternalSubscribedRedisConnection extends AbstractRedisConnection {
 
                     @Override
                     public void onComplete() {
-                        next.subscribe(subscriber);
+                        toSource(next).subscribe(subscriber);
                     }
 
                     @Override

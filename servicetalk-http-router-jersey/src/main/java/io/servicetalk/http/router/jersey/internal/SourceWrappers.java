@@ -15,6 +15,7 @@
  */
 package io.servicetalk.http.router.jersey.internal;
 
+import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.router.jersey.BufferPublisherInputStream;
@@ -32,6 +33,7 @@ import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.ext.MessageBodyReader;
 import javax.xml.transform.Source;
 
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -76,7 +78,7 @@ public final class SourceWrappers {
 
         @Override
         protected void handleSubscribe(final Subscriber<? super T> subscriber) {
-            original.subscribe(subscriber);
+            toSource(original).subscribe(subscriber);
         }
 
         @Override
@@ -112,8 +114,8 @@ public final class SourceWrappers {
         }
 
         @Override
-        protected void handleSubscribe(final Subscriber<? super T> subscriber) {
-            original.subscribe(subscriber);
+        protected void handleSubscribe(final io.servicetalk.concurrent.SingleSource.Subscriber<? super T> subscriber) {
+            toSource(original).subscribe(subscriber);
         }
 
         @Override

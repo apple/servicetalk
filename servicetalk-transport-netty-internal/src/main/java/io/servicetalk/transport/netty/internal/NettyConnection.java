@@ -48,9 +48,8 @@ public interface NettyConnection<Read, Write> extends NettyConnectionContext {
      * Returns {@link Publisher} that emits all items as read from this connection.
      *
      * @return {@link Publisher} that emits all items as read from this connection.
-     * Concurrent subscriptions (call {@link Publisher#subscribe(Subscriber)} when a {@link Subscriber} is already
-     * active) are disallowed but sequential subscriptions (call {@link Publisher#subscribe(Subscriber)} when a previous
-     * {@link Subscriber} has terminated) are allowed.
+     * Concurrent subscribes when a {@link Subscriber} is already active) are disallowed but sequential subscribes when
+     * a previous {@link Subscriber} has terminated) are allowed.
      */
     Publisher<Read> read();
 

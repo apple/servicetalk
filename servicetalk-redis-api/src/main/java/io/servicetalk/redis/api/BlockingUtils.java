@@ -16,6 +16,8 @@
 package io.servicetalk.redis.api;
 
 import io.servicetalk.concurrent.BlockingIterable;
+import io.servicetalk.concurrent.CompletableSource;
+import io.servicetalk.concurrent.SingleSource.Subscriber;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
@@ -80,7 +82,7 @@ final class BlockingUtils {
     static Completable blockingToCompletable(RunnableCheckedException r) {
         return new Completable() {
             @Override
-            protected void handleSubscribe(final Subscriber subscriber) {
+            protected void handleSubscribe(final CompletableSource.Subscriber subscriber) {
                 ThreadInterruptingCancellable cancellable = new ThreadInterruptingCancellable(currentThread());
                 subscriber.onSubscribe(cancellable);
                 try {
