@@ -39,7 +39,7 @@ public final class SslConfigBuilder {
 
     private static final String DEFAULT_HOSTNAME_VERIFICATION_ALGORITHM = "HTTPS";
 
-    private final boolean forServer;
+    private final boolean server;
     @Nullable
     private TrustManagerFactory trustManagerFactory;
     @Nullable
@@ -67,14 +67,14 @@ public final class SslConfigBuilder {
      */
     private int hostNameVerificationPort = -1;
 
-    private SslConfigBuilder(boolean forServer) {
-        this.forServer = forServer;
+    private SslConfigBuilder(boolean server) {
+        this.server = server;
     }
 
     private SslConfigBuilder(String hostName, int port) {
         hostNameVerificationHost = requireNonNull(hostName);
         hostNameVerificationPort = port;
-        forServer = false; // host name verification currently only support on the client
+        server = false; // host name verification currently only support on the client
     }
 
     /**
@@ -336,7 +336,7 @@ public final class SslConfigBuilder {
      * @return self.
      */
     public SslConfigBuilder clientAuth(SslConfig.ClientAuth clientAuth) {
-        if (!forServer) {
+        if (!server) {
             throw new UnsupportedOperationException("Only supported in server mode");
         }
         this.clientAuth = requireNonNull(clientAuth);
@@ -365,7 +365,7 @@ public final class SslConfigBuilder {
      * @see SSLParameters#setEndpointIdentificationAlgorithm(String)
      */
     public SslConfigBuilder hostNameVerificationAlgorithm(@Nullable String hostNameVerificationAlgorithm) {
-        if (forServer) {
+        if (server) {
             throw new UnsupportedOperationException("only supported for client mode");
         }
         if (hostNameVerificationAlgorithm == null && hostNameVerificationHost != null) {
@@ -382,7 +382,7 @@ public final class SslConfigBuilder {
      * @return a new {@link SslConfig}.
      */
     public SslConfig build() {
-        return new SslConfigImpl(forServer, trustManagerFactory, trustCertChainSupplier, keyManagerFactory,
+        return new SslConfigImpl(server, trustManagerFactory, trustCertChainSupplier, keyManagerFactory,
                 keyCertChainSupplier, keySupplier, keyPassword, ciphers, sessionCacheSize, sessionTimeout, clientAuth,
                 apn, provider, protocols, hostNameVerificationAlgorithm, hostNameVerificationHost,
                 hostNameVerificationPort);
@@ -397,7 +397,7 @@ public final class SslConfigBuilder {
      * A configuration for SSL/TLS.
      */
     private static final class SslConfigImpl implements SslConfig {
-        private final boolean forServer;
+        private final boolean server;
         @Nullable
         private final TrustManagerFactory trustManagerFactory;
         @Nullable
@@ -425,14 +425,14 @@ public final class SslConfigBuilder {
          */
         private final int hostNameVerificationPort;
 
-        SslConfigImpl(boolean forServer, @Nullable TrustManagerFactory trustManagerFactory,
+        SslConfigImpl(boolean server, @Nullable TrustManagerFactory trustManagerFactory,
                       Supplier<InputStream> trustCertChainSupplier, @Nullable KeyManagerFactory keyManagerFactory,
                       Supplier<InputStream> keyCertChainSupplier, Supplier<InputStream> keySupplier,
                       @Nullable String keyPassword, @Nullable Iterable<String> ciphers, long sessionCacheSize,
                       long sessionTimeout, ClientAuth clientAuth, ApplicationProtocolConfig apn, SslProvider provider,
                       @Nullable List<String> protocols, @Nullable String hostnameVerificationAlgorithm,
                       @Nullable String hostNameVerificationHost, int hostNameVerificationPort) {
-            this.forServer = forServer;
+            this.server = server;
             this.trustManagerFactory = trustManagerFactory;
             this.keyManagerFactory = keyManagerFactory;
             this.keyPassword = keyPassword;
@@ -452,8 +452,8 @@ public final class SslConfigBuilder {
         }
 
         @Override
-        public boolean forServer() {
-            return forServer;
+        public boolean server() {
+            return server;
         }
 
         @Override

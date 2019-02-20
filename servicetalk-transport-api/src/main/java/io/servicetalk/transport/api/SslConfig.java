@@ -73,7 +73,7 @@ public interface SslConfig {
      *
      * @return {@code true} if config is for server.
      */
-    boolean forServer();
+    boolean server();
 
     /**
      * Return the {@link TrustManagerFactory} to use or {@code null} if the default should be used.
