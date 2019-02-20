@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,13 +23,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.function.BiFunction;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.http.api.HttpHeaderNames.HOST;
 import static io.servicetalk.http.api.HttpUri.buildRequestTarget;
 import static io.servicetalk.http.api.QueryStringDecoder.decodeParams;
-import static java.lang.System.lineSeparator;
 import static java.net.URLEncoder.encode;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Objects.requireNonNull;
@@ -339,10 +337,8 @@ class DefaultHttpRequestMetaData extends AbstractHttpMetaData implements HttpReq
     }
 
     @Override
-    public final String toString(
-            final BiFunction<? super CharSequence, ? super CharSequence, CharSequence> headerFilter) {
-        return method().toString() + " " + requestTarget() + " " + version() + lineSeparator()
-                + headers().toString(headerFilter);
+    public final String toString() {
+        return method().toString() + " " + requestTarget() + " " + version();
     }
 
     @Override

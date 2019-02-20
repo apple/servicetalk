@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,9 +15,6 @@
  */
 package io.servicetalk.http.api;
 
-import java.util.function.BiFunction;
-
-import static java.lang.System.lineSeparator;
 import static java.util.Objects.requireNonNull;
 
 class DefaultHttpResponseMetaData extends AbstractHttpMetaData implements HttpResponseMetaData {
@@ -53,10 +50,8 @@ class DefaultHttpResponseMetaData extends AbstractHttpMetaData implements HttpRe
     }
 
     @Override
-    public final String toString(
-            final BiFunction<? super CharSequence, ? super CharSequence, CharSequence> headerFilter) {
-        return version() + " " + status() + lineSeparator()
-                + headers().toString(headerFilter);
+    public final String toString() {
+        return version() + " " + status();
     }
 
     @Override

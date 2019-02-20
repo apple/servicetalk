@@ -17,6 +17,8 @@ package io.servicetalk.http.api;
 
 import java.util.function.BiFunction;
 
+import static java.lang.System.lineSeparator;
+
 /**
  * Meta data shared between requests and responses.
  */
@@ -164,5 +166,8 @@ public interface HttpMetaData {
      * @param headerFilter a function that accepts the header name and value and returns the filtered value
      * @return string representation of the message and headers
      */
-    String toString(BiFunction<? super CharSequence, ? super CharSequence, CharSequence> headerFilter);
+    default String toString(BiFunction<? super CharSequence, ? super CharSequence, CharSequence> headerFilter) {
+        return toString() + lineSeparator()
+                + headers().toString(headerFilter);
+    }
 }
