@@ -84,7 +84,7 @@ final class MergeCompletable extends AbstractMergeCompletableOperator {
         }
 
         @Override
-        boolean done() {
+        boolean isDone() {
             return completedCount == 0;
         }
     }

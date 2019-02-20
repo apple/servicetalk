@@ -73,7 +73,7 @@ final class IterableMergeCompletable extends AbstractMergeCompletableOperator {
         }
 
         @Override
-        boolean done() {
+        boolean isDone() {
             return completedCount == expectedCount;
         }
 

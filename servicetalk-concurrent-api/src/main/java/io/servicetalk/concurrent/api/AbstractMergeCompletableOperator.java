@@ -180,6 +180,6 @@ abstract class AbstractMergeCompletableOperator extends AbstractNoHandleSubscrib
          *
          * @return {@code true} if we are currently done.
          */
-        abstract boolean done();
+        abstract boolean isDone();
     }
 }
