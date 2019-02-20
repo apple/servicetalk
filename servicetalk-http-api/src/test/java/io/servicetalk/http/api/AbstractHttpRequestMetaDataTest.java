@@ -31,6 +31,8 @@ import java.util.Spliterator;
 import java.util.stream.StreamSupport;
 
 import static io.servicetalk.http.api.HttpHeaderNames.HOST;
+import static io.servicetalk.http.api.HttpSchemes.HTTP;
+import static io.servicetalk.http.api.HttpSchemes.HTTPS;
 import static java.util.Arrays.asList;
 import static java.util.Collections.addAll;
 import static java.util.Collections.singleton;
@@ -86,7 +88,7 @@ public abstract class AbstractHttpRequestMetaDataTest<T extends HttpRequestMetaD
     public void testParseHttpUriAbsoluteForm() {
         createFixture("http://my.site.com/some/path?foo=bar&abc=def&foo=baz");
 
-        assertEquals("http", fixture.scheme());
+        assertEquals(HTTP, fixture.scheme());
         assertNull(fixture.userInfo());
         assertEquals("my.site.com", fixture.host());
         assertEquals(-1, fixture.port());
@@ -108,7 +110,7 @@ public abstract class AbstractHttpRequestMetaDataTest<T extends HttpRequestMetaD
     public void testParseHttpsUriAbsoluteForm() {
         createFixture("https://jdoe@my.site.com/some/path?foo=bar&abc=def&foo=baz");
 
-        assertEquals("https", fixture.scheme());
+        assertEquals(HTTPS, fixture.scheme());
         assertEquals("jdoe", fixture.userInfo());
         assertEquals("my.site.com", fixture.host());
         assertEquals(-1, fixture.port());
@@ -200,7 +202,7 @@ public abstract class AbstractHttpRequestMetaDataTest<T extends HttpRequestMetaD
         createFixture("http://my.site.com/some/path?foo=bar&abc=def&foo=baz");
         fixture.headers().set(HOST, "host.header.com");
 
-        assertEquals("http", fixture.scheme());
+        assertEquals(HTTP, fixture.scheme());
         assertNull(fixture.userInfo());
         assertEquals("my.site.com", fixture.host());
         assertEquals(-1, fixture.port());
