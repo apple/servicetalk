@@ -185,7 +185,7 @@ final class DefaultHttpHeaders extends MultiMap<CharSequence, CharSequence> impl
             sb.append("; max-age=");
             sb.append(cookie.maxAge());
         }
-        if (cookie.httpOnly()) {
+        if (cookie.isHttpOnly()) {
             sb.append("; httponly");
         }
         if (cookie.isSecure()) {

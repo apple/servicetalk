@@ -742,7 +742,7 @@ public class DefaultHttpCookiesTest {
                 Objects.equals(cookie1.path(), cookie2.path()) &&
                 Objects.equals(cookie1.expires(), cookie2.expires()) &&
                 Objects.equals(cookie1.value(), cookie2.value()) &&
-                cookie1.httpOnly() == cookie2.httpOnly() &&
+                cookie1.isHttpOnly() == cookie2.isHttpOnly() &&
                 cookie1.isSecure() == cookie2.isSecure() &&
                 cookie1.isWrapped() == cookie2.isWrapped();
     }
@@ -821,7 +821,7 @@ public class DefaultHttpCookiesTest {
         }
 
         @Override
-        public boolean httpOnly() {
+        public boolean isHttpOnly() {
             return isHttpOnly;
         }
 

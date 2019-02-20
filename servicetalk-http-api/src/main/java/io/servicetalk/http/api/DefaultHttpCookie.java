@@ -117,7 +117,7 @@ final class DefaultHttpCookie implements HttpCookie {
     }
 
     @Override
-    public boolean httpOnly() {
+    public boolean isHttpOnly() {
         return httpOnly;
     }
 

@@ -92,7 +92,7 @@ public interface HttpCookie {
      *
      * @return True if this {@link HttpCookie} is HTTP-only or false if it isn't
      */
-    boolean httpOnly();
+    boolean isHttpOnly();
 
     /**
      * Create a new not wrapped, not secure and not HTTP-only {@link HttpCookie} instance, with no path, domain,
