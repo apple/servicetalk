@@ -26,8 +26,7 @@ buildscript {
   }
 
   dependencies {
-    // The plugin is brought in via composite build inclusion, so no need to specify a version.
-    classpath "io.servicetalk:servicetalk-gradle-plugin-internal"
+    classpath "io.servicetalk:servicetalk-gradle-plugin-internal:$project.version"
   }
 }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,6 +30,7 @@ import java.util.Map.Entry;
 import java.util.Spliterator;
 import java.util.stream.StreamSupport;
 
+import static io.servicetalk.http.api.HttpHeaderNames.AUTHORIZATION;
 import static io.servicetalk.http.api.HttpHeaderNames.HOST;
 import static java.util.Arrays.asList;
 import static java.util.Collections.addAll;
@@ -502,6 +503,37 @@ public abstract class AbstractHttpRequestMetaDataTest<T extends HttpRequestMetaD
 
         assertEquals("my.site.com", fixture.effectiveHost());
         assertEquals(-1, fixture.effectivePort());
+    }
+
+    @Test
+    public void testToString() {
+        createFixture("/some/path?a=query");
+        fixture.headers().set(HOST, "some.site.com");
+        fixture.headers().set(AUTHORIZATION, "some auth info");
+
+        assertEquals("GET /some/path?a=query HTTP/1.1", fixture.toString());
+    }
+
+    @Test
+    public void testToStringWithPassFilter() {
+        createFixture("/some/path?a=query");
+        fixture.headers().set(HOST, "some.site.com");
+        fixture.headers().set(AUTHORIZATION, "some auth info");
+
+        assertEquals("GET /some/path?a=query HTTP/1.1\n" +
+                "DefaultHttpHeaders[authorization: some auth info\n" +
+                "host: some.site.com]", fixture.toString((k, v) -> v));
+    }
+
+    @Test
+    public void testToStringWithRedactFilter() {
+        createFixture("/some/path?a=query");
+        fixture.headers().set(HOST, "some.site.com");
+        fixture.headers().set(AUTHORIZATION, "some auth info");
+
+        assertEquals("GET /some/path?a=query HTTP/1.1\n" +
+                "DefaultHttpHeaders[authorization: redacted\n" +
+                "host: redacted]", fixture.toString((k, v) -> "redacted"));
     }
 
     @SuppressWarnings("unchecked")
