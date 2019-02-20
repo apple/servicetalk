@@ -464,7 +464,8 @@ final class DefaultMultiAddressUrlHttpClientBuilder extends MultiAddressHttpClie
     }
 
     @Override
-    public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> appendClientFilter(final HttpClientFilterFactory function) {
+    public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> appendClientFilter(
+            final HttpClientFilterFactory function) {
         clientFilterFunction = clientFilterFunction.append(function.asMultiAddressClientFilter());
         return this;
     }
