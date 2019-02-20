@@ -138,8 +138,8 @@ public final class TcpConnector {
         }
 
         // we disable auto read so we can handle stuff in the ConnectionFilter before we accept any content.
-        bs.option(ChannelOption.AUTO_READ, config.autoRead());
-        if (!config.autoRead()) {
+        bs.option(ChannelOption.AUTO_READ, config.isAutoRead());
+        if (!config.isAutoRead()) {
             bs.option(ChannelOption.MAX_MESSAGES_PER_READ, 1);
         }
 
@@ -159,8 +159,8 @@ public final class TcpConnector {
         }
 
         // we disable auto read so we can handle stuff in the ConnectionFilter before we accept any content.
-        channel.config().setOption(ChannelOption.AUTO_READ, config.autoRead());
-        if (!config.autoRead()) {
+        channel.config().setOption(ChannelOption.AUTO_READ, config.isAutoRead());
+        if (!config.isAutoRead()) {
             channel.config().setOption(ChannelOption.MAX_MESSAGES_PER_READ, 1);
         }
 

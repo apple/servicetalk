@@ -52,7 +52,7 @@ public class DefaultHttpExecutionStrategyMergeTest {
         assertThat("Unexpected merge result for send offload.", merged.sendOffloaded(), is(true));
         assertThat("Unexpected merge result for data receive offload.", merged.dataReceiveOffloaded(), is(false));
         assertThat("Unexpected merge result for meta receive offload", merged.metadataReceiveOffloaded(), is(false));
-        assertThat("Unexpected merge result for thread affinity", merged.threadAffinity(), is(true));
+        assertThat("Unexpected merge result for thread affinity", merged.isThreadAffinity(), is(true));
         assertThat("Unexpected merge result executor", merged.executor(), is(nullValue()));
     }
 

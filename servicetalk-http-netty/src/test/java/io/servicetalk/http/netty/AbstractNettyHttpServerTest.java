@@ -186,7 +186,7 @@ public abstract class AbstractNettyHttpServerTest {
         this.sslEnabled = sslEnabled;
     }
 
-    boolean sslEnabled() {
+    boolean isSslEnabled() {
         return sslEnabled;
     }
 

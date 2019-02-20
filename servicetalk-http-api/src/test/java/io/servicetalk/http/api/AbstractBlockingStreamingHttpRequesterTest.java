@@ -86,7 +86,7 @@ public abstract class AbstractBlockingStreamingHttpRequesterTest {
     protected abstract StreamingHttpRequester toStreamingRequester(BlockingStreamingHttpRequester requester);
 
     protected interface TestHttpRequester {
-        boolean closed();
+        boolean isClosed();
     }
 
     @Before
@@ -147,7 +147,7 @@ public abstract class AbstractBlockingStreamingHttpRequesterTest {
                 (strategy, req) -> Single.error(new IllegalStateException("shouldn't be called!")));
         BlockingStreamingHttpRequester syncRequester = toBlockingStreamingRequester(asyncRequester);
         syncRequester.close();
-        assertTrue(((TestHttpRequester) asyncRequester).closed());
+        assertTrue(((TestHttpRequester) asyncRequester).isClosed());
     }
 
     @Test
@@ -198,7 +198,7 @@ public abstract class AbstractBlockingStreamingHttpRequesterTest {
         });
         StreamingHttpRequester asyncRequester = toStreamingRequester(syncRequester);
         asyncRequester.closeAsync().toFuture().get();
-        assertTrue(((TestHttpRequester) syncRequester).closed());
+        assertTrue(((TestHttpRequester) syncRequester).isClosed());
     }
 
     @Test

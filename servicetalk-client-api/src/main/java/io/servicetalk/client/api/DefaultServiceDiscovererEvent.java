@@ -23,16 +23,16 @@ import static java.util.Objects.requireNonNull;
  */
 public final class DefaultServiceDiscovererEvent<T> implements ServiceDiscovererEvent<T> {
     private final T address;
-    private final boolean isAvailable;
+    private final boolean available;
 
     /**
      * Create a new instance.
      * @param address The address returned by {@link #address()}.
-     * @param isAvailable Value returned by {@link #isAvailable}.
+     * @param available Value returned by {@link #available}.
      */
-    public DefaultServiceDiscovererEvent(T address, boolean isAvailable) {
+    public DefaultServiceDiscovererEvent(T address, boolean available) {
         this.address = requireNonNull(address);
-        this.isAvailable = isAvailable;
+        this.available = available;
     }
 
     @Override
@@ -42,14 +42,14 @@ public final class DefaultServiceDiscovererEvent<T> implements ServiceDiscoverer
 
     @Override
     public boolean available() {
-        return isAvailable;
+        return available;
     }
 
     @Override
     public String toString() {
         return "DefaultServiceDiscovererEvent{" +
                 "address=" + address +
-                ", isAvailable=" + isAvailable +
+                ", available=" + available +
                 '}';
     }
 }

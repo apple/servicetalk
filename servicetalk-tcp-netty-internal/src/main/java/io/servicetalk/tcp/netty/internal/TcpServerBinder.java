@@ -177,8 +177,8 @@ public final class TcpServerBinder {
         }
 
         // we disable auto read so we can handle stuff in the ConnectionFilter before we accept any content.
-        bs.childOption(ChannelOption.AUTO_READ, config.autoRead());
-        if (!config.autoRead()) {
+        bs.childOption(ChannelOption.AUTO_READ, config.isAutoRead());
+        if (!config.isAutoRead()) {
             bs.childOption(ChannelOption.MAX_MESSAGES_PER_READ, 1);
         }
 

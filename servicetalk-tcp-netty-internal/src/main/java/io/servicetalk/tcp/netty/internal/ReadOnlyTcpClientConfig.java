@@ -86,7 +86,7 @@ public class ReadOnlyTcpClientConfig {
      *
      * @return {@code true} if auto-read enabled.
      */
-    public boolean autoRead() {
+    public boolean isAutoRead() {
         return autoRead;
     }
 

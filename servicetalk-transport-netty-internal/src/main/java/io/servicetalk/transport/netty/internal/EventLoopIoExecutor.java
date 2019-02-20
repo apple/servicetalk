@@ -25,7 +25,7 @@ final class EventLoopIoExecutor extends AbstractNettyIoExecutor<EventLoop> imple
     }
 
     @Override
-    public boolean currentThreadEventLoop() {
+    public boolean isCurrentThreadEventLoop() {
         return eventLoop.inEventLoop();
     }
 

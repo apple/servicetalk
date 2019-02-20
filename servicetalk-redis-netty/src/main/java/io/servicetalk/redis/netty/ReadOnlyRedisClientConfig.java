@@ -93,7 +93,7 @@ class ReadOnlyRedisClientConfig {
      *
      * @return {@code true} when subscribe signal needs to be deferred until the Redis PubSub subscribe ack
      */
-    boolean deferSubscribeTillConnect() {
+    boolean isDeferSubscribeTillConnect() {
         return deferSubscribeTillConnect;
     }
 }

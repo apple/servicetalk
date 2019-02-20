@@ -68,12 +68,12 @@ final class MapDynamicCompositeCancellable implements DynamicCompositeCancellabl
 
     @Override
     public boolean add(Cancellable toAdd) {
-        if (cancelled()) {
+        if (isCancelled()) {
             toAdd.cancel();
             return false;
         } else {
             cancellables.putIfAbsent(toAdd, toAdd);
-            if (cancelled()) {
+            if (isCancelled()) {
                 cancelAll();
                 return false;
             }
@@ -87,7 +87,7 @@ final class MapDynamicCompositeCancellable implements DynamicCompositeCancellabl
     }
 
     @Override
-    public boolean cancelled() {
+    public boolean isCancelled() {
         return cancelled != 0;
     }
 

@@ -80,7 +80,7 @@ public final class SingleFlatMapPublisherTest {
     public void testCancelBeforeNextPublisher() {
         subscriber.subscribe(single.flatMapPublisher(s -> publisher)).request(2);
         subscriber.cancel();
-        assertThat("Original single not cancelled.", single.cancelled(), is(true));
+        assertThat("Original single not cancelled.", single.isCancelled(), is(true));
     }
 
     @Test

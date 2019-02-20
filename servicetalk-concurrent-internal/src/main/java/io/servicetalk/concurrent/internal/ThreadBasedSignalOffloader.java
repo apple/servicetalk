@@ -210,10 +210,10 @@ final class ThreadBasedSignalOffloader implements SignalOffloader, Runnable {
                 OffloadedEntity entity = entities[i];
                 // terminated state is only touched from within sendSignals so there are no concurrent mutation,
                 // hence no need for atomic operation.
-                if (!entity.terminated()) {
+                if (!entity.isTerminated()) {
                     // sendSignals() never throws.
                     entity.sendSignals();
-                    if (entity.terminated()) {
+                    if (entity.isTerminated()) {
                         terminatedEntities++;
                     }
                 } else {
@@ -319,7 +319,7 @@ final class ThreadBasedSignalOffloader implements SignalOffloader, Runnable {
          */
         void sendSignals();
 
-        boolean terminated();
+        boolean isTerminated();
     }
 
     private static final class OffloadedSignalEntity<T> implements OffloadedEntity {
@@ -345,7 +345,7 @@ final class ThreadBasedSignalOffloader implements SignalOffloader, Runnable {
         }
 
         @Override
-        public boolean terminated() {
+        public boolean isTerminated() {
             return terminated;
         }
     }
@@ -368,6 +368,7 @@ final class ThreadBasedSignalOffloader implements SignalOffloader, Runnable {
          * Send all pending signals for this entity and call {@link #setTerminated()} if it does not need to be invoked
          * anymore.
          */
+        @Override
         public final void sendSignals() {
             // As with the CAS in notifyExecutor(), this CAS makes sure that writes to all normal fields in this
             // offloaded entity happens-before calling notifyExecutor() and hence sendSignals0().
@@ -382,7 +383,7 @@ final class ThreadBasedSignalOffloader implements SignalOffloader, Runnable {
         }
 
         @Override
-        public final boolean terminated() {
+        public final boolean isTerminated() {
             return terminated;
         }
 

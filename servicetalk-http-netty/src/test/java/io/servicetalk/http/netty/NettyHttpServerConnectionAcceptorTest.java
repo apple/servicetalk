@@ -156,7 +156,7 @@ public class NettyHttpServerConnectionAcceptorTest extends AbstractNettyHttpServ
                     instanceOf(ConnectionClosedException.class)));
         }
 
-        if (sslEnabled()) {
+        if (isSslEnabled()) {
             assertNotNull("SslSession was not set by the time filter executed", sslSession);
         }
     }

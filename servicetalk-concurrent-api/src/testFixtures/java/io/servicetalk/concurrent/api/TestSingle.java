@@ -114,8 +114,8 @@ public class TestSingle<T> extends Single<T> implements SingleSource.Subscriber<
         }
     }
 
-    public boolean cancelled() {
-        return dynamicCancellable.cancelled();
+    public boolean isCancelled() {
+        return dynamicCancellable.isCancelled();
     }
 
     public TestSingle<T> verifyListenCalled() {
@@ -135,12 +135,12 @@ public class TestSingle<T> extends Single<T> implements SingleSource.Subscriber<
     }
 
     public TestSingle<T> verifyCancelled() {
-        assertTrue("Subscriber did not cancel.", cancelled());
+        assertTrue("Subscriber did not cancel.", isCancelled());
         return this;
     }
 
     public TestSingle<T> verifyNotCancelled() {
-        assertFalse("Subscriber cancelled.", cancelled());
+        assertFalse("Subscriber cancelled.", isCancelled());
         return this;
     }
 }

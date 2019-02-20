@@ -185,7 +185,7 @@ public class TestPublisher<T> extends Publisher<T> implements Subscriber<T> {
         return sent.get();
     }
 
-    public boolean cancelled() {
+    public boolean isCancelled() {
         return cancelled.get();
     }
 
@@ -200,12 +200,12 @@ public class TestPublisher<T> extends Publisher<T> implements Subscriber<T> {
     }
 
     public TestPublisher<T> verifyCancelled() {
-        assertTrue("Subscriber did not cancel.", cancelled());
+        assertTrue("Subscriber did not cancel.", isCancelled());
         return this;
     }
 
     public TestPublisher<T> verifyNotCancelled() {
-        assertFalse("Subscriber cancelled.", cancelled());
+        assertFalse("Subscriber cancelled.", isCancelled());
         return this;
     }
 

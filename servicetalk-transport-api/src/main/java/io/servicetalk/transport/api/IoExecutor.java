@@ -29,12 +29,12 @@ public interface IoExecutor extends ListenableAsyncCloseable {
      *
      * @return {@code true} if <a href="https://en.wikipedia.org/wiki/Unix_domain_socket">Unix Domain Sockets</a> are supported.
      */
-    boolean unixDomainSocketSupported();
+    boolean isUnixDomainSocketSupported();
 
     /**
      * Determine if fd addresses are supported.
      *
      * @return {@code true} if supported
      */
-    boolean fileDescriptorSocketAddressSupported();
+    boolean isFileDescriptorSocketAddressSupported();
 }

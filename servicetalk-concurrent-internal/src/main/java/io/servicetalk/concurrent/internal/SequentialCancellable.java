@@ -75,7 +75,7 @@ public class SequentialCancellable implements Cancellable {
      *
      * @return {@code true} if this {@link Cancellable} is cancelled.
      */
-    public boolean cancelled() {
+    public boolean isCancelled() {
         return current == CANCELLED;
     }
 }

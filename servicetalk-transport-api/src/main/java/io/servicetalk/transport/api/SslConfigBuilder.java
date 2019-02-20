@@ -452,7 +452,7 @@ public final class SslConfigBuilder {
         }
 
         @Override
-        public boolean server() {
+        public boolean isServer() {
             return server;
         }
 

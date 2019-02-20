@@ -105,7 +105,7 @@ final class SubscribedChannelReadStream extends Publisher<SubscribedChannelReadS
                 return forChannel ? messageType : DATA;
             }
 
-            boolean forChannel() {
+            boolean isForChannel() {
                 return forChannel;
             }
         }
@@ -126,7 +126,7 @@ final class SubscribedChannelReadStream extends Publisher<SubscribedChannelReadS
         private final CompleteRedisData data;
 
         PubSubChannelMessage(KeyType keyType, CompleteRedisData data) {
-            if (keyType.forChannel()) {
+            if (keyType.isForChannel()) {
                 throw new IllegalArgumentException("No channel present for a subscribe response.");
             }
             this.keyType = keyType;
@@ -377,7 +377,7 @@ final class SubscribedChannelReadStream extends Publisher<SubscribedChannelReadS
                         throw new IllegalStateException("Received message data but no type.");
                     }
                     final PubSubChannelMessage msg;
-                    if (!currentKeyType.forChannel()) {
+                    if (!currentKeyType.isForChannel()) {
                         assert currentMessageType == DATA;
                         msg = new PubSubChannelMessage(currentKeyType, currentMessageData);
                     } else if (currentKeyType == Channel) {

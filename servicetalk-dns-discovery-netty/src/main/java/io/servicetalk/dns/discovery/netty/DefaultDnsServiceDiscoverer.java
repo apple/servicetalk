@@ -120,7 +120,7 @@ final class DefaultDnsServiceDiscoverer
     @Override
     public Publisher<ServiceDiscovererEvent<InetAddress>> discover(final String address) {
         final DiscoverEntry entry;
-        if (nettyIoExecutor.currentThreadEventLoop()) {
+        if (nettyIoExecutor.isCurrentThreadEventLoop()) {
             if (closed) {
                 return error(new IllegalStateException(DefaultDnsServiceDiscoverer.class.getSimpleName() +
                         " closed!"));
@@ -172,7 +172,7 @@ final class DefaultDnsServiceDiscoverer
             @Override
             protected void handleSubscribe(final Subscriber subscriber) {
                 closeCompletable.subscribe(subscriber);
-                if (nettyIoExecutor.currentThreadEventLoop()) {
+                if (nettyIoExecutor.isCurrentThreadEventLoop()) {
                     closeAsync0();
                 } else {
                     nettyIoExecutor.asExecutor().execute(DefaultDnsServiceDiscoverer.this::closeAsync0);
@@ -215,7 +215,7 @@ final class DefaultDnsServiceDiscoverer
     }
 
     private void assertInEventloop() {
-        assert nettyIoExecutor.currentThreadEventLoop() : "Must be called from the associated eventloop.";
+        assert nettyIoExecutor.isCurrentThreadEventLoop() : "Must be called from the associated eventloop.";
     }
 
     private final class DiscoverEntry {
@@ -243,7 +243,7 @@ final class DefaultDnsServiceDiscoverer
             protected void handleSubscribe(
                     final Subscriber<? super Iterable<ServiceDiscovererEvent<InetAddress>>> subscriber) {
 
-                if (nettyIoExecutor.currentThreadEventLoop()) {
+                if (nettyIoExecutor.isCurrentThreadEventLoop()) {
                     handleSubscribe0(subscriber);
                 } else {
                     nettyIoExecutor.asExecutor().execute(() -> handleSubscribe0(subscriber));
@@ -303,7 +303,7 @@ final class DefaultDnsServiceDiscoverer
 
                 @Override
                 public void request(final long n) {
-                    if (nettyIoExecutor.currentThreadEventLoop()) {
+                    if (nettyIoExecutor.isCurrentThreadEventLoop()) {
                         request0(n);
                     } else {
                         nettyIoExecutor.asExecutor().execute(() -> request0(n));
@@ -312,7 +312,7 @@ final class DefaultDnsServiceDiscoverer
 
                 @Override
                 public void cancel() {
-                    if (nettyIoExecutor.currentThreadEventLoop()) {
+                    if (nettyIoExecutor.isCurrentThreadEventLoop()) {
                         cancel0();
                     } else {
                         nettyIoExecutor.asExecutor().execute(this::cancel0);

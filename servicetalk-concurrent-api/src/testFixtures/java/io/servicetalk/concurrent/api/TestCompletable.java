@@ -93,8 +93,8 @@ public class TestCompletable extends Completable implements CompletableSource.Su
         terminalNotification = TerminalNotification.error(t);
     }
 
-    public boolean cancelled() {
-        return dynamicCancellable.cancelled();
+    public boolean isCancelled() {
+        return dynamicCancellable.isCancelled();
     }
 
     public TestCompletable verifyListenCalled() {
@@ -108,12 +108,12 @@ public class TestCompletable extends Completable implements CompletableSource.Su
     }
 
     public TestCompletable verifyCancelled() {
-        assertTrue("Subscriber did not cancel.", cancelled());
+        assertTrue("Subscriber did not cancel.", isCancelled());
         return this;
     }
 
     public TestCompletable verifyNotCancelled() {
-        assertFalse("Subscriber cancelled.", cancelled());
+        assertFalse("Subscriber cancelled.", isCancelled());
         return this;
     }
 }

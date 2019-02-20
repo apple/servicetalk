@@ -228,7 +228,7 @@ final class DefaultHttpExecutionStrategy implements HttpExecutionStrategy {
     }
 
     // Visible for testing
-    boolean threadAffinity() {
+    boolean isThreadAffinity() {
         return threadAffinity;
     }
 

@@ -77,7 +77,7 @@ final class InternalSubscribedRedisConnection extends AbstractRedisConnection {
         super(toNettyIoExecutor(connection.executionContext().ioExecutor()).asExecutor(), connection.onClosing(),
                 executionContext, roConfig);
         this.connection = connection;
-        this.deferSubscribeTillConnect = roConfig.deferSubscribeTillConnect();
+        this.deferSubscribeTillConnect = roConfig.isDeferSubscribeTillConnect();
         writeQueue = new WriteQueue(initialQueueCapacity, maxPendingRequests);
         this.readStreamSplitter = new ReadStreamSplitter(connection, maxPendingRequests, maxBufferPerGroup,
                 redisRequest -> request0(redisRequest).ignoreElements());

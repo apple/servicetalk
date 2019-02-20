@@ -102,7 +102,7 @@ public final class TcpClient {
      */
     public NettyConnection<Buffer, Buffer> connectWithFdBlocking(ExecutionContext executionContext, SocketAddress address)
             throws ExecutionException, InterruptedException {
-        assumeTrue(executionContext.ioExecutor().fileDescriptorSocketAddressSupported());
+        assumeTrue(executionContext.ioExecutor().isFileDescriptorSocketAddressSupported());
         assumeTrue(Epoll.isAvailable() || KQueue.isAvailable());
 
         final Class<? extends Channel> channelClass;

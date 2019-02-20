@@ -77,7 +77,7 @@ public abstract class AbstractTcpServerTest {
         this.sslEnabled = sslEnabled;
     }
 
-    boolean sslEnabled() {
+    boolean isSslEnabled() {
         return sslEnabled;
     }
 

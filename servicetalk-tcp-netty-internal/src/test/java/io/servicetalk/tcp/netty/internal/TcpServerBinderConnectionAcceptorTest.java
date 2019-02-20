@@ -164,7 +164,7 @@ public class TcpServerBinderConnectionAcceptorTest extends AbstractTcpServerTest
                 filterMode.expectAccept, acceptedConnection);
 
         // If the initializer throws, the filter will not execute, so we can't check the SSL Session.
-        if (sslEnabled() && !filterMode.initializerThrow) {
+        if (isSslEnabled() && !filterMode.initializerThrow) {
             assertNotNull("SslSession was not set by the time filter executed", sslSession);
         }
     }

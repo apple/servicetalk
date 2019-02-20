@@ -50,7 +50,7 @@ final class QueueDynamicCompositeCancellable implements DynamicCompositeCancella
 
     @Override
     public boolean add(Cancellable toAdd) {
-        if (cancelled()) {
+        if (isCancelled()) {
             toAdd.cancel();
             return false;
         }
@@ -59,7 +59,7 @@ final class QueueDynamicCompositeCancellable implements DynamicCompositeCancella
             throw new QueueFullException("cancellables");
         }
 
-        if (cancelled()) {
+        if (isCancelled()) {
             cancelAll();
             return false;
         }
@@ -72,7 +72,7 @@ final class QueueDynamicCompositeCancellable implements DynamicCompositeCancella
     }
 
     @Override
-    public boolean cancelled() {
+    public boolean isCancelled() {
         return cancelled != 0;
     }
 

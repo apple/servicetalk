@@ -120,7 +120,7 @@ public class BlockingStreamingHttpConnectionTest extends AbstractBlockingStreami
         }
 
         @Override
-        public final boolean closed() {
+        public final boolean isClosed() {
             return closed.get();
         }
     }
@@ -160,7 +160,7 @@ public class BlockingStreamingHttpConnectionTest extends AbstractBlockingStreami
         }
 
         @Override
-        public final boolean closed() {
+        public final boolean isClosed() {
             return closed.get();
         }
     }

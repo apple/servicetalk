@@ -165,7 +165,7 @@ public class ExceptionMapperTest extends AbstractJerseyStreamingHttpServiceTest 
 
     @Test
     public void singleMapResponse() {
-        assumeThat(streamingJsonEnabled(), is(true));
+        assumeThat(isStreamingJsonEnabled(), is(true));
         testJsonResponse(SMAP);
     }
 

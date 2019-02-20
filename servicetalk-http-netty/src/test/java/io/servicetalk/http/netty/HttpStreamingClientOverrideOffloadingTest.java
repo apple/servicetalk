@@ -86,10 +86,10 @@ public class HttpStreamingClientOverrideOffloadingTest {
     @Parameterized.Parameters(name = "{index} - {0}")
     public static Collection<Object[]> params() {
         List<Object[]> params = new ArrayList<>();
-        params.add(newParam("Override no offload", th -> !inClientEventLoop(th), noOffloadsStrategy(), null));
-        params.add(newParam("Default no offload", HttpStreamingClientOverrideOffloadingTest::inClientEventLoop,
+        params.add(newParam("Override no offload", th -> !isInClientEventLoop(th), noOffloadsStrategy(), null));
+        params.add(newParam("Default no offload", HttpStreamingClientOverrideOffloadingTest::isInClientEventLoop,
                 null, noOffloadsStrategy()));
-        params.add(newParam("Both offloads", HttpStreamingClientOverrideOffloadingTest::inClientEventLoop, null, null));
+        params.add(newParam("Both offloads", HttpStreamingClientOverrideOffloadingTest::isInClientEventLoop, null, null));
         return params;
     }
 
@@ -112,7 +112,7 @@ public class HttpStreamingClientOverrideOffloadingTest {
     @Test
     public void reserveRespectsDisable() throws Exception {
         client.reserveConnection(overridingStrategy, client.get("/")).doBeforeSuccess(__ -> {
-            if (invalidThread()) {
+            if (isInvalidThread()) {
                 throw new AssertionError("Invalid thread found providing the connection. Thread: "
                         + currentThread());
             }
@@ -123,27 +123,27 @@ public class HttpStreamingClientOverrideOffloadingTest {
     public void requestRespectsDisable() throws Exception {
         ConcurrentLinkedQueue<AssertionError> errors = new ConcurrentLinkedQueue<>();
         StreamingHttpRequest req = client.get("/").transformPayloadBody(p -> p.doBeforeRequest(__ -> {
-            if (invalidThread()) {
+            if (isInvalidThread()) {
                 errors.add(new AssertionError("Invalid thread called request-n. Thread: "
                         + currentThread()));
             }
         }));
         client.request(overridingStrategy, req)
                 .doBeforeSuccess(__ -> {
-                    if (invalidThread()) {
+                    if (isInvalidThread()) {
                         errors.add(new AssertionError("Invalid thread called response metadata. " +
                                 "Thread: " + currentThread()));
                     }
                 })
                 .flatMapPublisher(StreamingHttpResponse::payloadBody)
                 .doBeforeNext(__ -> {
-                    if (invalidThread()) {
+                    if (isInvalidThread()) {
                         errors.add(new AssertionError("Invalid thread called response payload onNext. " +
                                 "Thread: " + currentThread()));
                     }
                 })
                 .doBeforeComplete(() -> {
-                    if (invalidThread()) {
+                    if (isInvalidThread()) {
                         errors.add(new AssertionError("Invalid thread called response payload onComplete. " +
                                 "Thread: " + currentThread()));
                     }
@@ -152,11 +152,11 @@ public class HttpStreamingClientOverrideOffloadingTest {
         assertThat("Unexpected errors: " + errors, errors, hasSize(0));
     }
 
-    private boolean invalidThread() {
+    private boolean isInvalidThread() {
         return isInvalidThread.test(currentThread());
     }
 
-    private static boolean inClientEventLoop(Thread thread) {
+    private static boolean isInClientEventLoop(Thread thread) {
         return thread.getName().startsWith(IO_EXECUTOR_THREAD_NAME_PREFIX);
     }
 }

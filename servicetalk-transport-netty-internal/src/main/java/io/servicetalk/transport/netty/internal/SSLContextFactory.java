@@ -45,7 +45,7 @@ public final class SSLContextFactory {
      */
     public static SslContext forClient(SslConfig config) {
         requireNonNull(config);
-        if (config.server()) {
+        if (config.isServer()) {
             throw new IllegalArgumentException("SslConfig was built for server");
         }
 
@@ -88,7 +88,7 @@ public final class SSLContextFactory {
      */
     public static SslContext forServer(SslConfig config) {
         requireNonNull(config);
-        if (!config.server()) {
+        if (!config.isServer()) {
             throw new IllegalArgumentException("SslConfig for clients cannot be used when building a server");
         }
         SslContextBuilder builder;

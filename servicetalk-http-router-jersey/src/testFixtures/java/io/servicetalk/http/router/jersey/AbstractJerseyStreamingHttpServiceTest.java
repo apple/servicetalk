@@ -129,7 +129,7 @@ public abstract class AbstractJerseyStreamingHttpServiceTest {
         return hostHeader;
     }
 
-    protected boolean streamingJsonEnabled() {
+    protected boolean isStreamingJsonEnabled() {
         return streamingJsonEnabled;
     }
 
@@ -185,7 +185,7 @@ public abstract class AbstractJerseyStreamingHttpServiceTest {
     }
 
     protected Function<String, Integer> getJsonResponseContentLengthExtractor() {
-        return streamingJsonEnabled() ? __ -> null : String::length;
+        return isStreamingJsonEnabled() ? __ -> null : String::length;
     }
 
     protected StreamingHttpResponse sendAndAssertNoResponse(final StreamingHttpRequest req,

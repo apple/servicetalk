@@ -100,7 +100,7 @@ final class PubToSingle<T> extends AbstractNoHandleSubscribeSingle<T> {
 
         @Override
         public void onComplete() {
-            if (done()) {
+            if (isDone()) {
                 // Avoid creating a new exception if we are already done.
                 return;
             }
@@ -108,7 +108,7 @@ final class PubToSingle<T> extends AbstractNoHandleSubscribeSingle<T> {
         }
 
         private void terminate(Object terminal) {
-            if (done()) {
+            if (isDone()) {
                 return;
             }
             if (state == 0) {
@@ -140,7 +140,7 @@ final class PubToSingle<T> extends AbstractNoHandleSubscribeSingle<T> {
             }
         }
 
-        private boolean done() {
+        private boolean isDone() {
             return state == STATE_SENT_ON_SUBSCRIBE_AND_DONE;
         }
     }

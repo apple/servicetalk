@@ -24,7 +24,7 @@ final class EventLoopGroupIoExecutor extends AbstractNettyIoExecutor<EventLoopGr
     }
 
     @Override
-    public boolean currentThreadEventLoop() {
+    public boolean isCurrentThreadEventLoop() {
         return false; // We are in the group not a specific eventloop.
     }
 

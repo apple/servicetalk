@@ -363,7 +363,7 @@ public class RoundRobinLoadBalancerTest {
     @Test
     public void closeClosesConnectionFactory() throws Exception {
         awaitIndefinitely(lb.closeAsync());
-        assertTrue("ConnectionFactory not closed.", connectionFactory.closed());
+        assertTrue("ConnectionFactory not closed.", connectionFactory.isClosed());
     }
 
     @SuppressWarnings("unchecked")
@@ -452,7 +452,7 @@ public class RoundRobinLoadBalancerTest {
             return Completable.completed().doBeforeSubscribe(cancellable -> closed.set(true));
         }
 
-        boolean closed() {
+        boolean isClosed() {
             return closed.get();
         }
     }

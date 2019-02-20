@@ -204,7 +204,7 @@ abstract class AbstractRedisConnection extends RedisConnection {
             }
         }
 
-        boolean pingInProgress() {
+        boolean isInProgress() {
             return inProgress;
         }
     }
@@ -231,7 +231,7 @@ abstract class AbstractRedisConnection extends RedisConnection {
 
         @Override
         public void onComplete() {
-            if (pingSubscriber.pingInProgress()) {
+            if (pingSubscriber.isInProgress()) {
                 logger().warn("Connection: {} ping did not complete within the ping duration: {}. " +
                                 "Closing the connection.", AbstractRedisConnection.this, pingDuration);
                 closeAsync().subscribe();

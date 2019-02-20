@@ -25,7 +25,7 @@ import static java.util.Objects.requireNonNull;
 /**
  * A {@link Cancellable} that will {@link Thread#interrupt() interrupt a thread}.
  * <p>
- * It is important that {@link #done()} (or {@link #done(Throwable)}) is called after the associated blocking
+ * It is important that {@link #setDone()} (or {@link #setDone(Throwable)}) is called after the associated blocking
  * operation completes to avoid "spurious" thread interrupts.
  */
 public final class ThreadInterruptingCancellable implements Cancellable {
@@ -55,7 +55,7 @@ public final class ThreadInterruptingCancellable implements Cancellable {
      * Indicates the operation associated with this {@link Cancellable} is done and future calls to {@link #cancel()}
      * should be NOOPs.
      */
-    public void done() {
+    public void setDone() {
         status = 1;
     }
 
@@ -67,8 +67,8 @@ public final class ThreadInterruptingCancellable implements Cancellable {
      * {@link InterruptedException} then {@link Thread#interrupted()} will be called for the current thread to clear
      * the interrupt status.
      */
-    public void done(Throwable cause) {
-        done();
+    public void setDone(Throwable cause) {
+        setDone();
         if (cause instanceof InterruptedException) {
             interrupted();
         }
