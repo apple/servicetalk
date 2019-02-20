@@ -15,9 +15,6 @@
  */
 package io.servicetalk.http.api;
 
-import java.util.function.BiFunction;
-
-import static java.lang.System.lineSeparator;
 import static java.util.Objects.requireNonNull;
 
 class DefaultHttpResponseMetaData extends AbstractHttpMetaData implements HttpResponseMetaData {
@@ -55,13 +52,6 @@ class DefaultHttpResponseMetaData extends AbstractHttpMetaData implements HttpRe
     @Override
     public final String toString() {
         return version() + " " + status();
-    }
-
-    @Override
-    public final String toString(
-            final BiFunction<? super CharSequence, ? super CharSequence, CharSequence> headerFilter) {
-        return toString() + lineSeparator()
-                + headers().toString(headerFilter);
     }
 
     @Override
