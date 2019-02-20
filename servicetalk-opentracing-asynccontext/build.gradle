@@ -36,4 +36,10 @@ dependencies {
   implementation "com.google.code.findbugs:jsr305"
   implementation "io.servicetalk:servicetalk-annotations:$project.version"
   implementation "io.servicetalk:servicetalk-concurrent-api:$project.version"
+
+  testImplementation "io.servicetalk:servicetalk-test-resources:$project.version"
+  testImplementation "junit:junit"
+  testImplementation "org.slf4j:slf4j-api"
+  testImplementation "org.hamcrest:hamcrest-library"
+  testImplementation "org.mockito:mockito-core"
 }

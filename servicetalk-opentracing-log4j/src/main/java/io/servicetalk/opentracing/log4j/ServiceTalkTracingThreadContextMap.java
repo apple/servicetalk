@@ -58,21 +58,21 @@ public final class ServiceTalkTracingThreadContextMap extends ServiceTalkThreadC
         // isEmpty() may return true, but then get(..) may return elements from the trace.
         switch (key) {
             case TRACE_ID_KEY: {
-                InMemoryScope scope = SCOPE_MANAGER.active();
+                InMemoryScope scope = SCOPE_MANAGER.activeOrClosed();
                 if (scope != null) {
                     return scope.span().traceIdHex();
                 }
                 break;
             }
             case SPAN_ID_KEY: {
-                InMemoryScope scope = SCOPE_MANAGER.active();
+                InMemoryScope scope = SCOPE_MANAGER.activeOrClosed();
                 if (scope != null) {
                     return scope.span().spanIdHex();
                 }
                 break;
             }
             case PARENT_SPAN_ID_KEY: {
-                InMemoryScope scope = SCOPE_MANAGER.active();
+                InMemoryScope scope = SCOPE_MANAGER.activeOrClosed();
                 if (scope != null) {
                     return scope.span().nonnullParentSpanIdHex();
                 }
@@ -91,7 +91,7 @@ public final class ServiceTalkTracingThreadContextMap extends ServiceTalkThreadC
 
     private static boolean containsTracingKey(String key) {
         if (TRACE_ID_KEY.equals(key) || SPAN_ID_KEY.equals(key) || PARENT_SPAN_ID_KEY.equals(key)) {
-            InMemoryScope scope = SCOPE_MANAGER.active();
+            InMemoryScope scope = SCOPE_MANAGER.activeOrClosed();
             return scope != null;
         }
         return false;
@@ -99,7 +99,7 @@ public final class ServiceTalkTracingThreadContextMap extends ServiceTalkThreadC
 
     @Override
     protected Map<String, String> getCopy(Map<String, String> storage) {
-        return getCopy(storage, SCOPE_MANAGER.active());
+        return getCopy(storage, SCOPE_MANAGER.activeOrClosed());
     }
 
     private Map<String, String> getCopy(Map<String, String> storage, @Nullable InMemoryScope scope) {
@@ -115,7 +115,7 @@ public final class ServiceTalkTracingThreadContextMap extends ServiceTalkThreadC
     @Nullable
     @Override
     protected Map<String, String> getImmutableMapOrNull(Map<String, String> storage) {
-        InMemoryScope scope = SCOPE_MANAGER.active();
+        InMemoryScope scope = SCOPE_MANAGER.activeOrClosed();
         if (storage.isEmpty() && scope == null) {
             return null;
         }
@@ -128,7 +128,7 @@ public final class ServiceTalkTracingThreadContextMap extends ServiceTalkThreadC
 
     @Override
     public boolean isEmpty() {
-        return super.isEmpty() && SCOPE_MANAGER.active() == null;
+        return super.isEmpty() && SCOPE_MANAGER.activeOrClosed() == null;
     }
 
     @Override
@@ -167,7 +167,7 @@ public final class ServiceTalkTracingThreadContextMap extends ServiceTalkThreadC
 
             @Override
             public Map<String, String> toMap() {
-                return getCopy(storage, SCOPE_MANAGER.active());
+                return getCopy(storage, SCOPE_MANAGER.activeOrClosed());
             }
 
             @Override
@@ -178,7 +178,7 @@ public final class ServiceTalkTracingThreadContextMap extends ServiceTalkThreadC
             @SuppressWarnings("unchecked")
             @Override
             public <V> void forEach(BiConsumer<String, ? super V> action) {
-                InMemoryScope scope = SCOPE_MANAGER.active();
+                InMemoryScope scope = SCOPE_MANAGER.activeOrClosed();
                 if (scope != null) {
                     InMemorySpan span = scope.span();
                     action.accept(TRACE_ID_KEY, (V) span.traceIdHex());
@@ -191,7 +191,7 @@ public final class ServiceTalkTracingThreadContextMap extends ServiceTalkThreadC
             @SuppressWarnings("unchecked")
             @Override
             public <V, S> void forEach(TriConsumer<String, ? super V, S> action, S state) {
-                InMemoryScope scope = SCOPE_MANAGER.active();
+                InMemoryScope scope = SCOPE_MANAGER.activeOrClosed();
                 if (scope != null) {
                     InMemorySpan span = scope.span();
                     action.accept(TRACE_ID_KEY, (V) span.traceIdHex(), state);
@@ -206,21 +206,21 @@ public final class ServiceTalkTracingThreadContextMap extends ServiceTalkThreadC
             public <V> V getValue(String key) {
                 switch (key) {
                     case TRACE_ID_KEY: {
-                        InMemoryScope scope = SCOPE_MANAGER.active();
+                        InMemoryScope scope = SCOPE_MANAGER.activeOrClosed();
                         if (scope != null) {
                             return (V) scope.span().traceIdHex();
                         }
                         break;
                     }
                     case SPAN_ID_KEY: {
-                        InMemoryScope scope = SCOPE_MANAGER.active();
+                        InMemoryScope scope = SCOPE_MANAGER.activeOrClosed();
                         if (scope != null) {
                             return (V) scope.span().spanIdHex();
                         }
                         break;
                     }
                     case PARENT_SPAN_ID_KEY: {
-                        InMemoryScope scope = SCOPE_MANAGER.active();
+                        InMemoryScope scope = SCOPE_MANAGER.activeOrClosed();
                         if (scope != null) {
                             return (V) scope.span().nonnullParentSpanIdHex();
                         }
@@ -234,12 +234,12 @@ public final class ServiceTalkTracingThreadContextMap extends ServiceTalkThreadC
 
             @Override
             public boolean isEmpty() {
-                return storage.isEmpty() && SCOPE_MANAGER.active() == null;
+                return storage.isEmpty() && SCOPE_MANAGER.activeOrClosed() == null;
             }
 
             @Override
             public int size() {
-                InMemoryScope scope = SCOPE_MANAGER.active();
+                InMemoryScope scope = SCOPE_MANAGER.activeOrClosed();
                 return scope != null ? storage.size() + 3 : storage.size();
             }
         };
