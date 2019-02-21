@@ -33,6 +33,7 @@ import java.util.function.IntUnaryOperator;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static java.lang.Integer.MAX_VALUE;
 import static java.lang.Math.max;
 import static java.lang.Math.min;
@@ -228,7 +229,7 @@ public final class DefaultSerializer implements Serializer {
     private static <T> void applySerializer0(final Subscriber<? super Buffer> subscriber,
                                              final BufferAllocator allocator, final IntUnaryOperator bytesEstimator,
                                              final StreamingSerializer serializer, final Publisher<T> source) {
-        source.map(new SerializerFunction<>(bytesEstimator, allocator, serializer)).subscribe(subscriber);
+        toSource(source.map(new SerializerFunction<>(bytesEstimator, allocator, serializer))).subscribe(subscriber);
     }
 
     private static <T> Iterable<Buffer> applySerializer0(final BufferAllocator allocator,
@@ -282,8 +283,8 @@ public final class DefaultSerializer implements Serializer {
         // The StreamingDeserializer will be used to buffer data in between Buffers. It is not thread safe but
         // the concatMap should ensure there is no concurrency, and will ensure visibility when transitioning
         // between Buffers.
-        source.concatMapIterable(deSerializer::deserialize)
-                .doBeforeComplete(deSerializer::close)
+        toSource(source.concatMapIterable(deSerializer::deserialize)
+                .doBeforeComplete(deSerializer::close))
                 .subscribe(subscriber);
     }
 

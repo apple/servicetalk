@@ -15,6 +15,7 @@
  */
 package io.servicetalk.transport.netty.internal;
 
+import io.servicetalk.concurrent.CompletableSource.Subscriber;
 import io.servicetalk.concurrent.api.AsyncCloseable;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.CompletableProcessor;
@@ -33,6 +34,7 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.concurrent.api.Executors.immediate;
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.transport.netty.internal.CloseStates.CLOSING;
 import static io.servicetalk.transport.netty.internal.CloseStates.GRACEFULLY_CLOSING;
 import static io.servicetalk.transport.netty.internal.CloseStates.OPEN;
@@ -98,7 +100,7 @@ public final class ChannelSet implements ListenableAsyncCloseable {
         return new Completable() {
             @Override
             protected void handleSubscribe(final Subscriber subscriber) {
-                onClose.subscribe(subscriber);
+                toSource(onClose).subscribe(subscriber);
                 if (stateUpdater.getAndSet(ChannelSet.this, CLOSING) == CLOSING) {
                     return;
                 }
@@ -123,12 +125,12 @@ public final class ChannelSet implements ListenableAsyncCloseable {
             @Override
             protected void handleSubscribe(final Subscriber subscriber) {
                 if (!stateUpdater.compareAndSet(ChannelSet.this, OPEN, GRACEFULLY_CLOSING)) {
-                    onClose.subscribe(subscriber);
+                    toSource(onClose).subscribe(subscriber);
                     return;
                 }
 
                 if (channelMap.isEmpty()) {
-                    onClose.subscribe(subscriber);
+                    toSource(onClose).subscribe(subscriber);
                     onCloseProcessor.onComplete();
                     return;
                 }
@@ -162,7 +164,7 @@ public final class ChannelSet implements ListenableAsyncCloseable {
                     }
                 }
 
-                closeable.closeAsyncGracefully().subscribe(subscriber);
+                toSource(closeable.closeAsyncGracefully()).subscribe(subscriber);
             }
         };
     }

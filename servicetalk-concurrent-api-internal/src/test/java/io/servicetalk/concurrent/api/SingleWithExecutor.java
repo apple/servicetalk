@@ -15,6 +15,8 @@
  */
 package io.servicetalk.concurrent.api;
 
+import io.servicetalk.concurrent.SingleSource.Subscriber;
+
 /**
  * A {@link Single} that could be created with an {@link Executor}.
  *

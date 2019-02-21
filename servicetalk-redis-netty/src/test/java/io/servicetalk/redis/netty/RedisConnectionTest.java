@@ -45,6 +45,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static io.servicetalk.concurrent.api.BlockingTestUtils.awaitIndefinitely;
 import static io.servicetalk.concurrent.api.Publisher.just;
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.ServiceTalkTestTimeout.DEFAULT_TIMEOUT_SECONDS;
 import static io.servicetalk.redis.api.RedisData.NULL;
 import static io.servicetalk.redis.api.RedisData.OK;
@@ -126,9 +127,9 @@ public class RedisConnectionTest extends BaseRedisClientTest {
         final CountDownLatch cnxClosedLatch = new CountDownLatch(1);
         final AtomicReference<Throwable> cnxCloseError = new AtomicReference<>();
 
-        getEnv().client.reserveConnection(PING)
+        toSource(getEnv().client.reserveConnection(PING)
                 .flatMapPublisher(cnx -> {
-                    cnx.connectionContext().onClose().subscribe(new CompletableSource.Subscriber() {
+                    toSource(cnx.connectionContext().onClose()).subscribe(new CompletableSource.Subscriber() {
                         @Override
                         public void onSubscribe(final Cancellable cancellable) {
                         }
@@ -145,7 +146,7 @@ public class RedisConnectionTest extends BaseRedisClientTest {
                         }
                     });
                     return cnx.request(getRequest);
-                }).subscribe(
+                })).subscribe(
                 new Subscriber<RedisData>() {
                     private Subscription s;
 

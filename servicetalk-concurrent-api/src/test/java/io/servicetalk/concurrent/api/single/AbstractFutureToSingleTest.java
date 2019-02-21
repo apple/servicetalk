@@ -37,6 +37,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
@@ -88,7 +89,7 @@ public abstract class AbstractFutureToSingleTest {
     public void cancellation() throws InterruptedException {
         CompletableFuture<String> future = new CompletableFuture<>();
         Single<String> single = from(future);
-        single.subscribe(new SingleSource.Subscriber<String>() {
+        toSource(single).subscribe(new SingleSource.Subscriber<String>() {
             @Override
             public void onSubscribe(final Cancellable cancellable) {
                 cancellable.cancel();

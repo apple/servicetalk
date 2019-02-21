@@ -69,13 +69,4 @@ public interface SingleSource<T> {
          */
         void onError(Throwable t);
     }
-
-    /**
-     * An entity that is both {@link SingleSource} and {@link Subscriber}.
-     * This is same as {@link PublisherSource.Processor} but for {@link SingleSource}s.
-     * @param <T> The type of {@link Subscriber}.
-     * @param <R> The type of {@link SingleSource}.
-     */
-    interface Processor<T, R> extends SingleSource<R>, Subscriber<T> {
-    }
 }

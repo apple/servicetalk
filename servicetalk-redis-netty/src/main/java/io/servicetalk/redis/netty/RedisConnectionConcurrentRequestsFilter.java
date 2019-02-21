@@ -19,6 +19,7 @@ import io.servicetalk.client.api.ConnectionClosedException;
 import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.internal.MaxRequestLimitExceededRejectedSubscribeException;
 import io.servicetalk.client.internal.RequestConcurrencyController;
+import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.internal.LatestValueSubscriber;
 import io.servicetalk.concurrent.internal.ThrowableUtil;
@@ -31,6 +32,7 @@ import io.servicetalk.transport.netty.internal.NettyConnectionContext;
 
 import static io.servicetalk.client.internal.RequestConcurrencyControllers.newController;
 import static io.servicetalk.client.internal.RequestConcurrencyControllers.newSingleController;
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.EmptySubscription.EMPTY_SUBSCRIPTION;
 import static io.servicetalk.redis.api.RedisConnection.SettingKey.MAX_CONCURRENCY;
 
@@ -49,8 +51,8 @@ final class RedisConnectionConcurrentRequestsFilter extends RedisConnectionFilte
                                             int defaultMaxPipelinedRequests) {
         super(next);
         if (next.connectionContext() instanceof NettyConnectionContext) {
-            ((NettyConnectionContext) next.connectionContext()).transportError()
-                    .toPublisher().subscribe(transportError);
+            toSource(((NettyConnectionContext) next.connectionContext()).transportError()
+                    .toPublisher()).subscribe(transportError);
         }
 
         limiter = defaultMaxPipelinedRequests == 1 ?
@@ -67,7 +69,7 @@ final class RedisConnectionConcurrentRequestsFilter extends RedisConnectionFilte
                 Throwable reportedError;
                 switch (result) {
                     case Accepted:
-                        delegate().request(strategy, request).doBeforeFinally(limiter::requestFinished)
+                        toSource(delegate().request(strategy, request).doBeforeFinally(limiter::requestFinished))
                                 .subscribe(subscriber);
                         return;
                     case RejectedTemporary:

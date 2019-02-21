@@ -18,6 +18,7 @@ package io.servicetalk.http.netty;
 import io.servicetalk.client.api.ConnectionClosedException;
 import io.servicetalk.client.internal.MaxRequestLimitExceededRejectedSubscribeException;
 import io.servicetalk.client.internal.RequestConcurrencyController;
+import io.servicetalk.concurrent.SingleSource.Subscriber;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.LatestValueSubscriber;
 import io.servicetalk.http.api.HttpExecutionStrategy;
@@ -31,6 +32,7 @@ import io.servicetalk.transport.netty.internal.NettyConnectionContext;
 import static io.servicetalk.client.internal.RequestConcurrencyControllers.newController;
 import static io.servicetalk.client.internal.RequestConcurrencyControllers.newSingleController;
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.http.api.StreamingHttpConnection.SettingKey.MAX_CONCURRENCY;
 
 final class ConcurrentRequestsHttpConnectionFilter extends StreamingHttpConnectionFilter {
@@ -43,8 +45,8 @@ final class ConcurrentRequestsHttpConnectionFilter extends StreamingHttpConnecti
         super(next);
 
         if (next.connectionContext() instanceof NettyConnectionContext) {
-            ((NettyConnectionContext) next.connectionContext())
-                    .transportError().toPublisher().subscribe(transportError);
+            toSource(((NettyConnectionContext) next.connectionContext())
+                    .transportError().toPublisher()).subscribe(transportError);
         }
 
         limiter = defaultMaxPipelinedRequests == 1 ?
@@ -62,8 +64,8 @@ final class ConcurrentRequestsHttpConnectionFilter extends StreamingHttpConnecti
                 Throwable reportedError;
                 switch (result) {
                     case Accepted:
-                        delegate().request(strategy, request)
-                                .liftSynchronous(new DoBeforeFinallyOnHttpResponseOperator(limiter::requestFinished))
+                        toSource(delegate().request(strategy, request)
+                                .liftSynchronous(new DoBeforeFinallyOnHttpResponseOperator(limiter::requestFinished)))
                                 .subscribe(subscriber);
                         return;
                     case RejectedTemporary:

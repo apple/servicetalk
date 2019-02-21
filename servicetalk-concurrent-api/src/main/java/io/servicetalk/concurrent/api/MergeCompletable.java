@@ -15,6 +15,8 @@
  */
 package io.servicetalk.concurrent.api;
 
+import io.servicetalk.concurrent.CompletableSource.Subscriber;
+
 import javax.annotation.Nullable;
 
 import static java.util.Objects.requireNonNull;

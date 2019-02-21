@@ -21,7 +21,8 @@ import io.servicetalk.client.api.partition.PartitionAttributes;
 import io.servicetalk.client.api.partition.PartitionMap;
 import io.servicetalk.client.api.partition.PartitionMapFactory;
 import io.servicetalk.client.api.partition.PartitionedServiceDiscovererEvent;
-import io.servicetalk.concurrent.PublisherSource.Subscriber;
+import io.servicetalk.concurrent.CompletableSource;
+import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.api.AsyncCloseable;
 import io.servicetalk.concurrent.api.Completable;
@@ -43,6 +44,7 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.api.AsyncCloseables.emptyAsyncCloseable;
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -101,10 +103,9 @@ public final class DefaultPartitionedClientGroup<U, R, Client extends Listenable
         this.unknownPartitionClient = unknownPartitionClient;
         this.partitionMap = partitionMapFactory.newPartitionMap(event ->
                 new Partition<>(event, closedPartitionClient.apply(event)));
-        psdEvents
-                .groupByMulti(event -> event.available() ?
-                        partitionMap.add(event.partitionAddress()).iterator() :
-                        partitionMap.remove(event.partitionAddress()).iterator(), psdMaxQueueSize)
+        toSource(psdEvents.groupByMulti(event -> event.available() ?
+                partitionMap.add(event.partitionAddress()).iterator() :
+                partitionMap.remove(event.partitionAddress()).iterator(), psdMaxQueueSize))
                 .subscribe(new GroupedByPartitionSubscriber(clientFactory));
     }
 
@@ -234,10 +235,10 @@ public final class DefaultPartitionedClientGroup<U, R, Client extends Listenable
         public Completable closeAsync() {
             return new Completable() {
                 @Override
-                protected void handleSubscribe(Subscriber subscriber) {
+                protected void handleSubscribe(CompletableSource.Subscriber subscriber) {
                     Object oldClient = clientUpdater.getAndSet(DefaultPartitionedClientGroup.Partition.this, closed);
                     if (oldClient != null && oldClient != closed) {
-                        ((C) oldClient).closeAsync().subscribe(subscriber);
+                        toSource(((C) oldClient).closeAsync()).subscribe(subscriber);
                     } else {
                         subscriber.onSubscribe(IGNORE_CANCEL);
                         subscriber.onComplete();
@@ -253,7 +254,8 @@ public final class DefaultPartitionedClientGroup<U, R, Client extends Listenable
     }
 
     private final class GroupedByPartitionSubscriber
-            implements Subscriber<GroupedPublisher<Partition<Client>, ? extends PartitionedServiceDiscovererEvent<R>>> {
+            implements PublisherSource.Subscriber<GroupedPublisher<Partition<Client>,
+            ? extends PartitionedServiceDiscovererEvent<R>>> {
 
         private final PartitionedClientFactory<U, R, Client> clientFactory;
 

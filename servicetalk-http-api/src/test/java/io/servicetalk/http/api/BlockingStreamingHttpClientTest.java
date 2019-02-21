@@ -15,6 +15,7 @@
  */
 package io.servicetalk.http.api;
 
+import io.servicetalk.concurrent.CompletableSource.Subscriber;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.CompletableProcessor;
 import io.servicetalk.concurrent.api.Single;
@@ -24,6 +25,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiFunction;
 
 import static io.servicetalk.concurrent.api.Single.error;
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static java.util.Objects.requireNonNull;
 
@@ -109,7 +111,7 @@ public class BlockingStreamingHttpClientTest extends AbstractBlockingStreamingHt
                     if (closed.compareAndSet(false, true)) {
                         onClose.onComplete();
                     }
-                    onClose.subscribe(subscriber);
+                    toSource(onClose).subscribe(subscriber);
                 }
             };
         }

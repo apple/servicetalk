@@ -98,7 +98,7 @@ public class ExecutorThrowsTest {
     public void singleExecutorThrows() throws Throwable {
         Single<String> s = new Single<String>() {
             @Override
-            protected void handleSubscribe(final Subscriber<? super String> subscriber) {
+            protected void handleSubscribe(final SingleSource.Subscriber<? super String> subscriber) {
                 try {
                     subscriber.onSubscribe(IGNORE_CANCEL);
                 } catch (DeliberateException de) {
@@ -131,7 +131,7 @@ public class ExecutorThrowsTest {
     public void completableExecutorThrows() throws Throwable {
         Completable c = new Completable() {
             @Override
-            protected void handleSubscribe(final Subscriber subscriber) {
+            protected void handleSubscribe(final CompletableSource.Subscriber subscriber) {
                 try {
                     subscriber.onSubscribe(IGNORE_CANCEL);
                 } catch (DeliberateException de) {

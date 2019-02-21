@@ -33,6 +33,7 @@ import java.util.function.BiFunction;
 
 import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
 import static io.servicetalk.concurrent.api.Publisher.just;
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.api.completable.AbstractPublishAndSubscribeOnTest.verifyCapturedThreads;
 import static io.servicetalk.concurrent.internal.SignalOffloaders.threadBasedOffloaderFactory;
 import static java.lang.Long.MAX_VALUE;
@@ -64,9 +65,9 @@ public abstract class AbstractPublishAndSubscribeOnTest {
 
         Publisher<String> offloaded = offloadingFunction.apply(original, executor);
 
-        offloaded.doBeforeNext(__ -> capturedThreads.set(OFFLOADED_SUBSCRIBER_THREAD, currentThread()))
+        toSource(offloaded.doBeforeNext(__ -> capturedThreads.set(OFFLOADED_SUBSCRIBER_THREAD, currentThread()))
                 .doBeforeRequest(__ -> capturedThreads.set(OFFLOADED_SUBSCRIPTION_THREAD, currentThread()))
-                .doAfterFinally(allDone::countDown)
+                .doAfterFinally(allDone::countDown))
                 .subscribe(new Subscriber<String>() {
                     @Override
                     public void onSubscribe(final Subscription s) {

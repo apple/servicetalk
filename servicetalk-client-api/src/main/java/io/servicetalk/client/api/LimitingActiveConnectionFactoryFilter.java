@@ -16,7 +16,7 @@
 package io.servicetalk.client.api;
 
 import io.servicetalk.concurrent.Cancellable;
-import io.servicetalk.concurrent.SingleSource;
+import io.servicetalk.concurrent.SingleSource.Subscriber;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Single;
@@ -26,6 +26,7 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 
 /**
@@ -54,7 +55,7 @@ public final class LimitingActiveConnectionFactoryFilter<ResolvedAddress, C exte
             @Override
             protected void handleSubscribe(final Subscriber<? super C> subscriber) {
                 if (limiter.isConnectAllowed(resolvedAddress)) {
-                    original.newConnection(resolvedAddress)
+                    toSource(original.newConnection(resolvedAddress))
                             .subscribe(new CountingSubscriber<>(subscriber, limiter, resolvedAddress));
                 } else {
                     subscriber.onSubscribe(IGNORE_CANCEL);
@@ -184,18 +185,18 @@ public final class LimitingActiveConnectionFactoryFilter<ResolvedAddress, C exte
     }
 
     private static final class CountingSubscriber<A, C extends ListenableAsyncCloseable>
-            implements SingleSource.Subscriber<C> {
+            implements Subscriber<C> {
 
         private static final AtomicIntegerFieldUpdater<CountingSubscriber> doneUpdater =
                 newUpdater(CountingSubscriber.class, "done");
 
         @SuppressWarnings("unused")
         private volatile int done;
-        private final SingleSource.Subscriber<? super C> original;
+        private final Subscriber<? super C> original;
         private final ConnectionLimiter<A> limiter;
         private final A address;
 
-        CountingSubscriber(final SingleSource.Subscriber<? super C> original, final ConnectionLimiter<A> limiter,
+        CountingSubscriber(final Subscriber<? super C> original, final ConnectionLimiter<A> limiter,
                            final A address) {
             this.original = original;
             this.limiter = limiter;

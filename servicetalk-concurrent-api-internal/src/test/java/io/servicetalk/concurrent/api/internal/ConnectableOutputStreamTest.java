@@ -36,6 +36,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.IntBinaryOperator;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static java.lang.Math.max;
 import static java.lang.Math.min;
@@ -109,11 +110,10 @@ public class ConnectableOutputStreamTest {
 
     @Test
     public void multipleConnectWithInvalidRequestnShouldFailConnect() throws Exception {
-        @SuppressWarnings("unchecked")
         CountDownLatch onSubscribe = new CountDownLatch(1);
         CountDownLatch onComplete = new CountDownLatch(1);
         AtomicReference<Throwable> errorRef = new AtomicReference<>();
-        cos.connect().subscribe(new Subscriber<byte[]>() {
+        toSource(cos.connect()).subscribe(new Subscriber<byte[]>() {
             @Override
             public void onSubscribe(final Subscription s) {
                 s.request(-1);
@@ -143,10 +143,9 @@ public class ConnectableOutputStreamTest {
 
     @Test
     public void multipleConnectWhileEmittingShouldFailConnect() throws Exception {
-        @SuppressWarnings("unchecked")
         CountDownLatch onNext = new CountDownLatch(1);
         CountDownLatch onComplete = new CountDownLatch(1);
-        cos.connect().subscribe(new Subscriber<byte[]>() {
+        toSource(cos.connect()).subscribe(new Subscriber<byte[]>() {
             @Override
             public void onSubscribe(final Subscription s) {
                 s.request(1);
@@ -176,10 +175,9 @@ public class ConnectableOutputStreamTest {
 
     @Test
     public void multipleConnectWhileSubscribedShouldFailConnect() throws Exception {
-        @SuppressWarnings("unchecked")
         CountDownLatch onSubscribe = new CountDownLatch(1);
         CountDownLatch onComplete = new CountDownLatch(1);
-        cos.connect().subscribe(new Subscriber<byte[]>() {
+        toSource(cos.connect()).subscribe(new Subscriber<byte[]>() {
             @Override
             public void onSubscribe(final Subscription s) {
                 onSubscribe.countDown();
@@ -206,10 +204,9 @@ public class ConnectableOutputStreamTest {
 
     @Test
     public void multipleConnectWhileSubscriberFailedShouldFailConnect() throws Exception {
-        @SuppressWarnings("unchecked")
         CountDownLatch onError = new CountDownLatch(1);
         CountDownLatch onComplete = new CountDownLatch(1);
-        cos.connect().subscribe(new Subscriber<byte[]>() {
+        toSource(cos.connect()).subscribe(new Subscriber<byte[]>() {
             @Override
             public void onSubscribe(final Subscription s) {
                 s.request(1);
@@ -421,7 +418,7 @@ public class ConnectableOutputStreamTest {
     @Test
     public void invalidRequestN() {
         AtomicReference<Throwable> failure = new AtomicReference<>();
-        cos.connect().subscribe(new Subscriber<byte[]>() {
+        toSource(cos.connect()).subscribe(new Subscriber<byte[]>() {
             @Override
             public void onSubscribe(final Subscription s) {
                 s.request(-1);
@@ -449,7 +446,7 @@ public class ConnectableOutputStreamTest {
     @Test
     public void onNextThrows() throws IOException {
         AtomicReference<Throwable> failure = new AtomicReference<>();
-        cos.connect().subscribe(new Subscriber<byte[]>() {
+        toSource(cos.connect()).subscribe(new Subscriber<byte[]>() {
             @Override
             public void onSubscribe(final Subscription s) {
                 s.request(1);
@@ -523,7 +520,7 @@ public class ConnectableOutputStreamTest {
         final Thread consumerThread = new Thread(() -> {
             try {
                 final CountDownLatch consumerDone = new CountDownLatch(1);
-                pub.subscribe(new Subscriber<byte[]>() {
+                toSource(pub).subscribe(new Subscriber<byte[]>() {
                     @Nullable
                     private Subscription sub;
                     private int writeIndex;

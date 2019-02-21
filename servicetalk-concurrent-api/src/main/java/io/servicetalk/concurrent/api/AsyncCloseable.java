@@ -15,24 +15,32 @@
  */
 package io.servicetalk.concurrent.api;
 
-import java.util.concurrent.TimeUnit;
+import io.servicetalk.concurrent.CompletableSource;
 
 /**
  * Used to close/shutdown a resource.
  */
 @FunctionalInterface
-public interface AsyncCloseable extends io.servicetalk.concurrent.AsyncCloseable {
+public interface AsyncCloseable {
 
-    @Override
+    /**
+     * Used to close/shutdown a resource.
+     *
+     * @return A {@link CompletableSource} that is notified once the close is complete.
+     */
     Completable closeAsync();
 
     /**
-     * {@inheritDoc}
+     * Used to close/shutdown a resource, similar to {@link #closeAsync()}, but attempts to cleanup state before
+     * abruptly closing. This provides a hint that implementations can use to stop accepting new work and finish in
+     * flight work. This method is implemented on a "best effort" basis and may be equivalent to {@link #closeAsync()}.
      * <p>
-     * Note that {@link AsyncCloseables#closeAsyncGracefully(AsyncCloseable, long, TimeUnit)} can be used to apply a
-     * timeout.
+     * <b>Note</b>: Implementations may or may not apply a timeout for this operation to complete, if a caller does not
+     * want to wait indefinitely, and are unsure if the implementation applies a timeout, it is advisable to apply a
+     * timeout and force a call to {@link #closeAsync()}.
+     *
+     * @return A {@link Completable} that is notified once the close is complete.
      */
-    @Override
     default Completable closeAsyncGracefully() {
         return closeAsync();
     }

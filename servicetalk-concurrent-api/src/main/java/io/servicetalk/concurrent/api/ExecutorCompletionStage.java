@@ -16,7 +16,6 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
-import io.servicetalk.concurrent.CompletableSource;
 
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
@@ -37,7 +36,6 @@ import java.util.function.Function;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
-import static io.servicetalk.concurrent.api.Completable.error;
 import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.internal.PlatformDependent.throwException;
 import static io.servicetalk.concurrent.internal.ThrowableUtil.unknownStackTrace;
@@ -2096,11 +2094,6 @@ abstract class ExecutorCompletionStage<T> implements CompletionStage<T>, Future<
         @Override
         public Cancellable schedule(final Runnable task, final long delay, final TimeUnit unit) {
             throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public CompletableSource closeAsync() {
-            return error(new UnsupportedOperationException());
         }
     }
 }

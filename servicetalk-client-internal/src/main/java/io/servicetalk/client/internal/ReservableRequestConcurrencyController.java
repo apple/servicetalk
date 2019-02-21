@@ -15,7 +15,6 @@
  */
 package io.servicetalk.client.internal;
 
-import io.servicetalk.concurrent.CompletableSource.Subscriber;
 import io.servicetalk.concurrent.api.Completable;
 
 /**
@@ -30,8 +29,7 @@ public interface ReservableRequestConcurrencyController extends RequestConcurren
     boolean tryReserve();
 
     /**
-     * Must be called (and {@link Completable#subscribe(Subscriber) subscribed} to) to signify the reservation has
-     * completed after {@link #tryReserve()}.
+     * Must be called (and subscribed to) to signify the reservation has completed after {@link #tryReserve()}.
      * @return a {@link Completable} for the release.
      */
     Completable releaseAsync();

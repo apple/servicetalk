@@ -27,6 +27,7 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.redis.api.RedisProtocolSupport.Command;
 
 import static io.servicetalk.concurrent.api.Completable.error;
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 
 /**
  * A {@link RedisClient} filter that will account for transient failures introduced by a {@link LoadBalancer} not being
@@ -53,7 +54,7 @@ public final class LoadBalancerReadyRedisClient extends RedisClientFilter {
         }
         this.maxRetryCount = maxRetryCount;
         loadBalancerReadySubscriber = new LoadBalancerReadySubscriber();
-        loadBalancerEvents.subscribe(loadBalancerReadySubscriber);
+        toSource(loadBalancerEvents).subscribe(loadBalancerReadySubscriber);
     }
 
     @Override

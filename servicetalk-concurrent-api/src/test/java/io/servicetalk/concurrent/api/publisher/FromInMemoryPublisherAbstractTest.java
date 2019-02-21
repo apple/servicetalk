@@ -31,6 +31,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Executors.immediate;
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static java.util.Arrays.copyOf;
 import static java.util.Objects.requireNonNull;
@@ -144,7 +145,7 @@ public abstract class FromInMemoryPublisherAbstractTest {
         InMemorySource source = newSource(2);
         CountDownLatch latch = new CountDownLatch(1);
         AtomicReference<Throwable> throwableRef = new AtomicReference<>();
-        source.getPublisher().subscribe(new Subscriber<String>() {
+        toSource(source.getPublisher()).subscribe(new Subscriber<String>() {
             @Nullable
             private Subscription subscription;
             @Nullable
@@ -209,7 +210,7 @@ public abstract class FromInMemoryPublisherAbstractTest {
         final AtomicBoolean onErrorCalled = new AtomicBoolean();
 
         InMemorySource source = newSource(20);
-        source.getPublisher().subscribe(new Subscriber<String>() {
+        toSource(source.getPublisher()).subscribe(new Subscriber<String>() {
             private boolean onNextCalled;
 
             @Override

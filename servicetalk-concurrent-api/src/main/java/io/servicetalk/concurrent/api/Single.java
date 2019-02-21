@@ -17,6 +17,7 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.SingleSource;
+import io.servicetalk.concurrent.SingleSource.Subscriber;
 import io.servicetalk.concurrent.internal.SignalOffloader;
 
 import org.slf4j.Logger;
@@ -50,9 +51,16 @@ import static java.util.function.Function.identity;
 /**
  * An asynchronous computation that either completes with success giving the result or completes with an error.
  *
+ * <h2>How to subscribe?</h2>
+ *
+ * This class does not provide a way to subscribe using a {@link SingleSource.Subscriber} as such calls are
+ * ambiguous about the intent whether the subscribe is part of the same source (a.k.a an operator) or it is a terminal
+ * subscribe. If it is required to subscribe to a source, then a {@link SourceAdapters source adapter} can be used to
+ * convert to a {@link SingleSource}.
+ *
  * @param <T> Type of the result of the single.
  */
-public abstract class Single<T> implements SingleSource<T> {
+public abstract class Single<T> {
     private static final Logger LOGGER = LoggerFactory.getLogger(Single.class);
 
     private final Executor executor;
@@ -288,9 +296,8 @@ public abstract class Single<T> implements SingleSource<T> {
 
     /**
      * Creates a new {@link Single} that will mimic the signals of this {@link Single} but will terminate with a
-     * with a {@link TimeoutException} if time {@code duration} elapses between {@link #subscribe(Subscriber)} and
-     * termination. The timer starts when the returned {@link Single} is {@link #subscribe(Subscriber) subscribed}
-     * to.
+     * with a {@link TimeoutException} if time {@code duration} elapses between subscribe and
+     * termination. The timer starts when the returned {@link Single} is subscribed.
      * <p>
      * In the event of timeout any {@link Cancellable} from {@link Subscriber#onSubscribe(Cancellable)} will be
      * {@link Cancellable#cancel() cancelled} and the associated {@link Subscriber} will be
@@ -307,9 +314,8 @@ public abstract class Single<T> implements SingleSource<T> {
 
     /**
      * Creates a new {@link Single} that will mimic the signals of this {@link Single} but will terminate with a
-     * with a {@link TimeoutException} if time {@code duration} elapses between {@link #subscribe(Subscriber)} and
-     * termination. The timer starts when the returned {@link Single} is {@link #subscribe(Subscriber) subscribed}
-     * to.
+     * with a {@link TimeoutException} if time {@code duration} elapses between subscribe and
+     * termination. The timer starts when the returned {@link Single} is subscribed.
      * <p>
      * In the event of timeout any {@link Cancellable} from {@link Subscriber#onSubscribe(Cancellable)} will be
      * {@link Cancellable#cancel() cancelled} and the associated {@link Subscriber} will be
@@ -327,9 +333,8 @@ public abstract class Single<T> implements SingleSource<T> {
 
     /**
      * Creates a new {@link Single} that will mimic the signals of this {@link Single} but will terminate with a
-     * with a {@link TimeoutException} if time {@code duration} elapses between {@link #subscribe(Subscriber)} and
-     * termination. The timer starts when the returned {@link Single} is {@link #subscribe(Subscriber) subscribed}
-     * to.
+     * with a {@link TimeoutException} if time {@code duration} elapses between subscribe and
+     * termination. The timer starts when the returned {@link Single} is subscribed.
      * <p>
      * In the event of timeout any {@link Cancellable} from {@link Subscriber#onSubscribe(Cancellable)} will be
      * {@link Cancellable#cancel() cancelled} and the associated {@link Subscriber} will be
@@ -346,9 +351,8 @@ public abstract class Single<T> implements SingleSource<T> {
 
     /**
      * Creates a new {@link Single} that will mimic the signals of this {@link Single} but will terminate with a
-     * with a {@link TimeoutException} if time {@code duration} elapses between {@link #subscribe(Subscriber)} and
-     * termination. The timer starts when the returned {@link Single} is {@link #subscribe(Subscriber) subscribed}
-     * to.
+     * with a {@link TimeoutException} if time {@code duration} elapses between subscribe and termination.
+     * The timer starts when the returned {@link Single} is subscribed.
      * <p>
      * In the event of timeout any {@link Cancellable} from {@link Subscriber#onSubscribe(Cancellable)} will be
      * {@link Cancellable#cancel() cancelled} and the associated {@link Subscriber} will be
@@ -653,13 +657,13 @@ public abstract class Single<T> implements SingleSource<T> {
     }
 
     /**
-     * Creates a new {@link Subscriber} (via the {@code subscriberSupplier} argument) on each call to
-     * {@link #subscribe(Subscriber)} and invokes all the {@link Subscriber} methods <strong>before</strong> the
-     * {@link Subscriber}s of the returned {@link Single}.
-     *
-     * @param subscriberSupplier Creates a new {@link Subscriber} on each call to {@link #subscribe(Subscriber)} and
+     * Creates a new {@link Subscriber} (via the {@code subscriberSupplier} argument) on each call to subscribe and
      * invokes all the {@link Subscriber} methods <strong>before</strong> the {@link Subscriber}s of the returned
-     * {@link Single}. {@link Subscriber} methods <strong>MUST NOT</strong> throw.
+     * {@link Single}.
+     *
+     * @param subscriberSupplier Creates a new {@link Subscriber} on each call to subscribe and invokes all the
+     * {@link Subscriber} methods <strong>before</strong> the {@link Subscriber}s of the returned {@link Single}.
+     * {@link Subscriber} methods <strong>MUST NOT</strong> throw.
      * @return The new {@link Single}.
      */
     public final Single<T> doBeforeSubscriber(Supplier<Subscriber<? super T>> subscriberSupplier) {
@@ -762,13 +766,13 @@ public abstract class Single<T> implements SingleSource<T> {
     }
 
     /**
-     * Creates a new {@link Subscriber} (via the {@code subscriberSupplier} argument) on each call to
-     * {@link #subscribe(Subscriber)} and invokes
-     * all the {@link Subscriber} methods <strong>after</strong> the {@link Subscriber}s of the returned {@link Single}.
-     *
-     * @param subscriberSupplier Creates a new {@link Subscriber} on each call to {@link #subscribe(Subscriber)} and
+     * Creates a new {@link Subscriber} (via the {@code subscriberSupplier} argument) on each call to subscribe and
      * invokes all the {@link Subscriber} methods <strong>after</strong> the {@link Subscriber}s of the returned
-     * {@link Single}. {@link Subscriber} methods <strong>MUST NOT</strong> throw.
+     * {@link Single}.
+     *
+     * @param subscriberSupplier Creates a new {@link Subscriber} on each call to subscribe and invokes all the
+     * {@link Subscriber} methods <strong>after</strong> the {@link Subscriber}s of the returned {@link Single}.
+     * {@link Subscriber} methods <strong>MUST NOT</strong> throw.
      * @return The new {@link Single}.
      */
     public final Single<T> doAfterSubscriber(Supplier<Subscriber<? super T>> subscriberSupplier) {
@@ -883,14 +887,14 @@ public abstract class Single<T> implements SingleSource<T> {
     }
 
     /**
-     * Signifies that when {@link #subscribe(Subscriber)} is invoked on the returned {@link Single} that the
-     * {@link AsyncContext} will be shared instead of making a {@link AsyncContextMap#copy() copy}.
+     * Signifies that when the returned {@link Single} is subscribed to, the {@link AsyncContext} will be shared
+     * instead of making a {@link AsyncContextMap#copy() copy}.
      * <p>
-     * This operator only impacts behavior if {@link #subscribe(Subscriber)} is directly called on the return value,
+     * This operator only impacts behavior if the returned {@link Single} is subscribed directly after this operator,
      * that means this must be the "last operator" in the chain for this to have an impact.
      *
      * @return A {@link Single} that will share the {@link AsyncContext} instead of making a
-     * {@link AsyncContextMap#copy() copy} when {@link #subscribe(Subscriber)} is called.
+     * {@link AsyncContextMap#copy() copy} when subscribed to.
      */
     public final Single<T> subscribeShareContext() {
         return new SingleSubscribeShareContext<>(this);
@@ -900,8 +904,8 @@ public abstract class Single<T> implements SingleSource<T> {
      * <strong>This method requires advanced knowledge of building operators. Before using this method please attempt
      * to compose existing operator(s) to satisfy your use case.</strong>
      * <p>
-     * Returns a {@link Single} that when {@link Single#subscribe(Subscriber)} is called the {@code operator}
-     * argument will be used to wrap the {@link Subscriber} before subscribing to this {@link Single}.
+     * Returns a {@link Single} which will wrap the {@link SingleSource.Subscriber} using the provided {@code operator}
+     * argument before subscribing to this {@link Single}.
      * <pre>{@code
      *     Single<X> pub = ...;
      *     pub.map(..) // A
@@ -917,8 +921,8 @@ public abstract class Single<T> implements SingleSource<T> {
      * {@link Single} and the return is the "modified" {@link Subscriber} that provides custom operator business
      * logic.
      * @param <R> Type of the items emitted by the returned {@link Single}.
-     * @return a {@link Single} that when {@link Single#subscribe(Subscriber)} is called the {@code operator}
-     * argument will be used to wrap the {@link Subscriber} before subscribing to this {@link Single}.
+     * @return a {@link Single} which when subscribed, the {@code operator} argument will be used to wrap the
+     * {@link Subscriber} before subscribing to this {@link Single}.
      * @see #liftAsynchronous(SingleOperator)
      */
     public final <R> Single<R> liftSynchronous(SingleOperator<? super T, ? extends R> operator) {
@@ -929,8 +933,8 @@ public abstract class Single<T> implements SingleSource<T> {
      * <strong>This method requires advanced knowledge of building operators. Before using this method please attempt
      * to compose existing operator(s) to satisfy your use case.</strong>
      * <p>
-     * Returns a {@link Single} that when {@link Single#subscribe(Subscriber)} is called the {@code operator}
-     * argument will be used to wrap the {@link Subscriber} before subscribing to this {@link Single}.
+     * Returns a {@link Single} which will wrap the {@link SingleSource.Subscriber} using the provided {@code operator}
+     * argument before subscribing to this {@link Single}.
      * <pre>{@code
      *     Publisher<X> pub = ...;
      *     pub.map(..) // Aw
@@ -952,8 +956,8 @@ public abstract class Single<T> implements SingleSource<T> {
      * {@link Single} and the return is the "modified" {@link Subscriber} that provides custom operator business
      * logic.
      * @param <R> Type of the items emitted by the returned {@link Single}.
-     * @return a {@link Single} that when {@link Single#subscribe(Subscriber)} is called the {@code operator}
-     * argument will be used to wrap the {@link Subscriber} before subscribing to this {@link Single}.
+     * @return a {@link Single} which when subscribed, the {@code operator} argument will be used to wrap the
+     * {@link Subscriber} before subscribing to this {@link Single}.
      * @see #liftSynchronous(SingleOperator)
      */
     public final <R> Single<R> liftAsynchronous(SingleOperator<? super T, ? extends R> operator) {
@@ -1025,8 +1029,7 @@ public abstract class Single<T> implements SingleSource<T> {
     // Conversion Operators End
     //
 
-    @Override
-    public final void subscribe(Subscriber<? super T> subscriber) {
+    final void subscribe(Subscriber<? super T> subscriber) {
         subscribeCaptureContext(subscriber, AsyncContext.provider());
     }
 
@@ -1093,11 +1096,11 @@ public abstract class Single<T> implements SingleSource<T> {
     /**
      * Defer creation of a {@link Single} till it is subscribed to.
      *
-     * @param singleSupplier {@link Supplier} to create a new {@link Single} for every call to
-     * {@link #subscribe(Subscriber)} to the returned {@link Single}.
+     * @param singleSupplier {@link Supplier} to create a new {@link Single} every time the returned {@link Single} is
+     * subscribed.
      * @param <T> Type of the {@link Single}.
-     * @return A new {@link Single} that creates a new {@link Single} using {@code singleFactory} for every call to
-     * {@link #subscribe(Subscriber)} and forwards the result or error from the newly created {@link Single} to its
+     * @return A new {@link Single} that creates a new {@link Single} using {@code singleSupplier} every time
+     * it is subscribed and forwards all items and terminal events from the newly created {@link Single} to its
      * {@link Subscriber}.
      */
     public static <T> Single<T> defer(Supplier<? extends Single<T>> singleSupplier) {
@@ -1108,8 +1111,8 @@ public abstract class Single<T> implements SingleSource<T> {
      * Convert from a {@link Future} to a {@link Single} via {@link Future#get()}.
      * <p>
      * Note that because {@link Future} only presents blocking APIs to extract the result, so the process of getting the
-     * results will block. The caller of {@link #subscribe(Subscriber)} is responsible for offloading if necessary, and
-     * also offloading if {@link Cancellable#cancel()} will be called if this operation may block.
+     * results will block. The caller of subscribe is responsible for offloading if necessary, and also offloading if
+     * {@link Cancellable#cancel()} will be called and this operation may block.
      * <p>
      * To apply a timeout see {@link #timeout(long, TimeUnit)} and related methods.
      * @param future The {@link Future} to convert.
@@ -1435,7 +1438,8 @@ public abstract class Single<T> implements SingleSource<T> {
     //
 
     /**
-     * Replicating a call to {@link #subscribe(Subscriber)} but allows an override of the {@link AsyncContextMap}.
+     * Replicating a call to {@link #subscribe(SingleSource.Subscriber)} but allows an override of the
+     * {@link AsyncContextMap}.
      * @param subscriber the subscriber.
      * @param provider the {@link AsyncContextProvider} used to wrap any objects to preserve
      * {@link AsyncContextMap}.
@@ -1447,7 +1451,8 @@ public abstract class Single<T> implements SingleSource<T> {
     }
 
     /**
-     * Replicating a call to {@link #subscribe(Subscriber)} but with a materialized {@link AsyncContextMap}.
+     * Replicating a call to {@link #subscribe(SingleSource.Subscriber)} but with a materialized
+     * {@link AsyncContextMap}.
      * @param subscriber the subscriber.
      * @param contextMap the {@link AsyncContextMap} to use for this {@link Subscriber}.
      * @param contextProvider the {@link AsyncContextProvider} used to wrap any objects to preserve
@@ -1474,11 +1479,11 @@ public abstract class Single<T> implements SingleSource<T> {
     }
 
     /**
-     * Replicating a call to {@link #subscribe(Subscriber)} but with a materialized {@link SignalOffloader} and
-     * {@link AsyncContextMap}.
+     * Replicating a call to {@link #subscribe(SingleSource.Subscriber)} but with a materialized {@link SignalOffloader}
+     * and {@link AsyncContextMap}.
      * @param subscriber the subscriber.
-     * @param signalOffloader {@link SignalOffloader} to use for this {@link Subscriber}.
-     * @param contextMap the {@link AsyncContextMap} to use for this {@link Subscriber}.
+     * @param signalOffloader {@link SignalOffloader} to use for this {@link SingleSource.Subscriber}.
+     * @param contextMap the {@link AsyncContextMap} to use for this {@link SingleSource.Subscriber}.
      * @param contextProvider the {@link AsyncContextProvider} used to wrap any objects to preserve
      * {@link AsyncContextMap}.
      */
@@ -1496,17 +1501,18 @@ public abstract class Single<T> implements SingleSource<T> {
     }
 
     /**
-     * Override for {@link #handleSubscribe(Subscriber)} to offload the {@link #handleSubscribe(Subscriber)} call to the
-     * passed {@link SignalOffloader}.
+     * Override for {@link #handleSubscribe(SingleSource.Subscriber)} to offload the
+     * {@link #handleSubscribe(SingleSource.Subscriber)} call to the passed {@link SignalOffloader}.
      * <p>
-     * This method wraps the passed {@link Subscriber} using {@link SignalOffloader#offloadSubscriber(Subscriber)} and
-     * then calls {@link #handleSubscribe(Subscriber)} using
-     * {@link SignalOffloader#offloadSubscribe(Subscriber, Consumer)}. Operators that do not wish to wrap the passed
-     * {@link Subscriber} can override this method and omit the wrapping.
+     * This method wraps the passed {@link Subscriber} using
+     * {@link SignalOffloader#offloadSubscriber(SingleSource.Subscriber)} and then calls
+     * {@link #handleSubscribe(SingleSource.Subscriber)} using
+     * {@link SignalOffloader#offloadSubscribe(SingleSource.Subscriber, Consumer)}. Operators that do not wish to wrap
+     * the passed {@link Subscriber} can override this method and omit the wrapping.
      *
      * @param subscriber the subscriber.
      * @param signalOffloader {@link SignalOffloader} to use for this {@link Subscriber}.
-     * @param contextMap the {@link AsyncContextMap} to use for this {@link Subscriber}.
+     * @param contextMap the {@link AsyncContextMap} to use for this {@link SingleSource.Subscriber}.
      * @param contextProvider the {@link AsyncContextProvider} used to wrap any objects to preserve
      * {@link AsyncContextMap}.
      */

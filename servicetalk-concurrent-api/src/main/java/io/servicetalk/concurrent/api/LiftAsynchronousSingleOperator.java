@@ -15,6 +15,8 @@
  */
 package io.servicetalk.concurrent.api;
 
+import io.servicetalk.concurrent.SingleSource.Subscriber;
+
 import static java.util.Objects.requireNonNull;
 
 final class LiftAsynchronousSingleOperator<T, R> extends AbstractAsynchronousSingleOperator<T, R> {

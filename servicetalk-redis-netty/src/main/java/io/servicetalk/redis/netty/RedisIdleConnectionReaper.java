@@ -37,6 +37,7 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.Consumer;
 import java.util.function.UnaryOperator;
 
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.transport.netty.internal.NettyIoExecutors.toNettyIoExecutor;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
@@ -74,9 +75,9 @@ final class RedisIdleConnectionReaper implements UnaryOperator<RedisConnection> 
 
     @Override
     public RedisConnection apply(final RedisConnection redisConnection) {
-        Completable timer = toNettyIoExecutor(
+        CompletableSource timer = toSource(toNettyIoExecutor(
                 redisConnection.connectionContext().executionContext().ioExecutor())
-                        .asExecutor().timer(idleTimeoutNanos, NANOSECONDS);
+                .asExecutor().timer(idleTimeoutNanos, NANOSECONDS));
         return new IdleAwareRedisConnection(redisConnection, timer::subscribe);
     }
 
