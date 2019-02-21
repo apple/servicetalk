@@ -58,7 +58,7 @@ public final class AsyncContextInMemoryScopeManager implements InMemoryScopeMana
      * which {@link InMemoryScope#close()} was previously called.
      */
     @Nullable
-    public InMemoryScope activeOrClosed() {
+    public InMemoryScope currentScope() {
         return AsyncContext.get(SCOPE_KEY);
     }
 

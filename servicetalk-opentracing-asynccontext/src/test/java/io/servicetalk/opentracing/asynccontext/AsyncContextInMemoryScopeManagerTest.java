@@ -51,6 +51,6 @@ public class AsyncContextInMemoryScopeManagerTest {
         assertSame(scope, SCOPE_MANAGER.active());
         assertSame(mockSpan, scope.span());
         scope.close();
-        assertSame(scope, SCOPE_MANAGER.activeOrClosed());
+        assertSame(scope, SCOPE_MANAGER.currentScope());
     }
 }
