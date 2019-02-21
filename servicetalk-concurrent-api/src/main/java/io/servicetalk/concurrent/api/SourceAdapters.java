@@ -21,7 +21,6 @@ import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.SingleSource;
 
-import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import static java.util.Objects.requireNonNull;
@@ -131,19 +130,15 @@ public final class SourceAdapters {
     }
 
     @SuppressWarnings("unchecked")
-    @Nonnull
     private static <T> PublisherSource<T> uncheckCast(final Publisher<T> publisher) {
         return (PublisherSource<T>) publisher;
     }
 
     @SuppressWarnings("unchecked")
-    @Nonnull
     private static <T> SingleSource<T> uncheckCast(final Single<T> single) {
         return (SingleSource<T>) single;
     }
 
-    @SuppressWarnings("unchecked")
-    @Nonnull
     private static CompletableSource uncheckCast(final Completable completable) {
         return (CompletableSource) completable;
     }
