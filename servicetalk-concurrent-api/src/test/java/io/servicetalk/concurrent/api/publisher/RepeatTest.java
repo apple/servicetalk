@@ -69,12 +69,14 @@ public class RepeatTest {
 
     @Test
     public void testRequestAcrossRepeat() {
+        shouldRepeatValue = true;
         subscriberRule.request(3);
         source.sendItems(1, 2).onComplete();
         subscriberRule.verifyItems(1, 2);
         verify(shouldRepeat).test(1);
         source.verifySubscribed().sendItems(3);
-        subscriberRule.verifySuccess(3);
+        subscriberRule.verifyItems(3);
+        subscriberRule.verifyNoEmissions();
     }
 
     @Test
