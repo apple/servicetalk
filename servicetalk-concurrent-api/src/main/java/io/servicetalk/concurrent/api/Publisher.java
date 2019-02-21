@@ -65,6 +65,13 @@ import static java.util.Objects.requireNonNull;
  * An asynchronous computation that produces 0, 1 or more elements and may or may not terminate successfully or with
  * an error.
  *
+ * <h2>How to subscribe?</h2>
+ *
+ * This class does not provide a way to subscribe using a {@link PublisherSource.Subscriber} as such calls are
+ * ambiguous about the intent whether the subscribe is part of the same source (a.k.a an operator) or it is a terminal
+ * subscribe. If it is required to subscribe to a source, then a {@link SourceAdapters source adapter} can be used to
+ * convert to a {@link PublisherSource}.
+ *
  * @param <T> Type of items emitted.
  */
 public abstract class Publisher<T> {
@@ -1843,14 +1850,14 @@ public abstract class Publisher<T> {
     }
 
     /**
-     * Signifies that when the returned {@link Publisher} is subscribed, the {@link AsyncContext} will be shared
+     * Signifies that when the returned {@link Publisher} is subscribed to, the {@link AsyncContext} will be shared
      * instead of making a {@link AsyncContextMap#copy() copy}.
      * <p>
      * This operator only impacts behavior if the returned {@link Publisher} is subscribed directly after this operator,
      * that means this must be the "last operator" in the chain for this to have an impact.
      *
      * @return A {@link Publisher} that will share the {@link AsyncContext} instead of making a
-     * {@link AsyncContextMap#copy() copy} when subscribed.
+     * {@link AsyncContextMap#copy() copy} when subscribed to.
      */
     public final Publisher<T> subscribeShareContext() {
         return new PublisherSubscribeShareContext<>(this);
@@ -1890,8 +1897,8 @@ public abstract class Publisher<T> {
      * <strong>This method requires advanced knowledge of building operators. Before using this method please attempt
      * to compose existing operator(s) to satisfy your use case.</strong>
      * <p>
-     * Returns a {@link Publisher} which when subscribed, the {@code operator} argument will be used to wrap the
-     * {@link Subscriber} before subscribing to this {@link Publisher}.
+     * Returns a {@link Publisher} which will wrap the {@link PublisherSource.Subscriber} using the provided
+     * {@code operator} argument before subscribing to this {@link Publisher}.
      * <pre>{@code
      *     Publisher<X> pub = ...;
      *     pub.map(..) // A

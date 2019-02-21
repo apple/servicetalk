@@ -48,6 +48,13 @@ import static java.util.function.Function.identity;
 
 /**
  * An asynchronous computation that does not emit any data. It just completes or emits an error.
+ *
+ * <h2>How to subscribe?</h2>
+ *
+ * This class does not provide a way to subscribe using a {@link CompletableSource.Subscriber} as such calls are
+ * ambiguous about the intent whether the subscribe is part of the same source (a.k.a an operator) or it is a terminal
+ * subscribe. If it is required to subscribe to a source, then a {@link SourceAdapters source adapter} can be used to
+ * convert to a {@link CompletableSource}.
  */
 public abstract class Completable {
     private static final Logger LOGGER = LoggerFactory.getLogger(Completable.class);
@@ -869,8 +876,8 @@ public abstract class Completable {
      * <strong>This method requires advanced knowledge of building operators. Before using this method please attempt
      * to compose existing operator(s) to satisfy your use case.</strong>
      * <p>
-     * Returns a {@link Completable} which when subscribed, the {@code operator} argument will be used to wrap the
-     * {@link Subscriber} before subscribing to this {@link Completable}.
+     * Returns a {@link Completable} which will wrap the {@link Subscriber} using the provided {@code operator} argument
+     * before subscribing to this {@link Completable}.
      * <pre>{@code
      *     Completable<X> pub = ...;
      *     pub.map(..) // A
@@ -898,8 +905,8 @@ public abstract class Completable {
      * <strong>This method requires advanced knowledge of building operators. Before using this method please attempt
      * to compose existing operator(s) to satisfy your use case.</strong>
      * <p>
-     * Returns a {@link Completable} which when subscribed, the {@code operator} argument will be used to wrap the
-     * {@link Subscriber} before subscribing to this {@link Completable}.
+     * Returns a {@link Completable} which will wrap the {@link Subscriber} using the provided {@code operator} argument
+     * before subscribing to this {@link Completable}.
      * <pre>{@code
      *     Publisher<X> pub = ...;
      *     pub.map(..) // A
@@ -1037,14 +1044,14 @@ public abstract class Completable {
     }
 
     /**
-     * Signifies that when the returned {@link Completable} is subscribed, the {@link AsyncContext} will be shared
+     * Signifies that when the returned {@link Completable} is subscribed to, the {@link AsyncContext} will be shared
      * instead of making a {@link AsyncContextMap#copy() copy}.
      * <p>
      * This operator only impacts behavior if the returned {@link Completable} is subscribed directly after this
      * operator, that means this must be the "last operator" in the chain for this to have an impact.
      *
      * @return A {@link Completable} that will share the {@link AsyncContext} instead of making a
-     * {@link AsyncContextMap#copy() copy} when subscribed.
+     * {@link AsyncContextMap#copy() copy} when subscribed to.
      */
     public final Completable subscribeShareContext() {
         return new CompletableSubscribeShareContext(this);

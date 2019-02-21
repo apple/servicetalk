@@ -16,6 +16,7 @@
 package io.servicetalk.http.utils;
 
 import io.servicetalk.concurrent.Cancellable;
+import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.SingleSource.Subscriber;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.SequentialCancellable;
@@ -53,7 +54,7 @@ final class RedirectSingle extends Single<StreamingHttpResponse> {
     private static final Logger LOGGER = LoggerFactory.getLogger(RedirectSingle.class);
 
     private final HttpExecutionStrategy strategy;
-    private final Single<StreamingHttpResponse> originalResponse;
+    private final SingleSource<StreamingHttpResponse> originalResponse;
     private final StreamingHttpRequest originalRequest;
     private final int maxRedirects;
     private final StreamingHttpRequester requester;
@@ -79,7 +80,7 @@ final class RedirectSingle extends Single<StreamingHttpResponse> {
                    final StreamingHttpRequester requester,
                    final boolean onlyRelative) {
         this.strategy = strategy;
-        this.originalResponse = requireNonNull(originalResponse);
+        this.originalResponse = toSource(originalResponse);
         this.originalRequest = requireNonNull(originalRequest);
         this.maxRedirects = maxRedirects;
         this.requester = requireNonNull(requester);
@@ -88,7 +89,7 @@ final class RedirectSingle extends Single<StreamingHttpResponse> {
 
     @Override
     protected void handleSubscribe(final Subscriber<? super StreamingHttpResponse> subscriber) {
-        toSource(originalResponse).subscribe(new RedirectSubscriber(subscriber, this, originalRequest));
+        originalResponse.subscribe(new RedirectSubscriber(subscriber, this, originalRequest));
     }
 
     private static final class RedirectSubscriber implements Subscriber<StreamingHttpResponse> {

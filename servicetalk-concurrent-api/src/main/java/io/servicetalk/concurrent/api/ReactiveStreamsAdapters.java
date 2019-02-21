@@ -43,9 +43,6 @@ public final class ReactiveStreamsAdapters {
      */
     public static <T> org.reactivestreams.Publisher<T> toReactiveStreamsPublisher(Publisher<T> source) {
         requireNonNull(source);
-        if (source instanceof org.reactivestreams.Publisher) {
-            return uncheckCast(source);
-        }
         return subscriber -> source.subscribe(new ReactiveStreamsSubscriber<>(subscriber));
     }
 
@@ -60,9 +57,6 @@ public final class ReactiveStreamsAdapters {
      */
     public static <T> org.reactivestreams.Publisher<T> toReactiveStreamsPublisher(PublisherSource<T> source) {
         requireNonNull(source);
-        if (source instanceof org.reactivestreams.Publisher) {
-            return uncheckCast(source);
-        }
         return subscriber -> source.subscribe(new ReactiveStreamsSubscriber<>(subscriber));
     }
 
@@ -102,15 +96,5 @@ public final class ReactiveStreamsAdapters {
         public void onComplete() {
             subscriber.onComplete();
         }
-    }
-
-    @SuppressWarnings("unchecked")
-    private static <T> org.reactivestreams.Publisher<T> uncheckCast(final PublisherSource<T> source) {
-        return (org.reactivestreams.Publisher<T>) source;
-    }
-
-    @SuppressWarnings("unchecked")
-    private static <T> org.reactivestreams.Publisher<T> uncheckCast(final Publisher<T> source) {
-        return (org.reactivestreams.Publisher<T>) source;
     }
 }

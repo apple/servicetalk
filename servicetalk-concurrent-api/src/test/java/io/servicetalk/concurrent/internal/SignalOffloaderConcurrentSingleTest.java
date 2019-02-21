@@ -17,7 +17,7 @@ package io.servicetalk.concurrent.internal;
 
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.CompletableSource;
-import io.servicetalk.concurrent.SingleSource.Subscriber;
+import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Executors;
@@ -139,8 +139,8 @@ public class SignalOffloaderConcurrentSingleTest {
 
             final SubscriberImpl subscriber;
             final CancellableImpl cancellable;
-            private Subscriber<? super Integer> offloadCancellable;
-            private Subscriber<? super Integer> offloadSubscriber;
+            private SingleSource.Subscriber<? super Integer> offloadCancellable;
+            private SingleSource.Subscriber<? super Integer> offloadSubscriber;
 
             SubscriberCancellablePair(SubscriberImpl subscriber, CancellableImpl cancellable) {
                 this.subscriber = subscriber;
@@ -173,7 +173,7 @@ public class SignalOffloaderConcurrentSingleTest {
         }
     }
 
-    private static final class SubscriberImpl implements Subscriber<Integer> {
+    private static final class SubscriberImpl implements SingleSource.Subscriber<Integer> {
 
         private final CountDownLatch awaitOnSubscribe = new CountDownLatch(1);
         @Nullable

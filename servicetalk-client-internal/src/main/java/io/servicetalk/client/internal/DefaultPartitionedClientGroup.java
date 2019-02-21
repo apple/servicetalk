@@ -22,7 +22,7 @@ import io.servicetalk.client.api.partition.PartitionMap;
 import io.servicetalk.client.api.partition.PartitionMapFactory;
 import io.servicetalk.client.api.partition.PartitionedServiceDiscovererEvent;
 import io.servicetalk.concurrent.CompletableSource;
-import io.servicetalk.concurrent.PublisherSource.Subscriber;
+import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.api.AsyncCloseable;
 import io.servicetalk.concurrent.api.Completable;
@@ -254,7 +254,8 @@ public final class DefaultPartitionedClientGroup<U, R, Client extends Listenable
     }
 
     private final class GroupedByPartitionSubscriber
-            implements Subscriber<GroupedPublisher<Partition<Client>, ? extends PartitionedServiceDiscovererEvent<R>>> {
+            implements PublisherSource.Subscriber<GroupedPublisher<Partition<Client>,
+            ? extends PartitionedServiceDiscovererEvent<R>>> {
 
         private final PartitionedClientFactory<U, R, Client> clientFactory;
 

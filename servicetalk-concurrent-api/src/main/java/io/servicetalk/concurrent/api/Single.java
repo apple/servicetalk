@@ -51,6 +51,13 @@ import static java.util.function.Function.identity;
 /**
  * An asynchronous computation that either completes with success giving the result or completes with an error.
  *
+ * <h2>How to subscribe?</h2>
+ *
+ * This class does not provide a way to subscribe using a {@link SingleSource.Subscriber} as such calls are
+ * ambiguous about the intent whether the subscribe is part of the same source (a.k.a an operator) or it is a terminal
+ * subscribe. If it is required to subscribe to a source, then a {@link SourceAdapters source adapter} can be used to
+ * convert to a {@link SingleSource}.
+ *
  * @param <T> Type of the result of the single.
  */
 public abstract class Single<T> {
@@ -880,14 +887,14 @@ public abstract class Single<T> {
     }
 
     /**
-     * Signifies that when the returned {@link Single} is subscribed, the {@link AsyncContext} will be shared
+     * Signifies that when the returned {@link Single} is subscribed to, the {@link AsyncContext} will be shared
      * instead of making a {@link AsyncContextMap#copy() copy}.
      * <p>
      * This operator only impacts behavior if the returned {@link Single} is subscribed directly after this operator,
      * that means this must be the "last operator" in the chain for this to have an impact.
      *
      * @return A {@link Single} that will share the {@link AsyncContext} instead of making a
-     * {@link AsyncContextMap#copy() copy} when subscribed.
+     * {@link AsyncContextMap#copy() copy} when subscribed to.
      */
     public final Single<T> subscribeShareContext() {
         return new SingleSubscribeShareContext<>(this);
@@ -897,8 +904,8 @@ public abstract class Single<T> {
      * <strong>This method requires advanced knowledge of building operators. Before using this method please attempt
      * to compose existing operator(s) to satisfy your use case.</strong>
      * <p>
-     * Returns a {@link Single} which when subscribed, the {@code operator} argument will be used to wrap the
-     * {@link Subscriber} before subscribing to this {@link Single}.
+     * Returns a {@link Single} which will wrap the {@link SingleSource.Subscriber} using the provided {@code operator}
+     * argument before subscribing to this {@link Single}.
      * <pre>{@code
      *     Single<X> pub = ...;
      *     pub.map(..) // A
@@ -926,8 +933,8 @@ public abstract class Single<T> {
      * <strong>This method requires advanced knowledge of building operators. Before using this method please attempt
      * to compose existing operator(s) to satisfy your use case.</strong>
      * <p>
-     * Returns a {@link Single} which when subscribed, the {@code operator} argument will be used to wrap the
-     * {@link Subscriber} before subscribing to this {@link Single}.
+     * Returns a {@link Single} which will wrap the {@link SingleSource.Subscriber} using the provided {@code operator}
+     * argument before subscribing to this {@link Single}.
      * <pre>{@code
      *     Publisher<X> pub = ...;
      *     pub.map(..) // Aw
@@ -1092,7 +1099,7 @@ public abstract class Single<T> {
      * @param singleSupplier {@link Supplier} to create a new {@link Single} every time the returned {@link Single} is
      * subscribed.
      * @param <T> Type of the {@link Single}.
-     * @return A new {@link Publisher} that creates a new {@link Single} using {@code singleSupplier} every time
+     * @return A new {@link Single} that creates a new {@link Single} using {@code singleSupplier} every time
      * it is subscribed and forwards all items and terminal events from the newly created {@link Single} to its
      * {@link Subscriber}.
      */
@@ -1105,7 +1112,7 @@ public abstract class Single<T> {
      * <p>
      * Note that because {@link Future} only presents blocking APIs to extract the result, so the process of getting the
      * results will block. The caller of subscribe is responsible for offloading if necessary, and also offloading if
-     * {@link Cancellable#cancel()} will be called if this operation may block.
+     * {@link Cancellable#cancel()} will be called and this operation may block.
      * <p>
      * To apply a timeout see {@link #timeout(long, TimeUnit)} and related methods.
      * @param future The {@link Future} to convert.

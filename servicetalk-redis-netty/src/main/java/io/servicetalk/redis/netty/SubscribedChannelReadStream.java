@@ -17,6 +17,7 @@ package io.servicetalk.redis.netty;
 
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
+import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.api.Publisher;
@@ -74,16 +75,16 @@ final class SubscribedChannelReadStream extends Publisher<SubscribedChannelReadS
             new CompleteBulkString(DEFAULT_ALLOCATOR.fromAscii("punsubscribe").asReadOnly());
 
     private final BufferAllocator allocator;
-    private final Publisher<RedisData> original;
+    private final PublisherSource<RedisData> original;
 
     SubscribedChannelReadStream(final Publisher<RedisData> original, final BufferAllocator allocator) {
-        this.original = requireNonNull(original);
+        this.original = toSource(original);
         this.allocator = requireNonNull(allocator);
     }
 
     @Override
     protected void handleSubscribe(Subscriber<? super PubSubChannelMessage> subscriber) {
-        toSource(original).subscribe(new AggregatingSubscriber(subscriber, allocator));
+        original.subscribe(new AggregatingSubscriber(subscriber, allocator));
     }
 
     /**

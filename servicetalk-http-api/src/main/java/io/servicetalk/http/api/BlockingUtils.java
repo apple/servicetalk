@@ -16,7 +16,7 @@
 package io.servicetalk.http.api;
 
 import io.servicetalk.concurrent.CompletableSource;
-import io.servicetalk.concurrent.SingleSource.Subscriber;
+import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.ThreadInterruptingCancellable;
@@ -67,7 +67,7 @@ final class BlockingUtils {
     static <T> Single<T> blockingToSingle(SupplierCheckedException<T> supplier) {
         return new Single<T>() {
             @Override
-            protected void handleSubscribe(final Subscriber<? super T> subscriber) {
+            protected void handleSubscribe(final SingleSource.Subscriber<? super T> subscriber) {
                 ThreadInterruptingCancellable cancellable = new ThreadInterruptingCancellable(currentThread());
                 subscriber.onSubscribe(cancellable);
                 final T response;

@@ -231,7 +231,7 @@ public final class DefaultNettyPipelinedConnection<Req, Resp> implements NettyPi
 
         @Override
         protected void execute(Task<Resp> requestTask) {
-            toSource(requestTask.write).subscribe(new WriteSourceSubscriber<>(requestTask, this));
+            requestTask.write.subscribe(new WriteSourceSubscriber<>(requestTask, this));
         }
     }
 
@@ -260,14 +260,14 @@ public final class DefaultNettyPipelinedConnection<Req, Resp> implements NettyPi
 
     private static final class Task<Resp> extends SequentialCancellable {
 
-        final Completable write;
+        final CompletableSource write;
         final CompletableSource.Subscriber readReadyListener;
         @Nullable
         final Predicate<Resp> terminalMsgPredicate;
 
         Task(Completable write, CompletableSource.Subscriber readReadyListener,
              @Nullable Predicate<Resp> terminalMsgPredicate) {
-            this.write = requireNonNull(write);
+            this.write = toSource(write);
             this.readReadyListener = requireNonNull(readReadyListener);
             this.terminalMsgPredicate = terminalMsgPredicate;
         }

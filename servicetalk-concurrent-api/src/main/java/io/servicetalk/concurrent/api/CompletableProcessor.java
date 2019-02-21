@@ -16,7 +16,6 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
-import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.CompletableSource.Subscriber;
 import io.servicetalk.concurrent.internal.QueueFullAndRejectedSubscribeException;
 import io.servicetalk.concurrent.internal.TerminalNotification;
@@ -36,7 +35,7 @@ import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
  * A {@link Completable} which is also a {@link Subscriber}. State of this {@link Completable} can be modified by using
  * the {@link Subscriber} methods which is forwarded to all existing or subsequent {@link Subscriber}s.
  */
-public final class CompletableProcessor extends Completable implements CompletableSource.Subscriber {
+public final class CompletableProcessor extends Completable implements Subscriber {
 
     private static final AtomicReferenceFieldUpdater<CompletableProcessor, TerminalNotification> terminalSignalUpdater =
             AtomicReferenceFieldUpdater.newUpdater(CompletableProcessor.class, TerminalNotification.class,
