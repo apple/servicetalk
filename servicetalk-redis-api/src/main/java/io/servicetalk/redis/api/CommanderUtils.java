@@ -32,6 +32,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.redis.api.RedisData.QUEUED;
 
 final class CommanderUtils {
@@ -125,7 +126,7 @@ final class CommanderUtils {
     private static void handleCancel(final ReservedRedisConnection reservedCnx,
                                      final List<SingleProcessor<?>> singles,
                                      final String exceptionMessage) {
-        reservedCnx.closeAsync().subscribe(new CompletableSource.Subscriber() {
+        toSource(reservedCnx.closeAsync()).subscribe(new CompletableSource.Subscriber() {
             @Override
             public void onSubscribe(final Cancellable cancellable) {
                 // no-op
@@ -185,8 +186,8 @@ final class CommanderUtils {
                         .concatWith(error(discardThrowable))
                 ).concatWith(reservedCnx.releaseAsync()); // If discard succeeds, release the connection.
             }
-            discardSingle.doAfterCancel(() -> handleCancel(reservedCnx, singles,
-                    "Connection closed due to discard() cancellation."))
+            toSource(discardSingle.doAfterCancel(() -> handleCancel(reservedCnx, singles,
+                    "Connection closed due to discard() cancellation.")))
                     .subscribe(subscriber);
         }
     }
@@ -213,7 +214,7 @@ final class CommanderUtils {
         }
 
         @Override
-        protected void handleSubscribe(final Subscriber subscriber) {
+        protected void handleSubscribe(final CompletableSource.Subscriber subscriber) {
             if (!stateUpdater.compareAndSet(commander, STATE_PENDING, STATE_EXECUTED)) {
                 subscriber.onSubscribe(IGNORE_CANCEL);
                 subscriber.onError(new DuplicateSubscribeException(stateUpdater.get(commander), subscriber));
@@ -232,8 +233,8 @@ final class CommanderUtils {
                         .concatWith(error(discardThrowable))
                 ).concatWith(reservedCnx.releaseAsync()); // If exec succeeds, release the connection.
             }
-            execCompletable.doAfterCancel(() -> handleCancel(reservedCnx, singles,
-                    "Connection closed due to exec() cancellation."))
+            toSource(execCompletable.doAfterCancel(() -> handleCancel(reservedCnx, singles,
+                    "Connection closed due to exec() cancellation.")))
                     .subscribe(subscriber);
         }
     }

@@ -15,6 +15,8 @@
  */
 package io.servicetalk.concurrent.api;
 
+import io.servicetalk.concurrent.PublisherSource.Subscriber;
+import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.api.GroupedPublisher.QueueSizeProvider;
 import io.servicetalk.concurrent.api.MulticastUtils.IndividualMulticastSubscriber;
 import io.servicetalk.concurrent.api.MulticastUtils.SpscQueue;

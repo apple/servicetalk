@@ -24,6 +24,7 @@ import org.junit.Test;
 import java.util.function.Supplier;
 
 import static io.servicetalk.concurrent.api.Completable.completed;
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -53,7 +54,7 @@ public class CompletableDeferTest {
 
     private static void listenAndVerify(Completable source) {
         CompletableSource.Subscriber subscriber = mock(CompletableSource.Subscriber.class);
-        source.subscribe(subscriber);
+        toSource(source).subscribe(subscriber);
         verify(subscriber).onSubscribe(any());
         verify(subscriber).onComplete();
         verifyNoMoreInteractions(subscriber);

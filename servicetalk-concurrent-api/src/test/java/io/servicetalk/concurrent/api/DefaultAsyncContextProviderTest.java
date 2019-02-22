@@ -114,7 +114,7 @@ public class DefaultAsyncContextProviderTest {
     public void testContextInCompletableListener() throws Exception {
         Completable completable = new Completable() {
             @Override
-            protected void handleSubscribe(Subscriber completableSubscriber) {
+            protected void handleSubscribe(CompletableSource.Subscriber completableSubscriber) {
                 completeOnExecutor(completableSubscriber);
             }
         };
@@ -145,7 +145,7 @@ public class DefaultAsyncContextProviderTest {
 
         Completable completable = new Completable() {
             @Override
-            protected void handleSubscribe(Subscriber completableSubscriber) {
+            protected void handleSubscribe(CompletableSource.Subscriber completableSubscriber) {
                 AsyncContext.put(K1, "v1.2");
                 AsyncContext.put(K2, "v2.1");
                 f1.complete(AsyncContext.current().copy());
@@ -153,7 +153,7 @@ public class DefaultAsyncContextProviderTest {
             }
         }.merge(new Completable() {
             @Override
-            protected void handleSubscribe(Subscriber completableSubscriber) {
+            protected void handleSubscribe(CompletableSource.Subscriber completableSubscriber) {
                 AsyncContext.put(K2, "v2.2");
                 // We are in another async source, this shouldn't be visible to the outer Subscriber chain.
                 f2.complete(AsyncContext.current().copy());
@@ -179,7 +179,7 @@ public class DefaultAsyncContextProviderTest {
     public void testContextInSingleListener() throws Exception {
         Single<String> single = new Single<String>() {
             @Override
-            protected void handleSubscribe(Subscriber<? super String> singleSubscriber) {
+            protected void handleSubscribe(SingleSource.Subscriber<? super String> singleSubscriber) {
                 completeOnExecutor(singleSubscriber, "a");
             }
         };
@@ -212,7 +212,7 @@ public class DefaultAsyncContextProviderTest {
 
         Single<String> single = new Single<String>() {
             @Override
-            protected void handleSubscribe(Subscriber<? super String> singleSubscriber) {
+            protected void handleSubscribe(SingleSource.Subscriber<? super String> singleSubscriber) {
                 AsyncContext.put(K1, "v1.2");
                 AsyncContext.put(K2, "v2.1");
                 f1.complete(AsyncContext.current().copy());
@@ -227,7 +227,7 @@ public class DefaultAsyncContextProviderTest {
             f3.complete(AsyncContext.current().copy());
             return new Single<String>() {
                 @Override
-                protected void handleSubscribe(Subscriber<? super String> singleSubscriber) {
+                protected void handleSubscribe(SingleSource.Subscriber<? super String> singleSubscriber) {
                     // We are in another async source, this shouldn't be visible to the outer Subscriber chain.
                     f4.complete(AsyncContext.current().copy());
                     completeOnExecutor(singleSubscriber, "b");
@@ -261,7 +261,7 @@ public class DefaultAsyncContextProviderTest {
 
         Completable completable = new Single<String>() {
             @Override
-            protected void handleSubscribe(Subscriber<? super String> singleSubscriber) {
+            protected void handleSubscribe(SingleSource.Subscriber<? super String> singleSubscriber) {
                 AsyncContext.put(K1, "v1.2");
                 AsyncContext.put(K2, "v2.1");
                 f1.complete(AsyncContext.current().copy());
@@ -269,7 +269,7 @@ public class DefaultAsyncContextProviderTest {
             }
         }.ignoreResult().merge(new Completable() {
             @Override
-            protected void handleSubscribe(Subscriber completableSubscriber) {
+            protected void handleSubscribe(CompletableSource.Subscriber completableSubscriber) {
                 // We are in another async source, this shouldn't be visible to the outer Subscriber chain.
                 AsyncContext.put(K2, "v2.2");
                 f2.complete(AsyncContext.current().copy());

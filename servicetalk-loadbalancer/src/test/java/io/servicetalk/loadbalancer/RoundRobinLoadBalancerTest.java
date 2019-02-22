@@ -60,6 +60,7 @@ import java.util.function.Function;
 import static io.servicetalk.concurrent.api.BlockingTestUtils.awaitIndefinitely;
 import static io.servicetalk.concurrent.api.Single.error;
 import static io.servicetalk.concurrent.api.Single.success;
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.concurrent.internal.ServiceTalkTestTimeout.DEFAULT_TIMEOUT_SECONDS;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -140,7 +141,7 @@ public class RoundRobinLoadBalancerTest {
         CountDownLatch readyLatch = new CountDownLatch(1);
         CountDownLatch completeLatch = new CountDownLatch(1);
         AtomicReference<Throwable> causeRef = new AtomicReference<>();
-        lb.eventStream().subscribe(new Subscriber<Object>() {
+        toSource(lb.eventStream()).subscribe(new Subscriber<Object>() {
             @Override
             public void onSubscribe(final Subscription s) {
                 s.request(1);

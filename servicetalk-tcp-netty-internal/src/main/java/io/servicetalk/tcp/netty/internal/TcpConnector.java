@@ -19,6 +19,7 @@ import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.buffer.netty.BufferUtil;
 import io.servicetalk.client.api.RetryableConnectException;
 import io.servicetalk.concurrent.SingleSource;
+import io.servicetalk.concurrent.SingleSource.Subscriber;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.DelayedCancellable;
 import io.servicetalk.transport.api.ExecutionContext;

@@ -19,6 +19,7 @@ import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
+import io.servicetalk.concurrent.SingleSource.Subscriber;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.DuplicateSubscribeException;
@@ -35,6 +36,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.EmptySubscription.EMPTY_SUBSCRIPTION;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.checkDuplicateSubscription;
 import static io.servicetalk.concurrent.internal.ThrowableUtil.unknownStackTrace;
@@ -52,7 +54,7 @@ final class SpliceFlatStreamToMetaSingle<Data, MetaData, Payload> extends Single
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SpliceFlatStreamToMetaSingle.class);
     private final BiFunction<MetaData, Publisher<Payload>, Data> packer;
-    private final Publisher<?> original;
+    private final PublisherSource<?> original;
 
     /**
      * Operator splicing a {@link Publisher}&lt;{@link Object}&gt; with a common {@link Payload} and {@link
@@ -65,7 +67,7 @@ final class SpliceFlatStreamToMetaSingle<Data, MetaData, Payload> extends Single
      */
     SpliceFlatStreamToMetaSingle(Publisher<?> original, BiFunction<MetaData, Publisher<Payload>, Data> packer) {
         this.packer = requireNonNull(packer);
-        this.original = requireNonNull(original);
+        this.original = toSource(original);
     }
 
     @Override
@@ -102,7 +104,7 @@ final class SpliceFlatStreamToMetaSingle<Data, MetaData, Payload> extends Single
          * </ul>
          */
         @Nullable
-        @SuppressWarnings({"unused", "unchecked"})
+        @SuppressWarnings("unused")
         private volatile Object maybePayloadSub;
 
         /**

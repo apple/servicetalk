@@ -19,6 +19,7 @@ import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.SingleSource;
+import io.servicetalk.concurrent.SingleSource.Subscriber;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.MockedCompletableListenerRule;
 import io.servicetalk.concurrent.api.MockedSubscriberRule;

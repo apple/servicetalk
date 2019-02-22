@@ -15,6 +15,7 @@
  */
 package io.servicetalk.concurrent.api;
 
+import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.internal.RejectedSubscribeException;
 import io.servicetalk.concurrent.internal.SignalOffloader;
 

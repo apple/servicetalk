@@ -56,6 +56,7 @@ import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseabl
 import static io.servicetalk.concurrent.api.BlockingTestUtils.awaitIndefinitelyNonNull;
 import static io.servicetalk.concurrent.api.Publisher.just;
 import static io.servicetalk.concurrent.api.Single.success;
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpResponseStatuses.OK;
 import static io.servicetalk.http.api.StreamingHttpConnection.SettingKey.MAX_CONCURRENCY;
@@ -122,8 +123,8 @@ public class HttpOffloadingTest {
                                         + currentThread().getName()));
                             }
                         });
-        final Single<StreamingHttpResponse> resp = httpConnection.request(
-                httpConnection.get("/").payloadBody(reqPayload));
+        final SingleSource<StreamingHttpResponse> resp = toSource(httpConnection.request(
+                httpConnection.get("/").payloadBody(reqPayload)));
         resp.subscribe(new SingleSource.Subscriber<StreamingHttpResponse>() {
             @Override
             public void onSubscribe(final Cancellable cancellable) {
@@ -169,7 +170,7 @@ public class HttpOffloadingTest {
 
     @Test
     public void reserveConnectionIsOffloaded() throws Exception {
-        client.reserveConnection(client.get("/")).doAfterFinally(terminated::countDown)
+        toSource(client.reserveConnection(client.get("/")).doAfterFinally(terminated::countDown))
                 .subscribe(new SingleSource.Subscriber<StreamingHttpClient.ReservedStreamingHttpConnection>() {
                     @Override
                     public void onSubscribe(final Cancellable cancellable) {
@@ -259,7 +260,7 @@ public class HttpOffloadingTest {
     }
 
     private void subscribeTo(Predicate<Thread> notExpectedThread, Collection<Throwable> errors, Completable source) {
-        source.doAfterFinally(terminated::countDown).subscribe(new CompletableSource.Subscriber() {
+        toSource(source.doAfterFinally(terminated::countDown)).subscribe(new CompletableSource.Subscriber() {
             @Override
             public void onSubscribe(final Cancellable cancellable) {
                 if (notExpectedThread.test(currentThread())) {
@@ -293,7 +294,7 @@ public class HttpOffloadingTest {
 
     private static <T> void subscribeTo(Predicate<Thread> notExpectedThread, Collection<Throwable> errors,
                                         Publisher<T> source, String msgPrefix) {
-        source.subscribe(new Subscriber<T>() {
+        toSource(source).subscribe(new Subscriber<T>() {
             @Override
             public void onSubscribe(final Subscription s) {
                 if (notExpectedThread.test(currentThread())) {

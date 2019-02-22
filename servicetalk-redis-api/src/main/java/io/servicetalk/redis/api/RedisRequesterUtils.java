@@ -33,6 +33,7 @@ import java.util.Deque;
 import java.util.List;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.ConcurrentSubscription.wrap;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -68,8 +69,8 @@ final class RedisRequesterUtils {
         }
 
         @Override
-        protected void handleSubscribe(final Subscriber<? super R> subscriber) {
-            requester.request(strategy, request).subscribe(new AggregatingSubscriber<R>(subscriber) {
+        protected void handleSubscribe(final SingleSource.Subscriber<? super R> subscriber) {
+            toSource(requester.request(strategy, request)).subscribe(new AggregatingSubscriber<R>(subscriber) {
                 @Nullable
                 private CharSequence simpleString;
                 @Nullable
@@ -144,8 +145,8 @@ final class RedisRequesterUtils {
         }
 
         @Override
-        protected void handleSubscribe(final Subscriber<? super R> subscriber) {
-            requester.request(strategy, request).subscribe(new AggregatingSubscriber<R>(subscriber) {
+        protected void handleSubscribe(final SingleSource.Subscriber<? super R> subscriber) {
+            toSource(requester.request(strategy, request)).subscribe(new AggregatingSubscriber<R>(subscriber) {
                 @Nullable
                 private Buffer aggregator;
                 @Nullable
@@ -214,8 +215,8 @@ final class RedisRequesterUtils {
         }
 
         @Override
-        protected void handleSubscribe(final Subscriber<? super R> subscriber) {
-            requester.request(strategy, request).subscribe(new AggregatingSubscriber<R>(subscriber) {
+        protected void handleSubscribe(final SingleSource.Subscriber<? super R> subscriber) {
+            toSource(requester.request(strategy, request)).subscribe(new AggregatingSubscriber<R>(subscriber) {
                 @Nullable
                 private Long answer;
                 @Nullable
@@ -270,8 +271,8 @@ final class RedisRequesterUtils {
         }
 
         @Override
-        protected void handleSubscribe(final Subscriber<? super R> subscriber) {
-            requester.request(strategy, request).subscribe(new AggregatingSubscriber<R>(subscriber) {
+        protected void handleSubscribe(final SingleSource.Subscriber<? super R> subscriber) {
+            toSource(requester.request(strategy, request)).subscribe(new AggregatingSubscriber<R>(subscriber) {
                 @Nullable
                 private RedisServerException redisError;
                 @Nullable

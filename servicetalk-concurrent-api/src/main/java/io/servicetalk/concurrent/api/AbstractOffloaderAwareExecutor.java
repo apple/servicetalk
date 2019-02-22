@@ -15,6 +15,7 @@
  */
 package io.servicetalk.concurrent.api;
 
+import io.servicetalk.concurrent.CompletableSource.Subscriber;
 import io.servicetalk.concurrent.internal.SignalOffloaderFactory;
 
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;

@@ -76,7 +76,7 @@ public class SubscribeThrowsTest {
     public void singleSubscriberThrows() throws Exception {
         Single<String> s = new Single<String>() {
             @Override
-            protected void handleSubscribe(final Subscriber subscriber) {
+            protected void handleSubscribe(final SingleSource.Subscriber subscriber) {
                 throw DELIBERATE_EXCEPTION;
             }
         };
@@ -93,7 +93,7 @@ public class SubscribeThrowsTest {
                 (SingleSource.Subscriber<String>) mock(SingleSource.Subscriber.class);
         Single<String> s = new Single<String>() {
             @Override
-            protected void handleSubscribe(final Subscriber subscriber) {
+            protected void handleSubscribe(final SingleSource.Subscriber subscriber) {
                 throw DELIBERATE_EXCEPTION;
             }
         };
@@ -106,7 +106,7 @@ public class SubscribeThrowsTest {
     public void completableSubscriberThrows() throws Exception {
         Completable c = new Completable() {
             @Override
-            protected void handleSubscribe(final Subscriber subscriber) {
+            protected void handleSubscribe(final CompletableSource.Subscriber subscriber) {
                 throw DELIBERATE_EXCEPTION;
             }
         };
@@ -121,7 +121,7 @@ public class SubscribeThrowsTest {
         CompletableSource.Subscriber subscriber = mock(CompletableSource.Subscriber.class);
         Completable c = new Completable() {
             @Override
-            protected void handleSubscribe(final Subscriber subscriber) {
+            protected void handleSubscribe(final CompletableSource.Subscriber subscriber) {
                 throw DELIBERATE_EXCEPTION;
             }
         };

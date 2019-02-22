@@ -19,6 +19,9 @@ import io.servicetalk.client.api.DefaultServiceDiscovererEvent;
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.concurrent.Cancellable;
+import io.servicetalk.concurrent.CompletableSource;
+import io.servicetalk.concurrent.PublisherSource.Subscriber;
+import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.CompletableProcessor;
 import io.servicetalk.concurrent.api.Publisher;
@@ -52,6 +55,7 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.client.internal.ServiceDiscovererUtils.calculateDifference;
 import static io.servicetalk.concurrent.api.Publisher.error;
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.EmptySubscription.EMPTY_SUBSCRIPTION;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.isRequestNValid;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.newExceptionForInvalidRequestN;
@@ -170,8 +174,8 @@ final class DefaultDnsServiceDiscoverer
     public Completable closeAsync() {
         return new Completable() {
             @Override
-            protected void handleSubscribe(final Subscriber subscriber) {
-                closeCompletable.subscribe(subscriber);
+            protected void handleSubscribe(final CompletableSource.Subscriber subscriber) {
+                toSource(closeCompletable).subscribe(subscriber);
                 if (nettyIoExecutor.isCurrentThreadEventLoop()) {
                     closeAsync0();
                 } else {

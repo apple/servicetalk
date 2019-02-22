@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
@@ -34,9 +35,9 @@ public class DoBeforeSubscribeTest extends AbstractDoSubscribeTest {
     @Test
     public void testCallbackThrowsError() {
         List<AssertionError> failures = new ArrayList<>();
-        doSubscribe(Completable.completed(), s -> {
+        toSource(doSubscribe(Completable.completed(), s -> {
             throw DELIBERATE_EXCEPTION;
-        }).subscribe(new Subscriber() {
+        })).subscribe(new Subscriber() {
             @Override
             public void onSubscribe(final Cancellable c) {
                 failures.add(new AssertionError("onSubscribe invoked unexpectedly."));

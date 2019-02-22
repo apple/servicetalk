@@ -17,6 +17,7 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
+import io.servicetalk.concurrent.SingleSource.Subscriber;
 import io.servicetalk.concurrent.internal.SignalOffloader;
 
 import org.slf4j.Logger;

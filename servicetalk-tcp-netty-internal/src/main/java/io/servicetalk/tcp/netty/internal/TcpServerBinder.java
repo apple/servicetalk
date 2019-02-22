@@ -18,6 +18,7 @@ package io.servicetalk.tcp.netty.internal;
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.buffer.netty.BufferUtil;
 import io.servicetalk.client.api.ConnectionRejectedException;
+import io.servicetalk.concurrent.SingleSource.Subscriber;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.transport.api.ConnectionAcceptor;
 import io.servicetalk.transport.api.ConnectionContext;

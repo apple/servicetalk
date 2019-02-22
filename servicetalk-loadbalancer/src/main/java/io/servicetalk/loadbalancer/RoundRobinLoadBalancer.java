@@ -56,6 +56,7 @@ import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Single.defer;
 import static io.servicetalk.concurrent.api.Single.error;
 import static io.servicetalk.concurrent.api.Single.success;
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.EmptySubscription.EMPTY_SUBSCRIPTION;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.SUBSCRIBER_STATE_TERMINATED;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.checkTerminationValidWithConcurrentOnNextCheck;
@@ -131,7 +132,7 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends ListenableA
                 comparing(host -> host instanceof MutableAddressHost ?
                         ((MutableAddressHost<ResolvedAddress, C>) host).mutableAddress : host.address, comparator);
 
-        eventPublisher.subscribe(new Subscriber<ServiceDiscovererEvent<ResolvedAddress>>() {
+        toSource(eventPublisher).subscribe(new Subscriber<ServiceDiscovererEvent<ResolvedAddress>>() {
 
             @Override
             public void onSubscribe(final Subscription s) {

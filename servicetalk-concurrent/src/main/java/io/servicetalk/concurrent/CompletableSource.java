@@ -61,11 +61,4 @@ public interface CompletableSource {
          */
         void onError(Throwable t);
     }
-
-    /**
-     * An entity that is both {@link CompletableSource} and {@link Subscriber}.
-     * This is same as {@link PublisherSource.Processor} but for {@link CompletableSource}s.
-     */
-    interface Processor extends CompletableSource, Subscriber {
-    }
 }

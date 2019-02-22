@@ -17,6 +17,7 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.CompletableSource;
+import io.servicetalk.concurrent.CompletableSource.Subscriber;
 import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.internal.SignalOffloader;
 
@@ -47,8 +48,15 @@ import static java.util.function.Function.identity;
 
 /**
  * An asynchronous computation that does not emit any data. It just completes or emits an error.
+ *
+ * <h2>How to subscribe?</h2>
+ *
+ * This class does not provide a way to subscribe using a {@link CompletableSource.Subscriber} as such calls are
+ * ambiguous about the intent whether the subscribe is part of the same source (a.k.a an operator) or it is a terminal
+ * subscribe. If it is required to subscribe to a source, then a {@link SourceAdapters source adapter} can be used to
+ * convert to a {@link CompletableSource}.
  */
-public abstract class Completable implements CompletableSource {
+public abstract class Completable {
     private static final Logger LOGGER = LoggerFactory.getLogger(Completable.class);
 
     private final Executor executor;
@@ -209,9 +217,8 @@ public abstract class Completable implements CompletableSource {
 
     /**
      * Creates a new {@link Completable} that will mimic the signals of this {@link Completable} but will terminate
-     * with a {@link TimeoutException} if time {@code duration} elapses between {@link #subscribe(Subscriber)} and
-     * termination. The timer starts when the returned {@link Completable} is {@link #subscribe(Subscriber) subscribed}
-     * to.
+     * with a {@link TimeoutException} if time {@code duration} elapses between subscribe and termination.
+     * The timer starts when the returned {@link Completable} is subscribed.
      * <p>
      * In the event of timeout any {@link Cancellable} from {@link Subscriber#onSubscribe(Cancellable)} will be
      * {@link Cancellable#cancel() cancelled} and the associated {@link Subscriber} will be
@@ -228,9 +235,8 @@ public abstract class Completable implements CompletableSource {
 
     /**
      * Creates a new {@link Completable} that will mimic the signals of this {@link Completable} but will terminate
-     * with a {@link TimeoutException} if time {@code duration} elapses between {@link #subscribe(Subscriber)} and
-     * termination. The timer starts when the returned {@link Completable} is {@link #subscribe(Subscriber) subscribed}
-     * to.
+     * with a {@link TimeoutException} if time {@code duration} elapses between subscribe and termination.
+     * The timer starts when the returned {@link Completable} is subscribed.
      * <p>
      * In the event of timeout any {@link Cancellable} from {@link Subscriber#onSubscribe(Cancellable)} will be
      * {@link Cancellable#cancel() cancelled} and the associated {@link Subscriber} will be
@@ -248,9 +254,8 @@ public abstract class Completable implements CompletableSource {
 
     /**
      * Creates a new {@link Completable} that will mimic the signals of this {@link Completable} but will terminate
-     * with a {@link TimeoutException} if time {@code duration} elapses between {@link #subscribe(Subscriber)} and
-     * termination. The timer starts when the returned {@link Completable} is {@link #subscribe(Subscriber) subscribed}
-     * to.
+     * with a {@link TimeoutException} if time {@code duration} elapses between subscribe and termination.
+     * The timer starts when the returned {@link Completable} is subscribed.
      * <p>
      * In the event of timeout any {@link Cancellable} from {@link Subscriber#onSubscribe(Cancellable)} will be
      * {@link Cancellable#cancel() cancelled} and the associated {@link Subscriber} will be
@@ -266,9 +271,8 @@ public abstract class Completable implements CompletableSource {
 
     /**
      * Creates a new {@link Completable} that will mimic the signals of this {@link Completable} but will terminate
-     * with a {@link TimeoutException} if time {@code duration} elapses between {@link #subscribe(Subscriber)} and
-     * termination. The timer starts when the returned {@link Completable} is {@link #subscribe(Subscriber) subscribed}
-     * to.
+     * with a {@link TimeoutException} if time {@code duration} elapses between subscribe and termination.
+     * The timer starts when the returned {@link Completable} is subscribed.
      * <p>
      * In the event of timeout any {@link Cancellable} from {@link Subscriber#onSubscribe(Cancellable)} will be
      * {@link Cancellable#cancel() cancelled} and the associated {@link Subscriber} will be
@@ -743,12 +747,12 @@ public abstract class Completable implements CompletableSource {
 
     /**
      * Creates a new {@link Subscriber} (via the {@code subscriberSupplier} argument) on each call to
-     * {@link #subscribe(Subscriber)} and invokes all the {@link Subscriber} methods <strong>before</strong> the
-     * {@link Subscriber}s of the returned {@link Completable}.
+     * subscribe and invokes all the {@link Subscriber} methods <strong>before</strong> the {@link Subscriber}s of the
+     * returned {@link Completable}.
      *
-     * @param subscriberSupplier Creates a new {@link Subscriber} on each call to {@link #subscribe(Subscriber)} and
-     * invokes all the {@link Subscriber} methods <strong>before</strong> the {@link Subscriber}s of the returned
-     * {@link Completable}. {@link Subscriber} methods <strong>MUST NOT</strong> throw.
+     * @param subscriberSupplier Creates a new {@link Subscriber} on each call to subscribe and invokes all the
+     * {@link Subscriber} methods <strong>before</strong> the {@link Subscriber}s of the returned {@link Completable}.
+     * {@link Subscriber} methods <strong>MUST NOT</strong> throw.
      * @return The new {@link Completable}.
      */
     public final Completable doBeforeSubscriber(Supplier<Subscriber> subscriberSupplier) {
@@ -856,12 +860,12 @@ public abstract class Completable implements CompletableSource {
 
     /**
      * Creates a new {@link Subscriber} (via the {@code subscriberSupplier} argument) on each call to
-     * {@link #subscribe(Subscriber)} and invokes all the {@link Subscriber} methods <strong>after</strong> the
-     * {@link Subscriber}s of the returned {@link Completable}.
+     * subscribe and invokes all the {@link Subscriber} methods <strong>after</strong> the {@link Subscriber}s of the
+     * returned {@link Completable}.
      *
-     * @param subscriberSupplier Creates a new {@link Subscriber} on each call to {@link #subscribe(Subscriber)} and
-     * invokes all the {@link Subscriber} methods <strong>after</strong> the {@link Subscriber}s of the returned
-     * {@link Completable}. {@link Subscriber} methods <strong>MUST NOT</strong> throw.
+     * @param subscriberSupplier Creates a new {@link Subscriber} on each call to subscribe and invokes all the
+     * {@link Subscriber} methods <strong>after</strong> the {@link Subscriber}s of the returned {@link Completable}.
+     * {@link Subscriber} methods <strong>MUST NOT</strong> throw.
      * @return The new {@link Completable}.
      */
     public final Completable doAfterSubscriber(Supplier<Subscriber> subscriberSupplier) {
@@ -872,8 +876,8 @@ public abstract class Completable implements CompletableSource {
      * <strong>This method requires advanced knowledge of building operators. Before using this method please attempt
      * to compose existing operator(s) to satisfy your use case.</strong>
      * <p>
-     * Returns a {@link Completable} that when {@link Completable#subscribe(Subscriber)} is called the {@code operator}
-     * argument will be used to wrap the {@link Subscriber} before subscribing to this {@link Completable}.
+     * Returns a {@link Completable} which will wrap the {@link Subscriber} using the provided {@code operator} argument
+     * before subscribing to this {@link Completable}.
      * <pre>{@code
      *     Completable<X> pub = ...;
      *     pub.map(..) // A
@@ -889,8 +893,8 @@ public abstract class Completable implements CompletableSource {
      * @param operator The custom operator logic. The input is the "original" {@link Subscriber} to this
      * {@link Completable} and the return is the "modified" {@link Subscriber} that provides custom operator business
      * logic.
-     * @return a {@link Completable} that when {@link Completable#subscribe(Subscriber)} is called the {@code operator}
-     * argument will be used to wrap the {@link Subscriber} before subscribing to this {@link Completable}.
+     * @return a {@link Completable} that when subscribed, the {@code operator} argument will be used to wrap the
+     * {@link Subscriber} before subscribing to this {@link Completable}.
      * @see #liftAsynchronous(CompletableOperator)
      */
     public final Completable liftSynchronous(CompletableOperator operator) {
@@ -901,8 +905,8 @@ public abstract class Completable implements CompletableSource {
      * <strong>This method requires advanced knowledge of building operators. Before using this method please attempt
      * to compose existing operator(s) to satisfy your use case.</strong>
      * <p>
-     * Returns a {@link Completable} that when {@link Completable#subscribe(Subscriber)} is called the {@code operator}
-     * argument will be used to wrap the {@link Subscriber} before subscribing to this {@link Completable}.
+     * Returns a {@link Completable} which will wrap the {@link Subscriber} using the provided {@code operator} argument
+     * before subscribing to this {@link Completable}.
      * <pre>{@code
      *     Publisher<X> pub = ...;
      *     pub.map(..) // A
@@ -924,8 +928,8 @@ public abstract class Completable implements CompletableSource {
      * @param operator The custom operator logic. The input is the "original" {@link Subscriber} to this
      * {@link Completable} and the return is the "modified" {@link Subscriber} that provides custom operator business
      * logic.
-     * @return a {@link Completable} that when {@link Completable#subscribe(Subscriber)} is called the {@code operator}
-     * argument will be used to wrap the {@link Subscriber} before subscribing to this {@link Completable}.
+     * @return a {@link Completable} that when subscribed, the {@code operator} argument will be used to wrap the
+     * {@link Subscriber} before subscribing to this {@link Completable}.
      * @see #liftSynchronous(CompletableOperator)
      */
     public final Completable liftAsynchronous(CompletableOperator operator) {
@@ -1040,14 +1044,14 @@ public abstract class Completable implements CompletableSource {
     }
 
     /**
-     * Signifies that when {@link #subscribe(Subscriber)} is invoked on the returned {@link Completable} that the
-     * {@link AsyncContext} will be shared instead of making a {@link AsyncContextMap#copy() copy}.
+     * Signifies that when the returned {@link Completable} is subscribed to, the {@link AsyncContext} will be shared
+     * instead of making a {@link AsyncContextMap#copy() copy}.
      * <p>
-     * This operator only impacts behavior if {@link #subscribe(Subscriber)} is directly called on the return value,
-     * that means this must be the "last operator" in the chain for this to have an impact.
+     * This operator only impacts behavior if the returned {@link Completable} is subscribed directly after this
+     * operator, that means this must be the "last operator" in the chain for this to have an impact.
      *
      * @return A {@link Completable} that will share the {@link AsyncContext} instead of making a
-     * {@link AsyncContextMap#copy() copy} when {@link #subscribe(Subscriber)} is called.
+     * {@link AsyncContextMap#copy() copy} when subscribed to.
      */
     public final Completable subscribeShareContext() {
         return new CompletableSubscribeShareContext(this);
@@ -1112,8 +1116,7 @@ public abstract class Completable implements CompletableSource {
     // Conversion Operators End
     //
 
-    @Override
-    public final void subscribe(Subscriber subscriber) {
+    final void subscribe(Subscriber subscriber) {
         subscribeCaptureContext(subscriber, AsyncContext.provider());
     }
 
@@ -1133,7 +1136,7 @@ public abstract class Completable implements CompletableSource {
      * Handles a subscriber to this {@code Completable}.
      * <p>
      * This method is invoked internally by {@link Completable} for every call to the
-     * {@link Completable#subscribe(Subscriber)} method.
+     * {@link Completable#subscribe(CompletableSource.Subscriber)} method.
      *
      * @param subscriber the subscriber.
      */
@@ -1175,9 +1178,9 @@ public abstract class Completable implements CompletableSource {
      * Defer creation of a {@link Completable} till it is subscribed to.
      *
      * @param completableSupplier {@link Supplier} to create a new {@link Completable} for every call to
-     * {@link #subscribe(Subscriber)} to the returned {@link Completable}.
+     * {@link #subscribe(CompletableSource.Subscriber)} to the returned {@link Completable}.
      * @return A new {@link Completable} that creates a new {@link Completable} using {@code completableFactory}
-     * for every call to {@link #subscribe(Subscriber)} and forwards
+     * for every call to {@link #subscribe(CompletableSource.Subscriber)} and forwards
      * the termination signal from the newly created {@link Completable} to its {@link Subscriber}.
      */
     public static Completable defer(Supplier<? extends Completable> completableSupplier) {
@@ -1188,8 +1191,8 @@ public abstract class Completable implements CompletableSource {
      * Convert from a {@link Future} to a {@link Completable} via {@link Future#get()}.
      * <p>
      * Note that because {@link Future} only presents blocking APIs to extract the result, so the process of getting the
-     * results will block. The caller of {@link #subscribe(Subscriber)} is responsible for offloading if necessary, and
-     * also offloading if {@link Cancellable#cancel()} will be called if this operation may block.
+     * results will block. The caller of {@link #subscribe(CompletableSource.Subscriber)} is responsible for offloading
+     * if necessary, and also offloading if {@link Cancellable#cancel()} will be called if this operation may block.
      * <p>
      * To apply a timeout see {@link #timeout(long, TimeUnit)} and related methods.
      * @param future The {@link Future} to convert.
@@ -1460,7 +1463,9 @@ public abstract class Completable implements CompletableSource {
     //
 
     /**
-     * Replicating a call to {@link #subscribe(Subscriber)} but allows an override of the {@link AsyncContextMap}.
+     * Replicating a call to {@link #subscribe(CompletableSource.Subscriber)} but allows an override of the
+     * {@link AsyncContextMap}.
+     *
      * @param subscriber the subscriber.
      * @param provider the {@link AsyncContextProvider} used to wrap any objects to preserve
      * {@link AsyncContextMap}.
@@ -1472,7 +1477,9 @@ public abstract class Completable implements CompletableSource {
     }
 
     /**
-     * Replicating a call to {@link #subscribe(Subscriber)} but with a materialized {@link AsyncContextMap}.
+     * Replicating a call to {@link #subscribe(CompletableSource.Subscriber)} but with a materialized
+     * {@link AsyncContextMap}.
+     *
      * @param subscriber the subscriber.
      * @param contextMap the {@link AsyncContextMap} to use for this {@link Subscriber}.
      * @param contextProvider the {@link AsyncContextProvider} used to wrap any objects to preserve
@@ -1499,8 +1506,9 @@ public abstract class Completable implements CompletableSource {
     }
 
     /**
-     * Replicating a call to {@link #subscribe(Subscriber)} but with a materialized {@link SignalOffloader} and
-     * {@link AsyncContextMap}.
+     * Replicating a call to {@link #subscribe(CompletableSource.Subscriber)} but with a materialized
+     * {@link SignalOffloader} and {@link AsyncContextMap}.
+     *
      * @param subscriber the subscriber.
      * @param signalOffloader {@link SignalOffloader} to use for this {@link Subscriber}.
      * @param contextMap the {@link AsyncContextMap} to use for this {@link Subscriber}.
@@ -1521,12 +1529,13 @@ public abstract class Completable implements CompletableSource {
     }
 
     /**
-     * Override for {@link #handleSubscribe(Subscriber)} to offload the {@link #handleSubscribe(Subscriber)} call to the
-     * passed {@link SignalOffloader}.
+     * Override for {@link #handleSubscribe(CompletableSource.Subscriber)} to offload the
+     * {@link #handleSubscribe(CompletableSource.Subscriber)} call to the passed {@link SignalOffloader}.
      * <p>
-     * This method wraps the passed {@link Subscriber} using {@link SignalOffloader#offloadSubscriber(Subscriber)} and
-     * then calls {@link #handleSubscribe(Subscriber)} using
-     * {@link SignalOffloader#offloadSubscribe(Subscriber, Consumer)}.
+     * This method wraps the passed {@link Subscriber} using
+     * {@link SignalOffloader#offloadSubscriber(CompletableSource.Subscriber)} and then calls
+     * {@link #handleSubscribe(CompletableSource.Subscriber)} using
+     * {@link SignalOffloader#offloadSubscribe(CompletableSource.Subscriber, Consumer)}.
      * Operators that do not wish to wrap the passed {@link Subscriber} can override this method and omit the wrapping.
      *
      * @param subscriber the subscriber.

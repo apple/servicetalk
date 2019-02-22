@@ -16,6 +16,8 @@
 package io.servicetalk.http.utils;
 
 import io.servicetalk.concurrent.Cancellable;
+import io.servicetalk.concurrent.SingleSource;
+import io.servicetalk.concurrent.SingleSource.Subscriber;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.SequentialCancellable;
 import io.servicetalk.http.api.HttpExecutionStrategy;
@@ -32,6 +34,7 @@ import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderNames.HOST;
 import static io.servicetalk.http.api.HttpHeaderNames.LOCATION;
@@ -51,7 +54,7 @@ final class RedirectSingle extends Single<StreamingHttpResponse> {
     private static final Logger LOGGER = LoggerFactory.getLogger(RedirectSingle.class);
 
     private final HttpExecutionStrategy strategy;
-    private final Single<StreamingHttpResponse> originalResponse;
+    private final SingleSource<StreamingHttpResponse> originalResponse;
     private final StreamingHttpRequest originalRequest;
     private final int maxRedirects;
     private final StreamingHttpRequester requester;
@@ -77,7 +80,7 @@ final class RedirectSingle extends Single<StreamingHttpResponse> {
                    final StreamingHttpRequester requester,
                    final boolean onlyRelative) {
         this.strategy = strategy;
-        this.originalResponse = requireNonNull(originalResponse);
+        this.originalResponse = toSource(originalResponse);
         this.originalRequest = requireNonNull(originalRequest);
         this.maxRedirects = maxRedirects;
         this.requester = requireNonNull(requester);
@@ -155,8 +158,8 @@ final class RedirectSingle extends Single<StreamingHttpResponse> {
                         result.headers().get(LOCATION), redirectSingle.originalRequest);
             }
             // Consume any payload of the redirect response
-            result.payloadBody().ignoreElements().concatWith(
-                    redirectSingle.requester.request(redirectSingle.strategy, newRequest))
+            toSource(result.payloadBody().ignoreElements().concatWith(
+                    redirectSingle.requester.request(redirectSingle.strategy, newRequest)))
                         .subscribe(new RedirectSubscriber(
                             target, redirectSingle, newRequest, redirectCount + 1, sequentialCancellable));
         }

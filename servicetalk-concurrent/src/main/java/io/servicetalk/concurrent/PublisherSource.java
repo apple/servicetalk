@@ -127,22 +127,4 @@ public interface PublisherSource<T> {
          */
         void request(long n);
     }
-
-    /**
-     * An entity that is both a {@link PublisherSource} and a {@link Subscriber}.
-     * <p>
-     * This is a replica of the APIs provided by
-     * <a href="https://github.com/reactive-streams/reactive-streams-jvm">Reactive Streams</a> and follows the
-     * <a href="https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.2/README.md#specification">
-     * Reactive Streams specifications</a>.
-     * All implementations of this {@code Processor} adhere to the rules as specified for a Reactive Streams
-     * {@code Processor} in
-     * <a href="https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.2/README.md#4processor-code">
-     * Section 4</a> of the specifications.
-     *
-     * @param <T> Type of items received by this {@code Subscriber}.
-     * @param <R> Type of the items emitted by this {@code PublisherSource}.
-     */
-    interface Processor<T, R> extends PublisherSource<R>, Subscriber<T> {
-    }
 }

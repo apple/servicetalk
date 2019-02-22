@@ -16,6 +16,7 @@
 package io.servicetalk.redis.netty;
 
 import io.servicetalk.client.internal.ReservableRequestConcurrencyController;
+import io.servicetalk.concurrent.CompletableSource.Subscriber;
 import io.servicetalk.concurrent.api.Completable;
 
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;

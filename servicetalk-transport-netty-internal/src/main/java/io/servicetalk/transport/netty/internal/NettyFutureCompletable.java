@@ -15,6 +15,7 @@
  */
 package io.servicetalk.transport.netty.internal;
 
+import io.servicetalk.concurrent.CompletableSource.Subscriber;
 import io.servicetalk.concurrent.api.Completable;
 
 import io.netty.util.concurrent.Future;

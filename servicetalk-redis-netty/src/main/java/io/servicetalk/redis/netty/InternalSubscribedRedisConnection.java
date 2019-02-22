@@ -18,7 +18,7 @@ package io.servicetalk.redis.netty;
 import io.servicetalk.client.api.RetryableException;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.CompletableSource;
-import io.servicetalk.concurrent.PublisherSource.Subscriber;
+import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
@@ -44,6 +44,7 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Completable.error;
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.EmptySubscription.EMPTY_SUBSCRIPTION;
 import static io.servicetalk.concurrent.internal.ThrowableUtil.matches;
 import static io.servicetalk.concurrent.internal.ThrowableUtil.unknownStackTrace;
@@ -105,7 +106,7 @@ final class InternalSubscribedRedisConnection extends AbstractRedisConnection {
                 connection.executionContext().bufferAllocator());
         return new Publisher<RedisData>() {
             @Override
-            protected void handleSubscribe(Subscriber<? super RedisData> subscriber) {
+            protected void handleSubscribe(PublisherSource.Subscriber<? super RedisData> subscriber) {
                 Completable write;
                 if (command == QUIT) {
                     write = writeQueue.quit(connection.write(reqContent));
@@ -148,7 +149,7 @@ final class InternalSubscribedRedisConnection extends AbstractRedisConnection {
                     response = write.concatWith(readStreamSplitter.registerNewCommand(command));
                 }
                 // Unwrap PubSubChannelMessage if it wraps an SimpleString response
-                response.map(m -> m.keyType() == SimpleString ? m.data() : m).subscribe(subscriber);
+                toSource(response.map(m -> m.keyType() == SimpleString ? m.data() : m)).subscribe(subscriber);
             }
         };
     }
@@ -248,7 +249,7 @@ final class InternalSubscribedRedisConnection extends AbstractRedisConnection {
         Completable write(Completable toWrite, RedisProtocolSupport.Command command) {
             return new Completable() {
                 @Override
-                protected void handleSubscribe(Subscriber subscriber) {
+                protected void handleSubscribe(CompletableSource.Subscriber subscriber) {
                     // Don't add more items to the queue if the connection is closed already.
                     if (closed != 0) {
                         subscriber.onSubscribe(IGNORE_CANCEL);
@@ -271,7 +272,7 @@ final class InternalSubscribedRedisConnection extends AbstractRedisConnection {
         Completable quit(Completable quitRequestWrite) {
             return new Completable() {
                 @Override
-                protected void handleSubscribe(Subscriber subscriber) {
+                protected void handleSubscribe(CompletableSource.Subscriber subscriber) {
                     if (closedUpdater.compareAndSet(WriteQueue.this, 0, 1)) {
                         WriteTask task = new WriteTask(QUIT, quitRequestWrite, subscriber);
                         if (!offerAndTryExecute(task)) {
@@ -296,7 +297,7 @@ final class InternalSubscribedRedisConnection extends AbstractRedisConnection {
         final class WriteTask {
 
             private final boolean isSubscribedCommand;
-            private final Completable write;
+            private final CompletableSource write;
             private final CompletableSource.Subscriber subscriber;
             @SuppressWarnings("unused")
             volatile int taskCalledPostTerm;
@@ -304,7 +305,7 @@ final class InternalSubscribedRedisConnection extends AbstractRedisConnection {
             WriteTask(RedisProtocolSupport.Command command, Completable write,
                       CompletableSource.Subscriber subscriber) {
                 this.isSubscribedCommand = command == PSUBSCRIBE || command == SUBSCRIBE;
-                this.write = write;
+                this.write = toSource(write);
                 this.subscriber = subscriber;
             }
 
@@ -362,9 +363,9 @@ final class InternalSubscribedRedisConnection extends AbstractRedisConnection {
     }
 
     /**
-     * Defers the {@link Subscriber#onSubscribe(Subscription)} (Subscription)} signal to the {@link Subscriber} of the
-     * returned {@link Publisher} till {@code next} {@link Publisher} sends an
-     * {@link Subscriber#onSubscribe(Subscription)}.
+     * Defers the {@link PublisherSource.Subscriber#onSubscribe(Subscription)} (Subscription)} signal to the
+     * {@link PublisherSource.Subscriber} of the returned {@link Publisher} till {@code next} {@link Publisher} sends an
+     * {@link PublisherSource.Subscriber#onSubscribe(Subscription)}.
      *
      * This operator is required for in-process publisher-subscriber coordination. As a consequence a queued
      * subscription command can't be cancelled before writing to Redis.
@@ -381,8 +382,8 @@ final class InternalSubscribedRedisConnection extends AbstractRedisConnection {
 
         return new Publisher<PubSubChannelMessage>() {
             @Override
-            protected void handleSubscribe(io.servicetalk.concurrent.PublisherSource.Subscriber<? super PubSubChannelMessage> subscriber) {
-                queuedWrite.subscribe(new CompletableSource.Subscriber() {
+            protected void handleSubscribe(PublisherSource.Subscriber<? super PubSubChannelMessage> subscriber) {
+                toSource(queuedWrite).subscribe(new CompletableSource.Subscriber() {
 
                     @Override
                     public void onSubscribe(Cancellable cancellable) {
@@ -392,7 +393,7 @@ final class InternalSubscribedRedisConnection extends AbstractRedisConnection {
 
                     @Override
                     public void onComplete() {
-                        next.subscribe(subscriber);
+                        toSource(next).subscribe(subscriber);
                     }
 
                     @Override

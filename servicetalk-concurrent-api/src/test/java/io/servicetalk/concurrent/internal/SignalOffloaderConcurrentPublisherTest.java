@@ -15,7 +15,8 @@
  */
 package io.servicetalk.concurrent.internal;
 
-import io.servicetalk.concurrent.PublisherSource.Subscriber;
+import io.servicetalk.concurrent.CompletableSource;
+import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Executor;
@@ -156,8 +157,8 @@ public class SignalOffloaderConcurrentPublisherTest {
             final SubscriberImpl subscriber;
             final SubscriptionImpl subscription;
             private final AtomicInteger demand;
-            private Subscriber<? super Integer> offloadSubscription;
-            private Subscriber<? super Integer> offloadSubscriber;
+            private PublisherSource.Subscriber<? super Integer> offloadSubscription;
+            private PublisherSource.Subscriber<? super Integer> offloadSubscriber;
 
             SubscriberSubscriptionPair(SubscriberImpl subscriber, SubscriptionImpl subscription, AtomicInteger demand) {
                 this.subscriber = subscriber;
@@ -202,7 +203,7 @@ public class SignalOffloaderConcurrentPublisherTest {
 
                 return new Completable() {
                     @Override
-                    protected void handleSubscribe(Subscriber subscriber) {
+                    protected void handleSubscribe(CompletableSource.Subscriber subscriber) {
                         subscriber.onSubscribe(IGNORE_CANCEL);
                         try {
                             subscriberEmitter.get();
@@ -217,7 +218,7 @@ public class SignalOffloaderConcurrentPublisherTest {
         }
     }
 
-    private static final class SubscriberImpl implements Subscriber<Integer> {
+    private static final class SubscriberImpl implements PublisherSource.Subscriber<Integer> {
 
         private final CountDownLatch awaitOnSubscribe = new CountDownLatch(1);
         @Nullable

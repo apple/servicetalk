@@ -42,6 +42,7 @@ import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseabl
 import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
 import static io.servicetalk.concurrent.api.Publisher.just;
 import static io.servicetalk.concurrent.api.Single.success;
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
 import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
@@ -121,7 +122,7 @@ public class HttpServerOverrideOffloadingTest {
                 errors.add(new AssertionError("Invalid thread called the service. Thread: " +
                         currentThread()));
             }
-            request.payloadBody().doBeforeNext(__ -> {
+            toSource(request.payloadBody().doBeforeNext(__ -> {
                 if (isInvalidThread.test(currentThread())) {
                     errors.add(new AssertionError("Invalid thread calling response payload onNext." +
                             "Thread: " + currentThread()));
@@ -131,7 +132,7 @@ public class HttpServerOverrideOffloadingTest {
                     errors.add(new AssertionError("Invalid thread calling response payload onComplete." +
                             "Thread: " + currentThread()));
                 }
-            }).ignoreElements().subscribe(cp);
+            }).ignoreElements()).subscribe(cp);
             return success(responseFactory.ok().payloadBody(just("Hello"), textSerializer())
                     .transformPayloadBody(p -> p.doBeforeRequest(__ -> {
                         if (isInvalidThread.test(currentThread())) {

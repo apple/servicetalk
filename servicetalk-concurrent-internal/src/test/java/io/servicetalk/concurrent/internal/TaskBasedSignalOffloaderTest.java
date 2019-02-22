@@ -526,13 +526,5 @@ public class TaskBasedSignalOffloaderTest {
             }
             return execCount;
         }
-
-        @Override
-        public CompletableSource closeAsync() {
-            return subscriber -> {
-                subscriber.onSubscribe(IGNORE_CANCEL);
-                subscriber.onComplete();
-            };
-        }
     }
 }

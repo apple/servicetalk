@@ -15,6 +15,8 @@
  */
 package io.servicetalk.concurrent.api;
 
+import io.servicetalk.concurrent.CompletableSource.Subscriber;
+
 import java.util.function.Supplier;
 
 import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverTerminalFromSource;

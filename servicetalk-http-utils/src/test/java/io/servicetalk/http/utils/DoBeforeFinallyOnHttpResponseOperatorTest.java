@@ -19,6 +19,7 @@ import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.SingleSource;
+import io.servicetalk.concurrent.SingleSource.Subscriber;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.SingleOperator;
 import io.servicetalk.concurrent.api.TestPublisher;
@@ -45,6 +46,7 @@ import javax.annotation.Nullable;
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.api.Publisher.never;
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.http.api.HttpResponseStatuses.OK;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -72,7 +74,7 @@ public class DoBeforeFinallyOnHttpResponseOperatorTest {
     private SingleOperator<StreamingHttpResponse, StreamingHttpResponse> operator;
 
     @Before
-    public void setUp() throws Exception {
+    public void setUp() {
         operator = new DoBeforeFinallyOnHttpResponseOperator(doBeforeFinally);
     }
 
@@ -80,7 +82,7 @@ public class DoBeforeFinallyOnHttpResponseOperatorTest {
     public void nullAsSuccess() {
         final ResponseSubscriber subscriber = new ResponseSubscriber();
 
-        Single.<StreamingHttpResponse>success(null).liftSynchronous(operator).subscribe(subscriber);
+        toSource(Single.<StreamingHttpResponse>success(null).liftSynchronous(operator)).subscribe(subscriber);
         assertThat("onSubscribe not called.", subscriber.cancellable, is(notNullValue()));
         verify(doBeforeFinally).run();
 
@@ -101,7 +103,7 @@ public class DoBeforeFinallyOnHttpResponseOperatorTest {
         };
 
         final ResponseSubscriber subscriber = new ResponseSubscriber();
-        original.liftSynchronous(operator).subscribe(subscriber);
+        toSource(original.liftSynchronous(operator)).subscribe(subscriber);
         assertThat("Original Single not subscribed.", subRef.get(), is(notNullValue()));
         assertThat("onSubscribe not called.", subscriber.cancellable, is(notNullValue()));
 
@@ -120,7 +122,7 @@ public class DoBeforeFinallyOnHttpResponseOperatorTest {
     public void cancelBeforeOnSuccess() throws Exception {
         TestSingle<StreamingHttpResponse> responseSingle = new TestSingle<>(true);
         final ResponseSubscriber subscriber = new ResponseSubscriber();
-        responseSingle.liftSynchronous(operator).subscribe(subscriber);
+        toSource(responseSingle.liftSynchronous(operator)).subscribe(subscriber);
         assertThat("onSubscribe not called.", subscriber.cancellable, is(notNullValue()));
 
         subscriber.cancellable.cancel();
@@ -141,7 +143,7 @@ public class DoBeforeFinallyOnHttpResponseOperatorTest {
     public void cancelBeforeOnError() {
         TestSingle<StreamingHttpResponse> responseSingle = new TestSingle<>(true);
         final ResponseSubscriber subscriber = new ResponseSubscriber();
-        responseSingle.liftSynchronous(operator).subscribe(subscriber);
+        toSource(responseSingle.liftSynchronous(operator)).subscribe(subscriber);
         assertThat("onSubscribe not called.", subscriber.cancellable, is(notNullValue()));
 
         subscriber.cancellable.cancel();
@@ -157,7 +159,7 @@ public class DoBeforeFinallyOnHttpResponseOperatorTest {
     public void cancelAfterOnSuccess() {
         TestSingle<StreamingHttpResponse> responseSingle = new TestSingle<>(true);
         final ResponseSubscriber subscriber = new ResponseSubscriber();
-        responseSingle.liftSynchronous(operator).subscribe(subscriber);
+        toSource(responseSingle.liftSynchronous(operator)).subscribe(subscriber);
         assertThat("onSubscribe not called.", subscriber.cancellable, is(notNullValue()));
 
         final StreamingHttpResponse response = reqRespFactory.ok().payloadBody(never());
@@ -177,7 +179,7 @@ public class DoBeforeFinallyOnHttpResponseOperatorTest {
     public void cancelAfterOnError() {
         TestSingle<StreamingHttpResponse> responseSingle = new TestSingle<>(true);
         final ResponseSubscriber subscriber = new ResponseSubscriber();
-        responseSingle.liftSynchronous(operator).subscribe(subscriber);
+        toSource(responseSingle.liftSynchronous(operator)).subscribe(subscriber);
         assertThat("onSubscribe not called.", subscriber.cancellable, is(notNullValue()));
 
         responseSingle.onError(DELIBERATE_EXCEPTION);
@@ -197,7 +199,7 @@ public class DoBeforeFinallyOnHttpResponseOperatorTest {
         payload.sendOnSubscribe();
         TestSingle<StreamingHttpResponse> responseSingle = new TestSingle<>(true);
         final ResponseSubscriber subscriber = new ResponseSubscriber();
-        responseSingle.liftSynchronous(operator).subscribe(subscriber);
+        toSource(responseSingle.liftSynchronous(operator)).subscribe(subscriber);
         assertThat("onSubscribe not called.", subscriber.cancellable, is(notNullValue()));
 
         final StreamingHttpResponse response = reqRespFactory.ok().payloadBody(payload);

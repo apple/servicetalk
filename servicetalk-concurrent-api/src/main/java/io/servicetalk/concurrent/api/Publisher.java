@@ -19,6 +19,8 @@ import io.servicetalk.concurrent.BlockingIterable;
 import io.servicetalk.concurrent.BlockingIterator;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.PublisherSource;
+import io.servicetalk.concurrent.PublisherSource.Subscriber;
+import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.internal.SignalOffloader;
 
 import org.slf4j.Logger;
@@ -63,9 +65,16 @@ import static java.util.Objects.requireNonNull;
  * An asynchronous computation that produces 0, 1 or more elements and may or may not terminate successfully or with
  * an error.
  *
+ * <h2>How to subscribe?</h2>
+ *
+ * This class does not provide a way to subscribe using a {@link PublisherSource.Subscriber} as such calls are
+ * ambiguous about the intent whether the subscribe is part of the same source (a.k.a an operator) or it is a terminal
+ * subscribe. If it is required to subscribe to a source, then a {@link SourceAdapters source adapter} can be used to
+ * convert to a {@link PublisherSource}.
+ *
  * @param <T> Type of items emitted.
  */
-public abstract class Publisher<T> implements PublisherSource<T> {
+public abstract class Publisher<T> {
     private static final Logger LOGGER = LoggerFactory.getLogger(Publisher.class);
 
     private final Executor executor;
@@ -725,7 +734,7 @@ public abstract class Publisher<T> implements PublisherSource<T> {
     /**
      * Creates a new {@link Publisher} that will mimic the signals of this {@link Publisher} but will terminate with a
      * {@link TimeoutException} if time {@code duration} elapses between adjacent {@link Subscriber#onNext(Object)}
-     * calls. The timer starts when the returned {@link Publisher} is {@link #subscribe(Subscriber) subscribed} to.
+     * calls. The timer starts when the returned {@link Publisher} is subscribed.
      * <p>
      * In the event of timeout any {@link Subscription} from
      * {@link Subscriber#onSubscribe(PublisherSource.Subscription)} will be {@link Subscription#cancel() cancelled} and
@@ -744,7 +753,7 @@ public abstract class Publisher<T> implements PublisherSource<T> {
     /**
      * Creates a new {@link Publisher} that will mimic the signals of this {@link Publisher} but will terminate with a
      * {@link TimeoutException} if time {@code duration} elapses between adjacent {@link Subscriber#onNext(Object)}
-     * calls. The timer starts when the returned {@link Publisher} is {@link #subscribe(Subscriber) subscribed} to.
+     * calls. The timer starts when the returned {@link Publisher} is subscribed.
      * <p>
      * In the event of timeout any {@link Subscription} from
      * {@link Subscriber#onSubscribe(PublisherSource.Subscription)} will be {@link Subscription#cancel() cancelled}
@@ -762,7 +771,7 @@ public abstract class Publisher<T> implements PublisherSource<T> {
     /**
      * Creates a new {@link Publisher} that will mimic the signals of this {@link Publisher} but will terminate with a
      * {@link TimeoutException} if time {@code duration} elapses between adjacent {@link Subscriber#onNext(Object)}
-     * calls. The timer starts when the returned {@link Publisher} is {@link #subscribe(Subscriber) subscribed} to.
+     * calls. The timer starts when the returned {@link Publisher} is subscribed.
      * <p>
      * In the event of timeout any {@link Subscription} from
      * {@link Subscriber#onSubscribe(PublisherSource.Subscription)} will be {@link Subscription#cancel() cancelled} and
@@ -781,7 +790,7 @@ public abstract class Publisher<T> implements PublisherSource<T> {
     /**
      * Creates a new {@link Publisher} that will mimic the signals of this {@link Publisher} but will terminate with a
      * {@link TimeoutException} if time {@code duration} elapses between adjacent {@link Subscriber#onNext(Object)}
-     * calls. The timer starts when the returned {@link Publisher} is {@link #subscribe(Subscriber) subscribed} to.
+     * calls. The timer starts when the returned {@link Publisher} is subscribed.
      * <p>
      * In the event of timeout any {@link Subscription} from
      * {@link Subscriber#onSubscribe(PublisherSource.Subscription)} will be {@link Subscription#cancel() cancelled} and
@@ -1296,9 +1305,8 @@ public abstract class Publisher<T> implements PublisherSource<T> {
     }
 
     /**
-     * Create a {@link Publisher} that allows exactly {@code expectedSubscribers} calls to
-     * {@link #subscribe(Subscriber)}. The events from this {@link Publisher} object will be delivered to each
-     * {@link Subscriber}.
+     * Create a {@link Publisher} that allows exactly {@code expectedSubscribers} subscribes.
+     * The events from this {@link Publisher} object will be delivered to each {@link Subscriber}.
      * <p>
      * Depending on {@link Subscription#request(long)} demand it is possible that data maybe queued before being
      * delivered to each {@link Subscriber}! For example if there are 2 {@link Subscriber}s and the first calls
@@ -1316,18 +1324,17 @@ public abstract class Publisher<T> implements PublisherSource<T> {
      *     return multiResults;
      * }</pre>
      *
-     * @param expectedSubscribers The number of expected {@link #subscribe(Subscriber)} calls required on the returned
-     * {@link Publisher} before calling {@link #subscribe(Subscriber)} on this {@link Publisher}.
-     * @return a {@link Publisher} that allows exactly {@code expectedSubscribers} calls to
-     * {@link #subscribe(Subscriber)}.
+     * @param expectedSubscribers The number of expected subscribe calls required on the returned {@link Publisher}
+     * before subscribing to this {@link Publisher}.
+     * @return a {@link Publisher} that allows exactly {@code expectedSubscribers} subscribes.
      */
     public final Publisher<T> multicast(int expectedSubscribers) {
         return new MulticastPublisher<>(this, expectedSubscribers, executor);
     }
 
     /**
-     * Create a {@link Publisher} that allows exactly {@code expectedSubscribers} calls to
-     * {@link #subscribe(Subscriber)}. The events from this {@link Publisher} object will be delivered to each
+     * Create a {@link Publisher} that allows exactly {@code expectedSubscribers} subscribes.
+     * The events from this {@link Publisher} object will be delivered to each
      * {@link Subscriber}.
      * <p>
      * Depending on {@link Subscription#request(long)} demand it is possible that data maybe queued before being
@@ -1346,12 +1353,11 @@ public abstract class Publisher<T> implements PublisherSource<T> {
      *     return multiResults;
      * }</pre>
      *
-     * @param expectedSubscribers The number of expected {@link #subscribe(Subscriber)} calls required on the returned
-     *          {@link Publisher} before calling {@link #subscribe(Subscriber)} on this {@link Publisher}.
+     * @param expectedSubscribers The number of expected subscribe calls required on the returned {@link Publisher}
+     * before subscribing to this {@link Publisher}.
      * @param maxQueueSize The maximum number of {@link Subscriber#onNext(Object)} events that will be queued if there
      * is no demand for data before the {@link Subscriber} will be discarded.
-     * @return a {@link Publisher} that allows exactly {@code expectedSubscribers} calls to
-     * {@link #subscribe(Subscriber)}.
+     * @return a {@link Publisher} that allows exactly {@code expectedSubscribers} subscribes.
      */
     public final Publisher<T> multicast(int expectedSubscribers, int maxQueueSize) {
         return new MulticastPublisher<>(this, expectedSubscribers, maxQueueSize, executor);
@@ -1505,13 +1511,13 @@ public abstract class Publisher<T> implements PublisherSource<T> {
     }
 
     /**
-     * Creates a new {@link Subscriber} (via the {@code subscriberSupplier} argument) on each call to
-     * {@link #subscribe(Subscriber)} and invokes all the {@link Subscriber} methods <strong>before</strong> the
-     * {@link Subscriber}s of the returned {@link Publisher}.
-     *
-     * @param subscriberSupplier Creates a new {@link Subscriber} on each call to {@link #subscribe(Subscriber)} and
+     * Creates a new {@link Subscriber} (via the {@code subscriberSupplier} argument) on each call to subscribe and
      * invokes all the {@link Subscriber} methods <strong>before</strong> the {@link Subscriber}s of the returned
-     * {@link Publisher}. {@link Subscriber} methods <strong>MUST NOT</strong> throw.
+     * {@link Publisher}.
+     *
+     * @param subscriberSupplier Creates a new {@link Subscriber} on each call to subscribe and invokes all the
+     * {@link Subscriber} methods <strong>before</strong> the {@link Subscriber}s of the returned {@link Publisher}.
+     * {@link Subscriber} methods <strong>MUST NOT</strong> throw.
      * @return The new {@link Publisher}.
      *
      * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
@@ -1521,12 +1527,12 @@ public abstract class Publisher<T> implements PublisherSource<T> {
     }
 
     /**
-     * Creates a new {@link Subscription} (via the {@code subscriberSupplier} argument) on each call to
-     * {@link #subscribe(Subscriber)} and invokes all the {@link Subscription} methods <strong>before</strong> the
-     * {@link Subscription}s of the returned {@link Publisher}.
+     * Creates a new {@link Subscription} (via the {@code subscriptionSupplier} argument) on each call to
+     * subscribe and invokes all the {@link Subscription} methods <strong>before</strong> the {@link Subscription}s of
+     * the returned {@link Publisher}.
      *
-     * @param subscriptionSupplier Creates a new {@link Subscription} on each call to {@link #subscribe(Subscriber)} and
-     * invokes all the {@link Subscription} methods <strong>before</strong> the {@link Subscription}s of the returned
+     * @param subscriptionSupplier Creates a new {@link Subscription} on each call to subscribe and invokes all the
+     * {@link Subscription} methods <strong>before</strong> the {@link Subscription}s of the returned
      * {@link Publisher}. {@link Subscription} methods <strong>MUST NOT</strong> throw.
      * @return The new {@link Publisher}.
      *
@@ -1684,13 +1690,13 @@ public abstract class Publisher<T> implements PublisherSource<T> {
     }
 
     /**
-     * Creates a new {@link Subscriber} (via the {@code subscriberSupplier} argument) on each call to
-     * {@link #subscribe(Subscriber)} and invokes all the {@link Subscriber} methods <strong>after</strong> the
-     * {@link Subscriber}s of the returned {@link Publisher}.
-     *
-     * @param subscriberSupplier Creates a new {@link Subscriber} on each call to {@link #subscribe(Subscriber)} and
+     * Creates a new {@link Subscriber} (via the {@code subscriberSupplier} argument) for each new subscribe and
      * invokes all the {@link Subscriber} methods <strong>after</strong> the {@link Subscriber}s of the returned
-     * {@link Publisher}. {@link Subscriber} methods <strong>MUST NOT</strong> throw.
+     * {@link Publisher}.
+     *
+     * @param subscriberSupplier Creates a new {@link Subscriber} for each new subscribe and invokes all the
+     * {@link Subscriber} methods <strong>after</strong> the {@link Subscriber}s of the returned {@link Publisher}.
+     * {@link Subscriber} methods <strong>MUST NOT</strong> throw.
      * @return The new {@link Publisher}.
      *
      * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
@@ -1700,13 +1706,13 @@ public abstract class Publisher<T> implements PublisherSource<T> {
     }
 
     /**
-     * Creates a new {@link Subscription} (via the {@code subscriberSupplier} argument) on each call to
-     * {@link #subscribe(Subscriber)} and invokes all the {@link Subscription} methods <strong>after</strong> the
-     * {@link Subscription}s of the returned {@link Publisher}.
-     *
-     * @param subscriptionSupplier Creates a new {@link Subscription} on each call to {@link #subscribe(Subscriber)} and
+     * Creates a new {@link Subscription} (via the {@code subscriptionSupplier} argument) for each new subscribe and
      * invokes all the {@link Subscription} methods <strong>after</strong> the {@link Subscription}s of the returned
-     * {@link Publisher}. {@link Subscription} methods <strong>MUST NOT</strong> throw.
+     * {@link Publisher}.
+     *
+     * @param subscriptionSupplier Creates a new {@link Subscription} for each new subscribe and invokes all the
+     * {@link Subscription} methods <strong>after</strong> the {@link Subscription}s of the returned {@link Publisher}.
+     * {@link Subscription} methods <strong>MUST NOT</strong> throw.
      * @return The new {@link Publisher}.
      *
      * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
@@ -1844,14 +1850,14 @@ public abstract class Publisher<T> implements PublisherSource<T> {
     }
 
     /**
-     * Signifies that when {@link #subscribe(Subscriber)} is invoked on the returned {@link Publisher} that the
-     * {@link AsyncContext} will be shared instead of making a {@link AsyncContextMap#copy() copy}.
+     * Signifies that when the returned {@link Publisher} is subscribed to, the {@link AsyncContext} will be shared
+     * instead of making a {@link AsyncContextMap#copy() copy}.
      * <p>
-     * This operator only impacts behavior if {@link #subscribe(Subscriber)} is directly called on the return value,
+     * This operator only impacts behavior if the returned {@link Publisher} is subscribed directly after this operator,
      * that means this must be the "last operator" in the chain for this to have an impact.
      *
      * @return A {@link Publisher} that will share the {@link AsyncContext} instead of making a
-     * {@link AsyncContextMap#copy() copy} when {@link #subscribe(Subscriber)} is called.
+     * {@link AsyncContextMap#copy() copy} when subscribed to.
      */
     public final Publisher<T> subscribeShareContext() {
         return new PublisherSubscribeShareContext<>(this);
@@ -1861,8 +1867,8 @@ public abstract class Publisher<T> implements PublisherSource<T> {
      * <strong>This method requires advanced knowledge of building operators. Before using this method please attempt
      * to compose existing operator(s) to satisfy your use case.</strong>
      * <p>
-     * Returns a {@link Publisher} that when {@link Publisher#subscribe(Subscriber)} is called the {@code operator}
-     * argument will be used to wrap the {@link Subscriber} before subscribing to this {@link Publisher}.
+     * Returns a {@link Publisher} which when subscribed, the {@code operator} argument will be used to wrap the
+     * {@link Subscriber} before subscribing to this {@link Publisher}.
      * <pre>{@code
      *     Publisher<X> pub = ...;
      *     pub.map(..) // A
@@ -1879,8 +1885,8 @@ public abstract class Publisher<T> implements PublisherSource<T> {
      * {@link Publisher} and the return is the "modified" {@link Subscriber} that provides custom operator business
      * logic.
      * @param <R> Type of the items emitted by the returned {@link Publisher}.
-     * @return a {@link Publisher} that when {@link Publisher#subscribe(Subscriber)} is called the {@code operator}
-     * argument will be used to wrap the {@link Subscriber} before subscribing to this {@link Publisher}.
+     * @return a {@link Publisher} which when subscribed, the {@code operator} argument will be used to wrap the
+     * {@link Subscriber} before subscribing to this {@link Publisher}.
      * @see #liftAsynchronous(PublisherOperator)
      */
     public final <R> Publisher<R> liftSynchronous(PublisherOperator<? super T, ? extends R> operator) {
@@ -1891,8 +1897,8 @@ public abstract class Publisher<T> implements PublisherSource<T> {
      * <strong>This method requires advanced knowledge of building operators. Before using this method please attempt
      * to compose existing operator(s) to satisfy your use case.</strong>
      * <p>
-     * Returns a {@link Publisher} that when {@link Publisher#subscribe(Subscriber)} is called the {@code operator}
-     * argument will be used to wrap the {@link Subscriber} before subscribing to this {@link Publisher}.
+     * Returns a {@link Publisher} which will wrap the {@link PublisherSource.Subscriber} using the provided
+     * {@code operator} argument before subscribing to this {@link Publisher}.
      * <pre>{@code
      *     Publisher<X> pub = ...;
      *     pub.map(..) // A
@@ -1915,8 +1921,8 @@ public abstract class Publisher<T> implements PublisherSource<T> {
      * {@link Publisher} and the return is the "modified" {@link Subscriber} that provides custom operator business
      * logic.
      * @param <R> Type of the items emitted by the returned {@link Publisher}.
-     * @return a {@link Publisher} that when {@link Publisher#subscribe(Subscriber)} is called the {@code operator}
-     * argument will be used to wrap the {@link Subscriber} before subscribing to this {@link Publisher}.
+     * @return a {@link Publisher} which when subscribed, the {@code operator} argument will be used to wrap the
+     * {@link Subscriber} before subscribing to this {@link Publisher}.
      * @see #liftSynchronous(PublisherOperator)
      */
     public final <R> Publisher<R> liftAsynchronous(PublisherOperator<? super T, ? extends R> operator) {
@@ -2180,8 +2186,7 @@ public abstract class Publisher<T> implements PublisherSource<T> {
     // Conversion Operators End
     //
 
-    @Override
-    public final void subscribe(Subscriber<? super T> subscriber) {
+    final void subscribe(Subscriber<? super T> subscriber) {
         subscribeCaptureContext(subscriber, AsyncContext.provider());
     }
 
@@ -2230,9 +2235,8 @@ public abstract class Publisher<T> implements PublisherSource<T> {
     }
 
     /**
-     * Create a new {@link Publisher} that on {@link Publisher#subscribe(Subscriber)} will get an {@link Iterator} via
-     * {@link Iterable#iterator()} and emit all values to the {@link Subscriber} and then
-     * {@link Subscriber#onComplete()}.
+     * Create a new {@link Publisher} that when subscribed will get an {@link Iterator} via {@link Iterable#iterator()}
+     * and emit all values to the {@link Subscriber} and then {@link Subscriber#onComplete()}.
      * <p>
      * The Reactive Streams specification provides two criteria (
      * <a href="https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.2/README.md#3.4">3.4</a>, and
@@ -2245,17 +2249,16 @@ public abstract class Publisher<T> implements PublisherSource<T> {
      * must not return {@code null}. If this is of type {@link BlockingIterable} then any generated
      * {@link BlockingIterator}s will have their {@link BlockingIterator#close()} method called if an error
      * occurs.
-     * @return a new {@link Publisher} that on {@link Publisher#subscribe(Subscriber)} will get an {@link Iterator} via
-     * {@link Iterable#iterator()} and emit all values to the {@link Subscriber} and then
-     * {@link Subscriber#onComplete()}.
+     * @return a new {@link Publisher} that when subscribed will get an {@link Iterator} via {@link Iterable#iterator()}
+     * and emit all values to the {@link Subscriber} and then {@link Subscriber#onComplete()}.
      */
     public static <T> Publisher<T> from(Iterable<T> iterable) {
         return new FromIterablePublisher<>(iterable);
     }
 
     /**
-     * Create a new {@link Publisher} that on {@link Publisher#subscribe(Subscriber)} will get an {@link Iterator} via
-     * {@link Iterable#iterator()} and emit all values to the {@link Subscriber} and then
+     * Create a new {@link Publisher} that when subscribed will get a {@link BlockingIterator} via
+     * {@link BlockingIterable#iterator()} and emit all values to the {@link Subscriber} and then
      * {@link Subscriber#onComplete()}.
      * <p>
      * The Reactive Streams specification provides two criteria (
@@ -2271,8 +2274,8 @@ public abstract class Publisher<T> implements PublisherSource<T> {
      * @param timeoutSupplier A {@link LongSupplier} which provides the time duration to wait for each
      * interaction with {@code iterable}.
      * @param unit The time units for the {@code timeout} duration.
-     * @return a new {@link Publisher} that on {@link Publisher#subscribe(Subscriber)} will get an {@link Iterator} via
-     * {@link Iterable#iterator()} and emit all values to the {@link Subscriber} and then
+     * @return a new {@link Publisher} that when subscribed will get a {@link BlockingIterator} via
+     * {@link BlockingIterable#iterator()} and emit all values to the {@link Subscriber} and then
      * {@link Subscriber#onComplete()}.
      */
     public static <T> Publisher<T> from(BlockingIterable<T> iterable, LongSupplier timeoutSupplier, TimeUnit unit) {
@@ -2280,8 +2283,8 @@ public abstract class Publisher<T> implements PublisherSource<T> {
     }
 
     /**
-     * Create a new {@link Publisher} that on {@link Publisher#subscribe(Subscriber)} will emit all data from the
-     * {@link InputStream} to the {@link Subscriber} and then {@link Subscriber#onComplete()}.
+     * Create a new {@link Publisher} that when subscribed will emit all data from the {@link InputStream} to the
+     * {@link Subscriber} and then {@link Subscriber#onComplete()}.
      * <p>
      * The Reactive Streams specification provides two criteria (
      * <a href="https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.2/README.md#3.4">3.4</a>, and
@@ -2293,8 +2296,8 @@ public abstract class Publisher<T> implements PublisherSource<T> {
      * returned {@link Publisher}. Given the blocking nature of {@link InputStream}, assume {@link
      * Subscription#request(long)} can block when the underlying {@link InputStream} blocks on {@link
      * InputStream#read(byte[], int, int)}.
-     * @return a new {@link Publisher} that on {@link Publisher#subscribe(Subscriber)} will emit all data from the
-     * {@link InputStream} to the {@link Subscriber} and then {@link Subscriber#onComplete()}.
+     * @return a new {@link Publisher} that when subscribed will emit all data from the {@link InputStream} to the
+     * {@link Subscriber} and then {@link Subscriber#onComplete()}.
      */
     public static Publisher<byte[]> from(InputStream stream) {
         return new FromInputStreamPublisher(stream);
@@ -2346,12 +2349,12 @@ public abstract class Publisher<T> implements PublisherSource<T> {
     /**
      * Defers creation of a {@link Publisher} till it is subscribed.
      *
-     * @param publisherSupplier {@link Supplier} to create a new {@link Publisher} for every call to
-     * {@link #subscribe(Subscriber)} to the returned {@link Publisher}.
+     * @param publisherSupplier {@link Supplier} to create a new {@link Publisher} every time the returned
+     * {@link Publisher} is subscribed.
      * @param <T> Type of items emitted by the returned {@link Publisher}.
-     * @return A new {@link Publisher} that creates a new {@link Publisher} using {@code publisherFactory} for every
-     * call to {@link #subscribe(Subscriber)} and forwards all items
-     * and terminal events from the newly created {@link Publisher} to its {@link Subscriber}.
+     * @return A new {@link Publisher} that creates a new {@link Publisher} using {@code publisherSupplier} every time
+     * it is subscribed and forwards all items and terminal events from the newly created {@link Publisher} to its
+     * {@link Subscriber}.
      *
      * @see <a href="http://reactivex.io/documentation/operators/defer.html">ReactiveX defer operator.</a>
      */
@@ -2368,7 +2371,8 @@ public abstract class Publisher<T> implements PublisherSource<T> {
     //
 
     /**
-     * Replicating a call to {@link #subscribe(Subscriber)} but allows an override of the {@link AsyncContextMap}.
+     * Replicating a call to {@link #subscribe(PublisherSource.Subscriber)} but allows an override of the
+     * {@link AsyncContextMap}.
      * @param subscriber the subscriber.
      * @param provider the {@link AsyncContextProvider} used to wrap any objects to preserve
      * {@link AsyncContextMap}.
@@ -2380,7 +2384,8 @@ public abstract class Publisher<T> implements PublisherSource<T> {
     }
 
     /**
-     * Replicating a call to {@link #subscribe(Subscriber)} but with a materialized {@link AsyncContextMap}.
+     * Replicating a call to {@link #subscribe(PublisherSource.Subscriber)} but with a materialized
+     * {@link AsyncContextMap}.
      * @param subscriber the subscriber.
      * @param contextMap the {@link AsyncContextMap} to use for this {@link Subscriber}.
      * @param contextProvider the {@link AsyncContextProvider} used to wrap any objects to preserve
@@ -2408,8 +2413,8 @@ public abstract class Publisher<T> implements PublisherSource<T> {
     }
 
     /**
-     * Replicating a call to {@link #subscribe(Subscriber)} but with a materialized {@link SignalOffloader} and
-     * {@link AsyncContextMap}.
+     * Replicating a call to {@link #subscribe(PublisherSource.Subscriber)} but with a materialized
+     * {@link SignalOffloader} and {@link AsyncContextMap}.
      * @param subscriber the subscriber.
      * @param signalOffloader {@link SignalOffloader} to use for this {@link Subscriber}.
      * @param contextMap the {@link AsyncContextMap} to use for this {@link Subscriber}.

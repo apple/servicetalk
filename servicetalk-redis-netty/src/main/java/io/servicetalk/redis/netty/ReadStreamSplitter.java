@@ -18,6 +18,7 @@ package io.servicetalk.redis.netty;
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.CompletableSource;
+import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.api.Completable;
@@ -49,6 +50,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.EmptySubscription.EMPTY_SUBSCRIPTION;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.checkDuplicateSubscription;
 import static io.servicetalk.redis.api.RedisProtocolSupport.Command.PING;
@@ -77,9 +79,8 @@ import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
  * <ul>
  *     <li>No concurrent calls to {@link #registerNewCommand(Command)}.</li>
  *     <li>No concurrent calls to all {@link Publisher} returned by {@link #registerNewCommand(Command)}.</li>
- *     <li>Calls to {@link Publisher#subscribe(Subscriber)} to {@link Publisher} returned by
- *     {@link #registerNewCommand(Command)} is exactly in the same order as {@link #registerNewCommand(Command)} is
- *     called.</li>
+ *     <li>Subscribing to the {@link Publisher} returned by {@link #registerNewCommand(Command)} is exactly in the same
+ *     order as {@link #registerNewCommand(Command)} is called.</li>
  * </ul>
  *
  * The above rules mean that the caller of {@link #registerNewCommand(Command)} MUST immediately subscribe to the
@@ -99,7 +100,7 @@ final class ReadStreamSplitter {
     private static final AtomicIntegerFieldUpdater<ReadStreamSplitter> stateUpdater =
             newUpdater(ReadStreamSplitter.class, "state");
 
-    private final Publisher<GroupedPublisher<Key, PubSubChannelMessage>> original;
+    private final PublisherSource<GroupedPublisher<Key, PubSubChannelMessage>> original;
     private final Queue<Subscriber<? super PubSubChannelMessage>> subscribers;
     private final LinkedPredicate predicate;
     private final NettyConnection<RedisData, ByteBuf> connection;
@@ -116,9 +117,9 @@ final class ReadStreamSplitter {
                        int maxBufferPerGroup, Function<RedisRequest, Completable> unsubscribeWriter) {
         this.connection = requireNonNull(connection);
         this.unsubscribeWriter = requireNonNull(unsubscribeWriter);
-        this.original = new SubscribedChannelReadStream(connection.read(),
+        this.original = toSource(new SubscribedChannelReadStream(connection.read(),
                 connection.executionContext().bufferAllocator())
-                .groupBy(new GroupSelector(), maxBufferPerGroup, maxConcurrentRequests);
+                .groupBy(new GroupSelector(), maxBufferPerGroup, maxConcurrentRequests));
         NettyConnection.TerminalPredicate<RedisData> terminalMsgPredicate = connection.terminalMsgPredicate();
         // Max pending is enforced by the upstream connection for writes, so this can be unbounded.
         // poll() could be invoked from a group onNext in case of duplicate redis (p)subscribe commands
@@ -218,7 +219,7 @@ final class ReadStreamSplitter {
                     return;
                 }
 
-                group.filter(msg -> msg.messageType() == MessageType.DATA)
+                toSource(group.filter(msg -> msg.messageType() == MessageType.DATA))
                      .subscribe(new GroupSubscriber(subscriber, key.pChannel(), key.keyType() == Pattern));
             }
 
@@ -294,7 +295,7 @@ final class ReadStreamSplitter {
                     command.encodeTo(buf);
                     writeRequestArgument(buf, channel);
                     final RedisRequest request = newRequest(command, buf);
-                    unsubscribeWriter.apply(request).subscribe(new CompletableSource.Subscriber() {
+                    toSource(unsubscribeWriter.apply(request)).subscribe(new CompletableSource.Subscriber() {
                         @Override
                         public void onSubscribe(final Cancellable cancellable) {
                             // The cancel cannot be propagated because we don't want to cancel outside the scope of this

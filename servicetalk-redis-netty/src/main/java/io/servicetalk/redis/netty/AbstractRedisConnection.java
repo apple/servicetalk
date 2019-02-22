@@ -16,7 +16,7 @@
 package io.servicetalk.redis.netty;
 
 import io.servicetalk.concurrent.Cancellable;
-import io.servicetalk.concurrent.CompletableSource;
+import io.servicetalk.concurrent.CompletableSource.Subscriber;
 import io.servicetalk.concurrent.api.AsyncCloseable;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Executor;
@@ -39,6 +39,7 @@ import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.api.Publisher.error;
 import static io.servicetalk.concurrent.api.Publisher.just;
 import static io.servicetalk.concurrent.api.Single.success;
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.redis.api.RedisConnection.SettingKey.MAX_CONCURRENCY;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
@@ -54,7 +55,7 @@ abstract class AbstractRedisConnection extends RedisConnection {
     private final Completable closeAsync = new Completable() {
         @Override
         protected void handleSubscribe(Subscriber subscriber) {
-            pinger.closeAsync().concatWith(doClose()).subscribe(subscriber);
+            toSource(pinger.closeAsync().concatWith(doClose())).subscribe(subscriber);
         }
     };
     private final Executor pingTimerProvider;
@@ -153,7 +154,7 @@ abstract class AbstractRedisConnection extends RedisConnection {
             pingPeriodNanos = pingPeriod.toNanos();
             PingSubscriber pingSubscriber = new PingSubscriber();
             timerSubscriber = new TimerSubscriber(pingSubscriber, pingPeriod,
-                    () -> sendPing().subscribe(pingSubscriber),
+                    () -> toSource(sendPing()).subscribe(pingSubscriber),
                     () -> pingTimerProvider.timer(pingPeriodNanos, NANOSECONDS));
             closeAsync = new Completable() {
                 @Override
@@ -168,7 +169,7 @@ abstract class AbstractRedisConnection extends RedisConnection {
 
         void startPings() {
             logger().debug("Connection: {} starting PING timer.", AbstractRedisConnection.this);
-            pingTimerProvider.timer(pingPeriodNanos, NANOSECONDS).subscribe(timerSubscriber);
+            toSource(pingTimerProvider.timer(pingPeriodNanos, NANOSECONDS)).subscribe(timerSubscriber);
         }
 
         @Override
@@ -177,7 +178,7 @@ abstract class AbstractRedisConnection extends RedisConnection {
         }
     }
 
-    private final class PingSubscriber extends SequentialCancellable implements CompletableSource.Subscriber {
+    private final class PingSubscriber extends SequentialCancellable implements Subscriber {
 
         private volatile boolean inProgress; // volatile for visibility.
 
@@ -209,7 +210,7 @@ abstract class AbstractRedisConnection extends RedisConnection {
         }
     }
 
-    private final class TimerSubscriber extends SequentialCancellable implements CompletableSource.Subscriber {
+    private final class TimerSubscriber extends SequentialCancellable implements Subscriber {
 
         private final PingSubscriber pingSubscriber;
         private final Duration pingDuration;
@@ -238,7 +239,7 @@ abstract class AbstractRedisConnection extends RedisConnection {
             } else {
                 logger().debug("Connection: {} Sending ping.", AbstractRedisConnection.this);
                 pingSender.run();
-                timer.get().subscribe(this);
+                toSource(timer.get()).subscribe(this);
             }
         }
 

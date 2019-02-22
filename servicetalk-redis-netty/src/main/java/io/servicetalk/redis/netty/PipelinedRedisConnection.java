@@ -15,6 +15,7 @@
  */
 package io.servicetalk.redis.netty;
 
+import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.redis.api.RedisData;
@@ -36,6 +37,7 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Completable.error;
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.EmptySubscription.EMPTY_SUBSCRIPTION;
 import static io.servicetalk.concurrent.internal.ThrowableUtil.matches;
 import static io.servicetalk.redis.api.RedisProtocolSupport.Command.DISCARD;
@@ -77,7 +79,6 @@ final class PipelinedRedisConnection extends AbstractRedisConnection {
     @SuppressWarnings("unused")
     private volatile int skipQuitWhenClosed;
 
-    @SuppressWarnings("unchecked")
     private PipelinedRedisConnection(NettyConnection<RedisData, ByteBuf> connection,
                                      ExecutionContext executionContext,
                                      ReadOnlyRedisClientConfig roConfig) {
@@ -88,7 +89,6 @@ final class PipelinedRedisConnection extends AbstractRedisConnection {
     }
 
     @Override
-    @SuppressWarnings("unchecked")
     public Completable doClose() {
         return request0(newRequest(QUIT), true, false)
                 .ignoreElements()
@@ -150,7 +150,7 @@ final class PipelinedRedisConnection extends AbstractRedisConnection {
                 //Since we do not re-subscribe to the same publisher returned by connection.request,
                 // we can create the predicate here and return the same instance from the supplier.
                 TerminalMessagePredicates.TerminalMessagePredicate predicate = forCommand(cmd);
-                connection.request(() -> {
+                toSource(connection.request(() -> {
                     if (cmd == MONITOR || cmd == MULTI) {
                         potentiallyConflictingCommand = cmd;
                     } else if (potentiallyConflictingCommand == MULTI && (cmd == EXEC || cmd == DISCARD)) {
@@ -168,7 +168,7 @@ final class PipelinedRedisConnection extends AbstractRedisConnection {
                             if (flaggedSkipQuit) {
                                 skipQuitWhenClosedUpdater.decrementAndGet(PipelinedRedisConnection.this);
                             }
-                        })
+                        }))
                         .subscribe(subscriber);
             }
         };

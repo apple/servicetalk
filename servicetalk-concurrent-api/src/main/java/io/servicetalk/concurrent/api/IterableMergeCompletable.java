@@ -15,6 +15,7 @@
  */
 package io.servicetalk.concurrent.api;
 
+import io.servicetalk.concurrent.CompletableSource.Subscriber;
 import io.servicetalk.concurrent.api.MergeCompletable.FixedCountMergeSubscriber;
 
 import java.util.Collection;

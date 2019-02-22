@@ -15,6 +15,7 @@
  */
 package io.servicetalk.http.api;
 
+import io.servicetalk.concurrent.SingleSource.Subscriber;
 import io.servicetalk.concurrent.api.Single;
 
 import java.util.function.Function;

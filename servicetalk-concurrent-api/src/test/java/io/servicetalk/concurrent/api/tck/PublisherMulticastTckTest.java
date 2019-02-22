@@ -21,6 +21,7 @@ import io.servicetalk.concurrent.api.Publisher;
 
 import org.testng.annotations.Test;
 
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static java.lang.Math.max;
 
 @Test
@@ -33,7 +34,7 @@ public class PublisherMulticastTckTest extends AbstractPublisherOperatorTckTest<
         // before subscribing to the original Publisher. To facilitate this operator being used by the TCK tests we
         // specify a multicast factor of 2, and we immediately subscribe once here, just to let the TCK tests drive
         // the Subscription and consumption of data.
-        multicastPublisher.subscribe(new Subscriber<Integer>() {
+        toSource(multicastPublisher).subscribe(new Subscriber<Integer>() {
             @Override
             public void onSubscribe(Subscription s) {
             }

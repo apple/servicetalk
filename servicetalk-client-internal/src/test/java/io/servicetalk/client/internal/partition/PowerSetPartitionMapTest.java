@@ -18,6 +18,7 @@ package io.servicetalk.client.internal.partition;
 import io.servicetalk.client.api.partition.PartitionAttributes;
 import io.servicetalk.client.api.partition.PartitionAttributes.Key;
 import io.servicetalk.client.api.partition.PartitionAttributesBuilder;
+import io.servicetalk.concurrent.CompletableSource.Subscriber;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.CompletableProcessor;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
@@ -26,6 +27,7 @@ import org.junit.Test;
 
 import java.util.List;
 
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -52,7 +54,7 @@ public class PowerSetPartitionMapTest {
                 @Override
                 protected void handleSubscribe(Subscriber subscriber) {
                     close.onComplete();
-                    close.subscribe(subscriber);
+                    toSource(close).subscribe(subscriber);
                 }
             };
         }

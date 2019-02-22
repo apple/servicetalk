@@ -15,6 +15,8 @@
  */
 package io.servicetalk.concurrent.api;
 
+import io.servicetalk.concurrent.PublisherSource.Subscriber;
+
 import static java.util.Objects.requireNonNull;
 
 final class LiftAsynchronousPublisherOperator<T, R> extends AbstractAsynchronousPublisherOperator<T, R> {

@@ -44,6 +44,7 @@ import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.checkDuplicateSubscription;
 import static java.lang.Integer.MAX_VALUE;
 import static java.lang.System.nanoTime;
@@ -91,7 +92,7 @@ final class HttpDataSourceTranformations {
                                               final Publisher<Buffer> discardedPublisher) {
             this.target = target;
             bridgedSubscription = new DelayedSubscription();
-            discardedPublisher.subscribe(new Subscriber<Buffer>() {
+            toSource(discardedPublisher).subscribe(new Subscriber<Buffer>() {
                 @Override
                 public void onSubscribe(final Subscription s) {
                     bridgedSubscription.delayedSubscription(ConcurrentSubscription.wrap(s));
@@ -931,7 +932,7 @@ final class HttpDataSourceTranformations {
             private final T userState;
             private final BiFunction<I, T, O> transformer;
             private final BiFunction<T, HttpHeaders, HttpHeaders> trailersTransformer;
-            private final Single<HttpHeaders> inTrailersSingle;
+            private final SingleSource<HttpHeaders> inTrailersSingle;
             private final SingleProcessor<HttpHeaders> outTrailersSingle;
 
             PayloadAndTrailersSubscriber(final Subscriber<? super O> subscriber,
@@ -944,7 +945,7 @@ final class HttpDataSourceTranformations {
                 this.userState = userState;
                 this.transformer = transformer;
                 this.trailersTransformer = trailersTransformer;
-                this.inTrailersSingle = inTrailersSingle;
+                this.inTrailersSingle = toSource(inTrailersSingle);
                 this.outTrailersSingle = outTrailersSingle;
             }
 
@@ -1034,7 +1035,7 @@ final class HttpDataSourceTranformations {
         }
     }
 
-    private static <T> void completeOutTrailerSingle(@Nullable T userState, Single<HttpHeaders> inTrailersSingle,
+    private static <T> void completeOutTrailerSingle(@Nullable T userState, SingleSource<HttpHeaders> inTrailersSingle,
                                                      BiFunction<T, HttpHeaders, HttpHeaders> trailersTransformer,
                                                      SingleProcessor<HttpHeaders> outTrailersSingle,
                                                      Subscriber<?> subscriber) {

@@ -15,6 +15,7 @@
  */
 package io.servicetalk.transport.netty.internal;
 
+import io.servicetalk.concurrent.CompletableSource.Subscriber;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
@@ -24,6 +25,7 @@ import io.netty.channel.Channel;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.transport.netty.internal.CloseStates.CLOSING;
 import static io.servicetalk.transport.netty.internal.CloseStates.GRACEFULLY_CLOSING;
 import static io.servicetalk.transport.netty.internal.CloseStates.OPEN;
@@ -66,7 +68,7 @@ class NettyChannelListenableAsyncCloseable implements ListenableAsyncCloseable {
         return new Completable() {
             @Override
             protected void handleSubscribe(final Subscriber subscriber) {
-                onClose().subscribe(subscriber);
+                toSource(onClose()).subscribe(subscriber);
                 if (stateUpdater.getAndSet(NettyChannelListenableAsyncCloseable.this, CLOSING) != CLOSING) {
                     channel.close();
                 }
@@ -82,7 +84,7 @@ class NettyChannelListenableAsyncCloseable implements ListenableAsyncCloseable {
                 if (stateUpdater.compareAndSet(NettyChannelListenableAsyncCloseable.this, OPEN, GRACEFULLY_CLOSING)) {
                     doCloseAsyncGracefully();
                 }
-                onClose().subscribe(subscriber);
+                toSource(onClose()).subscribe(subscriber);
             }
         };
     }

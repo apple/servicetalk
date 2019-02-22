@@ -59,6 +59,7 @@ import javax.annotation.Nullable;
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.BlockingTestUtils.awaitIndefinitely;
 import static io.servicetalk.concurrent.api.Executors.immediate;
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.redis.api.RedisProtocolSupport.Command.DISCARD;
 import static io.servicetalk.redis.api.RedisProtocolSupport.Command.EXEC;
 import static io.servicetalk.redis.api.RedisProtocolSupport.Command.MULTI;
@@ -161,8 +162,8 @@ public class PingerTest {
         awaitPingDurations(2); // Await for a few ping durations to verify no pings were sent before subscribe.
         assertThat("Unexpected command written.", commandsWritten, hasSize(0));
 
-        connection.asCommander().subscribe(randomCharSequenceOfByteLength(32))
-                .flatMapPublisher(PubSubRedisConnection::messages)
+        toSource(connection.asCommander().subscribe(randomCharSequenceOfByteLength(32))
+                .flatMapPublisher(PubSubRedisConnection::messages))
                 .subscribe(new Subscriber<PubSubRedisMessage>() {
                     @Override
                     public void onSubscribe(Subscription s) {

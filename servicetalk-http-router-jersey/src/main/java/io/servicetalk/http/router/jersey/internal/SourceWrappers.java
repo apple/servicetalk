@@ -32,7 +32,7 @@ import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.ext.MessageBodyReader;
 import javax.xml.transform.Source;
 
-import static java.util.Objects.requireNonNull;
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 
 /**
  * When request's contents are not buffered, Jersey's determines if the entity body input stream that backs a request
@@ -60,7 +60,7 @@ public final class SourceWrappers {
      * @param <T> Type of items emitted.
      */
     public static final class PublisherSource<T> extends Publisher<T> implements Source {
-        private final Publisher<T> original;
+        private final io.servicetalk.concurrent.PublisherSource<T> original;
 
         @Nullable
         private String systemId;
@@ -71,11 +71,12 @@ public final class SourceWrappers {
          * @param original the original {@link Publisher} to wrap.
          */
         public PublisherSource(final Publisher<T> original) {
-            this.original = requireNonNull(original);
+            this.original = toSource(original);
         }
 
         @Override
-        protected void handleSubscribe(final Subscriber<? super T> subscriber) {
+        protected void handleSubscribe(
+                final io.servicetalk.concurrent.PublisherSource.Subscriber<? super T> subscriber) {
             original.subscribe(subscriber);
         }
 
@@ -97,7 +98,7 @@ public final class SourceWrappers {
      * @param <T> Type of items emitted.
      */
     public static final class SingleSource<T> extends Single<T> implements Source {
-        private final Single<T> original;
+        private final io.servicetalk.concurrent.SingleSource<T> original;
 
         @Nullable
         private String systemId;
@@ -108,11 +109,11 @@ public final class SourceWrappers {
          * @param original the original {@link Single} to wrap.
          */
         public SingleSource(final Single<T> original) {
-            this.original = requireNonNull(original);
+            this.original = toSource(original);
         }
 
         @Override
-        protected void handleSubscribe(final Subscriber<? super T> subscriber) {
+        protected void handleSubscribe(final io.servicetalk.concurrent.SingleSource.Subscriber<? super T> subscriber) {
             original.subscribe(subscriber);
         }
 
