@@ -46,7 +46,7 @@ public abstract class AbstractStreamingJsonResourcesTest extends AbstractJerseyS
     }
 
     @Override
-    protected Application getApplication() {
+    protected Application application() {
         return new TestApplication();
     }
 

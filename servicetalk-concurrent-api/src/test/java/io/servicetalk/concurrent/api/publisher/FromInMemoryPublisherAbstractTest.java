@@ -54,59 +54,59 @@ public abstract class FromInMemoryPublisherAbstractTest {
     @Test
     public void testRequestAllValues() {
         InMemorySource source = newSource(5);
-        subscriber.subscribe(source.getPublisher()).verifySuccess(source.getValues());
+        subscriber.subscribe(source.publisher()).verifySuccess(source.values());
     }
 
     @Test
     public void testRequestInChunks() {
         InMemorySource source = newSource(10);
-        subscriber.subscribe(source.getPublisher())
+        subscriber.subscribe(source.publisher())
                 .request(2)
                 .request(2)
                 .request(6)
-                .verifyItems(source.getValues());
+                .verifyItems(source.values());
     }
 
     @Test
     public void testNullAsValue() {
         String[] values = {"Hello", null};
         InMemorySource source = newPublisher(immediate(), values);
-        subscriber.subscribe(source.getPublisher()).request(2).verifyItems("Hello", null).verifySuccess();
+        subscriber.subscribe(source.publisher()).request(2).verifyItems("Hello", null).verifySuccess();
     }
 
     @Test
     public void testRequestPostComplete() {
         // Due to race between on* and request-n, request-n may arrive after onComplete/onError.
         InMemorySource source = newSource(5);
-        subscriber.subscribe(source.getPublisher()).verifySuccess(source.getValues());
+        subscriber.subscribe(source.publisher()).verifySuccess(source.values());
         subscriber.request(1);
-        verifyNoMoreInteractions(subscriber.getSubscriber());
+        verifyNoMoreInteractions(subscriber.subscriber());
     }
 
     @Test
     public void testRequestPostError() {
         String[] values = {"Hello", null};
         InMemorySource source = newPublisher(immediate(), values);
-        subscriber.subscribe(source.getPublisher());
+        subscriber.subscribe(source.publisher());
         doAnswer(invocation -> {
             throw DELIBERATE_EXCEPTION;
-        }).when(subscriber.getSubscriber()).onNext(eq(null));
+        }).when(subscriber.subscriber()).onNext(eq(null));
         subscriber.request(2).verifyItems("Hello", null).verifyFailure(DELIBERATE_EXCEPTION);
         subscriber.request(1);
-        verifyNoMoreInteractions(subscriber.getSubscriber());
+        verifyNoMoreInteractions(subscriber.subscriber());
     }
 
     @Test
     public void testReentrant() {
         InMemorySource source = newSource(6);
-        Publisher<String> p = source.getPublisher().doBeforeNext(s -> subscriber.request(5));
-        subscriber.subscribe(p).request(1).verifyItems(source.getValues());
+        Publisher<String> p = source.publisher().doBeforeNext(s -> subscriber.request(5));
+        subscriber.subscribe(p).request(1).verifyItems(source.values());
     }
 
     @Test
     public void testReactiveStreams2_13() {
         InMemorySource source = newSource(6);
-        Publisher<String> p = source.getPublisher().doBeforeNext(s -> {
+        Publisher<String> p = source.publisher().doBeforeNext(s -> {
             throw DELIBERATE_EXCEPTION;
         });
         subscriber.subscribe(p).request(6).verifyFailure(DELIBERATE_EXCEPTION);
@@ -123,19 +123,19 @@ public abstract class FromInMemoryPublisherAbstractTest {
         InMemorySource source = newSource(6);
         requestItemsAndVerifyEmissions(source);
         subscriber.cancel();
-        verifyNoMoreInteractions(subscriber.getSubscriber());
+        verifyNoMoreInteractions(subscriber.subscriber());
         subscriber.request(1);
-        verifyNoMoreInteractions(subscriber.getSubscriber());
+        verifyNoMoreInteractions(subscriber.subscriber());
     }
 
     @Test
     public void testCancelFromInOnNext() {
         InMemorySource source = newSource(2);
-        subscriber.subscribe(source.getPublisher());
+        subscriber.subscribe(source.publisher());
         doAnswer((Answer<Void>) invocation -> {
             subscriber.cancel();
             return null;
-        }).when(subscriber.getSubscriber()).onNext(any());
+        }).when(subscriber.subscriber()).onNext(any());
         subscriber.request(1).verifyItems("Hello0");
         subscriber.request(1).verifyNoEmissions();
     }
@@ -145,7 +145,7 @@ public abstract class FromInMemoryPublisherAbstractTest {
         InMemorySource source = newSource(2);
         CountDownLatch latch = new CountDownLatch(1);
         AtomicReference<Throwable> throwableRef = new AtomicReference<>();
-        toSource(source.getPublisher()).subscribe(new Subscriber<String>() {
+        toSource(source.publisher()).subscribe(new Subscriber<String>() {
             @Nullable
             private Subscription subscription;
             @Nullable
@@ -191,7 +191,7 @@ public abstract class FromInMemoryPublisherAbstractTest {
     @Test
     public void testInvalidRequestNZeroLengthArrayNoMultipleTerminal() {
         InMemorySource source = newSource(1);
-        subscriber.subscribe(source.getPublisher());
+        subscriber.subscribe(source.publisher());
         subscriber.request(-1).verifyFailure(IllegalArgumentException.class);
         subscriber.request(1).verifyNoEmissions();
     }
@@ -199,9 +199,9 @@ public abstract class FromInMemoryPublisherAbstractTest {
     @Test
     public void testInvalidRequestAfterCompleteDoesNotDeliverOnError() {
         InMemorySource source = newSource(1);
-        subscriber.subscribe(source.getPublisher()).request(1).verifySuccess();
+        subscriber.subscribe(source.publisher()).request(1).verifySuccess();
         subscriber.request(-1);
-        verify(subscriber.getSubscriber(), never()).onError(any());
+        verify(subscriber.subscriber(), never()).onError(any());
     }
 
     @Test
@@ -210,7 +210,7 @@ public abstract class FromInMemoryPublisherAbstractTest {
         final AtomicBoolean onErrorCalled = new AtomicBoolean();
 
         InMemorySource source = newSource(20);
-        toSource(source.getPublisher()).subscribe(new Subscriber<String>() {
+        toSource(source.publisher()).subscribe(new Subscriber<String>() {
             private boolean onNextCalled;
 
             @Override
@@ -263,10 +263,10 @@ public abstract class FromInMemoryPublisherAbstractTest {
     }
 
     private void requestItemsAndVerifyEmissions(InMemorySource source) {
-        subscriber.subscribe(source.getPublisher())
+        subscriber.subscribe(source.publisher())
                 .request(3)
-                .verifyItems(copyOf(source.getValues(), 3));
-        verifyNoMoreInteractions(subscriber.getSubscriber());
+                .verifyItems(copyOf(source.values(), 3));
+        verifyNoMoreInteractions(subscriber.subscriber());
     }
 
     final InMemorySource newSource(int size) {
@@ -284,10 +284,10 @@ public abstract class FromInMemoryPublisherAbstractTest {
             this.values = requireNonNull(values);
         }
 
-        protected final String[] getValues() {
+        protected final String[] values() {
             return values;
         }
 
-        protected abstract Publisher<String> getPublisher();
+        protected abstract Publisher<String> publisher();
     }
 }

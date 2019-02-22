@@ -137,7 +137,7 @@ public final class SingleFlatMapPublisherTest {
                     }
                     analyzed.countDown();
                 })
-                .subscribeOn(executorRule.getExecutor())
+                .subscribeOn(executorRule.executor())
                 .flatMapPublisher(t -> Publisher.never())
                 .forEach(__ -> { }).cancel();
         analyzed.await();

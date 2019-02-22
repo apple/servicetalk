@@ -126,7 +126,7 @@ public final class TerminalNotification {
      * @return {@link Throwable} if this is an error notification, otherwise {@code null}.
      */
     @Nullable
-    public Throwable getCause() {
+    public Throwable cause() {
         return cause;
     }
 

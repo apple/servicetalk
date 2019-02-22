@@ -143,8 +143,8 @@ final class DefaultExecutor extends AbstractOffloaderAwareExecutor implements Co
     }
 
     @Override
-    public boolean threadAffinity() {
-        return offloaderFactory.threadAffinity();
+    public boolean hasThreadAffinity() {
+        return offloaderFactory.hasThreadAffinity();
     }
 
     @Override

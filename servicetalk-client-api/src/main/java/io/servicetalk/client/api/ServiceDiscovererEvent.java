@@ -31,5 +31,5 @@ public interface ServiceDiscovererEvent<ResolvedAddress> {
      * @return {@code true} if {@link #address()} is now available or false if the {@link #address()} is now
      * unavailable.
      */
-    boolean available();
+    boolean isAvailable();
 }

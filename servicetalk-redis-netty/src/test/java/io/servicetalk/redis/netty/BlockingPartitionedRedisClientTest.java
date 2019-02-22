@@ -137,7 +137,7 @@ public class BlockingPartitionedRedisClientTest extends AbstractPartitionedRedis
 
             @Override
             public Function<Command, RedisPartitionAttributesBuilder> redisPartitionAttributesBuilderFunction() {
-                return getPartitionAttributesBuilderFactory();
+                return partitionAttributesBuilderFactory();
             }
 
             @Override

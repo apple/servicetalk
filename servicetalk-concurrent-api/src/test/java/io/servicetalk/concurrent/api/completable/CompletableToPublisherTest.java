@@ -61,7 +61,7 @@ public class CompletableToPublisherTest {
                     }
                     analyzed.countDown();
                 })
-                .subscribeOn(executorRule.getExecutor())
+                .subscribeOn(executorRule.executor())
                 .toPublisher()
                 .forEach(__ -> { });
         // toPublisher does not subscribe to the Completable, till data is requested. Since subscription is offloaded,

@@ -139,7 +139,7 @@ public class ExceptionMapperTest extends AbstractJerseyStreamingHttpServiceTest 
     }
 
     @Override
-    protected Application getApplication() {
+    protected Application application() {
         return new TestApplication();
     }
 

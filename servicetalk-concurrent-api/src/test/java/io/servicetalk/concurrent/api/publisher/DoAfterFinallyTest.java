@@ -40,7 +40,7 @@ public class DoAfterFinallyTest extends AbstractDoFinallyTest {
         thrown.expect(is(sameInstance(DELIBERATE_EXCEPTION)));
         AtomicInteger invocationCount = new AtomicInteger();
         try {
-            subscriber.subscribe(doFinally(publisher.getPublisher(), () -> {
+            subscriber.subscribe(doFinally(publisher.publisher(), () -> {
                 invocationCount.incrementAndGet();
                 throw DELIBERATE_EXCEPTION;
             }));
@@ -61,7 +61,7 @@ public class DoAfterFinallyTest extends AbstractDoFinallyTest {
 
         AtomicInteger invocationCount = new AtomicInteger();
         try {
-            subscriber.subscribe(doFinally(publisher.getPublisher(), () -> {
+            subscriber.subscribe(doFinally(publisher.publisher(), () -> {
                 invocationCount.incrementAndGet();
                 throw exception;
             }));

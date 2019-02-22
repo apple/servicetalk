@@ -62,6 +62,7 @@ public final class ThreadInterruptingCancellable implements Cancellable {
     /**
      * Indicates the operation associated with this {@link Cancellable} is done and future calls to {@link #cancel()}
      * should be NOOPs.
+     *
      * @param cause The operation failed, and this is the {@link Throwable} that indicates why. If this is
      * {@link InterruptedException} then {@link Thread#interrupted()} will be called for the current thread to clear
      * the interrupt status.

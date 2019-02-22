@@ -205,7 +205,7 @@ final class ReadStreamSplitter {
 
             @Override
             public void onNext(GroupedPublisher<Key, PubSubChannelMessage> group) {
-                final Key key = group.getKey();
+                final Key key = group.key();
                 if (key == Key.IGNORE_GROUP) {
                     group.ignoreElements().subscribe();
                     return;
@@ -219,8 +219,8 @@ final class ReadStreamSplitter {
                     return;
                 }
 
-                toSource(group.filter(msg -> msg.getMessageType() == MessageType.DATA))
-                     .subscribe(new GroupSubscriber(subscriber, key.getPChannel(), key.getKeyType() == Pattern));
+                toSource(group.filter(msg -> msg.messageType() == MessageType.DATA))
+                     .subscribe(new GroupSubscriber(subscriber, key.pChannel(), key.keyType() == Pattern));
             }
 
             @Override
@@ -376,25 +376,24 @@ final class ReadStreamSplitter {
 
         @Override
         public Key apply(PubSubChannelMessage pubSubChannelMessage) {
-            KeyType keyType = pubSubChannelMessage.getKeyType();
+            KeyType keyType = pubSubChannelMessage.keyType();
             if (isNotSubscribedCommand(keyType)) {
                 handleNonSubscribeCommand(pubSubChannelMessage, keyType);
                 return Key.IGNORE_GROUP; // Special value to signal ignore
             }
-            final String pChannel = keyType == Pattern ? pubSubChannelMessage.getPattern() :
-                    pubSubChannelMessage.getChannel();
+            final String pChannel = keyType == Pattern ? pubSubChannelMessage.pattern() : pubSubChannelMessage.channel();
             assert pChannel != null;
             Key key = pChannelToKey.get(pChannel);
             if (key == null) {
                 key = new Key(keyType, pChannel);
-                if (pubSubChannelMessage.getMessageType() == SUBSCRIBE_ACK) {
+                if (pubSubChannelMessage.messageType() == SUBSCRIBE_ACK) {
                     pChannelToKey.put(pChannel, key);
                 }
-            } else if (pubSubChannelMessage.getMessageType() == SUBSCRIBE_ACK) {
+            } else if (pubSubChannelMessage.messageType() == SUBSCRIBE_ACK) {
                 // Duplicate SUBSCRIBE, not supported.
                 failDuplicateSubscriber(pChannel);
                 return Key.IGNORE_GROUP; // Special value to signal ignore
-            } else if (pubSubChannelMessage.getMessageType() == MessageType.UNSUBSCRIBE) {
+            } else if (pubSubChannelMessage.messageType() == MessageType.UNSUBSCRIBE) {
                 pChannelToKey.remove(pChannel); // Remove pChannel mapping post unsubscribe.
                 if (predicate.unsubscribedFromAll) {
                     connection.closeAsync().subscribe();
@@ -446,11 +445,11 @@ final class ReadStreamSplitter {
             this.pChannel = pChannel;
         }
 
-        KeyType getKeyType() {
+        KeyType keyType() {
             return keyType;
         }
 
-        String getPChannel() {
+        String pChannel() {
             return pChannel;
         }
 

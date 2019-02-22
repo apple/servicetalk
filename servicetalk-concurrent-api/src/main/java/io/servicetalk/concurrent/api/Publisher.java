@@ -915,8 +915,8 @@ public abstract class Publisher<T> {
      */
     public final Publisher<T> retry(BiIntPredicate<Throwable> shouldRetry) {
         return new RedoPublisher<>(this,
-                (retryCount, terminalNotification) -> terminalNotification.getCause() != null &&
-                        shouldRetry.test(retryCount, terminalNotification.getCause()),
+                (retryCount, terminalNotification) -> terminalNotification.cause() != null &&
+                        shouldRetry.test(retryCount, terminalNotification.cause()),
                 executor);
     }
 
@@ -963,10 +963,10 @@ public abstract class Publisher<T> {
      */
     public final Publisher<T> retryWhen(BiIntFunction<Throwable, Completable> retryWhen) {
         return new RedoWhenPublisher<>(this, (retryCount, notification) -> {
-            if (notification.getCause() == null) {
+            if (notification.cause() == null) {
                 return Completable.completed();
             }
-            return retryWhen.apply(retryCount, notification.getCause());
+            return retryWhen.apply(retryCount, notification.cause());
         }, true, executor);
     }
 
@@ -993,7 +993,7 @@ public abstract class Publisher<T> {
      */
     public final Publisher<T> repeat(IntPredicate shouldRepeat) {
         return new RedoPublisher<>(this,
-                (repeatCount, terminalNotification) -> terminalNotification.getCause() == null &&
+                (repeatCount, terminalNotification) -> terminalNotification.cause() == null &&
                         shouldRepeat.test(repeatCount),
                 executor);
     }
@@ -1029,7 +1029,7 @@ public abstract class Publisher<T> {
      */
     public final Publisher<T> repeatWhen(IntFunction<Completable> repeatWhen) {
         return new RedoWhenPublisher<>(this, (retryCount, notification) -> {
-            if (notification.getCause() != null) {
+            if (notification.cause() != null) {
                 return Completable.completed();
             }
             return repeatWhen.apply(retryCount);
@@ -2484,7 +2484,7 @@ public abstract class Publisher<T> {
      *
      * @return {@link Executor} used for this {@link Publisher} via {@link #Publisher(Executor)}.
      */
-    final Executor getExecutor() {
+    final Executor executor() {
         return executor;
     }
 

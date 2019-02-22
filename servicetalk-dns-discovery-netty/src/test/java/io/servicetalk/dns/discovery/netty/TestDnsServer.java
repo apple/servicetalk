@@ -54,7 +54,7 @@ class TestDnsServer extends DnsServer {
         this.store = new DelegateRecordStore(store);
     }
 
-    void setStore(final RecordStore store) {
+    void store(final RecordStore store) {
         this.store.setStore(store);
     }
 

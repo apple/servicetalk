@@ -46,7 +46,7 @@ final class TimerCompletable extends Completable {
         DelayedCancellable cancellable = new DelayedCancellable();
         subscriber.onSubscribe(cancellable);
         try {
-            cancellable.setDelayedCancellable(
+            cancellable.delayedCancellable(
                     timeoutExecutor.schedule(subscriber::onComplete, delayNs, NANOSECONDS));
         } catch (Throwable cause) {
             subscriber.onError(cause);

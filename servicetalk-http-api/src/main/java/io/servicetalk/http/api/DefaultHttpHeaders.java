@@ -164,7 +164,7 @@ final class DefaultHttpHeaders extends MultiMap<CharSequence, CharSequence> impl
     private void encodeAndAddCookie(CharSequence cookieHeaderName, HttpCookie cookie) {
         StringBuilder sb = new StringBuilder(64);
         sb.append(cookie.name()).append('=');
-        if (cookie.wrapped()) {
+        if (cookie.isWrapped()) {
             sb.append('"').append(cookie.value()).append('"');
         } else {
             sb.append(cookie.value());
@@ -185,10 +185,10 @@ final class DefaultHttpHeaders extends MultiMap<CharSequence, CharSequence> impl
             sb.append("; max-age=");
             sb.append(cookie.maxAge());
         }
-        if (cookie.httpOnly()) {
+        if (cookie.isHttpOnly()) {
             sb.append("; httponly");
         }
-        if (cookie.secure()) {
+        if (cookie.isSecure()) {
             sb.append("; secure");
         }
         // We could return sb.toString() but for now we avoid the intermediate copy operation until we can demonstrate

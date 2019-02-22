@@ -28,7 +28,7 @@ abstract class AbstractSubmitCompletable extends Completable {
         this.runExecutor = requireNonNull(runExecutor);
     }
 
-    abstract Runnable getRunnable();
+    abstract Runnable runnable();
 
     @Override
     protected final void handleSubscribe(final CompletableSource.Subscriber subscriber) {
@@ -38,7 +38,7 @@ abstract class AbstractSubmitCompletable extends Completable {
         try {
             eCancellable = runExecutor.execute(() -> {
                 try {
-                    getRunnable().run();
+                    runnable().run();
                 } catch (Throwable cause) {
                     subscriber.onError(cause);
                     return;
@@ -51,6 +51,6 @@ abstract class AbstractSubmitCompletable extends Completable {
             subscriber.onError(cause);
             return;
         }
-        cancellable.setDelayedCancellable(eCancellable);
+        cancellable.delayedCancellable(eCancellable);
     }
 }

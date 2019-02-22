@@ -444,14 +444,14 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
         public void channelWritabilityChanged(ChannelHandlerContext ctx) {
             if (ctx.channel().isWritable()) {
                 connection.writableListener.channelWritable();
-            } else if (connection.flushStrategy.flushOnUnwritable()) {
+            } else if (connection.flushStrategy.shouldFlushOnUnwritable()) {
                 ctx.flush();
             }
         }
 
         @Override
         public void handlerAdded(ChannelHandlerContext ctx) {
-            delayedCancellable.setDelayedCancellable(ctx.channel()::close);
+            delayedCancellable.delayedCancellable(ctx.channel()::close);
             // Double check In the event of a late handler (or test utility like EmbeddedChannel) check activeness.
             if (ctx.channel().isActive()) {
                 doChannelActive(ctx);

@@ -58,10 +58,11 @@ public final class LatestValueSubscriber<T> implements Subscriber<T> {
 
     /**
      * Get the last seen value.
-     * @param defaultValue The default value if there has been no values seen.
-     * @return the last seen value.
+     *
+     * @param defaultValue The default value if there has been no values seen
+     * @return the last seen value
      */
-    public T getLastSeenValue(T defaultValue) {
+    public T lastSeenValue(T defaultValue) {
         final T current = latestValue;
         return current != null ? current : defaultValue;
     }

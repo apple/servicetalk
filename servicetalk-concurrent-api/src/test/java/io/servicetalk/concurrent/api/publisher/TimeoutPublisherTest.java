@@ -73,7 +73,7 @@ public class TimeoutPublisherTest {
 
     @Test
     public void executorScheduleThrows() {
-        subscriberRule.subscribe(publisherRule.getPublisher().timeout(1, NANOSECONDS, new AbstractTestExecutor() {
+        subscriberRule.subscribe(publisherRule.publisher().timeout(1, NANOSECONDS, new AbstractTestExecutor() {
             @Override
             public Cancellable schedule(final Runnable task, final long delay, final TimeUnit unit) {
                 throw DELIBERATE_EXCEPTION;
@@ -140,7 +140,7 @@ public class TimeoutPublisherTest {
     public void subscriptionCancelAlsoCancelsTimer() {
         ScheduleEvent event = initSubscriber();
 
-        subscriberRule.getSubscription().cancel();
+        subscriberRule.subscription().cancel();
         verify(event.cancellable).cancel();
     }
 
@@ -205,7 +205,7 @@ public class TimeoutPublisherTest {
         // 10 ms -> long enough for the first timeout runnable to first without timing out, so that the second time out
         // runnable will fire and result in a timeout. This doesn't always work so we just fallback and drain the
         // CountDownLatch if not.
-        subscriberRule.subscribe(publisherRule.getPublisher().timeout(10, MILLISECONDS, new AbstractTestExecutor() {
+        subscriberRule.subscribe(publisherRule.publisher().timeout(10, MILLISECONDS, new AbstractTestExecutor() {
             private final AtomicInteger timerCount = new AtomicInteger();
             @Override
             public Cancellable schedule(final Runnable task, final long delay, final TimeUnit unit) {
@@ -266,7 +266,7 @@ public class TimeoutPublisherTest {
     }
 
     private ScheduleEvent initSubscriber(long timeout, TimeUnit unit) {
-        return initSubscriber(timeout, unit, publisherRule.getPublisher(), true);
+        return initSubscriber(timeout, unit, publisherRule.publisher(), true);
     }
 
     private ScheduleEvent initSubscriber(long timeout, TimeUnit unit, Publisher<Integer> publisher,

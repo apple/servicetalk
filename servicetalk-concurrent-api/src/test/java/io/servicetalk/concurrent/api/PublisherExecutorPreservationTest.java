@@ -32,21 +32,21 @@ public class PublisherExecutorPreservationTest {
 
     @Before
     public void setupPublisher() {
-        publisher = Publisher.<String>empty().publishAndSubscribeOnOverride(EXEC.getExecutor());
+        publisher = Publisher.<String>empty().publishAndSubscribeOnOverride(EXEC.executor());
     }
 
     @Test
     public void testPubToSingle() {
-        assertSame(EXEC.getExecutor(), publisher.first().getExecutor());
+        assertSame(EXEC.executor(), publisher.first().executor());
     }
 
     @Test
     public void testPubToCompletable() {
-        assertSame(EXEC.getExecutor(), publisher.ignoreElements().getExecutor());
+        assertSame(EXEC.executor(), publisher.ignoreElements().executor());
     }
 
     @Test
     public void testReduceSingle() {
-        assertSame(EXEC.getExecutor(), publisher.reduce(() -> 0, (n, s) -> n += s.length()).getExecutor());
+        assertSame(EXEC.executor(), publisher.reduce(() -> 0, (n, s) -> n += s.length()).executor());
     }
 }

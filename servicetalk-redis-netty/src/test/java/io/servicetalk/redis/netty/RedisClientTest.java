@@ -171,7 +171,7 @@ public class RedisClientTest extends BaseRedisClientTest {
               if (d instanceof FirstBulkStringChunk) {
                   assertThat(((FirstBulkStringChunk) d).bulkStringLength(), is(1000));
               }
-              r.append(d.getBufferValue().toString(UTF_8));
+              r.append(d.bufferValue().toString(UTF_8));
             return r;
         })).toString();
 
@@ -205,7 +205,7 @@ public class RedisClientTest extends BaseRedisClientTest {
                     if (d instanceof FirstBulkStringChunk) {
                         assertThat(((FirstBulkStringChunk) d).bulkStringLength(), is(1000));
                     }
-                    r.append(d.getBufferValue().toString(UTF_8));
+                    r.append(d.bufferValue().toString(UTF_8));
                     return r;
                 }).toFuture().get().toString();
 

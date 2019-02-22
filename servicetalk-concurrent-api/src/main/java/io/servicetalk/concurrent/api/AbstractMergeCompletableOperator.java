@@ -171,12 +171,14 @@ abstract class AbstractMergeCompletableOperator extends AbstractNoHandleSubscrib
 
         /**
          * Called when a terminal event is received.
+         *
          * @return {@code true} if we are done processing after changing state due to receiving a terminal event.
          */
         abstract boolean onTerminate();
 
         /**
          * Determine if we are currently done.
+         *
          * @return {@code true} if we are currently done.
          */
         abstract boolean isDone();

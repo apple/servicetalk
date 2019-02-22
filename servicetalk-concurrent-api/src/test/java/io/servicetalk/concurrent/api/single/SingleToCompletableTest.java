@@ -47,7 +47,7 @@ public class SingleToCompletableTest {
                         currentThread()));
             }
             analyzed.countDown();
-        }).subscribeOn(executorRule.getExecutor()).toCompletable().subscribe().cancel();
+        }).subscribeOn(executorRule.executor()).toCompletable().subscribe().cancel();
         analyzed.await();
         assertThat("Unexpected errors observed: " + errors, errors, hasSize(0));
     }

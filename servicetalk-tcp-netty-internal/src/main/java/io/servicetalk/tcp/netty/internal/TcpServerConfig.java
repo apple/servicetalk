@@ -53,7 +53,7 @@ public final class TcpServerConfig extends ReadOnlyTcpServerConfig {
      * @param backlog the backlog to use when accepting connections.
      * @return this.
      */
-    public TcpServerConfig setBacklog(int backlog) {
+    public TcpServerConfig backlog(int backlog) {
         if (backlog < 0) {
             throw new IllegalArgumentException("backlog must be >= 0");
         }
@@ -63,16 +63,17 @@ public final class TcpServerConfig extends ReadOnlyTcpServerConfig {
 
     /**
      * Allows to setup SNI.
-     * You can either use {@link #setSslConfig(SslConfig)} or this method.
+     * You can either use {@link #sslConfig(SslConfig)} or this method.
      * @param mappings mapping hostnames to the ssl configuration that should be used.
      * @param defaultConfig the configuration to use if no hostnames matched from {@code mappings}.
      * @return this.
-     * @throws IllegalStateException if the {@link SslConfig#getKeyCertChainSupplier()}, {@link SslConfig#getKeySupplier()}, or {@link SslConfig#getTrustCertChainSupplier()}
+     * @throws IllegalStateException if the {@link SslConfig#keyCertChainSupplier()}, {@link SslConfig#keySupplier()},
+     * or {@link SslConfig#trustCertChainSupplier()}
      * throws when {@link InputStream#close()} is called.
      */
-    public TcpServerConfig setSniConfig(@Nullable Map<String, SslConfig> mappings, SslConfig defaultConfig) {
+    public TcpServerConfig sniConfig(@Nullable Map<String, SslConfig> mappings, SslConfig defaultConfig) {
         if (sslContext != null) {
-            throw new IllegalStateException("setSslConfig(...) was already used");
+            throw new IllegalStateException("sslConfig(...) was already used");
         } else {
             if (mappings != null) {
                 DomainMappingBuilder<SslContext> builder = new DomainMappingBuilder<>(forServer(defaultConfig));
@@ -93,13 +94,14 @@ public final class TcpServerConfig extends ReadOnlyTcpServerConfig {
      * Enable SSL/TLS using the provided {@link SslConfig}. To disable it pass in {@code null}.
      * @param config the {@link SslConfig}.
      * @return this.
-     * @throws IllegalStateException if the {@link SslConfig#getKeyCertChainSupplier()}, {@link SslConfig#getKeySupplier()}, or {@link SslConfig#getTrustCertChainSupplier()}
+     * @throws IllegalStateException if the {@link SslConfig#keyCertChainSupplier()}, {@link SslConfig#keySupplier()},
+     * or {@link SslConfig#trustCertChainSupplier()}
      * throws when {@link InputStream#close()} is called.
      */
-    public TcpServerConfig setSslConfig(@Nullable SslConfig config) {
+    public TcpServerConfig sslConfig(@Nullable SslConfig config) {
         if (config != null) {
             if (mappings != null) {
-                throw new IllegalStateException("setSniConfig(...) was already used");
+                throw new IllegalStateException("sniConfig(...) was already used");
             }
             sslContext = forServer(config);
         } else {
@@ -116,11 +118,11 @@ public final class TcpServerConfig extends ReadOnlyTcpServerConfig {
      * @param value the value.
      * @return this.
      */
-    public <T> TcpServerConfig setSocketOption(SocketOption<T> option, T value) {
+    public <T> TcpServerConfig socketOption(SocketOption<T> option, T value) {
         if (option == ServiceTalkSocketOptions.IDLE_TIMEOUT) {
             idleTimeoutMs = (Long) value;
         } else {
-            BuilderUtils.addOption(optionMap, option, value);
+            BuilderUtils.addOption(options, option, value);
         }
         return this;
     }
@@ -154,7 +156,7 @@ public final class TcpServerConfig extends ReadOnlyTcpServerConfig {
      * @param flushStrategy {@link FlushStrategy} to use for all connections accepted by this server.
      * @return {@code this}.
      */
-    public TcpServerConfig setFlushStrategy(FlushStrategy flushStrategy) {
+    public TcpServerConfig flushStrategy(FlushStrategy flushStrategy) {
         this.flushStrategy = requireNonNull(flushStrategy);
         return this;
     }

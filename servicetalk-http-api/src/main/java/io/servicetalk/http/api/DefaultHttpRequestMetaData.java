@@ -103,29 +103,29 @@ class DefaultHttpRequestMetaData extends AbstractHttpMetaData implements HttpReq
     @Nullable
     @Override
     public final String scheme() {
-        return lazyParseRequestTarget().getScheme();
+        return lazyParseRequestTarget().scheme();
     }
 
     @Nullable
     @Override
     public final String userInfo() {
-        return lazyParseRequestTarget().getUserInfo();
+        return lazyParseRequestTarget().userInfo();
     }
 
     @Nullable
     @Override
     public final String host() {
-        return lazyParseRequestTarget().getHost();
+        return lazyParseRequestTarget().host();
     }
 
     @Override
     public final int port() {
-        return lazyParseRequestTarget().getExplicitPort();
+        return lazyParseRequestTarget().explicitPort();
     }
 
     @Override
     public final String rawPath() {
-        return lazyParseRequestTarget().getRawPath();
+        return lazyParseRequestTarget().rawPath();
     }
 
     @Override
@@ -139,7 +139,7 @@ class DefaultHttpRequestMetaData extends AbstractHttpMetaData implements HttpReq
 
     @Override
     public final String path() {
-        return lazyParseRequestTarget().getPath();
+        return lazyParseRequestTarget().path();
     }
 
     @Override
@@ -177,7 +177,7 @@ class DefaultHttpRequestMetaData extends AbstractHttpMetaData implements HttpReq
 
     @Override
     public final String rawQuery() {
-        return lazyParseRequestTarget().getRawQuery();
+        return lazyParseRequestTarget().rawQuery();
     }
 
     @Override
@@ -278,7 +278,7 @@ class DefaultHttpRequestMetaData extends AbstractHttpMetaData implements HttpReq
 
     private HttpQuery lazyParseQueryString() {
         if (httpQuery == null) {
-            httpQuery = new HttpQuery(decodeParams(lazyParseRequestTarget().getRawQuery()), this::setQueryParams);
+            httpQuery = new HttpQuery(decodeParams(lazyParseRequestTarget().rawQuery()), this::setQueryParams);
         }
         return httpQuery;
     }
@@ -295,8 +295,8 @@ class DefaultHttpRequestMetaData extends AbstractHttpMetaData implements HttpReq
 
         if (effectiveRequestPort == PORT_NOT_ASSIGNED || !Objects.equals(hostHeader, effectiveRequestHostHeader)) {
             final HttpUri effectiveRequestUri = new HttpUri(requestTarget(), () -> StringUtil.toString(hostHeader));
-            effectiveRequestHost = effectiveRequestUri.getHost();
-            effectiveRequestPort = effectiveRequestUri.getExplicitPort();
+            effectiveRequestHost = effectiveRequestUri.host();
+            effectiveRequestPort = effectiveRequestUri.explicitPort();
             effectiveRequestHostHeader = hostHeader;
         }
     }
@@ -318,11 +318,11 @@ class DefaultHttpRequestMetaData extends AbstractHttpMetaData implements HttpReq
                                        @Nullable final String query,
                                        @Nullable final String relativeReference) {
         final HttpUri uri = lazyParseRequestTarget();
-        final String scheme = uri.getScheme();
+        final String scheme = uri.scheme();
         return buildRequestTarget(
                 scheme != null ? scheme : "http",
-                uri.getHost(),
-                uri.getExplicitPort(),
+                uri.host(),
+                uri.explicitPort(),
                 path,
                 query,
                 relativeReference);

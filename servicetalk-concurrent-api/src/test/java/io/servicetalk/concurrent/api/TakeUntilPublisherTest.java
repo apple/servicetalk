@@ -30,7 +30,7 @@ public class TakeUntilPublisherTest {
     @Test
     public void testUntilComplete() {
         TestCompletable completable = new TestCompletable();
-        Publisher<String> p = publisher.getPublisher().takeUntil(completable);
+        Publisher<String> p = publisher.publisher().takeUntil(completable);
         subscriber.subscribe(p);
         subscriber.request(4);
         publisher.sendItemsNoVerify("Hello1", "Hello2", "Hello3");
@@ -42,7 +42,7 @@ public class TakeUntilPublisherTest {
     @Test
     public void testUntilError() {
         TestCompletable completable = new TestCompletable();
-        Publisher<String> p = publisher.getPublisher().takeUntil(completable);
+        Publisher<String> p = publisher.publisher().takeUntil(completable);
         subscriber.subscribe(p);
         subscriber.request(4);
         publisher.sendItemsNoVerify("Hello1", "Hello2", "Hello3");
@@ -54,7 +54,7 @@ public class TakeUntilPublisherTest {
     @Test
     public void testEmitsError() {
         TestCompletable completable = new TestCompletable();
-        Publisher<String> p = publisher.getPublisher().takeUntil(completable);
+        Publisher<String> p = publisher.publisher().takeUntil(completable);
         subscriber.subscribe(p);
         subscriber.request(4);
         publisher.sendItems("Hello1").fail();
@@ -64,7 +64,7 @@ public class TakeUntilPublisherTest {
     @Test
     public void testEmitsComplete() {
         TestCompletable completable = new TestCompletable();
-        Publisher<String> p = publisher.getPublisher().takeUntil(completable);
+        Publisher<String> p = publisher.publisher().takeUntil(completable);
         subscriber.subscribe(p);
         subscriber.request(4);
         publisher.sendItems("Hello1").complete();
@@ -74,7 +74,7 @@ public class TakeUntilPublisherTest {
     @Test
     public void testSubCancelled() {
         TestCompletable completable = new TestCompletable();
-        Publisher<String> p = publisher.getPublisher().takeUntil(completable);
+        Publisher<String> p = publisher.publisher().takeUntil(completable);
         subscriber.subscribe(p);
         subscriber.request(3);
         publisher.sendItems("Hello1", "Hello2");

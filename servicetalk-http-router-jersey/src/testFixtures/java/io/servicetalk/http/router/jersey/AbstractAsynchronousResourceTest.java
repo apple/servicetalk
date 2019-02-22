@@ -35,7 +35,7 @@ import static org.junit.Assert.assertThat;
 
 public abstract class AbstractAsynchronousResourceTest extends AbstractResourceTest {
     @Override
-    String getResourcePath() {
+    String resourcePath() {
         return AsynchronousResources.PATH;
     }
 

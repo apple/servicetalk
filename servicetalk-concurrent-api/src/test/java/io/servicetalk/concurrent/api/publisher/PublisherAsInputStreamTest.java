@@ -226,7 +226,7 @@ public final class PublisherAsInputStreamTest {
         String realStringData = "hello!";
         final int midWayPoint = 3;
         byte[] data = new byte[realStringData.length()];
-        InputStream is = publisherRule.getPublisher().toInputStream(str ->
+        InputStream is = publisherRule.publisher().toInputStream(str ->
                 str == null ? emptyConversionValue : str.getBytes(US_ASCII));
 
         // Split the real data up into 2 chunks and send null/empty in between

@@ -121,9 +121,9 @@ public class ConcurrentRequestsHttpConnectionFilterTest {
             public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
                                                          final StreamingHttpRequest request) {
                 switch (reqCount.incrementAndGet()) {
-                    case 1: return success(reqRespFactory.ok().payloadBody(response1Publisher.getPublisher()));
-                    case 2: return success(reqRespFactory.ok().payloadBody(response2Publisher.getPublisher()));
-                    case 3: return success(reqRespFactory.ok().payloadBody(response3Publisher.getPublisher()));
+                    case 1: return success(reqRespFactory.ok().payloadBody(response1Publisher.publisher()));
+                    case 2: return success(reqRespFactory.ok().payloadBody(response2Publisher.publisher()));
+                    case 3: return success(reqRespFactory.ok().payloadBody(response3Publisher.publisher()));
                     default: return error(new UnsupportedOperationException());
                 }
             }

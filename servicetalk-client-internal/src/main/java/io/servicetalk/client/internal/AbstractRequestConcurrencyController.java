@@ -67,11 +67,11 @@ abstract class AbstractRequestConcurrencyController implements RequestConcurrenc
         pendingRequestsUpdater.decrementAndGet(this);
     }
 
-    final int getLastSeenMaxValue(int defaultValue) {
-        return maxConcurrencyHolder.getLastSeenValue(defaultValue);
+    final int lastSeenMaxValue(int defaultValue) {
+        return maxConcurrencyHolder.lastSeenValue(defaultValue);
     }
 
-    final int getPendingRequests() {
+    final int pendingRequests() {
         return pendingRequests;
     }
 

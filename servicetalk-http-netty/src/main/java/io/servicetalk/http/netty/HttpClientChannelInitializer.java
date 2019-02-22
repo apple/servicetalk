@@ -45,12 +45,12 @@ final class HttpClientChannelInitializer implements ChannelInitializer {
 
     @Override
     public ConnectionContext init(final Channel channel, final ConnectionContext ctx) {
-        Queue<HttpRequestMethod> methodQueue = new ArrayDeque<>(min(8, roConfig.getMaxPipelinedRequests()));
+        Queue<HttpRequestMethod> methodQueue = new ArrayDeque<>(min(8, roConfig.maxPipelinedRequests()));
         final ChannelPipeline pipeline = channel.pipeline();
-        pipeline.addLast(new HttpResponseDecoder(methodQueue, roConfig.getHeadersFactory(),
-                roConfig.getMaxInitialLineLength(), roConfig.getMaxHeaderSize(), closeHandler));
+        pipeline.addLast(new HttpResponseDecoder(methodQueue, roConfig.headersFactory(),
+                roConfig.maxInitialLineLength(), roConfig.maxHeaderSize(), closeHandler));
         pipeline.addLast(new HttpRequestEncoder(methodQueue,
-                roConfig.getHeadersEncodedSizeEstimate(), roConfig.getTrailersEncodedSizeEstimate(), closeHandler));
+                roConfig.headersEncodedSizeEstimate(), roConfig.trailersEncodedSizeEstimate(), closeHandler));
         return ctx;
     }
 }

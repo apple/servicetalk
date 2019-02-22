@@ -41,7 +41,7 @@ public interface HttpCookie {
      *
      * @return If the value of this {@link HttpCookie} is to be wrapped
      */
-    boolean wrapped();
+    boolean isWrapped();
 
     /**
      * Returns the domain of this {@link HttpCookie}.
@@ -82,7 +82,7 @@ public interface HttpCookie {
      *
      * @return True if this {@link HttpCookie} is secure, otherwise false
      */
-    boolean secure();
+    boolean isSecure();
 
     /**
      * Checks to see if this {@link HttpCookie} can only be accessed via HTTP.
@@ -92,7 +92,7 @@ public interface HttpCookie {
      *
      * @return True if this {@link HttpCookie} is HTTP-only or false if it isn't
      */
-    boolean httpOnly();
+    boolean isHttpOnly();
 
     /**
      * Create a new not wrapped, not secure and not HTTP-only {@link HttpCookie} instance, with no path, domain,

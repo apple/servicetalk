@@ -42,7 +42,7 @@ public class JsonMicroformatResourcesTest extends AbstractJerseyStreamingHttpSer
     }
 
     @Override
-    protected Application getApplication() {
+    protected Application application() {
         return new TestApplication();
     }
 

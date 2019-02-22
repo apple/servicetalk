@@ -198,12 +198,12 @@ public class MockedSubscriberRule<T> implements TestRule {
         return this;
     }
 
-    public Subscriber<T> getSubscriber() {
+    public Subscriber<T> subscriber() {
         assert subscriber != null;
         return subscriber;
     }
 
-    public Subscription getSubscription() {
+    public Subscription subscription() {
         assertNotNull(subscription);
         return subscription;
     }

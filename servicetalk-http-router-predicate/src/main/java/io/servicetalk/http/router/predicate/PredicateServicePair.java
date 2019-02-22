@@ -24,8 +24,8 @@ import java.util.function.BiPredicate;
 import static java.util.Objects.requireNonNull;
 
 /**
- * A POJO for holding a {@link BiPredicate} to be evaluated on the request and connection context, and an {@link StreamingHttpService}
- * to be called if the predicate matches.
+ * A POJO for holding a {@link BiPredicate} to be evaluated on the request and connection context, and an
+ * {@link StreamingHttpService} to be called if the predicate matches.
  */
 final class PredicateServicePair {
 
@@ -34,6 +34,7 @@ final class PredicateServicePair {
 
     /**
      * Constructs a {@link PredicateServicePair} POJO.
+     *
      * @param predicate the {@link BiPredicate} to evaluate.
      * @param service the {@link StreamingHttpService} to route to.
      */
@@ -44,18 +45,20 @@ final class PredicateServicePair {
     }
 
     /**
-     * Get the predicate.
+     * Returns the predicate.
+     *
      * @return the predicate.
      */
-    BiPredicate<ConnectionContext, StreamingHttpRequest> getPredicate() {
+    BiPredicate<ConnectionContext, StreamingHttpRequest> predicate() {
         return predicate;
     }
 
     /**
-     * Get the service.
+     * Returns the service.
+     *
      * @return the service.
      */
-    StreamingHttpService getService() {
+    StreamingHttpService service() {
         return service;
     }
 }

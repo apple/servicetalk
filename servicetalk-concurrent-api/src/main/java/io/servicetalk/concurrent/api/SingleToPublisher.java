@@ -66,7 +66,7 @@ final class SingleToPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
 
         @Override
         public void onSubscribe(Cancellable cancellable) {
-            sequentialCancellable.setNextCancellable(cancellable);
+            sequentialCancellable.nextCancellable(cancellable);
         }
 
         @Override

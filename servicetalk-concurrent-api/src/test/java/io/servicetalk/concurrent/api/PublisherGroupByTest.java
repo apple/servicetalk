@@ -209,7 +209,7 @@ public class PublisherGroupByTest {
     @Test
     public void testOnNextThrows() {
         List<MockedSubscriberRule<Integer>> groupSubs = subscribeToAllGroups(10);
-        doThrow(DELIBERATE_EXCEPTION).when(subscriber.getSubscriber()).onNext(anyBoolean());
+        doThrow(DELIBERATE_EXCEPTION).when(subscriber.subscriber()).onNext(anyBoolean());
         source.sendItemsNoDemandCheck(1);
         subscriber.verifyNoEmissions();
         subscriber.request(1);
@@ -240,7 +240,7 @@ public class PublisherGroupByTest {
         groupSubs.get(1).verifyItems(2);
 
         groupSubs.get(0).verifyNoEmissions();
-        doThrow(DELIBERATE_EXCEPTION).when(groupSubs.get(0).getSubscriber()).onNext(anyInt());
+        doThrow(DELIBERATE_EXCEPTION).when(groupSubs.get(0).subscriber()).onNext(anyInt());
         groupSubs.get(0).request(1);
         groupSubs.get(0).verifyItems(1);
 
@@ -445,8 +445,8 @@ public class PublisherGroupByTest {
 
     private void testGroupOnNextThrows(int requestFromGroupOnSubscribe) {
         List<MockedSubscriberRule<Integer>> groupSubs = subscribeToAllGroups(10, s -> {
-            doThrow(DELIBERATE_EXCEPTION).when(s.getSubscriber()).onNext(anyInt());
-            doThrow(new DeliberateException()).when(s.getSubscriber()).onError(any());
+            doThrow(DELIBERATE_EXCEPTION).when(s.subscriber()).onNext(anyInt());
+            doThrow(new DeliberateException()).when(s.subscriber()).onError(any());
             if (requestFromGroupOnSubscribe > 0) {
                 s.request(requestFromGroupOnSubscribe);
             }
@@ -477,7 +477,7 @@ public class PublisherGroupByTest {
         List<GroupedPublisher<Boolean, Integer>> groups = new ArrayList<>();
         subscriber.subscribe(source.groupBy(integer -> Boolean.TRUE, maxBufferPerGroup).map(grp -> {
             groups.add(grp);
-            return grp.getKey();
+            return grp.key();
         }));
         return groups;
     }
@@ -494,7 +494,7 @@ public class PublisherGroupByTest {
             subscriber.subscribe(grp);
             newSubscriberConsumer.accept(subscriber);
             subscribers.add(subscriber);
-            return grp.getKey();
+            return grp.key();
         }));
         return subscribers;
     }

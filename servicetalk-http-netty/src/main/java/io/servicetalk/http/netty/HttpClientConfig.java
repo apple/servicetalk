@@ -45,67 +45,67 @@ final class HttpClientConfig {
         trailersEncodedSizeEstimate = from.trailersEncodedSizeEstimate;
     }
 
-    TcpClientConfig getTcpClientConfig() {
+    TcpClientConfig tcpClientConfig() {
         return tcpClientConfig;
     }
 
-    HttpHeadersFactory getHeadersFactory() {
+    HttpHeadersFactory headersFactory() {
         return headersFactory;
     }
 
-    void setHeadersFactory(final HttpHeadersFactory headersFactory) {
+    void headersFactory(final HttpHeadersFactory headersFactory) {
         this.headersFactory = requireNonNull(headersFactory);
     }
 
-    int getMaxInitialLineLength() {
+    int maxInitialLineLength() {
         return maxInitialLineLength;
     }
 
-    void setMaxInitialLineLength(final int maxInitialLineLength) {
+    void maxInitialLineLength(final int maxInitialLineLength) {
         if (maxInitialLineLength <= 0) {
             throw new IllegalArgumentException("maxInitialLineLength must be > 0");
         }
         this.maxInitialLineLength = maxInitialLineLength;
     }
 
-    int getMaxHeaderSize() {
+    int maxHeaderSize() {
         return maxHeaderSize;
     }
 
-    void setMaxHeaderSize(final int maxHeaderSize) {
+    void maxHeaderSize(final int maxHeaderSize) {
         if (maxHeaderSize <= 0) {
             throw new IllegalArgumentException("maxHeaderSize must be > 0");
         }
         this.maxHeaderSize = maxHeaderSize;
     }
 
-    int getMaxPipelinedRequests() {
+    int maxPipelinedRequests() {
         return maxPipelinedRequests;
     }
 
-    void setMaxPipelinedRequests(final int maxPipelinedRequests) {
+    void maxPipelinedRequests(final int maxPipelinedRequests) {
         if (maxPipelinedRequests <= 0) {
             throw new IllegalArgumentException("maxPipelinedRequests must be > 0");
         }
         this.maxPipelinedRequests = maxPipelinedRequests;
     }
 
-    int getHeadersEncodedSizeEstimate() {
+    int headersEncodedSizeEstimate() {
         return headersEncodedSizeEstimate;
     }
 
-    void setHeadersEncodedSizeEstimate(final int headersEncodedSizeEstimate) {
+    void headersEncodedSizeEstimate(final int headersEncodedSizeEstimate) {
         if (headersEncodedSizeEstimate <= 0) {
             throw new IllegalArgumentException("headersEncodedSizeEstimate must be > 0");
         }
         this.headersEncodedSizeEstimate = headersEncodedSizeEstimate;
     }
 
-    int getTrailersEncodedSizeEstimate() {
+    int trailersEncodedSizeEstimate() {
         return trailersEncodedSizeEstimate;
     }
 
-    void setTrailersEncodedSizeEstimate(final int trailersEncodedSizeEstimate) {
+    void trailersEncodedSizeEstimate(final int trailersEncodedSizeEstimate) {
         if (trailersEncodedSizeEstimate <= 0) {
             throw new IllegalArgumentException("trailersEncodedSizeEstimate must be > 0");
         }

@@ -49,7 +49,8 @@ final class MaxSizeBasedRequestNSupplier extends OverlappingCapacityAwareSupplie
 
     @Override
     protected long getRequestNForCapacity(long writeBufferCapacityInBytes) {
-        return writeBufferCapacityInBytes / (sizesRingBuffer[currentMaxSizeIndex] == 0 ? defaultSizeInBytes : sizesRingBuffer[currentMaxSizeIndex]);
+        return writeBufferCapacityInBytes / (sizesRingBuffer[currentMaxSizeIndex] == 0 ?
+                defaultSizeInBytes : sizesRingBuffer[currentMaxSizeIndex]);
     }
 
     @Override

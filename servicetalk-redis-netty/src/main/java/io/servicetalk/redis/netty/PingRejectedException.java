@@ -34,7 +34,7 @@ final class PingRejectedException extends RuntimeException {
     }
 
     @Nullable
-    Command getConflictingCommand() {
+    Command conflictingCommand() {
         return conflictingCommand;
     }
 }

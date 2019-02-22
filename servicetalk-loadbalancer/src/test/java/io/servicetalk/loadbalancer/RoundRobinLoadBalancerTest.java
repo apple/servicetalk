@@ -177,44 +177,44 @@ public class RoundRobinLoadBalancerTest {
     @SuppressWarnings("unchecked")
     @Test
     public void handleDiscoveryEvents() {
-        assertThat(lb.getActiveAddresses(), is(empty()));
+        assertThat(lb.activeAddresses(), is(empty()));
 
         sendServiceDiscoveryEvents(upEvent("address-1"));
-        assertThat(lb.getActiveAddresses(), contains(
+        assertThat(lb.activeAddresses(), contains(
                 both(hasProperty("key", is("address-1"))).and(hasProperty("value", is(empty())))));
 
         sendServiceDiscoveryEvents(downEvent("address-1"));
-        assertThat(lb.getActiveAddresses(), is(empty()));
+        assertThat(lb.activeAddresses(), is(empty()));
 
         sendServiceDiscoveryEvents(upEvent("address-2"));
-        assertThat(lb.getActiveAddresses(), contains(
+        assertThat(lb.activeAddresses(), contains(
                 both(hasProperty("key", is("address-2"))).and(hasProperty("value", is(empty())))));
 
         sendServiceDiscoveryEvents(downEvent("address-3"));
-        assertThat(lb.getActiveAddresses(), contains(
+        assertThat(lb.activeAddresses(), contains(
                 both(hasProperty("key", is("address-2"))).and(hasProperty("value", is(empty())))));
 
         sendServiceDiscoveryEvents(upEvent("address-1"));
-        assertThat(lb.getActiveAddresses(), contains(
+        assertThat(lb.activeAddresses(), contains(
                 both(hasProperty("key", is("address-1"))).and(hasProperty("value", is(empty()))),
                 both(hasProperty("key", is("address-2"))).and(hasProperty("value", is(empty())))));
 
         sendServiceDiscoveryEvents(downEvent("address-1"));
-        assertThat(lb.getActiveAddresses(), contains(
+        assertThat(lb.activeAddresses(), contains(
                 both(hasProperty("key", is("address-2"))).and(hasProperty("value", is(empty())))));
 
         sendServiceDiscoveryEvents(downEvent("address-2"));
-        assertThat(lb.getActiveAddresses(), is(empty()));
+        assertThat(lb.activeAddresses(), is(empty()));
 
         sendServiceDiscoveryEvents(downEvent("address-3"));
-        assertThat(lb.getActiveAddresses(), is(empty()));
+        assertThat(lb.activeAddresses(), is(empty()));
 
         // Let's make sure that an SD failure doesn't compromise LB's internal state
         sendServiceDiscoveryEvents(upEvent("address-1"));
-        assertThat(lb.getActiveAddresses(), contains(
+        assertThat(lb.activeAddresses(), contains(
                 both(hasProperty("key", is("address-1"))).and(hasProperty("value", is(empty())))));
         serviceDiscoveryPublisher.fail();
-        assertThat(lb.getActiveAddresses(), contains(
+        assertThat(lb.activeAddresses(), contains(
                 both(hasProperty("key", is("address-1"))).and(hasProperty("value", is(empty())))));
     }
 
@@ -290,7 +290,7 @@ public class RoundRobinLoadBalancerTest {
 
         assertThat(exceptions, is(empty()));
         assertThat(selectedConnections, hasSize(100));
-        assertThat(selectedConnections.stream().map(TestLoadBalancedConnection::getAddress).collect(toSet()), contains("address-1"));
+        assertThat(selectedConnections.stream().map(TestLoadBalancedConnection::address).collect(toSet()), contains("address-1"));
         assertThat(connectionsCreated, hasSize(both(greaterThan(0)).and(lessThanOrEqualTo(100))));
     }
 
@@ -304,11 +304,11 @@ public class RoundRobinLoadBalancerTest {
                 .concatWith(lb.selectConnection(identity()))
                 .concatWith(lb.selectConnection(identity()))
                 .concatWith(lb.selectConnection(identity()))
-                .map(TestLoadBalancedConnection::getAddress)));
+                .map(TestLoadBalancedConnection::address)));
 
         assertThat(connections, contains("address-1", "address-2", "address-1", "address-2", "address-1"));
 
-        assertThat(lb.getActiveAddresses(), contains(
+        assertThat(lb.activeAddresses(), contains(
                 both(hasProperty("key", is("address-1"))).and(hasProperty("value", hasSize(1))),
                 both(hasProperty("key", is("address-2"))).and(hasProperty("value", hasSize(1)))));
 
@@ -322,7 +322,7 @@ public class RoundRobinLoadBalancerTest {
 
         final TestLoadBalancedConnection connection = awaitIndefinitely(lb.selectConnection(identity()));
         assert connection != null;
-        List<Map.Entry<String, List<TestLoadBalancedConnection>>> activeAddresses = lb.getActiveAddresses();
+        List<Map.Entry<String, List<TestLoadBalancedConnection>>> activeAddresses = lb.activeAddresses();
 
         assertThat(activeAddresses.size(), is(1));
         assertThat(activeAddresses, contains(
@@ -330,7 +330,7 @@ public class RoundRobinLoadBalancerTest {
         assertThat(activeAddresses.get(0).getValue().get(0), is(connection));
         awaitIndefinitely(connection.closeAsync());
 
-        assertThat(lb.getActiveAddresses(),
+        assertThat(lb.activeAddresses(),
                 contains(both(hasProperty("key", is("address-1"))).and(hasProperty("value", is(empty())))));
 
         assertThat(connectionsCreated, hasSize(1));
@@ -382,7 +382,7 @@ public class RoundRobinLoadBalancerTest {
 
     private RoundRobinLoadBalancer<String, TestLoadBalancedConnection> newTestLoadBalancer(
             final DelegatingConnectionFactory connectionFactory) {
-        return new RoundRobinLoadBalancer<>(serviceDiscoveryPublisher.getPublisher(), connectionFactory, String::compareTo);
+        return new RoundRobinLoadBalancer<>(serviceDiscoveryPublisher.publisher(), connectionFactory, String::compareTo);
     }
 
     private TestSingle<TestLoadBalancedConnection> newUnrealizedConnectionSingle(final String address) {
@@ -404,7 +404,7 @@ public class RoundRobinLoadBalancerTest {
             return closeCompletable;
         });
         when(cnx.onClose()).thenReturn(closeCompletable);
-        when(cnx.getAddress()).thenReturn(address);
+        when(cnx.address()).thenReturn(address);
         when(cnx.toString()).thenReturn(address + '@' + cnx.hashCode());
 
         connectionsCreated.add(cnx);
@@ -426,7 +426,7 @@ public class RoundRobinLoadBalancerTest {
     }
 
     private interface TestLoadBalancedConnection extends ListenableAsyncCloseable {
-        String getAddress();
+        String address();
     }
 
     private static class DelegatingConnectionFactory implements ConnectionFactory<String, TestLoadBalancedConnection> {

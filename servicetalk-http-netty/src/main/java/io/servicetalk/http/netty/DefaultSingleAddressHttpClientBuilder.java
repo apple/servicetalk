@@ -127,7 +127,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
     }
 
     HttpHeadersFactory headersFactory() {
-        return config.getHeadersFactory();
+        return config.headersFactory();
     }
 
     ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>> serviceDiscoverer() {
@@ -150,11 +150,11 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
 
             final StreamingHttpRequestResponseFactory reqRespFactory =
                     new DefaultStreamingHttpRequestResponseFactory(exec.bufferAllocator(),
-                            roConfig.getHeadersFactory());
+                            roConfig.headersFactory());
 
             // closed by the LoadBalancer
             final ConnectionFactory<R, ? extends StreamingHttpConnection> connectionFactory =
-                    connectionFactoryFilter.apply(closeOnException.prepend(roConfig.getMaxPipelinedRequests() == 1 ?
+                    connectionFactoryFilter.apply(closeOnException.prepend(roConfig.maxPipelinedRequests() == 1 ?
                         new NonPipelinedLBHttpConnectionFactory<>(roConfig, exec, connectionFilterFunction,
                                 reqRespFactory, strategy) :
                         new PipelinedLBHttpConnectionFactory<>(roConfig, exec, connectionFilterFunction,
@@ -210,60 +210,63 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
 
     @Override
     public <T> DefaultSingleAddressHttpClientBuilder<U, R> socketOption(SocketOption<T> option, T value) {
-        config.getTcpClientConfig().setSocketOption(option, value);
+        config.tcpClientConfig().socketOption(option, value);
         return this;
     }
 
     @Override
     public DefaultSingleAddressHttpClientBuilder<U, R> enableWireLogging(final String loggerName) {
-        config.getTcpClientConfig().enableWireLogging(loggerName);
+        config.tcpClientConfig().enableWireLogging(loggerName);
         return this;
     }
 
     @Override
     public DefaultSingleAddressHttpClientBuilder<U, R> disableWireLogging() {
-        config.getTcpClientConfig().disableWireLogging();
+        config.tcpClientConfig().disableWireLogging();
         return this;
     }
 
     @Override
     public DefaultSingleAddressHttpClientBuilder<U, R> headersFactory(final HttpHeadersFactory headersFactory) {
-        config.setHeadersFactory(headersFactory);
+        config.headersFactory(headersFactory);
         return this;
     }
 
     @Override
     public DefaultSingleAddressHttpClientBuilder<U, R> maxInitialLineLength(final int maxInitialLineLength) {
-        config.setMaxInitialLineLength(maxInitialLineLength);
+        config.maxInitialLineLength(maxInitialLineLength);
         return this;
     }
 
     @Override
     public DefaultSingleAddressHttpClientBuilder<U, R> maxHeaderSize(final int maxHeaderSize) {
-        config.setMaxHeaderSize(maxHeaderSize);
+        config.maxHeaderSize(maxHeaderSize);
         return this;
     }
 
     @Override
-    public DefaultSingleAddressHttpClientBuilder<U, R> headersEncodedSizeEstimate(final int headersEncodedSizeEstimate) {
-        config.setHeadersEncodedSizeEstimate(headersEncodedSizeEstimate);
+    public DefaultSingleAddressHttpClientBuilder<U, R> headersEncodedSizeEstimate(
+            final int headersEncodedSizeEstimate) {
+        config.headersEncodedSizeEstimate(headersEncodedSizeEstimate);
         return this;
     }
 
     @Override
-    public DefaultSingleAddressHttpClientBuilder<U, R> trailersEncodedSizeEstimate(final int trailersEncodedSizeEstimate) {
-        config.setTrailersEncodedSizeEstimate(trailersEncodedSizeEstimate);
+    public DefaultSingleAddressHttpClientBuilder<U, R> trailersEncodedSizeEstimate(
+            final int trailersEncodedSizeEstimate) {
+        config.trailersEncodedSizeEstimate(trailersEncodedSizeEstimate);
         return this;
     }
 
     @Override
     public DefaultSingleAddressHttpClientBuilder<U, R> maxPipelinedRequests(final int maxPipelinedRequests) {
-        config.setMaxPipelinedRequests(maxPipelinedRequests);
+        config.maxPipelinedRequests(maxPipelinedRequests);
         return this;
     }
 
     @Override
-    public DefaultSingleAddressHttpClientBuilder<U, R> appendConnectionFilter(final HttpConnectionFilterFactory factory) {
+    public DefaultSingleAddressHttpClientBuilder<U, R> appendConnectionFilter(
+            final HttpConnectionFilterFactory factory) {
         connectionFilterFunction = connectionFilterFunction.append(requireNonNull(factory));
         return this;
     }
@@ -315,10 +318,11 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
 
     @Override
     public DefaultSingleAddressHttpClientBuilder<U, R> sslConfig(@Nullable final SslConfig sslConfig) {
-        config.getTcpClientConfig().setSslConfig(sslConfig);
+        config.tcpClientConfig().sslConfig(sslConfig);
         return this;
     }
 
+    @Override
     public HttpExecutionStrategy executionStrategy() {
         return super.executionStrategy();
     }

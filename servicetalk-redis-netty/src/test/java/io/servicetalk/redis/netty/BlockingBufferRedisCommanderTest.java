@@ -26,6 +26,8 @@ import io.servicetalk.redis.api.BlockingPubSubBufferRedisConnection;
 import io.servicetalk.redis.api.BlockingTransactedBufferRedisCommander;
 import io.servicetalk.redis.api.IllegalTransactionStateException;
 import io.servicetalk.redis.api.PubSubRedisMessage;
+import io.servicetalk.redis.api.PubSubRedisMessage.ChannelPubSubRedisMessage;
+import io.servicetalk.redis.api.PubSubRedisMessage.PatternPubSubRedisMessage;
 import io.servicetalk.redis.api.RedisProtocolSupport;
 import io.servicetalk.redis.api.RedisProtocolSupport.BitfieldOperations.Get;
 import io.servicetalk.redis.api.RedisProtocolSupport.BitfieldOperations.Incrby;
@@ -70,7 +72,6 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static java.util.stream.Collectors.toList;
-import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
@@ -201,10 +202,10 @@ public class BlockingBufferRedisCommanderTest extends BaseRedisClientTest {
         // ie. the following is equivalent to:
         //     BITFIELD <key> SET u8 #2 200 GET u8 #2 GET u4 #4 GET u4 #5
         results = commandClient.bitfield(key("bf"), asList(
-                new Set(U08, U08.getBitSize() * 2, 200L),
-                new Get(U08, U08.getBitSize() * 2),
-                new Get(U04, U04.getBitSize() * 4),
-                new Get(U04, U04.getBitSize() * 5)));
+                new Set(U08, U08.size() * 2, 200L),
+                new Get(U08, U08.size() * 2),
+                new Get(U04, U04.size() * 4),
+                new Get(U04, U04.size() * 5)));
         assertThat(results, contains(0L, 200L, 12L, 8L));
     }
 
@@ -435,23 +436,23 @@ public class BlockingBufferRedisCommanderTest extends BaseRedisClientTest {
     public void pubSubMultipleSubscribes() throws Exception {
         assumeThat("Ignored flaky test", parseBoolean(System.getenv("CI")), is(FALSE));
         final BlockingPubSubBufferRedisConnection pubSubClient1 = commandClient.subscribe(key("channel-1"));
-        BlockingIterable<PubSubRedisMessage> messages1 = pubSubClient1.getMessages();
+        BlockingIterable<PubSubRedisMessage> messages1 = pubSubClient1.messages();
         BlockingIterator<PubSubRedisMessage> iterator1 = messages1.iterator();
 
         // Publish a test message
         publishTestMessage(key("channel-1"));
 
         // Check ping request get proper response
-        assertThat(pubSubClient1.ping().getBufferValue(), is(EMPTY_BUFFER));
+        assertThat(pubSubClient1.ping().bufferValue(), is(EMPTY_BUFFER));
 
         // Subscribe to a pattern on the same connection
         final BlockingPubSubBufferRedisConnection pubSubClient2 = pubSubClient1.psubscribe(key("channel-2*"));
-        BlockingIterable<PubSubRedisMessage> messages2 = pubSubClient2.getMessages();
+        BlockingIterable<PubSubRedisMessage> messages2 = pubSubClient2.messages();
         BlockingIterator<PubSubRedisMessage> iterator2 = messages2.iterator();
 
         // Let's throw a wrench and psubscribe a second time to the same pattern
         final BlockingPubSubBufferRedisConnection pubSubClient3 = pubSubClient1.psubscribe(key("channel-2*"));
-        BlockingIterable<PubSubRedisMessage> messages3 = pubSubClient3.getMessages();
+        BlockingIterable<PubSubRedisMessage> messages3 = pubSubClient3.messages();
         BlockingIterator<PubSubRedisMessage> iterator3 = messages3.iterator();
         try {
             iterator3.next();
@@ -464,18 +465,22 @@ public class BlockingBufferRedisCommanderTest extends BaseRedisClientTest {
         publishTestMessage(key("channel-202"));
 
         // Check ping request get proper response
-        assertThat(pubSubClient1.ping(buf("my-pong")).getBufferValue(), is(buf("my-pong")));
+        assertThat(pubSubClient1.ping(buf("my-pong")).bufferValue(), is(buf("my-pong")));
 
-        assertThat(iterator1.next(), allOf(
-                hasProperty("channel", equalTo(keyStr("channel-1"))),
-                hasProperty("bufferValue", equalTo(buf("test-message")))));
+        final PubSubRedisMessage next1 = iterator1.next();
+        assertThat(next1, instanceOf(ChannelPubSubRedisMessage.class));
+        final ChannelPubSubRedisMessage channelMessage = (ChannelPubSubRedisMessage) next1;
+        assertThat(channelMessage.channel(), equalTo(keyStr("channel-1")));
+        assertThat(channelMessage.bufferValue(), equalTo(buf("test-message")));
         // Cancel the subscriber, which issues an UNSUBSCRIBE behind the scenes
         pubSubClient1.close();
 
-        assertThat(iterator2.next(), allOf(
-                hasProperty("channel", equalTo(keyStr("channel-202"))),
-                hasProperty("pattern", equalTo(keyStr("channel-2*"))),
-                hasProperty("bufferValue", equalTo(buf("test-message")))));
+        final PubSubRedisMessage next2 = iterator2.next();
+        assertThat(next2, instanceOf(PatternPubSubRedisMessage.class));
+        final PatternPubSubRedisMessage patternMessage = (PatternPubSubRedisMessage) next2;
+        assertThat(patternMessage.channel(), equalTo(keyStr("channel-202")));
+        assertThat(patternMessage.pattern(), equalTo(keyStr("channel-2*")));
+        assertThat(patternMessage.bufferValue(), equalTo(buf("test-message")));
         // Cancel the subscriber, which issues an PUNSUBSCRIBE behind the scenes
         iterator2.close();
 

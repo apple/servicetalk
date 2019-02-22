@@ -53,7 +53,8 @@ public class MulticastPublisherTest {
 
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout(60, SECONDS, () ->
-            System.out.println("sent: " + source.getSent() + " requested: " + source.getRequested() + " outstanding: " + source.getOutstandingRequested()));
+            System.out.println("sent: " + source.sent() + " requested: " + source.requested() + " outstanding: " +
+                    source.outstandingRequested()));
 
     @Before
     public void setUp() throws Exception {
@@ -214,7 +215,7 @@ public class MulticastPublisherTest {
             barrier.await();
 
             for (int i = 0; i < expectedSubscribers; ++i) {
-                while (source.getOutstandingRequested() <= 0) {
+                while (source.outstandingRequested() <= 0) {
                     Thread.yield();
                 }
                 source.sendItems(i);
@@ -262,11 +263,11 @@ public class MulticastPublisherTest {
         doAnswer((Answer<Void>) invocation -> {
             subscriber1.request(1);
             return null;
-        }).when(subscriber1.getSubscriber()).onNext(anyInt());
+        }).when(subscriber1.subscriber()).onNext(anyInt());
         doAnswer((Answer<Void>) invocation -> {
             subscriber2.request(1);
             return null;
-        }).when(subscriber2.getSubscriber()).onNext(anyInt());
+        }).when(subscriber2.subscriber()).onNext(anyInt());
 
         subscriber1.request(1);
         subscriber2.request(1);
@@ -293,7 +294,7 @@ public class MulticastPublisherTest {
             doAnswer((Answer<Void>) invocation -> {
                 subscriber1.request(1);
                 return null;
-            }).when(subscriber1.getSubscriber()).onNext(anyInt());
+            }).when(subscriber1.subscriber()).onNext(anyInt());
 
             subscriber1.request(2);
             subscriber2.request(1);
@@ -306,7 +307,7 @@ public class MulticastPublisherTest {
             doAnswer((Answer<Void>) invocation -> {
                 subscriber2.request(1);
                 return null;
-            }).when(subscriber2.getSubscriber()).onNext(anyInt());
+            }).when(subscriber2.subscriber()).onNext(anyInt());
 
             subscriber2.request(2);
             subscriber1.request(1);
@@ -337,7 +338,7 @@ public class MulticastPublisherTest {
                 source.sendItems(null, 3);
             }
             return null;
-        }).when(subscriber1.getSubscriber()).onNext(anyInt());
+        }).when(subscriber1.subscriber()).onNext(anyInt());
 
         subscriber1.request(3);
         subscriber2.request(1);

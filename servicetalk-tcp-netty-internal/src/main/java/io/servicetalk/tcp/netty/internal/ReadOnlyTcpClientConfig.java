@@ -38,7 +38,7 @@ public class ReadOnlyTcpClientConfig {
     //TODO 3.x: Add back attributes
     protected final boolean autoRead;
     @SuppressWarnings("rawtypes")
-    protected final Map<ChannelOption, Object> optionMap;
+    protected final Map<ChannelOption, Object> options;
     @Nullable
     protected SslContext sslContext;
     @Nullable
@@ -58,20 +58,20 @@ public class ReadOnlyTcpClientConfig {
      */
     public ReadOnlyTcpClientConfig(boolean autoRead) {
         this.autoRead = autoRead;
-        optionMap = new LinkedHashMap<>();
+        options = new LinkedHashMap<>();
     }
 
     /**
      * Copy constructor.
      *
      * @param from Source to copy from.
-     * @param readOnlyMap {@code true} to make the {@link #getOptions()} unmodifiable.
+     * @param readOnlyOptions {@code true} to make the {@link #options()} unmodifiable.
      */
     @SuppressWarnings("rawtypes")
-    protected ReadOnlyTcpClientConfig(TcpClientConfig from, boolean readOnlyMap) {
+    protected ReadOnlyTcpClientConfig(TcpClientConfig from, boolean readOnlyOptions) {
         autoRead = from.autoRead;
-        final Map<ChannelOption, Object> optionMap = new HashMap<>(from.optionMap);
-        this.optionMap = readOnlyMap ? unmodifiableMap(optionMap) : optionMap;
+        final Map<ChannelOption, Object> options = new HashMap<>(from.options);
+        this.options = readOnlyOptions ? unmodifiableMap(options) : options;
         sslContext = from.sslContext;
         sslHostnameVerificationAlgorithm = from.sslHostnameVerificationAlgorithm;
         sslHostnameVerificationHost = from.sslHostnameVerificationHost;
@@ -96,7 +96,7 @@ public class ReadOnlyTcpClientConfig {
      * @return {@link SslContext}, {@code null} if none specified.
      */
     @Nullable
-    public SslContext getSslContext() {
+    public SslContext sslContext() {
         return sslContext;
     }
 
@@ -106,7 +106,7 @@ public class ReadOnlyTcpClientConfig {
      * @return hostname verification algorithm, {@code null} if none specified.
      */
     @Nullable
-    public String getSslHostnameVerificationAlgorithm() {
+    public String sslHostnameVerificationAlgorithm() {
         return sslHostnameVerificationAlgorithm;
     }
 
@@ -116,18 +116,18 @@ public class ReadOnlyTcpClientConfig {
      * @return the non-authoritative name of the host.
      */
     @Nullable
-    public String getSslHostnameVerificationHost() {
+    public String sslHostnameVerificationHost() {
         return sslHostnameVerificationHost;
     }
 
     /**
      * Get the non-authoritative port.
      * <p>
-     * Only valid if {@link #getSslHostnameVerificationHost()} is not {@code null}.
+     * Only valid if {@link #sslHostnameVerificationHost()} is not {@code null}.
      *
      * @return the non-authoritative port.
      */
-    public int getSslHostnameVerificationPort() {
+    public int sslHostnameVerificationPort() {
         return sslHostnameVerificationPort;
     }
 
@@ -136,7 +136,7 @@ public class ReadOnlyTcpClientConfig {
      *
      * @return idle timeout.
      */
-    public long getIdleTimeoutMs() {
+    public long idleTimeoutMs() {
         return idleTimeoutMs;
     }
 
@@ -145,8 +145,8 @@ public class ReadOnlyTcpClientConfig {
      *
      * @return Unmodifiable map of options.
      */
-    public Map<ChannelOption, Object> getOptions() {
-        return optionMap;
+    public Map<ChannelOption, Object> options() {
+        return options;
     }
 
     /**
@@ -155,7 +155,7 @@ public class ReadOnlyTcpClientConfig {
      * @return {@link WireLoggingInitializer} if any.
      */
     @Nullable
-    public WireLoggingInitializer getWireLoggingInitializer() {
+    public WireLoggingInitializer wireLoggingInitializer() {
         return wireLoggingInitializer;
     }
 
@@ -163,7 +163,7 @@ public class ReadOnlyTcpClientConfig {
      * Returns the {@link FlushStrategy} for this client.
      * @return {@link FlushStrategy} for this client.
      */
-    public FlushStrategy getFlushStrategy() {
+    public FlushStrategy flushStrategy() {
         return flushStrategy;
     }
 }

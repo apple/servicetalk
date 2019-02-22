@@ -156,42 +156,42 @@ final class SubscribedChannelReadStream extends Publisher<SubscribedChannelReadS
             this.data = requireNonNull(data);
         }
 
-        KeyType getKeyType() {
+        KeyType keyType() {
             return keyType;
         }
 
-        MessageType getMessageType() {
+        MessageType messageType() {
             return messageType;
         }
 
-        CompleteRedisData getData() {
+        CompleteRedisData data() {
             return data;
         }
 
         @Override
         @Nullable
-        public String getChannel() {
+        public String channel() {
             return channel;
         }
 
         @Nullable
         @Override
-        public String getPattern() {
+        public String pattern() {
             return pattern;
         }
 
         @Override
-        public Buffer getBufferValue() {
+        public Buffer bufferValue() {
             if ((data instanceof Null) || (data instanceof CompleteBulkString)) {
-                return data.getBufferValue();
+                return data.bufferValue();
             }
             throw new CoercionException(data, Buffer.class);
         }
 
         @Override
-        public CharSequence getCharSequenceValue() {
+        public CharSequence charSequenceValue() {
             String string = RedisUtils.convertToString(data);
-            return string == null ? data.getCharSequenceValue() : string;
+            return string == null ? data.charSequenceValue() : string;
         }
 
         @Override
@@ -280,7 +280,7 @@ final class SubscribedChannelReadStream extends Publisher<SubscribedChannelReadS
                             + ". Current State: " + aggregationState);
                 }
                 aggregationState = STATE_AGGR_TYPE;
-                msgArraySize = (int) data.getLongValue();
+                msgArraySize = (int) data.longValue();
                 // We request `size` because at least `size` CompleteRedisData are expected
                 subscription.request(msgArraySize);
                 return;
@@ -307,7 +307,7 @@ final class SubscribedChannelReadStream extends Publisher<SubscribedChannelReadS
                     throw new IllegalStateException("Received a bulk string chunk without size.");
                 }
 
-                currentDataBuffer.writeBytes(data.getBufferValue());
+                currentDataBuffer.writeBytes(data.bufferValue());
                 if (currentDataBuffer.writableBytes() == 0) {
                     CompleteBulkString val = new CompleteBulkString(currentDataBuffer);
                     currentDataBuffer = null;

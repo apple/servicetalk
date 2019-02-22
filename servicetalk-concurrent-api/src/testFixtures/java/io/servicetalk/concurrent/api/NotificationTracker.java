@@ -50,7 +50,7 @@ public final class NotificationTracker<T> {
         completes = new ArrayList<>();
     }
 
-    public Publisher<T> getSource() {
+    public Publisher<T> source() {
         return source;
     }
 
@@ -100,7 +100,7 @@ public final class NotificationTracker<T> {
 
     public NotificationTracker<T> verifyRequest(Long... requests) {
         assertThat("Unexpected requests received.", this.requests, hasSize(requests.length));
-        List<Long> received = this.requests.stream().map(Notification::getData).map(Optional::get).collect(Collectors.toList());
+        List<Long> received = this.requests.stream().map(Notification::data).map(Optional::get).collect(Collectors.toList());
         assertThat("Unexpected requests received.", received, contains(requests));
         return this;
     }
@@ -109,7 +109,7 @@ public final class NotificationTracker<T> {
     public final NotificationTracker<T> verifyOnNexts(T... nexts) {
         assertThat("Unexpected onNexts received.", this.nexts, hasSize(nexts.length));
         if (nexts.length > 0) {
-            List<T> received = this.nexts.stream().map(Notification::getData).map(Optional::get).collect(Collectors.toList());
+            List<T> received = this.nexts.stream().map(Notification::data).map(Optional::get).collect(Collectors.toList());
             assertThat("Unexpected onNexts received.", received, contains(nexts));
         }
         return this;
@@ -122,7 +122,7 @@ public final class NotificationTracker<T> {
     }
 
     public NotificationTracker<T> verifyErrorLax(Throwable cause) {
-        List<Throwable> received = errors.stream().map(Notification::getData).map(Optional::get).collect(Collectors.toList());
+        List<Throwable> received = errors.stream().map(Notification::data).map(Optional::get).collect(Collectors.toList());
         assertThat("Unexpected error received.", received, contains(cause));
         return this;
     }

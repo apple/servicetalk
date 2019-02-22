@@ -66,7 +66,7 @@ public final class ConcurrentUtilsTest {
 
     @After
     public void tearDown() throws Exception {
-        qHolder.q.clear();
+        qHolder.queue.clear();
         executor.shutdown();
         executor.awaitTermination(DEFAULT_TIMEOUT_SECONDS, SECONDS);
     }
@@ -81,11 +81,11 @@ public final class ConcurrentUtilsTest {
     public void testDrainSingleConsumerQueueConcurrent() throws Exception {
         qHolder.fillRange(1, 4);
         Future<?> submit1 = executor.submit(() -> {
-            qHolder.q.add(5);
+            qHolder.queue.add(5);
             drain();
         });
         Future<?> submit2 = executor.submit(() -> {
-            qHolder.q.add(6);
+            qHolder.queue.add(6);
             drain();
         });
         submit1.get();
@@ -147,7 +147,7 @@ public final class ConcurrentUtilsTest {
     }
 
     private void drain() {
-        drainSingleConsumerQueueDelayThrow(qHolder.getQueue(), integer -> drainCounter.incrementAndGet(),
+        drainSingleConsumerQueueDelayThrow(qHolder.queue(), integer -> drainCounter.incrementAndGet(),
                 QueueHolder.drainingUpdater, qHolder);
     }
 
@@ -158,15 +158,15 @@ public final class ConcurrentUtilsTest {
         @SuppressWarnings("unused")
         private volatile int draining;
 
-        private final Queue<Integer> q = new ConcurrentLinkedQueue<>();
+        private final Queue<Integer> queue = new ConcurrentLinkedQueue<>();
 
-        Queue<Integer> getQueue() {
-            return q;
+        Queue<Integer> queue() {
+            return queue;
         }
 
         void fillRange(int start, int end) {
             for (int i = start; i <= end; i++) {
-                q.add(i);
+                queue.add(i);
             }
         }
     }

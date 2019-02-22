@@ -106,7 +106,7 @@ final class PipelinedRedisConnection extends AbstractRedisConnection {
     }
 
     @Override
-    Logger getLogger() {
+    Logger logger() {
         return LOGGER;
     }
 

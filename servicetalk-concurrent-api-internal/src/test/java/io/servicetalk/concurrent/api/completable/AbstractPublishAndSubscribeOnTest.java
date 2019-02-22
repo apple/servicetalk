@@ -47,7 +47,7 @@ public abstract class AbstractPublishAndSubscribeOnTest {
         CountDownLatch allDone = new CountDownLatch(1);
         AtomicReferenceArray<Thread> capturedThreads = new AtomicReferenceArray<>(2);
 
-        Completable original = new CompletableWithExecutor(originalSourceExecutorRule.getExecutor(), completed())
+        Completable original = new CompletableWithExecutor(originalSourceExecutorRule.executor(), completed())
                 .doBeforeComplete(() -> capturedThreads.set(ORIGINAL_SUBSCRIBER_THREAD, currentThread()));
 
         Completable offloaded = offloadingFunction.apply(original);
@@ -66,7 +66,7 @@ public abstract class AbstractPublishAndSubscribeOnTest {
         CountDownLatch allDone = new CountDownLatch(1);
         AtomicReferenceArray<Thread> capturedThreads = new AtomicReferenceArray<>(2);
 
-        Completable original = new CompletableWithExecutor(originalSourceExecutorRule.getExecutor(), never())
+        Completable original = new CompletableWithExecutor(originalSourceExecutorRule.executor(), never())
                 .doAfterCancel(() -> {
                     capturedThreads.set(0, currentThread());
                     allDone.countDown();

@@ -438,8 +438,8 @@ public final class DefaultExecutorTest {
             done.await();
             TerminalNotification terminalNotification = this.terminalNotification;
             assert terminalNotification != null;
-            if (terminalNotification.getCause() != null) {
-                throw terminalNotification.getCause();
+            if (terminalNotification.cause() != null) {
+                throw terminalNotification.cause();
             }
         }
     }

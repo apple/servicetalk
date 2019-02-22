@@ -422,13 +422,13 @@ public class HttpRequestEncoderTest {
 
             NettyConnection<Object, Object> conn = resources.prepend(
             TcpConnector.connect(null, serverHostAndPort(serverContext),
-                    cConfig.getTcpClientConfig().asReadOnly(), CEC)
+                    cConfig.tcpClientConfig().asReadOnly(), CEC)
             .flatMap(channel -> {
                 CloseHandler closeHandler = spy(forPipelinedRequestResponse(true, channel.config()));
                 closeHandlerRef.compareAndSet(null, closeHandler);
                 return DefaultNettyConnection.initChannel(channel, CEC.bufferAllocator(), CEC.executor(),
                         new TerminalPredicate<>(o -> o instanceof HttpHeaders), closeHandler, defaultFlushStrategy(),
-                        new TcpClientChannelInitializer(cConfig.getTcpClientConfig())
+                        new TcpClientChannelInitializer(cConfig.tcpClientConfig())
                             .andThen(new HttpClientChannelInitializer(cConfig.asReadOnly(), closeHandler))
                             .andThen((channel2, context) -> {
                                 channel2.pipeline().addLast(new ChannelInboundHandlerAdapter() {

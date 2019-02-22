@@ -97,7 +97,7 @@ public final class TcpConnector {
                 }
             };
 
-            EventLoop loop = toEventLoopAwareNettyIoExecutor(executionContext.ioExecutor()).getEventLoopGroup().next();
+            EventLoop loop = toEventLoopAwareNettyIoExecutor(executionContext.ioExecutor()).eventLoopGroup().next();
             if (!(resolvedRemoteAddress instanceof FileDescriptorSocketAddress)) {
                 return attachCancelSubscriber(connectWithBootstrap(localAddress, resolvedRemoteAddress, config,
                         loop, executionContext.bufferAllocator(), handler), cancellable);
@@ -114,13 +114,13 @@ public final class TcpConnector {
             return attachCancelSubscriber(initFileDescriptorBasedChannel(config, loop, channel,
                     executionContext.bufferAllocator(), handler), cancellable);
         } catch (Throwable cause) {
-            cancellable.setDelayedCancellable(IGNORE_CANCEL);
+            cancellable.delayedCancellable(IGNORE_CANCEL);
             return ImmediateEventExecutor.INSTANCE.newFailedFuture(cause);
         }
     }
 
     private static ChannelFuture attachCancelSubscriber(ChannelFuture channelFuture, DelayedCancellable cancellable) {
-        cancellable.setDelayedCancellable(() -> channelFuture.cancel(false));
+        cancellable.delayedCancellable(() -> channelFuture.cancel(false));
         return channelFuture;
     }
 
@@ -133,7 +133,7 @@ public final class TcpConnector {
         bs.channel(socketChannel(loop, nettyresolvedRemoteAddress.getClass()));
         bs.handler(handler);
 
-        for (@SuppressWarnings("rawtypes") Map.Entry<ChannelOption, Object> opt : config.getOptions().entrySet()) {
+        for (@SuppressWarnings("rawtypes") Map.Entry<ChannelOption, Object> opt : config.options().entrySet()) {
             //noinspection unchecked
             bs.option(opt.getKey(), opt.getValue());
         }
@@ -154,7 +154,7 @@ public final class TcpConnector {
     private static ChannelFuture initFileDescriptorBasedChannel(
             ReadOnlyTcpClientConfig config, EventLoop loop, Channel channel,
             BufferAllocator bufferAllocator, ChannelHandler handler) {
-        for (@SuppressWarnings("rawtypes") Map.Entry<ChannelOption, Object> opt : config.getOptions().entrySet()) {
+        for (@SuppressWarnings("rawtypes") Map.Entry<ChannelOption, Object> opt : config.options().entrySet()) {
             //noinspection unchecked
             channel.config().setOption(opt.getKey(), opt.getValue());
         }

@@ -78,8 +78,7 @@ final class RedisConnectionConcurrentRequestsFilter extends RedisConnectionFilte
                                         RedisConnectionConcurrentRequestsFilter.this);
                         break;
                     case RejectedPermanently:
-                        reportedError = RedisConnectionConcurrentRequestsFilter.this.transportError
-                                .getLastSeenValue(NONE);
+                        reportedError = RedisConnectionConcurrentRequestsFilter.this.transportError.lastSeenValue(NONE);
                         if (reportedError == NONE) {
                             reportedError = new ConnectionClosedException(
                                     "Connection Closed: " + RedisConnectionConcurrentRequestsFilter.this);

@@ -103,7 +103,7 @@ public final class DefaultPartitionedClientGroup<U, R, Client extends Listenable
         this.unknownPartitionClient = unknownPartitionClient;
         this.partitionMap = partitionMapFactory.newPartitionMap(event ->
                 new Partition<>(event, closedPartitionClient.apply(event)));
-        toSource(psdEvents.groupByMulti(event -> event.available() ?
+        toSource(psdEvents.groupByMulti(event -> event.isAvailable() ?
                 partitionMap.add(event.partitionAddress()).iterator() :
                 partitionMap.remove(event.partitionAddress()).iterator(), psdMaxQueueSize))
                 .subscribe(new GroupedByPartitionSubscriber(clientFactory));
@@ -146,7 +146,7 @@ public final class DefaultPartitionedClientGroup<U, R, Client extends Listenable
 
         PartitionServiceDiscoverer(final GroupedPublisher<Partition<C>, PSDE> newGroup) {
             this.newGroup = newGroup;
-            this.partition = newGroup.getKey();
+            this.partition = newGroup.key();
             close = emptyAsyncCloseable();
         }
 
@@ -164,7 +164,7 @@ public final class DefaultPartitionedClientGroup<U, R, Client extends Listenable
                 public boolean test(PSDE evt) {
                     MutableInt counter = addressCount.computeIfAbsent(evt.address(), __ -> new MutableInt());
                     boolean acceptEvent;
-                    if (evt.available()) {
+                    if (evt.isAvailable()) {
                         acceptEvent = ++counter.value == 1;
                     } else {
                         acceptEvent = --counter.value == 0;
@@ -270,16 +270,16 @@ public final class DefaultPartitionedClientGroup<U, R, Client extends Listenable
             // have to wrap the Subscription in a ConcurrentSubscription which is costly.
             // Since, we synchronously process onNexts we do not really care about flow control.
             s.request(Long.MAX_VALUE);
-            sequentialCancellable.setNextCancellable(s);
+            sequentialCancellable.nextCancellable(s);
         }
 
         @Override
         public void onNext(@Nonnull final GroupedPublisher<Partition<Client>,
                         ? extends PartitionedServiceDiscovererEvent<R>> newGroup) {
             requireNonNull(newGroup);
-            Client newClient = requireNonNull(clientFactory.apply(newGroup.getKey().attributes,
+            Client newClient = requireNonNull(clientFactory.apply(newGroup.key().attributes,
                     new PartitionServiceDiscoverer<>(newGroup)), "<null> Client created for partition");
-            newGroup.getKey().client(newClient);
+            newGroup.key().client(newClient);
         }
 
         @Override

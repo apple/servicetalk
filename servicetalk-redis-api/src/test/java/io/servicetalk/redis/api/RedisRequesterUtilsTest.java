@@ -78,7 +78,7 @@ public class RedisRequesterUtilsTest {
         allocator = DEFAULT_ALLOCATOR;
         when(requester.executionContext()).thenReturn(executionContext);
         when(requester.executionContext().bufferAllocator()).thenReturn(allocator);
-        when(requester.request(any(RedisExecutionStrategy.class), any())).thenReturn(publisher.getPublisher());
+        when(requester.request(any(RedisExecutionStrategy.class), any())).thenReturn(publisher.publisher());
     }
 
     @Test

@@ -92,7 +92,7 @@ public final class RequestProperties {
     public static void setRequestCancellable(final Cancellable cancellable,
                                              final ContainerRequestContext reqCtx) {
         ((DelayedCancellable) reqCtx.getProperty(REQUEST_CANCELLABLE))
-                .setDelayedCancellable(requireNonNull(cancellable));
+                .delayedCancellable(requireNonNull(cancellable));
     }
 
     /**

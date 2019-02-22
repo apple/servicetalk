@@ -95,7 +95,7 @@ public final class DefaultRedisConnectionBuilder<ResolvedAddress> implements Red
      * @throws IllegalStateException if accessing the cert/key throws when {@link InputStream#close()} is called.
      */
     public DefaultRedisConnectionBuilder<ResolvedAddress> ssl(@Nullable SslConfig config) {
-        this.config.getTcpClientConfig().setSslConfig(config);
+        this.config.tcpClientConfig().sslConfig(config);
         return this;
     }
 
@@ -108,7 +108,7 @@ public final class DefaultRedisConnectionBuilder<ResolvedAddress> implements Red
      * @return {@code this}.
      */
     public <T> DefaultRedisConnectionBuilder<ResolvedAddress> socketOption(SocketOption<T> option, T value) {
-        config.getTcpClientConfig().setSocketOption(option, value);
+        config.tcpClientConfig().socketOption(option, value);
         return this;
     }
 
@@ -119,7 +119,7 @@ public final class DefaultRedisConnectionBuilder<ResolvedAddress> implements Red
      * @return {@code this}.
      */
     public DefaultRedisConnectionBuilder<ResolvedAddress> enableWireLogging(String loggerName) {
-        config.getTcpClientConfig().enableWireLogging(loggerName);
+        config.tcpClientConfig().enableWireLogging(loggerName);
         return this;
     }
 
@@ -131,7 +131,7 @@ public final class DefaultRedisConnectionBuilder<ResolvedAddress> implements Red
      * @see #enableWireLogging(String)
      */
     public DefaultRedisConnectionBuilder<ResolvedAddress> disableWireLogging() {
-        config.getTcpClientConfig().disableWireLogging();
+        config.tcpClientConfig().disableWireLogging();
         return this;
     }
 
@@ -142,7 +142,7 @@ public final class DefaultRedisConnectionBuilder<ResolvedAddress> implements Red
      * @return {@code this}.
      */
     public DefaultRedisConnectionBuilder<ResolvedAddress> maxPipelinedRequests(int maxPipelinedRequests) {
-        config.setMaxPipelinedRequests(maxPipelinedRequests);
+        config.maxPipelinedRequests(maxPipelinedRequests);
         return this;
     }
 
@@ -154,7 +154,7 @@ public final class DefaultRedisConnectionBuilder<ResolvedAddress> implements Red
      */
     public DefaultRedisConnectionBuilder<ResolvedAddress> idleConnectionTimeout(
             @Nullable Duration idleConnectionTimeout) {
-        config.setIdleConnectionTimeout(idleConnectionTimeout);
+        config.idleConnectionTimeout(idleConnectionTimeout);
         return this;
     }
 
@@ -165,7 +165,7 @@ public final class DefaultRedisConnectionBuilder<ResolvedAddress> implements Red
      * @return {@code this}.
      */
     public DefaultRedisConnectionBuilder<ResolvedAddress> pingPeriod(@Nullable final Duration pingPeriod) {
-        config.setPingPeriod(pingPeriod);
+        config.pingPeriod(pingPeriod);
         return this;
     }
 
@@ -234,18 +234,18 @@ public final class DefaultRedisConnectionBuilder<ResolvedAddress> implements Red
                         .map(RedisSubscribedConcurrencyLimitingFilter::new) :
                 buildForPipelined(context, resolvedAddress, roConfig, connectionFilterFactory)
                         .map(filteredConnection -> new RedisConnectionConcurrentRequestsFilter(filteredConnection,
-                                roConfig.getMaxPipelinedRequests()));
+                                roConfig.maxPipelinedRequests()));
     }
 
     static <ResolvedAddress> Single<RedisConnection> buildForSubscribe(ExecutionContext executionContext,
                                                                        ResolvedAddress resolvedAddress,
                                                                        ReadOnlyRedisClientConfig roConfig,
                                                                RedisConnectionFilterFactory connectionFilterFactory) {
-        return roConfig.getIdleConnectionTimeout() == null ? build(executionContext, resolvedAddress, roConfig).map(
+        return roConfig.idleConnectionTimeout() == null ? build(executionContext, resolvedAddress, roConfig).map(
                 conn -> connectionFilterFactory.create(newSubscribedConnection(conn, executionContext, roConfig))) :
                 // User Filters -> IdleReaper -> Connection
                 build(executionContext, resolvedAddress, roConfig).map(conn -> connectionFilterFactory.create(
-                        new RedisIdleConnectionReaper(roConfig.getIdleConnectionTimeout()).apply(
+                        new RedisIdleConnectionReaper(roConfig.idleConnectionTimeout()).apply(
                                 newSubscribedConnection(conn, executionContext, roConfig))));
     }
 
@@ -253,24 +253,24 @@ public final class DefaultRedisConnectionBuilder<ResolvedAddress> implements Red
                                                                        ResolvedAddress resolvedAddress,
                                                                        ReadOnlyRedisClientConfig roConfig,
                                                                RedisConnectionFilterFactory connectionFilterFactory) {
-        return roConfig.getIdleConnectionTimeout() == null ? build(executionContext, resolvedAddress, roConfig).map(
+        return roConfig.idleConnectionTimeout() == null ? build(executionContext, resolvedAddress, roConfig).map(
                 conn -> connectionFilterFactory.create(newPipelinedConnection(conn, executionContext, roConfig))) :
                 // User Filters -> IdleReaper -> Connection
                 build(executionContext, resolvedAddress, roConfig).map(conn -> connectionFilterFactory.create(
-                        new RedisIdleConnectionReaper(roConfig.getIdleConnectionTimeout()).apply(
+                        new RedisIdleConnectionReaper(roConfig.idleConnectionTimeout()).apply(
                                 newPipelinedConnection(conn, executionContext, roConfig))));
     }
 
     private static <ResolvedAddress> Single<? extends NettyConnection<RedisData, ByteBuf>> build(
             ExecutionContext executionContext, ResolvedAddress resolvedAddress, ReadOnlyRedisClientConfig roConfig) {
         // This state is read only, so safe to keep a copy across Subscribers
-        final ReadOnlyTcpClientConfig tcpClientConfig = roConfig.getTcpClientConfig();
+        final ReadOnlyTcpClientConfig tcpClientConfig = roConfig.tcpClientConfig();
         return TcpConnector.connect(null, resolvedAddress, tcpClientConfig, executionContext)
                 .flatMap(channel -> {
                     CloseHandler closeHandler = forPipelinedRequestResponse(true, channel.config());
                     return DefaultNettyConnection.initChannel(channel, executionContext.bufferAllocator(),
                             executionContext.executor(), new TerminalPredicate<>(o -> false), closeHandler,
-                            tcpClientConfig.getFlushStrategy(), new TcpClientChannelInitializer(
+                            tcpClientConfig.flushStrategy(), new TcpClientChannelInitializer(
                                     tcpClientConfig).andThen(new RedisClientChannelInitializer()));
                 });
     }

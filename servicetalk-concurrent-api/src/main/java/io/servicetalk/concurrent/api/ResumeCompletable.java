@@ -75,7 +75,7 @@ final class ResumeCompletable extends AbstractNoHandleSubscribeCompletable {
             } else {
                 // Only a single re-subscribe is allowed.
                 nextFactory = null;
-                sequentialCancellable.setNextCancellable(cancellable);
+                sequentialCancellable.nextCancellable(cancellable);
             }
         }
 

@@ -252,7 +252,7 @@ public abstract class ByteToMessageDecoder extends ChannelInboundHandlerAdapter 
      *
      * @return reader index of cumulation.
      */
-    protected final int getCumulationReaderIndex() {
+    protected final int cumulationReaderIndex() {
         assert cumulation != null;
         return cumulation.readerIndex();
     }

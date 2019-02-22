@@ -20,11 +20,11 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.internal.SignalOffloader;
 import io.servicetalk.concurrent.internal.SignalOffloaderFactory;
+import io.servicetalk.concurrent.internal.SignalOffloaders;
 
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 
-import static io.servicetalk.concurrent.internal.SignalOffloaders.hasThreadAffinity;
 import static io.servicetalk.concurrent.internal.SignalOffloaders.newThreadBasedOffloader;
 import static java.util.Objects.requireNonNull;
 
@@ -75,8 +75,8 @@ public final class OffloaderAwareExecutor implements Executor, SignalOffloaderFa
     }
 
     @Override
-    public boolean threadAffinity() {
-        return offloaderFactory.threadAffinity();
+    public boolean hasThreadAffinity() {
+        return offloaderFactory.hasThreadAffinity();
     }
 
     /**
@@ -87,7 +87,7 @@ public final class OffloaderAwareExecutor implements Executor, SignalOffloaderFa
      * @return An {@link Executor} that honors thread affinity.
      */
     public static Executor ensureThreadAffinity(final Executor executor) {
-        if (hasThreadAffinity(executor)) {
+        if (SignalOffloaders.hasThreadAffinity(executor)) {
             return executor;
         }
         return new OffloaderAwareExecutor(executor, new SignalOffloaderFactory() {
@@ -97,7 +97,7 @@ public final class OffloaderAwareExecutor implements Executor, SignalOffloaderFa
             }
 
             @Override
-            public boolean threadAffinity() {
+            public boolean hasThreadAffinity() {
                 return true;
             }
         });

@@ -133,7 +133,7 @@ public final class RetryingHttpRequesterFilter implements HttpClientFilterFactor
          */
         public BiPredicate<HttpRequestMetaData, Throwable> retryForIdempotentRequestsPredicate() {
             return defaultRetryForPredicate().or((meta, throwable) ->
-                    throwable instanceof IOException && meta.method().methodProperties().idempotent());
+                    throwable instanceof IOException && meta.method().methodProperties().isIdempotent());
         }
     }
 }

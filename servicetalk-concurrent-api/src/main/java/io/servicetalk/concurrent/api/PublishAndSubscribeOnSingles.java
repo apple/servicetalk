@@ -42,27 +42,27 @@ final class PublishAndSubscribeOnSingles {
     }
 
     static <T> Single<T> publishAndSubscribeOn(Single<T> original, Executor executor) {
-        return original.getExecutor() == executor ? original : new PublishAndSubscribeOn<>(executor, original);
+        return original.executor() == executor ? original : new PublishAndSubscribeOn<>(executor, original);
     }
 
     static <T> Single<T> publishAndSubscribeOnOverride(Single<T> original, Executor executor) {
-        return original.getExecutor() == executor ? original : new PublishAndSubscribeOnOverride<>(original, executor);
+        return original.executor() == executor ? original : new PublishAndSubscribeOnOverride<>(original, executor);
     }
 
     static <T> Single<T> publishOn(Single<T> original, Executor executor) {
-        return original.getExecutor() == executor ? original : new PublishOn<>(executor, original);
+        return original.executor() == executor ? original : new PublishOn<>(executor, original);
     }
 
     static <T> Single<T> publishOnOverride(Single<T> original, Executor executor) {
-        return original.getExecutor() == executor ? original : new PublishOnOverride<>(original, executor);
+        return original.executor() == executor ? original : new PublishOnOverride<>(original, executor);
     }
 
     static <T> Single<T> subscribeOn(Single<T> original, Executor executor) {
-        return original.getExecutor() == executor ? original : new SubscribeOn<>(executor, original);
+        return original.executor() == executor ? original : new SubscribeOn<>(executor, original);
     }
 
     static <T> Single<T> subscribeOnOverride(Single<T> original, Executor executor) {
-        return original.getExecutor() == executor ? original : new SubscribeOnOverride<>(original, executor);
+        return original.executor() == executor ? original : new SubscribeOnOverride<>(original, executor);
     }
 
     private static final class PublishAndSubscribeOn<T> extends AbstractNoHandleSubscribeSingle<T> {
@@ -114,7 +114,7 @@ final class PublishAndSubscribeOnSingles {
         private final Single<T> original;
 
         PublishOn(final Executor executor, final Single<T> original) {
-            super(mergeAndOffloadPublish(original.getExecutor(), executor));
+            super(mergeAndOffloadPublish(original.executor(), executor));
             this.original = original;
         }
 
@@ -144,7 +144,7 @@ final class PublishAndSubscribeOnSingles {
     private static final class PublishOnOverride<T> extends AbstractSynchronousSingleOperator<T, T> {
 
         PublishOnOverride(final Single<T> original, final Executor executor) {
-            super(original, mergeAndOffloadPublish(original.getExecutor(), executor));
+            super(original, mergeAndOffloadPublish(original.executor(), executor));
         }
 
         @Override
@@ -159,7 +159,7 @@ final class PublishAndSubscribeOnSingles {
         private final Single<T> original;
 
         SubscribeOn(final Executor executor, final Single<T> original) {
-            super(mergeAndOffloadSubscribe(original.getExecutor(), executor));
+            super(mergeAndOffloadSubscribe(original.executor(), executor));
             this.original = original;
         }
 
@@ -189,7 +189,7 @@ final class PublishAndSubscribeOnSingles {
     private static final class SubscribeOnOverride<T> extends AbstractSynchronousSingleOperator<T, T> {
 
         SubscribeOnOverride(final Single<T> original, final Executor executor) {
-            super(original, mergeAndOffloadSubscribe(original.getExecutor(), executor));
+            super(original, mergeAndOffloadSubscribe(original.executor(), executor));
         }
 
         @Override

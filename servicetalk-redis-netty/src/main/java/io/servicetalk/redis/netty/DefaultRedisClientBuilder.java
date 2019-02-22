@@ -141,43 +141,43 @@ final class DefaultRedisClientBuilder<U, R> implements RedisClientBuilder<U, R> 
 
     @Override
     public DefaultRedisClientBuilder<U, R> sslConfig(@Nullable SslConfig config) {
-        this.config.getTcpClientConfig().setSslConfig(config);
+        this.config.tcpClientConfig().sslConfig(config);
         return this;
     }
 
     @Override
     public <T> DefaultRedisClientBuilder<U, R> socketOption(SocketOption<T> option, T value) {
-        config.getTcpClientConfig().setSocketOption(option, value);
+        config.tcpClientConfig().socketOption(option, value);
         return this;
     }
 
     @Override
     public DefaultRedisClientBuilder<U, R> enableWireLogging(String loggerName) {
-        config.getTcpClientConfig().enableWireLogging(loggerName);
+        config.tcpClientConfig().enableWireLogging(loggerName);
         return this;
     }
 
     @Override
     public DefaultRedisClientBuilder<U, R> disableWireLogging() {
-        config.getTcpClientConfig().disableWireLogging();
+        config.tcpClientConfig().disableWireLogging();
         return this;
     }
 
     @Override
     public DefaultRedisClientBuilder<U, R> maxPipelinedRequests(int maxPipelinedRequests) {
-        config.setMaxPipelinedRequests(maxPipelinedRequests);
+        config.maxPipelinedRequests(maxPipelinedRequests);
         return this;
     }
 
     @Override
     public DefaultRedisClientBuilder<U, R> idleConnectionTimeout(@Nullable Duration idleConnectionTimeout) {
-        config.setIdleConnectionTimeout(idleConnectionTimeout);
+        config.idleConnectionTimeout(idleConnectionTimeout);
         return this;
     }
 
     @Override
     public DefaultRedisClientBuilder<U, R> pingPeriod(@Nullable final Duration pingPeriod) {
-        config.setPingPeriod(pingPeriod);
+        config.pingPeriod(pingPeriod);
         return this;
     }
 
@@ -227,7 +227,7 @@ final class DefaultRedisClientBuilder<U, R> implements RedisClientBuilder<U, R> 
      * @return {@code this}
      */
     RedisClientBuilder<U, R> deferSubscribeTillConnect(boolean defer) {
-        config.setDeferSubscribeTillConnect(defer);
+        config.deferSubscribeTillConnect(defer);
         return this;
     }
 

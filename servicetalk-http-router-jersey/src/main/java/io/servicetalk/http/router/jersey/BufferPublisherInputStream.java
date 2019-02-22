@@ -39,7 +39,7 @@ import static org.glassfish.jersey.message.internal.ReaderInterceptorExecutor.cl
  * <p>
  * Not threadsafe and intended to be used internally only, where no concurrency occurs
  * between {@link BufferPublisherInputStream#read()}, {@link BufferPublisherInputStream#read(byte[], int, int)}
- * and {@link BufferPublisherInputStream#getBufferPublisher()}.
+ * and {@link BufferPublisherInputStream#bufferPublisher()}.
  */
 public final class BufferPublisherInputStream extends InputStream {
     private static final InputStream EMPTY_INPUT_STREAM = new InputStream() {
@@ -98,7 +98,7 @@ public final class BufferPublisherInputStream extends InputStream {
      * @return the wrapped {@link Publisher Publisher&lt;Buffer&gt;}
      * @throws IllegalStateException in case reading the stream has started
      */
-    private Publisher<Buffer> getBufferPublisher() {
+    private Publisher<Buffer> bufferPublisher() {
         if (inputStream != EMPTY_INPUT_STREAM) {
             throw new IllegalStateException("Publisher is being consumed via InputStream");
         }
@@ -139,7 +139,7 @@ public final class BufferPublisherInputStream extends InputStream {
 
         if (wrappedStream instanceof BufferPublisherInputStream) {
             // If the wrapped stream is built around a Publisher, provide it to the resource as-is
-            return bufferPublisherHandler.apply(((BufferPublisherInputStream) wrappedStream).getBufferPublisher(),
+            return bufferPublisherHandler.apply(((BufferPublisherInputStream) wrappedStream).bufferPublisher(),
                     allocator);
         }
 

@@ -37,8 +37,9 @@ final class PubSubRedisConnectionToBlockingPubSubRedisConnection extends Blockin
         blockingInvocation(pubSubConnection.closeAsync());
     }
 
-    public BlockingIterable<PubSubRedisMessage> getMessages() {
-        return pubSubConnection.getMessages().toIterable();
+    @Override
+    public BlockingIterable<PubSubRedisMessage> messages() {
+        return pubSubConnection.messages().toIterable();
     }
 
     @Override

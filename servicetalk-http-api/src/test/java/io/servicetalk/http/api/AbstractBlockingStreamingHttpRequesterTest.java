@@ -154,7 +154,7 @@ public abstract class AbstractBlockingStreamingHttpRequesterTest {
     @Test
     public void asyncToSyncCancelPropagated() throws Exception {
         StreamingHttpRequester asyncRequester = newAsyncRequester(reqRespFactory, mockExecutionCtx,
-                (strategy, req) -> success(reqRespFactory.ok().payloadBody(publisherRule.getPublisher())));
+                (strategy, req) -> success(reqRespFactory.ok().payloadBody(publisherRule.publisher())));
         BlockingStreamingHttpRequester syncRequester = toBlockingStreamingRequester(asyncRequester);
         BlockingStreamingHttpResponse syncResponse = syncRequester.request(
                 syncRequester.get("/"));

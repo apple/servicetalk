@@ -36,9 +36,10 @@ public class DelayedCancellable implements Cancellable {
     /**
      * Set the delayed {@link Cancellable}. This method can only be called a single time and
      * subsequent calls will result in {@link #cancel()} being call on {@code delayedCancellable}.
+     *
      * @param delayedCancellable The delayed {@link Cancellable}.
      */
-    public final void setDelayedCancellable(Cancellable delayedCancellable) {
+    public final void delayedCancellable(Cancellable delayedCancellable) {
         if (!currentUpdater.compareAndSet(this, null, requireNonNull(delayedCancellable))) {
             delayedCancellable.cancel();
         }

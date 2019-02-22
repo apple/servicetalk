@@ -41,27 +41,27 @@ final class PublishAndSubscribeOnPublishers {
     }
 
     static <T> Publisher<T> publishAndSubscribeOn(Publisher<T> original, Executor executor) {
-        return original.getExecutor() == executor ? original : new PublishAndSubscribeOn<>(executor, original);
+        return original.executor() == executor ? original : new PublishAndSubscribeOn<>(executor, original);
     }
 
     static <T> Publisher<T> publishAndSubscribeOnOverride(Publisher<T> original, Executor executor) {
-        return original.getExecutor() == executor ? original : new PublishAndSubscribeOnOverride<>(original, executor);
+        return original.executor() == executor ? original : new PublishAndSubscribeOnOverride<>(original, executor);
     }
 
     static <T> Publisher<T> publishOn(Publisher<T> original, Executor executor) {
-        return original.getExecutor() == executor ? original : new PublishOn<>(executor, original);
+        return original.executor() == executor ? original : new PublishOn<>(executor, original);
     }
 
     static <T> Publisher<T> publishOnOverride(Publisher<T> original, Executor executor) {
-        return original.getExecutor() == executor ? original : new PublishOnOverride<>(original, executor);
+        return original.executor() == executor ? original : new PublishOnOverride<>(original, executor);
     }
 
     static <T> Publisher<T> subscribeOn(Publisher<T> original, Executor executor) {
-        return original.getExecutor() == executor ? original : new SubscribeOn<>(executor, original);
+        return original.executor() == executor ? original : new SubscribeOn<>(executor, original);
     }
 
     static <T> Publisher<T> subscribeOnOverride(Publisher<T> original, Executor executor) {
-        return original.getExecutor() == executor ? original : new SubscribeOnOverride<>(original, executor);
+        return original.executor() == executor ? original : new SubscribeOnOverride<>(original, executor);
     }
 
     private static final class PublishAndSubscribeOn<T> extends AbstractNoHandleSubscribePublisher<T> {
@@ -114,7 +114,7 @@ final class PublishAndSubscribeOnPublishers {
         private final Publisher<T> original;
 
         PublishOn(final Executor executor, final Publisher<T> original) {
-            super(mergeAndOffloadPublish(original.getExecutor(), executor));
+            super(mergeAndOffloadPublish(original.executor(), executor));
             this.original = original;
         }
 
@@ -144,7 +144,7 @@ final class PublishAndSubscribeOnPublishers {
     private static final class PublishOnOverride<T> extends AbstractSynchronousPublisherOperator<T, T> {
 
         PublishOnOverride(final Publisher<T> original, final Executor executor) {
-            super(original, mergeAndOffloadPublish(original.getExecutor(), executor));
+            super(original, mergeAndOffloadPublish(original.executor(), executor));
         }
 
         @Override
@@ -159,7 +159,7 @@ final class PublishAndSubscribeOnPublishers {
         private final Publisher<T> original;
 
         SubscribeOn(final Executor executor, final Publisher<T> original) {
-            super(mergeAndOffloadSubscribe(original.getExecutor(), executor));
+            super(mergeAndOffloadSubscribe(original.executor(), executor));
             this.original = original;
         }
 
@@ -189,7 +189,7 @@ final class PublishAndSubscribeOnPublishers {
     private static final class SubscribeOnOverride<T> extends AbstractSynchronousPublisherOperator<T, T> {
 
         SubscribeOnOverride(final Publisher<T> original, final Executor executor) {
-            super(original, mergeAndOffloadSubscribe(original.getExecutor(), executor));
+            super(original, mergeAndOffloadSubscribe(original.executor(), executor));
         }
 
         @Override

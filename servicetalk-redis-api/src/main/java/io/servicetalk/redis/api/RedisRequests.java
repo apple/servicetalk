@@ -147,7 +147,7 @@ public final class RedisRequests {
      */
     public static RedisRequest newRequest(final Array<CompleteRequestRedisData> content) {
         @SuppressWarnings("unchecked")
-        final List<CompleteRequestRedisData> data = (List<CompleteRequestRedisData>) content.getListValue();
+        final List<CompleteRequestRedisData> data = (List<CompleteRequestRedisData>) content.listValue();
         final Command command = (Command) data.get(0);
 
         final RequestRedisData[] stanzaAndArgs = data.toArray(new RequestRedisData[data.size() + 1]);

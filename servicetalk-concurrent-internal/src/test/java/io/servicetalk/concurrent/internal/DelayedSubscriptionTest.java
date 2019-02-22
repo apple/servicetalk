@@ -61,8 +61,8 @@ public class DelayedSubscriptionTest {
 
     @Test
     public void multipleDelayedSubscriptionCancels() {
-        delayedSubscription.setDelayedSubscription(s1);
-        delayedSubscription.setDelayedSubscription(s2);
+        delayedSubscription.delayedSubscription(s1);
+        delayedSubscription.delayedSubscription(s2);
         verifyNoMoreInteractions(s1);
         verify(s2).cancel();
         verifyNoMoreInteractions(s2);
@@ -72,7 +72,7 @@ public class DelayedSubscriptionTest {
     public void delaySubscriptionIsRequested() {
         delayedSubscription.request(100);
         delayedSubscription.request(5);
-        delayedSubscription.setDelayedSubscription(s1);
+        delayedSubscription.delayedSubscription(s1);
         verify(s1).request(105);
         verifyNoMoreInteractions(s1);
     }
@@ -82,7 +82,7 @@ public class DelayedSubscriptionTest {
         delayedSubscription.request(100);
         delayedSubscription.request(5);
         delayedSubscription.cancel();
-        delayedSubscription.setDelayedSubscription(s1);
+        delayedSubscription.delayedSubscription(s1);
         verify(s1).cancel();
         verifyNoMoreInteractions(s1);
     }
@@ -91,7 +91,7 @@ public class DelayedSubscriptionTest {
     public void invalidRequestNIsPassedThrough() {
         delayedSubscription.request(100);
         delayedSubscription.request(-1);
-        delayedSubscription.setDelayedSubscription(s1);
+        delayedSubscription.delayedSubscription(s1);
         verify(s1).request(-1);
         verifyNoMoreInteractions(s1);
     }
@@ -100,7 +100,7 @@ public class DelayedSubscriptionTest {
     public void invalidRequestNZeroIsNotPassedThrough() {
         delayedSubscription.request(100);
         delayedSubscription.request(0);
-        delayedSubscription.setDelayedSubscription(s1);
+        delayedSubscription.delayedSubscription(s1);
         verify(s1).request(MIN_VALUE);
         verifyNoMoreInteractions(s1);
     }
@@ -108,7 +108,7 @@ public class DelayedSubscriptionTest {
     @Test
     public void signalsAfterDelayedArePassedThrough() {
         delayedSubscription.request(2);
-        delayedSubscription.setDelayedSubscription(s1);
+        delayedSubscription.delayedSubscription(s1);
         verify(s1).request(2);
         verifyNoMoreInteractions(s1);
         delayedSubscription.request(3);
@@ -122,7 +122,7 @@ public class DelayedSubscriptionTest {
     @Test
     public void setDelayedFromAnotherThreadIsVisible() throws Exception {
         delayedSubscription.request(2);
-        executor.submit(() -> delayedSubscription.setDelayedSubscription(s1)).get();
+        executor.submit(() -> delayedSubscription.delayedSubscription(s1)).get();
         verify(s1).request(2);
         verifyNoMoreInteractions(s1);
     }
@@ -149,12 +149,12 @@ public class DelayedSubscriptionTest {
         });
         Future<Void> swapper = executor.submit(() -> {
             barrier.await();
-            ds.setDelayedSubscription(s);
+            ds.delayedSubscription(s);
             return null;
         });
         swapper.get();
         requester.get();
-        assertThat("Unexpected items requested.", ((CountingSubscription) s).getRequested(), is(10_000));
+        assertThat("Unexpected items requested.", ((CountingSubscription) s).requested(), is(10_000));
     }
 
     private static class CountingSubscription implements Subscription {
@@ -170,7 +170,7 @@ public class DelayedSubscriptionTest {
             requested = -1;
         }
 
-        int getRequested() {
+        int requested() {
             return requested;
         }
     }

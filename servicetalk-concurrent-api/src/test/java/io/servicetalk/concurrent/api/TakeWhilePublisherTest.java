@@ -29,7 +29,7 @@ public class TakeWhilePublisherTest {
 
     @Test
     public void testWhile() {
-        Publisher<String> p = publisher.getPublisher().takeWhile(s -> !s.equals("Hello3"));
+        Publisher<String> p = publisher.publisher().takeWhile(s -> !s.equals("Hello3"));
         subscriber.subscribe(p);
         subscriber.request(4);
         publisher.sendItemsNoVerify("Hello1", "Hello2", "Hello3");
@@ -39,7 +39,7 @@ public class TakeWhilePublisherTest {
 
     @Test
     public void testWhileError() {
-        Publisher<String> p = publisher.getPublisher().takeWhile(s -> !s.equals("Hello3"));
+        Publisher<String> p = publisher.publisher().takeWhile(s -> !s.equals("Hello3"));
         subscriber.subscribe(p);
         subscriber.request(1);
         publisher.sendItems("Hello1").fail();
@@ -48,7 +48,7 @@ public class TakeWhilePublisherTest {
 
     @Test
     public void testWhileComplete() {
-        Publisher<String> p = publisher.getPublisher().takeWhile(s -> !s.equals("Hello3"));
+        Publisher<String> p = publisher.publisher().takeWhile(s -> !s.equals("Hello3"));
         subscriber.subscribe(p);
         subscriber.request(1);
         publisher.sendItems("Hello1").complete();
@@ -57,7 +57,7 @@ public class TakeWhilePublisherTest {
 
     @Test
     public void testSubCancelled() {
-        Publisher<String> p = publisher.getPublisher().takeWhile(s -> !s.equals("Hello3"));
+        Publisher<String> p = publisher.publisher().takeWhile(s -> !s.equals("Hello3"));
         subscriber.subscribe(p);
         subscriber.request(3);
         publisher.sendItems("Hello1", "Hello2");

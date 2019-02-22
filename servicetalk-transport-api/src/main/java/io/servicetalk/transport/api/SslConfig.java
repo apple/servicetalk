@@ -81,7 +81,7 @@ public interface SslConfig {
      * @return the factory to use.
      */
     @Nullable
-    TrustManagerFactory getTrustManagerFactory();
+    TrustManagerFactory trustManagerFactory();
 
     /**
      * Return the {@link KeyManagerFactory} to use or {@code null} if none should be used.
@@ -89,7 +89,7 @@ public interface SslConfig {
      * @return the factory to use.
      */
     @Nullable
-    KeyManagerFactory getKeyManagerFactory();
+    KeyManagerFactory keyManagerFactory();
 
     /**
      * Return the password to use or {@code null} if none.
@@ -97,7 +97,7 @@ public interface SslConfig {
      * @return the password to use or {@code null} if none.
      */
     @Nullable
-    String getKeyPassword();
+    String keyPassword();
 
     /**
      * Return the ciphers or {@code null} if the default should be used.
@@ -105,35 +105,35 @@ public interface SslConfig {
      * @return the ciphers.
      */
     @Nullable
-    Iterable<String> getCiphers();
+    Iterable<String> ciphers();
 
     /**
      * Get the size of the cache used for storing SSL session objects.
      *
      * @return cache size.
      */
-    long getSessionCacheSize();
+    long sessionCacheSize();
 
     /**
      * Get the timeout for the cached SSL session objects, in seconds.
      *
      * @return the timeout.
      */
-    long getSessionTimeout();
+    long sessionTimeout();
 
     /**
      * Return the configured {@link ClientAuth}.
      *
      * @return auth.
      */
-    ClientAuth getClientAuth();
+    ClientAuth clientAuth();
 
     /**
      * Return the supplier for the trust cert chain.
      *
      * @return supplier.
      */
-    Supplier<InputStream> getTrustCertChainSupplier();
+    Supplier<InputStream> trustCertChainSupplier();
 
     /**
      * Return the supplier for the key cert chain.
@@ -142,7 +142,7 @@ public interface SslConfig {
      * If this is not the desired behavior then wrap the {@link InputStream} and override {@link InputStream#close()}.
      * @return supplier.
      */
-    Supplier<InputStream> getKeyCertChainSupplier();
+    Supplier<InputStream> keyCertChainSupplier();
 
     /**
      * Return the supplier for private key.
@@ -151,21 +151,21 @@ public interface SslConfig {
      * If this is not the desired behavior then wrap the {@link InputStream} and override {@link InputStream#close()}.
      * @return supplier.
      */
-    Supplier<InputStream> getKeySupplier();
+    Supplier<InputStream> keySupplier();
 
     /**
      * Return the config to use.
      *
      * @return config.
      */
-    ApplicationProtocolConfig getApn();
+    ApplicationProtocolConfig apn();
 
     /**
      * Return the provider to use.
      *
      * @return the provider.
      */
-    SslProvider getProvider();
+    SslProvider provider();
 
     /**
      * Returns the protocols to enable, in the order of preference. {@code null} to use default protocols.
@@ -173,7 +173,7 @@ public interface SslConfig {
      * @return protocols the protocols to use.
      */
     @Nullable
-    List<String> getProtocols();
+    List<String> protocols();
 
     /**
      * Determines what algorithm to use for hostname verification using the
@@ -182,7 +182,7 @@ public interface SslConfig {
      * @see SSLParameters#setEndpointIdentificationAlgorithm(String)
      */
     @Nullable
-    String getHostnameVerificationAlgorithm();
+    String hostnameVerificationAlgorithm();
 
     /**
      * The host name used to verify the <a href="https://tools.ietf.org/search/rfc2818#section-3.1">server identity</a>.
@@ -190,7 +190,7 @@ public interface SslConfig {
      * <a href="https://tools.ietf.org/search/rfc2818#section-3.1">server identity</a>.
      */
     @Nullable
-    String getHostnameVerificationHost();
+    String hostnameVerificationHost();
 
     /**
      * The port which maybe used to verify the
@@ -199,5 +199,5 @@ public interface SslConfig {
      * @return The port which maybe used to verify the
      * <a href="https://tools.ietf.org/search/rfc2818#section-3.1">server identity</a>.
      */
-    int getHostnameVerificationPort();
+    int hostnameVerificationPort();
 }

@@ -118,7 +118,7 @@ public class CancellationTest {
 
         jerseyRouter = new HttpJerseyRouterBuilder()
                 .routeExecutionStrategyFactory(asFactory(
-                        singletonMap("test", defaultStrategy(EXEC.getExecutor()))))
+                        singletonMap("test", defaultStrategy(EXEC.executor()))))
                 .build(new Application() {
                     @Override
                     public Set<Object> getSingletons() {
@@ -169,7 +169,7 @@ public class CancellationTest {
     public void cancelSse() throws Exception {
         doAnswer(invocation -> {
             Object[] args = invocation.getArguments();
-            return EXEC.getExecutor().schedule((Runnable) args[0], (long) args[1], (TimeUnit) args[2]);
+            return EXEC.executor().schedule((Runnable) args[0], (long) args[1], (TimeUnit) args[2]);
         }).when(exec).schedule(any(Runnable.class), anyLong(), any(TimeUnit.class));
 
         // Initial SSE request succeeds

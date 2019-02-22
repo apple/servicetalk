@@ -277,7 +277,7 @@ public class RequestResponseCloseHandlerTest {
         private class FailedPendingWatcher extends TestWatcher {
             @Override
             protected void failed(final Throwable e, final Description description) {
-                LOGGER.error("Test Failed – Pending state: {}", toHexString(h.getState() << 24 | h.getPending()), e);
+                LOGGER.error("Test Failed – Pending state: {}", toHexString(h.state() << 24 | h.pending()), e);
             }
         }
 
@@ -515,7 +515,7 @@ public class RequestResponseCloseHandlerTest {
         private ServerSocketChannel startServer() {
             EventLoopAwareNettyIoExecutor eventLoopAwareNettyIoExecutor =
                     toEventLoopAwareNettyIoExecutor(S_CTX.ioExecutor());
-            EventLoop loop = eventLoopAwareNettyIoExecutor.getEventLoopGroup().next();
+            EventLoop loop = eventLoopAwareNettyIoExecutor.eventLoopGroup().next();
 
             ServerBootstrap bs = new ServerBootstrap();
             bs.group(loop);
@@ -554,7 +554,7 @@ public class RequestResponseCloseHandlerTest {
         private SocketChannel connectClient(InetSocketAddress address) {
             EventLoopAwareNettyIoExecutor eventLoopAwareNettyIoExecutor =
                     toEventLoopAwareNettyIoExecutor(C_CTX.ioExecutor());
-            EventLoop loop = eventLoopAwareNettyIoExecutor.getEventLoopGroup().next();
+            EventLoop loop = eventLoopAwareNettyIoExecutor.eventLoopGroup().next();
 
             Bootstrap bs = new Bootstrap();
             bs.group(loop);

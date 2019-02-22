@@ -75,7 +75,7 @@ public class CompletionStageAsyncContextTest {
     @Before
     public void beforeTest() {
         AsyncContext.clear();
-        source = new TestSingle<>(executorRule.getExecutor(), true, true);
+        source = new TestSingle<>(executorRule.executor(), true, true);
     }
 
     @Test

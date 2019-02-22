@@ -101,15 +101,15 @@ public abstract class AbstractResourceTest extends AbstractJerseyStreamingHttpSe
     }
 
     @Override
-    protected Application getApplication() {
+    protected Application application() {
         return new TestApplication();
     }
 
-    abstract String getResourcePath();
+    abstract String resourcePath();
 
     @Override
     protected String testUri(final String path) {
-        return getResourcePath() + path;
+        return resourcePath() + path;
     }
 
     @Test

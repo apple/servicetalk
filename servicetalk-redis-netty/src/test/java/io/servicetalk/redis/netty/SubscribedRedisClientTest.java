@@ -128,12 +128,12 @@ public class SubscribedRedisClientTest extends BaseRedisClientTest {
             return onTerminal.await(timeout, unit);
         }
 
-        Deque<T> getReceived() {
+        Deque<T> received() {
             return received;
         }
 
         @Nullable
-        TerminalNotification getTerminal() {
+        TerminalNotification terminal() {
             return terminal;
         }
 
@@ -174,19 +174,19 @@ public class SubscribedRedisClientTest extends BaseRedisClientTest {
         final AccumulatingSubscriber<RedisData> subscriber = new AccumulatingSubscriber<>();
         toSource(cnx.request(monitorRequest)).subscribe(subscriber);
         assertThat(subscriber.request(1).awaitUntilAtLeastNReceived(1, DEFAULT_TIMEOUT_SECONDS, SECONDS), is(true));
-        assertThat(subscriber.getReceived().poll(), is(redisSimpleString("OK")));
+        assertThat(subscriber.received().poll(), is(redisSimpleString("OK")));
 
         final RedisData pong = awaitIndefinitely(getEnv().client.request(newRequest(PING)).first());
         assertThat(pong, is(redisSimpleString("PONG")));
 
         assertThat(subscriber.request(1).awaitUntilAtLeastNReceived(1, DEFAULT_TIMEOUT_SECONDS, SECONDS), is(true));
-        assertThat(subscriber.getReceived().poll(), is(redisSimpleString(endsWith("\"PING\""))));
+        assertThat(subscriber.received().poll(), is(redisSimpleString(endsWith("\"PING\""))));
 
         awaitIndefinitely(cnx.closeAsync());
 
         // Check that the violent termination of the subscription has been detected
         assertThat(subscriber.awaitTerminal(DEFAULT_TIMEOUT_SECONDS, SECONDS), is(true));
-        assertThat(subscriber.getTerminal().getCause(), is(instanceOf(ClosedChannelException.class)));
+        assertThat(subscriber.terminal().cause(), is(instanceOf(ClosedChannelException.class)));
     }
 
     @Test
@@ -239,7 +239,7 @@ public class SubscribedRedisClientTest extends BaseRedisClientTest {
 
         // Check that the violent termination of the connection has been detected
         assertThat(messagesSubscriber.awaitTerminal(DEFAULT_TIMEOUT_SECONDS, SECONDS), is(true));
-        assertThat(messagesSubscriber.getTerminal().getCause(), is(instanceOf(ClosedChannelException.class)));
+        assertThat(messagesSubscriber.terminal().cause(), is(instanceOf(ClosedChannelException.class)));
     }
 
     @Test
@@ -279,7 +279,7 @@ public class SubscribedRedisClientTest extends BaseRedisClientTest {
                 .subscribe(messages3);
 
         assertThat(messages3Subscriber.awaitTerminal(DEFAULT_TIMEOUT_SECONDS, SECONDS), is(true));
-        assertThat(messages3Subscriber.getTerminal().getCause(), is(instanceOf(RejectedSubscribeException.class)));
+        assertThat(messages3Subscriber.terminal().cause(), is(instanceOf(RejectedSubscribeException.class)));
 
         // Publish another test message
         publishTestMessage("test-channel-404");
@@ -291,14 +291,14 @@ public class SubscribedRedisClientTest extends BaseRedisClientTest {
 
         assertThat(messages1Subscriber.request(1).awaitUntilAtLeastNReceived(1, DEFAULT_TIMEOUT_SECONDS, SECONDS),
                 is(true));
-        checkValidPubSubData(messages1Subscriber.getReceived().poll(), Channel, "test-channel-3", buf("test-message"));
+        checkValidPubSubData(messages1Subscriber.received().poll(), Channel, "test-channel-3", buf("test-message"));
 
         // Cancel the subscriber, which issues an UNSUBSCRIBE behind the scenes
         messages1Subscriber.cancel();
 
         assertThat(messages2Subscriber.request(1).awaitUntilAtLeastNReceived(1, DEFAULT_TIMEOUT_SECONDS, SECONDS),
                 is(true));
-        checkValidPubSubData(messages2Subscriber.getReceived().poll(), Pattern, "test-channel-404", "test-channel-4*",
+        checkValidPubSubData(messages2Subscriber.received().poll(), Pattern, "test-channel-404", "test-channel-4*",
                 buf("test-message"));
         // Cancel the subscriber, which issues an PUNSUBSCRIBE behind the scenes
         messages2Subscriber.cancel();
@@ -352,7 +352,7 @@ public class SubscribedRedisClientTest extends BaseRedisClientTest {
                 pingSubscriber.request(1);
                 assertThat(pingSubscriber.awaitUntilAtLeastNReceived(1, DEFAULT_TIMEOUT_SECONDS, SECONDS), is(true));
                 assertThat(pingSubscriber.awaitTerminal(DEFAULT_TIMEOUT_SECONDS, SECONDS), is(true));
-                checkValidPing(pingSubscriber.getReceived().poll(), pingData);
+                checkValidPing(pingSubscriber.received().poll(), pingData);
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }
@@ -373,7 +373,7 @@ public class SubscribedRedisClientTest extends BaseRedisClientTest {
         cnx.request(subscribeRequest)
                 .doAfterSubscribe(__ -> latch.countDown())
                 .map(msg -> (PatternPubSubRedisMessage) msg)
-                .groupBy(ChannelPubSubRedisMessage::getChannel, 32)
+                .groupBy(ChannelPubSubRedisMessage::channel, 32)
                 .forEach(grp -> {
                     AccumulatingSubscriber<PatternPubSubRedisMessage> sub =
                             new AccumulatingSubscriber<PatternPubSubRedisMessage>().subscribe(grp);
@@ -387,7 +387,7 @@ public class SubscribedRedisClientTest extends BaseRedisClientTest {
 
         AccumulatingSubscriber<PatternPubSubRedisMessage> channel77 = groupSubs.take();
         assertThat(channel77.awaitUntilAtLeastNReceived(1, DEFAULT_TIMEOUT_SECONDS, SECONDS), is(true));
-        PatternPubSubRedisMessage msg77 = channel77.getReceived().poll();
+        PatternPubSubRedisMessage msg77 = channel77.received().poll();
         checkValidPubSubData(msg77, Pattern, "test-channel-77", "test-channel-7*", buf("test-message"));
 
         // Publish a test message
@@ -395,14 +395,14 @@ public class SubscribedRedisClientTest extends BaseRedisClientTest {
 
         AccumulatingSubscriber<PatternPubSubRedisMessage> channel78 = groupSubs.take();
         assertThat(channel78.awaitUntilAtLeastNReceived(1, DEFAULT_TIMEOUT_SECONDS, SECONDS), is(true));
-        PatternPubSubRedisMessage msg78 = channel78.getReceived().poll();
+        PatternPubSubRedisMessage msg78 = channel78.received().poll();
         checkValidPubSubData(msg78, Pattern, "test-channel-78", "test-channel-7*", buf("test-message"));
 
         // Publish a test message
         publishTestMessage("test-channel-77");
 
         assertThat(channel77.awaitUntilAtLeastNReceived(1, DEFAULT_TIMEOUT_SECONDS, SECONDS), is(true));
-        msg77 = channel77.getReceived().poll();
+        msg77 = channel77.received().poll();
         checkValidPubSubData(msg77, Pattern, "test-channel-77", "test-channel-7*", buf("test-message"));
 
         assertThat("Unexpected group emitted.", groupSubs, hasSize(0));
@@ -450,7 +450,7 @@ public class SubscribedRedisClientTest extends BaseRedisClientTest {
         messagesSubscriber.cancel();
 
         // Check that no interleaved response has been mixed in all the received messages
-        final Deque<RedisData> receivedMessages = messagesSubscriber.getReceived();
+        final Deque<RedisData> receivedMessages = messagesSubscriber.received();
         RedisData msg;
         while ((msg = receivedMessages.poll()) != null) {
             checkValidPubSubData(msg, Channel, "test-channel-5", buf("test-message"));
@@ -501,8 +501,8 @@ public class SubscribedRedisClientTest extends BaseRedisClientTest {
         assertThat(pongRaw, is(notNullValue()));
         assertThat(pongRaw, is(instanceOf(PubSubChannelMessage.class)));
         final PubSubChannelMessage pong = (PubSubChannelMessage) pongRaw;
-        assertThat(pong.getKeyType(), is(Ping));
-        assertThat(pong.getData(), is(redisCompleteBulkString(expectedData)));
+        assertThat(pong.keyType(), is(Ping));
+        assertThat(pong.data(), is(redisCompleteBulkString(expectedData)));
     }
 
     static void checkValidPubSubData(@Nullable final RedisData dataRaw, final KeyType expectedKeyType,
@@ -511,17 +511,17 @@ public class SubscribedRedisClientTest extends BaseRedisClientTest {
         assertThat(dataRaw, is(instanceOf(PubSubChannelMessage.class)));
 
         final PubSubChannelMessage data = (PubSubChannelMessage) dataRaw;
-        assertThat(data.getKeyType(), is(expectedKeyType));
-        assertThat(data.getMessageType(), is(DATA));
-        assertThat(data.getChannel(), is(channelName));
-        assertThat(data.getData(), is(redisCompleteBulkString(expectedData)));
+        assertThat(data.keyType(), is(expectedKeyType));
+        assertThat(data.messageType(), is(DATA));
+        assertThat(data.channel(), is(channelName));
+        assertThat(data.data(), is(redisCompleteBulkString(expectedData)));
     }
 
     static void checkValidPubSubData(@Nullable final RedisData dataRaw, final KeyType expectedKeyType,
                                      final String channelName, final String pattern, final Buffer expectedData) {
         checkValidPubSubData(dataRaw, expectedKeyType, channelName, expectedData);
         assert dataRaw != null;
-        assertThat(((PubSubChannelMessage) dataRaw).getPattern(), is(pattern));
+        assertThat(((PubSubChannelMessage) dataRaw).pattern(), is(pattern));
     }
 
     private static final class PingSubscriber implements Subscriber<RedisData> {
@@ -587,7 +587,7 @@ public class SubscribedRedisClientTest extends BaseRedisClientTest {
             termReceived.await();
             TerminalNotification n = notification;
             assertThat("Completion not received.", n, is(notNullValue()));
-            assertThat("Completion not received.", n.getCause(), is(nullValue()));
+            assertThat("Completion not received.", n.cause(), is(nullValue()));
         }
     }
 }

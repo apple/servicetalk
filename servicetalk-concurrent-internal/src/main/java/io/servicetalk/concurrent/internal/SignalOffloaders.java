@@ -29,7 +29,7 @@ public final class SignalOffloaders {
         }
 
         @Override
-        public boolean threadAffinity() {
+        public boolean hasThreadAffinity() {
             return false;
         }
     };
@@ -41,7 +41,7 @@ public final class SignalOffloaders {
         }
 
         @Override
-        public boolean threadAffinity() {
+        public boolean hasThreadAffinity() {
             return true;
         }
     };
@@ -120,6 +120,6 @@ public final class SignalOffloaders {
      * @return {@code true} if the passed {@link Executor} honors thread affinity.
      */
     public static boolean hasThreadAffinity(Executor executor) {
-        return executor instanceof SignalOffloaderFactory && ((SignalOffloaderFactory) executor).threadAffinity();
+        return executor instanceof SignalOffloaderFactory && ((SignalOffloaderFactory) executor).hasThreadAffinity();
     }
 }

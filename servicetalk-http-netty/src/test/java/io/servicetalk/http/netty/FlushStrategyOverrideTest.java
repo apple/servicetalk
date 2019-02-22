@@ -191,7 +191,7 @@ public class FlushStrategyOverrideTest {
                 }
 
                 @Override
-                public boolean available() {
+                public boolean isAvailable() {
                     return true;
                 }
             });

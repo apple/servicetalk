@@ -502,7 +502,7 @@ public class PublisherFlatMapSingleTest {
         requestingStarting.await();
         for (int i = 1; i <= totalToRequest; i++) {
             //noinspection StatementWithEmptyBody
-            while (source.getOutstandingRequested() <= 0) {
+            while (source.outstandingRequested() <= 0) {
                 // Don't send if we emit faster than request.
             }
             source.sendItems(i);

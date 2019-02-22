@@ -190,7 +190,7 @@ public final class RedisProtocolSupport {
          *
          * @return the bit size.
          */
-        public int getBitSize() {
+        public int size() {
             return size;
         }
     }
@@ -400,12 +400,12 @@ public final class RedisProtocolSupport {
 
         private final EnumSet<CommandFlag> flags;
 
-        private final boolean supportsKeys;
+        private final boolean keysSupported;
 
-        Command(final String s, final EnumSet<CommandFlag> flags, final boolean supportsKeys) {
+        Command(final String s, final EnumSet<CommandFlag> flags, final boolean keysSupported) {
             b = s.getBytes(US_ASCII);
             this.flags = flags;
-            this.supportsKeys = supportsKeys;
+            this.keysSupported = keysSupported;
         }
 
         /**
@@ -443,8 +443,8 @@ public final class RedisProtocolSupport {
          *
          * @return {@code true} if this command can have one or more keys associated with it.
          */
-        public boolean supportsKeys() {
-            return supportsKeys;
+        public boolean areKeysSupported() {
+            return keysSupported;
         }
     }
 

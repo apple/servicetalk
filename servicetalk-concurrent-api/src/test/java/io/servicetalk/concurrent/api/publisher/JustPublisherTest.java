@@ -35,7 +35,7 @@ public class JustPublisherTest {
         // The mock action must be setup after subscribe, because this creates a new mock object internally.
         doAnswer(invocation -> {
             throw DELIBERATE_EXCEPTION;
-        }).when(subscriberRule.getSubscriber()).onNext(any());
+        }).when(subscriberRule.subscriber()).onNext(any());
         subscriberRule.request(1).verifyItems("foo").verifyFailure(DELIBERATE_EXCEPTION);
     }
 

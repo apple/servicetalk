@@ -330,7 +330,7 @@ final class TaskBasedSignalOffloader implements SignalOffloader {
                                 ((TerminalNotification) signal).terminate(target);
                             } catch (Throwable t) {
                                 LOGGER.error("Ignored unexpected exception from {}. Subscriber: {}",
-                                        ((TerminalNotification) signal).getCause() == null ? "onComplete()" :
+                                        ((TerminalNotification) signal).cause() == null ? "onComplete()" :
                                                 "onError()", target, t);
                             }
                             return; // We can't interact with the queue any more because we terminated, so bail.
@@ -507,7 +507,7 @@ final class TaskBasedSignalOffloader implements SignalOffloader {
             }
         }
 
-        final void setTerminal(final Object terminal) {
+        final void terminal(final Object terminal) {
             this.terminal = terminal;
             for (;;) {
                 int cState = state;
@@ -566,12 +566,12 @@ final class TaskBasedSignalOffloader implements SignalOffloader {
 
         @Override
         public void onSuccess(@Nullable final T result) {
-            setTerminal(result == null ? NULL_WRAPPER : result);
+            terminal(result == null ? NULL_WRAPPER : result);
         }
 
         @Override
         public void onError(final Throwable t) {
-            setTerminal(TerminalNotification.error(t));
+            terminal(TerminalNotification.error(t));
         }
 
         @Override
@@ -583,7 +583,7 @@ final class TaskBasedSignalOffloader implements SignalOffloader {
         void deliverTerminalToSubscriber(final Object terminal) {
             if (terminal instanceof TerminalNotification) {
                 try {
-                    final Throwable error = ((TerminalNotification) terminal).getCause();
+                    final Throwable error = ((TerminalNotification) terminal).cause();
                     assert error != null : "Cause can't be null from TerminalNotification.error(..)";
                     target.onError(error);
                 } catch (Throwable t) {
@@ -629,12 +629,12 @@ final class TaskBasedSignalOffloader implements SignalOffloader {
 
         @Override
         public void onComplete() {
-            setTerminal(COMPLETED);
+            terminal(COMPLETED);
         }
 
         @Override
         public void onError(final Throwable t) {
-            setTerminal(t);
+            terminal(t);
         }
 
         @Override

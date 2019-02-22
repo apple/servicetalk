@@ -132,8 +132,8 @@ public class WriteStreamSubscriberTest extends AbstractWriteTest {
 
     private void verifyWrite(WriteInfo... infos) {
         for (WriteInfo info : infos) {
-            verify(requestNSupplier).onItemWrite(info.getMesssage(), info.getWriteCapacityBefore(),
-                    info.getWriteCapacityAfter());
+            verify(requestNSupplier).onItemWrite(info.messsage(), info.writeCapacityBefore(),
+                    info.writeCapacityAfter());
         }
         verify(subscription, times(infos.length + 1)).request(1);
     }

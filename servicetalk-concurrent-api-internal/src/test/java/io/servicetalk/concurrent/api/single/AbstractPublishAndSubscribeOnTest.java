@@ -46,7 +46,7 @@ public abstract class AbstractPublishAndSubscribeOnTest {
         CountDownLatch allDone = new CountDownLatch(1);
         AtomicReferenceArray<Thread> capturedThreads = new AtomicReferenceArray<>(2);
 
-        Single<String> original = new SingleWithExecutor<>(originalSourceExecutorRule.getExecutor(), success("Hello"))
+        Single<String> original = new SingleWithExecutor<>(originalSourceExecutorRule.executor(), success("Hello"))
                 .doBeforeSuccess(__ -> capturedThreads.set(ORIGINAL_SUBSCRIBER_THREAD, currentThread()));
 
         Single<String> offloaded = offloadingFunction.apply(original);
@@ -65,7 +65,7 @@ public abstract class AbstractPublishAndSubscribeOnTest {
         CountDownLatch allDone = new CountDownLatch(1);
         AtomicReferenceArray<Thread> capturedThreads = new AtomicReferenceArray<>(2);
 
-        Single<String> original = new SingleWithExecutor<>(originalSourceExecutorRule.getExecutor(),
+        Single<String> original = new SingleWithExecutor<>(originalSourceExecutorRule.executor(),
                 Single.<String>never())
                 .doAfterCancel(() -> {
                     capturedThreads.set(ORIGINAL_SUBSCRIBER_THREAD, currentThread());

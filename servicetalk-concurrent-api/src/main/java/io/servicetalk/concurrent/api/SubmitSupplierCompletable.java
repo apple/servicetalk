@@ -29,7 +29,7 @@ final class SubmitSupplierCompletable extends AbstractSubmitCompletable {
     }
 
     @Override
-    Runnable getRunnable() {
+    Runnable runnable() {
         return runnableSupplier.get();
     }
 }

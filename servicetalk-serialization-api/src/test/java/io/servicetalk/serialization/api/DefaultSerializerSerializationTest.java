@@ -191,42 +191,42 @@ public class DefaultSerializerSerializationTest {
     public void applySerializationForBlockingIterableWithType() throws Exception {
         final List<String> data = asList("Hello1", "Hello2");
         BlockingIterableMock<String> source = new BlockingIterableMock<>(data);
-        final BlockingIterable<Buffer> buffers = factory.serialize(source.getIterable(), allocator, String.class);
+        final BlockingIterable<Buffer> buffers = factory.serialize(source.iterable(), allocator, String.class);
         verify(provider).getSerializer(String.class);
 
-        drainBlockingIteratorAndVerify(data, source.getIterator(), buffers);
+        drainBlockingIteratorAndVerify(data, source.iterator(), buffers);
     }
 
     @Test
     public void applySerializationForBlockingIterableWithTypeHolder() throws Exception {
         final List<List<String>> data = asList(singletonList("Hello1"), singletonList("Hello2"));
         BlockingIterableMock<List<String>> source = new BlockingIterableMock<>(data);
-        final BlockingIterable<Buffer> buffers = factory.serialize(source.getIterable(), allocator, TYPE_FOR_LIST);
+        final BlockingIterable<Buffer> buffers = factory.serialize(source.iterable(), allocator, TYPE_FOR_LIST);
         verify(provider).getSerializer(TYPE_FOR_LIST);
 
-        drainBlockingIteratorAndVerify(data, source.getIterator(), buffers);
+        drainBlockingIteratorAndVerify(data, source.iterator(), buffers);
     }
 
     @Test
     public void applySerializationForBlockingIterableWithTypeAndEstimator() throws Exception {
         final List<String> data = asList("Hello1", "Hello2");
         BlockingIterableMock<String> source = new BlockingIterableMock<>(data);
-        final BlockingIterable<Buffer> buffers = factory.serialize(source.getIterable(), allocator, String.class,
+        final BlockingIterable<Buffer> buffers = factory.serialize(source.iterable(), allocator, String.class,
                 sizeEstimator);
         verify(provider).getSerializer(String.class);
 
-        drainBlockingIteratorAndVerify(data, source.getIterator(), buffers);
+        drainBlockingIteratorAndVerify(data, source.iterator(), buffers);
     }
 
     @Test
     public void applySerializationForBlockingIterableWithTypeHolderAndEstimator() throws Exception {
         final List<List<String>> data = asList(singletonList("Hello1"), singletonList("Hello2"));
         BlockingIterableMock<List<String>> source = new BlockingIterableMock<>(data);
-        final BlockingIterable<Buffer> buffers = factory.serialize(source.getIterable(), allocator, TYPE_FOR_LIST,
+        final BlockingIterable<Buffer> buffers = factory.serialize(source.iterable(), allocator, TYPE_FOR_LIST,
                 sizeEstimator);
         verify(provider).getSerializer(TYPE_FOR_LIST);
 
-        drainBlockingIteratorAndVerify(data, source.getIterator(), buffers);
+        drainBlockingIteratorAndVerify(data, source.iterator(), buffers);
     }
 
     @Test

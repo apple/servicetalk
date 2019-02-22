@@ -30,7 +30,7 @@ final class EventLoopIoExecutor extends AbstractNettyIoExecutor<EventLoop> imple
     }
 
     @Override
-    public EventLoopGroup getEventLoopGroup() {
+    public EventLoopGroup eventLoopGroup() {
         return eventLoop;
     }
 

@@ -58,12 +58,12 @@ public class FlushWithExecutorTest extends AbstractFlushTest {
     @Test
     public void testFlushBeforeEnd() throws Exception {
         Publisher<String> source = from(data).map(String::valueOf).publishAndSubscribeOn(contextRule.executor());
-        Publisher<String> flushSource = setup(source, flushStrategyAndVerifier.getFlushStrategy());
+        Publisher<String> flushSource = setup(source, flushStrategyAndVerifier.flushStrategy());
         flushSource.toFuture().get();
         int index = 0;
         for (String datum : data) {
             verifyWrite(datum);
-            if (flushStrategyAndVerifier.getExpectFlushAtIndex().test(index)) {
+            if (flushStrategyAndVerifier.expectFlushAtIndex().test(index)) {
                 index++;
                 verifyFlush();
             }

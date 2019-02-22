@@ -40,7 +40,7 @@ public abstract class GroupedPublisher<Key, T> extends Publisher<T> {
      *
      * @return Key for this group.
      */
-    public final Key getKey() {
+    public final Key key() {
         return key;
     }
 

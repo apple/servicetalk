@@ -45,7 +45,7 @@ final class WriteSingleSubscriber implements SingleSource.Subscriber<Object>, De
 
     @Override
     public void onSubscribe(Cancellable cancellable) {
-        sequentialCancellable.setNextCancellable(cancellable);
+        sequentialCancellable.nextCancellable(cancellable);
         subscriber.onSubscribe(sequentialCancellable);
     }
 

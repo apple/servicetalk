@@ -84,7 +84,7 @@ public final class TcpClient {
                 .flatMap(channel -> DefaultNettyConnection.<Buffer, Buffer>initChannel(channel,
                         executionContext.bufferAllocator(), executionContext.executor(),
                         new TerminalPredicate<>(buffer -> false), UNSUPPORTED_PROTOCOL_CLOSE_HANDLER,
-                        config.getFlushStrategy(), new TcpClientChannelInitializer(config)
+                        config.flushStrategy(), new TcpClientChannelInitializer(config)
                                 .andThen((channel2, context) -> {
                             channel2.pipeline().addLast(BufferHandler.INSTANCE);
                             return context;
@@ -142,14 +142,14 @@ public final class TcpClient {
      *
      * @return {@link ReadOnlyTcpClientConfig} for this client.
      */
-    public ReadOnlyTcpClientConfig getConfig() {
+    public ReadOnlyTcpClientConfig config() {
         return config;
     }
 
     private static TcpClientConfig defaultConfig() {
         TcpClientConfig config = new TcpClientConfig(false);
         // To test coverage of options.
-        config.setSocketOption(StandardSocketOptions.SO_KEEPALIVE, true);
+        config.socketOption(StandardSocketOptions.SO_KEEPALIVE, true);
         return config;
     }
 }

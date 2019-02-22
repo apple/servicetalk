@@ -35,12 +35,12 @@ final class DefaultHostAndPort implements HostAndPort {
     }
 
     @Override
-    public String getHostName() {
+    public String hostName() {
         return hostName;
     }
 
     @Override
-    public int getPort() {
+    public int port() {
         return port;
     }
 
@@ -55,7 +55,7 @@ final class DefaultHostAndPort implements HostAndPort {
             return false;
         }
         DefaultHostAndPort rhs = (DefaultHostAndPort) o;
-        return port == rhs.getPort() && hostName.equals(rhs.getHostName());
+        return port == rhs.port() && hostName.equals(rhs.hostName());
     }
 
     @Override

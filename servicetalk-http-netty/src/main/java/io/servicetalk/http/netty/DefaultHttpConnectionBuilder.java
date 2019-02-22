@@ -94,7 +94,7 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress> extends HttpCon
         ExecutionContext executionContext = executionContextBuilder.build();
         final StreamingHttpRequestResponseFactory reqRespFactory =
                 new DefaultStreamingHttpRequestResponseFactory(executionContext.bufferAllocator(),
-                        roConfig.getHeadersFactory());
+                        roConfig.headersFactory());
 
         // Make a best effort to infer HOST header for HttpConnection
         final HttpConnectionFilterFactory filterFactory;
@@ -106,13 +106,13 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress> extends HttpCon
             filterFactory = connectionFilterFunction;
         }
 
-        return (roConfig.getMaxPipelinedRequests() == 1 ?
+        return (roConfig.maxPipelinedRequests() == 1 ?
                 buildForNonPipelined(executionContext, resolvedAddress, roConfig, filterFactory,
                         reqRespFactory, strategy)
                 : buildForPipelined(executionContext, resolvedAddress, roConfig, filterFactory,
                 reqRespFactory, strategy))
                     .map(filteredConnection -> new ConcurrentRequestsHttpConnectionFilter(filteredConnection,
-                            roConfig.getMaxPipelinedRequests()));
+                            roConfig.maxPipelinedRequests()));
     }
 
     static <ResolvedAddress> Single<StreamingHttpConnection> buildForPipelined(
@@ -139,14 +139,14 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress> extends HttpCon
             final ExecutionContext executionContext, ResolvedAddress resolvedAddress,
             ReadOnlyHttpClientConfig roConfig) {
         // This state is read only, so safe to keep a copy across Subscribers
-        final ReadOnlyTcpClientConfig roTcpClientConfig = roConfig.getTcpClientConfig();
+        final ReadOnlyTcpClientConfig roTcpClientConfig = roConfig.tcpClientConfig();
         return TcpConnector.connect(null, resolvedAddress, roTcpClientConfig, executionContext)
                 .flatMap(channel -> {
                     CloseHandler closeHandler = forPipelinedRequestResponse(true, channel.config());
                     return DefaultNettyConnection.initChannel(channel, executionContext.bufferAllocator(),
                             executionContext.executor(), new TerminalPredicate<>(LAST_CHUNK_PREDICATE), closeHandler,
-                            roTcpClientConfig.getFlushStrategy(), new TcpClientChannelInitializer(
-                                    roConfig.getTcpClientConfig()).andThen(new HttpClientChannelInitializer(roConfig,
+                            roTcpClientConfig.flushStrategy(), new TcpClientChannelInitializer(
+                                    roConfig.tcpClientConfig()).andThen(new HttpClientChannelInitializer(roConfig,
                                     closeHandler)));
                 });
     }
@@ -156,12 +156,12 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress> extends HttpCon
      *
      * @param sslConfig the {@link SslConfig}.
      * @return this.
-     * @throws IllegalStateException if the {@link SslConfig#getKeyCertChainSupplier()},
-     * {@link SslConfig#getKeySupplier()}, or {@link SslConfig#getTrustCertChainSupplier()}
+     * @throws IllegalStateException if the {@link SslConfig#keyCertChainSupplier()}, {@link SslConfig#keySupplier()},
+     * or {@link SslConfig#trustCertChainSupplier()}
      * throws when {@link InputStream#close()} is called.
      */
     public DefaultHttpConnectionBuilder<ResolvedAddress> sslConfig(@Nullable final SslConfig sslConfig) {
-        config.getTcpClientConfig().setSslConfig(sslConfig);
+        config.tcpClientConfig().sslConfig(sslConfig);
         return this;
     }
 
@@ -174,7 +174,7 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress> extends HttpCon
      * @return this.
      */
     public <T> DefaultHttpConnectionBuilder<ResolvedAddress> socketOption(final SocketOption<T> option, T value) {
-        config.getTcpClientConfig().setSocketOption(option, value);
+        config.tcpClientConfig().socketOption(option, value);
         return this;
     }
 
@@ -185,7 +185,7 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress> extends HttpCon
      * @return {@code this}.
      */
     public DefaultHttpConnectionBuilder<ResolvedAddress> enableWireLogging(final String loggerName) {
-        config.getTcpClientConfig().enableWireLogging(loggerName);
+        config.tcpClientConfig().enableWireLogging(loggerName);
         return this;
     }
 
@@ -197,7 +197,7 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress> extends HttpCon
      * @see #enableWireLogging(String)
      */
     public DefaultHttpConnectionBuilder<ResolvedAddress> disableWireLogging() {
-        config.getTcpClientConfig().disableWireLogging();
+        config.tcpClientConfig().disableWireLogging();
         return this;
     }
 
@@ -208,7 +208,7 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress> extends HttpCon
      * @return {@code this}.
      */
     public DefaultHttpConnectionBuilder<ResolvedAddress> headersFactory(final HttpHeadersFactory headersFactory) {
-        config.setHeadersFactory(headersFactory);
+        config.headersFactory(headersFactory);
         return this;
     }
 
@@ -220,7 +220,7 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress> extends HttpCon
      * @return {@code this}.
      */
     public DefaultHttpConnectionBuilder<ResolvedAddress> maxInitialLineLength(final int maxInitialLineLength) {
-        config.setMaxInitialLineLength(maxInitialLineLength);
+        config.maxInitialLineLength(maxInitialLineLength);
         return this;
     }
 
@@ -232,7 +232,7 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress> extends HttpCon
      * @return {@code this}.
      */
     public DefaultHttpConnectionBuilder<ResolvedAddress> maxHeaderSize(final int maxHeaderSize) {
-        config.setMaxHeaderSize(maxHeaderSize);
+        config.maxHeaderSize(maxHeaderSize);
         return this;
     }
 
@@ -245,7 +245,7 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress> extends HttpCon
      */
     public DefaultHttpConnectionBuilder<ResolvedAddress> headersEncodedSizeEstimate(
             final int headersEncodedSizeEstimate) {
-        config.setHeadersEncodedSizeEstimate(headersEncodedSizeEstimate);
+        config.headersEncodedSizeEstimate(headersEncodedSizeEstimate);
         return this;
     }
 
@@ -258,7 +258,7 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress> extends HttpCon
      */
     public DefaultHttpConnectionBuilder<ResolvedAddress> trailersEncodedSizeEstimate(
             final int trailersEncodedSizeEstimate) {
-        config.setTrailersEncodedSizeEstimate(trailersEncodedSizeEstimate);
+        config.trailersEncodedSizeEstimate(trailersEncodedSizeEstimate);
         return this;
     }
 
@@ -272,7 +272,7 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress> extends HttpCon
      * @return {@code this}.
      */
     public DefaultHttpConnectionBuilder<ResolvedAddress> maxPipelinedRequests(final int maxPipelinedRequests) {
-        config.setMaxPipelinedRequests(maxPipelinedRequests);
+        config.maxPipelinedRequests(maxPipelinedRequests);
         return this;
     }
 

@@ -63,7 +63,7 @@ final class RetrySingle<T> extends AbstractNoHandleSubscribeSingle<T> {
         @Override
         public final void onSubscribe(Cancellable cancellable) {
             cancellable = decorate(cancellable);
-            sequentialCancellable.setNextCancellable(cancellable);
+            sequentialCancellable.nextCancellable(cancellable);
             if (retryCount == 0) {
                 target.onSubscribe(sequentialCancellable);
             }

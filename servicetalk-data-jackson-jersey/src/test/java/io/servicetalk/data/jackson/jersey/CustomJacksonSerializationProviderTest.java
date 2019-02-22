@@ -46,7 +46,7 @@ public class CustomJacksonSerializationProviderTest extends AbstractJerseyStream
     }
 
     @Override
-    protected Application getApplication() {
+    protected Application application() {
         return new TestApplication();
     }
 

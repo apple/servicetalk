@@ -312,7 +312,7 @@ abstract class AbstractPublisherGroupBy<Key, T>
         }
 
         final void removeGroup(GroupSink<Key, T> groupSink) {
-            groups.remove(groupSink.groupedPublisher.getKey(), groupSink);
+            groups.remove(groupSink.groupedPublisher.key(), groupSink);
         }
 
         final void cancelSourceFromSource(Throwable throwable) {
@@ -323,7 +323,8 @@ abstract class AbstractPublisherGroupBy<Key, T>
             cancelSourceFromSource(subscriberLockAcquired, throwable, groupQueue);
         }
 
-        private void cancelSourceFromSource(boolean subscriberLockAcquired, Throwable throwable, @Nullable SpscQueue<GroupedPublisher<Key, T>> pendingGroupsQ) {
+        private void cancelSourceFromSource(boolean subscriberLockAcquired, Throwable throwable,
+                                            @Nullable SpscQueue<GroupedPublisher<Key, T>> pendingGroupsQ) {
             Subscription s = subscription;
             assert s != null : "Subscription can not be null in cancel()";
             terminatedPrematurely = true;
@@ -381,7 +382,7 @@ abstract class AbstractPublisherGroupBy<Key, T>
 
         private long drainPendingGroups(SpscQueue<GroupedPublisher<Key, T>> q, Consumer<Throwable> nonTerminalErrorConsumer) {
             return drainToSubscriber(q, target, subscriberStateUpdater, () -> groupRequestedUpdater.get(this), terminalNotification -> {
-                        Throwable cause = terminalNotification.getCause();
+                        Throwable cause = terminalNotification.cause();
                         if (cause == null) {
                             sendCompleteToAllGroups();
                         } else {
@@ -446,7 +447,7 @@ abstract class AbstractPublisherGroupBy<Key, T>
 
         @Override
         String queueIdentifier() {
-            return groupedPublisher.getKey().toString();
+            return groupedPublisher.key().toString();
         }
 
         @Override
@@ -467,7 +468,7 @@ abstract class AbstractPublisherGroupBy<Key, T>
             // synchronize state and deliver an error to the Subscriber. ReactiveStreams specification allows for this
             // in [1].
             // [1] https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.1/README.md#2.13
-            LOGGER.error("Unexpected exception thrown from group {} subscriber", groupedPublisher.getKey(), cause);
+            LOGGER.error("Unexpected exception thrown from group {} subscriber", groupedPublisher.key(), cause);
         }
 
         @Override

@@ -258,7 +258,7 @@ public final class ExecutionStrategyResources {
                                                             final UriInfo uriInfo) {
             // Use the opportunity to assert that other context objects are valid
             if (!req.path().equals('/' + uriInfo.getPath())) {
-                throw new IllegalStateException("Invalid @Context state for: " + req);
+                throw new IllegalStateException("Invalid @context state for: " + req);
             }
 
             final Map<String, String> info = new HashMap<>(2);

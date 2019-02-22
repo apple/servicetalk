@@ -88,7 +88,7 @@ public class RedisClientOffloadingTest {
     public void setUp() throws Exception {
         errors = new ConcurrentLinkedQueue<>();
         terminated = new CountDownLatch(1);
-        connectionContext = awaitIndefinitelyNonNull(getEnv().client.reserveConnection(PING)).connectionContext();
+        connectionContext = awaitIndefinitelyNonNull(env().client.reserveConnection(PING)).connectionContext();
     }
 
     @Test
@@ -101,7 +101,7 @@ public class RedisClientOffloadingTest {
             }
         });
         final RedisRequest request = newRequest(PING, reqContent);
-        final Publisher<RedisData> response = getEnv().client.request(request);
+        final Publisher<RedisData> response = env().client.request(request);
         subscribeTo(RedisTestEnvironment::isInClientEventLoop, errors, response.doAfterFinally(terminated::countDown),
                 "Response content: ");
         terminated.await();
@@ -110,7 +110,7 @@ public class RedisClientOffloadingTest {
 
     @Test
     public void reserveConnectionIsOffloaded() throws Exception {
-        toSource(getEnv().client.reserveConnection(PING).doAfterFinally(terminated::countDown))
+        toSource(env().client.reserveConnection(PING).doAfterFinally(terminated::countDown))
                 .subscribe(new SingleSource.Subscriber<ReservedRedisConnection>() {
                     @Override
                     public void onSubscribe(final Cancellable cancellable) {
@@ -148,7 +148,7 @@ public class RedisClientOffloadingTest {
     @Test
     public void settingsStreamIsOffloaded() throws Exception {
         final ReservedRedisConnection connection =
-                awaitIndefinitelyNonNull(getEnv().client.reserveConnection(PING));
+                awaitIndefinitelyNonNull(env().client.reserveConnection(PING));
         subscribeTo(RedisTestEnvironment::isInClientEventLoop, errors,
                 connection.settingStream(MAX_CONCURRENCY).doAfterFinally(terminated::countDown),
                 "Client settings stream: ");
@@ -251,7 +251,7 @@ public class RedisClientOffloadingTest {
         });
     }
 
-    private static RedisTestEnvironment getEnv() {
+    private static RedisTestEnvironment env() {
         if (env == null) {
             throw new IllegalStateException("Environment is not setup.");
         }

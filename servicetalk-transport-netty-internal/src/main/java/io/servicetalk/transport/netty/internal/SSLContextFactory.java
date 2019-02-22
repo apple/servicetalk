@@ -50,18 +50,18 @@ public final class SSLContextFactory {
         }
 
         SslContextBuilder builder = SslContextBuilder.forClient()
-                .sessionCacheSize(config.getSessionCacheSize()).sessionTimeout(config.getSessionTimeout());
+                .sessionCacheSize(config.sessionCacheSize()).sessionTimeout(config.sessionTimeout());
         configureTrustManager(config, builder);
-        KeyManagerFactory keyManagerFactory = config.getKeyManagerFactory();
+        KeyManagerFactory keyManagerFactory = config.keyManagerFactory();
         if (keyManagerFactory != null) {
             builder.keyManager(keyManagerFactory);
         } else {
             InputStream keyCertChainSupplier = null;
             InputStream keySupplier = null;
             try {
-                keyCertChainSupplier = config.getKeyCertChainSupplier().get();
-                keySupplier = config.getKeySupplier().get();
-                builder.keyManager(keyCertChainSupplier, keySupplier, config.getKeyPassword());
+                keyCertChainSupplier = config.keyCertChainSupplier().get();
+                keySupplier = config.keySupplier().get();
+                builder.keyManager(keyCertChainSupplier, keySupplier, config.keyPassword());
             } finally {
                 try {
                     closeAndRethrowUnchecked(keyCertChainSupplier);
@@ -69,12 +69,12 @@ public final class SSLContextFactory {
                     closeAndRethrowUnchecked(keySupplier);
                 }
             }
-            builder.sslProvider(SslUtils.toNettySslProvider(config.getProvider()));
+            builder.sslProvider(SslUtils.toNettySslProvider(config.provider()));
         }
-        builder.ciphers(config.getCiphers());
-        builder.applicationProtocolConfig(SslUtils.toNettyApplicationProtocol(config.getApn()));
+        builder.ciphers(config.ciphers());
+        builder.applicationProtocolConfig(SslUtils.toNettyApplicationProtocol(config.apn()));
         try {
-            return new WrappingSslContext(builder.build(), config.getProtocols());
+            return new WrappingSslContext(builder.build(), config.protocols());
         } catch (SSLException e) {
             throw new IllegalArgumentException(e);
         }
@@ -93,16 +93,16 @@ public final class SSLContextFactory {
         }
         SslContextBuilder builder;
 
-        KeyManagerFactory keyManagerFactory = config.getKeyManagerFactory();
+        KeyManagerFactory keyManagerFactory = config.keyManagerFactory();
         if (keyManagerFactory != null) {
             builder = SslContextBuilder.forServer(keyManagerFactory);
         } else {
             InputStream keyCertChainSupplier = null;
             InputStream keySupplier = null;
             try {
-                keyCertChainSupplier = config.getKeyCertChainSupplier().get();
-                keySupplier = config.getKeySupplier().get();
-                builder = SslContextBuilder.forServer(keyCertChainSupplier, keySupplier, config.getKeyPassword());
+                keyCertChainSupplier = config.keyCertChainSupplier().get();
+                keySupplier = config.keySupplier().get();
+                builder = SslContextBuilder.forServer(keyCertChainSupplier, keySupplier, config.keyPassword());
             } finally {
                 try {
                     closeAndRethrowUnchecked(keyCertChainSupplier);
@@ -110,13 +110,13 @@ public final class SSLContextFactory {
                     closeAndRethrowUnchecked(keySupplier);
                 }
             }
-            builder.sslProvider(SslUtils.toNettySslProvider(config.getProvider()));
+            builder.sslProvider(SslUtils.toNettySslProvider(config.provider()));
         }
 
-        builder.sessionCacheSize(config.getSessionCacheSize()).sessionTimeout(config.getSessionTimeout())
-                .applicationProtocolConfig(SslUtils.toNettyApplicationProtocol(config.getApn()));
+        builder.sessionCacheSize(config.sessionCacheSize()).sessionTimeout(config.sessionTimeout())
+                .applicationProtocolConfig(SslUtils.toNettyApplicationProtocol(config.apn()));
 
-        switch (config.getClientAuth()) {
+        switch (config.clientAuth()) {
             case NONE:
                 builder.clientAuth(ClientAuth.NONE);
                 break;
@@ -127,24 +127,24 @@ public final class SSLContextFactory {
                 builder.clientAuth(ClientAuth.REQUIRE);
                 break;
             default:
-                throw new IllegalArgumentException("Unsupported ClientAuth value: " + config.getClientAuth());
+                throw new IllegalArgumentException("Unsupported ClientAuth value: " + config.clientAuth());
         }
         configureTrustManager(config, builder);
-        builder.ciphers(config.getCiphers());
+        builder.ciphers(config.ciphers());
 
-        builder.sslProvider(SslUtils.toNettySslProvider(config.getProvider()));
+        builder.sslProvider(SslUtils.toNettySslProvider(config.provider()));
         try {
-            return new WrappingSslContext(builder.build(), config.getProtocols());
+            return new WrappingSslContext(builder.build(), config.protocols());
         } catch (SSLException e) {
             throw new IllegalArgumentException(e);
         }
     }
 
     private static void configureTrustManager(SslConfig config, SslContextBuilder builder) {
-        if (config.getTrustManagerFactory() != null) {
-            builder.trustManager(config.getTrustManagerFactory());
+        if (config.trustManagerFactory() != null) {
+            builder.trustManager(config.trustManagerFactory());
         } else {
-            InputStream trustManagerStream = config.getTrustCertChainSupplier().get();
+            InputStream trustManagerStream = config.trustCertChainSupplier().get();
             try {
                 builder.trustManager(trustManagerStream);
             } finally {

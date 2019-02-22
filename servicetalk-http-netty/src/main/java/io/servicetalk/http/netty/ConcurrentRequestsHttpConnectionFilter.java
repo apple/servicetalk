@@ -74,8 +74,7 @@ final class ConcurrentRequestsHttpConnectionFilter extends StreamingHttpConnecti
                                                 ConcurrentRequestsHttpConnectionFilter.this);
                         break;
                     case RejectedPermanently:
-                        reportedError = ConcurrentRequestsHttpConnectionFilter.this.transportError
-                                .getLastSeenValue(NONE);
+                        reportedError = ConcurrentRequestsHttpConnectionFilter.this.transportError.lastSeenValue(NONE);
                         if (reportedError == NONE) {
                             reportedError = new ConnectionClosedException(
                                     "Connection Closed: " + ConcurrentRequestsHttpConnectionFilter.this);

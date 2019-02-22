@@ -50,20 +50,20 @@ public interface HttpRequestMethod {
          * <a href="https://tools.ietf.org/html/rfc7231#section-4.2.1">Safe Methods</a> are those that are essentially read-only.
          * @return {@code true} if a <a href="https://tools.ietf.org/html/rfc7231#section-4.2.1">safe method</a>.
          */
-        boolean safe();
+        boolean isSafe();
 
         /**
          * <a href="https://tools.ietf.org/html/rfc7231#section-4.2.2">Idempotent Methods</a> are those that the same action can be
          * repeated indefinitely without changing semantics.
          * @return {@code true} if a <a href="https://tools.ietf.org/html/rfc7231#section-4.2.2">idempotent method</a>.
          */
-        boolean idempotent();
+        boolean isIdempotent();
 
         /**
          * <a href="https://tools.ietf.org/html/rfc7231#section-4.2.3">Cacheable Methods</a> are those that allow for responses
          * to be cached for future reuse.
          * @return {@code true} if a <a href="https://tools.ietf.org/html/rfc7231#section-4.2.3">cacheable method</a>.
          */
-        boolean cacheable();
+        boolean isCacheable();
     }
 }

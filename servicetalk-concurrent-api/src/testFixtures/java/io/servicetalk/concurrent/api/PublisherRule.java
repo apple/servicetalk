@@ -73,11 +73,11 @@ public class PublisherRule<T> implements TestRule {
         };
     }
 
-    public Publisher<T> getPublisher() {
-        return getPublisher(false);
+    public Publisher<T> publisher() {
+        return publisher(false);
     }
 
-    public Publisher<T> getPublisher(boolean deferOnSubscribe) {
+    public Publisher<T> publisher(boolean deferOnSubscribe) {
         this.deferOnSubscribe = deferOnSubscribe;
         return source;
     }

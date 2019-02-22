@@ -60,7 +60,7 @@ final class BatchFlush implements FlushStrategy {
 
         @Override
         public void writeStarted() {
-            boundariesCancellable.setDelayedCancellable(boundaries.forEach(__ -> sender.flush()));
+            boundariesCancellable.delayedCancellable(boundaries.forEach(__ -> sender.flush()));
         }
 
         @Override

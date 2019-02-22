@@ -40,7 +40,7 @@ public abstract class DefaultBaseRedisData<T> implements RedisData {
      *
      * @return The associated value.
      */
-    public T getValue() {
+    public T value() {
         return value;
     }
 

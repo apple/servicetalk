@@ -19,6 +19,7 @@ import io.servicetalk.concurrent.internal.RejectedSubscribeException;
 import io.servicetalk.redis.api.IllegalTransactionStateException;
 import io.servicetalk.redis.api.PubSubRedisConnection;
 import io.servicetalk.redis.api.PubSubRedisMessage;
+import io.servicetalk.redis.api.PubSubRedisMessage.ChannelPubSubRedisMessage;
 import io.servicetalk.redis.api.RedisCommander;
 import io.servicetalk.redis.api.RedisProtocolSupport;
 import io.servicetalk.redis.api.RedisProtocolSupport.BitfieldOperations.Get;
@@ -70,7 +71,6 @@ import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.stream.Collectors.toList;
-import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
@@ -202,10 +202,10 @@ public class RedisCommanderTest extends BaseRedisClientTest {
         // ie. the following is equivalent to:
         //     BITFIELD bf-<key> SET u8 #2 200 GET u8 #2 GET u4 #4 GET u4 #5
         results = awaitIndefinitely(commandClient.bitfield(key("bf"), asList(
-                new Set(U08, U08.getBitSize() * 2, 200L),
-                new Get(U08, U08.getBitSize() * 2),
-                new Get(U04, U04.getBitSize() * 4),
-                new Get(U04, U04.getBitSize() * 5))));
+                new Set(U08, U08.size() * 2, 200L),
+                new Get(U08, U08.size() * 2),
+                new Get(U04, U04.size() * 4),
+                new Get(U04, U04.size() * 5))));
         assertThat(results, contains(0L, 200L, 12L, 8L));
     }
 
@@ -481,7 +481,7 @@ public class RedisCommanderTest extends BaseRedisClientTest {
                 .request(2)
                 .awaitUntilAtLeastNReceived(2, DEFAULT_TIMEOUT_SECONDS, SECONDS), is(true));
 
-        assertThat(subscriber.getReceived(), contains(is("OK"), endsWith("\"PING\"")));
+        assertThat(subscriber.received(), contains(is("OK"), endsWith("\"PING\"")));
 
         subscriber.cancel();
         assertThat(cancelled.await(DEFAULT_TIMEOUT_SECONDS, SECONDS), is(true));
@@ -493,41 +493,43 @@ public class RedisCommanderTest extends BaseRedisClientTest {
         final PubSubRedisConnection pubSubClient1 = awaitIndefinitely(commandClient.subscribe(key("channel-1")));
         final AccumulatingSubscriber<PubSubRedisMessage> subscriber1 = new AccumulatingSubscriber<>();
 
-        subscriber1.subscribe(pubSubClient1.getMessages()).awaitSubscription(DEFAULT_TIMEOUT_SECONDS, SECONDS);
+        subscriber1.subscribe(pubSubClient1.messages()).awaitSubscription(DEFAULT_TIMEOUT_SECONDS, SECONDS);
         subscriber1.request(1);
 
         // Publish a test message
         publishTestMessage(key("channel-1"));
 
         // Check ping request get proper response
-        assertThat(awaitIndefinitely(pubSubClient1.ping()).getCharSequenceValue(), is(""));
+        assertThat(awaitIndefinitely(pubSubClient1.ping()).charSequenceValue(), is(""));
 
         // Subscribe to a pattern on the same connection
         final PubSubRedisConnection pubSubClient2 = awaitIndefinitely(pubSubClient1.psubscribe(key("channel-2*")));
         final AccumulatingSubscriber<PubSubRedisMessage> subscriber2 = new AccumulatingSubscriber<>();
 
-        subscriber2.subscribe(pubSubClient2.getMessages()).awaitSubscription(DEFAULT_TIMEOUT_SECONDS, SECONDS);
+        subscriber2.subscribe(pubSubClient2.messages()).awaitSubscription(DEFAULT_TIMEOUT_SECONDS, SECONDS);
         subscriber2.request(1);
 
         // Let's throw a wrench and psubscribe a second time to the same pattern
         final PubSubRedisConnection pubSubClient3 = awaitIndefinitely(pubSubClient1.psubscribe(key("channel-2*")));
         final AccumulatingSubscriber<PubSubRedisMessage> subscriber3 =
-                new AccumulatingSubscriber<PubSubRedisMessage>().subscribe(pubSubClient3.getMessages());
+                new AccumulatingSubscriber<PubSubRedisMessage>().subscribe(pubSubClient3.messages());
         assertThat(subscriber3.awaitTerminal(DEFAULT_TIMEOUT_SECONDS, SECONDS), is(true));
-        assertThat(subscriber3.getTerminal().getCause(), is(instanceOf(RejectedSubscribeException.class)));
+        assertThat(subscriber3.terminal().cause(), is(instanceOf(RejectedSubscribeException.class)));
 
         // Publish another test message
         publishTestMessage(key("channel-202"));
 
         // Check ping request get proper response
-        assertThat(awaitIndefinitely(pubSubClient1.ping("my-pong")).getCharSequenceValue(), is("my-pong"));
+        assertThat(awaitIndefinitely(pubSubClient1.ping("my-pong")).charSequenceValue(), is("my-pong"));
 
         // Cancel the subscriber, which issues an UNSUBSCRIBE behind the scenes
         subscriber1.cancel();
         assertThat(subscriber1.awaitUntilAtLeastNReceived(1, DEFAULT_TIMEOUT_SECONDS, SECONDS), is(true));
-        assertThat(subscriber1.getReceived().poll(), allOf(
-                hasProperty("channel", equalTo(key("channel-1"))),
-                hasProperty("charSequenceValue", equalTo("test-message"))));
+        final PubSubRedisMessage next1 = subscriber1.received().poll();
+        assertThat(next1, instanceOf(ChannelPubSubRedisMessage.class));
+        final ChannelPubSubRedisMessage channelMessage = (ChannelPubSubRedisMessage) next1;
+        assertThat(channelMessage.channel(), equalTo(key("channel-1")));
+        assertThat(channelMessage.charSequenceValue(), equalTo("test-message"));
 
         // Check the second psubscribe subscription never got anything beyond the subscription confirmation
         subscriber3.cancel();
@@ -536,10 +538,12 @@ public class RedisCommanderTest extends BaseRedisClientTest {
         subscriber2.cancel();
 
         assertThat(subscriber2.awaitUntilAtLeastNReceived(1, DEFAULT_TIMEOUT_SECONDS, SECONDS), is(true));
-        assertThat(subscriber2.getReceived().poll(), allOf(
-                hasProperty("channel", equalTo(key("channel-202"))),
-                hasProperty("pattern", equalTo(key("channel-2*"))),
-                hasProperty("charSequenceValue", equalTo("test-message"))));
+        final PubSubRedisMessage next2 = subscriber2.received().poll();
+        assertThat(next2, instanceOf(PubSubRedisMessage.PatternPubSubRedisMessage.class));
+        final PubSubRedisMessage.PatternPubSubRedisMessage patternMessage = (PubSubRedisMessage.PatternPubSubRedisMessage) next2;
+        assertThat(patternMessage.channel(), equalTo(key("channel-202")));
+        assertThat(patternMessage.pattern(), equalTo(key("channel-2*")));
+        assertThat(patternMessage.charSequenceValue(), equalTo("test-message"));
 
         // It is an error to keep using the pubsub client after all subscriptions have been terminated
         try {

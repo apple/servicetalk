@@ -62,7 +62,7 @@ public final class AddressUtils {
      * @return a {@code HOST} header value
      */
     public static String hostHeader(final HostAndPort hostAndPort) {
-        return isValidIpV6Address(hostAndPort.getHostName()) ?
-                "[" + hostAndPort.getHostName() + "]:" + hostAndPort.getPort() : hostAndPort.toString();
+        return isValidIpV6Address(hostAndPort.hostName()) ?
+                "[" + hostAndPort.hostName() + "]:" + hostAndPort.port() : hostAndPort.toString();
     }
 }

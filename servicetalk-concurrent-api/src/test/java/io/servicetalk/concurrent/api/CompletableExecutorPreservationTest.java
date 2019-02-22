@@ -36,17 +36,17 @@ public class CompletableExecutorPreservationTest {
 
     @Before
     public void setupCompletable() {
-        completable = completed().publishAndSubscribeOnOverride(EXEC.getExecutor());
+        completable = completed().publishAndSubscribeOnOverride(EXEC.executor());
     }
 
     @Test
     public void testTimeoutCompletable() {
-        assertSame(EXEC.getExecutor(), completable.timeout(1, MILLISECONDS).getExecutor());
-        assertSame(EXEC.getExecutor(), completable.timeout(Duration.ofMillis(1)).getExecutor());
+        assertSame(EXEC.executor(), completable.timeout(1, MILLISECONDS).executor());
+        assertSame(EXEC.executor(), completable.timeout(Duration.ofMillis(1)).executor());
     }
 
     @Test
     public void testDoBeforeFinallyCompletable() {
-        assertSame(EXEC.getExecutor(), completable.doBeforeFinally(() -> { /* NOOP */ }).getExecutor());
+        assertSame(EXEC.executor(), completable.doBeforeFinally(() -> { /* NOOP */ }).executor());
     }
 }

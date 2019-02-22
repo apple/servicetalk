@@ -59,13 +59,13 @@ public class SpliceFlatStreamToMetaSingleTest {
 
     @Test
     public void streamWithHeaderAndPayloadShouldProduceDataWithEmbeddedPayload() {
-        Publisher<Object> stream = upstream.getPublisher();
+        Publisher<Object> stream = upstream.publisher();
         SpliceFlatStreamToMetaSingle<Data, MetaData, Payload> op = new SpliceFlatStreamToMetaSingle<>(
                 stream, Data::new);
         dataSubscriber.listen(op);
         upstream.sendItems(metaData);
         Data data = dataSubscriber.verifySuccessAndReturn(Data.class);
-        assertThat(data.getMeta(), equalTo(data.getMeta()));
+        assertThat(data.meta(), equalTo(data.meta()));
         payloadSubscriber.subscribe(data.getPayload());
         payloadSubscriber.request(2);
         upstream.sendItems(one, last);
@@ -76,20 +76,20 @@ public class SpliceFlatStreamToMetaSingleTest {
     @Test
     public void streamWithHeaderAndEmptyPayloadShouldCompleteOnPublisherOnSubscribe()
             throws Exception {
-        Publisher<Object> stream = upstream.getPublisher();
+        Publisher<Object> stream = upstream.publisher();
         SpliceFlatStreamToMetaSingle<Data, MetaData, Payload> op = new SpliceFlatStreamToMetaSingle<>(
                 stream, Data::new);
         dataSubscriber.listen(op);
         upstream.sendItems(metaData);
         Data data = dataSubscriber.verifySuccessAndReturn(Data.class);
-        assertThat(data.getMeta(), equalTo(data.getMeta()));
+        assertThat(data.meta(), equalTo(data.meta()));
         upstream.complete();
         assertThat(data.getPayload().toFuture().get(), empty());
     }
 
     @Test
     public void emptyStreamShouldCompleteDataWithError() {
-        Publisher<Object> stream = upstream.getPublisher();
+        Publisher<Object> stream = upstream.publisher();
         SpliceFlatStreamToMetaSingle<Data, MetaData, Payload> op = new SpliceFlatStreamToMetaSingle<>(
                 stream, Data::new);
         dataSubscriber.listen(op);
@@ -99,27 +99,27 @@ public class SpliceFlatStreamToMetaSingleTest {
 
     @Test
     public void cancelDataRacingWithDataShouldCompleteAndFailPublisherOnSubscribe() {
-        Publisher<Object> stream = upstream.getPublisher();
+        Publisher<Object> stream = upstream.publisher();
         SpliceFlatStreamToMetaSingle<Data, MetaData, Payload> op = new SpliceFlatStreamToMetaSingle<>(
                 stream, Data::new);
         dataSubscriber.listen(op);
         dataSubscriber.cancel();
         upstream.sendItemsNoVerify(metaData); // noverify -> send regardless of cancel to simulate race
         Data data = dataSubscriber.verifySuccessAndReturn(Data.class);
-        assertThat(data.getMeta(), equalTo(data.getMeta()));
+        assertThat(data.meta(), equalTo(data.meta()));
         payloadSubscriber.subscribe(data.getPayload());
         payloadSubscriber.verifyFailure(CancellationException.class);
     }
 
     @Test
     public void cancelDataAfterDataCompleteShouldIgnoreCancelAndDeliverPublisherOnComplete() {
-        Publisher<Object> stream = upstream.getPublisher();
+        Publisher<Object> stream = upstream.publisher();
         SpliceFlatStreamToMetaSingle<Data, MetaData, Payload> op = new SpliceFlatStreamToMetaSingle<>(
                 stream, Data::new);
         dataSubscriber.listen(op);
         upstream.sendItems(metaData);
         Data data = dataSubscriber.verifySuccessAndReturn(Data.class);
-        assertThat(data.getMeta(), equalTo(data.getMeta()));
+        assertThat(data.meta(), equalTo(data.meta()));
         dataSubscriber.cancel();
         payloadSubscriber.subscribe(data.getPayload());
         payloadSubscriber.request(3);
@@ -130,7 +130,7 @@ public class SpliceFlatStreamToMetaSingleTest {
 
     @Test
     public void cancelDataBeforeDataCompleteShouldDeliverError() {
-        Publisher<Object> stream = upstream.getPublisher();
+        Publisher<Object> stream = upstream.publisher();
         SpliceFlatStreamToMetaSingle<Data, MetaData, Payload> op = new SpliceFlatStreamToMetaSingle<>(
                 stream, Data::new);
         dataSubscriber.listen(op);
@@ -141,13 +141,13 @@ public class SpliceFlatStreamToMetaSingleTest {
 
     @Test
     public void streamErrorAfterPublisherSubscribeShouldDeliverError() {
-        Publisher<Object> stream = upstream.getPublisher();
+        Publisher<Object> stream = upstream.publisher();
         SpliceFlatStreamToMetaSingle<Data, MetaData, Payload> op = new SpliceFlatStreamToMetaSingle<>(
                 stream, Data::new);
         dataSubscriber.listen(op);
         upstream.sendItems(metaData);
         Data data = dataSubscriber.verifySuccessAndReturn(Data.class);
-        assertThat(data.getMeta(), equalTo(data.getMeta()));
+        assertThat(data.meta(), equalTo(data.meta()));
         payloadSubscriber.subscribe(data.getPayload());
         payloadSubscriber.request(1);
         upstream.sendItems(one);
@@ -158,13 +158,13 @@ public class SpliceFlatStreamToMetaSingleTest {
 
     @Test
     public void streamCompleteAfterPublisherSubscribeShouldDeliverComplete() {
-        Publisher<Object> stream = upstream.getPublisher();
+        Publisher<Object> stream = upstream.publisher();
         SpliceFlatStreamToMetaSingle<Data, MetaData, Payload> op = new SpliceFlatStreamToMetaSingle<>(
                 stream, Data::new);
         dataSubscriber.listen(op);
         upstream.sendItems(metaData);
         Data data = dataSubscriber.verifySuccessAndReturn(Data.class);
-        assertThat(data.getMeta(), equalTo(data.getMeta()));
+        assertThat(data.meta(), equalTo(data.meta()));
         payloadSubscriber.subscribe(data.getPayload());
         payloadSubscriber.request(3);
         upstream.sendItems(one, two, last);
@@ -174,13 +174,13 @@ public class SpliceFlatStreamToMetaSingleTest {
 
     @Test
     public void streamCompleteBeforePublisherSubscribeShouldDeliverCompleteOnSubscribe() {
-        Publisher<Object> stream = upstream.getPublisher();
+        Publisher<Object> stream = upstream.publisher();
         SpliceFlatStreamToMetaSingle<Data, MetaData, Payload> op = new SpliceFlatStreamToMetaSingle<>(
                 stream, Data::new);
         dataSubscriber.listen(op);
         upstream.sendItems(metaData);
         Data data = dataSubscriber.verifySuccessAndReturn(Data.class);
-        assertThat(data.getMeta(), equalTo(data.getMeta()));
+        assertThat(data.meta(), equalTo(data.meta()));
         upstream.complete();
         payloadSubscriber.subscribe(data.getPayload());
         payloadSubscriber.verifySuccess();
@@ -188,13 +188,13 @@ public class SpliceFlatStreamToMetaSingleTest {
 
     @Test
     public void streamErrorBeforePublisherSubscribeShouldDeliverErrorOnSubscribe() {
-        Publisher<Object> stream = upstream.getPublisher();
+        Publisher<Object> stream = upstream.publisher();
         SpliceFlatStreamToMetaSingle<Data, MetaData, Payload> op = new SpliceFlatStreamToMetaSingle<>(
                 stream, Data::new);
         dataSubscriber.listen(op);
         upstream.sendItems(metaData);
         Data data = dataSubscriber.verifySuccessAndReturn(Data.class);
-        assertThat(data.getMeta(), equalTo(data.getMeta()));
+        assertThat(data.meta(), equalTo(data.meta()));
         upstream.fail(false, DELIBERATE_EXCEPTION);
         payloadSubscriber.subscribe(data.getPayload());
         payloadSubscriber.verifyFailure(DELIBERATE_EXCEPTION);
@@ -202,13 +202,13 @@ public class SpliceFlatStreamToMetaSingleTest {
 
     @Test
     public void publisherSubscribeTwiceShouldFailSecondSubscriber() {
-        Publisher<Object> stream = upstream.getPublisher();
+        Publisher<Object> stream = upstream.publisher();
         SpliceFlatStreamToMetaSingle<Data, MetaData, Payload> op = new SpliceFlatStreamToMetaSingle<>(
                 stream, Data::new);
         dataSubscriber.listen(op);
         upstream.sendItems(metaData);
         Data data = dataSubscriber.verifySuccessAndReturn(Data.class);
-        assertThat(data.getMeta(), equalTo(data.getMeta()));
+        assertThat(data.meta(), equalTo(data.meta()));
         payloadSubscriber.subscribe(data.getPayload());
         payloadSubscriber.request(3);
         upstream.sendItems(one, two, last);
@@ -220,13 +220,13 @@ public class SpliceFlatStreamToMetaSingleTest {
 
     @Test
     public void publisherSubscribeAgainAfterCompletingInitialSubscriberShouldFailSecondSubscriber() {
-        Publisher<Object> stream = upstream.getPublisher();
+        Publisher<Object> stream = upstream.publisher();
         SpliceFlatStreamToMetaSingle<Data, MetaData, Payload> op = new SpliceFlatStreamToMetaSingle<>(
                 stream, Data::new);
         dataSubscriber.listen(op);
         upstream.sendItems(metaData);
         Data data = dataSubscriber.verifySuccessAndReturn(Data.class);
-        assertThat(data.getMeta(), equalTo(data.getMeta()));
+        assertThat(data.meta(), equalTo(data.meta()));
         payloadSubscriber.subscribe(data.getPayload());
         payloadSubscriber.request(3);
         upstream.sendItems(one, two, last);
@@ -257,7 +257,7 @@ public class SpliceFlatStreamToMetaSingleTest {
             this.meta = meta;
         }
 
-        String getMeta() {
+        String meta() {
             return meta;
         }
     }
@@ -266,7 +266,7 @@ public class SpliceFlatStreamToMetaSingleTest {
         private final Publisher<Payload> payload;
 
         Data(MetaData metaData, Publisher<Payload> payload) {
-            super(metaData.getMeta());
+            super(metaData.meta());
             this.payload = payload;
         }
 

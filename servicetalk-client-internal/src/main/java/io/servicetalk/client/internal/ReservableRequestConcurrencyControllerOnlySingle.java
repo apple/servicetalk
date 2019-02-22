@@ -31,7 +31,7 @@ final class ReservableRequestConcurrencyControllerOnlySingle extends AbstractRes
     @Override
     public Result tryRequest() {
         // No concurrency means we have to have 0 requests!
-        if (getLastSeenMaxValue(1) > 0) {
+        if (lastSeenMaxValue(1) > 0) {
             if (casPendingRequests(0, 1)) {
                 return Accepted;
             }

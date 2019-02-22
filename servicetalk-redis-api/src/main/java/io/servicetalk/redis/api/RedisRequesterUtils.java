@@ -84,12 +84,12 @@ final class RedisRequesterUtils {
                         assert simpleString == null; // a single SimpleString is the only chunk of data expected.
                         // Either BulkString, SimpleString, or Error is expected, but not multiple.
                         assert aggregator == null && error == null;
-                        simpleString = redisData.getCharSequenceValue();
+                        simpleString = redisData.charSequenceValue();
                     } else if (redisData instanceof BulkStringChunk) {
                         // Either BulkString, SimpleString, or Error is expected, but not multiple.
                         assert simpleString == null && error == null;
                         if (aggregator == null) {
-                            aggregator = redisData.getBufferValue();
+                            aggregator = redisData.bufferValue();
                             if (!(redisData instanceof LastBulkStringChunk)) {
                                 assert redisData instanceof FirstBulkStringChunk;
                                 // FirstBulkStringChunk includes the number of bytes we expect to read, so proactively
@@ -101,7 +101,7 @@ final class RedisRequesterUtils {
                                 }
                             }
                         } else {
-                            aggregator.writeBytes(redisData.getBufferValue());
+                            aggregator.writeBytes(redisData.bufferValue());
                         }
                     } else if (redisData instanceof RedisData.Error) {
                         error = (RedisData.Error) redisData;
@@ -157,7 +157,7 @@ final class RedisRequesterUtils {
                     if (redisData instanceof BulkStringChunk) {
                         assert error == null;
                         if (aggregator == null) {
-                            aggregator = redisData.getBufferValue();
+                            aggregator = redisData.bufferValue();
                             if (!(redisData instanceof LastBulkStringChunk)) {
                                 assert redisData instanceof FirstBulkStringChunk;
                                 // FirstBulkStringChunk includes the number of bytes we expect to read, so proactively
@@ -169,13 +169,13 @@ final class RedisRequesterUtils {
                                 }
                             }
                         } else {
-                            aggregator.writeBytes(redisData.getBufferValue());
+                            aggregator.writeBytes(redisData.bufferValue());
                         }
                     } else if (redisData instanceof SimpleString) {
                         // Either BulkString, SimpleString, or Error is expected, but not multiple.
                         assert aggregator == null && error == null;
                         aggregator = requester.executionContext().bufferAllocator()
-                                .fromUtf8(redisData.getCharSequenceValue());
+                                .fromUtf8(redisData.charSequenceValue());
                     } else if (redisData instanceof RedisData.Error) {
                         error = (RedisData.Error) redisData;
                         aggregator = null;
@@ -232,7 +232,7 @@ final class RedisRequesterUtils {
                             throw new IllegalArgumentException("error already set:" + error);
                         }
                     } else if (redisData instanceof RedisData.Integer) {
-                        answer = redisData.getLongValue();
+                        answer = redisData.longValue();
                     } else if (!(redisData instanceof Null)) {
                         throw new IllegalArgumentException("unsupported data:" + redisData);
                     }
@@ -287,10 +287,10 @@ final class RedisRequesterUtils {
                     if (redisData instanceof BulkStringChunk) {
                         if (aggregator == null) {
                             if (redisData instanceof LastBulkStringChunk) {
-                                addResult(coerceBuffersToCharSequences ? redisData.getBufferValue().toString(UTF_8) :
-                                        redisData.getBufferValue());
+                                addResult(coerceBuffersToCharSequences ? redisData.bufferValue().toString(UTF_8) :
+                                        redisData.bufferValue());
                             } else {
-                                aggregator = redisData.getBufferValue();
+                                aggregator = redisData.bufferValue();
                                 assert redisData instanceof FirstBulkStringChunk;
                                 // FirstBulkStringChunk includes the number of bytes we expect to read, so proactively
                                 // ensure the buffer is large enough to accumulate all the data.
@@ -301,14 +301,14 @@ final class RedisRequesterUtils {
                                 }
                             }
                         } else {
-                            aggregator.writeBytes(redisData.getBufferValue());
+                            aggregator.writeBytes(redisData.bufferValue());
                             if (redisData instanceof LastBulkStringChunk) {
                                 addResult(coerceBuffersToCharSequences ? aggregator.toString(UTF_8) : aggregator);
                                 aggregator = null;
                             }
                         }
                     } else if (redisData instanceof RedisData.ArraySize) {
-                        final long length = redisData.getLongValue();
+                        final long length = redisData.longValue();
                         if (length > Integer.MAX_VALUE) {
                             throw new IllegalArgumentException("length " + length + "(expected <=" +
                                     Integer.MAX_VALUE + ")");
@@ -389,10 +389,10 @@ final class RedisRequesterUtils {
     @Nullable
     private static Object unwrapData(final RedisData redisData) {
         if (redisData instanceof SimpleString) {
-            return redisData.getCharSequenceValue();
+            return redisData.charSequenceValue();
         }
         if (redisData instanceof RedisData.Integer) {
-            return redisData.getLongValue();
+            return redisData.longValue();
         }
         if (redisData instanceof Null) {
             return null;

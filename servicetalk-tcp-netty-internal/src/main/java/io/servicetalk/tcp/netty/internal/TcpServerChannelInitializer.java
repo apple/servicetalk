@@ -36,16 +36,16 @@ public class TcpServerChannelInitializer implements ChannelInitializer {
      */
     public TcpServerChannelInitializer(ReadOnlyTcpServerConfig config) {
         ChannelInitializer delegate = ChannelInitializer.defaultInitializer();
-        if (config.getWireLoggingInitializer() != null) {
-            delegate = delegate.andThen(config.getWireLoggingInitializer());
+        if (config.wireLoggingInitializer() != null) {
+            delegate = delegate.andThen(config.wireLoggingInitializer());
         }
-        if (config.getIdleTimeoutMs() > 0) {
-            delegate = delegate.andThen(new IdleTimeoutInitializer(config.getIdleTimeoutMs()));
+        if (config.idleTimeoutMs() > 0) {
+            delegate = delegate.andThen(new IdleTimeoutInitializer(config.idleTimeoutMs()));
         }
-        if (config.getSslContext() != null) {
-            this.delegate = delegate.andThen(new SslServerChannelInitializer(config.getSslContext()));
-        } else if (config.getDomainNameMapping() != null) {
-            this.delegate = delegate.andThen(new SslServerChannelInitializer(config.getDomainNameMapping()));
+        if (config.sslContext() != null) {
+            this.delegate = delegate.andThen(new SslServerChannelInitializer(config.sslContext()));
+        } else if (config.domainNameMapping() != null) {
+            this.delegate = delegate.andThen(new SslServerChannelInitializer(config.domainNameMapping()));
         } else {
             this.delegate = delegate;
         }

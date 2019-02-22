@@ -40,7 +40,7 @@ final class ImmediateExecutor extends AbstractOffloaderAwareExecutor {
     }
 
     @Override
-    public boolean threadAffinity() {
+    public boolean hasThreadAffinity() {
         return false;
     }
 

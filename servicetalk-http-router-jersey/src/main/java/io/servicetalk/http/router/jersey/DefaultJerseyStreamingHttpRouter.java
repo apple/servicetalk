@@ -134,7 +134,7 @@ final class DefaultJerseyStreamingHttpRouter extends StreamingHttpService {
         applicationHandler.onStartup(container);
     }
 
-    Configuration getConfiguration() {
+    Configuration configuration() {
         return applicationHandler.getConfiguration();
     }
 
@@ -224,7 +224,7 @@ final class DefaultJerseyStreamingHttpRouter extends StreamingHttpService {
             injectionManager.<Ref<StreamingHttpRequest>>getInstance(HTTP_REQUEST_REF_TYPE).set(req);
         });
 
-        delayedCancellable.setDelayedCancellable(responseWriter::dispose);
+        delayedCancellable.delayedCancellable(responseWriter::dispose);
 
         applicationHandler.handle(containerRequest);
     }

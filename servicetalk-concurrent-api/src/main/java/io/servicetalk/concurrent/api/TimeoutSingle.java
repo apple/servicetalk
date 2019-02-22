@@ -38,7 +38,7 @@ final class TimeoutSingle<T> extends AbstractNoHandleSubscribeSingle<T> {
     TimeoutSingle(final Single<T> original,
                   final Duration duration,
                   final Executor timeoutExecutor) {
-        super(original.getExecutor());
+        super(original.executor());
         this.original = original;
         this.durationNs = duration.toNanos();
         this.timeoutExecutor = requireNonNull(timeoutExecutor);
@@ -48,7 +48,7 @@ final class TimeoutSingle<T> extends AbstractNoHandleSubscribeSingle<T> {
                   final long duration,
                   final TimeUnit unit,
                   final Executor timeoutExecutor) {
-        super(original.getExecutor());
+        super(original.executor());
         this.original = original;
         this.durationNs = unit.toNanos(duration);
         this.timeoutExecutor = requireNonNull(timeoutExecutor);

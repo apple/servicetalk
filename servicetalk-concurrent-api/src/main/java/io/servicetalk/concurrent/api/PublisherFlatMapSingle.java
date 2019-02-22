@@ -278,7 +278,7 @@ final class PublisherFlatMapSingle<T, R> extends AbstractAsynchronousPublisherOp
                 CompositeException de = this.delayedError;
                 if (de != null) {
                     de.addAllPendingSuppressed();
-                    if (terminalNotification.getCause() == de) {
+                    if (terminalNotification.cause() == de) {
                         terminalNotification.terminate(target);
                     } else {
                         terminalNotification.terminate(target, de);

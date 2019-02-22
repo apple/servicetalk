@@ -90,21 +90,21 @@ public interface HttpExecutionStrategy extends ExecutionStrategy {
      *
      * @return {@code true} if metadata receive offloading is enabled for this {@link ExecutionStrategy}.
      */
-    boolean metadataReceiveOffloaded();
+    boolean isMetadataReceiveOffloaded();
 
     /**
      * Returns {@code true} if data receive offloading is enabled for this {@link ExecutionStrategy}.
      *
      * @return {@code true} if data receive offloading is enabled for this {@link ExecutionStrategy}.
      */
-    boolean dataReceiveOffloaded();
+    boolean isDataReceiveOffloaded();
 
     /**
      * Returns {@code true} if send offloading is enabled for this {@link ExecutionStrategy}.
      *
      * @return {@code true} if send offloading is enabled for this {@link ExecutionStrategy}.
      */
-    boolean sendOffloaded();
+    boolean isSendOffloaded();
 
     /**
      * Merges the passed {@link HttpExecutionStrategy} with {@code this} {@link HttpExecutionStrategy} and return the

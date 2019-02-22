@@ -41,7 +41,7 @@ final class CommanderUtils {
     static final int STATE_EXECUTED = 1;
     static final int STATE_DISCARDED = 2;
 
-    private static final String QUEUED_RESP = QUEUED.getValue().toString();
+    private static final String QUEUED_RESP = QUEUED.value().toString();
 
     private CommanderUtils() {
         // no instances

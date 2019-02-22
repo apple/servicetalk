@@ -39,7 +39,7 @@ final class SimpleSingleSubscriber<T> extends SequentialCancellable implements S
 
     @Override
     public void onSubscribe(Cancellable cancellable) {
-        setNextCancellable(cancellable);
+        nextCancellable(cancellable);
     }
 
     @Override

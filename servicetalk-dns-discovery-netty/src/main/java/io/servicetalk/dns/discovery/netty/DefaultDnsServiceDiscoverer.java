@@ -96,7 +96,7 @@ final class DefaultDnsServiceDiscoverer
         this.nettyIoExecutor = toEventLoopAwareNettyIoExecutor(ioExecutor).next();
         this.ttlCache = new MinTtlCache(new DefaultDnsCache(minTTL, Integer.MAX_VALUE, minTTL), minTTL);
         this.invalidateHostsOnDnsFailure = invalidateHostsOnDnsFailure;
-        final EventLoop eventLoop = this.nettyIoExecutor.getEventLoopGroup().next();
+        final EventLoop eventLoop = this.nettyIoExecutor.eventLoopGroup().next();
         final DnsNameResolverBuilder builder = new DnsNameResolverBuilder(eventLoop)
                 .resolveCache(ttlCache)
                 .channelType(datagramChannel(eventLoop));

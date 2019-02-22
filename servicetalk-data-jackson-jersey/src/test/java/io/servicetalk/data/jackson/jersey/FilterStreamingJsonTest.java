@@ -58,7 +58,7 @@ public class FilterStreamingJsonTest extends AbstractJerseyStreamingHttpServiceT
     }
 
     @Override
-    protected Application getApplication() {
+    protected Application application() {
         return new TestApplication();
     }
 

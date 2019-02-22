@@ -262,7 +262,7 @@ public class NettyChannelPublisherTest {
     public void testDelayedCancel() {
         nextItemTerminal = true;
         subscriber.subscribe(publisher).request(3);
-        final Subscription firstSubscription = requireNonNull(subscriber.getSubscription());
+        final Subscription firstSubscription = requireNonNull(subscriber.subscription());
         fireChannelRead(1);
         subscriber.verifySuccessNoRequestN(1);
 
@@ -281,7 +281,7 @@ public class NettyChannelPublisherTest {
     public void testDelayedRequestN() {
         nextItemTerminal = true;
         subscriber.subscribe(publisher).request(3);
-        final Subscription firstSubscription = subscriber.getSubscription();
+        final Subscription firstSubscription = subscriber.subscription();
         fireChannelRead(1);
         subscriber.verifySuccessNoRequestN(1);
 

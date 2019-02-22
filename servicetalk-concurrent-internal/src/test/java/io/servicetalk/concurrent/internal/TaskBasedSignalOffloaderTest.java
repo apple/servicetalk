@@ -403,8 +403,8 @@ public class TaskBasedSignalOffloaderTest {
                 verify(executor.mock, times(execInvocationCount)).execute(any());
 
                 assertThat("Unexpected tasks executed.", executor.executeAllTasks(), is(1));
-                if (terminalNotification.getCause() != null) {
-                    verify(pubSub).onError(terminalNotification.getCause());
+                if (terminalNotification.cause() != null) {
+                    verify(pubSub).onError(terminalNotification.cause());
                 } else {
                     verify(pubSub).onComplete();
                 }
@@ -436,8 +436,8 @@ public class TaskBasedSignalOffloaderTest {
                 verify(pubSub).onNext(signal == null ? null : (Integer) signal);
             } else if (signal instanceof TerminalNotification) {
                 TerminalNotification terminalNotification = (TerminalNotification) signal;
-                if (terminalNotification.getCause() != null) {
-                    verify(pubSub).onError(terminalNotification.getCause());
+                if (terminalNotification.cause() != null) {
+                    verify(pubSub).onError(terminalNotification.cause());
                 } else {
                     verify(pubSub).onComplete();
                 }

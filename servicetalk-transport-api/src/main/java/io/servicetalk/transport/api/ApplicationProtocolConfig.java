@@ -126,7 +126,7 @@ public final class ApplicationProtocolConfig {
      *
      * @return supported protocols.
      */
-    public List<String> getSupportedProtocols() {
+    public List<String> supportedProtocols() {
         return supportedProtocols;
     }
 
@@ -135,7 +135,7 @@ public final class ApplicationProtocolConfig {
      *
      * @return the protocol
      */
-    public Protocol getProtocol() {
+    public Protocol protocol() {
         return protocol;
     }
 
@@ -144,7 +144,7 @@ public final class ApplicationProtocolConfig {
      *
      * @return the behavior.
      */
-    public SelectorFailureBehavior getSelectorFailureBehavior() {
+    public SelectorFailureBehavior selectorFailureBehavior() {
         return selectorBehavior;
     }
 
@@ -153,7 +153,7 @@ public final class ApplicationProtocolConfig {
      *
      * @return the behavior.
      */
-    public SelectedListenerFailureBehavior getSelectedListenerFailureBehavior() {
+    public SelectedListenerFailureBehavior selectedListenerFailureBehavior() {
         return selectedBehavior;
     }
 }

@@ -47,7 +47,7 @@ public class FromBlockingIterableTest extends FromInMemoryPublisherAbstractTest 
                     new TestIterableToBlockingIterable<>(asList(values), hashNextConsumer, nextConsumer,
                             closeable), () -> 1, SECONDS);
             @Override
-            protected Publisher<String> getPublisher() {
+            protected Publisher<String> publisher() {
                 return publisher;
             }
         };
@@ -73,7 +73,7 @@ public class FromBlockingIterableTest extends FromInMemoryPublisherAbstractTest 
         };
         AtomicBoolean cancelled = new AtomicBoolean();
         InMemorySource source = newSource(1, hashNextConsumer, nextConsumer, () -> cancelled.set(true));
-        subscriber.subscribe(source.getPublisher()).request(1)
+        subscriber.subscribe(source.publisher()).request(1)
                 .verifyFailure(DELIBERATE_EXCEPTION).verifyNoEmissions();
         assertTrue(cancelled.get());
     }
@@ -87,7 +87,7 @@ public class FromBlockingIterableTest extends FromInMemoryPublisherAbstractTest 
         };
         AtomicBoolean cancelled = new AtomicBoolean();
         InMemorySource source = newSource(1, hashNextConsumer, nextConsumer, () -> cancelled.set(true));
-        subscriber.subscribe(source.getPublisher()).request(1)
+        subscriber.subscribe(source.publisher()).request(1)
                 .verifyFailure(DELIBERATE_EXCEPTION).verifyNoEmissions();
         assertTrue(cancelled.get());
     }

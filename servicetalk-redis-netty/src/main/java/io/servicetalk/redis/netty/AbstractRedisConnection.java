@@ -74,8 +74,8 @@ abstract class AbstractRedisConnection extends RedisConnection {
                                       ReadOnlyRedisClientConfig roConfig) {
         this.pingTimerProvider = pingTimerProvider;
         this.executionContext = executionContext;
-        Duration pingPeriod = roConfig.getPingPeriod();
-        final int maxPipelinedRequests = roConfig.getMaxPipelinedRequests();
+        Duration pingPeriod = roConfig.pingPeriod();
+        final int maxPipelinedRequests = roConfig.maxPipelinedRequests();
         if (pingPeriod != null) {
             if (pingPeriod.compareTo(MINIMUM_PING_PERIOD) < 0) {
                 throw new IllegalArgumentException("pingPeriod: " + pingPeriod + " (expected >=" +
@@ -92,7 +92,7 @@ abstract class AbstractRedisConnection extends RedisConnection {
             pinger = NOOP_PINGER;
             maxPendingRequests = maxPipelinedRequests;
         }
-        maxConcurrencySetting = just(roConfig.getMaxPipelinedRequests())
+        maxConcurrencySetting = just(roConfig.maxPipelinedRequests())
                 .concatWith(onClosing.concatWith(success(0)));
     }
 
@@ -142,7 +142,7 @@ abstract class AbstractRedisConnection extends RedisConnection {
      */
     abstract Completable sendPing();
 
-    abstract Logger getLogger();
+    abstract Logger logger();
 
     private final class Pinger implements AsyncCloseable {
 
@@ -168,7 +168,7 @@ abstract class AbstractRedisConnection extends RedisConnection {
         }
 
         void startPings() {
-            getLogger().debug("Connection: {} starting PING timer.", AbstractRedisConnection.this);
+            logger().debug("Connection: {} starting PING timer.", AbstractRedisConnection.this);
             toSource(pingTimerProvider.timer(pingPeriodNanos, NANOSECONDS)).subscribe(timerSubscriber);
         }
 
@@ -185,12 +185,12 @@ abstract class AbstractRedisConnection extends RedisConnection {
         @Override
         public void onSubscribe(Cancellable cancellable) {
             inProgress = true;
-            setNextCancellable(cancellable);
+            nextCancellable(cancellable);
         }
 
         @Override
         public void onComplete() {
-            getLogger().debug("Connection: {} received PING response.", AbstractRedisConnection.this);
+            logger().debug("Connection: {} received PING response.", AbstractRedisConnection.this);
             inProgress = false;
         }
 
@@ -199,13 +199,13 @@ abstract class AbstractRedisConnection extends RedisConnection {
             inProgress = false;
             // Ignore failures due to a saturated connection pipeline
             if (!(t instanceof ClosedChannelException || t instanceof PingRejectedException)) {
-                getLogger().warn("Connection: {} failed to consume PING response, closing connection.",
+                logger().warn("Connection: {} failed to consume PING response, closing connection.",
                         AbstractRedisConnection.this, t);
                 closeAsync().subscribe();
             }
         }
 
-        boolean isPingInProgress() {
+        boolean isInProgress() {
             return inProgress;
         }
     }
@@ -227,17 +227,17 @@ abstract class AbstractRedisConnection extends RedisConnection {
 
         @Override
         public void onSubscribe(Cancellable cancellable) {
-            setNextCancellable(cancellable);
+            nextCancellable(cancellable);
         }
 
         @Override
         public void onComplete() {
-            if (pingSubscriber.isPingInProgress()) {
-                getLogger().warn("Connection: {} ping did not complete within the ping duration: {}. " +
+            if (pingSubscriber.isInProgress()) {
+                logger().warn("Connection: {} ping did not complete within the ping duration: {}. " +
                                 "Closing the connection.", AbstractRedisConnection.this, pingDuration);
                 closeAsync().subscribe();
             } else {
-                getLogger().debug("Connection: {} Sending ping.", AbstractRedisConnection.this);
+                logger().debug("Connection: {} Sending ping.", AbstractRedisConnection.this);
                 pingSender.run();
                 toSource(timer.get()).subscribe(this);
             }
@@ -246,7 +246,7 @@ abstract class AbstractRedisConnection extends RedisConnection {
         @Override
         public void onError(Throwable t) {
             if (!(t instanceof CancellationException)) {
-                getLogger().error("Connection: {} unexpected timer error, stopping pings.",
+                logger().error("Connection: {} unexpected timer error, stopping pings.",
                         AbstractRedisConnection.this, t);
             }
         }

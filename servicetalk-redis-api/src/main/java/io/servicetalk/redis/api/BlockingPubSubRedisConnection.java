@@ -39,7 +39,7 @@ public abstract class BlockingPubSubRedisConnection implements AutoCloseable {
      *
      * @return a {@link BlockingIterable} of messages
      */
-    public abstract BlockingIterable<PubSubRedisMessage> getMessages();
+    public abstract BlockingIterable<PubSubRedisMessage> messages();
 
     /**
      * Ping the server.

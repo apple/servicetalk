@@ -140,7 +140,7 @@ public class PartitionedRedisClientTest extends AbstractPartitionedRedisClientTe
 
             @Override
             public Function<Command, RedisPartitionAttributesBuilder> redisPartitionAttributesBuilderFunction() {
-                return getPartitionAttributesBuilderFactory();
+                return partitionAttributesBuilderFactory();
             }
 
             @Override
@@ -203,6 +203,6 @@ public class PartitionedRedisClientTest extends AbstractPartitionedRedisClientTe
                     return true;
                 });
 
-        assertThat(awaitIndefinitely(subscribeAndPingCommand).getValue(), equalTo("PONG"));
+        assertThat(awaitIndefinitely(subscribeAndPingCommand).value(), equalTo("PONG"));
     }
 }

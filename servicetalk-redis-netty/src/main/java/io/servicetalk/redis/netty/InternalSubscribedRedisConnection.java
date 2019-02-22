@@ -149,7 +149,7 @@ final class InternalSubscribedRedisConnection extends AbstractRedisConnection {
                     response = write.concatWith(readStreamSplitter.registerNewCommand(command));
                 }
                 // Unwrap PubSubChannelMessage if it wraps an SimpleString response
-                toSource(response.map(m -> m.getKeyType() == SimpleString ? m.getData() : m)).subscribe(subscriber);
+                toSource(response.map(m -> m.keyType() == SimpleString ? m.data() : m)).subscribe(subscriber);
             }
         };
     }
@@ -190,7 +190,7 @@ final class InternalSubscribedRedisConnection extends AbstractRedisConnection {
     }
 
     @Override
-    Logger getLogger() {
+    Logger logger() {
         return LOGGER;
     }
 

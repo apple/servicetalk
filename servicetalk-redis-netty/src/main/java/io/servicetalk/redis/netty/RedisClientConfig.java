@@ -37,7 +37,7 @@ final class RedisClientConfig extends ReadOnlyRedisClientConfig {
      * @param maxPipelinedRequests Maximum number of pipelined requests per {@link RedisConnection}.
      * @return {@code this}.
      */
-    RedisClientConfig setMaxPipelinedRequests(final int maxPipelinedRequests) {
+    RedisClientConfig maxPipelinedRequests(final int maxPipelinedRequests) {
         if (maxPipelinedRequests <= 0) {
             throw new IllegalArgumentException("maxPipelinedRequests: " + maxPipelinedRequests + " (expected >0)");
         }
@@ -51,7 +51,7 @@ final class RedisClientConfig extends ReadOnlyRedisClientConfig {
      * @param idleConnectionTimeout the timeout {@link Duration} or {@code null} if no timeout configured.
      * @return {@code this}.
      */
-    RedisClientConfig setIdleConnectionTimeout(@Nullable final Duration idleConnectionTimeout) {
+    RedisClientConfig idleConnectionTimeout(@Nullable final Duration idleConnectionTimeout) {
         this.idleConnectionTimeout = idleConnectionTimeout;
         return this;
     }
@@ -62,7 +62,7 @@ final class RedisClientConfig extends ReadOnlyRedisClientConfig {
      * @param pingPeriod the {@link Duration} between keep-alive pings or {@code null} to disable pings.
      * @return {@code this}.
      */
-    RedisClientConfig setPingPeriod(@Nullable final Duration pingPeriod) {
+    RedisClientConfig pingPeriod(@Nullable final Duration pingPeriod) {
         this.pingPeriod = pingPeriod;
         return this;
     }
@@ -73,7 +73,7 @@ final class RedisClientConfig extends ReadOnlyRedisClientConfig {
      * @return the {@link TcpClientConfig}.
      */
     @Override
-    TcpClientConfig getTcpClientConfig() {
+    TcpClientConfig tcpClientConfig() {
         return (TcpClientConfig) tcpClientConfig;
     }
 
@@ -84,7 +84,7 @@ final class RedisClientConfig extends ReadOnlyRedisClientConfig {
      * @param defer {@code true} to defer the subscribe
      * @return {@code this}
      */
-    RedisClientConfig setDeferSubscribeTillConnect(boolean defer) {
+    RedisClientConfig deferSubscribeTillConnect(boolean defer) {
         this.deferSubscribeTillConnect = defer;
         return this;
     }

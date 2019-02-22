@@ -89,19 +89,19 @@ final class NettyHttpServer {
                                       final SocketAddress address, final ConnectionAcceptor connectionAcceptor,
                                       final StreamingHttpService service) {
         // This state is read only, so safe to keep a copy across Subscribers
-        final ReadOnlyTcpServerConfig tcpServerConfig = config.getTcpConfig();
+        final ReadOnlyTcpServerConfig tcpServerConfig = config.tcpConfig();
         return TcpServerBinder.bind(address, tcpServerConfig, executionContext, connectionAcceptor,
                 channel -> {
                     final CloseHandler closeHandler = forPipelinedRequestResponse(false, channel.config());
                     final NettyHttpServerConnection.CompositeFlushStrategy flushStrategy =
-                            new NettyHttpServerConnection.CompositeFlushStrategy(tcpServerConfig.getFlushStrategy());
+                            new NettyHttpServerConnection.CompositeFlushStrategy(tcpServerConfig.flushStrategy());
                     return DefaultNettyConnection.initChannel(
                             channel, executionContext.bufferAllocator(), executionContext.executor(),
                             new TerminalPredicate<>(LAST_HTTP_PAYLOAD_CHUNK_OBJECT_PREDICATE), closeHandler,
                             flushStrategy, new TcpServerChannelInitializer(tcpServerConfig)
                                     .andThen(getChannelInitializer(config, closeHandler)))
                         .map(conn -> new NettyHttpServerConnection(conn, service, flushStrategy,
-                                config.getHeadersFactory()));
+                                config.headersFactory()));
                 },
                 serverConnection -> serverConnection.process().subscribe())
             .map(delegate -> {
@@ -115,10 +115,10 @@ final class NettyHttpServer {
                                                             final CloseHandler closeHandler) {
         return (channel, context) -> {
             Queue<HttpRequestMethod> methodQueue = new ArrayDeque<>(2);
-            channel.pipeline().addLast(new HttpRequestDecoder(methodQueue, config.getHeadersFactory(),
-                    config.getMaxInitialLineLength(), config.getMaxHeaderSize(), closeHandler));
-            channel.pipeline().addLast(new HttpResponseEncoder(methodQueue, config.getHeadersEncodedSizeEstimate(),
-                    config.getTrailersEncodedSizeEstimate(), closeHandler));
+            channel.pipeline().addLast(new HttpRequestDecoder(methodQueue, config.headersFactory(),
+                    config.maxInitialLineLength(), config.maxHeaderSize(), closeHandler));
+            channel.pipeline().addLast(new HttpResponseEncoder(methodQueue, config.headersEncodedSizeEstimate(),
+                    config.trailersEncodedSizeEstimate(), closeHandler));
             return context;
         };
     }
@@ -236,7 +236,7 @@ final class NettyHttpServer {
                         }));
 
                 final HttpRequestMethod requestMethod = request2.method();
-                final HttpKeepAlive keepAlive = HttpKeepAlive.getResponseKeepAlive(request2);
+                final HttpKeepAlive keepAlive = HttpKeepAlive.responseKeepAlive(request2);
                 final Completable drainRequestPayloadBody = request2.payloadBody().ignoreElements()
                         // ignore error about duplicate subscriptions, we are forcing a subscription here and the user
                         // may also subscribe, so it is OK if we fail here.

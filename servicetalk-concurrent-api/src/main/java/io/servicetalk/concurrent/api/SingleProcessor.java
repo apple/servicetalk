@@ -106,7 +106,7 @@ public final class SingleProcessor<T> extends Single<T> implements Subscriber<T>
 
     private void notifyListeners(@Nullable Object terminalSignal) {
         if (terminalSignal instanceof TerminalNotification) {
-            final Throwable error = ((TerminalNotification) terminalSignal).getCause();
+            final Throwable error = ((TerminalNotification) terminalSignal).cause();
             assert error != null : "Cause can't be null from TerminalNotification.error(..)";
             drainSingleConsumerQueueDelayThrow(subscribers, subscriber -> subscriber.onError(error),
                     drainingTheQueueUpdater, this);

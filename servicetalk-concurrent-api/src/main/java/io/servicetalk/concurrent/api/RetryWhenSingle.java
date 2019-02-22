@@ -97,7 +97,7 @@ final class RetryWhenSingle<T> extends AbstractNoHandleSubscribeSingle<T> {
             retryDecider.subscribeWithContext(new CompletableSource.Subscriber() {
                 @Override
                 public void onSubscribe(Cancellable completableCancellable) {
-                    retrySignalCancellable.setNextCancellable(completableCancellable);
+                    retrySignalCancellable.nextCancellable(completableCancellable);
                 }
 
                 @Override

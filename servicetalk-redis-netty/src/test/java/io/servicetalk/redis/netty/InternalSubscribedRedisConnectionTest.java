@@ -83,7 +83,7 @@ public class InternalSubscribedRedisConnectionTest {
         ioExecutor = toNettyIoExecutor(createIoExecutor());
         builder = DefaultRedisConnectionBuilder.<InetSocketAddress>forSubscribe(
                 new RedisClientConfig(new TcpClientConfig(true))
-                        .setDeferSubscribeTillConnect(true))
+                        .deferSubscribeTillConnect(true))
                 .pingPeriod(Duration.ofSeconds(1))
                 .idleConnectionTimeout(Duration.ofSeconds(2));
     }

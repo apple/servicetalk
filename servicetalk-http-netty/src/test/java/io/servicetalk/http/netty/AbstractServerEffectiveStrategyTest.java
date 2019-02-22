@@ -103,7 +103,7 @@ public class AbstractServerEffectiveStrategyTest {
         closeable.appendAll(serviceExecutor, ioExecutor).closeAsync().toFuture().get();
     }
 
-    protected BlockingHttpClient setContext(ServerContext context) {
+    protected BlockingHttpClient context(ServerContext context) {
         this.context = context;
         client = HttpClients.forSingleAddress(serverHostAndPort(context)).buildBlocking();
         return client;

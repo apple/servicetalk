@@ -50,7 +50,7 @@ public abstract class PubSubBufferRedisConnection implements AsyncCloseable {
      *
      * @return a {@link Publisher} of messages
      */
-    public abstract Publisher<PubSubRedisMessage> getMessages();
+    public abstract Publisher<PubSubRedisMessage> messages();
 
     /**
      * Ping the server.

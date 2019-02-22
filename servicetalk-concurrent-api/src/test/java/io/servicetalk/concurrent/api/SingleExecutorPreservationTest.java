@@ -35,17 +35,17 @@ public class SingleExecutorPreservationTest {
 
     @Before
     public void setupSingle() {
-        single = Single.<String>never().publishAndSubscribeOnOverride(EXEC.getExecutor());
+        single = Single.<String>never().publishAndSubscribeOnOverride(EXEC.executor());
     }
 
     @Test
     public void testTimeoutSingle() {
-        assertSame(EXEC.getExecutor(), single.timeout(1, MILLISECONDS).getExecutor());
-        assertSame(EXEC.getExecutor(), single.timeout(Duration.ofMillis(1)).getExecutor());
+        assertSame(EXEC.executor(), single.timeout(1, MILLISECONDS).executor());
+        assertSame(EXEC.executor(), single.timeout(Duration.ofMillis(1)).executor());
     }
 
     @Test
     public void testDoAfterFinallySingle() {
-        assertSame(EXEC.getExecutor(), single.doAfterFinally(() -> { /* NOOP */ }).getExecutor());
+        assertSame(EXEC.executor(), single.doAfterFinally(() -> { /* NOOP */ }).executor());
     }
 }

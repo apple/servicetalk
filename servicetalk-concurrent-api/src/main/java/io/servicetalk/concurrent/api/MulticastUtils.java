@@ -276,7 +276,7 @@ final class MulticastUtils {
             }
         }
 
-        final long getSourceRequested() {
+        final long sourceRequested() {
             return sourceRequested;
         }
 
