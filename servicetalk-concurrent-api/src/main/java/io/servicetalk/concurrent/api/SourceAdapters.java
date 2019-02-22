@@ -75,6 +75,60 @@ public final class SourceAdapters {
         return new CompletableToCompletableSource(completable);
     }
 
+    /**
+     * Converts the provided {@link PublisherSource} into a {@link Publisher}.
+     *
+     * @param source {@link PublisherSource} to convert to a {@link Publisher}.
+     * @param <T> Type of items emitted from the {@code source} and the returned {@link Publisher}.
+     * @return A {@link Publisher} representation of the passed {@link PublisherSource}.
+     */
+    public static <T> Publisher<T> fromSource(PublisherSource<T> source) {
+        if (source instanceof Publisher) {
+            return uncheckedCast(source);
+        }
+        requireNonNull(source);
+        return new PublisherSourceToPublisher<>(source);
+    }
+
+    /**
+     * Converts the provided {@link SingleSource} into a {@link Single}.
+     *
+     * @param source {@link SingleSource} to convert to a {@link Single}.
+     * @param <T> Type of items emitted from the {@code source} and the returned {@link Single}.
+     * @return A {@link Single} representation of the passed {@link SingleSource}.
+     */
+    public static <T> Single<T> fromSource(SingleSource<T> source) {
+        if (source instanceof Single) {
+            return uncheckedCast(source);
+        }
+        requireNonNull(source);
+        return new SingleSourceToSingle<>(source);
+    }
+
+    /**
+     * Converts the provided {@link CompletableSource} into a {@link Completable}.
+     *
+     * @param source {@link CompletableSource} to convert to a {@link Completable}.
+     * @return A {@link Completable} representation of the passed {@link CompletableSource}.
+     */
+    public static Completable fromSource(CompletableSource source) {
+        if (source instanceof Completable) {
+            return (Completable) source;
+        }
+        requireNonNull(source);
+        return new CompletableSourceToCompletable(source);
+    }
+
+    @SuppressWarnings("unchecked")
+    private static <T> Publisher<T> uncheckedCast(final PublisherSource<T> source) {
+        return (Publisher<T>) source;
+    }
+
+    @SuppressWarnings("unchecked")
+    private static <T> Single<T> uncheckedCast(final SingleSource<T> source) {
+        return (Single<T>) source;
+    }
+
     @SuppressWarnings("unchecked")
     private static <T> PublisherSource<T> uncheckedCast(final Publisher<T> publisher) {
         return (PublisherSource<T>) publisher;
@@ -121,6 +175,60 @@ public final class SourceAdapters {
         @Override
         public void subscribe(final Subscriber subscriber) {
             completable.subscribeInternal(subscriber);
+        }
+    }
+
+    private static final class PublisherSourceToPublisher<T> extends Publisher<T> implements PublisherSource<T> {
+        private final PublisherSource<T> source;
+
+        PublisherSourceToPublisher(final PublisherSource<T> source) {
+            this.source = source;
+        }
+
+        @Override
+        protected void handleSubscribe(final PublisherSource.Subscriber<? super T> subscriber) {
+            source.subscribe(subscriber);
+        }
+
+        @Override
+        public void subscribe(final Subscriber<? super T> subscriber) {
+            source.subscribe(subscriber);
+        }
+    }
+
+    private static final class SingleSourceToSingle<T> extends Single<T> implements SingleSource<T> {
+        private final SingleSource<T> source;
+
+        SingleSourceToSingle(final SingleSource<T> source) {
+            this.source = source;
+        }
+
+        @Override
+        protected void handleSubscribe(final SingleSource.Subscriber<? super T> subscriber) {
+            source.subscribe(subscriber);
+        }
+
+        @Override
+        public void subscribe(final Subscriber<? super T> subscriber) {
+            source.subscribe(subscriber);
+        }
+    }
+
+    private static final class CompletableSourceToCompletable extends Completable implements CompletableSource {
+        private final CompletableSource source;
+
+        CompletableSourceToCompletable(final CompletableSource source) {
+            this.source = source;
+        }
+
+        @Override
+        protected void handleSubscribe(final CompletableSource.Subscriber subscriber) {
+            source.subscribe(subscriber);
+        }
+
+        @Override
+        public void subscribe(final Subscriber subscriber) {
+            source.subscribe(subscriber);
         }
     }
 }
