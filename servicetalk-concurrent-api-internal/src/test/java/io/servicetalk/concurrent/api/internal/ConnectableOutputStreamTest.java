@@ -60,15 +60,15 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 public class ConnectableOutputStreamTest {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ConnectableOutputStreamTest.class);
 
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
     @Rule
     public final ExpectedException expectedException = none();
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(ConnectableOutputStreamTest.class);
-
     private final TestPublisherSubscriber<byte[]> subscriber = new TestPublisherSubscriber<>();
+
     private IntBinaryOperator nextSizeSupplier;
     private ConnectableOutputStream cos;
 
