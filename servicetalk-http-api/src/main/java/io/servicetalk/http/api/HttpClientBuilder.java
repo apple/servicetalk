@@ -226,6 +226,58 @@ interface HttpClientBuilder<U, R, SDE extends ServiceDiscovererEvent<R>> {
             ConnectionFactoryFilter<R, StreamingHttpConnection> factory);
 
     /**
+     * Append the filter to the chain of filters used to decorate the {@link HttpClient} created by this
+     * builder.
+     * <p>
+     * Note this method will be used to decorate the result of {@link #build()} before it is
+     * returned to the user.
+     * <p>
+     * The order of execution of these filters are in order of append. If 3 filters are added as follows:
+     * <pre>
+     *     builder.append(filter1).append(filter2).append(filter3)
+     * </pre>
+     * making a request to a client wrapped by this filter chain the order of invocation of these filters will be:
+     * <pre>
+     *     filter1 =&gt; filter2 =&gt; filter3 =&gt; client
+     * </pre>
+     *
+     * @param factory {@link HttpClientFilterFactory} to decorate a {@link HttpClient} for the purpose of
+     * filtering.
+     * @return {@code this}
+     */
+    HttpClientBuilder<U, R, SDE> appendClientFilter(HttpClientFilterFactory factory);
+
+    /**
+     * Append the filter to the chain of filters used to decorate the {@link HttpClient} created by this
+     * builder, for every request that passes the provided {@link Predicate}.
+     * <p>
+     * Note this method will be used to decorate the result of {@link #build()} before it is
+     * returned to the user.
+     * <p>
+     * The order of execution of these filters are in order of append. If 3 filters are added as follows:
+     * <pre>
+     *     builder.append(filter1).append(filter2).append(filter3)
+     * </pre>
+     * making a request to a client wrapped by this filter chain the order of invocation of these filters will be:
+     * <pre>
+     *     filter1 =&gt; filter2 =&gt; filter3 =&gt; client
+     * </pre>
+     *
+     * @param predicate the {@link Predicate} to test if the filter must be applied.
+     * @param factory {@link HttpClientFilterFactory} to decorate a {@link HttpClient} for the purpose of
+     * filtering.
+     * @return {@code this}
+     */
+    default HttpClientBuilder<U, R, SDE> appendClientFilter(Predicate<StreamingHttpRequest> predicate,
+                                                            HttpClientFilterFactory factory) {
+        requireNonNull(predicate);
+        requireNonNull(factory);
+
+        return appendClientFilter((client, lbEvents) ->
+                new ConditionalHttpClientFilter(predicate, factory.create(client, lbEvents), client));
+    }
+
+    /**
      * Disable automatically setting {@code Host} headers by inferring from the address or {@link StreamingHttpRequest}.
      * <p>
      * This setting disables the default filter such that no {@code Host} header will be manipulated.
