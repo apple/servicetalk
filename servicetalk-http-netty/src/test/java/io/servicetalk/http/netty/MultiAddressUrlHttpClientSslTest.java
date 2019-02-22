@@ -22,7 +22,6 @@ import io.servicetalk.http.api.DefaultHttpHeadersFactory;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpRequester;
-import io.servicetalk.http.api.HttpScheme;
 import io.servicetalk.http.api.SslConfigProvider;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
@@ -200,7 +199,7 @@ public class MultiAddressUrlHttpClientSslTest {
     public void requesterWithSecureSslConfigProvider() throws Exception {
         SslConfigProvider sslConfigProvider = new SslConfigProvider() {
             @Override
-            public int defaultPort(final HttpScheme scheme, final String effectiveHost) {
+            public int defaultPort(@Nullable final String scheme, @Nullable final String effectiveHost) {
                 return secureByDefault().defaultPort(scheme, effectiveHost);
             }
 

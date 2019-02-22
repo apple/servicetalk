@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,12 +30,12 @@ public interface SslConfigProvider {
      * This method will be invoked in case the {@link HttpRequestMetaData} does not have information about
      * {@link HttpRequestMetaData#effectivePort() effective port number}.
      *
-     * @param scheme A {@link HttpScheme} of the request.
+     * @param scheme A URI scheme of the request.
      * @param effectiveHost An effective host for the request.
      * @return A port number for specified {@code scheme} and {@code effectiveHost}.
      * @see HttpRequestMetaData#effectivePort()
      */
-    int defaultPort(HttpScheme scheme, String effectiveHost);
+    int defaultPort(@Nullable String scheme, @Nullable String effectiveHost);
 
     /**
      * Return a {@link SslConfig} for specified {@link HostAndPort}.

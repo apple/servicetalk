@@ -40,8 +40,10 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 final class HttpUri {
     private static final String SPACE = " ";
 
-    static final int DEFAULT_PORT_HTTP = 80;
-    static final int DEFAULT_PORT_HTTPS = 443;
+    static final String HTTP_SCHEME = "http";
+    static final String HTTPS_SCHEME = "https";
+    static final int HTTP_SCHEME_DEFAULT_PORT = 80;
+    static final int HTTPS_SCHEME_DEFAULT_PORT = 443;
 
     private final String uri;
     @Nullable
@@ -121,9 +123,9 @@ final class HttpUri {
                     if (parsedScheme != -1) {
                         throw new IllegalArgumentException("duplicate scheme");
                     }
-                    if (i == 5 && uri.regionMatches(true, 0, "http", 0, 4)) {
+                    if (i == 5 && uri.regionMatches(true, 0, HTTP_SCHEME, 0, 4)) {
                         parsedScheme = 0;
-                    } else if (i == 6 && uri.regionMatches(true, 0, "https", 0, 5)) {
+                    } else if (i == 6 && uri.regionMatches(true, 0, HTTPS_SCHEME, 0, 5)) {
                         parsedScheme = 1;
                     } else {
                         throw new IllegalArgumentException("unsupported scheme");
@@ -238,11 +240,11 @@ final class HttpUri {
         } else {
             relativeReference = "";
         }
-        scheme = parsedScheme == 0 ? "http" : parsedScheme == 1 ? "https" : null;
+        scheme = parsedScheme == 0 ? HTTP_SCHEME : parsedScheme == 1 ? HTTPS_SCHEME : null;
         host = parsedHost;
         hostHeader = parsedHostHeader;
         ssl = parsedScheme == 1;
-        port = parsedPort > 0 ? parsedPort : (ssl ? DEFAULT_PORT_HTTPS : DEFAULT_PORT_HTTP);
+        port = parsedPort > 0 ? parsedPort : (ssl ? HTTPS_SCHEME_DEFAULT_PORT : HTTP_SCHEME_DEFAULT_PORT);
         explicitPort = parsedPort > 0;
         this.uri = uri;
     }
