@@ -30,7 +30,6 @@ import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.test.resources.DefaultTestCerts;
 import io.servicetalk.transport.api.ConnectionAcceptor;
-import io.servicetalk.transport.api.ConnectionAcceptorFilter;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.api.SslConfig;
@@ -141,7 +140,7 @@ public abstract class AbstractNettyHttpServerTest {
             serverBuilder.sslConfig(sslConfig);
         }
         serverContext = awaitIndefinitelyNonNull(serverBuilder.ioExecutor(serverIoExecutor)
-                .appendConnectionAcceptorFilter(original -> new ConnectionAcceptorFilter(connectionAcceptor))
+                .connectionAcceptor(connectionAcceptor)
                 .listenStreaming(service)
                 .doBeforeSuccess(ctx -> LOGGER.debug("Server started on {}.", ctx.listenAddress()))
                 .doBeforeError(throwable -> LOGGER.debug("Failed starting server on {}.", bindAddress)));

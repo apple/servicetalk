@@ -21,7 +21,7 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.api.HttpServerBuilder;
 import io.servicetalk.http.api.StreamingHttpService;
-import io.servicetalk.transport.api.ConnectionAcceptorFilter;
+import io.servicetalk.transport.api.ConnectionAcceptor;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.api.SslConfig;
@@ -135,14 +135,14 @@ final class DefaultHttpServerBuilder extends HttpServerBuilder {
     }
 
     @Override
-    public Single<ServerContext> doListen(final ConnectionAcceptorFilter connectionAcceptorFilter,
+    public Single<ServerContext> doListen(final ConnectionAcceptor connectionAcceptor,
                                           final StreamingHttpService service) {
         ReadOnlyHttpServerConfig roConfig = this.config.asReadOnly();
         Executor executor = service.executionStrategy().executor();
         if (executor != null) {
             executionContextBuilder.executor(executor);
         }
-        return NettyHttpServer.bind(executionContextBuilder.build(), roConfig, address, connectionAcceptorFilter,
+        return NettyHttpServer.bind(executionContextBuilder.build(), roConfig, address, connectionAcceptor,
                 service);
     }
 }

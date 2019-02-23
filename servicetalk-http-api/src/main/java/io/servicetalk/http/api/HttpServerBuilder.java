@@ -18,8 +18,6 @@ package io.servicetalk.http.api;
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.transport.api.ConnectionAcceptor;
-import io.servicetalk.transport.api.ConnectionAcceptorFilter;
-import io.servicetalk.transport.api.ConnectionAcceptorFilterFactory;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.api.SslConfig;
@@ -42,8 +40,7 @@ import static java.util.Objects.requireNonNull;
  */
 public abstract class HttpServerBuilder {
 
-    private ConnectionAcceptorFilterFactory connectionAcceptorFilterFactory =
-            ConnectionAcceptorFilterFactory.identity();
+    private ConnectionAcceptor connectionAcceptor = ACCEPT_ALL;
     private HttpServiceFilterFactory serviceFilter = identity();
 
     /**
@@ -161,24 +158,12 @@ public abstract class HttpServerBuilder {
     public abstract HttpServerBuilder disableWireLogging();
 
     /**
-     * Append the filter to the chain of filters used to decorate the {@link ConnectionAcceptor} used by this builder.
-     * <p>
-     * The order of execution of these filters are in order of append. If 3 filters are added as follows:
-     * <pre>
-     *     builder.appendConnectionAcceptorFilter(filter1).appendConnectionAcceptorFilter(filter2).
-     *     appendConnectionAcceptorFilter(filter3)
-     * </pre>
-     * accepting a connection by a filter wrapped by this filter chain, the order of invocation of these filters will
-     * be:
-     * <pre>
-     *     filter1 =&gt; filter2 =&gt; filter3
-     * </pre>
-     * @param factory {@link ConnectionAcceptorFilterFactory} to append. Lifetime of this
-     * {@link ConnectionAcceptorFilterFactory} is managed by this builder and the server started thereof.
+     * Set the {@link ConnectionAcceptor}.
+     * @param connectionAcceptor the {@link ConnectionAcceptor}.
      * @return {@code this}
      */
-    public final HttpServerBuilder appendConnectionAcceptorFilter(final ConnectionAcceptorFilterFactory factory) {
-        this.connectionAcceptorFilterFactory = connectionAcceptorFilterFactory.append(factory);
+    public final HttpServerBuilder connectionAcceptor(final ConnectionAcceptor connectionAcceptor) {
+        this.connectionAcceptor = requireNonNull(connectionAcceptor);
         return this;
     }
 
@@ -401,13 +386,12 @@ public abstract class HttpServerBuilder {
      * the server could not be started.
      */
     public final Single<ServerContext> listenStreaming(final StreamingHttpRequestHandler handler) {
-        ConnectionAcceptorFilter connectionAcceptorFilter = connectionAcceptorFilterFactory.create(ACCEPT_ALL);
         StreamingHttpService svc = handler.asStreamingService();
         HttpExecutionStrategy strategy = svc.executionStrategy();
         StreamingHttpServiceFilter filterChain = serviceFilter.create(svc);
         HttpExecutionStrategy effectiveStrategy = filterChain.effectiveExecutionStrategy(strategy);
         StreamingHttpServiceFilter finalService = new StreamingHttpServiceFilter(filterChain, effectiveStrategy);
-        return doListen(connectionAcceptorFilter, finalService);
+        return doListen(connectionAcceptor, finalService);
     }
 
     /**
@@ -443,11 +427,11 @@ public abstract class HttpServerBuilder {
      * <p>
      * If the underlying protocol (eg. TCP) supports it this should result in a socket bind/listen on {@code address}.
      *
-     * @param connectionAcceptorFilter {@link ConnectionAcceptorFilter} to use for the server.
+     * @param connectionAcceptor {@link ConnectionAcceptor} to use for the server.
      * @param service {@link StreamingHttpService} to use for the server.
      * @return A {@link Single} that completes when the server is successfully started or terminates with an error if
      * the server could not be started.
      */
-    protected abstract Single<ServerContext> doListen(ConnectionAcceptorFilter connectionAcceptorFilter,
+    protected abstract Single<ServerContext> doListen(ConnectionAcceptor connectionAcceptor,
                                                       StreamingHttpService service);
 }

@@ -27,8 +27,8 @@ import org.mockito.junit.MockitoJUnit;
 import org.mockito.junit.MockitoRule;
 
 import java.util.concurrent.ConcurrentLinkedQueue;
-import javax.annotation.Nonnull;
 
+import static io.servicetalk.concurrent.api.Single.success;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.transport.api.ConnectionAcceptor.ACCEPT_ALL;
 import static java.lang.Boolean.FALSE;
@@ -56,19 +56,18 @@ public class ConnectionAcceptorTest {
 
     @Test
     public void factoryAppend() throws Exception {
-        ConnectionAcceptorFilterFactory f = ConnectionAcceptorFilterFactory.identity();
         ConcurrentLinkedQueue<Integer> order = new ConcurrentLinkedQueue<>();
-        f.append(original -> new OrderVerifyingConnectionAcceptorFilter(original, order, 1))
-                .append(original -> new OrderVerifyingConnectionAcceptorFilter(original, order, 2))
-                .append(original -> new OrderVerifyingConnectionAcceptorFilter(original, order, 3))
-                .create(ACCEPT_ALL).accept(context).toFuture().get();
+        ACCEPT_ALL.append(new OrderVerifyingConnectionAcceptor(order, 1))
+                  .append(new OrderVerifyingConnectionAcceptor(order, 2))
+                  .append(new OrderVerifyingConnectionAcceptor(order, 3))
+                  .accept(context).toFuture().get();
         assertThat("Unexpected filter order.", order, contains(1, 2, 3));
     }
 
     @Test
     public void chainingTrueThenTrueShouldReturnTrue() {
-        setFilterResult(first, Single.success(true));
-        setFilterResult(second, Single.success(true));
+        setFilterResult(first, success(true));
+        setFilterResult(second, success(true));
 
         applyFilters();
         listener.verifySuccess(TRUE);
@@ -79,8 +78,8 @@ public class ConnectionAcceptorTest {
 
     @Test
     public void chainingTrueThenFalseShouldReturnFalse() {
-        setFilterResult(first, Single.success(true));
-        setFilterResult(second, Single.success(false));
+        setFilterResult(first, success(true));
+        setFilterResult(second, success(false));
 
         applyFilters();
         listener.verifySuccess(FALSE);
@@ -91,7 +90,7 @@ public class ConnectionAcceptorTest {
 
     @Test
     public void chainingTrueThenErrorShouldReturnError() {
-        setFilterResult(first, Single.success(true));
+        setFilterResult(first, success(true));
         setFilterResult(second, Single.error(DELIBERATE_EXCEPTION));
 
         applyFilters();
@@ -102,27 +101,27 @@ public class ConnectionAcceptorTest {
     }
 
     @Test
-    public void chainingAfterFalseShouldCallNextFilter() {
-        setFilterResult(first, Single.success(false));
-        setFilterResult(second, Single.success(true));
+    public void chainingAfterFalseShouldNotCallNextFilter() {
+        setFilterResult(first, success(false));
+        setFilterResult(second, success(true));
 
         applyFilters();
-        listener.verifySuccess(TRUE);
+        listener.verifySuccess(FALSE);
 
         verify(first).accept(context);
-        verify(second).accept(context);
+        verify(second, never()).accept(context);
     }
 
     @Test
-    public void chainingAfterNullShouldCallNextFilter() {
-        setFilterResult(first, Single.success(null));
-        setFilterResult(second, Single.success(true));
+    public void chainingAfterNullShouldNotCallNextFilter() {
+        setFilterResult(first, success(null));
+        setFilterResult(second, success(true));
 
         applyFilters();
-        listener.verifySuccess(TRUE);
+        listener.verifySuccess(null);
 
         verify(first).accept(context);
-        verify(second).accept(context);
+        verify(second, never()).accept(context);
     }
 
     @Test
@@ -140,20 +139,15 @@ public class ConnectionAcceptorTest {
         when(filter.accept(context)).thenReturn(resultSingle);
     }
 
-    @Nonnull
     protected void applyFilters() {
-        ConnectionAcceptorFilterFactory f = (original -> new ConnectionAcceptorFilter(original, (ctx, prevResult) -> second.accept(ctx)));
-        f = f.append(original -> new ConnectionAcceptorFilter(original, (ctx, prevResult) -> first.accept(ctx)));
-        listener.listen(f.create(ACCEPT_ALL).accept(context));
+        listener.listen(ACCEPT_ALL.append(first).append(second).accept(context));
     }
 
-    private static class OrderVerifyingConnectionAcceptorFilter extends ConnectionAcceptorFilter {
+    private static final class OrderVerifyingConnectionAcceptor implements ConnectionAcceptor {
         private final ConcurrentLinkedQueue<Integer> order;
         private final int index;
 
-        OrderVerifyingConnectionAcceptorFilter(final ConnectionAcceptor original, final ConcurrentLinkedQueue<Integer> order,
-                                               final int index) {
-            super(original);
+        OrderVerifyingConnectionAcceptor(final ConcurrentLinkedQueue<Integer> order, final int index) {
             this.order = order;
             this.index = index;
         }
@@ -161,7 +155,7 @@ public class ConnectionAcceptorTest {
         @Override
         public Single<Boolean> accept(final ConnectionContext context) {
             order.add(index);
-            return super.accept(context);
+            return success(true);
         }
     }
 }

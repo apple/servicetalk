@@ -108,8 +108,6 @@ public final class TcpServerBinder {
             @Override
             protected void initChannel(Channel channel) {
                 Single<T> connectionSingle = connectionFunction.apply(channel);
-                // TODO(scott): this optimization no longer works because of DefaultHttpServerBuilder's usage of
-                // ConnectionAcceptorFilterFactory and ConnectionAcceptorFilter wrapping the ACCEPT_ALL.
                 if (connectionAcceptor != ACCEPT_ALL) {
                     connectionSingle = connectionSingle
                             .flatMap(conn ->

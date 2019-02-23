@@ -27,7 +27,6 @@ import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.api.StreamingHttpService;
-import io.servicetalk.transport.api.ConnectionAcceptorFilter;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.netty.internal.ExecutionContextRule;
 import io.servicetalk.transport.netty.internal.FlushStrategy;
@@ -108,12 +107,11 @@ public class NettyHttpServerConnectionTest {
 
         serverContext = HttpServers.forAddress(localAddress(0))
                 .ioExecutor(contextRule.ioExecutor())
-                .appendConnectionAcceptorFilter(original -> new ConnectionAcceptorFilter(original,
-                        (ctx, accepted) -> {
-                            customCancellableRef.set(
-                                    ((NettyConnectionContext) ctx).updateFlushStrategy(current -> customStrategy));
-                            return success(true);
-                        }))
+                .connectionAcceptor(ctx -> {
+                    customCancellableRef.set(
+                            ((NettyConnectionContext) ctx).updateFlushStrategy(current -> customStrategy));
+                    return success(true);
+                })
                 .listenStreaming(new StreamingHttpService() {
                     @Override
                     public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
