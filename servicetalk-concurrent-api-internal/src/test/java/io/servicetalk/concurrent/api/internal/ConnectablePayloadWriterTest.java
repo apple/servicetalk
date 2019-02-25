@@ -23,11 +23,11 @@ import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 import org.junit.rules.Timeout;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
@@ -46,14 +46,11 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertNull;
-import static org.junit.rules.ExpectedException.none;
 
 public class ConnectablePayloadWriterTest {
     private static final Logger LOGGER = LoggerFactory.getLogger(ConnectablePayloadWriterTest.class);
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
-    @Rule
-    public final ExpectedException expectedException = none();
     @Rule
     public final MockedSubscriberRule<String> subscriberRule = new MockedSubscriberRule<>();
     private ConnectablePayloadWriter<String> cpw;
@@ -64,7 +61,7 @@ public class ConnectablePayloadWriterTest {
     }
 
     @Test
-    public void writeConnectFlushCloseSubscribe() {
+    public void writeConnectFlushCloseSubscribe() throws IOException {
         cpw.write("foo");
         final Publisher<String> connect = cpw.connect();
         cpw.flush();
@@ -75,7 +72,7 @@ public class ConnectablePayloadWriterTest {
     }
 
     @Test
-    public void closeShouldBeIdempotent() {
+    public void closeShouldBeIdempotent() throws IOException {
         cpw.write("foo");
         final Publisher<String> connect = cpw.connect();
         cpw.flush();
@@ -87,7 +84,7 @@ public class ConnectablePayloadWriterTest {
     }
 
     @Test
-    public void closeShouldBeIdempotentWhenNotSubscribed() {
+    public void closeShouldBeIdempotentWhenNotSubscribed() throws IOException {
         cpw.connect();
         cpw.write("foo");
         cpw.close();
@@ -222,7 +219,7 @@ public class ConnectablePayloadWriterTest {
     }
 
     @Test
-    public void writeFlushConnectCloseSubscribe() {
+    public void writeFlushConnectCloseSubscribe() throws IOException {
         cpw.write("foo");
         cpw.flush();
         final Publisher<String> connect = cpw.connect();
@@ -231,7 +228,7 @@ public class ConnectablePayloadWriterTest {
     }
 
     @Test
-    public void writeFlushCloseConnectSubscribe() {
+    public void writeFlushCloseConnectSubscribe() throws IOException {
         cpw.write("foo");
         cpw.flush();
         cpw.close();
@@ -239,7 +236,7 @@ public class ConnectablePayloadWriterTest {
     }
 
     @Test
-    public void connectWriteFlushCloseSubscribe() {
+    public void connectWriteFlushCloseSubscribe() throws IOException {
         final Publisher<String> connect = cpw.connect();
         cpw.write("foo");
         cpw.flush();
@@ -248,7 +245,7 @@ public class ConnectablePayloadWriterTest {
     }
 
     @Test
-    public void connectSubscribeWriteFlushCloseRequest() {
+    public void connectSubscribeWriteFlushCloseRequest() throws IOException {
         final Publisher<String> connect = cpw.connect();
         subscriberRule.subscribe(connect);
         cpw.write("foo");
@@ -258,7 +255,7 @@ public class ConnectablePayloadWriterTest {
     }
 
     @Test
-    public void connectSubscribeRequestWriteFlushClose() {
+    public void connectSubscribeRequestWriteFlushClose() throws IOException {
         final Publisher<String> connect = cpw.connect();
         subscriberRule.subscribe(connect).request(1);
         cpw.write("foo");
@@ -268,7 +265,7 @@ public class ConnectablePayloadWriterTest {
     }
 
     @Test
-    public void requestWriteSingleWriteSingleFlushClose() {
+    public void requestWriteSingleWriteSingleFlushClose() throws IOException {
         final Publisher<String> connect = cpw.connect();
         subscriberRule.subscribe(connect).request(2);
         cpw.write("foo");
@@ -279,7 +276,7 @@ public class ConnectablePayloadWriterTest {
     }
 
     @Test
-    public void requestWriteSingleFlushWriteSingleFlushClose() {
+    public void requestWriteSingleFlushWriteSingleFlushClose() throws IOException {
         final Publisher<String> connect = cpw.connect();
         subscriberRule.subscribe(connect).request(2);
         cpw.write("foo");
@@ -291,7 +288,7 @@ public class ConnectablePayloadWriterTest {
     }
 
     @Test
-    public void writeSingleFlushWriteSingleFlushRequestClose() {
+    public void writeSingleFlushWriteSingleFlushRequestClose() throws IOException {
         final Publisher<String> connect = cpw.connect();
         subscriberRule.subscribe(connect);
         cpw.write("foo");
@@ -335,7 +332,7 @@ public class ConnectablePayloadWriterTest {
     }
 
     @Test
-    public void onNextThrows() {
+    public void onNextThrows() throws IOException {
         AtomicReference<Throwable> failure = new AtomicReference<>();
         toSource(cpw.connect()).subscribe(new PublisherSource.Subscriber<String>() {
             @Override

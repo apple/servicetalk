@@ -15,20 +15,24 @@
  */
 package io.servicetalk.transport.api;
 
+import java.io.Closeable;
+import java.io.Flushable;
+import java.io.IOException;
+import java.io.OutputStream;
+
 /**
- * An interface which mimics behavior like {@link java.io.OutputStream}, but allows for writing of Objects of type
+ * An interface which mimics behavior like {@link OutputStream}, but allows for writing of objects of type
  * {@link T}.
+ *
  * @param <T> The type of Objects to write.
  */
-public interface PayloadWriter<T> extends AutoCloseable {
+public interface PayloadWriter<T> extends Closeable, Flushable {
     /**
-     * Write an Object of type {@link T}.
+     * Write an object of type {@link T}.
+     *
      * @param t the object to write.
+     * @throws IOException if an I/O error occurs. In particular, an {@link IOException} may be thrown if this has been
+     * closed.
      */
-    void write(T t);
-
-    /**
-     * Attempt to flush previously written Objects to the underlying transport.
-     */
-    void flush();
+    void write(T t) throws IOException;
 }

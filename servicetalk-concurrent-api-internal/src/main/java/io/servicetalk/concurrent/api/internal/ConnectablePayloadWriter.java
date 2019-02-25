@@ -26,14 +26,15 @@ import io.servicetalk.transport.api.PayloadWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.util.Queue;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 import static io.servicetalk.concurrent.api.Publisher.error;
-import static io.servicetalk.concurrent.internal.EmptySubscription.EMPTY_SUBSCRIPTION;
 import static io.servicetalk.concurrent.internal.PlatformDependent.newUnboundedMpscQueue;
+import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverTerminalFromSource;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.isRequestNValid;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.newExceptionForInvalidRequestN;
 import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater;
@@ -52,28 +53,17 @@ public final class ConnectablePayloadWriter<T> implements PayloadWriter<T> {
             newUpdater(ConnectablePayloadWriter.class, Object.class, "state");
 
     /**
-     * Values used in {@link #state} below.
-     */
-    private static final Object DISCONNECTED = new Object(),
-            CONNECTED = new Object(),
-            EMITTING = new Object(),
-            TERMINATED = new Object();
-
-    /**
      * A field that assumes various states:
      * <ul>
-     *      <li>{@link #DISCONNECTED} - waiting for {@link #connect()} to be called</li>
-     *      <li>{@link #CONNECTED} - {@link Publisher} created, logically connected but awaiting {@link Subscriber}</li>
-     *      <li>{@link #EMITTING} - emitting from {@link Subscription#request(long)} or {@link #flush()}</li>
-     *      <li>{@link #TERMINATED} - the {@link Subscriber} has been terminated</li>
-     *      <li>{@link Subscriber} - connected to the outer, waiting for items to be emitted or outer termination</li>
+     * <li>{@link State#DISCONNECTED} - waiting for {@link #connect()} to be called</li>
+     * <li>{@link State#CONNECTED} - {@link Publisher} created, logically connected but awaiting {@link Subscriber}</li>
+     * <li>{@link State#EMITTING} - emitting from {@link Subscription#request(long)} or {@link #flush()}</li>
+     * <li>{@link State#TERMINATED} - the {@link Subscriber} has been terminated</li>
+     * <li>{@link Subscriber} - connected to the outer, waiting for items to be emitted or outer termination</li>
      * </ul>
      */
-    @SuppressWarnings("unused")
-    private volatile Object state = DISCONNECTED;
-    @SuppressWarnings("unused")
+    private volatile Object state = State.DISCONNECTED;
     private volatile long requested;
-    @SuppressWarnings("unused")
     private volatile int closed;
 
     /**
@@ -84,13 +74,13 @@ public final class ConnectablePayloadWriter<T> implements PayloadWriter<T> {
     private final Queue<Object> dataQueue = newUnboundedMpscQueue(4);
 
     @Override
-    public void write(final T t) {
+    public void write(final T t) throws IOException {
         verifyOpen();
         dataQueue.add(t);
     }
 
     @Override
-    public void flush() {
+    public void flush() throws IOException {
         verifyOpen();
         trySendData();
     }
@@ -111,8 +101,8 @@ public final class ConnectablePayloadWriter<T> implements PayloadWriter<T> {
      * {@link Subscriber}. Only a single active {@link Subscriber} is allowed for this {@link Publisher}.
      */
     public Publisher<T> connect() {
-        return stateUpdater.compareAndSet(this, DISCONNECTED, CONNECTED) ? new ConnectedPublisher<>(this) :
-                error(new IllegalStateException("Stream is not ready for connect."));
+        return stateUpdater.compareAndSet(this, State.DISCONNECTED, State.CONNECTED) ? new ConnectedPublisher<>(this) :
+                error(new IllegalStateException("Stream state " + state + " is not valid for connect."));
     }
 
     private void trySendData() {
@@ -126,7 +116,7 @@ public final class ConnectablePayloadWriter<T> implements PayloadWriter<T> {
 
     private void trySendData(final Subscriber<? super T> s) {
         do {
-            if (!stateUpdater.compareAndSet(this, s, EMITTING)) {
+            if (!stateUpdater.compareAndSet(this, s, State.EMITTING)) {
                 break;
             }
             // Since we have acquired the lock, we reserve all the requested demand in this loop and decrement after
@@ -139,7 +129,7 @@ public final class ConnectablePayloadWriter<T> implements PayloadWriter<T> {
                     if (next == null) {
                         break;
                     } else if (next instanceof TerminalNotification) {
-                        state = TERMINATED;
+                        state = State.TERMINATED;
                         ((TerminalNotification) next).terminate(s);
                         return;
                     } else {
@@ -150,7 +140,7 @@ public final class ConnectablePayloadWriter<T> implements PayloadWriter<T> {
                             s.onNext(nextT);
                         } catch (final Throwable t) {
                             closed = 1;
-                            state = TERMINATED;
+                            state = State.TERMINATED;
                             dataQueue.clear();
                             s.onError(t);
                             return;
@@ -162,7 +152,7 @@ public final class ConnectablePayloadWriter<T> implements PayloadWriter<T> {
                 final Object next = dataQueue.peek();
                 if (next instanceof TerminalNotification) {
                     dataQueue.poll();
-                    state = TERMINATED;
+                    state = State.TERMINATED;
                     ((TerminalNotification) next).terminate(s);
                 }
             } finally {
@@ -173,14 +163,14 @@ public final class ConnectablePayloadWriter<T> implements PayloadWriter<T> {
                 }
 
                 // Do a CaS because we may have set the state above, or someone else may have terminated the state.
-                stateUpdater.compareAndSet(this, EMITTING, s);
+                stateUpdater.compareAndSet(this, State.EMITTING, s);
             }
-        } while (requested != 0 && !dataQueue.isEmpty());
+        } while (requested > 0 && !dataQueue.isEmpty());
     }
 
-    private void verifyOpen() {
+    private void verifyOpen() throws IOException {
         if (closed != 0) {
-            throw new IllegalStateException("Already closed.");
+            throw new IOException("Already closed.");
         }
     }
 
@@ -194,9 +184,8 @@ public final class ConnectablePayloadWriter<T> implements PayloadWriter<T> {
 
         @Override
         protected void handleSubscribe(final Subscriber<? super T> subscriber) {
-            if (!stateUpdater.compareAndSet(outer, CONNECTED, subscriber)) {
-                subscriber.onSubscribe(EMPTY_SUBSCRIPTION);
-                subscriber.onError(new DuplicateSubscribeException(outer.state, subscriber));
+            if (!stateUpdater.compareAndSet(outer, State.CONNECTED, subscriber)) {
+                deliverTerminalFromSource(subscriber, new DuplicateSubscribeException(outer.state, subscriber));
                 return;
             }
 
@@ -222,5 +211,9 @@ public final class ConnectablePayloadWriter<T> implements PayloadWriter<T> {
                 }
             });
         }
+    }
+
+    private enum State {
+        DISCONNECTED, CONNECTED, EMITTING, TERMINATED
     }
 }
