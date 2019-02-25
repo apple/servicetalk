@@ -25,6 +25,7 @@ import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.api.StreamingHttpService;
+import io.servicetalk.http.router.jersey.internal.BufferPublisherInputStream;
 import io.servicetalk.transport.api.ConnectionContext;
 
 import org.glassfish.jersey.internal.MapPropertiesDelegate;

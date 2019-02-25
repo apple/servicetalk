@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,6 @@ import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.internal.DelayedCancellable;
 import io.servicetalk.http.api.HttpExecutionStrategy;
-import io.servicetalk.http.router.jersey.BufferPublisherInputStream;
 
 import javax.annotation.Nullable;
 import javax.ws.rs.container.ContainerRequestContext;

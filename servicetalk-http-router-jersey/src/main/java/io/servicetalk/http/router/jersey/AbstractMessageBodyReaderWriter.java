@@ -40,7 +40,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.ext.MessageBodyReader;
 import javax.ws.rs.ext.MessageBodyWriter;
 
-import static io.servicetalk.http.router.jersey.BufferPublisherInputStream.handleEntityStream;
+import static io.servicetalk.http.router.jersey.internal.BufferPublisherInputStream.handleEntityStream;
 import static io.servicetalk.http.router.jersey.internal.RequestProperties.setResponseBufferPublisher;
 import static javax.ws.rs.Priorities.ENTITY_CODER;
 import static javax.ws.rs.core.MediaType.WILDCARD;

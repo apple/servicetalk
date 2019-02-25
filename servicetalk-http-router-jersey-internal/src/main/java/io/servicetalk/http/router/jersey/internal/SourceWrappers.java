@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,6 @@ package io.servicetalk.http.router.jersey.internal;
 
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.http.router.jersey.BufferPublisherInputStream;
 
 import org.glassfish.jersey.internal.PropertiesDelegate;
 import org.glassfish.jersey.message.internal.InboundMessageContext;

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.http.router.jersey;
+package io.servicetalk.http.router.jersey.internal;
 
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
@@ -59,7 +59,7 @@ public final class BufferPublisherInputStream extends InputStream {
      * @param publisher the {@link Publisher Publisher&lt;Buffer&gt;} to read from.
      * @param queueCapacity the capacity hint for the intermediary queue that stores items.
      */
-    BufferPublisherInputStream(final Publisher<Buffer> publisher, final int queueCapacity) {
+    public BufferPublisherInputStream(final Publisher<Buffer> publisher, final int queueCapacity) {
         inputStream = EMPTY_INPUT_STREAM;
         this.publisher = requireNonNull(publisher);
         this.queueCapacity = queueCapacity;
@@ -83,7 +83,7 @@ public final class BufferPublisherInputStream extends InputStream {
      * @param executionStrategy the {@link HttpExecutionStrategy} to use.
      * @param fallbackExecutor the {@link Executor} to use as a fallback with the {@link HttpExecutionStrategy}.
      */
-    void offloadSourcePublisher(final HttpExecutionStrategy executionStrategy,
+    public void offloadSourcePublisher(final HttpExecutionStrategy executionStrategy,
                                 final Executor fallbackExecutor) {
         if (inputStream == EMPTY_INPUT_STREAM) {
             publisher = executionStrategy.offloadReceive(fallbackExecutor, publisher);

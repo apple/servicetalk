@@ -13,4 +13,4 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-io.servicetalk.data.jackson.jersey.internal.ServiceTalkJacksonSerializerAutoDiscoverable
+io.servicetalk.data.jackson.jersey.config.ServiceTalkJacksonSerializerAutoDiscoverable
