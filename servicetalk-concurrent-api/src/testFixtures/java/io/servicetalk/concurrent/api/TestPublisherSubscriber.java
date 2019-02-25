@@ -112,6 +112,10 @@ public final class TestPublisherSubscriber<T> implements Subscriber<T>, Subscrip
         collector.clear();
     }
 
+    public static <T> TestPublisherSubscriber<T> newTestPublisherSubscriber() {
+        return new Builder<T>().build();
+    }
+
     public static class Builder<T> {
         private boolean checkDemand = true;
         @Nullable

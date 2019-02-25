@@ -45,8 +45,8 @@ public class TestPublisherTest {
     @Rule
     public final ExpectedException expected = ExpectedException.none();
 
-    private final TestPublisherSubscriber<String> subscriber1 = new TestPublisherSubscriber.Builder<String>().build();
-    private final TestPublisherSubscriber<String> subscriber2 = new TestPublisherSubscriber.Builder<String>().build();
+    private final TestPublisherSubscriber<String> subscriber1 = TestPublisherSubscriber.newTestPublisherSubscriber();
+    private final TestPublisherSubscriber<String> subscriber2 = TestPublisherSubscriber.newTestPublisherSubscriber();
 
     @Test
     public void testNonResubscribeablePublisher() {

@@ -105,6 +105,10 @@ public final class TestPublisher<T> extends Publisher<T> {
         exceptions.add(t);
     }
 
+    public static <T> TestPublisher<T> newTestPublisher() {
+        return new Builder<T>().build();
+    }
+
     public static class Builder<T> {
 
         @Nullable
