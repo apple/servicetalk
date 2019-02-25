@@ -61,10 +61,15 @@ public class IsIterableEndingWithInOrder<T> extends IsIterableContainingInOrder<
             matchers.add(equalTo(item));
         }
 
-        return endsWith(matchers);
+        return new IsIterableEndingWithInOrder<>(matchers);
     }
 
-    public static <E> Matcher<Iterable<? extends E>> endsWith(List<Matcher<? super E>> itemMatchers) {
-        return new IsIterableEndingWithInOrder<>(itemMatchers);
+    public static <E> Matcher<Iterable<? extends E>> endsWith(List<E> items) {
+        List<Matcher<? super E>> matchers = new ArrayList<>();
+        for (E item : items) {
+            matchers.add(equalTo(item));
+        }
+
+        return new IsIterableEndingWithInOrder<>(matchers);
     }
 }
