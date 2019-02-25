@@ -25,8 +25,7 @@ public class DemandCheckingSubscriber<T> implements Subscriber<T> {
 
     private final Subscriber<? super T> delegate;
 
-    private final AtomicLong requested = new AtomicLong();
-    private final AtomicLong received = new AtomicLong();
+    private final AtomicLong pending = new AtomicLong();
     private volatile boolean subscribed;
 
     public DemandCheckingSubscriber(final Subscriber<? super T> delegate) {
@@ -36,10 +35,11 @@ public class DemandCheckingSubscriber<T> implements Subscriber<T> {
     @Override
     public void onSubscribe(final Subscription s) {
         subscribed = true;
+        pending.set(0);
         delegate.onSubscribe(new Subscription() {
             @Override
             public void request(final long n) {
-                requested.accumulateAndGet(n, FlowControlUtil::addWithOverflowProtection);
+                pending.accumulateAndGet(n, FlowControlUtil::addWithOverflowProtection);
                 s.request(n);
             }
 
@@ -55,10 +55,9 @@ public class DemandCheckingSubscriber<T> implements Subscriber<T> {
         if (!subscribed) {
             throw new IllegalStateException("Demand check failure: not subscribed to receive " + t);
         }
-        if (received.get() >= requested.get()) {
+        if (pending.decrementAndGet() < 0) {
             throw new IllegalStateException("Demand check failure: not enough demand to send " + t);
         }
-        received.incrementAndGet();
         delegate.onNext(t);
     }
 

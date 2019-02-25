@@ -31,17 +31,17 @@ import static java.util.Objects.requireNonNull;
 public final class TestPublisher<T> extends Publisher<T> {
     private static final Logger LOGGER = LoggerFactory.getLogger(TestPublisher.class);
 
-    private final Function<Subscriber<? super T>, Subscriber<T>> subscriberFunction;
+    private final Function<Subscriber<? super T>, Subscriber<? super T>> subscriberFunction;
     private final List<Throwable> exceptions = new CopyOnWriteArrayList<>();
 
     @Nullable
-    private volatile Subscriber<T> subscriber;
+    private volatile Subscriber<? super T> subscriber;
 
-    private TestPublisher(final Function<Subscriber<? super T>, Subscriber<T>> subscriberFunction) {
+    private TestPublisher(final Function<Subscriber<? super T>, Subscriber<? super T>> subscriberFunction) {
         this.subscriberFunction = subscriberFunction;
     }
 
-    public boolean subscribed() {
+    public boolean isSubscribed() {
         return subscriber != null;
     }
 
@@ -51,27 +51,17 @@ public final class TestPublisher<T> extends Publisher<T> {
             this.subscriber = requireNonNull(subscriberFunction.apply(subscriber));
         } catch (final Throwable t) {
             record(t);
-            LOGGER.warn("Unexpected exception", t);
         }
     }
 
     public void onSubscribe(final Subscription subscription) {
-        rethrow();
-        final Subscriber<T> subscriber = this.subscriber;
-        if (subscriber == null) {
-            recordAndThrow(new IllegalStateException("onSubscribe without subscriber"));
-            return;
-        }
+        final Subscriber<? super T> subscriber = checkSubscriberAndExceptions("onSubscribe");
         subscriber.onSubscribe(subscription);
     }
 
     @SafeVarargs
     public final void onNext(@Nullable final T... items) {
-        rethrow();
-        final Subscriber<T> subscriber = this.subscriber;
-        if (subscriber == null) {
-            throw new IllegalStateException("onNext without subscriber");
-        }
+        final Subscriber<? super T> subscriber = checkSubscriberAndExceptions("onNext");
         if (items == null) {
             subscriber.onNext(null);
         } else {
@@ -82,34 +72,16 @@ public final class TestPublisher<T> extends Publisher<T> {
     }
 
     public void onComplete() {
-        rethrow();
-        final Subscriber<T> subscriber = this.subscriber;
-        if (subscriber == null) {
-            throw new IllegalStateException("onComplete without subscriber");
-        }
+        final Subscriber<? super T> subscriber = checkSubscriberAndExceptions("onComplete");
         subscriber.onComplete();
     }
 
     public void onError(final Throwable t) {
-        rethrow();
-        final Subscriber<T> subscriber = this.subscriber;
-        if (subscriber == null) {
-            throw new IllegalStateException("onError without subscriber");
-        }
+        final Subscriber<? super T> subscriber = checkSubscriberAndExceptions("onError");
         subscriber.onError(t);
     }
 
-    private <TT extends Throwable> void recordAndThrow(final TT t) throws TT {
-        record(t);
-        throw t;
-    }
-
-    private void record(final Throwable t) {
-        requireNonNull(t);
-        exceptions.add(t);
-    }
-
-    private void rethrow() {
+    private Subscriber<? super T> checkSubscriberAndExceptions(final String signal) {
         if (!exceptions.isEmpty()) {
             final RuntimeException exception = new RuntimeException("Unexpected exception(s) encountered",
                     exceptions.get(0));
@@ -118,17 +90,30 @@ public final class TestPublisher<T> extends Publisher<T> {
             }
             throw exception;
         }
+        final Subscriber<? super T> subscriber = this.subscriber;
+        if (subscriber == null) {
+            final IllegalStateException e = new IllegalStateException(signal + " without subscriber");
+            record(e);
+            throw e;
+        }
+        return subscriber;
+    }
+
+    private void record(final Throwable t) {
+        requireNonNull(t);
+        LOGGER.warn("Unexpected exception", t);
+        exceptions.add(t);
     }
 
     public static class Builder<T> {
 
         @Nullable
-        private Function<Subscriber<? super T>, Subscriber<T>> demandCheckingSubscriberFunction;
+        private Function<Subscriber<? super T>, Subscriber<? super T>> demandCheckingSubscriberFunction;
         @Nullable
-        private Function<Subscriber<? super T>, Subscriber<T>> autoOnSubscribeSubscriberFunction =
+        private Function<Subscriber<? super T>, Subscriber<? super T>> autoOnSubscribeSubscriberFunction =
                 new AutoOnSubscribeSubscriberFunction<>();
 
-        private Function<Subscriber<? super T>, Subscriber<T>> subscriberCardinalityFunction =
+        private Function<Subscriber<? super T>, Subscriber<? super T>> subscriberCardinalityFunction =
                 new SequentialPublisherSubscriberFunction<>();
 
         public Builder<T> concurrentSubscribers() {
@@ -191,12 +176,13 @@ public final class TestPublisher<T> extends Publisher<T> {
             return this;
         }
 
-        public TestPublisher<T> custom(final Function<Subscriber<? super T>, Subscriber<T>> function) {
+        public TestPublisher<T> build(final Function<Subscriber<? super T>, Subscriber<? super T>> function) {
             return new TestPublisher<>(requireNonNull(function));
         }
 
-        private Function<Subscriber<? super T>, Subscriber<T>> buildSubscriberFunction() {
-            Function<Subscriber<? super T>, Subscriber<T>> subscriberFunction = demandCheckingSubscriberFunction;
+        private Function<Subscriber<? super T>, Subscriber<? super T>> buildSubscriberFunction() {
+            Function<Subscriber<? super T>, Subscriber<? super T>> subscriberFunction =
+                    demandCheckingSubscriberFunction;
             subscriberFunction = andThen(subscriberFunction, autoOnSubscribeSubscriberFunction);
             subscriberFunction = andThen(subscriberFunction, subscriberCardinalityFunction);
             assert subscriberFunction != null;
@@ -208,14 +194,14 @@ public final class TestPublisher<T> extends Publisher<T> {
         }
 
         @Nullable
-        private static <T> Function<Subscriber<? super T>,
-                Subscriber<T>> andThen(@Nullable final Function<Subscriber<? super T>, Subscriber<T>> first,
-                                       @Nullable final Function<Subscriber<? super T>, Subscriber<T>> second) {
+        private static <T> Function<Subscriber<? super T>, Subscriber<? super T>>
+        andThen(@Nullable final Function<Subscriber<? super T>, Subscriber<? super T>> first,
+                @Nullable final Function<Subscriber<? super T>, Subscriber<? super T>> second) {
             if (first == null) {
                 return second;
             }
             if (second == null) {
-                return null;
+                return first;
             }
             return first.andThen(second);
         }

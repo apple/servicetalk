@@ -141,11 +141,6 @@ public final class TestPublisherSubscriber<T> implements Subscriber<T>, Subscrip
             return this;
         }
 
-        public Builder<T> name(final String name) {
-            this.loggingName = name;
-            return this;
-        }
-
         public TestPublisherSubscriber<T> build() {
             final CollectingPublisherSubscriber<T> collector = new CollectingPublisherSubscriber<>();
             Subscriber<T> delegate = collector;

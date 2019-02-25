@@ -23,7 +23,7 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Function;
 
-public class ConcurrentPublisherSubscriberFunction<T> implements Function<Subscriber<? super T>, Subscriber<T>> {
+public class ConcurrentPublisherSubscriberFunction<T> implements Function<Subscriber<? super T>, Subscriber<? super T>> {
 
     private final List<Subscriber<? super T>> subscribers = new CopyOnWriteArrayList<>();
     private final Subscriber<T> listSubscriber = new Subscriber<T>() {
@@ -57,7 +57,7 @@ public class ConcurrentPublisherSubscriberFunction<T> implements Function<Subscr
     };
 
     @Override
-    public Subscriber<T> apply(final Subscriber<? super T> subscriber) {
+    public Subscriber<? super T> apply(final Subscriber<? super T> subscriber) {
         subscribers.add(subscriber);
         return listSubscriber;
     }

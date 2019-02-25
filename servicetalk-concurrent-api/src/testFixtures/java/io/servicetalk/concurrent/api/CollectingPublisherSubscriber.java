@@ -23,7 +23,7 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import javax.annotation.Nullable;
 
-public class CollectingPublisherSubscriber<T> implements Subscriber<T>, Subscription {
+public final class CollectingPublisherSubscriber<T> implements Subscriber<T>, Subscription {
     public static final Throwable COMPLETE = new Throwable();
     public static final Throwable INCOMPLETE = new Throwable();
 
@@ -33,6 +33,11 @@ public class CollectingPublisherSubscriber<T> implements Subscriber<T>, Subscrip
     private volatile Throwable terminal = INCOMPLETE;
     private volatile boolean subscribed;
 
+    /**
+     * Clear received items and any terminal signals.
+     * <p>
+     * Does not affect subscribed/subscription state.
+     */
     public void clear() {
         items.clear();
         terminal = INCOMPLETE;

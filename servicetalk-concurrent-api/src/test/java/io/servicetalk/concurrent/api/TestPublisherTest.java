@@ -157,7 +157,7 @@ public class TestPublisherTest {
         ConcurrentPublisherSubscriberFunction<Integer> concurrentPublisherSubscriberFunction =
                 new ConcurrentPublisherSubscriberFunction<>();
         final AutoOnSubscribeSubscriberFunction<Integer> autoOnSubscribe = new AutoOnSubscribeSubscriberFunction<>();
-        TestPublisher<Integer> source = new TestPublisher.Builder<Integer>().custom(
+        TestPublisher<Integer> source = new TestPublisher.Builder<Integer>().build(
                 new DemandCheckingSubscriberFunction<Integer>()
                         .andThen(autoOnSubscribe)
                         .andThen(concurrentPublisherSubscriberFunction)

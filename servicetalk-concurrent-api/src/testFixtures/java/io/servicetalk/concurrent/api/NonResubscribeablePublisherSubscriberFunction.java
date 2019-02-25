@@ -17,19 +17,19 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 
 public class NonResubscribeablePublisherSubscriberFunction<T>
-        implements Function<Subscriber<? super T>, Subscriber<T>> {
+        implements Function<Subscriber<? super T>, Subscriber<? super T>> {
 
-    private volatile boolean subscribed;
+    private AtomicBoolean subscribed = new AtomicBoolean();
 
     @Override
-    public Subscriber<T> apply(final Subscriber<? super T> subscriber) {
-        if (subscribed) {
+    public Subscriber<? super T> apply(final Subscriber<? super T> subscriber) {
+        if (!subscribed.compareAndSet(false, true)) {
             throw new IllegalStateException("Duplicate subscriber: " + subscriber);
         }
-        subscribed = true;
-        return new DelegatingSubscriber<>(subscriber);
+        return subscriber;
     }
 }

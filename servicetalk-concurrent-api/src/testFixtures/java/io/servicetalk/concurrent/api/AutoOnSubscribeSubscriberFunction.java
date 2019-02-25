@@ -23,12 +23,12 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Function;
 
-public class AutoOnSubscribeSubscriberFunction<T> implements Function<Subscriber<? super T>, Subscriber<T>> {
+public class AutoOnSubscribeSubscriberFunction<T> implements Function<Subscriber<? super T>, Subscriber<? super T>> {
 
     private final List<TestSubscription> subscriptions = new CopyOnWriteArrayList<>();
 
     @Override
-    public Subscriber<T> apply(final Subscriber<? super T> subscriber) {
+    public Subscriber<? super T> apply(final Subscriber<? super T> subscriber) {
         final TestSubscription subscription = new TestSubscription();
         subscriptions.add(subscription);
         subscriber.onSubscribe(subscription);

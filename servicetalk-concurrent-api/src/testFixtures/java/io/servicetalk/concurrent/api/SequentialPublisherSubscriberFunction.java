@@ -18,20 +18,19 @@ package io.servicetalk.concurrent.api;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
-public class SequentialPublisherSubscriberFunction<T> implements Function<Subscriber<? super T>, Subscriber<T>> {
+public class SequentialPublisherSubscriberFunction<T> implements Function<Subscriber<? super T>, Subscriber<? super T>> {
 
-    @Nullable
-    private Subscriber<? super T> subscriber;
+    private final AtomicReference<Subscriber<? super T>> subscriberRef = new AtomicReference<>();
 
     @Override
-    public Subscriber<T> apply(final Subscriber<? super T> subscriber) {
-        if (this.subscriber != null) {
+    public Subscriber<? super T> apply(final Subscriber<? super T> subscriber) {
+        if (!subscriberRef.compareAndSet(null, subscriber)) {
             throw new IllegalStateException("Duplicate subscriber: " + subscriber);
         }
-        this.subscriber = subscriber;
         return new DelegatingSubscriber<T>(subscriber) {
             @Override
             public void onSubscribe(final Subscription s) {
@@ -43,7 +42,7 @@ public class SequentialPublisherSubscriberFunction<T> implements Function<Subscr
 
                     @Override
                     public void cancel() {
-                        SequentialPublisherSubscriberFunction.this.subscriber = null;
+                        subscriberRef.compareAndSet(subscriber, null);
                         s.cancel();
                     }
                 });
@@ -51,13 +50,13 @@ public class SequentialPublisherSubscriberFunction<T> implements Function<Subscr
 
             @Override
             public void onError(final Throwable t) {
-                SequentialPublisherSubscriberFunction.this.subscriber = null;
+                subscriberRef.compareAndSet(subscriber, null);
                 super.onError(t);
             }
 
             @Override
             public void onComplete() {
-                SequentialPublisherSubscriberFunction.this.subscriber = null;
+                subscriberRef.compareAndSet(subscriber, null);
                 super.onComplete();
             }
         };
@@ -65,6 +64,6 @@ public class SequentialPublisherSubscriberFunction<T> implements Function<Subscr
 
     @Nullable
     public Subscriber<? super T> subscriber() {
-        return subscriber;
+        return subscriberRef.get();
     }
 }

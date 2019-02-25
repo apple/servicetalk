@@ -23,19 +23,18 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.SortedMap;
-import java.util.TreeMap;
+import java.util.concurrent.ConcurrentNavigableMap;
+import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import javax.annotation.Nullable;
 
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
-import static org.hamcrest.Matchers.greaterThan;
-import static org.junit.Assert.assertThat;
 
 public class TestExecutor implements Executor {
 
     private final List<RunnableWrapper> tasks = new ArrayList<>();
-    private final SortedMap<Long, List<RunnableWrapper>> scheduledTasksByNano = new TreeMap<>();
+    private final ConcurrentNavigableMap<Long, List<RunnableWrapper>> scheduledTasksByNano = new ConcurrentSkipListMap<>();
     private long currentNanos;
     private CompletableProcessor closeProcessor = new CompletableProcessor();
 
@@ -43,9 +42,7 @@ public class TestExecutor implements Executor {
     public Cancellable execute(final Runnable task) throws RejectedExecutionException {
         final RunnableWrapper wrappedTask = new RunnableWrapper(task);
         tasks.add(wrappedTask);
-        return () -> {
-            tasks.remove(wrappedTask);
-        };
+        return () -> tasks.remove(wrappedTask);
     }
 
     @Override
@@ -53,19 +50,15 @@ public class TestExecutor implements Executor {
             throws RejectedExecutionException {
         final RunnableWrapper wrappedTask = new RunnableWrapper(task);
         final long scheduledNanos = currentNanos() + unit.toNanos(delay);
-        scheduledTasksByNano.compute(scheduledNanos, (k, tasks) -> {
-            if (tasks == null) {
-                tasks = new ArrayList<>();
-            }
-            tasks.add(wrappedTask);
+
+        final List<RunnableWrapper> tasksForNanos = scheduledTasksByNano.computeIfAbsent(scheduledNanos,
+                k -> new ArrayList<>());
+        tasksForNanos.add(wrappedTask);
+
+        return () -> scheduledTasksByNano.computeIfPresent(scheduledNanos, (k, tasks) -> {
+            tasks.remove(wrappedTask);
             return tasks;
         });
-        return () -> {
-            scheduledTasksByNano.computeIfPresent(scheduledNanos, (k, tasks) -> {
-                tasks.remove(wrappedTask);
-                return tasks;
-            });
-        };
     }
 
     @Override
@@ -104,7 +97,9 @@ public class TestExecutor implements Executor {
     }
 
     public TestExecutor advanceTimeByNoExecuteTasks(final long time, final TimeUnit unit) {
-        assertThat(time, greaterThan(0L));
+        if (time <= 0) {
+            throw new IllegalArgumentException("time (" + time + ") must be >0");
+        }
         currentNanos += unit.toNanos(time);
         return this;
     }
@@ -117,7 +112,10 @@ public class TestExecutor implements Executor {
     }
 
     public TestExecutor advanceTimeToNoExecuteTasks(final long time, final TimeUnit unit) {
-        assertThat(unit.toNanos(time), greaterThan(currentNanos));
+        if (unit.toNanos(time) <= currentNanos) {
+            throw new IllegalArgumentException("time (" + unit.toNanos(time) +
+                    ") must be greater than the current time (" + currentNanos + ")");
+        }
         currentNanos = unit.toNanos(time);
         return this;
     }
