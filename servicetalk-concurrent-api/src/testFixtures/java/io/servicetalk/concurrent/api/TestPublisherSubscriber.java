@@ -18,6 +18,7 @@ package io.servicetalk.concurrent.api;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.SingleSource;
+import io.servicetalk.concurrent.internal.TerminalNotification;
 
 import java.util.List;
 import javax.annotation.Nullable;
@@ -43,7 +44,7 @@ public final class TestPublisherSubscriber<T> implements Subscriber<T>, Subscrip
     }
 
     @Nullable
-    public Throwable terminal() {
+    public TerminalNotification terminal() {
         return collector.terminal();
     }
 

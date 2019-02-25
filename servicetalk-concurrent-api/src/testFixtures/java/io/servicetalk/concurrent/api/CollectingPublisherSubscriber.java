@@ -17,6 +17,7 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
+import io.servicetalk.concurrent.internal.TerminalNotification;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -24,13 +25,11 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import javax.annotation.Nullable;
 
 public final class CollectingPublisherSubscriber<T> implements Subscriber<T>, Subscription {
-    public static final Throwable COMPLETE = new Throwable();
-    public static final Throwable INCOMPLETE = new Throwable();
 
     private final List<T> items = new CopyOnWriteArrayList<>();
     private final SequentialSubscription subscription = new SequentialSubscription();
     @Nullable
-    private volatile Throwable terminal = INCOMPLETE;
+    private volatile TerminalNotification terminal;
     private volatile boolean subscribed;
 
     /**
@@ -40,7 +39,7 @@ public final class CollectingPublisherSubscriber<T> implements Subscriber<T>, Su
      */
     public void clear() {
         items.clear();
-        terminal = INCOMPLETE;
+        terminal = null;
     }
 
     public List<T> items() {
@@ -54,17 +53,17 @@ public final class CollectingPublisherSubscriber<T> implements Subscriber<T>, Su
     }
 
     @Nullable
-    public Throwable terminal() {
+    public TerminalNotification terminal() {
         return terminal;
     }
 
     @Nullable
     public Throwable error() {
-        final Throwable terminal = this.terminal;
-        if (terminal == INCOMPLETE) {
+        final TerminalNotification terminal = this.terminal;
+        if (terminal == null) {
             return null;
         }
-        return terminal == COMPLETE ? null : terminal;
+        return terminal == TerminalNotification.complete() ? null : terminal.cause();
     }
 
     public boolean isSubscribed() {
@@ -77,16 +76,16 @@ public final class CollectingPublisherSubscriber<T> implements Subscriber<T>, Su
     }
 
     public boolean isCompleted() {
-        return terminal == COMPLETE;
+        return terminal == TerminalNotification.complete();
     }
 
     public boolean isErrored() {
-        final Throwable terminal = this.terminal;
-        return terminal != INCOMPLETE && terminal != COMPLETE;
+        final TerminalNotification terminal = this.terminal;
+        return terminal != null && terminal != TerminalNotification.complete();
     }
 
     public boolean isTerminated() {
-        return terminal != INCOMPLETE;
+        return terminal != null;
     }
 
     @Override
@@ -112,11 +111,11 @@ public final class CollectingPublisherSubscriber<T> implements Subscriber<T>, Su
 
     @Override
     public void onError(final Throwable t) {
-        terminal = t;
+        terminal = TerminalNotification.error(t);
     }
 
     @Override
     public void onComplete() {
-        terminal = COMPLETE;
+        terminal = TerminalNotification.complete();
     }
 }
