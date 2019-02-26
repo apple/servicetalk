@@ -108,14 +108,18 @@ public class TestPublisherTest {
         FanOut fanOut = new FanOut(2);
         fanOut.consume(source);
 
-        List<TestSubscription> subscriptions = autoOnSubscribe.subscriptions();
+        List<Subscription> subscriptions = autoOnSubscribe.subscriptions();
+        TestSubscription subscription1 = new TestSubscription();
+        TestSubscription subscription2 = new TestSubscription();
+        ((SequentialSubscription) subscriptions.get(0)).switchTo(subscription1);
+        ((SequentialSubscription) subscriptions.get(1)).switchTo(subscription2);
 
-        assertEquals(1, subscriptions.get(0).requested());
-        assertEquals(1, subscriptions.get(1).requested());
+        assertEquals(1, subscription1.requested());
+        assertEquals(1, subscription2.requested());
 
         source.onNext(1, 2, 3, 4, 5, 6, 7, 8, 9);
-        assertEquals(10, subscriptions.get(0).requested());
-        assertEquals(10, subscriptions.get(1).requested());
+        assertEquals(10, subscription1.requested());
+        assertEquals(10, subscription2.requested());
         source.onComplete();
 
         Map<Integer, Integer> counts = fanOut.getCounts();
@@ -137,14 +141,18 @@ public class TestPublisherTest {
         fanOut.consume(source);
         assertEquals(2, concurrentPublisherSubscriberFunction.subscribers().size());
 
-        List<TestSubscription> subscriptions = autoOnSubscribe.subscriptions();
+        List<Subscription> subscriptions = autoOnSubscribe.subscriptions();
+        TestSubscription subscription1 = new TestSubscription();
+        TestSubscription subscription2 = new TestSubscription();
+        ((SequentialSubscription) subscriptions.get(0)).switchTo(subscription1);
+        ((SequentialSubscription) subscriptions.get(1)).switchTo(subscription2);
 
-        assertEquals(1, subscriptions.get(0).requested());
-        assertEquals(1, subscriptions.get(1).requested());
+        assertEquals(1, subscription1.requested());
+        assertEquals(1, subscription2.requested());
 
         source.onNext(1, 2, 3, 4, 5, 6, 7, 8, 9);
-        assertEquals(10, subscriptions.get(0).requested());
-        assertEquals(10, subscriptions.get(1).requested());
+        assertEquals(10, subscription1.requested());
+        assertEquals(10, subscription2.requested());
         source.onComplete();
 
         Map<Integer, Integer> counts = fanOut.getCounts();
@@ -167,14 +175,18 @@ public class TestPublisherTest {
         fanOut.consume(source);
         assertEquals(2, concurrentPublisherSubscriberFunction.subscribers().size());
 
-        List<TestSubscription> subscriptions = autoOnSubscribe.subscriptions();
+        List<Subscription> subscriptions = autoOnSubscribe.subscriptions();
+        TestSubscription subscription1 = new TestSubscription();
+        TestSubscription subscription2 = new TestSubscription();
+        ((SequentialSubscription) subscriptions.get(0)).switchTo(subscription1);
+        ((SequentialSubscription) subscriptions.get(1)).switchTo(subscription2);
 
-        assertEquals(1, subscriptions.get(0).requested());
-        assertEquals(1, subscriptions.get(1).requested());
+        assertEquals(1, subscription1.requested());
+        assertEquals(1, subscription2.requested());
 
         source.onNext(1, 2, 3, 4, 5, 6, 7, 8, 9);
-        assertEquals(10, subscriptions.get(0).requested());
-        assertEquals(10, subscriptions.get(1).requested());
+        assertEquals(10, subscription1.requested());
+        assertEquals(10, subscription2.requested());
         source.onComplete();
 
         Map<Integer, Integer> counts = fanOut.getCounts();

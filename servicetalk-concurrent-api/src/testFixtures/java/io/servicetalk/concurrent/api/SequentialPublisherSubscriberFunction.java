@@ -18,12 +18,14 @@ package io.servicetalk.concurrent.api;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
 public final class SequentialPublisherSubscriberFunction<T> implements Function<Subscriber<? super T>, Subscriber<? super T>> {
 
+    private final AtomicInteger subscriptionCount = new AtomicInteger();
     private final AtomicReference<Subscriber<? super T>> subscriberRef = new AtomicReference<>();
 
     @Override
@@ -31,6 +33,7 @@ public final class SequentialPublisherSubscriberFunction<T> implements Function<
         if (!subscriberRef.compareAndSet(null, subscriber)) {
             throw new IllegalStateException("Duplicate subscriber: " + subscriber);
         }
+        subscriptionCount.incrementAndGet();
         return new DelegatingSubscriber<T>(subscriber) {
             @Override
             public void onSubscribe(final Subscription s) {
@@ -65,5 +68,9 @@ public final class SequentialPublisherSubscriberFunction<T> implements Function<
     @Nullable
     public Subscriber<? super T> subscriber() {
         return subscriberRef.get();
+    }
+
+    public int subscriptionCount() {
+        return subscriptionCount.get();
     }
 }

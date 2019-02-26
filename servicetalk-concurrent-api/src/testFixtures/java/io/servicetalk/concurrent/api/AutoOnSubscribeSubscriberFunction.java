@@ -25,23 +25,28 @@ import java.util.function.Function;
 
 public final class AutoOnSubscribeSubscriberFunction<T> implements Function<Subscriber<? super T>, Subscriber<? super T>> {
 
-    private final List<TestSubscription> subscriptions = new CopyOnWriteArrayList<>();
+    private final List<Subscription> subscriptions = new CopyOnWriteArrayList<>();
 
     @Override
     public Subscriber<? super T> apply(final Subscriber<? super T> subscriber) {
-        final TestSubscription subscription = new TestSubscription();
+        final SequentialSubscription subscription = new SequentialSubscription();
         subscriptions.add(subscription);
         subscriber.onSubscribe(subscription);
-
         return new DelegatingSubscriber<T>(subscriber) {
             @Override
             public void onSubscribe(final Subscription s) {
-                throw new IllegalStateException("onSubscribe already called automatically");
+                subscription.switchTo(s);
+            }
+
+            @Override
+            public void onNext(final T t) {
+                subscription.itemReceived();
+                super.onNext(t);
             }
         };
     }
 
-    public List<TestSubscription> subscriptions() {
+    public List<Subscription> subscriptions() {
         return new ArrayList<>(subscriptions);
     }
 }
