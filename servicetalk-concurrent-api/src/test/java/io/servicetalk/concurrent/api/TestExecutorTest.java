@@ -31,25 +31,15 @@ import static org.testng.Assert.assertNull;
 public class TestExecutorTest {
 
     @Test
-    public void testAdvanceTo() {
+    public void testAdvanceTimeByNoExecuteTasks() {
         TestExecutor fixture = new TestExecutor();
 
-        assertThat(fixture.currentNanos(), equalTo(0L));
-        fixture.advanceTimeToNoExecuteTasks(1000, MILLISECONDS);
-        assertThat(fixture.currentNanos(), equalTo(1000000000L));
-        fixture.advanceTimeToNoExecuteTasks(2000, MILLISECONDS);
-        assertThat(fixture.currentNanos(), equalTo(2000000000L));
-    }
-
-    @Test
-    public void testAdvanceBy() {
-        TestExecutor fixture = new TestExecutor();
-
-        assertThat(fixture.currentNanos(), equalTo(0L));
+        long initialTime = fixture.currentNanos();
+        assertThat(fixture.currentNanos(), equalTo(initialTime));
         fixture.advanceTimeByNoExecuteTasks(1000, MILLISECONDS);
-        assertThat(fixture.currentNanos(), equalTo(1000000000L));
+        assertThat(fixture.currentNanos(), equalTo(initialTime + 1000000000L));
         fixture.advanceTimeByNoExecuteTasks(1000, MILLISECONDS);
-        assertThat(fixture.currentNanos(), equalTo(2000000000L));
+        assertThat(fixture.currentNanos(), equalTo(initialTime + 2000000000L));
     }
 
     @Test

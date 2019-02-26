@@ -17,6 +17,7 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
+import io.servicetalk.concurrent.internal.DelayedSubscription;
 import io.servicetalk.concurrent.internal.TerminalNotification;
 
 import java.util.ArrayList;
@@ -27,7 +28,7 @@ import javax.annotation.Nullable;
 public final class CollectingPublisherSubscriber<T> implements Subscriber<T>, Subscription {
 
     private final List<T> items = new CopyOnWriteArrayList<>();
-    private final SequentialSubscription subscription = new SequentialSubscription();
+    private final DelayedSubscription subscription = new DelayedSubscription();
     @Nullable
     private volatile TerminalNotification terminal;
     private volatile boolean subscribed;
@@ -101,7 +102,7 @@ public final class CollectingPublisherSubscriber<T> implements Subscriber<T>, Su
     @Override
     public void onSubscribe(final Subscription s) {
         subscribed = true;
-        subscription.switchTo(s);
+        subscription.delayedSubscription(s);
     }
 
     @Override

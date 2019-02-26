@@ -20,7 +20,7 @@ import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 
-public class NonResubscribeablePublisherSubscriberFunction<T>
+public final class NonResubscribeablePublisherSubscriberFunction<T>
         implements Function<Subscriber<? super T>, Subscriber<? super T>> {
 
     private AtomicBoolean subscribed = new AtomicBoolean();

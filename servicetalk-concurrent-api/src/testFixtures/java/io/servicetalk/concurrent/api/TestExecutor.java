@@ -26,6 +26,7 @@ import java.util.SortedMap;
 import java.util.concurrent.ConcurrentNavigableMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import javax.annotation.Nullable;
 
@@ -35,7 +36,7 @@ public class TestExecutor implements Executor {
 
     private final List<RunnableWrapper> tasks = new ArrayList<>();
     private final ConcurrentNavigableMap<Long, List<RunnableWrapper>> scheduledTasksByNano = new ConcurrentSkipListMap<>();
-    private long currentNanos;
+    private long currentNanos = ThreadLocalRandom.current().nextLong();
     private CompletableProcessor closeProcessor = new CompletableProcessor();
 
     @Override
@@ -104,22 +105,6 @@ public class TestExecutor implements Executor {
         return this;
     }
 
-    public TestExecutor advanceTimeTo(final long time, final TimeUnit unit) {
-        advanceTimeToNoExecuteTasks(time, unit);
-        executeTasks();
-        executeScheduledTasks();
-        return this;
-    }
-
-    public TestExecutor advanceTimeToNoExecuteTasks(final long time, final TimeUnit unit) {
-        if (unit.toNanos(time) <= currentNanos) {
-            throw new IllegalArgumentException("time (" + unit.toNanos(time) +
-                    ") must be greater than the current time (" + currentNanos + ")");
-        }
-        currentNanos = unit.toNanos(time);
-        return this;
-    }
-
     public TestExecutor executeTasks() {
         execute(tasks);
         return this;
@@ -135,8 +120,10 @@ public class TestExecutor implements Executor {
     public TestExecutor executeScheduledTasks() {
         SortedMap<Long, List<RunnableWrapper>> headMap = scheduledTasksByNano.headMap(currentNanos + 1);
 
-        for (Map.Entry<Long, List<RunnableWrapper>> entry : headMap.entrySet()) {
+        for (Iterator<Map.Entry<Long, List<RunnableWrapper>>> i = headMap.entrySet().iterator(); i.hasNext();) {
+            final Map.Entry<Long, List<RunnableWrapper>> entry = i.next();
             execute(entry.getValue());
+            i.remove();
         }
         return this;
     }
@@ -144,9 +131,12 @@ public class TestExecutor implements Executor {
     public TestExecutor executeNextScheduledTask() {
         SortedMap<Long, List<RunnableWrapper>> headMap = scheduledTasksByNano.headMap(currentNanos + 1);
 
-        for (Map.Entry<Long, List<RunnableWrapper>> entry : headMap.entrySet()) {
+        for (Iterator<Map.Entry<Long, List<RunnableWrapper>>> i = headMap.entrySet().iterator(); i.hasNext();) {
+            final Map.Entry<Long, List<RunnableWrapper>> entry = i.next();
             if (executeOne(entry.getValue())) {
                 return this;
+            } else {
+                i.remove();
             }
         }
         throw new IllegalStateException("No scheduled tasks to execute");

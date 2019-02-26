@@ -19,7 +19,7 @@ import io.servicetalk.concurrent.PublisherSource.Subscriber;
 
 import java.util.function.Function;
 
-public class DemandCheckingSubscriberFunction<T> implements Function<Subscriber<? super T>, Subscriber<? super T>> {
+public final class DemandCheckingSubscriberFunction<T> implements Function<Subscriber<? super T>, Subscriber<? super T>> {
 
     @Override
     public Subscriber<? super T> apply(final Subscriber<? super T> subscriber) {

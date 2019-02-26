@@ -21,7 +21,7 @@ import io.servicetalk.concurrent.internal.FlowControlUtil;
 
 import java.util.concurrent.atomic.AtomicLong;
 
-public class DemandCheckingSubscriber<T> implements Subscriber<T> {
+public final class DemandCheckingSubscriber<T> implements Subscriber<T> {
 
     private final Subscriber<? super T> delegate;
 
