@@ -20,9 +20,11 @@ import io.servicetalk.concurrent.api.MockedSubscriberRule;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 import org.junit.rules.Timeout;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,6 +32,11 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.annotation.Nullable;
 
@@ -46,48 +53,44 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.fail;
 
 public class ConnectablePayloadWriterTest {
     private static final Logger LOGGER = LoggerFactory.getLogger(ConnectablePayloadWriterTest.class);
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
     @Rule
+    public final ExpectedException exception = ExpectedException.none();
+    @Rule
     public final MockedSubscriberRule<String> subscriberRule = new MockedSubscriberRule<>();
     private ConnectablePayloadWriter<String> cpw;
+    private ExecutorService executorService;
 
     @Before
     public void setUp() {
         cpw = new ConnectablePayloadWriter<>();
+        executorService = Executors.newCachedThreadPool();
+    }
+
+    @After
+    public void teardown() {
+        executorService.shutdown();
     }
 
     @Test
-    public void writeConnectFlushCloseSubscribe() throws IOException {
-        cpw.write("foo");
+    public void closeShouldBeIdempotent() throws Exception {
+        Future<?> f = executorService.submit(toRunnable(() -> {
+            cpw.write("foo");
+            cpw.flush();
+            cpw.close();
+        }));
         final Publisher<String> connect = cpw.connect();
-        cpw.flush();
-        cpw.close();
         subscriberRule.subscribe(connect);
         subscriberRule.verifyNoEmissions();
-        subscriberRule.verifySuccess("foo");
-    }
-
-    @Test
-    public void closeShouldBeIdempotent() throws IOException {
-        cpw.write("foo");
-        final Publisher<String> connect = cpw.connect();
-        cpw.flush();
-        cpw.close();
-        subscriberRule.subscribe(connect);
-        subscriberRule.verifyNoEmissions();
-        subscriberRule.verifySuccess("foo");
-        cpw.close(); // should be idempotent
-    }
-
-    @Test
-    public void closeShouldBeIdempotentWhenNotSubscribed() throws IOException {
-        cpw.connect();
-        cpw.write("foo");
-        cpw.close();
+        subscriberRule.request(1);
+        f.get();
+        subscriberRule.verifySuccessNoRequestN("foo");
         cpw.close(); // should be idempotent
     }
 
@@ -210,8 +213,18 @@ public class ConnectablePayloadWriterTest {
                 onComplete.countDown();
             }
         });
-        cpw.write("foo");
-        cpw.flush();
+        try {
+            cpw.write("foo");
+            fail();
+        } catch (RuntimeException cause) {
+            assertSame(DELIBERATE_EXCEPTION, cause);
+        }
+        try {
+            cpw.flush();
+            fail();
+        } catch (IOException ignored) {
+            // expected
+        }
         cpw.close();
         onError.await();
         subscriberRule.subscribe(cpw.connect()).verifyFailure(IllegalStateException.class);
@@ -219,92 +232,104 @@ public class ConnectablePayloadWriterTest {
     }
 
     @Test
-    public void writeFlushConnectCloseSubscribe() throws IOException {
-        cpw.write("foo");
-        cpw.flush();
-        final Publisher<String> connect = cpw.connect();
-        cpw.close();
-        subscriberRule.subscribe(connect).verifySuccess("foo");
-    }
+    public void writeFlushCloseConnectSubscribeRequest() throws Exception {
+        Future<?> f = executorService.submit(toRunnable(() -> {
+            cpw.write("foo");
+            cpw.flush();
+            cpw.close();
+        }));
 
-    @Test
-    public void writeFlushCloseConnectSubscribe() throws IOException {
-        cpw.write("foo");
-        cpw.flush();
-        cpw.close();
-        subscriberRule.subscribe(cpw.connect()).verifySuccess("foo");
-    }
-
-    @Test
-    public void connectWriteFlushCloseSubscribe() throws IOException {
-        final Publisher<String> connect = cpw.connect();
-        cpw.write("foo");
-        cpw.flush();
-        cpw.close();
-        subscriberRule.subscribe(connect).verifySuccess("foo");
-    }
-
-    @Test
-    public void connectSubscribeWriteFlushCloseRequest() throws IOException {
         final Publisher<String> connect = cpw.connect();
         subscriberRule.subscribe(connect);
-        cpw.write("foo");
-        cpw.flush();
-        cpw.close();
-        subscriberRule.verifySuccess("foo");
-    }
-
-    @Test
-    public void connectSubscribeRequestWriteFlushClose() throws IOException {
-        final Publisher<String> connect = cpw.connect();
-        subscriberRule.subscribe(connect).request(1);
-        cpw.write("foo");
-        cpw.flush();
-        cpw.close();
+        subscriberRule.verifyNoEmissions();
+        subscriberRule.request(1);
+        f.get();
         subscriberRule.verifySuccessNoRequestN("foo");
     }
 
     @Test
-    public void requestWriteSingleWriteSingleFlushClose() throws IOException {
-        final Publisher<String> connect = cpw.connect();
-        subscriberRule.subscribe(connect).request(2);
-        cpw.write("foo");
-        cpw.write("bar");
-        cpw.flush();
-        cpw.close();
-        subscriberRule.verifySuccessNoRequestN("foo", "bar");
-    }
-
-    @Test
-    public void requestWriteSingleFlushWriteSingleFlushClose() throws IOException {
-        final Publisher<String> connect = cpw.connect();
-        subscriberRule.subscribe(connect).request(2);
-        cpw.write("foo");
-        cpw.flush();
-        cpw.write("bar");
-        cpw.flush();
-        cpw.close();
-        subscriberRule.verifySuccessNoRequestN("foo", "bar");
-    }
-
-    @Test
-    public void writeSingleFlushWriteSingleFlushRequestClose() throws IOException {
+    public void connectSubscribeRequestWriteFlushClose() throws Exception {
         final Publisher<String> connect = cpw.connect();
         subscriberRule.subscribe(connect);
-        cpw.write("foo");
-        cpw.flush();
-        cpw.write("bar");
-        cpw.flush();
-        cpw.close();
-        subscriberRule.request(1);
-        subscriberRule.verifyItems("foo");
         subscriberRule.verifyNoEmissions();
         subscriberRule.request(1);
-        subscriberRule.verifySuccess("bar");
+        Future<?> f = executorService.submit(toRunnable(() -> {
+            cpw.write("foo");
+            cpw.flush();
+            cpw.close();
+        }));
+        f.get();
+        subscriberRule.verifySuccessNoRequestN("foo");
     }
 
     @Test
-    public void invalidRequestN() {
+    public void connectSubscribeWriteFlushCloseRequest() throws Exception {
+        final Publisher<String> connect = cpw.connect();
+        subscriberRule.subscribe(connect);
+        Future<?> f = executorService.submit(toRunnable(() -> {
+            cpw.write("foo");
+            cpw.flush();
+            cpw.close();
+        }));
+        subscriberRule.verifyNoEmissions();
+        subscriberRule.request(1);
+        f.get();
+        subscriberRule.verifySuccessNoRequestN("foo");
+    }
+
+    @Test
+    public void requestWriteSingleWriteSingleFlushClose() throws Exception {
+        final Publisher<String> connect = cpw.connect();
+        subscriberRule.subscribe(connect);
+        subscriberRule.verifyNoEmissions();
+        subscriberRule.request(2);
+        Future<?> f = executorService.submit(toRunnable(() -> {
+            cpw.write("foo");
+            cpw.write("bar");
+            cpw.flush();
+            cpw.close();
+        }));
+        f.get();
+        subscriberRule.verifySuccessNoRequestN("foo", "bar");
+    }
+
+    @Test
+    public void requestWriteSingleFlushWriteSingleFlushClose() throws Exception {
+        final Publisher<String> connect = cpw.connect();
+        subscriberRule.subscribe(connect);
+        subscriberRule.verifyNoEmissions();
+        subscriberRule.request(2);
+        Future<?> f = executorService.submit(toRunnable(() -> {
+            cpw.write("foo");
+            cpw.flush();
+            cpw.write("bar");
+            cpw.flush();
+            cpw.close();
+        }));
+        f.get();
+        subscriberRule.verifySuccessNoRequestN("foo", "bar");
+    }
+
+    @Test
+    public void writeSingleFlushWriteSingleFlushRequestClose() throws Exception {
+        final Publisher<String> connect = cpw.connect();
+        subscriberRule.subscribe(connect);
+        subscriberRule.verifyNoEmissions();
+        subscriberRule.request(1);
+        Future<?> f = executorService.submit(toRunnable(() -> {
+            cpw.write("foo");
+            cpw.flush();
+            cpw.write("bar");
+            cpw.flush();
+            cpw.close();
+        }));
+        subscriberRule.request(1);
+        f.get();
+        subscriberRule.verifySuccessNoRequestN("foo", "bar");
+    }
+
+    @Test
+    public void invalidRequestN() throws IOException {
         AtomicReference<Throwable> failure = new AtomicReference<>();
         toSource(cpw.connect()).subscribe(new PublisherSource.Subscriber<String>() {
             @Override
@@ -328,6 +353,7 @@ public class ConnectablePayloadWriterTest {
             }
         });
 
+        cpw.close();
         assertThat("Unexpected failure", failure.get(), is(instanceOf(IllegalArgumentException.class)));
     }
 
@@ -355,9 +381,104 @@ public class ConnectablePayloadWriterTest {
                 failure.set(new AssertionError("onComplete received when onNext threw."));
             }
         });
-        cpw.write("foo");
+        try {
+            cpw.write("foo");
+            fail();
+        } catch (RuntimeException cause) {
+            assertSame(DELIBERATE_EXCEPTION, cause);
+        }
         cpw.close();
         assertThat("Unexpected failure", failure.get(), is(DELIBERATE_EXCEPTION));
+    }
+
+    @Test
+    public void cancelCloses() throws Exception {
+        final Publisher<String> connect = cpw.connect();
+        subscriberRule.subscribe(connect);
+        subscriberRule.verifyNoEmissions();
+        subscriberRule.cancel();
+        Future<?> f = executorService.submit(toRunnable(() -> {
+            cpw.write("foo");
+        }));
+        exception.expect(ExecutionException.class);
+        exception.expectCause(is(instanceOf(RuntimeException.class)));
+        f.get();
+    }
+
+    @Test
+    public void cancelCloseAfterWrite() throws Exception {
+        final Publisher<String> connect = cpw.connect();
+        subscriberRule.subscribe(connect);
+        subscriberRule.verifyNoEmissions();
+        subscriberRule.request(1);
+        Future<?> f = executorService.submit(toRunnable(() -> {
+            cpw.write("foo");
+            cpw.flush();
+        }));
+        f.get();
+        subscriberRule.verifyItems("foo");
+
+        subscriberRule.cancel();
+        exception.expect(is(instanceOf(IOException.class)));
+        cpw.write("foo");
+    }
+
+    @Test
+    public void requestNegativeWrite() throws Exception {
+        final Publisher<String> connect = cpw.connect();
+        subscriberRule.subscribe(connect);
+        subscriberRule.verifyNoEmissions();
+        subscriberRule.request(-1);
+        Future<?> f = executorService.submit(toRunnable(() -> {
+            cpw.write("foo");
+            cpw.flush();
+        }));
+        try {
+            f.get();
+            fail();
+        } catch (ExecutionException e) {
+            assertThat(e.getCause(), is(instanceOf(RuntimeException.class)));
+            assertThat(e.getCause().getCause(), is(instanceOf(IOException.class)));
+        }
+        subscriberRule.verifyFailure(IllegalArgumentException.class);
+    }
+
+    @Test
+    public void writeRequestNegative() throws Exception {
+        final Publisher<String> connect = cpw.connect();
+        subscriberRule.subscribe(connect);
+        subscriberRule.verifyNoEmissions();
+        CyclicBarrier cb = new CyclicBarrier(2);
+        Future<?> f = executorService.submit(toRunnable(() -> {
+            cb.await();
+            cpw.write("foo");
+            cpw.flush();
+        }));
+        cb.await();
+        subscriberRule.request(-1);
+        try {
+            f.get();
+            fail();
+        } catch (ExecutionException e) {
+            assertThat(e.getCause(), is(instanceOf(RuntimeException.class)));
+            assertThat(e.getCause().getCause(), is(instanceOf(IOException.class)));
+        }
+        subscriberRule.verifyFailure(IllegalArgumentException.class);
+    }
+
+    @Test
+    public void closeNoWrite() throws Exception {
+        CyclicBarrier cb = new CyclicBarrier(2);
+        Future<?> f = executorService.submit(toRunnable(() -> {
+            cb.await();
+            cpw.close();
+        }));
+        final Publisher<String> connect = cpw.connect();
+        cb.await();
+        subscriberRule.subscribe(connect);
+        subscriberRule.request(1);
+        f.get();
+        subscriberRule.verifySuccess();
     }
 
     @Test
@@ -450,5 +571,20 @@ public class ConnectablePayloadWriterTest {
         consumerThread.join(); // provides visibility for received from consumerThread
         assertNull(error.get());
         assertArrayEquals(data, received); // assertThat() times out
+    }
+
+    private static Runnable toRunnable(CheckedRunnable runnable) {
+        return () -> {
+            try {
+                runnable.doWork();
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        };
+    }
+
+    @FunctionalInterface
+    private interface CheckedRunnable {
+        void doWork() throws Exception;
     }
 }

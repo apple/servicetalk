@@ -27,13 +27,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.Queue;
-import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+import java.util.concurrent.locks.LockSupport;
+import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Publisher.error;
-import static io.servicetalk.concurrent.internal.PlatformDependent.newUnboundedMpscQueue;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverTerminalFromSource;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.isRequestNValid;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.newExceptionForInvalidRequestN;
@@ -47,8 +46,9 @@ import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater
 public final class ConnectablePayloadWriter<T> implements PayloadWriter<T> {
     private static final AtomicLongFieldUpdater<ConnectablePayloadWriter> requestedUpdater =
             AtomicLongFieldUpdater.newUpdater(ConnectablePayloadWriter.class, "requested");
-    private static final AtomicIntegerFieldUpdater<ConnectablePayloadWriter> closedUpdater =
-            AtomicIntegerFieldUpdater.newUpdater(ConnectablePayloadWriter.class, "closed");
+    private static final AtomicReferenceFieldUpdater<ConnectablePayloadWriter, TerminalNotification> closedUpdater =
+            AtomicReferenceFieldUpdater.newUpdater(
+                    ConnectablePayloadWriter.class, TerminalNotification.class, "closed");
     private static final AtomicReferenceFieldUpdater<ConnectablePayloadWriter, Object> stateUpdater =
             newUpdater(ConnectablePayloadWriter.class, Object.class, "state");
 
@@ -57,39 +57,58 @@ public final class ConnectablePayloadWriter<T> implements PayloadWriter<T> {
      * <ul>
      * <li>{@link State#DISCONNECTED} - waiting for {@link #connect()} to be called</li>
      * <li>{@link State#CONNECTED} - {@link Publisher} created, logically connected but awaiting {@link Subscriber}</li>
-     * <li>{@link State#EMITTING} - emitting from {@link Subscription#request(long)} or {@link #flush()}</li>
-     * <li>{@link State#TERMINATED} - the {@link Subscriber} has been terminated</li>
      * <li>{@link Subscriber} - connected to the outer, waiting for items to be emitted or outer termination</li>
+     * <li>{@link State#TERMINATED} - we have delivered a terminal signal to the {@link Subscriber}</li>
      * </ul>
      */
     private volatile Object state = State.DISCONNECTED;
     private volatile long requested;
-    private volatile int closed;
-
-    /**
-     * Stores objects of type {@link T} from {@link #write(Object)}, or a {@link TerminalNotification}.
-     * <p>
-     * MultiProducer queue because the Subscription may insert elements into the queue to force a close and terminate.
-     */
-    private final Queue<Object> dataQueue = newUnboundedMpscQueue(4);
+    @Nullable
+    private volatile TerminalNotification closed;
+    @Nullable
+    private volatile Thread writerThread;
 
     @Override
     public void write(final T t) throws IOException {
         verifyOpen();
-        dataQueue.add(t);
+        // This can only be called from a single thread, so optimistically decrement and not worry about underflow
+        // because there will be no other thread decrementing this value. If we go negative we increment and wait.
+        final long currRequested = requestedUpdater.decrementAndGet(this);
+        if (currRequested < 0) {
+            requestedUpdater.incrementAndGet(this);
+            waitForRequestNDemand();
+        }
+
+        final Subscriber<? super T> s = waitForSubscriber();
+        try {
+            s.onNext(t);
+        } catch (final Throwable cause) {
+            closed = TerminalNotification.error(cause);
+            state = State.TERMINATED;
+            s.onError(cause);
+            throw cause;
+        }
     }
 
     @Override
     public void flush() throws IOException {
+        // We currently don't queue any data at this layer, so there is nothing to do here.
         verifyOpen();
-        trySendData();
     }
 
     @Override
-    public void close() {
-        if (closedUpdater.compareAndSet(this, 0, 1)) {
-            dataQueue.add(TerminalNotification.complete());
-            trySendData();
+    public void close() throws IOException {
+        if (closedUpdater.compareAndSet(this, null, TerminalNotification.complete())) {
+            final Subscriber<? super T> s = waitForSubscriber();
+            state = State.TERMINATED;
+            s.onComplete();
+        } else {
+            Object currState = stateUpdater.getAndSet(this, State.TERMINATED);
+            if (currState instanceof Subscriber) {
+                final TerminalNotification currClosed = closed;
+                assert currClosed != null;
+                currClosed.terminate((Subscriber<?>) currState);
+            }
         }
     }
 
@@ -105,73 +124,58 @@ public final class ConnectablePayloadWriter<T> implements PayloadWriter<T> {
                 error(new IllegalStateException("Stream state " + state + " is not valid for connect."));
     }
 
-    private void trySendData() {
-        final Object currentState = state;
-        if (currentState instanceof Subscriber) {
-            @SuppressWarnings("unchecked")
-            final Subscriber<? super T> s = (Subscriber<? super T>) currentState;
-            trySendData(s);
-        }
-    }
-
-    private void trySendData(final Subscriber<? super T> s) {
-        do {
-            if (!stateUpdater.compareAndSet(this, s, State.EMITTING)) {
-                break;
-            }
-            // Since we have acquired the lock, we reserve all the requested demand in this loop and decrement after
-            // we have delivered as much data as possible.
-            long requestedTotal = requestedUpdater.getAndSet(this, 0);
-            long drainedCount = 0;
-            try {
-                while (drainedCount < requestedTotal) {
-                    final Object next = dataQueue.poll();
-                    if (next == null) {
-                        break;
-                    } else if (next instanceof TerminalNotification) {
-                        state = State.TERMINATED;
-                        ((TerminalNotification) next).terminate(s);
-                        return;
-                    } else {
-                        ++drainedCount;
-                        try {
-                            @SuppressWarnings("unchecked")
-                            final T nextT = (T) next;
-                            s.onNext(nextT);
-                        } catch (final Throwable t) {
-                            closed = 1;
-                            state = State.TERMINATED;
-                            dataQueue.clear();
-                            s.onError(t);
-                            return;
-                        }
-                    }
-                }
-                // If requestN is exhausted, we should still check to see if there is a terminal event pending on the
-                // the queue and deliver it.
-                final Object next = dataQueue.peek();
-                if (next instanceof TerminalNotification) {
-                    dataQueue.poll();
-                    state = State.TERMINATED;
-                    ((TerminalNotification) next).terminate(s);
-                }
-            } finally {
-                // Restore the amount we were unable to deliver from requested.
-                if (drainedCount != requestedTotal) {
-                    requestedUpdater.accumulateAndGet(this, requestedTotal - drainedCount,
-                            FlowControlUtil::addWithOverflowProtection);
-                }
-
-                // Do a CaS because we may have set the state above, or someone else may have terminated the state.
-                stateUpdater.compareAndSet(this, State.EMITTING, s);
-            }
-        } while (requested > 0 && !dataQueue.isEmpty());
-    }
-
     private void verifyOpen() throws IOException {
-        if (closed != 0) {
-            throw new IOException("Already closed.");
+        TerminalNotification currClosed = closed;
+        if (currClosed != null) {
+            Object currState = stateUpdater.getAndSet(this, State.TERMINATED);
+            if (currState instanceof Subscriber) {
+                currClosed.terminate((Subscriber<?>) currState);
+            }
+            throw new IOException("Already closed " + currClosed);
         }
+    }
+
+    private void waitForRequestNDemand() throws IOException {
+        writerThread = Thread.currentThread();
+        for (;;) {
+            LockSupport.park();
+            final long currRequested = requested;
+            if (currRequested > 0) {
+                if (requestedUpdater.compareAndSet(this, currRequested, currRequested - 1)) {
+                    writerThread = null;
+                    break;
+                }
+            } else {
+                // While we are waiting for interaction with the Subscription, if the Subscription contract is violated
+                // that may result in a terminal notification, which doesn't require any demand to deliver.
+                TerminalNotification currClosed = closed;
+                if (currClosed != null) {
+                    final Subscriber<? super T> s = waitForSubscriber();
+                    state = State.TERMINATED;
+                    currClosed.terminate(s);
+                    throw new IOException("Already closed " + currClosed);
+                }
+            }
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private Subscriber<? super T> waitForSubscriber() throws IOException {
+        Object currState = state;
+        if (!(currState instanceof Subscriber)) {
+            writerThread = Thread.currentThread();
+            for (;;) {
+                LockSupport.park();
+                currState = state;
+                if (currState instanceof Subscriber) {
+                    writerThread = null;
+                    break;
+                } else if (currState == State.TERMINATED) {
+                    throw new IOException("Already closed " + closed);
+                }
+            }
+        }
+        return (Subscriber<? super T>) currState;
     }
 
     private static final class ConnectedPublisher<T> extends Publisher<T> {
@@ -194,26 +198,33 @@ public final class ConnectablePayloadWriter<T> implements PayloadWriter<T> {
                 public void request(final long n) {
                     if (isRequestNValid(n)) {
                         requestedUpdater.accumulateAndGet(outer, n, FlowControlUtil::addWithOverflowProtection);
-                    } else if (closedUpdater.compareAndSet(outer, 0, 1)) {
-                        outer.dataQueue.add(TerminalNotification.error(newExceptionForInvalidRequestN(n)));
+                        unparkWriterThread();
+                    } else if (closedUpdater.compareAndSet(outer, null,
+                            TerminalNotification.error(newExceptionForInvalidRequestN(n)))) {
+                        unparkWriterThread();
                     } else {
-                        LOGGER.warn("invalid request({}), but already closed.", n, newExceptionForInvalidRequestN(n));
+                        LOGGER.warn("invalid request({}), but already closed.", n);
                     }
-                    outer.trySendData(subscriber);
                 }
 
                 @Override
                 public void cancel() {
-                    if (closedUpdater.compareAndSet(outer, 0, 1)) {
-                        outer.dataQueue.add(TerminalNotification.complete());
-                        outer.trySendData(subscriber);
+                    if (closedUpdater.compareAndSet(outer, null, TerminalNotification.complete())) {
+                        unparkWriterThread();
                     }
                 }
             });
         }
+
+        private void unparkWriterThread() {
+            final Thread maybeWriterThread = outer.writerThread;
+            if (maybeWriterThread != null) {
+                LockSupport.unpark(maybeWriterThread);
+            }
+        }
     }
 
     private enum State {
-        DISCONNECTED, CONNECTED, EMITTING, TERMINATED
+        DISCONNECTED, CONNECTED, TERMINATED
     }
 }
