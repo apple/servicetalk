@@ -204,7 +204,7 @@ final class DefaultMultiAddressUrlHttpClientBuilder extends MultiAddressHttpClie
 
         @Override
         public int hashCode() {
-            return 31 * hostAndPort.hashCode() + (scheme != null ? scheme.hashCode() : 0);
+            return 31 * hostAndPort.hashCode() + Objects.hashCode(scheme);
         }
     }
 
