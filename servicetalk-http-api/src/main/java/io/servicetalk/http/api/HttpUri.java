@@ -42,8 +42,8 @@ final class HttpUri {
 
     static final String HTTP_SCHEME = "http";
     static final String HTTPS_SCHEME = "https";
-    static final int HTTP_SCHEME_DEFAULT_PORT = 80;
-    static final int HTTPS_SCHEME_DEFAULT_PORT = 443;
+    static final int HTTP_DEFAULT_PORT = 80;
+    static final int HTTPS_DEFAULT_PORT = 443;
 
     private final String uri;
     @Nullable
@@ -244,7 +244,7 @@ final class HttpUri {
         host = parsedHost;
         hostHeader = parsedHostHeader;
         ssl = parsedScheme == 1;
-        port = parsedPort > 0 ? parsedPort : (ssl ? HTTPS_SCHEME_DEFAULT_PORT : HTTP_SCHEME_DEFAULT_PORT);
+        port = parsedPort > 0 ? parsedPort : (ssl ? HTTPS_DEFAULT_PORT : HTTP_DEFAULT_PORT);
         explicitPort = parsedPort > 0;
         this.uri = uri;
     }

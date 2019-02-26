@@ -21,9 +21,9 @@ import io.servicetalk.transport.api.SslConfig;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.http.api.HttpUri.HTTPS_SCHEME;
-import static io.servicetalk.http.api.HttpUri.HTTPS_SCHEME_DEFAULT_PORT;
+import static io.servicetalk.http.api.HttpUri.HTTPS_DEFAULT_PORT;
 import static io.servicetalk.http.api.HttpUri.HTTP_SCHEME;
-import static io.servicetalk.http.api.HttpUri.HTTP_SCHEME_DEFAULT_PORT;
+import static io.servicetalk.http.api.HttpUri.HTTP_DEFAULT_PORT;
 import static io.servicetalk.transport.api.SslConfigBuilder.forClient;
 
 /**
@@ -90,13 +90,13 @@ public final class SslConfigProviders {
 
     private static int resolvePort(@Nullable final String scheme, final boolean secure) {
         if (scheme == null || scheme.isEmpty()) {
-            return secure ? HTTPS_SCHEME_DEFAULT_PORT : HTTP_SCHEME_DEFAULT_PORT;
+            return secure ? HTTPS_DEFAULT_PORT : HTTP_DEFAULT_PORT;
         }
         if (HTTP_SCHEME.equalsIgnoreCase(scheme)) {
-            return HTTP_SCHEME_DEFAULT_PORT;
+            return HTTP_DEFAULT_PORT;
         }
         if (HTTPS_SCHEME.equalsIgnoreCase(scheme)) {
-            return HTTPS_SCHEME_DEFAULT_PORT;
+            return HTTPS_DEFAULT_PORT;
         }
         throw new IllegalArgumentException("Unknown scheme: " + scheme);
     }
