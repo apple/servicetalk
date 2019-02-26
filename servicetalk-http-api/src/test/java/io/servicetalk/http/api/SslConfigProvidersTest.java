@@ -34,37 +34,25 @@ public class SslConfigProvidersTest {
     @Test
     public void plainDefaultPortNullScheme() {
         assertEquals(HTTP_DEFAULT_PORT, plainByDefault().defaultPort(null, "test."));
-        assertEquals(HTTP_DEFAULT_PORT, plainByDefault().defaultPort(null, null));
     }
 
     @Test
     public void plainDefaultPortHttpScheme() {
         assertEquals(HTTP_DEFAULT_PORT, plainByDefault().defaultPort(HTTP_SCHEME, "test."));
-        assertEquals(HTTP_DEFAULT_PORT, plainByDefault().defaultPort(HTTP_SCHEME, null));
         assertEquals(HTTP_DEFAULT_PORT, plainByDefault().defaultPort("http", "test."));
-        assertEquals(HTTP_DEFAULT_PORT, plainByDefault().defaultPort("http", null));
         assertEquals(HTTP_DEFAULT_PORT, plainByDefault().defaultPort("hTTp", "test."));
-        assertEquals(HTTP_DEFAULT_PORT, plainByDefault().defaultPort("hTTp", null));
     }
 
     @Test
     public void plainDefaultPortHttpsScheme() {
         assertEquals(HTTPS_DEFAULT_PORT, plainByDefault().defaultPort(HTTPS_SCHEME, "test."));
-        assertEquals(HTTPS_DEFAULT_PORT, plainByDefault().defaultPort(HTTPS_SCHEME, null));
         assertEquals(HTTPS_DEFAULT_PORT, plainByDefault().defaultPort("https", "test."));
-        assertEquals(HTTPS_DEFAULT_PORT, plainByDefault().defaultPort("https", null));
         assertEquals(HTTPS_DEFAULT_PORT, plainByDefault().defaultPort("hTTps", "test."));
-        assertEquals(HTTPS_DEFAULT_PORT, plainByDefault().defaultPort("hTTps", null));
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void plainDefaultPortUnknownScheme() {
         plainByDefault().defaultPort("unknown", "test.");
-    }
-
-    @Test(expected = IllegalArgumentException.class)
-    public void plainDefaultPortUnknownSchemeNoHost() {
-        plainByDefault().defaultPort("unknown", null);
     }
 
     @Test
@@ -75,37 +63,25 @@ public class SslConfigProvidersTest {
     @Test
     public void secureDefaultPortNullScheme() {
         assertEquals(HTTPS_DEFAULT_PORT, secureByDefault().defaultPort(null, "test."));
-        assertEquals(HTTPS_DEFAULT_PORT, secureByDefault().defaultPort(null, null));
     }
 
     @Test
     public void secureDefaultPortHttpScheme() {
         assertEquals(HTTP_DEFAULT_PORT, secureByDefault().defaultPort(HTTP_SCHEME, "test."));
-        assertEquals(HTTP_DEFAULT_PORT, secureByDefault().defaultPort(HTTP_SCHEME, null));
         assertEquals(HTTP_DEFAULT_PORT, secureByDefault().defaultPort("http", "test."));
-        assertEquals(HTTP_DEFAULT_PORT, secureByDefault().defaultPort("http", null));
         assertEquals(HTTP_DEFAULT_PORT, secureByDefault().defaultPort("hTTp", "test."));
-        assertEquals(HTTP_DEFAULT_PORT, secureByDefault().defaultPort("hTTp", null));
     }
 
     @Test
     public void secureDefaultPortHttpsScheme() {
         assertEquals(HTTPS_DEFAULT_PORT, secureByDefault().defaultPort(HTTPS_SCHEME, "test."));
-        assertEquals(HTTPS_DEFAULT_PORT, secureByDefault().defaultPort(HTTPS_SCHEME, null));
         assertEquals(HTTPS_DEFAULT_PORT, secureByDefault().defaultPort("https", "test."));
-        assertEquals(HTTPS_DEFAULT_PORT, secureByDefault().defaultPort("https", null));
         assertEquals(HTTPS_DEFAULT_PORT, secureByDefault().defaultPort("hTTps", "test."));
-        assertEquals(HTTPS_DEFAULT_PORT, secureByDefault().defaultPort("hTTps", null));
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void secureDefaultPortUnknownScheme() {
         secureByDefault().defaultPort("unknown", "test.");
-    }
-
-    @Test(expected = IllegalArgumentException.class)
-    public void secureDefaultPortUnknownSchemeNoHost() {
-        secureByDefault().defaultPort("unknown", null);
     }
 
     @Test

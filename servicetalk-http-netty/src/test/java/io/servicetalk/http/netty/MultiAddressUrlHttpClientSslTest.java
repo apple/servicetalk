@@ -199,7 +199,7 @@ public class MultiAddressUrlHttpClientSslTest {
     public void requesterWithSecureSslConfigProvider() throws Exception {
         SslConfigProvider sslConfigProvider = new SslConfigProvider() {
             @Override
-            public int defaultPort(@Nullable final String scheme, @Nullable final String effectiveHost) {
+            public int defaultPort(@Nullable final String scheme, final String effectiveHost) {
                 return secureByDefault().defaultPort(scheme, effectiveHost);
             }
 

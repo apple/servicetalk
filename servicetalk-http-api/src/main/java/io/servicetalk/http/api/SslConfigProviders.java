@@ -33,7 +33,7 @@ public final class SslConfigProviders {
 
     private static final SslConfigProvider PLAIN = new SslConfigProvider() {
         @Override
-        public int defaultPort(@Nullable final String scheme, @Nullable final String effectiveHost) {
+        public int defaultPort(@Nullable final String scheme, final String effectiveHost) {
             return resolvePort(scheme, false);
         }
 
@@ -45,7 +45,7 @@ public final class SslConfigProviders {
 
     private static final SslConfigProvider SECURE = new SslConfigProvider() {
         @Override
-        public int defaultPort(@Nullable final String scheme, @Nullable final String effectiveHost) {
+        public int defaultPort(@Nullable final String scheme, final String effectiveHost) {
             return resolvePort(scheme, true);
         }
 
