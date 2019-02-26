@@ -92,9 +92,7 @@ public final class TestPublisher<T> extends Publisher<T> {
         }
         final Subscriber<? super T> subscriber = this.subscriber;
         if (subscriber == null) {
-            final IllegalStateException e = new IllegalStateException(signal + " without subscriber");
-            record(e);
-            throw e;
+            throw new IllegalStateException(signal + " without subscriber");
         }
         return subscriber;
     }
