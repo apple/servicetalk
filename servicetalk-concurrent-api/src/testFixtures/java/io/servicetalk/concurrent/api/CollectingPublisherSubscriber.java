@@ -31,7 +31,7 @@ public final class CollectingPublisherSubscriber<T> implements Subscriber<T>, Su
     private final DelayedSubscription subscription = new DelayedSubscription();
     @Nullable
     private volatile TerminalNotification terminal;
-    private volatile boolean subscribed;
+    private volatile boolean subscriptionReceived;
 
     /**
      * Clear received items and any terminal signals.
@@ -67,11 +67,10 @@ public final class CollectingPublisherSubscriber<T> implements Subscriber<T>, Su
         return terminal == TerminalNotification.complete() ? null : terminal.cause();
     }
 
-    public boolean isSubscribed() {
-        return subscribed;
+    public boolean subscriptionReceived() {
+        return subscriptionReceived;
     }
 
-    @Nullable
     public Subscription subscription() {
         return subscription;
     }
@@ -101,8 +100,8 @@ public final class CollectingPublisherSubscriber<T> implements Subscriber<T>, Su
 
     @Override
     public void onSubscribe(final Subscription s) {
-        subscribed = true;
         subscription.delayedSubscription(s);
+        subscriptionReceived = true;
     }
 
     @Override

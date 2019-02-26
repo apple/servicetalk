@@ -55,7 +55,7 @@ public class TestPublisherTest {
                 .build();
 
         source.subscribe(subscriber1);
-        assertTrue(subscriber1.isSubscribed());
+        assertTrue(subscriber1.subscriptionReceived());
 
         source.onComplete();
         assertTrue(subscriber1.isCompleted());

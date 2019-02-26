@@ -54,11 +54,11 @@ public class CollectingPublisherSubscriberTest {
 
     @Test
     public void testSubscribed() {
-        assertFalse(subscriber.isSubscribed());
+        assertFalse(subscriber.subscriptionReceived());
 
         source.subscribe(subscriber);
 
-        assertTrue(subscriber.isSubscribed());
+        assertTrue(subscriber.subscriptionReceived());
     }
 
     @Test

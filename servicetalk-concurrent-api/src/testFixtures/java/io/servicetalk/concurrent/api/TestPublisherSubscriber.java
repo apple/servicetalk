@@ -53,11 +53,10 @@ public final class TestPublisherSubscriber<T> implements Subscriber<T>, Subscrip
         return collector.error();
     }
 
-    public boolean isSubscribed() {
-        return collector.isSubscribed();
+    public boolean subscriptionReceived() {
+        return collector.subscriptionReceived();
     }
 
-    @Nullable
     public Subscription subscription() {
         return collector.subscription();
     }
