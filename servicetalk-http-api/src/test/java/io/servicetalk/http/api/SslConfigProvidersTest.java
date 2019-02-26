@@ -19,10 +19,10 @@ import io.servicetalk.transport.api.HostAndPort;
 
 import org.junit.Test;
 
-import static io.servicetalk.http.api.HttpUri.HTTPS_SCHEME;
 import static io.servicetalk.http.api.HttpUri.HTTPS_DEFAULT_PORT;
-import static io.servicetalk.http.api.HttpUri.HTTP_SCHEME;
+import static io.servicetalk.http.api.HttpUri.HTTPS_SCHEME;
 import static io.servicetalk.http.api.HttpUri.HTTP_DEFAULT_PORT;
+import static io.servicetalk.http.api.HttpUri.HTTP_SCHEME;
 import static io.servicetalk.http.api.SslConfigProviders.plainByDefault;
 import static io.servicetalk.http.api.SslConfigProviders.secureByDefault;
 import static org.junit.Assert.assertEquals;

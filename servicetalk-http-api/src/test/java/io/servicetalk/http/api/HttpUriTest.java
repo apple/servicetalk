@@ -20,10 +20,10 @@ import org.junit.Test;
 
 import javax.annotation.Nullable;
 
-import static io.servicetalk.http.api.HttpUri.HTTPS_SCHEME;
 import static io.servicetalk.http.api.HttpUri.HTTPS_DEFAULT_PORT;
-import static io.servicetalk.http.api.HttpUri.HTTP_SCHEME;
+import static io.servicetalk.http.api.HttpUri.HTTPS_SCHEME;
 import static io.servicetalk.http.api.HttpUri.HTTP_DEFAULT_PORT;
+import static io.servicetalk.http.api.HttpUri.HTTP_SCHEME;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
