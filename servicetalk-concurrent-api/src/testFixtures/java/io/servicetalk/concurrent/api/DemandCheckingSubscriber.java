@@ -26,7 +26,7 @@ public final class DemandCheckingSubscriber<T> implements Subscriber<T> {
     private final Subscriber<? super T> delegate;
 
     private final AtomicLong pending = new AtomicLong();
-    private volatile boolean subscribed;
+    private boolean subscribed;
 
     public DemandCheckingSubscriber(final Subscriber<? super T> delegate) {
         this.delegate = delegate;
