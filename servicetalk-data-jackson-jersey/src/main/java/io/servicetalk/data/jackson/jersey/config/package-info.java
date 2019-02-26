@@ -14,6 +14,6 @@
  * limitations under the License.
  */
 @ElementsAreNonnullByDefault
-package io.servicetalk.data.jackson.jersey.internal;
+package io.servicetalk.data.jackson.jersey.config;
 
 import io.servicetalk.annotations.ElementsAreNonnullByDefault;

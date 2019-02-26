@@ -20,7 +20,6 @@ import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.internal.DelayedCancellable;
 import io.servicetalk.http.api.HttpExecutionStrategy;
-import io.servicetalk.http.router.jersey.BufferPublisherInputStream;
 
 import javax.annotation.Nullable;
 import javax.ws.rs.container.ContainerRequestContext;

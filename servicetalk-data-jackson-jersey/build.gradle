@@ -39,6 +39,7 @@ dependencies {
   implementation "io.servicetalk:servicetalk-data-jackson:$project.version"
   implementation "io.servicetalk:servicetalk-http-api:$project.version"
   implementation "io.servicetalk:servicetalk-http-router-jersey:$project.version"
+  implementation "io.servicetalk:servicetalk-http-router-jersey-internal:$project.version"
   implementation "io.servicetalk:servicetalk-http-utils:$project.version"
   implementation "io.servicetalk:servicetalk-transport-netty:$project.version"
   implementation "org.glassfish.jersey.core:jersey-common:$jerseyVersion"
