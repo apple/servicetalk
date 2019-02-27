@@ -33,6 +33,7 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Publisher.error;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverTerminalFromSource;
+import static io.servicetalk.concurrent.internal.SubscriberUtils.handleExceptionFromOnSubscribe;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.isRequestNValid;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.newExceptionForInvalidRequestN;
 import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater;
@@ -56,8 +57,10 @@ final class ConnectablePayloadWriter<T> implements PayloadWriter<T> {
      * A field that assumes various states:
      * <ul>
      * <li>{@link State#DISCONNECTED} - waiting for {@link #connect()} to be called</li>
+     * <li>{@link State#CONNECTING} - {@link #connect()} has been called, but no {@link Subscriber} yet.</li>
      * <li>{@link State#CONNECTED} - {@link Publisher} created, logically connected but awaiting {@link Subscriber}</li>
-     * <li>{@link Subscriber} - connected to the outer, waiting for items to be emitted or outer termination</li>
+     * <li>{@link Subscriber} - connected to the {@link Subscriber}, waiting for items to be emitted or termination</li>
+     * <li>{@link State#TERMINATING} - we have {@link #close()}, but not yet delivered to the {@link Subscriber}</li>
      * <li>{@link State#TERMINATED} - we have delivered a terminal signal to the {@link Subscriber}</li>
      * </ul>
      */
@@ -98,10 +101,22 @@ final class ConnectablePayloadWriter<T> implements PayloadWriter<T> {
 
     @Override
     public void close() throws IOException {
+        // Set closed before state, because the Subscriber thread depends upon this ordering in the event it needs to
+        // terminate the Subscriber.
         if (closedUpdater.compareAndSet(this, null, TerminalNotification.complete())) {
-            final Subscriber<? super T> s = waitForSubscriber();
-            state = State.TERMINATED;
-            s.onComplete();
+            for (;;) {
+                Object currState = state;
+                if (currState == State.TERMINATED || currState == State.CONNECTED) {
+                    break;
+                } else if (currState instanceof Subscriber) {
+                    if (stateUpdater.compareAndSet(this, currState, State.TERMINATED)) {
+                        ((Subscriber) currState).onComplete();
+                        break;
+                    }
+                } else if (stateUpdater.compareAndSet(this, currState, State.TERMINATING)) {
+                    break;
+                }
+            }
         } else {
             Object currState = stateUpdater.getAndSet(this, State.TERMINATED);
             if (currState instanceof Subscriber) {
@@ -120,7 +135,7 @@ final class ConnectablePayloadWriter<T> implements PayloadWriter<T> {
      * {@link Subscriber}. Only a single active {@link Subscriber} is allowed for this {@link Publisher}.
      */
     public Publisher<T> connect() {
-        return stateUpdater.compareAndSet(this, State.DISCONNECTED, State.CONNECTED) ? new ConnectedPublisher<>(this) :
+        return stateUpdater.compareAndSet(this, State.DISCONNECTED, State.CONNECTING) ? new ConnectedPublisher<>(this) :
                 error(new IllegalStateException("Stream state " + state + " is not valid for connect."));
     }
 
@@ -188,32 +203,53 @@ final class ConnectablePayloadWriter<T> implements PayloadWriter<T> {
 
         @Override
         protected void handleSubscribe(final Subscriber<? super T> subscriber) {
-            if (!stateUpdater.compareAndSet(outer, State.CONNECTED, subscriber)) {
-                deliverTerminalFromSource(subscriber, new DuplicateSubscribeException(outer.state, subscriber));
+            if (!stateUpdater.compareAndSet(outer, State.CONNECTING, State.CONNECTED)) {
+                if (stateUpdater.compareAndSet(outer, State.TERMINATING, State.TERMINATED)) {
+                    deliverTerminalFromSource(subscriber);
+                } else {
+                    deliverTerminalFromSource(subscriber, new DuplicateSubscribeException(outer.state, subscriber));
+                }
                 return;
             }
 
-            subscriber.onSubscribe(new Subscription() {
-                @Override
-                public void request(final long n) {
-                    if (isRequestNValid(n)) {
-                        requestedUpdater.accumulateAndGet(outer, n, FlowControlUtil::addWithOverflowProtection);
-                        unparkWriterThread();
-                    } else if (closedUpdater.compareAndSet(outer, null,
-                            TerminalNotification.error(newExceptionForInvalidRequestN(n)))) {
-                        unparkWriterThread();
-                    } else {
-                        LOGGER.warn("invalid request({}), but already closed.", n);
+            try {
+                subscriber.onSubscribe(new Subscription() {
+                    @Override
+                    public void request(final long n) {
+                        if (isRequestNValid(n)) {
+                            requestedUpdater.accumulateAndGet(outer, n, FlowControlUtil::addWithOverflowProtection);
+                            unparkWriterThread();
+                        } else if (closedUpdater.compareAndSet(outer, null,
+                                TerminalNotification.error(newExceptionForInvalidRequestN(n)))) {
+                            unparkWriterThread();
+                        } else {
+                            LOGGER.warn("invalid request({}), but already closed.", n);
+                        }
                     }
-                }
 
-                @Override
-                public void cancel() {
-                    if (closedUpdater.compareAndSet(outer, null, TerminalNotification.complete())) {
-                        unparkWriterThread();
+                    @Override
+                    public void cancel() {
+                        if (closedUpdater.compareAndSet(outer, null, TerminalNotification.complete())) {
+                            unparkWriterThread();
+                        }
                     }
+                });
+            } catch (Throwable cause) {
+                handleExceptionFromOnSubscribe(subscriber, cause);
+            } finally {
+                // Make the Subscriber available after this thread is done interacting with it to avoid concurrent
+                // invocation.
+                if (stateUpdater.compareAndSet(outer, State.CONNECTED, subscriber)) {
+                    // We need to unpark the writer thread here because it is possible there was synchronous
+                    // calls on the Subscription above, and those wakeups would be interpreted as spurious because the
+                    // Subscriber was not made available to the writer thread yet.
+                    unparkWriterThread();
+                } else {
+                    TerminalNotification currClosed = outer.closed;
+                    assert currClosed != null;
+                    currClosed.terminate(subscriber);
                 }
-            });
+            }
         }
 
         private void unparkWriterThread() {
@@ -225,6 +261,6 @@ final class ConnectablePayloadWriter<T> implements PayloadWriter<T> {
     }
 
     private enum State {
-        DISCONNECTED, CONNECTED, TERMINATED
+        DISCONNECTED, CONNECTING, CONNECTED, TERMINATING, TERMINATED
     }
 }
