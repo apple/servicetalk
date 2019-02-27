@@ -249,8 +249,7 @@ final class NettyHttpServer {
                                             keepAlive.addConnectionHeaderIfNecessary(response);
                                             return response;
                                         }),
-                                (cause, executor) -> newErrorResponse(cause, executor, request2.version(),
-                                        requestMethod, keepAlive))
+                                (cause, executor) -> newErrorResponse(cause, executor, request2.version(), keepAlive))
                         .concatWith(drainRequestPayloadBody).concatWith(processor);
             });
             return connection.write(responseObjectPublisher.repeat(val -> true)
@@ -296,19 +295,18 @@ final class NettyHttpServer {
 
         private Single<StreamingHttpResponse> newErrorResponse(final Throwable cause, final Executor executor,
                                                                final HttpProtocolVersion version,
-                                                               final HttpRequestMethod requestMethod,
                                                                final HttpKeepAlive keepAlive) {
             final StreamingHttpResponse response;
             if (cause instanceof RejectedExecutionException) {
                 LOGGER.error("Task rejected by Executor {} for service={}, connection={}", executor, service, this,
                         cause);
-                response = streamingResponseFactory().serviceUnavailable().version(version);
+                response = streamingResponseFactory().serviceUnavailable();
             } else {
                 LOGGER.error("Internal server error service={} connection={}", service, this, cause);
-                response = streamingResponseFactory().internalServerError().version(version);
+                response = streamingResponseFactory().internalServerError();
             }
-            response.setHeader(CONTENT_LENGTH, ZERO);
-            addResponseTransferEncodingIfNecessary(response, requestMethod);
+            response.version(version)
+                    .setHeader(CONTENT_LENGTH, ZERO);
             keepAlive.addConnectionHeaderIfNecessary(response);
             return success(response);
         }
