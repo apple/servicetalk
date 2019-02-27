@@ -38,6 +38,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 import static io.servicetalk.concurrent.api.IsIterableEndingWithInOrder.endsWith;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
@@ -336,7 +337,10 @@ public class PublisherGroupByTest {
         ExecutorService executorService = Executors.newFixedThreadPool(1);
         try {
             final int totalData = 10000;
-            toSource(subscribeToAllGroups(totalData)).subscribe(subscriber);
+            toSource(subscribeToAllGroups(totalData,
+                    () -> new TestPublisherSubscriber.Builder<Integer>()
+                            .disableDemandCheck().build(),
+                    s -> s)).subscribe(subscriber);
             CountDownLatch latch1 = new CountDownLatch(1);
             CountDownLatch latch2 = new CountDownLatch(1);
             AtomicReference<TestPublisherSubscriber<Integer>> groupSubRef = new AtomicReference<>();
@@ -632,8 +636,16 @@ public class PublisherGroupByTest {
     private Publisher<Boolean> subscribeToAllGroups(
             Function<Integer, Boolean> keySelector, int maxBufferPerGroup,
             Function<TestPublisherSubscriber<Integer>, Subscriber<Integer>> subscriberFunction) {
+        return subscribeToAllGroups(keySelector, maxBufferPerGroup,
+                TestPublisherSubscriber::newTestPublisherSubscriber, subscriberFunction);
+    }
+
+    private Publisher<Boolean> subscribeToAllGroups(
+            Function<Integer, Boolean> keySelector, int maxBufferPerGroup,
+            final Supplier<TestPublisherSubscriber<Integer>> subscriberSupplier,
+            Function<TestPublisherSubscriber<Integer>, Subscriber<Integer>> subscriberFunction) {
         return source.groupBy(keySelector, maxBufferPerGroup).map(grp -> {
-            TestPublisherSubscriber<Integer> subscriber = newTestPublisherSubscriber();
+            TestPublisherSubscriber<Integer> subscriber = subscriberSupplier.get();
             toSource(grp).subscribe(subscriberFunction.apply(subscriber));
             groupSubs.add(subscriber);
             return grp.key();
@@ -643,7 +655,15 @@ public class PublisherGroupByTest {
     private Publisher<Boolean> subscribeToAllGroups(
             int maxBufferPerGroup,
             Function<TestPublisherSubscriber<Integer>, Subscriber<Integer>> subscriberFunction) {
-        return subscribeToAllGroups(integer -> integer != null && integer % 2 == 0, maxBufferPerGroup,
+        return subscribeToAllGroups(maxBufferPerGroup, TestPublisherSubscriber::newTestPublisherSubscriber,
                 subscriberFunction);
+    }
+
+    private Publisher<Boolean> subscribeToAllGroups(
+            int maxBufferPerGroup,
+            final Supplier<TestPublisherSubscriber<Integer>> subscriberSupplier,
+            Function<TestPublisherSubscriber<Integer>, Subscriber<Integer>> subscriberFunction) {
+        return subscribeToAllGroups(integer -> integer != null && integer % 2 == 0, maxBufferPerGroup,
+                subscriberSupplier, subscriberFunction);
     }
 }
