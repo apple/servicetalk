@@ -18,14 +18,13 @@ package io.servicetalk.concurrent.api;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.CompletableSource;
 
-import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 import java.util.SortedMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentNavigableMap;
 import java.util.concurrent.ConcurrentSkipListMap;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
@@ -35,8 +34,8 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
 public class TestExecutor implements Executor {
 
-    private final List<RunnableWrapper> tasks = new ArrayList<>();
-    private final ConcurrentNavigableMap<Long, List<RunnableWrapper>> scheduledTasksByNano = new ConcurrentSkipListMap<>();
+    private final Queue<RunnableWrapper> tasks = new ConcurrentLinkedQueue<>();
+    private final ConcurrentNavigableMap<Long, Queue<RunnableWrapper>> scheduledTasksByNano = new ConcurrentSkipListMap<>();
     private long currentNanos = ThreadLocalRandom.current().nextLong();
     private CompletableProcessor closeProcessor = new CompletableProcessor();
 
@@ -53,8 +52,8 @@ public class TestExecutor implements Executor {
         final RunnableWrapper wrappedTask = new RunnableWrapper(task);
         final long scheduledNanos = currentNanos() + unit.toNanos(delay);
 
-        final List<RunnableWrapper> tasksForNanos = scheduledTasksByNano.computeIfAbsent(scheduledNanos,
-                k -> new CopyOnWriteArrayList<>());
+        final Queue<RunnableWrapper> tasksForNanos = scheduledTasksByNano.computeIfAbsent(scheduledNanos,
+                k -> new ConcurrentLinkedQueue<>());
         tasksForNanos.add(wrappedTask);
 
         return () -> scheduledTasksByNano.computeIfPresent(scheduledNanos, (k, tasks) -> {
@@ -119,10 +118,10 @@ public class TestExecutor implements Executor {
     }
 
     public TestExecutor executeScheduledTasks() {
-        SortedMap<Long, List<RunnableWrapper>> headMap = scheduledTasksByNano.headMap(currentNanos + 1);
+        SortedMap<Long, Queue<RunnableWrapper>> headMap = scheduledTasksByNano.headMap(currentNanos + 1);
 
-        for (Iterator<Map.Entry<Long, List<RunnableWrapper>>> i = headMap.entrySet().iterator(); i.hasNext();) {
-            final Map.Entry<Long, List<RunnableWrapper>> entry = i.next();
+        for (Iterator<Map.Entry<Long, Queue<RunnableWrapper>>> i = headMap.entrySet().iterator(); i.hasNext();) {
+            final Map.Entry<Long, Queue<RunnableWrapper>> entry = i.next();
             execute(entry.getValue());
             i.remove();
         }
@@ -130,10 +129,10 @@ public class TestExecutor implements Executor {
     }
 
     public TestExecutor executeNextScheduledTask() {
-        SortedMap<Long, List<RunnableWrapper>> headMap = scheduledTasksByNano.headMap(currentNanos + 1);
+        SortedMap<Long, Queue<RunnableWrapper>> headMap = scheduledTasksByNano.headMap(currentNanos + 1);
 
-        for (Iterator<Map.Entry<Long, List<RunnableWrapper>>> i = headMap.entrySet().iterator(); i.hasNext();) {
-            final Map.Entry<Long, List<RunnableWrapper>> entry = i.next();
+        for (Iterator<Map.Entry<Long, Queue<RunnableWrapper>>> i = headMap.entrySet().iterator(); i.hasNext();) {
+            final Map.Entry<Long, Queue<RunnableWrapper>> entry = i.next();
             if (executeOne(entry.getValue())) {
                 return this;
             } else {
@@ -143,7 +142,7 @@ public class TestExecutor implements Executor {
         throw new IllegalStateException("No scheduled tasks to execute");
     }
 
-    private static void execute(List<RunnableWrapper> tasks) {
+    private static void execute(Queue<RunnableWrapper> tasks) {
         for (Iterator<RunnableWrapper> i = tasks.iterator(); i.hasNext();) {
             final Runnable task = i.next();
             i.remove();
@@ -152,7 +151,7 @@ public class TestExecutor implements Executor {
     }
 
     @Nullable
-    private static boolean executeOne(List<RunnableWrapper> tasks) {
+    private static boolean executeOne(Queue<RunnableWrapper> tasks) {
         Iterator<RunnableWrapper> i = tasks.iterator();
         if (i.hasNext()) {
             final Runnable task = i.next();

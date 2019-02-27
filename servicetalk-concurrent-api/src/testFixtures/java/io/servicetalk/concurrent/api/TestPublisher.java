@@ -15,8 +15,7 @@
  */
 package io.servicetalk.concurrent.api;
 
-import io.servicetalk.concurrent.PublisherSource.Subscriber;
-import io.servicetalk.concurrent.PublisherSource.Subscription;
+import io.servicetalk.concurrent.PublisherSource;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,7 +27,7 @@ import javax.annotation.Nullable;
 
 import static java.util.Objects.requireNonNull;
 
-public final class TestPublisher<T> extends Publisher<T> {
+public final class TestPublisher<T> extends Publisher<T> implements PublisherSource<T> {
     private static final Logger LOGGER = LoggerFactory.getLogger(TestPublisher.class);
 
     private final Function<Subscriber<? super T>, Subscriber<? super T>> subscriberFunction;
@@ -52,6 +51,11 @@ public final class TestPublisher<T> extends Publisher<T> {
         } catch (final Throwable t) {
             record(t);
         }
+    }
+
+    @Override
+    public void subscribe(final Subscriber<? super T> subscriber) {
+        subscribeInternal(subscriber);
     }
 
     public void onSubscribe(final Subscription subscription) {
