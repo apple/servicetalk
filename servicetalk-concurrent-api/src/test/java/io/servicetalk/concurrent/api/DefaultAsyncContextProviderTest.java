@@ -53,6 +53,7 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.api.DefaultAsyncContextProvider.INSTANCE;
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.ServiceTalkTestTimeout.DEFAULT_TIMEOUT_SECONDS;
 import static java.lang.Integer.bitCount;
 import static java.lang.Integer.numberOfTrailingZeros;
@@ -940,7 +941,7 @@ public class DefaultAsyncContextProviderTest {
         }
 
         ContextCaptureCompletableSubscriber subscribeAndWait(Completable completable) throws InterruptedException {
-            completable.subscribeInternal(this);
+            toSource(completable).subscribe(this);
             latch.await();
             return this;
         }
@@ -979,7 +980,7 @@ public class DefaultAsyncContextProviderTest {
         }
 
         ContextCaptureSingleSubscriber<T> subscribeAndWait(Single<T> single) throws InterruptedException {
-            single.subscribeInternal(this);
+            toSource(single).subscribe(this);
             latch.await();
             return this;
         }
@@ -1061,7 +1062,7 @@ public class DefaultAsyncContextProviderTest {
         }
 
         ContextCaptureSubscriber<T> subscribeAndWait(Publisher<T> publisher) throws InterruptedException {
-            publisher.subscribeInternal(this);
+            toSource(publisher).subscribe(this);
             latch.await();
             return this;
         }

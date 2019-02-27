@@ -36,6 +36,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
@@ -409,7 +410,7 @@ public class PublisherGroupByTest {
     public void testPendingGroupsQueueBreach() {
         @SuppressWarnings("unchecked")
         Subscriber<GroupedPublisher<Integer, Integer>> subscriber = mock(Subscriber.class);
-        source.groupBy(integer -> integer, 16).subscribeInternal(subscriber);
+        toSource(source.groupBy(integer -> integer, 16)).subscribe(subscriber);
         ArgumentCaptor<Subscription> subscriptionCaptor = forClass(Subscription.class);
         verify(subscriber).onSubscribe(subscriptionCaptor.capture());
         Subscription subscription = subscriptionCaptor.getValue();

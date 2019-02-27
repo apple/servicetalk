@@ -26,6 +26,7 @@ import org.mockito.InOrder;
 
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.api.VerificationTestUtils.verifyOriginalAndSuppressedCauses;
 import static io.servicetalk.concurrent.api.VerificationTestUtils.verifySuppressed;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -71,7 +72,7 @@ public class MockedCompletableListenerRule implements TestRule {
     public MockedCompletableListenerRule listen(Completable src, boolean expectOnSubscribe) {
         createSubscriber();
         assert subscriber != null;
-        src.subscribeInternal(subscriber);
+        toSource(src).subscribe(subscriber);
         if (expectOnSubscribe) {
             ArgumentCaptor<Cancellable> cancellableCaptor = forClass(Cancellable.class);
             verify(subscriber).onSubscribe(cancellableCaptor.capture());

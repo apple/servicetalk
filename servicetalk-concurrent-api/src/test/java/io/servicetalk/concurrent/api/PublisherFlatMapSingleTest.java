@@ -40,6 +40,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static io.servicetalk.concurrent.api.Executors.immediate;
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.stream.Collectors.toList;
@@ -422,7 +423,7 @@ public class PublisherFlatMapSingleTest {
         PublisherFlatMapSingle<Integer, String> pub = new PublisherFlatMapSingle<>(Publisher.from(expectedNumbers),
                 value -> Single.success(Integer.toString(value)),
                 1, false, immediate());
-        pub.subscribeInternal(new Subscriber<String>() {
+        toSource(pub).subscribe(new Subscriber<String>() {
             private Subscription subscription;
 
             @Override
@@ -461,11 +462,11 @@ public class PublisherFlatMapSingleTest {
     public void testEmitFromQueue() throws Exception {
         List<TestSingle<Integer>> emittedSingles = new ArrayList<>();
         BlockingSubscriber<Integer> subscriber = new BlockingSubscriber<>();
-        source.flatMapSingle(integer -> {
+        toSource(source.flatMapSingle(integer -> {
             TestSingle<Integer> s = new TestSingle<>();
             emittedSingles.add(s);
             return s;
-        }, 2).subscribeInternal(subscriber);
+        }, 2)).subscribe(subscriber);
         subscriber.request(Long.MAX_VALUE);
         source.sendItems(1, 1);
         assertThat("Unexpected number of Singles emitted.", emittedSingles, hasSize(2));

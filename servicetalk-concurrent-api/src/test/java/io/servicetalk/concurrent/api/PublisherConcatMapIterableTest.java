@@ -24,6 +24,7 @@ import org.junit.rules.ExpectedException;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
@@ -46,7 +47,7 @@ public class PublisherConcatMapIterableTest {
 
     @Test
     public void cancellableIterableIsCancelled() {
-        cancellablePublisher.publisher().concatMapIterable(identity()).subscribeInternal(subscriber.subscriber());
+        toSource(cancellablePublisher.publisher().concatMapIterable(identity())).subscribe(subscriber.subscriber());
         subscriber.verifySubscribe();
         subscriber.request(1);
         AtomicBoolean cancelled = new AtomicBoolean();
@@ -60,14 +61,14 @@ public class PublisherConcatMapIterableTest {
 
     @Test
     public void justComplete() {
-        publisher.publisher().concatMapIterable(identity()).subscribeInternal(subscriber.subscriber());
+        toSource(publisher.publisher().concatMapIterable(identity())).subscribe(subscriber.subscriber());
         subscriber.verifySubscribe();
         verifyTermination(true);
     }
 
     @Test
     public void justFail() {
-        publisher.publisher().concatMapIterable(identity()).subscribeInternal(subscriber.subscriber());
+        toSource(publisher.publisher().concatMapIterable(identity())).subscribe(subscriber.subscriber());
         subscriber.verifySubscribe();
         verifyTermination(false);
     }
@@ -83,7 +84,7 @@ public class PublisherConcatMapIterableTest {
     }
 
     private void singleElementSingleValue(boolean success) {
-        publisher.publisher().concatMapIterable(identity()).subscribeInternal(subscriber.subscriber());
+        toSource(publisher.publisher().concatMapIterable(identity())).subscribe(subscriber.subscriber());
         subscriber.verifySubscribe();
         subscriber.request(1);
         publisher.sendItems(singletonList("one"));
@@ -104,7 +105,7 @@ public class PublisherConcatMapIterableTest {
     }
 
     private void singleElementMultipleValuesDelayedRequest(boolean success) {
-        publisher.publisher().concatMapIterable(identity()).subscribeInternal(subscriber.subscriber());
+        toSource(publisher.publisher().concatMapIterable(identity())).subscribe(subscriber.subscriber());
         subscriber.verifySubscribe();
         subscriber.request(1);
         publisher.sendItems(asList("one", "two"));
@@ -138,7 +139,7 @@ public class PublisherConcatMapIterableTest {
     }
 
     private void multipleElementsSingleValue(boolean success) {
-        publisher.publisher().concatMapIterable(identity()).subscribeInternal(subscriber.subscriber());
+        toSource(publisher.publisher().concatMapIterable(identity())).subscribe(subscriber.subscriber());
         subscriber.verifySubscribe();
         subscriber.request(1);
         publisher.sendItems(singletonList("one"));
@@ -162,7 +163,7 @@ public class PublisherConcatMapIterableTest {
     }
 
     private void multipleElementsMultipleValues(boolean success) {
-        publisher.publisher().concatMapIterable(identity()).subscribeInternal(subscriber.subscriber());
+        toSource(publisher.publisher().concatMapIterable(identity())).subscribe(subscriber.subscriber());
         subscriber.verifySubscribe();
         subscriber.request(1);
         publisher.sendItems(asList("one", "two"));
@@ -183,7 +184,7 @@ public class PublisherConcatMapIterableTest {
 
     @Test
     public void cancelIsPropagated() {
-        publisher.publisher().concatMapIterable(identity()).subscribeInternal(subscriber.subscriber());
+        toSource(publisher.publisher().concatMapIterable(identity())).subscribe(subscriber.subscriber());
         subscriber.verifySubscribe();
         subscriber.request(1);
         publisher.sendItems(asList("one", "two"));
@@ -203,7 +204,7 @@ public class PublisherConcatMapIterableTest {
     }
 
     private void requestWithEmptyIterable(boolean success) {
-        publisher.publisher().concatMapIterable(identity()).subscribeInternal(subscriber.subscriber());
+        toSource(publisher.publisher().concatMapIterable(identity())).subscribe(subscriber.subscriber());
         subscriber.verifySubscribe();
         subscriber.request(1);
         subscriber.request(1);
@@ -227,7 +228,7 @@ public class PublisherConcatMapIterableTest {
 
     @Test
     public void exceptionFromOnErrorIsPropagated() {
-        publisher.publisher().concatMapIterable(identity()).subscribeInternal(subscriber.subscriber());
+        toSource(publisher.publisher().concatMapIterable(identity())).subscribe(subscriber.subscriber());
         subscriber.verifySubscribe();
         doThrow(DELIBERATE_EXCEPTION).when(subscriber.subscriber()).onError(any());
         expectedException.expect(is(DELIBERATE_EXCEPTION));
@@ -236,7 +237,7 @@ public class PublisherConcatMapIterableTest {
 
     @Test
     public void exceptionFromOnCompleteIsPropagated() {
-        publisher.publisher().concatMapIterable(identity()).subscribeInternal(subscriber.subscriber());
+        toSource(publisher.publisher().concatMapIterable(identity())).subscribe(subscriber.subscriber());
         subscriber.verifySubscribe();
         doThrow(DELIBERATE_EXCEPTION).when(subscriber.subscriber()).onComplete();
         expectedException.expect(is(DELIBERATE_EXCEPTION));

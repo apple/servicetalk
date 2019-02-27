@@ -19,7 +19,6 @@ import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.internal.SubscribablePublisher;
 import io.servicetalk.concurrent.api.internal.SubscribableSingle;
-import io.servicetalk.http.router.jersey.BufferPublisherInputStream;
 
 import org.glassfish.jersey.internal.PropertiesDelegate;
 import org.glassfish.jersey.message.internal.InboundMessageContext;

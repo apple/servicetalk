@@ -27,6 +27,7 @@ import org.mockito.stubbing.Answer;
 
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.api.VerificationTestUtils.verifyOriginalAndSuppressedCauses;
 import static io.servicetalk.concurrent.api.VerificationTestUtils.verifySuppressed;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -77,7 +78,7 @@ public class MockedSingleListenerRule<T> implements TestRule {
 
     public MockedSingleListenerRule<T> listen(Single<? extends T> src) {
         assert subscriber != null;
-        src.subscribeInternal(subscriber);
+        toSource(src).subscribe(subscriber);
         return this;
     }
 
