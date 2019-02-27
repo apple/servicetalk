@@ -21,7 +21,7 @@ import io.servicetalk.concurrent.internal.DelayedCancellable;
 
 import static java.util.Objects.requireNonNull;
 
-abstract class AbstractSubmitCompletable extends Completable {
+abstract class AbstractSubmitCompletable extends Completable implements CompletableSource {
     private final Executor runExecutor;
 
     AbstractSubmitCompletable(final Executor runExecutor) {
@@ -52,5 +52,10 @@ abstract class AbstractSubmitCompletable extends Completable {
             return;
         }
         cancellable.delayedCancellable(eCancellable);
+    }
+
+    @Override
+    public final void subscribe(final Subscriber subscriber) {
+        subscribeInternal(subscriber);
     }
 }

@@ -15,7 +15,6 @@
  */
 package io.servicetalk.concurrent.api;
 
-import io.servicetalk.concurrent.CompletableSource.Subscriber;
 import io.servicetalk.concurrent.api.MergeCompletable.FixedCountMergeSubscriber;
 
 import java.util.Collection;
@@ -51,12 +50,12 @@ final class IterableMergeCompletable extends AbstractMergeCompletableOperator {
             int count = 1;
             for (Completable itr : others) {
                 ++count;
-                itr.subscribe(subscriber);
+                itr.subscribeInternal(subscriber);
             }
             ((DynamicCountSubscriber) subscriber).setExpectedCount(count);
         } else {
             for (Completable itr : others) {
-                itr.subscribe(subscriber);
+                itr.subscribeInternal(subscriber);
             }
         }
     }

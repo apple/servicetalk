@@ -17,10 +17,10 @@ package io.servicetalk.transport.netty.internal;
 
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.CompletableSource;
-import io.servicetalk.concurrent.CompletableSource.Subscriber;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.concurrent.api.internal.SubscribableCompletable;
 import io.servicetalk.concurrent.internal.QueueFullAndRejectedSubscribeException;
 import io.servicetalk.concurrent.internal.QueueFullException;
 import io.servicetalk.concurrent.internal.SequentialCancellable;
@@ -142,7 +142,7 @@ public final class DefaultNettyPipelinedConnection<Req, Resp> implements NettyPi
 
     private Publisher<Resp> writeOrQueueRequest(Completable completable,
                                                 @Nullable Predicate<Resp> terminalMsgPredicate) {
-        return new Completable() {
+        return new SubscribableCompletable() {
             @Override
             protected void handleSubscribe(Subscriber subscriber) {
                 Task<Resp> task = new Task<>(completable, subscriber, terminalMsgPredicate);

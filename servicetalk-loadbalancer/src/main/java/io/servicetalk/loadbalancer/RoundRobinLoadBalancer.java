@@ -29,6 +29,7 @@ import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.concurrent.api.internal.SubscribablePublisher;
 import io.servicetalk.concurrent.internal.DuplicateSubscribeException;
 import io.servicetalk.concurrent.internal.SequentialCancellable;
 
@@ -392,7 +393,7 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends ListenableA
      * arbitrary events being published.
      * @param <T> The type of data delivered to {@link Subscriber}s.
      */
-    private static final class PublisherProcessorSingle<T> extends Publisher<T> {
+    private static final class PublisherProcessorSingle<T> extends SubscribablePublisher<T> {
         private static final AtomicIntegerFieldUpdater<PublisherProcessorSingle> subscriberStateUpdater =
                 newUpdater(PublisherProcessorSingle.class, "subscriberState");
         private static final AtomicReferenceFieldUpdater<PublisherProcessorSingle, Object> terminalNotificationUpdater =

@@ -18,9 +18,8 @@ package io.servicetalk.redis.netty;
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.PublisherSource;
-import io.servicetalk.concurrent.PublisherSource.Subscriber;
-import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.concurrent.api.internal.SubscribablePublisher;
 import io.servicetalk.concurrent.internal.ConcurrentSubscription;
 import io.servicetalk.redis.api.CoercionException;
 import io.servicetalk.redis.api.PubSubRedisMessage.ChannelPubSubRedisMessage;
@@ -48,7 +47,8 @@ import static java.nio.charset.Charset.defaultCharset;
 import static java.util.Objects.requireNonNull;
 
 // TODO repeal and replace with buffer operator (<rdar://problem/34135772>)
-final class SubscribedChannelReadStream extends Publisher<SubscribedChannelReadStream.PubSubChannelMessage> {
+final class SubscribedChannelReadStream
+        extends SubscribablePublisher<SubscribedChannelReadStream.PubSubChannelMessage> {
 
     private static final CompleteBulkString MESSAGE_PUBSUB_MESSAGE_TYPE =
             new CompleteBulkString(DEFAULT_ALLOCATOR.fromAscii("message").asReadOnly());

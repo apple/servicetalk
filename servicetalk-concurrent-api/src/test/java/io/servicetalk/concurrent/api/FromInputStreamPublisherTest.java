@@ -33,6 +33,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
 
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static java.lang.Integer.MAX_VALUE;
 import static java.lang.Math.ceil;
@@ -180,7 +181,7 @@ public class FromInputStreamPublisherTest {
         }).when(sub).onSubscribe(any());
         doThrow(DELIBERATE_EXCEPTION).when(sub).onNext(any());
 
-        pub.subscribe(sub);
+        toSource(pub).subscribe(sub);
 
         verify(is).close();
         verify(sub, never()).onComplete();
@@ -202,7 +203,7 @@ public class FromInputStreamPublisherTest {
         }).when(sub).onSubscribe(any());
         doThrow(DELIBERATE_EXCEPTION).when(sub).onNext(any());
 
-        pub.subscribe(sub);
+        toSource(pub).subscribe(sub);
         // triggers another delivery + failure, to ensure we only observe a single terminal event
         subRef.get().request(1);
 
@@ -225,7 +226,7 @@ public class FromInputStreamPublisherTest {
         }).when(sub).onSubscribe(any());
         doThrow(DELIBERATE_EXCEPTION).when(sub).onNext(any());
 
-        pub.subscribe(sub);
+        toSource(pub).subscribe(sub);
 
         verify(sub, never()).onComplete();
         verify(sub).onError(DELIBERATE_EXCEPTION);
@@ -247,7 +248,7 @@ public class FromInputStreamPublisherTest {
             return 1;
         });
 
-        pub.subscribe(new Subscriber<byte[]>() {
+        toSource(pub).subscribe(new Subscriber<byte[]>() {
             private Subscription s;
 
             @Override
@@ -473,7 +474,7 @@ public class FromInputStreamPublisherTest {
         AtomicBoolean complete = new AtomicBoolean();
         AtomicReference<Throwable> error = new AtomicReference<>();
 
-        pub.subscribe(new Subscriber<byte[]>() {
+        toSource(pub).subscribe(new Subscriber<byte[]>() {
             int batch;
 
             @Override

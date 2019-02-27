@@ -21,12 +21,12 @@ import io.servicetalk.client.api.ConnectionFactoryFilter;
 import io.servicetalk.client.api.LoadBalancerFactory;
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
-import io.servicetalk.concurrent.CompletableSource.Subscriber;
 import io.servicetalk.concurrent.api.AsyncCloseable;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.concurrent.api.internal.SubscribableCompletable;
 import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.HttpClientFilterFactory;
 import io.servicetalk.http.api.HttpConnectionFilterFactory;
@@ -168,7 +168,7 @@ final class DefaultMultiAddressUrlHttpClientBuilder extends MultiAddressHttpClie
             // Make a best effort to clear the map. Note that we don't attempt to resolve race conditions between
             // closing the client and in flight requests adding Keys to the map. We also don't attempt to remove
             // from the map if a request fails, or a request is made after the client is closed.
-            return new Completable() {
+            return new SubscribableCompletable() {
                 @Override
                 protected void handleSubscribe(final Subscriber subscriber) {
                     subscriber.onSubscribe(IGNORE_CANCEL);

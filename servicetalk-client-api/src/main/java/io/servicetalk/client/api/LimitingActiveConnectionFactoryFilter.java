@@ -20,6 +20,7 @@ import io.servicetalk.concurrent.SingleSource.Subscriber;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.concurrent.api.internal.SubscribableSingle;
 
 import java.net.ConnectException;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
@@ -51,7 +52,7 @@ public final class LimitingActiveConnectionFactoryFilter<ResolvedAddress, C exte
 
     @Override
     public Single<C> newConnection(final ResolvedAddress resolvedAddress) {
-        return new Single<C>() {
+        return new SubscribableSingle<C>() {
             @Override
             protected void handleSubscribe(final Subscriber<? super C> subscriber) {
                 if (limiter.isConnectAllowed(resolvedAddress)) {

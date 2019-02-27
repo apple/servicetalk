@@ -1116,7 +1116,13 @@ public abstract class Completable {
     // Conversion Operators End
     //
 
-    final void subscribe(Subscriber subscriber) {
+    /**
+     * A internal subscribe method similar to {@link CompletableSource#subscribe(Subscriber)} which can be used by
+     * different implementations to subscribe.
+     *
+     * @param subscriber {@link Subscriber} to subscribe for the result.
+     */
+    protected final void subscribeInternal(Subscriber subscriber) {
         subscribeCaptureContext(subscriber, AsyncContext.provider());
     }
 
@@ -1128,7 +1134,7 @@ public abstract class Completable {
      */
     public final Cancellable subscribe() {
         SimpleCompletableSubscriber subscriber = new SimpleCompletableSubscriber();
-        subscribe(subscriber);
+        subscribeInternal(subscriber);
         return subscriber;
     }
 
@@ -1136,7 +1142,7 @@ public abstract class Completable {
      * Handles a subscriber to this {@code Completable}.
      * <p>
      * This method is invoked internally by {@link Completable} for every call to the
-     * {@link Completable#subscribe(CompletableSource.Subscriber)} method.
+     * {@link Completable#subscribeInternal(CompletableSource.Subscriber)} method.
      *
      * @param subscriber the subscriber.
      */
@@ -1178,9 +1184,9 @@ public abstract class Completable {
      * Defer creation of a {@link Completable} till it is subscribed to.
      *
      * @param completableSupplier {@link Supplier} to create a new {@link Completable} for every call to
-     * {@link #subscribe(CompletableSource.Subscriber)} to the returned {@link Completable}.
+     * {@link #subscribeInternal(CompletableSource.Subscriber)} to the returned {@link Completable}.
      * @return A new {@link Completable} that creates a new {@link Completable} using {@code completableFactory}
-     * for every call to {@link #subscribe(CompletableSource.Subscriber)} and forwards
+     * for every call to {@link #subscribeInternal(CompletableSource.Subscriber)} and forwards
      * the termination signal from the newly created {@link Completable} to its {@link Subscriber}.
      */
     public static Completable defer(Supplier<? extends Completable> completableSupplier) {
@@ -1191,7 +1197,7 @@ public abstract class Completable {
      * Convert from a {@link Future} to a {@link Completable} via {@link Future#get()}.
      * <p>
      * Note that because {@link Future} only presents blocking APIs to extract the result, so the process of getting the
-     * results will block. The caller of {@link #subscribe(CompletableSource.Subscriber)} is responsible for offloading
+     * results will block. The caller of {@link #subscribeInternal(CompletableSource.Subscriber)} is responsible for offloading
      * if necessary, and also offloading if {@link Cancellable#cancel()} will be called if this operation may block.
      * <p>
      * To apply a timeout see {@link #timeout(long, TimeUnit)} and related methods.
@@ -1463,7 +1469,7 @@ public abstract class Completable {
     //
 
     /**
-     * Replicating a call to {@link #subscribe(CompletableSource.Subscriber)} but allows an override of the
+     * Replicating a call to {@link #subscribeInternal(CompletableSource.Subscriber)} but allows an override of the
      * {@link AsyncContextMap}.
      *
      * @param subscriber the subscriber.
@@ -1477,7 +1483,7 @@ public abstract class Completable {
     }
 
     /**
-     * Replicating a call to {@link #subscribe(CompletableSource.Subscriber)} but with a materialized
+     * Replicating a call to {@link #subscribeInternal(CompletableSource.Subscriber)} but with a materialized
      * {@link AsyncContextMap}.
      *
      * @param subscriber the subscriber.
@@ -1506,7 +1512,7 @@ public abstract class Completable {
     }
 
     /**
-     * Replicating a call to {@link #subscribe(CompletableSource.Subscriber)} but with a materialized
+     * Replicating a call to {@link #subscribeInternal(CompletableSource.Subscriber)} but with a materialized
      * {@link SignalOffloader} and {@link AsyncContextMap}.
      *
      * @param subscriber the subscriber.

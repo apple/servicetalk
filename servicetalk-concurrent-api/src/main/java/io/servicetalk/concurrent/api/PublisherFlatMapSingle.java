@@ -16,8 +16,6 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
-import io.servicetalk.concurrent.PublisherSource.Subscriber;
-import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.internal.ConcurrentSubscription;
 import io.servicetalk.concurrent.internal.FlowControlUtil;
@@ -183,7 +181,7 @@ final class PublisherFlatMapSingle<T, R> extends AbstractAsynchronousPublisherOp
             // effort behavior mimics the semantics of cancel though so we don't take any special action to try to
             // adjust the count or prematurely terminate.
             activeUpdater.incrementAndGet(this);
-            next.subscribe(new FlatMapSingleSubscriber());
+            next.subscribeInternal(new FlatMapSingleSubscriber());
         }
 
         @Override

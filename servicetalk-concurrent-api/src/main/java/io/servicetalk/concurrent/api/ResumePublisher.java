@@ -15,8 +15,6 @@
  */
 package io.servicetalk.concurrent.api;
 
-import io.servicetalk.concurrent.PublisherSource.Subscriber;
-import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.internal.SignalOffloader;
 
 import java.util.function.Function;
@@ -113,7 +111,7 @@ final class ResumePublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
             // originate from this new Publisher.
             final Subscriber<? super T> offloadedSubscriber = signalOffloader.offloadSubscriber(
                     contextProvider.wrap(this, contextMap));
-            next.subscribe(offloadedSubscriber);
+            next.subscribeInternal(offloadedSubscriber);
         }
 
         @Override

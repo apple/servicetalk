@@ -20,11 +20,11 @@ import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.CompletableSource;
-import io.servicetalk.concurrent.PublisherSource.Subscriber;
-import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.CompletableProcessor;
 import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.concurrent.api.internal.SubscribableCompletable;
+import io.servicetalk.concurrent.api.internal.SubscribablePublisher;
 import io.servicetalk.concurrent.internal.DuplicateSubscribeException;
 import io.servicetalk.concurrent.internal.FlowControlUtil;
 import io.servicetalk.concurrent.internal.RejectedSubscribeError;
@@ -172,7 +172,7 @@ final class DefaultDnsServiceDiscoverer
 
     @Override
     public Completable closeAsync() {
-        return new Completable() {
+        return new SubscribableCompletable() {
             @Override
             protected void handleSubscribe(final CompletableSource.Subscriber subscriber) {
                 toSource(closeCompletable).subscribe(subscriber);
@@ -236,7 +236,8 @@ final class DefaultDnsServiceDiscoverer
             entriesPublisher.close0();
         }
 
-        private final class EntriesPublisher extends Publisher<Iterable<ServiceDiscovererEvent<InetAddress>>> {
+        private final class EntriesPublisher
+                extends SubscribablePublisher<Iterable<ServiceDiscovererEvent<InetAddress>>> {
 
             @Nullable
             private Subscriber<? super Iterable<ServiceDiscovererEvent<InetAddress>>> discoverySubscriber;

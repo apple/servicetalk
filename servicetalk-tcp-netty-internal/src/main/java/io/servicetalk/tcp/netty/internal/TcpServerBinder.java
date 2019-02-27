@@ -18,8 +18,8 @@ package io.servicetalk.tcp.netty.internal;
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.buffer.netty.BufferUtil;
 import io.servicetalk.client.api.ConnectionRejectedException;
-import io.servicetalk.concurrent.SingleSource.Subscriber;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.concurrent.api.internal.SubscribableSingle;
 import io.servicetalk.transport.api.ConnectionAcceptor;
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ExecutionContext;
@@ -142,7 +142,7 @@ public final class TcpServerBinder {
         });
 
         ChannelFuture future = bs.bind(listenAddress);
-        return new Single<ServerContext>() {
+        return new SubscribableSingle<ServerContext>() {
             @Override
             protected void handleSubscribe(Subscriber<? super ServerContext> subscriber) {
                 subscriber.onSubscribe(() -> future.cancel(true));

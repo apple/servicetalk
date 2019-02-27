@@ -51,6 +51,7 @@ import javax.annotation.Nullable;
 import static io.servicetalk.concurrent.api.BlockingTestUtils.awaitIndefinitelyNonNull;
 import static io.servicetalk.concurrent.api.Executors.from;
 import static io.servicetalk.concurrent.api.Executors.newFixedSizeExecutor;
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
 import static io.servicetalk.concurrent.internal.TerminalNotification.error;
@@ -203,7 +204,7 @@ public final class DefaultExecutorTest {
     private void timerCancel(Completable timer) throws InterruptedException {
         AtomicReference<Throwable> refCause = new AtomicReference<>();
         CountDownLatch latch = new CountDownLatch(1);
-        timer.doAfterCancel(latch::countDown)
+        toSource(timer.doAfterCancel(latch::countDown))
                 .subscribe(new CompletableSource.Subscriber() {
                     @Override
                     public void onSubscribe(final Cancellable cancellable) {

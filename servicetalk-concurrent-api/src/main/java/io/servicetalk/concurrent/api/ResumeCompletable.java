@@ -16,7 +16,6 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
-import io.servicetalk.concurrent.CompletableSource.Subscriber;
 import io.servicetalk.concurrent.internal.SequentialCancellable;
 import io.servicetalk.concurrent.internal.SignalOffloader;
 
@@ -106,7 +105,7 @@ final class ResumeCompletable extends AbstractNoHandleSubscribeCompletable {
             // originate from this new Completable.
             final Subscriber offloadedSubscriber = signalOffloader.offloadSubscriber(
                     contextProvider.wrap(this, contextMap));
-            next.subscribe(offloadedSubscriber);
+            next.subscribeInternal(offloadedSubscriber);
         }
     }
 }

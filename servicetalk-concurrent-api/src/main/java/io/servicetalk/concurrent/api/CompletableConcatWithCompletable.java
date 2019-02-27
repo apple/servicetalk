@@ -16,7 +16,6 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
-import io.servicetalk.concurrent.CompletableSource.Subscriber;
 import io.servicetalk.concurrent.internal.SequentialCancellable;
 import io.servicetalk.concurrent.internal.SignalOffloader;
 
@@ -98,7 +97,7 @@ final class CompletableConcatWithCompletable extends AbstractNoHandleSubscribeCo
                 //
                 // This is an asynchronous boundary, and so we should recapture the AsyncContext instead of propagating
                 // it.
-                next.subscribe(this);
+                next.subscribeInternal(this);
             } else {
                 target.onComplete();
             }

@@ -15,9 +15,9 @@
  */
 package io.servicetalk.redis.netty;
 
-import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.concurrent.api.internal.SubscribablePublisher;
 import io.servicetalk.redis.api.RedisData;
 import io.servicetalk.redis.api.RedisProtocolSupport;
 import io.servicetalk.redis.api.RedisRequest;
@@ -134,7 +134,7 @@ final class PipelinedRedisConnection extends AbstractRedisConnection {
     }
 
     private Publisher<RedisData> request0(final RedisRequest request, boolean fromClose, boolean internalPing) {
-        return new Publisher<RedisData>() {
+        return new SubscribablePublisher<RedisData>() {
             @Override
             protected void handleSubscribe(Subscriber<? super RedisData> subscriber) {
                 final RedisProtocolSupport.Command cmd = request.command();

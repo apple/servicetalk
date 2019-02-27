@@ -15,7 +15,7 @@
  */
 package io.servicetalk.concurrent.api;
 
-import io.servicetalk.concurrent.SingleSource.Subscriber;
+import io.servicetalk.concurrent.SingleSource;
 
 import java.util.function.Supplier;
 
@@ -27,7 +27,7 @@ import static java.util.Objects.requireNonNull;
  *
  * @param <T> Type of result of this {@link Single}.
  */
-final class SingleDefer<T> extends Single<T> {
+final class SingleDefer<T> extends Single<T> implements SingleSource<T> {
     private final Supplier<? extends Single<T>> singleFactory;
 
     SingleDefer(Supplier<? extends Single<T>> singleFactory) {
@@ -46,6 +46,11 @@ final class SingleDefer<T> extends Single<T> {
         // There are technically two sources, this one and the one returned by the factory.
         // Since, we are invoking user code (singleFactory) we need this method to be run using an Executor
         // and also use the configured Executor for subscribing to the Single returned from singleFactory.
-        single.subscribe(subscriber);
+        single.subscribeInternal(subscriber);
+    }
+
+    @Override
+    public void subscribe(final Subscriber<? super T> subscriber) {
+        subscribeInternal(subscriber);
     }
 }

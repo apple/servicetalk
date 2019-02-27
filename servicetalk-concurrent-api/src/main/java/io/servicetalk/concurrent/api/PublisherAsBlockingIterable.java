@@ -70,7 +70,7 @@ final class PublisherAsBlockingIterable<T> implements BlockingIterable<T> {
     @Override
     public BlockingIterator<T> iterator() {
         SubscriberAndIterator<T> subscriberAndIterator = new SubscriberAndIterator<>(queueCapacityHint);
-        original.subscribe(subscriberAndIterator);
+        original.subscribeInternal(subscriberAndIterator);
         return subscriberAndIterator;
     }
 

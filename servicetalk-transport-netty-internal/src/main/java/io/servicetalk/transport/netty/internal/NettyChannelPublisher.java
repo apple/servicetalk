@@ -15,9 +15,7 @@
  */
 package io.servicetalk.transport.netty.internal;
 
-import io.servicetalk.concurrent.PublisherSource.Subscriber;
-import io.servicetalk.concurrent.PublisherSource.Subscription;
-import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.concurrent.api.internal.SubscribablePublisher;
 import io.servicetalk.concurrent.internal.DuplicateSubscribeException;
 import io.servicetalk.concurrent.internal.TerminalNotification;
 
@@ -39,7 +37,7 @@ import static io.servicetalk.concurrent.internal.SubscriberUtils.newExceptionFor
 import static io.servicetalk.concurrent.internal.ThrowableUtil.unknownStackTrace;
 import static java.util.Objects.requireNonNull;
 
-final class NettyChannelPublisher<T> extends Publisher<T> {
+final class NettyChannelPublisher<T> extends SubscribablePublisher<T> {
     private static final ClosedChannelException CLOSED_CHANNEL_EXCEPTION =
             unknownStackTrace(new ClosedChannelException(), NettyChannelPublisher.class, "channelInboundClosed");
 

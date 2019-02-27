@@ -19,9 +19,10 @@ import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
-import io.servicetalk.concurrent.SingleSource.Subscriber;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.concurrent.api.internal.SubscribablePublisher;
+import io.servicetalk.concurrent.api.internal.SubscribableSingle;
 import io.servicetalk.concurrent.internal.DuplicateSubscribeException;
 import io.servicetalk.http.api.HttpResponseMetaData;
 import io.servicetalk.http.api.StreamingHttpResponse;
@@ -50,7 +51,7 @@ import static java.util.Objects.requireNonNull;
  * @param <MetaData> type of meta-data in front of the stream of {@link Payload}, eg. {@link HttpResponseMetaData}
  * @param <Payload> type of payload inside the {@link Data}, eg. {@link Buffer}
  */
-final class SpliceFlatStreamToMetaSingle<Data, MetaData, Payload> extends Single<Data> {
+final class SpliceFlatStreamToMetaSingle<Data, MetaData, Payload> extends SubscribableSingle<Data> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SpliceFlatStreamToMetaSingle.class);
     private final BiFunction<MetaData, Publisher<Payload>, Data> packer;
@@ -225,11 +226,12 @@ final class SpliceFlatStreamToMetaSingle<Data, MetaData, Payload> extends Single
 
         @Nonnull
         private Publisher<Payload> newPayloadPublisher() {
-            return new Publisher<Payload>() {
+            return new SubscribablePublisher<Payload>() {
                 @Override
                 protected void handleSubscribe(PublisherSource.Subscriber<? super Payload> newSubscriber) {
                     if (maybePayloadSubUpdater.compareAndSet(SplicingSubscriber.this, PENDING, newSubscriber)) {
                         // TODO risk of a race here with terminal events, will be addressed in follow-up PR
+                        assert rawSubscription != null;
                         newSubscriber.onSubscribe(rawSubscription);
                     } else {
                         // Entering this branch means either a duplicate subscriber or a stream that completed or failed

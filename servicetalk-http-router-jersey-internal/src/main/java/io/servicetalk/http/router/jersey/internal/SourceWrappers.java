@@ -17,7 +17,8 @@ package io.servicetalk.http.router.jersey.internal;
 
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.http.router.jersey.BufferPublisherInputStream;
+import io.servicetalk.concurrent.api.internal.SubscribablePublisher;
+import io.servicetalk.concurrent.api.internal.SubscribableSingle;
 
 import org.glassfish.jersey.internal.PropertiesDelegate;
 import org.glassfish.jersey.message.internal.InboundMessageContext;
@@ -59,7 +60,7 @@ public final class SourceWrappers {
      *
      * @param <T> Type of items emitted.
      */
-    public static final class PublisherSource<T> extends Publisher<T> implements Source {
+    public static final class PublisherSource<T> extends SubscribablePublisher<T> implements Source {
         private final io.servicetalk.concurrent.PublisherSource<T> original;
 
         @Nullable
@@ -97,7 +98,7 @@ public final class SourceWrappers {
      *
      * @param <T> Type of items emitted.
      */
-    public static final class SingleSource<T> extends Single<T> implements Source {
+    public static final class SingleSource<T> extends SubscribableSingle<T> implements Source {
         private final io.servicetalk.concurrent.SingleSource<T> original;
 
         @Nullable

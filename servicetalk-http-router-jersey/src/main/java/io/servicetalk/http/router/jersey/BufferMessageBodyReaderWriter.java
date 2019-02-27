@@ -41,7 +41,7 @@ import javax.ws.rs.ext.MessageBodyWriter;
 
 import static io.servicetalk.http.router.jersey.AbstractMessageBodyReaderWriter.getRequestContentLength;
 import static io.servicetalk.http.router.jersey.AbstractMessageBodyReaderWriter.newBufferForRequestContent;
-import static io.servicetalk.http.router.jersey.BufferPublisherInputStream.handleEntityStream;
+import static io.servicetalk.http.router.jersey.internal.BufferPublisherInputStream.handleEntityStream;
 import static io.servicetalk.http.router.jersey.internal.RequestProperties.setResponseBufferPublisher;
 import static javax.ws.rs.Priorities.ENTITY_CODER;
 import static javax.ws.rs.core.HttpHeaders.CONTENT_LENGTH;

@@ -16,7 +16,6 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
-import io.servicetalk.concurrent.SingleSource.Subscriber;
 import io.servicetalk.concurrent.internal.SequentialCancellable;
 
 import java.util.function.Function;
@@ -78,7 +77,7 @@ final class SingleFlatMapSingle<T, R> extends AbstractAsynchronousSingleOperator
 
             // If this method throws we don't know if we should propagate the error to the subscriber because they
             // could have already subscribed, or subscribe async at a later time.
-            next.subscribe(new Subscriber<R>() {
+            next.subscribeInternal(new Subscriber<R>() {
                 @Override
                 public void onSubscribe(Cancellable cancellable) {
                     sequentialCancellable.nextCancellable(cancellable);

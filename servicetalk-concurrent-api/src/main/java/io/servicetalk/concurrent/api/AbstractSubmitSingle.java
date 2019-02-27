@@ -16,14 +16,14 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
-import io.servicetalk.concurrent.SingleSource.Subscriber;
+import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.internal.DelayedCancellable;
 
 import java.util.concurrent.Callable;
 
 import static java.util.Objects.requireNonNull;
 
-abstract class AbstractSubmitSingle<T> extends Single<T> {
+abstract class AbstractSubmitSingle<T> extends Single<T> implements SingleSource<T> {
     private final Executor runExecutor;
 
     AbstractSubmitSingle(final Executor runExecutor) {
@@ -55,5 +55,10 @@ abstract class AbstractSubmitSingle<T> extends Single<T> {
             return;
         }
         cancellable.delayedCancellable(eCancellable);
+    }
+
+    @Override
+    public final void subscribe(final Subscriber<? super T> subscriber) {
+        subscribeInternal(subscriber);
     }
 }

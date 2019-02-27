@@ -16,7 +16,6 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
-import io.servicetalk.concurrent.SingleSource.Subscriber;
 import io.servicetalk.concurrent.internal.SequentialCancellable;
 import io.servicetalk.concurrent.internal.SignalOffloader;
 
@@ -112,7 +111,7 @@ final class ResumeSingle<T> extends AbstractNoHandleSubscribeSingle<T> {
             // originate from this new Single.
             final Subscriber<? super T> offloadedSubscriber = signalOffloader.offloadSubscriber(
                     contextProvider.wrap(this, contextMap));
-            next.subscribe(offloadedSubscriber);
+            next.subscribeInternal(offloadedSubscriber);
         }
     }
 }

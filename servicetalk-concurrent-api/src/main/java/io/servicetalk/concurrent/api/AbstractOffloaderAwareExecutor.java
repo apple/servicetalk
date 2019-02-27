@@ -15,7 +15,7 @@
  */
 package io.servicetalk.concurrent.api;
 
-import io.servicetalk.concurrent.CompletableSource.Subscriber;
+import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.internal.SignalOffloaderFactory;
 
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
@@ -39,23 +39,7 @@ abstract class AbstractOffloaderAwareExecutor implements SignalOffloaderFactory,
 
     @Override
     public Completable closeAsync() {
-        return new Completable() {
-            @Override
-            protected void handleSubscribe(Subscriber subscriber) {
-                CompletableProcessor onClose = getOrCreateOnClose();
-                onClose.subscribe(subscriber);
-                try {
-                    // If closeAsync() is subscribed multiple times, we will call this method as many times.
-                    // Since doClose() is idempotent and usually cheap, it is OK as compared to implementing at most
-                    // once semantics.
-                    doClose();
-                } catch (Throwable cause) {
-                    onClose.onError(cause);
-                    return;
-                }
-                onClose.onComplete();
-            }
-        };
+        return new CloseAsync();
     }
 
     private CompletableProcessor getOrCreateOnClose() {
@@ -77,4 +61,27 @@ abstract class AbstractOffloaderAwareExecutor implements SignalOffloaderFactory,
      * This method MUST be idempotent.
      */
     abstract void doClose();
+
+    private final class CloseAsync extends Completable implements CompletableSource {
+        @Override
+        protected void handleSubscribe(Subscriber subscriber) {
+            CompletableProcessor onClose = getOrCreateOnClose();
+            onClose.subscribeInternal(subscriber);
+            try {
+                // If closeAsync() is subscribed multiple times, we will call this method as many times.
+                // Since doClose() is idempotent and usually cheap, it is OK as compared to implementing at most
+                // once semantics.
+                doClose();
+            } catch (Throwable cause) {
+                onClose.onError(cause);
+                return;
+            }
+            onClose.onComplete();
+        }
+
+        @Override
+        public void subscribe(final Subscriber subscriber) {
+            subscribeInternal(subscriber);
+        }
+    }
 }

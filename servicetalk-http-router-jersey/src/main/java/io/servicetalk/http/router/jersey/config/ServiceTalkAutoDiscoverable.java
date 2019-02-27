@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.http.router.jersey.internal;
+package io.servicetalk.http.router.jersey.config;
 
 import io.servicetalk.http.router.jersey.ServiceTalkFeature;
 

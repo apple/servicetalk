@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.data.jackson.jersey.internal;
+package io.servicetalk.data.jackson.jersey.config;
 
 import io.servicetalk.data.jackson.jersey.ServiceTalkJacksonSerializerFeature;
 
