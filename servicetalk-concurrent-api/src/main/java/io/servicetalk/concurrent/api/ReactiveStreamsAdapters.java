@@ -37,9 +37,9 @@ public final class ReactiveStreamsAdapters {
      * <a href="https://github.com/reactive-streams/reactive-streams-jvm">Reactive Streams</a>
      * {@link org.reactivestreams.Publisher}.
      *
-     * @param source {@link PublisherSource} to convert to a {@link Publisher}.
+     * @param source {@link org.reactivestreams.Publisher} to convert to a {@link Publisher}.
      * @param <T> Type of items emitted from the {@code source} and the returned {@link Publisher}.
-     * @return A {@link Publisher} representation of the passed {@link PublisherSource}.
+     * @return A {@link Publisher} representation of the passed {@link org.reactivestreams.Publisher}.
      */
     public static <T> Publisher<T> fromReactiveStreamsPublisher(org.reactivestreams.Publisher<T> source) {
         requireNonNull(source);
