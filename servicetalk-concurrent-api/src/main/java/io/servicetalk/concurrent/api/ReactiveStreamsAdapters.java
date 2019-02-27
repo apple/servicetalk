@@ -42,7 +42,6 @@ public final class ReactiveStreamsAdapters {
      * @return A {@link Publisher} representation of the passed {@link org.reactivestreams.Publisher}.
      */
     public static <T> Publisher<T> fromReactiveStreamsPublisher(org.reactivestreams.Publisher<T> source) {
-        requireNonNull(source);
         return new RSPublisherToPublisher<>(source);
     }
 
@@ -56,7 +55,6 @@ public final class ReactiveStreamsAdapters {
      * @return A {@link Publisher} representation of the passed {@link PublisherSource}.
      */
     public static <T> org.reactivestreams.Publisher<T> toReactiveStreamsPublisher(Publisher<T> publisher) {
-        requireNonNull(publisher);
         return new PublisherToRSPublisher<>(publisher);
     }
 
@@ -70,7 +68,6 @@ public final class ReactiveStreamsAdapters {
      * @return A {@link org.reactivestreams.Publisher} representation of the passed {@link PublisherSource}.
      */
     public static <T> org.reactivestreams.Publisher<T> toReactiveStreamsPublisher(PublisherSource<T> source) {
-        requireNonNull(source);
         return new PublisherSourceToRSPublisher<>(source);
     }
 
@@ -78,7 +75,7 @@ public final class ReactiveStreamsAdapters {
         private final Publisher<T> source;
 
         PublisherToRSPublisher(final Publisher<T> source) {
-            this.source = source;
+            this.source = requireNonNull(source);
         }
 
         @Override
@@ -91,7 +88,7 @@ public final class ReactiveStreamsAdapters {
         private final PublisherSource<T> source;
 
         PublisherSourceToRSPublisher(final PublisherSource<T> source) {
-            this.source = source;
+            this.source = requireNonNull(source);
         }
 
         @Override
@@ -142,7 +139,7 @@ public final class ReactiveStreamsAdapters {
         private final org.reactivestreams.Publisher<T> source;
 
         RSPublisherToPublisher(final org.reactivestreams.Publisher<T> source) {
-            this.source = source;
+            this.source = requireNonNull(source);
         }
 
         @Override

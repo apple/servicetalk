@@ -42,7 +42,6 @@ public final class SourceAdapters {
         if (publisher instanceof PublisherSource) {
             return uncheckedCast(publisher);
         }
-        requireNonNull(publisher);
         return new PublisherToPublisherSource<>(publisher);
     }
 
@@ -57,7 +56,6 @@ public final class SourceAdapters {
         if (single instanceof SingleSource) {
             return uncheckedCast(single);
         }
-        requireNonNull(single);
         return new SingleToSingleSource<>(single);
     }
 
@@ -71,7 +69,6 @@ public final class SourceAdapters {
         if (completable instanceof CompletableSource) {
             return (CompletableSource) completable;
         }
-        requireNonNull(completable);
         return new CompletableToCompletableSource(completable);
     }
 
@@ -86,7 +83,6 @@ public final class SourceAdapters {
         if (source instanceof Publisher) {
             return uncheckedCast(source);
         }
-        requireNonNull(source);
         return new PublisherSourceToPublisher<>(source);
     }
 
@@ -101,7 +97,6 @@ public final class SourceAdapters {
         if (source instanceof Single) {
             return uncheckedCast(source);
         }
-        requireNonNull(source);
         return new SingleSourceToSingle<>(source);
     }
 
@@ -115,7 +110,6 @@ public final class SourceAdapters {
         if (source instanceof Completable) {
             return (Completable) source;
         }
-        requireNonNull(source);
         return new CompletableSourceToCompletable(source);
     }
 
@@ -143,7 +137,7 @@ public final class SourceAdapters {
         private final Publisher<T> publisher;
 
         PublisherToPublisherSource(final Publisher<T> publisher) {
-            this.publisher = publisher;
+            this.publisher = requireNonNull(publisher);
         }
 
         @Override
@@ -156,7 +150,7 @@ public final class SourceAdapters {
         private final Single<T> single;
 
         SingleToSingleSource(final Single<T> single) {
-            this.single = single;
+            this.single = requireNonNull(single);
         }
 
         @Override
@@ -169,7 +163,7 @@ public final class SourceAdapters {
         private final Completable completable;
 
         CompletableToCompletableSource(final Completable completable) {
-            this.completable = completable;
+            this.completable = requireNonNull(completable);
         }
 
         @Override
@@ -182,7 +176,7 @@ public final class SourceAdapters {
         private final PublisherSource<T> source;
 
         PublisherSourceToPublisher(final PublisherSource<T> source) {
-            this.source = source;
+            this.source = requireNonNull(source);
         }
 
         @Override
@@ -200,7 +194,7 @@ public final class SourceAdapters {
         private final SingleSource<T> source;
 
         SingleSourceToSingle(final SingleSource<T> source) {
-            this.source = source;
+            this.source = requireNonNull(source);
         }
 
         @Override
@@ -218,7 +212,7 @@ public final class SourceAdapters {
         private final CompletableSource source;
 
         CompletableSourceToCompletable(final CompletableSource source) {
-            this.source = source;
+            this.source = requireNonNull(source);
         }
 
         @Override
