@@ -67,7 +67,6 @@ import static io.servicetalk.concurrent.api.Publisher.empty;
 import static io.servicetalk.concurrent.api.Publisher.just;
 import static io.servicetalk.concurrent.api.Single.error;
 import static io.servicetalk.concurrent.api.Single.success;
-import static io.servicetalk.concurrent.api.TestPublisher.newTestPublisher;
 import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
 import static io.servicetalk.http.api.StreamingHttpConnection.SettingKey.MAX_CONCURRENCY;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
@@ -93,9 +92,9 @@ public class ConcurrentRequestsHttpConnectionFilterTest {
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
 
-    private final TestPublisher<Buffer> response1Publisher = newTestPublisher();
-    private final TestPublisher<Buffer> response2Publisher = newTestPublisher();
-    private final TestPublisher<Buffer> response3Publisher = newTestPublisher();
+    private final TestPublisher<Buffer> response1Publisher = new TestPublisher<>();
+    private final TestPublisher<Buffer> response2Publisher = new TestPublisher<>();
+    private final TestPublisher<Buffer> response3Publisher = new TestPublisher<>();
 
     // TODO(jayv) Temporary workaround until DefaultNettyConnection leverages strategy.offloadReceive()
     private static final HttpExecutionStrategy FULLY_NO_OFFLOAD_STRATEGY =

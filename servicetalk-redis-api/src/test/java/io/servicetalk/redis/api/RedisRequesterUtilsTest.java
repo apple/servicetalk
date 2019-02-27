@@ -43,7 +43,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
-import static io.servicetalk.concurrent.api.TestPublisher.newTestPublisher;
 import static io.servicetalk.redis.api.RedisExecutionStrategies.noOffloadsStrategy;
 import static java.lang.String.join;
 import static java.util.Arrays.asList;
@@ -65,7 +64,7 @@ public class RedisRequesterUtilsTest {
     @Rule
     public MockedSingleListenerRule<List<Object>> listSubscriber = new MockedSingleListenerRule<>();
 
-    private final TestPublisher<RedisData> publisher = newTestPublisher();
+    private final TestPublisher<RedisData> publisher = new TestPublisher<>();
     private RedisRequester requester;
     private RedisRequest request;
     private BufferAllocator allocator;

@@ -17,9 +17,7 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.internal.TerminalNotification;
 
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.hasSize;
@@ -31,9 +29,6 @@ import static org.junit.Assert.assertTrue;
 import static org.testng.Assert.assertNull;
 
 public class CollectingPublisherSubscriberTest {
-
-    @Rule
-    public final ExpectedException expected = ExpectedException.none();
 
     private final CollectingPublisherSubscriber<String> subscriber = new CollectingPublisherSubscriber<>();
     private final TestPublisher<String> source = new TestPublisher.Builder<String>()
@@ -53,7 +48,7 @@ public class CollectingPublisherSubscriberTest {
     }
 
     @Test
-    public void testSubscribed() {
+    public void testSubscriptionReceived() {
         assertFalse(subscriber.subscriptionReceived());
 
         source.subscribe(subscriber);

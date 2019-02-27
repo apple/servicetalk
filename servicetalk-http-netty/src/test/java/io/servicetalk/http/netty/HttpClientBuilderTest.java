@@ -34,7 +34,6 @@ import java.util.concurrent.ExecutionException;
 import javax.annotation.Nonnull;
 
 import static io.servicetalk.concurrent.api.Completable.completed;
-import static io.servicetalk.concurrent.api.TestPublisher.newTestPublisher;
 import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -57,7 +56,7 @@ public class HttpClientBuilderTest extends AbstractEchoServerBasedHttpRequesterT
     @Test
     public void httpClientWithDynamicLoadBalancing() throws Exception {
 
-        TestPublisher<ServiceDiscovererEvent<InetSocketAddress>> sdPub = newTestPublisher();
+        TestPublisher<ServiceDiscovererEvent<InetSocketAddress>> sdPub = new TestPublisher<>();
 
         DefaultServiceDiscovererEvent<InetSocketAddress> sdEvent = new DefaultServiceDiscovererEvent<>(
                 (InetSocketAddress) serverContext.listenAddress(), true);

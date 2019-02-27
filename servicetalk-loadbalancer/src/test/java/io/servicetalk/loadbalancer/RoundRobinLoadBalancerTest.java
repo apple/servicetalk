@@ -22,7 +22,6 @@ import io.servicetalk.client.api.NoAvailableHostException;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
-import io.servicetalk.concurrent.api.AutoOnSubscribeSubscriberFunction;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.CompletableProcessor;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
@@ -94,11 +93,7 @@ public class RoundRobinLoadBalancerTest {
     @Rule
     public final MockedSingleListenerRule<TestLoadBalancedConnection> selectConnectionListener = new MockedSingleListenerRule<>();
 
-    private final AutoOnSubscribeSubscriberFunction<ServiceDiscovererEvent<String>> autoOnSubscribe =
-            new AutoOnSubscribeSubscriberFunction<>();
-    private final TestPublisher<ServiceDiscovererEvent<String>> serviceDiscoveryPublisher =
-            new TestPublisher.Builder<ServiceDiscovererEvent<String>>()
-                    .autoOnSubscribe(autoOnSubscribe).build();
+    private final TestPublisher<ServiceDiscovererEvent<String>> serviceDiscoveryPublisher = new TestPublisher<>();
     private final List<TestLoadBalancedConnection> connectionsCreated = new CopyOnWriteArrayList<>();
     private final Queue<Runnable> connectionRealizers = new ConcurrentLinkedQueue<>();
 

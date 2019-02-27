@@ -37,7 +37,6 @@ import java.util.function.IntUnaryOperator;
 import static io.servicetalk.concurrent.api.BlockingTestUtils.awaitIndefinitelyNonNull;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
-import static io.servicetalk.concurrent.api.TestPublisher.newTestPublisher;
 import static io.servicetalk.concurrent.api.TestPublisherSubscriber.newTestPublisherSubscriber;
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
@@ -112,7 +111,7 @@ public class DefaultSerializerSerializationTest {
 
     @Test
     public void applySerializationForPublisherWithTypeAndEstimator() {
-        TestPublisher<String> source = newTestPublisher();
+        TestPublisher<String> source = new TestPublisher<>();
 
         final Publisher<Buffer> serialized = factory.serialize(source, allocator, String.class, sizeEstimator);
         TestPublisherSubscriber<Buffer> subscriber = newTestPublisherSubscriber();
@@ -132,7 +131,7 @@ public class DefaultSerializerSerializationTest {
 
     @Test
     public void applySerializationForPublisherWithTypeHolderAndEstimator() {
-        TestPublisher<List<String>> source = TestPublisher.newTestPublisher();
+        TestPublisher<List<String>> source = new TestPublisher<>();
 
         final Publisher<Buffer> serialized = factory.serialize(source, allocator, TYPE_FOR_LIST, sizeEstimator);
         TestPublisherSubscriber<Buffer> subscriber = newTestPublisherSubscriber();

@@ -15,7 +15,6 @@
  */
 package io.servicetalk.concurrent.api.publisher;
 
-import io.servicetalk.concurrent.api.AutoOnSubscribeSubscriberFunction;
 import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.api.TestPublisherSubscriber;
 import io.servicetalk.concurrent.api.TestSubscription;
@@ -43,10 +42,7 @@ import static org.mockito.Mockito.when;
 public class RepeatTest {
 
     private final TestPublisherSubscriber<Integer> subscriber = newTestPublisherSubscriber();
-    private final AutoOnSubscribeSubscriberFunction<Integer> autoOnSubscribe =
-            new AutoOnSubscribeSubscriberFunction<>();
-    private final TestPublisher<Integer> source = new TestPublisher.Builder<Integer>()
-            .autoOnSubscribe(autoOnSubscribe).build();
+    private final TestPublisher<Integer> source = new TestPublisher<>();
     private final IntPredicate shouldRepeat = mock(IntPredicate.class);
     private boolean shouldRepeatValue;
 

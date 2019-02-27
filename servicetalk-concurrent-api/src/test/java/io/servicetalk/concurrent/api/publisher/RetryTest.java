@@ -25,7 +25,6 @@ import org.junit.Before;
 import org.junit.Test;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
-import static io.servicetalk.concurrent.api.TestPublisher.newTestPublisher;
 import static io.servicetalk.concurrent.api.TestPublisherSubscriber.newTestPublisherSubscriber;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static org.hamcrest.Matchers.contains;
@@ -53,7 +52,7 @@ public class RetryTest {
     @SuppressWarnings("unchecked")
     @Before
     public void setUp() throws Exception {
-        source = newTestPublisher();
+        source = new TestPublisher<>();
         shouldRetry = (BiIntPredicate<Throwable>) mock(BiIntPredicate.class);
         when(shouldRetry.test(anyInt(), any())).thenAnswer(invocation -> shouldRetryValue);
         toSource(source.retry(shouldRetry)).subscribe(subscriber);
@@ -146,7 +145,7 @@ public class RetryTest {
     public void exceptionInTerminalCallsOnError() {
         DeliberateException ex = new DeliberateException();
         subscriber = newTestPublisherSubscriber();
-        source = newTestPublisher();
+        source = new TestPublisher<>();
         toSource(source.retry((times, cause) -> {
             throw ex;
         })).subscribe(subscriber);

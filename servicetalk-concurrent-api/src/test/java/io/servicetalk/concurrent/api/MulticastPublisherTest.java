@@ -36,7 +36,6 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
-import static io.servicetalk.concurrent.api.TestPublisher.newTestPublisher;
 import static io.servicetalk.concurrent.api.TestPublisherSubscriber.newTestPublisherSubscriber;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -128,7 +127,7 @@ public class MulticastPublisherTest {
 
     @Test
     public void sourceSubscribeBefore() {
-        source = newTestPublisher(); // With auto-on-subscribe enabled
+        source = new TestPublisher<>(); // With auto-on-subscribe enabled
         Publisher<Integer> multicast = source.multicast(2);
         TestPublisherSubscriber<Integer> subscriber1 = newTestPublisherSubscriber();
         TestPublisherSubscriber<Integer> subscriber2 = newTestPublisherSubscriber();

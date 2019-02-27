@@ -24,7 +24,6 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
 
-import static io.servicetalk.concurrent.api.TestPublisher.newTestPublisher;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.transport.netty.internal.FlushStrategies.flushOnEach;
 import static io.servicetalk.transport.netty.internal.FlushStrategies.flushOnEnd;
@@ -44,7 +43,7 @@ public class FlushStrategiesTest {
     @Before
     public void setUp() {
         flushSender = mock(FlushSender.class);
-        durationSource = newTestPublisher();
+        durationSource = new TestPublisher<>();
     }
 
     @Test

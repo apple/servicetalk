@@ -26,7 +26,8 @@ import static org.junit.Assert.assertTrue;
 
 public class MapPublisherTest {
 
-    private TestPublisher<Integer> source = new TestPublisher.Builder<Integer>().disableAutoOnSubscribe().build();
+    private final TestPublisher<Integer> source = new TestPublisher.Builder<Integer>()
+            .disableAutoOnSubscribe().build();
     private final TestPublisherSubscriber<String> subscriber = newTestPublisherSubscriber();
 
     @Test

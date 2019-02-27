@@ -36,7 +36,6 @@ import java.util.concurrent.ExecutionException;
 import static io.servicetalk.concurrent.api.Completable.error;
 import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
-import static io.servicetalk.concurrent.api.TestPublisher.newTestPublisher;
 import static io.servicetalk.concurrent.api.TestPublisherSubscriber.newTestPublisherSubscriber;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static org.hamcrest.Matchers.contains;
@@ -61,7 +60,7 @@ public class RetryWhenTest {
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
 
-    private TestPublisher<Integer> source = newTestPublisher();
+    private TestPublisher<Integer> source = new TestPublisher<>();
     private TestPublisherSubscriber<Integer> subscriber = newTestPublisherSubscriber();
     private BiIntFunction<Throwable, Completable> shouldRetry;
     private TestCompletable retrySignal;
@@ -208,7 +207,7 @@ public class RetryWhenTest {
     public void exceptionInTerminalCallsOnError() {
         DeliberateException ex = new DeliberateException();
         subscriber = newTestPublisherSubscriber();
-        source = newTestPublisher();
+        source = new TestPublisher<>();
         toSource(source.retryWhen((times, cause) -> {
             throw ex;
         })).subscribe(subscriber);
@@ -221,7 +220,7 @@ public class RetryWhenTest {
 
     @Test
     public void nullInTerminalCallsOnError() {
-        source = newTestPublisher();
+        source = new TestPublisher<>();
         toSource(source.retryWhen((times1, cause1) -> null)).subscribe(subscriber);
         subscriber.request(1);
         source.onError(DELIBERATE_EXCEPTION);

@@ -30,7 +30,6 @@ import static io.servicetalk.client.internal.RequestConcurrencyController.Result
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Completable.never;
 import static io.servicetalk.concurrent.api.Publisher.just;
-import static io.servicetalk.concurrent.api.TestPublisher.newTestPublisher;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 
@@ -38,7 +37,7 @@ public abstract class AbstractRequestConcurrencyControllerOnlySingleTest {
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
 
-    private final TestPublisher<Integer> limitPublisher = newTestPublisher();
+    private final TestPublisher<Integer> limitPublisher = new TestPublisher<>();
 
     protected abstract RequestConcurrencyController newController(Publisher<Integer> maxSetting, Completable onClose);
 

@@ -33,7 +33,6 @@ import static io.servicetalk.concurrent.api.Completable.error;
 import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
 import static io.servicetalk.concurrent.api.Publisher.just;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
-import static io.servicetalk.concurrent.api.TestPublisher.newTestPublisher;
 import static io.servicetalk.concurrent.api.TestPublisherSubscriber.newTestPublisherSubscriber;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static org.hamcrest.Matchers.contains;
@@ -183,7 +182,7 @@ public class RepeatWhenTest {
     }
 
     private void init() {
-        init(newTestPublisher());
+        init(new TestPublisher<>());
     }
 
     @SuppressWarnings("unchecked")

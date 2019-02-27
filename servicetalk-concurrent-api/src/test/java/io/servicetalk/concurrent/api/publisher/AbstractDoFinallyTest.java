@@ -28,7 +28,6 @@ import org.junit.rules.ExpectedException;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static io.servicetalk.concurrent.api.TestPublisher.newTestPublisher;
 import static io.servicetalk.concurrent.api.TestPublisherSubscriber.newTestPublisherSubscriber;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -45,7 +44,7 @@ public abstract class AbstractDoFinallyTest {
     @Rule
     public final ExpectedException thrown = ExpectedException.none();
 
-    final TestPublisher<String> publisher = newTestPublisher();
+    final TestPublisher<String> publisher = new TestPublisher<>();
     final TestPublisherSubscriber<String> subscriber = newTestPublisherSubscriber();
     private Runnable doFinally;
     final TestSubscription subscription = new TestSubscription();

@@ -24,9 +24,7 @@ import org.junit.rules.ExpectedException;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static io.servicetalk.concurrent.api.IsIterableEndingWithInOrder.endsWith;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
-import static io.servicetalk.concurrent.api.TestPublisher.newTestPublisher;
 import static io.servicetalk.concurrent.api.TestPublisherSubscriber.newTestPublisherSubscriber;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static java.util.Arrays.asList;
@@ -44,10 +42,10 @@ public class PublisherConcatMapIterableTest {
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
 
-    private final TestPublisher<List<String>> publisher = newTestPublisher();
-    private final TestPublisher<BlockingIterable<String>> cancellablePublisher = newTestPublisher();
+    private final TestPublisher<List<String>> publisher = new TestPublisher<>();
+    private final TestPublisher<BlockingIterable<String>> cancellablePublisher = new TestPublisher<>();
     private final TestPublisherSubscriber<String> subscriber = newTestPublisherSubscriber();
-    private TestSubscription subscription = new TestSubscription();
+    private final TestSubscription subscription = new TestSubscription();
 
     @Test
     public void cancellableIterableIsCancelled() {
@@ -122,7 +120,7 @@ public class PublisherConcatMapIterableTest {
         assertTrue(subscriber.subscriptionReceived());
         subscriber.request(1);
         publisher.onNext(asList("one", "two"));
-        assertThat(subscriber.items(), contains("one"));
+        assertThat(subscriber.takeItems(), contains("one"));
 
         if (success) {
             publisher.onComplete();
@@ -131,7 +129,7 @@ public class PublisherConcatMapIterableTest {
         }
 
         subscriber.request(1);
-        assertThat(subscriber.items(), endsWith("two"));
+        assertThat(subscriber.items(), contains("two"));
 
         if (success) {
             assertTrue(subscriber.isCompleted());
@@ -157,11 +155,11 @@ public class PublisherConcatMapIterableTest {
         assertTrue(subscriber.subscriptionReceived());
         subscriber.request(1);
         publisher.onNext(singletonList("one"));
-        assertThat(subscriber.items(), contains("one"));
+        assertThat(subscriber.takeItems(), contains("one"));
 
         subscriber.request(1);
         publisher.onNext(singletonList("two"));
-        assertThat(subscriber.items(), endsWith("two"));
+        assertThat(subscriber.takeItems(), contains("two"));
 
         verifyTermination(success);
     }
@@ -182,17 +180,17 @@ public class PublisherConcatMapIterableTest {
         assertTrue(subscriber.subscriptionReceived());
         subscriber.request(1);
         publisher.onNext(asList("one", "two"));
-        assertThat(subscriber.items(), contains("one"));
+        assertThat(subscriber.takeItems(), contains("one"));
 
         subscriber.request(1);
-        assertThat(subscriber.items(), endsWith("two"));
+        assertThat(subscriber.takeItems(), contains("two"));
 
         subscriber.request(1);
         publisher.onNext(asList("three", "four"));
-        assertThat(subscriber.items(), endsWith("three"));
+        assertThat(subscriber.takeItems(), contains("three"));
 
         subscriber.request(1);
-        assertThat(subscriber.items(), endsWith("four"));
+        assertThat(subscriber.takeItems(), contains("four"));
 
         verifyTermination(success);
     }
@@ -227,13 +225,13 @@ public class PublisherConcatMapIterableTest {
         subscriber.request(1);
 
         publisher.onNext(asList("one", "two", "three"));
-        assertThat(subscriber.items(), contains("one", "two"));
+        assertThat(subscriber.takeItems(), contains("one", "two"));
 
         subscriber.request(1);
-        assertThat(subscriber.items(), endsWith("three"));
+        assertThat(subscriber.takeItems(), contains("three"));
         subscriber.request(1);
-        publisher.onNext(asList("four"));
-        assertThat(subscriber.items(), endsWith("four"));
+        publisher.onNext(singletonList("four"));
+        assertThat(subscriber.takeItems(), contains("four"));
         verifyTermination(success);
     }
 

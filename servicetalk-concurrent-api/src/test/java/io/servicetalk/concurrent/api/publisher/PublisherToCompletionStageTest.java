@@ -33,7 +33,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static io.servicetalk.concurrent.api.TestPublisher.newTestPublisher;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
@@ -48,7 +47,7 @@ public class PublisherToCompletionStageTest {
     @Rule
     public final ExpectedException thrown = ExpectedException.none();
 
-    private final TestPublisher<String> publisher = newTestPublisher();
+    private final TestPublisher<String> publisher = new TestPublisher<>();
     private static ExecutorService jdkExecutor;
 
     @BeforeClass

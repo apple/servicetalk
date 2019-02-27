@@ -25,7 +25,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import static io.servicetalk.concurrent.api.TestPublisher.newTestPublisher;
 import static io.servicetalk.concurrent.api.TestPublisherSubscriber.newTestPublisherSubscriber;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static org.hamcrest.Matchers.contains;
@@ -41,7 +40,7 @@ public abstract class AbstractDoCancelTest {
     @Rule
     public final ExpectedException thrown = ExpectedException.none();
 
-    private final TestPublisher<String> publisher = newTestPublisher();
+    private final TestPublisher<String> publisher = new TestPublisher<>();
     private final TestPublisherSubscriber<String> subscriber = newTestPublisherSubscriber();
     private TestSubscription subscription = new TestSubscription();
 

@@ -40,7 +40,6 @@ import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Completable.never;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
-import static io.servicetalk.concurrent.api.TestPublisher.newTestPublisher;
 import static io.servicetalk.concurrent.api.TestPublisherSubscriber.newTestPublisherSubscriber;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpProtocolVersions.HTTP_1_0;
@@ -89,10 +88,10 @@ public class PipelinedHttpConnectionTest {
         when(connection.executionContext()).thenReturn(ctx);
         HttpClientConfig config = new HttpClientConfig(new TcpClientConfig(true));
         config.maxPipelinedRequests(2);
-        readPublisher1 = newTestPublisher();
-        readPublisher2 = newTestPublisher();
-        writePublisher1 = newTestPublisher();
-        writePublisher2 = newTestPublisher();
+        readPublisher1 = new TestPublisher<>();
+        readPublisher2 = new TestPublisher<>();
+        writePublisher1 = new TestPublisher<>();
+        writePublisher2 = new TestPublisher<>();
         when(connection.write(any())).then(inv -> {
             Publisher<Object> publisher = inv.getArgument(0);
             return publisher.ignoreElements(); // simulate write consuming all

@@ -40,7 +40,6 @@ public class CompletableMergeWithPublisherTest {
         toSource(completable.merge(publisher)).subscribe(subscriber);
         assertTrue(subscriber.subscriptionReceived());
         subscriber.request(5);
-        publisher.onSubscribe(subscription);
         completable.onComplete();
         subscriber.request(7);
         publisher.onNext("1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12");
@@ -134,7 +133,6 @@ public class CompletableMergeWithPublisherTest {
     public void testCancelPublisherCompleteCompletablePendingCancelsNoMoreInteraction() {
         TestCompletable completable = new TestCompletable();
         toSource(completable.merge(publisher)).subscribe(subscriber);
-        publisher.onSubscribe(subscription);
         assertTrue(subscriber.subscriptionReceived());
         subscriber.request(2);
         publisher.onNext("one", "two");
@@ -151,7 +149,6 @@ public class CompletableMergeWithPublisherTest {
     public void testCompletableAndPublisherCompleteSingleCompleteSignal() {
         TestCompletable completable = new TestCompletable();
         toSource(completable.merge(publisher)).subscribe(subscriber);
-        publisher.onSubscribe(subscription);
         assertTrue(subscriber.subscriptionReceived());
         subscriber.request(2);
         completable.onComplete();
@@ -180,7 +177,6 @@ public class CompletableMergeWithPublisherTest {
     public void testCompletableFailsAndPublisherCompletesSingleErrorSignal() {
         TestCompletable completable = new TestCompletable();
         toSource(completable.merge(publisher)).subscribe(subscriber);
-        publisher.onSubscribe(subscription);
         assertTrue(subscriber.subscriptionReceived());
         subscriber.request(2);
         publisher.onNext("one", "two");

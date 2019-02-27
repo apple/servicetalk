@@ -43,7 +43,6 @@ import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.Publisher.just;
 import static io.servicetalk.concurrent.api.Single.success;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
-import static io.servicetalk.concurrent.api.TestPublisher.newTestPublisher;
 import static io.servicetalk.http.api.HttpProtocolVersions.HTTP_1_1;
 import static io.servicetalk.http.api.HttpResponseStatuses.OK;
 import static java.nio.charset.StandardCharsets.US_ASCII;
@@ -68,7 +67,7 @@ public abstract class AbstractBlockingStreamingHttpRequesterTest {
     @Mock
     private BlockingIterator<Buffer> mockIterator;
 
-    private final TestPublisher<Buffer> publisher = newTestPublisher();
+    private final TestPublisher<Buffer> publisher = new TestPublisher<>();
     private final BufferAllocator allocator = DEFAULT_ALLOCATOR;
     private final StreamingHttpRequestResponseFactory reqRespFactory = new DefaultStreamingHttpRequestResponseFactory(
             allocator, DefaultHttpHeadersFactory.INSTANCE);

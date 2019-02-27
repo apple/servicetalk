@@ -50,7 +50,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.concurrent.api.Single.success;
-import static io.servicetalk.concurrent.api.TestPublisher.newTestPublisher;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
 import static io.servicetalk.http.api.HttpRequestMethods.GET;
@@ -68,8 +67,8 @@ public class NettyHttpServerConnectionTest {
     @Rule
     public final ExecutionContextRule contextRule = immediate();
 
-    public final TestPublisher<Buffer> responsePublisher = newTestPublisher();
-    public final TestPublisher<Buffer> responsePublisher2 = newTestPublisher();
+    public final TestPublisher<Buffer> responsePublisher = new TestPublisher<>();
+    public final TestPublisher<Buffer> responsePublisher2 = new TestPublisher<>();
     private HttpExecutionStrategy serverExecutionStrategy;
     private HttpExecutionStrategy clientExecutionStrategy;
     private ServerContext serverContext;

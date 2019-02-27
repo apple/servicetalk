@@ -15,7 +15,6 @@
  */
 package io.servicetalk.http.netty;
 
-import io.servicetalk.concurrent.api.AutoOnSubscribeSubscriberFunction;
 import io.servicetalk.concurrent.api.MockedSingleListenerRule;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.TestPublisher;
@@ -51,10 +50,7 @@ public class SpliceFlatStreamToMetaSingleTest {
     @Rule
     public final MockedSingleListenerRule<Data> dataSubscriber = new MockedSingleListenerRule<>();
 
-    private final AutoOnSubscribeSubscriberFunction<Object> autoOnSubscribe =
-            new AutoOnSubscribeSubscriberFunction<>();
-    private final TestPublisher<Object> upstream = new TestPublisher.Builder<>()
-            .autoOnSubscribe(autoOnSubscribe).build();
+    private final TestPublisher<Object> upstream = new TestPublisher<>();
     private final MetaData metaData = new MetaData("foo");
     private final Payload one = new Payload();
     private final Payload two = new Payload();

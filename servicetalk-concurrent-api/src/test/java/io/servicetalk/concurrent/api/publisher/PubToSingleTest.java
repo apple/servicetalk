@@ -16,7 +16,6 @@
 package io.servicetalk.concurrent.api.publisher;
 
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
-import io.servicetalk.concurrent.api.AutoOnSubscribeSubscriberFunction;
 import io.servicetalk.concurrent.api.DeferredEmptySubscription;
 import io.servicetalk.concurrent.api.ExecutorRule;
 import io.servicetalk.concurrent.api.MockedSingleListenerRule;
@@ -51,10 +50,7 @@ public class PubToSingleTest {
     @Rule
     public final MockedSingleListenerRule<String> listenerRule = new MockedSingleListenerRule<>();
 
-    private final AutoOnSubscribeSubscriberFunction<String> autoOnSubscribe =
-            new AutoOnSubscribeSubscriberFunction<>();
-    private final TestPublisher<String> publisher = new TestPublisher.Builder<String>()
-            .autoOnSubscribe(autoOnSubscribe).build();
+    private final TestPublisher<String> publisher = new TestPublisher<>();
     private final TestSubscription subscription = new TestSubscription();
 
     @Test

@@ -21,12 +21,10 @@ import io.servicetalk.concurrent.PublisherSource.Subscription;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
 public final class ConcurrentPublisherSubscriberFunction<T> implements Function<Subscriber<? super T>, Subscriber<? super T>> {
 
-    private final AtomicInteger subscriptionCount = new AtomicInteger();
     private final List<Subscriber<? super T>> subscribers = new CopyOnWriteArrayList<>();
     private final Subscriber<T> listSubscriber = new Subscriber<T>() {
         @Override
@@ -61,15 +59,10 @@ public final class ConcurrentPublisherSubscriberFunction<T> implements Function<
     @Override
     public Subscriber<? super T> apply(final Subscriber<? super T> subscriber) {
         subscribers.add(subscriber);
-        subscriptionCount.incrementAndGet();
         return listSubscriber;
     }
 
     public List<Subscriber<? super T>> subscribers() {
         return new ArrayList<>(subscribers);
-    }
-
-    public int subscriptionCount() {
-        return subscriptionCount.get();
     }
 }

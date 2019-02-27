@@ -50,7 +50,6 @@ import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Publisher.just;
 import static io.servicetalk.concurrent.api.Publisher.never;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
-import static io.servicetalk.concurrent.api.TestPublisher.newTestPublisher;
 import static io.servicetalk.concurrent.api.TestPublisherSubscriber.newTestPublisherSubscriber;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.transport.netty.internal.CloseHandler.UNSUPPORTED_PROTOCOL_CLOSE_HANDLER;
@@ -118,7 +117,7 @@ public class DefaultNettyConnectionTest {
         });
         conn = DefaultNettyConnection.<Buffer, Buffer>initChannel(channel, allocator, executor, terminalPredicate,
                 closeHandler, defaultFlushStrategy(), (channel, context) -> context).toFuture().get();
-        publisher = newTestPublisher();
+        publisher = new TestPublisher<>();
     }
 
     @Test

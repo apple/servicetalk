@@ -29,7 +29,6 @@ import java.io.InputStream;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Publisher.from;
-import static io.servicetalk.concurrent.api.TestPublisher.newTestPublisher;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.util.Arrays.copyOfRange;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -44,7 +43,7 @@ public final class PublisherAsInputStreamTest {
     @Rule
     public final ExpectedException expected = none();
 
-    private final TestPublisher<String> publisher = newTestPublisher();
+    private final TestPublisher<String> publisher = new TestPublisher<>();
 
     @Test
     public void streamEmitsAllDataInSingleRead() throws IOException {
@@ -191,7 +190,7 @@ public final class PublisherAsInputStreamTest {
 
     @Test
     public void checkAvailableReturnsCorrectlyWithPrefetch() throws IOException {
-        TestPublisher<String> testPublisher = newTestPublisher();
+        TestPublisher<String> testPublisher = new TestPublisher<>();
         InputStream stream = testPublisher.toInputStream(str -> str.getBytes(US_ASCII));
         assertThat("Unexpected available return type.", stream.available(), is(0));
         testPublisher.onNext("1234");

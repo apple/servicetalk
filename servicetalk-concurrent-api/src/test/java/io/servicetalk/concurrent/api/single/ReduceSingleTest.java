@@ -34,7 +34,6 @@ import java.util.function.BiFunction;
 import java.util.function.Consumer;
 
 import static io.servicetalk.concurrent.api.Publisher.just;
-import static io.servicetalk.concurrent.api.TestPublisher.newTestPublisher;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static java.lang.Thread.currentThread;
 import static org.hamcrest.Matchers.hasSize;
@@ -55,7 +54,7 @@ public class ReduceSingleTest {
     @Rule
     public final ReducerRule reducerRule = new ReducerRule();
 
-    private final TestPublisher<String> publisher = newTestPublisher();
+    private final TestPublisher<String> publisher = new TestPublisher<>();
     private final TestSubscription subscription = new TestSubscription();
 
     @Test

@@ -47,7 +47,6 @@ import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.api.Publisher.never;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
-import static io.servicetalk.concurrent.api.TestPublisher.newTestPublisher;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.http.api.HttpResponseStatuses.OK;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -196,7 +195,7 @@ public class DoBeforeFinallyOnHttpResponseOperatorTest {
 
     @Test
     public void payloadComplete() {
-        TestPublisher<Buffer> payload = newTestPublisher();
+        TestPublisher<Buffer> payload = new TestPublisher<>();
         TestSingle<StreamingHttpResponse> responseSingle = new TestSingle<>(true);
         final ResponseSubscriber subscriber = new ResponseSubscriber();
         toSource(responseSingle.liftSynchronous(operator)).subscribe(subscriber);

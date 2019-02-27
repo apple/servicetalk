@@ -42,7 +42,6 @@ import java.util.function.Supplier;
 
 import static io.servicetalk.concurrent.api.IsIterableEndingWithInOrder.endsWith;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
-import static io.servicetalk.concurrent.api.TestPublisher.newTestPublisher;
 import static io.servicetalk.concurrent.api.TestPublisherSubscriber.newTestPublisherSubscriber;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -69,7 +68,7 @@ public class PublisherGroupByTest {
 
     @Before
     public void setUp() {
-        source = newTestPublisher();
+        source = new TestPublisher<>();
         subscriber = newTestPublisherSubscriber();
     }
 

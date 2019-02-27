@@ -41,7 +41,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.IsIterableEndingWithInOrder.endsWith;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
-import static io.servicetalk.concurrent.api.TestPublisher.newTestPublisher;
 import static io.servicetalk.concurrent.api.TestPublisherSubscriber.newTestPublisherSubscriber;
 import static io.servicetalk.concurrent.api.VerificationTestUtils.verifyOriginalAndSuppressedCauses;
 import static io.servicetalk.concurrent.api.VerificationTestUtils.verifySuppressed;
@@ -69,7 +68,7 @@ public class PublisherFlatMapSingleTest {
     public final Timeout timeout = new ServiceTalkTestTimeout(30, SECONDS);
 
     private final TestPublisherSubscriber<Integer> subscriber = newTestPublisherSubscriber();
-    private final TestPublisher<Integer> source = newTestPublisher();
+    private final TestPublisher<Integer> source = new TestPublisher<>();
     private final TestSubscription subscription = new TestSubscription();
     private static ExecutorService executorService;
     private static Executor executor;
@@ -241,6 +240,8 @@ public class PublisherFlatMapSingleTest {
 
     @Test
     public void testSingleCompletePostCancel() {
+        final TestPublisherSubscriber<Integer> subscriber = new TestPublisherSubscriber.Builder<Integer>()
+                .disableDemandCheck().build();
         TestSingle<Integer> single = new TestSingle<>(true);
         toSource(source.flatMapSingle(integer1 -> single, 2)).subscribe(subscriber);
         subscriber.request(1);

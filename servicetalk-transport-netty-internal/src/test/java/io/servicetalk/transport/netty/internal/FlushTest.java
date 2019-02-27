@@ -15,7 +15,6 @@
  */
 package io.servicetalk.transport.netty.internal;
 
-import io.servicetalk.concurrent.api.AutoOnSubscribeSubscriberFunction;
 import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.api.TestPublisherSubscriber;
 import io.servicetalk.concurrent.api.TestSubscription;
@@ -39,10 +38,7 @@ import static org.mockito.Mockito.verifyZeroInteractions;
 
 public class FlushTest extends AbstractFlushTest {
 
-    private final AutoOnSubscribeSubscriberFunction<String> autoOnSubscribe =
-            new AutoOnSubscribeSubscriberFunction<>();
-    private final TestPublisher<String> source = new TestPublisher.Builder<String>()
-            .autoOnSubscribe(autoOnSubscribe).build();
+    private final TestPublisher<String> source = new TestPublisher<>();
     private final TestPublisherSubscriber<String> subscriber = newTestPublisherSubscriber();
     private FlushSender flushSender;
     private MockFlushStrategy strategy;

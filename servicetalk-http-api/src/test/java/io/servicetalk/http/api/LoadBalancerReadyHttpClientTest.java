@@ -43,7 +43,6 @@ import static io.servicetalk.concurrent.api.Single.defer;
 import static io.servicetalk.concurrent.api.Single.error;
 import static io.servicetalk.concurrent.api.Single.success;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
-import static io.servicetalk.concurrent.api.TestPublisher.newTestPublisher;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.http.api.DefaultHttpHeadersFactory.INSTANCE;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
@@ -65,7 +64,7 @@ public class LoadBalancerReadyHttpClientTest {
     @Mock
     private ExecutionContext mockExecutionCtx;
 
-    private final TestPublisher<Object> loadBalancerPublisher = newTestPublisher();
+    private final TestPublisher<Object> loadBalancerPublisher = new TestPublisher<>();
 
     private StreamingHttpClient client = new TestStreamingHttpClient(reqRespFactory, mockExecutionCtx) {
         @Override
@@ -112,7 +111,7 @@ public class LoadBalancerReadyHttpClientTest {
 
     private void verifyOnInitializedFailedFailsAction(Function<StreamingHttpClient,
             Single<?>> action) throws InterruptedException {
-        TestPublisher<Object> loadBalancerPublisher = newTestPublisher();
+        TestPublisher<Object> loadBalancerPublisher = new TestPublisher<>();
         LoadBalancerReadyStreamingHttpClient filter =
                 new LoadBalancerReadyStreamingHttpClient(1, loadBalancerPublisher, client);
         CountDownLatch latch = new CountDownLatch(2);

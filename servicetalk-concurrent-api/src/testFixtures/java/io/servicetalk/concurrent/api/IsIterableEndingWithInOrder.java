@@ -26,7 +26,7 @@ import java.util.List;
 
 import static org.hamcrest.core.IsEqual.equalTo;
 
-public class IsIterableEndingWithInOrder<T> extends IsIterableContainingInOrder<T> {
+public final class IsIterableEndingWithInOrder<T> extends IsIterableContainingInOrder<T> {
 
     private final int expectedCount;
 

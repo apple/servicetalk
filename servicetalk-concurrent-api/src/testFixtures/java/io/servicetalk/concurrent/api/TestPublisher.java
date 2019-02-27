@@ -36,6 +36,10 @@ public final class TestPublisher<T> extends Publisher<T> implements PublisherSou
     @Nullable
     private volatile Subscriber<? super T> subscriber;
 
+    public TestPublisher() {
+        this(new Builder<T>().buildSubscriberFunction());
+    }
+
     private TestPublisher(final Function<Subscriber<? super T>, Subscriber<? super T>> subscriberFunction) {
         this.subscriberFunction = subscriberFunction;
     }
@@ -105,10 +109,6 @@ public final class TestPublisher<T> extends Publisher<T> implements PublisherSou
         requireNonNull(t);
         LOGGER.warn("Unexpected exception", t);
         exceptions.add(t);
-    }
-
-    public static <T> TestPublisher<T> newTestPublisher() {
-        return new Builder<T>().build();
     }
 
     public static class Builder<T> {

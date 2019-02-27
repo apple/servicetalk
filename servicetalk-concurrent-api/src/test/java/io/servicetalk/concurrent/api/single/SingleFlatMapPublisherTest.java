@@ -72,7 +72,6 @@ public final class SingleFlatMapPublisherTest {
     public void testSuccess() {
         toSource(success(1).flatMapPublisher(s1 -> publisher)).subscribe(subscriber);
         subscriber.request(2);
-        publisher.onSubscribe(subscription);
         publisher.onNext("Hello1", "Hello2");
         publisher.onComplete();
         assertThat(subscriber.items(), contains("Hello1", "Hello2"));
@@ -83,7 +82,6 @@ public final class SingleFlatMapPublisherTest {
     public void testPublisherEmitsError() {
         toSource(success(1).flatMapPublisher(s1 -> publisher)).subscribe(subscriber);
         subscriber.request(1);
-        publisher.onSubscribe(subscription);
         publisher.onError(DELIBERATE_EXCEPTION);
         assertThat(subscriber.error(), sameInstance(DELIBERATE_EXCEPTION));
     }

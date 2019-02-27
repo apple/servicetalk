@@ -45,6 +45,7 @@ public final class DemandCheckingSubscriber<T> implements Subscriber<T> {
 
             @Override
             public void cancel() {
+                pending.set(0);
                 s.cancel();
             }
         });
@@ -63,13 +64,11 @@ public final class DemandCheckingSubscriber<T> implements Subscriber<T> {
 
     @Override
     public void onError(final Throwable t) {
-        subscribed = false;
         delegate.onError(t);
     }
 
     @Override
     public void onComplete() {
-        subscribed = false;
         delegate.onComplete();
     }
 }

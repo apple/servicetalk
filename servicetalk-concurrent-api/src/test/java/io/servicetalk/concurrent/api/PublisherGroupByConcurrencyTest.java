@@ -58,13 +58,10 @@ public final class PublisherGroupByConcurrencyTest {
     private TestPublisher<Integer> source;
     private ExecutorService executor;
     private AtomicBoolean allWorkDone;
-    private AutoOnSubscribeSubscriberFunction<Integer> autoOnSubscribe;
 
     @Before
     public void setUp() throws Exception {
-        autoOnSubscribe = new AutoOnSubscribeSubscriberFunction<>();
-        source = new TestPublisher.Builder<Integer>()
-                .autoOnSubscribe(autoOnSubscribe).build();
+        source = new TestPublisher<>();
         allItemsReceivedOnAllGroups = new ConcurrentLinkedQueue<>();
         executor = newCachedThreadPool();
         allWorkDone = new AtomicBoolean();

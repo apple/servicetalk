@@ -44,7 +44,6 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.AsyncCloseables.closeAsyncGracefully;
-import static io.servicetalk.concurrent.api.TestPublisher.newTestPublisher;
 import static io.servicetalk.http.api.DefaultHttpHeadersFactory.INSTANCE;
 import static io.servicetalk.http.api.HttpHeaderNames.CONNECTION;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
@@ -97,7 +96,7 @@ public class NettyHttpServerTest extends AbstractNettyHttpServerTest {
     private final StreamingHttpRequestResponseFactory reqRespFactory =
             new DefaultStreamingHttpRequestResponseFactory(DEFAULT_ALLOCATOR, INSTANCE);
 
-    private final TestPublisher<Buffer> publisher = newTestPublisher();
+    private final TestPublisher<Buffer> publisher = new TestPublisher<>();
     private AtomicReference<Single<Throwable>> capturedServiceTransportErrorRef = new AtomicReference<>();
 
     public NettyHttpServerTest(final ExecutorSupplier clientExecutorSupplier,

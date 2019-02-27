@@ -43,7 +43,6 @@ import java.util.function.Function;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.BlockingTestUtils.awaitIndefinitely;
-import static io.servicetalk.concurrent.api.TestPublisher.newTestPublisher;
 import static io.servicetalk.redis.api.RedisExecutionStrategies.noOffloadsStrategy;
 import static io.servicetalk.redis.api.RedisProtocolSupport.Command.INFO;
 import static io.servicetalk.redis.api.RedisProtocolSupport.CommandFlag.PUBSUB;
@@ -73,7 +72,7 @@ public abstract class AbstractPartitionedRedisClientTest {
     public final Timeout timeout = new ServiceTalkTestTimeout();
 
     private final TestPublisher<PartitionedServiceDiscovererEvent<InetSocketAddress>> serviceDiscoveryPublisher =
-            newTestPublisher();
+            new TestPublisher<>();
 
     static {
         Map<String, Integer> localMap = new HashMap<>();

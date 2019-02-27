@@ -18,7 +18,6 @@ package io.servicetalk.concurrent.api;
 import org.junit.Test;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
-import static io.servicetalk.concurrent.api.TestPublisher.newTestPublisher;
 import static io.servicetalk.concurrent.api.TestPublisherSubscriber.newTestPublisherSubscriber;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static org.hamcrest.Matchers.contains;
@@ -28,8 +27,8 @@ import static org.junit.Assert.assertTrue;
 
 public class ConcatPublisherTest {
 
-    private final TestPublisher<String> first = newTestPublisher();
-    private final TestPublisher<String> second = newTestPublisher();
+    private final TestPublisher<String> first = new TestPublisher<>();
+    private final TestPublisher<String> second = new TestPublisher<>();
     private final TestPublisherSubscriber<String> subscriber = newTestPublisherSubscriber();
 
     @Test

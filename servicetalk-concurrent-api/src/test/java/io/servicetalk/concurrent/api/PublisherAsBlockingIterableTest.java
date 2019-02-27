@@ -53,7 +53,7 @@ public final class PublisherAsBlockingIterableTest {
     @Rule
     public final ServiceTalkTestTimeout timeout = new ServiceTalkTestTimeout();
 
-    private final TestPublisher<Integer> source = new TestPublisher.Builder<Integer>().disableAutoOnSubscribe().build();
+    private final TestPublisher<Integer> source = new TestPublisher<>();
 
     @Test
     public void subscribeDelayedTillIterator() {
@@ -155,7 +155,6 @@ public final class PublisherAsBlockingIterableTest {
     public void cancelShouldTerminatePostDrain() throws Exception {
         BlockingIterator<Integer> iterator = source.toIterable().iterator();
         assertTrue(source.isSubscribed());
-        source.onSubscribe(new TestSubscription());
         source.onNext(1, 2);
         iterator.close();
         assertThat("Unexpected item found.", iterator.next(), is(1));
@@ -167,7 +166,6 @@ public final class PublisherAsBlockingIterableTest {
     public void cancelShouldTerminatePostDrainAndRejectSubsequentItems() throws Exception {
         BlockingIterator<Integer> iterator = source.toIterable().iterator();
         assertTrue(source.isSubscribed());
-        source.onSubscribe(new TestSubscription());
         source.onNext(1, 2);
         iterator.close();
         source.onNext(1); // Additional item, must be ignored.
@@ -180,7 +178,6 @@ public final class PublisherAsBlockingIterableTest {
     public void nextWithoutHasNext() {
         Iterator<Integer> iterator = source.toIterable().iterator();
         assertTrue(source.isSubscribed());
-        source.onSubscribe(new TestSubscription());
         source.onNext(1);
         assertThat("Unexpected item found.", iterator.next(), is(1));
         source.onNext(2);
@@ -193,7 +190,6 @@ public final class PublisherAsBlockingIterableTest {
     public void nextWithoutHasNextAndTerminal() {
         Iterator<Integer> iterator = source.toIterable().iterator();
         assertTrue(source.isSubscribed());
-        source.onSubscribe(new TestSubscription());
         source.onNext(1);
         assertThat("Unexpected item found.", iterator.next(), is(1));
         source.onNext(2);
@@ -207,7 +203,6 @@ public final class PublisherAsBlockingIterableTest {
     public void nextWithTimeoutWithoutHasNextAndTerminal() throws TimeoutException {
         BlockingIterator<Integer> iterator = source.toIterable().iterator();
         assertTrue(source.isSubscribed());
-        source.onSubscribe(new TestSubscription());
         source.onNext(1);
         assertThat("Unexpected item found.", iterator.next(), is(1));
         source.onNext(2);

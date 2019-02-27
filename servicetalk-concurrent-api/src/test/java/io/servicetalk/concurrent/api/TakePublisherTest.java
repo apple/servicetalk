@@ -27,10 +27,7 @@ import static org.junit.Assert.assertTrue;
 
 public class TakePublisherTest {
 
-    private final AutoOnSubscribeSubscriberFunction<String> autoOnSubscribe =
-            new AutoOnSubscribeSubscriberFunction<>();
-    private final TestPublisher<String> publisher = new TestPublisher.Builder<String>()
-            .autoOnSubscribe(autoOnSubscribe).build();
+    private final TestPublisher<String> publisher = new TestPublisher<>();
     private final TestPublisherSubscriber<String> subscriber = newTestPublisherSubscriber();
     private final TestSubscription subscription = new TestSubscription();
 
