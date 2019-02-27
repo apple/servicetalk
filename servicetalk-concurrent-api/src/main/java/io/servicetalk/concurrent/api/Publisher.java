@@ -870,9 +870,7 @@ public abstract class Publisher<T> {
      * @see <a href="http://reactivex.io/documentation/operators/concat.html">ReactiveX concat operator.</a>
      */
     public final Publisher<T> concatWith(Completable next) {
-        // We can not use next.toPublisher() here as that returns Publisher<Void> which can not be concatenated with
-        // Publisher<T>
-        return new ConcatPublisher<>(this, next.concatWith(empty()), executor);
+        return new ConcatPublisher<>(this, next.toPublisher(), executor);
     }
 
     /**

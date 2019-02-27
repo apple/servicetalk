@@ -385,7 +385,7 @@ public abstract class Single<T> {
      * result of {@code next} {@link Single}.
      */
     public final Publisher<T> concatWith(Single<? extends T> next) {
-        return toPublisher().concatWith(next.toPublisher());
+        return toPublisher().concatWith(next);
     }
 
     /**
