@@ -33,7 +33,6 @@ import io.servicetalk.http.api.HttpConnectionFilterFactory;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.api.HttpRequestMetaData;
-import io.servicetalk.http.api.HttpScheme;
 import io.servicetalk.http.api.MultiAddressHttpClientBuilder;
 import io.servicetalk.http.api.MultiAddressHttpClientFilterFactory;
 import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
@@ -54,6 +53,7 @@ import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
 import java.net.SocketOption;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Function;
@@ -64,7 +64,6 @@ import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseabl
 import static io.servicetalk.concurrent.api.AsyncCloseables.toListenableAsyncCloseable;
 import static io.servicetalk.concurrent.api.Single.defer;
 import static io.servicetalk.http.api.HttpHeaderNames.HOST;
-import static io.servicetalk.http.api.HttpScheme.schemeForValue;
 import static io.servicetalk.http.api.SslConfigProviders.plainByDefault;
 import static io.servicetalk.transport.api.SslConfigBuilder.forClient;
 import static java.util.Objects.requireNonNull;
@@ -156,11 +155,11 @@ final class DefaultMultiAddressUrlHttpClientBuilder extends MultiAddressHttpClie
             }
             final int effectivePort = metaData.effectivePort();
             final int port = effectivePort >= 0 ? effectivePort :
-                    sslConfigProvider.defaultPort(schemeForValue(metaData.scheme()), host);
+                    sslConfigProvider.defaultPort(metaData.scheme(), host);
             final String key = metaData.scheme() + host + ':' + port;
             final UrlKey urlKey = urlKeyCache.get(key);
             return urlKey != null ? urlKey : urlKeyCache.computeIfAbsent(key, ignore ->
-                    new UrlKey(schemeForValue(metaData.scheme()), HostAndPort.of(host, port)));
+                    new UrlKey(metaData.scheme(), HostAndPort.of(host, port)));
         }
 
         @Override
@@ -181,10 +180,11 @@ final class DefaultMultiAddressUrlHttpClientBuilder extends MultiAddressHttpClie
 
     private static class UrlKey {
 
-        final HttpScheme scheme;
+        @Nullable
+        final String scheme;
         final HostAndPort hostAndPort;
 
-        UrlKey(final HttpScheme scheme, final HostAndPort hostAndPort) {
+        UrlKey(@Nullable final String scheme, final HostAndPort hostAndPort) {
             this.scheme = scheme;
             this.hostAndPort = hostAndPort;
         }
@@ -199,18 +199,12 @@ final class DefaultMultiAddressUrlHttpClientBuilder extends MultiAddressHttpClie
             }
 
             final UrlKey urlKey = (UrlKey) o;
-
-            if (scheme != urlKey.scheme) {
-                return false;
-            }
-            return hostAndPort.equals(urlKey.hostAndPort);
+            return Objects.equals(scheme, urlKey.scheme) && hostAndPort.equals(urlKey.hostAndPort);
         }
 
         @Override
         public int hashCode() {
-            int result = scheme.hashCode();
-            result = 31 * result + hostAndPort.hashCode();
-            return result;
+            return 31 * hostAndPort.hashCode() + Objects.hashCode(scheme);
         }
     }
 
@@ -244,21 +238,16 @@ final class DefaultMultiAddressUrlHttpClientBuilder extends MultiAddressHttpClie
         @Override
         public StreamingHttpClient apply(final UrlKey urlKey) {
             SslConfig sslConfig;
-            switch (urlKey.scheme) {
-                case HTTP:
-                    sslConfig = null;
-                    break;
-                case HTTPS:
-                    sslConfig = sslConfigProvider.forHostAndPort(urlKey.hostAndPort);
-                    if (sslConfig == null) {
-                        sslConfig = forClient(urlKey.hostAndPort).build();
-                    }
-                    break;
-                case NONE:
-                    sslConfig = sslConfigProvider.forHostAndPort(urlKey.hostAndPort);
-                    break;
-                default:
-                    throw new IllegalArgumentException("Unknown scheme: " + urlKey.scheme);
+            if ("http".equalsIgnoreCase(urlKey.scheme)) {
+                sslConfig = null;
+            } else if ("https".equalsIgnoreCase(urlKey.scheme)) {
+                sslConfig = sslConfigProvider.forHostAndPort(urlKey.hostAndPort);
+                if (sslConfig == null) {
+                    // fallback to the default SSL config if none was provided by user
+                    sslConfig = forClient(urlKey.hostAndPort).build();
+                }
+            } else {
+                sslConfig = sslConfigProvider.forHostAndPort(urlKey.hostAndPort);
             }
 
             // Copy existing builder to prevent changes at runtime when concurrently creating clients for new addresses

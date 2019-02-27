@@ -26,6 +26,7 @@ import java.util.Set;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.http.api.HttpHeaderNames.HOST;
+import static io.servicetalk.http.api.HttpUri.HTTP_SCHEME;
 import static io.servicetalk.http.api.HttpUri.buildRequestTarget;
 import static io.servicetalk.http.api.QueryStringDecoder.decodeParams;
 import static java.net.URLEncoder.encode;
@@ -320,7 +321,7 @@ class DefaultHttpRequestMetaData extends AbstractHttpMetaData implements HttpReq
         final HttpUri uri = lazyParseRequestTarget();
         final String scheme = uri.scheme();
         return buildRequestTarget(
-                scheme != null ? scheme : "http",
+                scheme != null ? scheme : HTTP_SCHEME,
                 uri.host(),
                 uri.explicitPort(),
                 path,
