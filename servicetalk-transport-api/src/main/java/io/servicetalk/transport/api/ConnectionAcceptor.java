@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,6 @@ package io.servicetalk.transport.api;
 
 import io.servicetalk.concurrent.api.AsyncCloseable;
 import io.servicetalk.concurrent.api.Completable;
-import io.servicetalk.concurrent.api.Single;
 
 import static io.servicetalk.concurrent.api.Completable.completed;
 
@@ -30,19 +29,17 @@ public interface ConnectionAcceptor extends AsyncCloseable {
     /**
      * ACCEPT all connections.
      */
-    ConnectionAcceptor ACCEPT_ALL = (context) -> Single.success(Boolean.TRUE);
+    ConnectionAcceptor ACCEPT_ALL = (context) -> completed();
 
     /**
-     * Evaluate the passed {@link ConnectionContext} to accept or reject. If the returned {@link Single} terminates with
-     * a {@link Boolean#TRUE} then the passed {@link ConnectionContext} will be accepted, otherwise rejected. If the
-     * {@link Single} terminates with an error, the passed {@link ConnectionContext} will be rejected.
+     * Evaluate the passed {@link ConnectionContext} to accept or reject. If the returned {@link Completable} terminates
+     * successfully then the passed {@link ConnectionContext} will be accepted, otherwise rejected.
      *
      * @param context the {@link ConnectionContext} to evaluate.
-     * @return {@link Single}, which when terminated with a {@link Boolean#TRUE}, the passed {@link ConnectionContext}
-     * is accepted, otherwise rejected. If it terminates with an error, the passed {@link ConnectionContext} will be
-     * rejected.
+     * @return {@link Completable}, which when terminated successfully, the passed {@link ConnectionContext}
+     * is accepted, otherwise rejected.
      */
-    Single<Boolean> accept(ConnectionContext context);
+    Completable accept(ConnectionContext context);
 
     /**
      * Returns a composed {@link ConnectionAcceptor} that first applies {@code this} {@link ConnectionAcceptor}, and if

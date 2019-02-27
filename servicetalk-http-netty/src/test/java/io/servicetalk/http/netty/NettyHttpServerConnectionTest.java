@@ -48,6 +48,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
+import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Single.success;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
@@ -110,7 +111,7 @@ public class NettyHttpServerConnectionTest {
                 .appendConnectionAcceptorFilter(original -> original.append(ctx -> {
                             customCancellableRef.set(
                                     ((NettyConnectionContext) ctx).updateFlushStrategy(current -> customStrategy));
-                            return success(true);
+                            return completed();
                         }))
                 .listenStreaming(new StreamingHttpService() {
                     @Override

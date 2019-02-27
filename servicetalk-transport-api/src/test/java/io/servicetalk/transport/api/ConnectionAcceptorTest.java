@@ -15,8 +15,8 @@
  */
 package io.servicetalk.transport.api;
 
-import io.servicetalk.concurrent.api.MockedSingleListenerRule;
-import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.concurrent.api.Completable;
+import io.servicetalk.concurrent.api.MockedCompletableListenerRule;
 import io.servicetalk.concurrent.internal.DeliberateException;
 
 import org.junit.Rule;
@@ -31,8 +31,6 @@ import javax.annotation.Nonnull;
 
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.transport.api.ConnectionAcceptor.ACCEPT_ALL;
-import static java.lang.Boolean.FALSE;
-import static java.lang.Boolean.TRUE;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.mockito.ArgumentMatchers.any;
@@ -44,7 +42,7 @@ public class ConnectionAcceptorTest {
     @Rule
     public final MockitoRule rule = MockitoJUnit.rule();
     @Rule
-    public final MockedSingleListenerRule<Boolean> listener = new MockedSingleListenerRule<>();
+    public final MockedCompletableListenerRule listener = new MockedCompletableListenerRule();
 
     @Mock
     private ConnectionContext context;
@@ -66,33 +64,21 @@ public class ConnectionAcceptorTest {
     }
 
     @Test
-    public void chainingTrueThenTrueShouldReturnTrue() {
-        setFilterResult(first, Single.success(true));
-        setFilterResult(second, Single.success(true));
+    public void chainingCompletedThenCompletedShouldReturnTrue() {
+        setFilterResult(first, Completable.completed());
+        setFilterResult(second, Completable.completed());
 
         applyFilters();
-        listener.verifySuccess(TRUE);
+        listener.verifyCompletion();
 
         verify(first).accept(context);
         verify(second).accept(context);
     }
 
     @Test
-    public void chainingTrueThenFalseShouldReturnFalse() {
-        setFilterResult(first, Single.success(true));
-        setFilterResult(second, Single.success(false));
-
-        applyFilters();
-        listener.verifySuccess(FALSE);
-
-        verify(first).accept(context);
-        verify(second).accept(context);
-    }
-
-    @Test
-    public void chainingTrueThenErrorShouldReturnError() {
-        setFilterResult(first, Single.success(true));
-        setFilterResult(second, Single.error(DELIBERATE_EXCEPTION));
+    public void chainingCompletedThenErrorShouldReturnError() {
+        setFilterResult(first, Completable.completed());
+        setFilterResult(second, Completable.error(DELIBERATE_EXCEPTION));
 
         applyFilters();
         listener.verifyFailure(DeliberateException.class);
@@ -102,32 +88,8 @@ public class ConnectionAcceptorTest {
     }
 
     @Test
-    public void chainingAfterFalseShouldCallNextFilter() {
-        setFilterResult(first, Single.success(false));
-        setFilterResult(second, Single.success(true));
-
-        applyFilters();
-        listener.verifySuccess(FALSE);
-
-        verify(first).accept(context);
-        verify(second, never()).accept(context);
-    }
-
-    @Test
-    public void chainingAfterNullShouldCallNextFilter() {
-        setFilterResult(first, Single.success(null));
-        setFilterResult(second, Single.success(true));
-
-        applyFilters();
-        listener.verifySuccess(null);
-
-        verify(first).accept(context);
-        verify(second, never()).accept(context);
-    }
-
-    @Test
     public void chainingAfterErrorShouldNotCallNextFilter() {
-        setFilterResult(first, Single.error(DELIBERATE_EXCEPTION));
+        setFilterResult(first, Completable.error(DELIBERATE_EXCEPTION));
 
         applyFilters();
         listener.verifyFailure(DeliberateException.class);
@@ -136,8 +98,8 @@ public class ConnectionAcceptorTest {
         verify(second, never()).accept(any(ConnectionContext.class));
     }
 
-    private void setFilterResult(final ConnectionAcceptor filter, final Single<Boolean> resultSingle) {
-        when(filter.accept(context)).thenReturn(resultSingle);
+    private void setFilterResult(final ConnectionAcceptor filter, final Completable resultCompletable) {
+        when(filter.accept(context)).thenReturn(resultCompletable);
     }
 
     @Nonnull
@@ -159,7 +121,7 @@ public class ConnectionAcceptorTest {
         }
 
         @Override
-        public Single<Boolean> accept(final ConnectionContext context) {
+        public Completable accept(final ConnectionContext context) {
             order.add(index);
             return super.accept(context);
         }

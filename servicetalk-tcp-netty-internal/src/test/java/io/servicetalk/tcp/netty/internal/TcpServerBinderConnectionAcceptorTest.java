@@ -38,8 +38,8 @@ import javax.annotation.Nullable;
 import javax.net.ssl.SSLSession;
 
 import static io.servicetalk.concurrent.api.BlockingTestUtils.awaitIndefinitelyNonNull;
-import static io.servicetalk.concurrent.api.Single.error;
-import static io.servicetalk.concurrent.api.Single.success;
+import static io.servicetalk.concurrent.api.Completable.completed;
+import static io.servicetalk.concurrent.api.Completable.error;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -50,21 +50,21 @@ import static org.junit.Assert.assertNotNull;
 public class TcpServerBinderConnectionAcceptorTest extends AbstractTcpServerTest {
 
     enum FilterMode {
-        ACCEPT_ALL(true, false, (executor, context) -> success(true)),
-        DELAY_ACCEPT_ALL(true, false, (executor, context) -> executor.timer(100, MILLISECONDS).concatWith(success(true))),
-        REJECT_ALL(false, false, (executor, context) -> success(false)),
+        ACCEPT_ALL(true, false, (executor, context) -> completed()),
+        DELAY_ACCEPT_ALL(true, false, (executor, context) -> executor.timer(100, MILLISECONDS).concatWith(completed())),
+        REJECT_ALL(false, false, (executor, context) -> error(DELIBERATE_EXCEPTION)),
         DELAY_REJECT_ALL(false, false, (executor, context) ->
-                executor.timer(100, MILLISECONDS).concatWith(success(false))),
+                executor.timer(100, MILLISECONDS).concatWith(error(DELIBERATE_EXCEPTION))),
         THROW_EXCEPTION(false, false, (executor, context) -> {
             throw DELIBERATE_EXCEPTION;
         }),
         DELAY_SINGLE_ERROR(false, false, (executor, context) ->
                 executor.timer(100, MILLISECONDS).concatWith(error(DELIBERATE_EXCEPTION))),
         SINGLE_ERROR(false, false, (executor, context) -> error(new DeliberateException())),
-        INITIALIZER_THROW(false, true, (executor, context) -> success(true)),
+        INITIALIZER_THROW(false, true, (executor, context) -> completed()),
         DELAY_INITIALIZER_THROW(false, true, (executor, context) ->
-                executor.timer(100, MILLISECONDS).concatWith(success(true))),
-        ACCEPT_ALL_CONSTANT(true, false, (executor, context) -> success(true)) {
+                executor.timer(100, MILLISECONDS).concatWith(completed())),
+        ACCEPT_ALL_CONSTANT(true, false, (executor, context) -> completed()) {
             @Override
             ConnectionAcceptor getContextFilter(final Executor executor) {
                 return ConnectionAcceptor.ACCEPT_ALL;
@@ -73,11 +73,11 @@ public class TcpServerBinderConnectionAcceptorTest extends AbstractTcpServerTest
 
         private final boolean expectAccept;
         private final boolean initializerThrow;
-        private final BiFunction<Executor, ConnectionContext, Single<Boolean>>
+        private final BiFunction<Executor, ConnectionContext, Completable>
                 contextFilterFunction;
 
         FilterMode(boolean expectAccept, boolean initializerThrow, BiFunction<Executor, ConnectionContext,
-                Single<Boolean>> contextFilterFunction) {
+                Completable> contextFilterFunction) {
             this.expectAccept = expectAccept;
             this.initializerThrow = initializerThrow;
             this.contextFilterFunction = contextFilterFunction;

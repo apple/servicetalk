@@ -29,4 +29,14 @@ public final class ConnectionRejectedException extends RuntimeException implemen
     public ConnectionRejectedException(final String message) {
         super(message);
     }
+
+    /**
+     * Creates a new instance.
+     *
+     * @param message the detail message.
+     * @param cause the cause.
+     */
+    public ConnectionRejectedException(final String message, final Throwable cause) {
+        super(message, cause);
+    }
 }

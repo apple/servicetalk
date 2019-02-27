@@ -54,6 +54,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Single.defer;
 import static io.servicetalk.concurrent.api.Single.success;
 import static io.servicetalk.http.api.CharSequences.newAsciiString;
@@ -303,7 +304,7 @@ public class HttpServiceAsyncContextTest {
         ServerContext ctx = compositeCloseable.append(HttpServers.forAddress(localAddress(0))
                 .appendConnectionAcceptorFilter(original -> new ConnectionAcceptorAdapter(context -> {
                     AsyncContext.put(K1, "v1");
-                    return success(true);
+                    return completed();
                 }))
                 .listenStreamingAndAwait(service));
         try {
