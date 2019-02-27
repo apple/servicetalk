@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
  */
 package io.servicetalk.concurrent.api.publisher;
 
+import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.internal.DeliberateException;
 
@@ -22,16 +23,19 @@ import org.junit.Test;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.sameInstance;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 public class DoAfterFinallyTest extends AbstractDoFinallyTest {
     @Override
-    protected <T> Publisher<T> doFinally(Publisher<T> publisher, Runnable runnable) {
-        return publisher.doAfterFinally(runnable);
+    protected <T> PublisherSource<T> doFinally(Publisher<T> publisher, Runnable runnable) {
+        return toSource(publisher.doAfterFinally(runnable));
     }
 
     @Override
@@ -40,16 +44,17 @@ public class DoAfterFinallyTest extends AbstractDoFinallyTest {
         thrown.expect(is(sameInstance(DELIBERATE_EXCEPTION)));
         AtomicInteger invocationCount = new AtomicInteger();
         try {
-            subscriber.subscribe(doFinally(publisher.publisher(), () -> {
+            doFinally(publisher, () -> {
                 invocationCount.incrementAndGet();
                 throw DELIBERATE_EXCEPTION;
-            }));
-            publisher.complete();
+            }).subscribe(subscriber);
+            assertFalse(subscription.isCancelled());
+            publisher.onComplete();
             fail();
         } finally {
-            subscriber.verifySuccess();
+            assertTrue(subscriber.isCompleted());
             assertThat("Unexpected calls to doFinally callback.", invocationCount.get(), is(1));
-            publisher.verifyNotCancelled();
+            assertFalse(subscription.isCancelled());
         }
     }
 
@@ -61,16 +66,16 @@ public class DoAfterFinallyTest extends AbstractDoFinallyTest {
 
         AtomicInteger invocationCount = new AtomicInteger();
         try {
-            subscriber.subscribe(doFinally(publisher.publisher(), () -> {
+            doFinally(publisher, () -> {
                 invocationCount.incrementAndGet();
                 throw exception;
-            }));
-            publisher.fail();
+            }).subscribe(subscriber);
+            publisher.onError(DELIBERATE_EXCEPTION);
             fail();
         } finally {
-            subscriber.verifyFailure(DELIBERATE_EXCEPTION);
+            assertThat(subscriber.error(), sameInstance(DELIBERATE_EXCEPTION));
             assertThat("Unexpected calls to doFinally callback.", invocationCount.get(), is(1));
-            publisher.verifyNotCancelled();
+            assertFalse(subscription.isCancelled());
         }
     }
 }

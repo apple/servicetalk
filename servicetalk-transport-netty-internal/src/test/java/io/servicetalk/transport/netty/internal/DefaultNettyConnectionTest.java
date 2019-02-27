@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,10 +22,10 @@ import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.SingleSource.Subscriber;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.MockedCompletableListenerRule;
-import io.servicetalk.concurrent.api.MockedSubscriberRule;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.TestPublisher;
+import io.servicetalk.concurrent.api.TestPublisherSubscriber;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.transport.netty.internal.NettyConnection.TerminalPredicate;
 
@@ -49,6 +49,9 @@ import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Publisher.just;
 import static io.servicetalk.concurrent.api.Publisher.never;
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
+import static io.servicetalk.concurrent.api.TestPublisher.newTestPublisher;
+import static io.servicetalk.concurrent.api.TestPublisherSubscriber.newTestPublisherSubscriber;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.transport.netty.internal.CloseHandler.UNSUPPORTED_PROTOCOL_CLOSE_HANDLER;
 import static io.servicetalk.transport.netty.internal.CloseHandler.forPipelinedRequestResponse;
@@ -59,11 +62,14 @@ import static java.lang.Integer.MAX_VALUE;
 import static java.nio.charset.Charset.defaultCharset;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -81,10 +87,9 @@ public class DefaultNettyConnectionTest {
     @Rule
     public final MockedCompletableListenerRule closeListener = new MockedCompletableListenerRule();
     @Rule
-    public final MockedSubscriberRule<Buffer> subscriberRule = new MockedSubscriberRule<>();
-    @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
 
+    private final TestPublisherSubscriber<Buffer> subscriber = newTestPublisherSubscriber();
     private BufferAllocator allocator;
     private EmbeddedChannel channel;
     private NettyConnection.RequestNSupplier requestNSupplier;
@@ -113,7 +118,7 @@ public class DefaultNettyConnectionTest {
         });
         conn = DefaultNettyConnection.<Buffer, Buffer>initChannel(channel, allocator, executor, terminalPredicate,
                 closeHandler, defaultFlushStrategy(), (channel, context) -> context).toFuture().get();
-        publisher = new TestPublisher<Buffer>().sendOnSubscribe();
+        publisher = newTestPublisher();
     }
 
     @Test
@@ -139,12 +144,14 @@ public class DefaultNettyConnectionTest {
     @Test
     public void testAsPipelinedConnection() {
         final NettyPipelinedConnection<Buffer, Buffer> c = new DefaultNettyPipelinedConnection<>(conn, 2);
-        subscriberRule.subscribe(c.request(newBuffer("Hello")));
-        subscriberRule.verifyNoEmissions();
-        subscriberRule.request(1);
+        toSource(c.request(newBuffer("Hello"))).subscribe(subscriber);
+        assertThat(subscriber.items(), hasSize(0));
+        assertFalse(subscriber.isTerminated());
+        subscriber.request(1);
         Buffer expected = newBuffer("Hi");
         channel.writeInbound(expected.duplicate());
-        subscriberRule.verifySuccess(expected);
+        assertThat(subscriber.items(), contains(expected));
+        assertTrue(subscriber.isCompleted());
     }
 
     @Test
@@ -271,7 +278,8 @@ public class DefaultNettyConnectionTest {
     public void testWriteActiveWithPublisher() {
         writeListener.listen(conn.write(publisher));
         assertThat("Unexpected write active state.", conn.isWriteActive(), is(true));
-        publisher.sendItems(newBuffer("Hello")).onComplete();
+        publisher.onNext(newBuffer("Hello"));
+        publisher.onComplete();
         writeListener.verifyCompletion();
         pollChannelAndVerifyWrites("Hello");
         assertThat("Unexpected write active state.", conn.isWriteActive(), is(false));
@@ -296,12 +304,12 @@ public class DefaultNettyConnectionTest {
         requestNext = 0;
         Buffer hello1 = newBuffer("Hello1");
         Buffer hello2 = newBuffer("Hello2");
-        publisher.sendItems(hello1);
+        publisher.onNext(hello1);
         changeWritability(false);
         pollChannelAndVerifyWrites("Hello1");
         requestNext = 1;
         changeWritability(true);
-        publisher.sendItems(hello2);
+        publisher.onNext(hello2);
         publisher.onComplete();
         pollChannelAndVerifyWrites("Hello2");
         verifyPredictorCalled(1, hello1, hello2);
@@ -317,9 +325,9 @@ public class DefaultNettyConnectionTest {
         writeListener.reset();
         Cancellable c = conn.updateFlushStrategy(old -> batchFlush(2, never()));
         writeListener.listen(conn.write(publisher));
-        publisher.sendItems(newBuffer("Hello1"));
+        publisher.onNext(newBuffer("Hello1"));
         pollChannelAndVerifyWrites(); // No flush
-        publisher.sendItems(newBuffer("Hello2"));
+        publisher.onNext(newBuffer("Hello2"));
         pollChannelAndVerifyWrites("Hello1", "Hello2"); // Batch flush of 2
         publisher.onComplete();
         writeListener.verifyCompletion();
@@ -334,12 +342,14 @@ public class DefaultNettyConnectionTest {
 
     @Test
     public void testRead() {
-        subscriberRule.subscribe(conn.read());
+        toSource(conn.read()).subscribe(subscriber);
         Buffer expected = allocator.fromAscii("data");
         channel.writeInbound(expected.duplicate());
-        subscriberRule.verifyNoEmissions();
-        subscriberRule.request(1);
-        subscriberRule.verifySuccess(expected);
+        assertThat(subscriber.items(), hasSize(0));
+        assertFalse(subscriber.isTerminated());
+        subscriber.request(1);
+        assertThat(subscriber.items(), contains(expected));
+        assertTrue(subscriber.isCompleted());
     }
 
     @Test
@@ -348,8 +358,8 @@ public class DefaultNettyConnectionTest {
         writeListener.listen(conn.write(publisher));
         Buffer hello1 = newBuffer("Hello1");
         Buffer hello2 = newBuffer("Hello2");
-        publisher.sendItems(hello1);
-        publisher.sendItems(hello2);
+        publisher.onNext(hello1);
+        publisher.onNext(hello2);
         closeListener.listen(conn.closeAsync());
         assertThat(channel.isOpen(), is(false));
         writeListener.verifyFailure(ClosedChannelException.class);
@@ -420,7 +430,7 @@ public class DefaultNettyConnectionTest {
         writeListener.listen(conn.write(publisher));
 
         ArgumentCaptor<Throwable> exCaptor = ArgumentCaptor.forClass(Throwable.class);
-        subscriberRule.subscribe(conn.read());
+        toSource(conn.read()).subscribe(subscriber);
         writeListener.verifyFailure(exCaptor); // ClosedChannelException was translated
 
         // Exception should be of type CloseEventObservedException
@@ -436,15 +446,14 @@ public class DefaultNettyConnectionTest {
         CloseHandler closeHandler = forPipelinedRequestResponse(true, channel.config());
         setupWithCloseHandler(closeHandler);
 
-        ArgumentCaptor<Throwable> exCaptor = ArgumentCaptor.forClass(Throwable.class);
-        subscriberRule.subscribe(conn.read()).request(1);
+        toSource(conn.read()).subscribe(subscriber);
+        subscriber.request(1);
         channel.writeInbound(allocator.fromAscii("DELIBERATE_EXCEPTION"));
         closeHandler.channelClosedInbound(channel.pipeline().firstContext());
-        subscriberRule.verifyFailure(exCaptor); // DELIBERATE_EXCEPTION was translated
 
         // TODO(scott): EmbeddedChannel doesn't support half closure so we need an alternative approach to fully
         // test half closure.
-        assertThat(exCaptor.getValue(), is(DELIBERATE_EXCEPTION));
+        assertThat(subscriber.error(), is(DELIBERATE_EXCEPTION));
     }
 
     @Test
@@ -479,16 +488,16 @@ public class DefaultNettyConnectionTest {
     @Test
     public void testExceptionWithNoSubscriberIsQueued() throws Exception {
         channel.pipeline().fireExceptionCaught(DELIBERATE_EXCEPTION);
-        subscriberRule.subscribe(conn.read());
-        subscriberRule.verifyFailure(DELIBERATE_EXCEPTION);
+        toSource(conn.read()).subscribe(subscriber);
+        assertThat(subscriber.error(), is(DELIBERATE_EXCEPTION));
         conn.onClose().toFuture().get();
     }
 
     @Test
     public void testChannelInactiveWithNoSubscriberIsQueued() throws Exception {
         channel.close().get();
-        subscriberRule.subscribe(conn.read());
-        subscriberRule.verifyFailure(ClosedChannelException.class);
+        toSource(conn.read()).subscribe(subscriber);
+        assertThat(subscriber.error(), instanceOf(ClosedChannelException.class));
         conn.onClose().toFuture().get();
     }
 }

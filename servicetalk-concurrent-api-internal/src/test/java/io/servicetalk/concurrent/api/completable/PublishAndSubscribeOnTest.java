@@ -29,7 +29,7 @@ import static org.hamcrest.Matchers.not;
 public class PublishAndSubscribeOnTest extends AbstractPublishAndSubscribeOnTest {
 
     @Rule
-    public final ExecutorRule executorRule = new ExecutorRule();
+    public final ExecutorRule executorRule = ExecutorRule.newRule();
 
     @Test
     public void testPublishOnNoOverride() throws InterruptedException {

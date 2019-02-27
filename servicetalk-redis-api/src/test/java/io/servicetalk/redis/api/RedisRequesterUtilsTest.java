@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,7 @@ package io.servicetalk.redis.api;
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.MockedSingleListenerRule;
-import io.servicetalk.concurrent.api.PublisherRule;
+import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.redis.api.RedisData.ArraySize;
 import io.servicetalk.redis.api.RedisData.BulkStringChunk;
 import io.servicetalk.redis.api.RedisData.CompleteBulkString;
@@ -43,6 +43,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
+import static io.servicetalk.concurrent.api.TestPublisher.newTestPublisher;
 import static io.servicetalk.redis.api.RedisExecutionStrategies.noOffloadsStrategy;
 import static java.lang.String.join;
 import static java.util.Arrays.asList;
@@ -63,9 +64,8 @@ public class RedisRequesterUtilsTest {
     public MockedSingleListenerRule<Buffer> bufferSubscriber = new MockedSingleListenerRule<>();
     @Rule
     public MockedSingleListenerRule<List<Object>> listSubscriber = new MockedSingleListenerRule<>();
-    @Rule
-    public PublisherRule<RedisData> publisher = new PublisherRule<>();
 
+    private final TestPublisher<RedisData> publisher = newTestPublisher();
     private RedisRequester requester;
     private RedisRequest request;
     private BufferAllocator allocator;
@@ -78,7 +78,7 @@ public class RedisRequesterUtilsTest {
         allocator = DEFAULT_ALLOCATOR;
         when(requester.executionContext()).thenReturn(executionContext);
         when(requester.executionContext().bufferAllocator()).thenReturn(allocator);
-        when(requester.request(any(RedisExecutionStrategy.class), any())).thenReturn(publisher.publisher());
+        when(requester.request(any(RedisExecutionStrategy.class), any())).thenReturn(publisher);
     }
 
     @Test
@@ -88,13 +88,13 @@ public class RedisRequesterUtilsTest {
 
         Buffer buffer = allocator.newBuffer(1).writeByte(1).asReadOnly();
         BulkStringChunk bufferChunk = new DefaultFirstBulkStringChunk(buffer, 2);
-        publisher.sendItems(bufferChunk);
+        publisher.onNext(bufferChunk);
 
         buffer = allocator.newBuffer(1).writeByte(2).asReadOnly();
         bufferChunk = new DefaultLastBulkStringChunk(buffer);
-        publisher.sendItems(bufferChunk);
+        publisher.onNext(bufferChunk);
 
-        publisher.complete();
+        publisher.onComplete();
 
         bufferSubscriber.verifySuccess(allocator.newBuffer(2).writeByte(1).writeByte(2));
     }
@@ -105,9 +105,9 @@ public class RedisRequesterUtilsTest {
         bufferSubscriber.listen(aggregator);
 
         SimpleString stringChunk = new SimpleString("12");
-        publisher.sendItems(stringChunk);
+        publisher.onNext(stringChunk);
 
-        publisher.complete();
+        publisher.onComplete();
 
         // Note the comparison is in terms of ascii characters because there is a string conversion.
         bufferSubscriber.verifySuccess(allocator.newBuffer(2).writeByte(49).writeByte(50));
@@ -131,16 +131,16 @@ public class RedisRequesterUtilsTest {
         listSubscriber.listen(aggregator);
 
         ArraySize arraySize = new ArraySize(1);
-        publisher.sendItems(arraySize);
+        publisher.onNext(arraySize);
 
         Buffer buffer = allocator.fromUtf8(chunk);
         if (!resizableBuffer) {
             buffer = buffer.asReadOnly();
         }
         BulkStringChunk redisData = new CompleteBulkString(buffer);
-        publisher.sendItems(redisData);
+        publisher.onNext(redisData);
 
-        publisher.complete();
+        publisher.onComplete();
 
         listSubscriber.verifySuccess(singletonList(expectedObject));
     }
@@ -189,7 +189,7 @@ public class RedisRequesterUtilsTest {
                 coerceBuffersToCharSequences);
         listSubscriber.listen(aggregator);
 
-        publisher.sendItems(new ArraySize(chunkedItems.size()));
+        publisher.onNext(new ArraySize(chunkedItems.size()));
         for (final List<? extends CharSequence> chunks : chunkedItems) {
             publishChunkedBulkString(chunks, resizableBuffer);
 
@@ -200,7 +200,7 @@ public class RedisRequesterUtilsTest {
                 expectedResult.add(allocator.fromAscii(expectedChunk).asReadOnly());
             }
         }
-        publisher.complete();
+        publisher.onComplete();
 
         listSubscriber.verifySuccess(expectedResult);
     }
@@ -226,7 +226,7 @@ public class RedisRequesterUtilsTest {
             } else {
                 redisData = new DefaultBulkStringChunk(buffer);
             }
-            publisher.sendItems(redisData);
+            publisher.onNext(redisData);
         }
     }
 }

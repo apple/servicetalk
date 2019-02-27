@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,14 +22,16 @@ import io.servicetalk.client.api.NoAvailableHostException;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
+import io.servicetalk.concurrent.api.AutoOnSubscribeSubscriberFunction;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.CompletableProcessor;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.MockedSingleListenerRule;
 import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.concurrent.api.PublisherRule;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.api.TestSingle;
+import io.servicetalk.concurrent.api.TestSubscription;
 import io.servicetalk.concurrent.internal.DeliberateException;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 
@@ -90,11 +92,13 @@ public class RoundRobinLoadBalancerTest {
     public final ExpectedException thrown = ExpectedException.none();
 
     @Rule
-    public final PublisherRule<ServiceDiscovererEvent<String>> serviceDiscoveryPublisher = new PublisherRule<>();
-
-    @Rule
     public final MockedSingleListenerRule<TestLoadBalancedConnection> selectConnectionListener = new MockedSingleListenerRule<>();
 
+    private final AutoOnSubscribeSubscriberFunction<ServiceDiscovererEvent<String>> autoOnSubscribe =
+            new AutoOnSubscribeSubscriberFunction<>();
+    private final TestPublisher<ServiceDiscovererEvent<String>> serviceDiscoveryPublisher =
+            new TestPublisher.Builder<ServiceDiscovererEvent<String>>()
+                    .autoOnSubscribe(autoOnSubscribe).build();
     private final List<TestLoadBalancedConnection> connectionsCreated = new CopyOnWriteArrayList<>();
     private final Queue<Runnable> connectionRealizers = new ConcurrentLinkedQueue<>();
 
@@ -114,7 +118,9 @@ public class RoundRobinLoadBalancerTest {
         awaitIndefinitely(lb.closeAsync());
         awaitIndefinitely(lb.onClose());
 
-        serviceDiscoveryPublisher.verifyCancelled();
+        TestSubscription subscription = new TestSubscription();
+        serviceDiscoveryPublisher.onSubscribe(subscription);
+        assertTrue(subscription.isCancelled());
 
         connectionsCreated.forEach(cnx -> {
             try {
@@ -213,7 +219,7 @@ public class RoundRobinLoadBalancerTest {
         sendServiceDiscoveryEvents(upEvent("address-1"));
         assertThat(lb.activeAddresses(), contains(
                 both(hasProperty("key", is("address-1"))).and(hasProperty("value", is(empty())))));
-        serviceDiscoveryPublisher.fail();
+        serviceDiscoveryPublisher.onError(DELIBERATE_EXCEPTION);
         assertThat(lb.activeAddresses(), contains(
                 both(hasProperty("key", is("address-1"))).and(hasProperty("value", is(empty())))));
     }
@@ -228,11 +234,15 @@ public class RoundRobinLoadBalancerTest {
 
     @Test
     public void selectStampedeUnsaturableConnection() throws Exception {
+        serviceDiscoveryPublisher.onComplete();
+
         testSelectStampede(identity());
     }
 
     @Test
     public void selectStampedeSaturableConnection() throws Exception {
+        serviceDiscoveryPublisher.onComplete();
+
         testSelectStampede(newSaturableConnectionFilter());
     }
 
@@ -338,6 +348,8 @@ public class RoundRobinLoadBalancerTest {
 
     @Test
     public void connectionFactoryErrorPropagation() throws Exception {
+        serviceDiscoveryPublisher.onComplete();
+
         thrown.expect(instanceOf(ExecutionException.class));
         thrown.expectCause(instanceOf(DeliberateException.class));
         connectionFactory = new DelegatingConnectionFactory(__ -> error(DELIBERATE_EXCEPTION));
@@ -369,7 +381,7 @@ public class RoundRobinLoadBalancerTest {
 
     @SuppressWarnings("unchecked")
     private void sendServiceDiscoveryEvents(final ServiceDiscovererEvent... events) {
-        serviceDiscoveryPublisher.sendItems(events);
+        serviceDiscoveryPublisher.onNext((ServiceDiscovererEvent<String>[]) events);
     }
 
     private static ServiceDiscovererEvent upEvent(final String address) {
@@ -382,7 +394,7 @@ public class RoundRobinLoadBalancerTest {
 
     private RoundRobinLoadBalancer<String, TestLoadBalancedConnection> newTestLoadBalancer(
             final DelegatingConnectionFactory connectionFactory) {
-        return new RoundRobinLoadBalancer<>(serviceDiscoveryPublisher.publisher(), connectionFactory, String::compareTo);
+        return new RoundRobinLoadBalancer<>(serviceDiscoveryPublisher, connectionFactory, String::compareTo);
     }
 
     private TestSingle<TestLoadBalancedConnection> newUnrealizedConnectionSingle(final String address) {

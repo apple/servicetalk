@@ -44,7 +44,7 @@ public class PubToCompletableTest {
     @Rule
     public final MockedCompletableListenerRule listenerRule = new MockedCompletableListenerRule();
     @Rule
-    public final ExecutorRule executorRule = new ExecutorRule();
+    public final ExecutorRule executorRule = ExecutorRule.newRule();
 
     @Test
     public void testSuccess() {

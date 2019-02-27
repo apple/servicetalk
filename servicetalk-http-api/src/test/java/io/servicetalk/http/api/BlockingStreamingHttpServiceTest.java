@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,8 +22,9 @@ import io.servicetalk.concurrent.BlockingIterator;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.api.Completable;
-import io.servicetalk.concurrent.api.PublisherRule;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.concurrent.api.TestPublisher;
+import io.servicetalk.concurrent.api.TestSubscription;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.transport.api.ExecutionContext;
 
@@ -43,6 +44,7 @@ import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.Publisher.just;
 import static io.servicetalk.concurrent.api.Single.success;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
+import static io.servicetalk.concurrent.api.TestPublisher.newTestPublisher;
 import static io.servicetalk.http.api.HttpProtocolVersions.HTTP_1_1;
 import static io.servicetalk.http.api.HttpResponseStatuses.OK;
 import static java.nio.charset.StandardCharsets.US_ASCII;
@@ -59,14 +61,14 @@ public class BlockingStreamingHttpServiceTest {
     @Rule
     public final ServiceTalkTestTimeout timeout = new ServiceTalkTestTimeout();
 
-    @Rule
-    public final PublisherRule<Buffer> publisherRule = new PublisherRule<>();
     @Mock
     private BlockingIterable<Buffer> mockIterable;
     @Mock
     private BlockingIterator<Buffer> mockIterator;
     @Mock
     private ExecutionContext mockExecutionCtx;
+
+    private final TestPublisher<Buffer> publisher = newTestPublisher();
     private static final BufferAllocator allocator = DEFAULT_ALLOCATOR;
     private final StreamingHttpRequestResponseFactory reqRespFactory = new DefaultStreamingHttpRequestResponseFactory(
             allocator, DefaultHttpHeadersFactory.INSTANCE);
@@ -172,19 +174,22 @@ public class BlockingStreamingHttpServiceTest {
             public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
                                                         final StreamingHttpRequest request,
                                                         final StreamingHttpResponseFactory factory) {
-                return success(factory.ok().payloadBody(publisherRule.publisher()));
+                return success(factory.ok().payloadBody(publisher));
             }
         };
+        final TestSubscription subscription = new TestSubscription();
         BlockingStreamingHttpService syncService = asyncService.asBlockingStreamingService();
         BlockingStreamingHttpResponse syncResponse = syncService.handle(mockCtx,
                 blkReqRespFactory.get("/"), blkReqRespFactory);
         assertEquals(HTTP_1_1, syncResponse.version());
         assertEquals(OK, syncResponse.status());
         BlockingIterator<Buffer> iterator = syncResponse.payloadBody().iterator();
-        publisherRule.sendItems(allocator.fromAscii("hello"));
+        publisher.onSubscribe(subscription);
+        publisher.onNext(allocator.fromAscii("hello"));
         assertTrue(iterator.hasNext());
         iterator.close();
-        publisherRule.verifyCancelled();
+
+        assertTrue(subscription.isCancelled());
     }
 
     @Test

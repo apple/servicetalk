@@ -17,8 +17,8 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.Cancellable;
-import io.servicetalk.concurrent.api.PublisherRule;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpServiceContext;
@@ -50,6 +50,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.concurrent.api.Single.success;
+import static io.servicetalk.concurrent.api.TestPublisher.newTestPublisher;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
 import static io.servicetalk.http.api.HttpRequestMethods.GET;
@@ -65,12 +66,10 @@ public class NettyHttpServerConnectionTest {
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
     @Rule
-    public final PublisherRule<Buffer> responsePublisherRule = new PublisherRule<>();
-    @Rule
-    public final PublisherRule<Buffer> responsePublisherRule2 = new PublisherRule<>();
-    @Rule
     public final ExecutionContextRule contextRule = immediate();
 
+    public final TestPublisher<Buffer> responsePublisher = newTestPublisher();
+    public final TestPublisher<Buffer> responsePublisher2 = newTestPublisher();
     private HttpExecutionStrategy serverExecutionStrategy;
     private HttpExecutionStrategy clientExecutionStrategy;
     private ServerContext serverContext;
@@ -121,15 +120,15 @@ public class NettyHttpServerConnectionTest {
                                                                 final StreamingHttpResponseFactory responseFactory) {
                         if (handledFirstRequest.compareAndSet(false, true)) {
                             customStrategy.doAfterFirstWrite(FlushStrategy.FlushSender::flush);
-                            return success(responseFactory.ok().payloadBody(responsePublisherRule.publisher())
-                            .transformRawPayloadBody(pub -> pub.doAfterSubscribe(subscription -> {
-                                response1PayloadConsumedLatch.countDown();
-                            })));
+                            return success(responseFactory.ok().payloadBody(responsePublisher)
+                                    .transformRawPayloadBody(pub -> pub.doAfterSubscribe(subscription -> {
+                                        response1PayloadConsumedLatch.countDown();
+                                    })));
                         }
-                        return success(responseFactory.ok().payloadBody(responsePublisherRule2.publisher())
+                        return success(responseFactory.ok().payloadBody(responsePublisher2)
                                 .transformRawPayloadBody(pub -> pub.doAfterSubscribe(subscription -> {
-                            response2PayloadConsumedLatch.countDown();
-                        })));
+                                    response2PayloadConsumedLatch.countDown();
+                                })));
                     }
 
                     @Override
@@ -153,8 +152,8 @@ public class NettyHttpServerConnectionTest {
 
         response1PayloadConsumedLatch.await();
         String payloadBodyString = "foo";
-        responsePublisherRule.sendItems(DEFAULT_ALLOCATOR.fromAscii(payloadBodyString));
-        responsePublisherRule.complete();
+        responsePublisher.onNext(DEFAULT_ALLOCATOR.fromAscii(payloadBodyString));
+        responsePublisher.onComplete();
         customFlushSender.flush();
         Buffer responsePayload = response.payloadBody().reduce(DEFAULT_ALLOCATOR::newBuffer, (results, current) -> {
             results.writeBytes(current);
@@ -168,8 +167,8 @@ public class NettyHttpServerConnectionTest {
         customCancellable.cancel();
         StreamingHttpResponse response2 = client.request(client.newRequest(GET, "/2")).toFuture().get();
         response2PayloadConsumedLatch.await();
-        responsePublisherRule2.sendItems(DEFAULT_ALLOCATOR.fromAscii(payloadBodyString));
-        responsePublisherRule2.complete();
+        responsePublisher2.onNext(DEFAULT_ALLOCATOR.fromAscii(payloadBodyString));
+        responsePublisher2.onComplete();
         responsePayload = response2.payloadBody().reduce(DEFAULT_ALLOCATOR::newBuffer, (results, current) -> {
             results.writeBytes(current);
             return results;

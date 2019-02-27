@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,15 +21,12 @@ import org.junit.Test;
 
 import java.time.Duration;
 
-import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
-import static java.lang.Thread.NORM_PRIORITY;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.junit.Assert.assertSame;
 
 public class SingleExecutorPreservationTest {
     @ClassRule
-    public static final ExecutorRule EXEC = new ExecutorRule(() ->
-            newCachedThreadExecutor(new DefaultThreadFactory("test-", true, NORM_PRIORITY)));
+    public static final ExecutorRule EXEC = ExecutorRule.withNamePrefix("test-");
 
     private Single<String> single;
 

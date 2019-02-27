@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,8 +17,8 @@ package io.servicetalk.concurrent.api.single;
 
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.api.ExecutorRule;
-import io.servicetalk.concurrent.api.MockedSubscriberRule;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.concurrent.api.TestPublisherSubscriber;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 
 import org.junit.Rule;
@@ -28,55 +28,75 @@ import org.junit.rules.Timeout;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
+import static io.servicetalk.concurrent.api.TestPublisherSubscriber.newTestPublisherSubscriber;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static java.lang.Thread.currentThread;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.hasSize;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doAnswer;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.sameInstance;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 public class SingleToPublisherTest {
 
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
     @Rule
-    public final ExecutorRule executorRule = new ExecutorRule();
-    @Rule
-    public MockedSubscriberRule<String> verifier = new MockedSubscriberRule<>();
+    public final ExecutorRule executorRule = ExecutorRule.newRule();
+
+    private TestPublisherSubscriber<String> verifier = newTestPublisherSubscriber();
 
     @Test
     public void testSuccessfulFuture() {
-        verifier.subscribe(Single.success("Hello")).verifySuccess("Hello");
+        toSource(Single.success("Hello").toPublisher()).subscribe(verifier);
+        verifier.request(1);
+        assertThat(verifier.items(), contains("Hello"));
+        assertTrue(verifier.isCompleted());
     }
 
     @Test
     public void testFailedFuture() {
-        verifier.subscribe(Single.error(DELIBERATE_EXCEPTION)).requestAndVerifyFailure(DELIBERATE_EXCEPTION);
+        toSource(Single.<String>error(DELIBERATE_EXCEPTION).toPublisher()).subscribe(verifier);
+        verifier.request(1);
+        assertThat(verifier.error(), sameInstance(DELIBERATE_EXCEPTION));
     }
 
     @Test
     public void testCancelBeforeRequest() {
-        verifier.subscribe(Single.success("Hello")).cancel().verifyNoEmissions();
+        toSource(Single.success("Hello").toPublisher()).subscribe(verifier);
+        assertTrue(verifier.subscriptionReceived());
+        assertThat(verifier.items(), hasSize(0));
+        assertFalse(verifier.isTerminated());
     }
 
     @Test
     public void testCancelAfterRequest() {
-        verifier.subscribe(Single.success("Hello")).verifySuccess("Hello").cancel();
+        toSource(Single.success("Hello").toPublisher()).subscribe(verifier);
+        verifier.request(1);
+        assertThat(verifier.items(), contains("Hello"));
+        assertTrue(verifier.isCompleted());
+        verifier.cancel();
     }
 
     @Test
     public void testInvalidRequestN() {
-        verifier.subscribe(Single.success("Hello")).request(-1).verifyFailure(IllegalArgumentException.class);
+        toSource(Single.success("Hello").toPublisher()).subscribe(verifier);
+        verifier.request(-1);
+        assertThat(verifier.error(), instanceOf(IllegalArgumentException.class));
     }
 
     @Test
     public void exceptionInTerminalCallsOnError() {
-        verifier.subscribe(Single.success("Hello"));
-        // The mock behavior must be applied after subscribe, because a new mock is created as part of this process.
-        doAnswer(invocation -> {
+        toSource(Single.success("Hello").toPublisher().doOnNext(n -> {
             throw DELIBERATE_EXCEPTION;
-        }).when(verifier.subscriber()).onNext(any());
-        verifier.request(1).verifyItems("Hello").verifyFailure(DELIBERATE_EXCEPTION);
+        })).subscribe(verifier);
+        // The mock behavior must be applied after subscribe, because a new mock is created as part of this process.
+        verifier.request(1);
+        assertThat(verifier.items(), contains("Hello"));
+        assertThat(verifier.error(), sameInstance(DELIBERATE_EXCEPTION));
     }
 
     @Test

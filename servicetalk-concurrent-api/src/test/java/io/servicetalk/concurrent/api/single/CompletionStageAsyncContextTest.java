@@ -17,7 +17,6 @@ package io.servicetalk.concurrent.api.single;
 
 import io.servicetalk.concurrent.api.AsyncContext;
 import io.servicetalk.concurrent.api.AsyncContextMap.Key;
-import io.servicetalk.concurrent.api.DefaultThreadFactory;
 import io.servicetalk.concurrent.api.ExecutorRule;
 import io.servicetalk.concurrent.api.TestSingle;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
@@ -38,17 +37,14 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static io.servicetalk.concurrent.api.AsyncContextMap.Key.newKey;
-import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
 import static io.servicetalk.concurrent.api.Single.fromStage;
-import static java.lang.Thread.NORM_PRIORITY;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public class CompletionStageAsyncContextTest {
     private static final Key<Integer> K1 = newKey("k1");
     @Rule
-    public final ExecutorRule executorRule = new ExecutorRule(() ->
-            newCachedThreadExecutor(new DefaultThreadFactory(ST_THREAD_PREFIX_NAME, true, NORM_PRIORITY)));
+    public final ExecutorRule executorRule = ExecutorRule.withNamePrefix(ST_THREAD_PREFIX_NAME);
     private static final String ST_THREAD_PREFIX_NAME = "st-exec-thread-";
     private static final String JDK_THREAD_NAME_PREFIX = "jdk-thread-";
     private static final AtomicInteger threadCount = new AtomicInteger();

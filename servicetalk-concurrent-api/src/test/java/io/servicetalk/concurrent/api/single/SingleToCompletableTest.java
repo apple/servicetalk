@@ -34,7 +34,7 @@ public class SingleToCompletableTest {
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
     @Rule
-    public final ExecutorRule executorRule = new ExecutorRule();
+    public final ExecutorRule executorRule = ExecutorRule.newRule();
 
     @Test
     public void subscribeOnOriginalIsPreserved() throws InterruptedException {

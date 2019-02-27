@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,16 +15,24 @@
  */
 package io.servicetalk.concurrent.api.publisher;
 
-import io.servicetalk.concurrent.api.MockedSubscriberRule;
+import io.servicetalk.concurrent.api.AutoOnSubscribeSubscriberFunction;
 import io.servicetalk.concurrent.api.TestPublisher;
+import io.servicetalk.concurrent.api.TestPublisherSubscriber;
+import io.servicetalk.concurrent.api.TestSubscription;
 
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.function.IntPredicate;
 
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
+import static io.servicetalk.concurrent.api.TestPublisherSubscriber.newTestPublisherSubscriber;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.sameInstance;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -34,35 +42,37 @@ import static org.mockito.Mockito.when;
 
 public class RepeatTest {
 
-    @Rule
-    public final MockedSubscriberRule<Integer> subscriberRule = new MockedSubscriberRule<>();
-
-    private TestPublisher<Integer> source;
-    private IntPredicate shouldRepeat;
+    private final TestPublisherSubscriber<Integer> subscriber = newTestPublisherSubscriber();
+    private final AutoOnSubscribeSubscriberFunction<Integer> autoOnSubscribe =
+            new AutoOnSubscribeSubscriberFunction<>();
+    private final TestPublisher<Integer> source = new TestPublisher.Builder<Integer>()
+            .autoOnSubscribe(autoOnSubscribe).build();
+    private final IntPredicate shouldRepeat = mock(IntPredicate.class);
     private boolean shouldRepeatValue;
 
     @Before
     public void setUp() throws Exception {
-        source = new TestPublisher<>(true);
-        source.sendOnSubscribe();
-        shouldRepeat = mock(IntPredicate.class);
         when(shouldRepeat.test(anyInt())).thenAnswer(invocation -> shouldRepeatValue);
-        subscriberRule.subscribe(source.repeat(shouldRepeat));
+        toSource(source.repeat(shouldRepeat)).subscribe(subscriber);
     }
 
     @Test
     public void testError() {
-        subscriberRule.request(2);
-        source.sendItems(1, 2).fail();
-        subscriberRule.verifyItems(1, 2).verifyFailure(DELIBERATE_EXCEPTION);
+        subscriber.request(2);
+        source.onNext(1, 2);
+        source.onError(DELIBERATE_EXCEPTION);
+        assertThat(subscriber.items(), contains(1, 2));
+        assertThat(subscriber.error(), sameInstance(DELIBERATE_EXCEPTION));
         verifyZeroInteractions(shouldRepeat);
     }
 
     @Test
     public void testRepeatCount() {
-        subscriberRule.request(2);
-        source.sendItems(1, 2).onComplete();
-        subscriberRule.verifyItems(1, 2).verifySuccess();
+        subscriber.request(2);
+        source.onNext(1, 2);
+        source.onComplete();
+        assertThat(subscriber.items(), contains(1, 2));
+        assertTrue(subscriber.isCompleted());
         verify(shouldRepeat).test(1);
         verifyNoMoreInteractions(shouldRepeat);
     }
@@ -70,47 +80,58 @@ public class RepeatTest {
     @Test
     public void testRequestAcrossRepeat() {
         shouldRepeatValue = true;
-        subscriberRule.request(3);
-        source.sendItems(1, 2).onComplete();
-        subscriberRule.verifyItems(1, 2);
+        subscriber.request(3);
+        source.onNext(1, 2);
+        source.onComplete();
+        assertThat(subscriber.items(), contains(1, 2));
         verify(shouldRepeat).test(1);
-        source.verifySubscribed().sendItems(3);
-        subscriberRule.verifyItems(3);
-        subscriberRule.verifyNoEmissions();
+        assertTrue(source.isSubscribed());
+        source.onNext(3);
+        assertThat(subscriber.items(), contains(1, 2, 3));
+        assertFalse(subscriber.isTerminated());
     }
 
     @Test
     public void testTwoCompletes() {
         shouldRepeatValue = true;
-        subscriberRule.request(3);
-        source.sendItems(1, 2).onComplete();
-        subscriberRule.verifyItems(1, 2).verifyNoEmissions();
+        subscriber.request(3);
+        source.onNext(1, 2);
+        source.onComplete();
+        assertThat(subscriber.items(), contains(1, 2));
+        assertFalse(subscriber.isTerminated());
         verify(shouldRepeat).test(1);
-        source.verifySubscribed();
-        source.sendItems(3).onComplete();
+        assertTrue(source.isSubscribed());
+        source.onNext(3);
+        source.onComplete();
         verify(shouldRepeat).test(2);
-        source.fail();
-        subscriberRule.verifyItems(1, 2, 3).verifyFailure(DELIBERATE_EXCEPTION);
+        source.onError(DELIBERATE_EXCEPTION);
+        assertThat(subscriber.items(), contains(1, 2, 3));
+        assertThat(subscriber.error(), sameInstance(DELIBERATE_EXCEPTION));
     }
 
     @Test
     public void testMaxRepeats() {
         shouldRepeatValue = true;
-        subscriberRule.request(3);
-        source.sendItems(1, 2).onComplete();
-        subscriberRule.verifyItems(1, 2).verifyNoEmissions();
+        subscriber.request(3);
+        source.onNext(1, 2);
+        source.onComplete();
+        assertThat(subscriber.items(), contains(1, 2));
+        assertFalse(subscriber.isTerminated());
         verify(shouldRepeat).test(1);
         shouldRepeatValue = false;
         source.onComplete();
-        subscriberRule.verifySuccess();
+        assertTrue(subscriber.isCompleted());
     }
 
     @Test
     public void testCancel() {
-        subscriberRule.request(2);
-        source.sendItems(1, 2);
-        subscriberRule.verifyItems(1, 2).cancel();
+        final TestSubscription subscription = new TestSubscription();
+        source.onSubscribe(subscription);
+        subscriber.request(2);
+        source.onNext(1, 2);
+        assertThat(subscriber.items(), contains(1, 2));
+        subscriber.cancel();
         source.onComplete();
-        source.verifyCancelled();
+        assertTrue(subscription.isCancelled());
     }
 }

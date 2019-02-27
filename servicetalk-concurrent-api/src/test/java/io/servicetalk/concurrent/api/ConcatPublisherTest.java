@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,44 +15,57 @@
  */
 package io.servicetalk.concurrent.api;
 
-import org.junit.Rule;
 import org.junit.Test;
 
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
+import static io.servicetalk.concurrent.api.TestPublisher.newTestPublisher;
+import static io.servicetalk.concurrent.api.TestPublisherSubscriber.newTestPublisherSubscriber;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.sameInstance;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 public class ConcatPublisherTest {
 
-    @Rule
-    public final MockedSubscriberRule<String> subscriber = new MockedSubscriberRule<>();
-    @Rule
-    public final PublisherRule<String> first = new PublisherRule<>();
-    @Rule
-    public final PublisherRule<String> second = new PublisherRule<>();
+    private final TestPublisher<String> first = newTestPublisher();
+    private final TestPublisher<String> second = newTestPublisher();
+    private final TestPublisherSubscriber<String> subscriber = newTestPublisherSubscriber();
 
     @Test
     public void testEnoughRequests() {
-        Publisher<String> p = first.publisher().concatWith(second.publisher());
-        subscriber.subscribe(p).request(2);
-        first.sendItems("Hello1", "Hello2").complete();
+        Publisher<String> p = first.concatWith(second);
+        toSource(p).subscribe(subscriber);
         subscriber.request(2);
-        second.sendItems("Hello3", "Hello4").complete();
-        subscriber.verifySuccess("Hello1", "Hello2", "Hello3", "Hello4");
+        first.onNext("Hello1", "Hello2");
+        first.onComplete();
+        subscriber.request(2);
+        second.onNext("Hello3", "Hello4");
+        second.onComplete();
+        assertThat(subscriber.items(), contains("Hello1", "Hello2", "Hello3", "Hello4"));
+        assertTrue(subscriber.isCompleted());
     }
 
     @Test
     public void testFirstEmitsError() {
-        Publisher<String> p = first.publisher().concatWith(second.publisher());
-        subscriber.subscribe(p).request(2);
-        first.sendItems("Hello1", "Hello2").fail();
-        subscriber.verifyItems("Hello1", "Hello2").verifyFailure(DELIBERATE_EXCEPTION);
+        Publisher<String> p = first.concatWith(second);
+        toSource(p).subscribe(subscriber);
+        subscriber.request(2);
+        first.onNext("Hello1", "Hello2");
+        first.onError(DELIBERATE_EXCEPTION);
+        assertThat(subscriber.items(), contains("Hello1", "Hello2"));
+        assertThat(subscriber.error(), sameInstance(DELIBERATE_EXCEPTION));
     }
 
     @Test
     public void testSecondEmitsError() {
-        Publisher<String> p = first.publisher().concatWith(second.publisher());
-        subscriber.subscribe(p).request(2);
-        first.sendItems("Hello1", "Hello2").complete();
-        second.fail();
-        subscriber.verifyItems("Hello1", "Hello2").verifyFailure(DELIBERATE_EXCEPTION);
+        Publisher<String> p = first.concatWith(second);
+        toSource(p).subscribe(subscriber);
+        subscriber.request(2);
+        first.onNext("Hello1", "Hello2");
+        first.onComplete();
+        second.onError(DELIBERATE_EXCEPTION);
+        assertThat(subscriber.items(), contains("Hello1", "Hello2"));
+        assertThat(subscriber.error(), sameInstance(DELIBERATE_EXCEPTION));
     }
 }

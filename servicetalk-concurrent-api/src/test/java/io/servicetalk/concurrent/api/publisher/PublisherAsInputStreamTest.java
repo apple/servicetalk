@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,6 @@ package io.servicetalk.concurrent.api.publisher;
 
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.concurrent.api.PublisherRule;
 import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.internal.DeliberateException;
 
@@ -30,6 +29,7 @@ import java.io.InputStream;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Publisher.from;
+import static io.servicetalk.concurrent.api.TestPublisher.newTestPublisher;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.util.Arrays.copyOfRange;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -43,8 +43,8 @@ public final class PublisherAsInputStreamTest {
 
     @Rule
     public final ExpectedException expected = none();
-    @Rule
-    public final PublisherRule<String> publisherRule = new PublisherRule<>();
+
+    private final TestPublisher<String> publisher = newTestPublisher();
 
     @Test
     public void streamEmitsAllDataInSingleRead() throws IOException {
@@ -191,11 +191,10 @@ public final class PublisherAsInputStreamTest {
 
     @Test
     public void checkAvailableReturnsCorrectlyWithPrefetch() throws IOException {
-        TestPublisher<String> testPublisher = new TestPublisher<>();
-        testPublisher.sendOnSubscribe();
+        TestPublisher<String> testPublisher = newTestPublisher();
         InputStream stream = testPublisher.toInputStream(str -> str.getBytes(US_ASCII));
         assertThat("Unexpected available return type.", stream.available(), is(0));
-        testPublisher.sendItems("1234");
+        testPublisher.onNext("1234");
         assertThat("Unexpected available return type.", stream.available(), is(0));
         byte[] data = new byte[2];
         int read = stream.read(data, 0, 2);
@@ -226,19 +225,19 @@ public final class PublisherAsInputStreamTest {
         String realStringData = "hello!";
         final int midWayPoint = 3;
         byte[] data = new byte[realStringData.length()];
-        InputStream is = publisherRule.publisher().toInputStream(str ->
+        InputStream is = publisher.toInputStream(str ->
                 str == null ? emptyConversionValue : str.getBytes(US_ASCII));
 
         // Split the real data up into 2 chunks and send null/empty in between
-        publisherRule.sendItems((String[]) null);
-        publisherRule.sendItems("");
-        publisherRule.sendItems(realStringData.substring(0, midWayPoint));
+        publisher.onNext((String[]) null);
+        publisher.onNext("");
+        publisher.onNext(realStringData.substring(0, midWayPoint));
         assertThat(is.read(data, 0, midWayPoint), is(midWayPoint));
 
         // send the second chunk
-        publisherRule.sendItems((String[]) null);
-        publisherRule.sendItems("");
-        publisherRule.sendItems(realStringData.substring(midWayPoint));
+        publisher.onNext((String[]) null);
+        publisher.onNext("");
+        publisher.onNext(realStringData.substring(midWayPoint));
         final int len = realStringData.length() - midWayPoint;
         assertThat(is.read(data, midWayPoint, len), is(len));
 

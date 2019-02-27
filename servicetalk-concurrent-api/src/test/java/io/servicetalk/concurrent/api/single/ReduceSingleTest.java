@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,8 @@ package io.servicetalk.concurrent.api.single;
 
 import io.servicetalk.concurrent.api.ExecutorRule;
 import io.servicetalk.concurrent.api.MockedSingleListenerRule;
-import io.servicetalk.concurrent.api.PublisherRule;
+import io.servicetalk.concurrent.api.TestPublisher;
+import io.servicetalk.concurrent.api.TestSubscription;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 
 import org.hamcrest.MatcherAssert;
@@ -33,9 +34,11 @@ import java.util.function.BiFunction;
 import java.util.function.Consumer;
 
 import static io.servicetalk.concurrent.api.Publisher.just;
+import static io.servicetalk.concurrent.api.TestPublisher.newTestPublisher;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static java.lang.Thread.currentThread;
 import static org.hamcrest.Matchers.hasSize;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.fail;
 
@@ -44,63 +47,67 @@ public class ReduceSingleTest {
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
     @Rule
-    public final ExecutorRule executorRule = new ExecutorRule();
+    public final ExecutorRule executorRule = ExecutorRule.newRule();
 
     @Rule
     public final MockedSingleListenerRule<String> listenerRule = new MockedSingleListenerRule<>();
 
     @Rule
-    public final PublisherRule<String> publisherRule = new PublisherRule<>();
-
-    @Rule
     public final ReducerRule reducerRule = new ReducerRule();
+
+    private final TestPublisher<String> publisher = newTestPublisher();
+    private final TestSubscription subscription = new TestSubscription();
 
     @Test
     public void testSingleItem() {
-        reducerRule.listen(publisherRule, listenerRule);
-        publisherRule.sendItems("Hello").complete();
+        reducerRule.listen(publisher, listenerRule);
+        publisher.onNext("Hello");
+        publisher.onComplete();
         listenerRule.verifySuccess("Hello");
     }
 
     @Test
     public void testEmpty() {
-        reducerRule.listen(publisherRule, listenerRule);
-        publisherRule.complete();
+        reducerRule.listen(publisher, listenerRule);
+        publisher.onComplete();
         listenerRule.verifySuccess(""); // Empty string as exactly one item is required.
     }
 
     @Test
     public void testMultipleItems() {
-        reducerRule.listen(publisherRule, listenerRule);
-        publisherRule.sendItems("Hello1", "Hello2", "Hello3").complete();
+        reducerRule.listen(publisher, listenerRule);
+        publisher.onNext("Hello1", "Hello2", "Hello3");
+        publisher.onComplete();
         listenerRule.verifySuccess("Hello1Hello2Hello3");
     }
 
     @Test
     public void testError() {
-        reducerRule.listen(publisherRule, listenerRule);
-        publisherRule.fail();
+        reducerRule.listen(publisher, listenerRule);
+        publisher.onError(DELIBERATE_EXCEPTION);
         listenerRule.verifyFailure(DELIBERATE_EXCEPTION);
     }
 
     @Test
     public void testFactoryReturnsNull() {
-        listenerRule.listen(publisherRule.publisher().reduce(() -> null, (o, s) -> o));
-        publisherRule.sendItems("foo").complete();
+        listenerRule.listen(publisher.reduce(() -> null, (o, s) -> o));
+        publisher.onNext("foo");
+        publisher.onComplete();
         listenerRule.verifySuccess(null);
     }
 
     @Test
     public void testAggregatorReturnsNull() {
-        listenerRule.listen(publisherRule.publisher().reduce(() -> "", (o, s) -> null));
-        publisherRule.sendItems("foo").complete();
+        listenerRule.listen(publisher.reduce(() -> "", (o, s) -> null));
+        publisher.onNext("foo");
+        publisher.onComplete();
         listenerRule.verifySuccess(null);
     }
 
     @Test
     public void testReducerExceptionCleanup() {
         final RuntimeException testException = new RuntimeException("fake exception");
-        listenerRule.listen(publisherRule.publisher().reduce(() -> "", new BiFunction<String, String, String>() {
+        listenerRule.listen(publisher.reduce(() -> "", new BiFunction<String, String, String>() {
             private int callNumber;
 
             @Override
@@ -135,21 +142,23 @@ public class ReduceSingleTest {
     }
 
     private void verifyThrows(Consumer<Throwable> assertFunction) {
+        publisher.onSubscribe(subscription);
         try {
-            publisherRule.sendItems("Hello1", "Hello2", "Hello3");
+            publisher.onNext("Hello1", "Hello2", "Hello3");
             fail();
         } catch (Throwable cause) {
             assertFunction.accept(cause);
+            assertFalse(subscription.isCancelled());
             // Now simulate failing the publisher by emit onError(...)
-            publisherRule.fail(false, cause);
+            publisher.onError(cause);
             listenerRule.verifyFailure(cause);
         }
     }
 
     private static class ReducerRule extends Verifier {
 
-        ReducerRule listen(PublisherRule<String> publisherRule, MockedSingleListenerRule<String> listenerRule) {
-            listenerRule.listen(publisherRule.publisher().reduce(() -> "", (r, s) -> r + s));
+        ReducerRule listen(TestPublisher<String> testPublisher, MockedSingleListenerRule<String> listenerRule) {
+            listenerRule.listen(testPublisher.reduce(() -> "", (r, s) -> r + s));
             return this;
         }
     }

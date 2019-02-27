@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,52 +24,61 @@ import org.junit.rules.ExpectedException;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static io.servicetalk.concurrent.api.IsIterableEndingWithInOrder.endsWith;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
+import static io.servicetalk.concurrent.api.TestPublisher.newTestPublisher;
+import static io.servicetalk.concurrent.api.TestPublisherSubscriber.newTestPublisherSubscriber;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static java.util.function.Function.identity;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.sameInstance;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doThrow;
 
 public class PublisherConcatMapIterableTest {
     @Rule
-    public final PublisherRule<List<String>> publisher = new PublisherRule<>();
-    @Rule
-    public final MockedSubscriberRule<String> subscriber = new MockedSubscriberRule<>();
-    @Rule
-    public final PublisherRule<BlockingIterable<String>> cancellablePublisher = new PublisherRule<>();
-    @Rule
     public final ExpectedException expectedException = ExpectedException.none();
+
+    private final TestPublisher<List<String>> publisher = newTestPublisher();
+    private final TestPublisher<BlockingIterable<String>> cancellablePublisher = newTestPublisher();
+    private final TestPublisherSubscriber<String> subscriber = newTestPublisherSubscriber();
+    private TestSubscription subscription = new TestSubscription();
 
     @Test
     public void cancellableIterableIsCancelled() {
-        toSource(cancellablePublisher.publisher().concatMapIterable(identity())).subscribe(subscriber.subscriber());
-        subscriber.verifySubscribe();
+        toSource(cancellablePublisher.concatMapIterable(identity())).subscribe(subscriber);
+        cancellablePublisher.onSubscribe(subscription);
+        assertTrue(subscriber.subscriptionReceived());
         subscriber.request(1);
         AtomicBoolean cancelled = new AtomicBoolean();
-        cancellablePublisher.sendItems(new TestIterableToBlockingIterable<>(asList("one", "two"),
+        cancellablePublisher.onNext(new TestIterableToBlockingIterable<>(asList("one", "two"),
                 (time, unit) -> { }, (time, unit) -> { }, () -> cancelled.set(true)));
-        subscriber.verifyItems("one");
-        subscriber.verifyNoEmissions();
+        assertThat(subscriber.takeItems(), contains("one"));
+        assertTrue(subscriber.subscriptionReceived());
+        assertThat(subscriber.items(), hasSize(0));
+        assertFalse(subscriber.isTerminated());
         subscriber.cancel();
         assertTrue(cancelled.get());
     }
 
     @Test
     public void justComplete() {
-        toSource(publisher.publisher().concatMapIterable(identity())).subscribe(subscriber.subscriber());
-        subscriber.verifySubscribe();
+        toSource(publisher.concatMapIterable(identity())).subscribe(subscriber);
+        publisher.onSubscribe(subscription);
+        assertTrue(subscriber.subscriptionReceived());
         verifyTermination(true);
     }
 
     @Test
     public void justFail() {
-        toSource(publisher.publisher().concatMapIterable(identity())).subscribe(subscriber.subscriber());
-        subscriber.verifySubscribe();
+        toSource(publisher.concatMapIterable(identity())).subscribe(subscriber);
+        publisher.onSubscribe(subscription);
+        assertTrue(subscriber.subscriptionReceived());
         verifyTermination(false);
     }
 
@@ -84,12 +93,15 @@ public class PublisherConcatMapIterableTest {
     }
 
     private void singleElementSingleValue(boolean success) {
-        toSource(publisher.publisher().concatMapIterable(identity())).subscribe(subscriber.subscriber());
-        subscriber.verifySubscribe();
+        toSource(publisher.concatMapIterable(identity())).subscribe(subscriber);
+        publisher.onSubscribe(subscription);
+        assertTrue(subscriber.subscriptionReceived());
         subscriber.request(1);
-        publisher.sendItems(singletonList("one"));
-        subscriber.verifyItems("one");
-        subscriber.verifyNoEmissions();
+        publisher.onNext(singletonList("one"));
+        assertThat(subscriber.takeItems(), contains("one"));
+        assertTrue(subscriber.subscriptionReceived());
+        assertThat(subscriber.items(), hasSize(0));
+        assertFalse(subscriber.isTerminated());
 
         verifyTermination(success);
     }
@@ -105,27 +117,28 @@ public class PublisherConcatMapIterableTest {
     }
 
     private void singleElementMultipleValuesDelayedRequest(boolean success) {
-        toSource(publisher.publisher().concatMapIterable(identity())).subscribe(subscriber.subscriber());
-        subscriber.verifySubscribe();
+        toSource(publisher.concatMapIterable(identity())).subscribe(subscriber);
+        publisher.onSubscribe(subscription);
+        assertTrue(subscriber.subscriptionReceived());
         subscriber.request(1);
-        publisher.sendItems(asList("one", "two"));
-        subscriber.verifyItems("one");
+        publisher.onNext(asList("one", "two"));
+        assertThat(subscriber.items(), contains("one"));
 
         if (success) {
-            publisher.complete();
+            publisher.onComplete();
         } else {
-            publisher.fail();
+            publisher.onError(DELIBERATE_EXCEPTION);
         }
 
         subscriber.request(1);
-        subscriber.verifyItems("two");
+        assertThat(subscriber.items(), endsWith("two"));
 
         if (success) {
-            subscriber.verifySuccess();
+            assertTrue(subscriber.isCompleted());
         } else {
-            subscriber.verifyFailure(DELIBERATE_EXCEPTION);
+            assertThat(subscriber.error(), sameInstance(DELIBERATE_EXCEPTION));
         }
-        publisher.verifyNotCancelled();
+        assertFalse(subscription.isCancelled());
     }
 
     @Test
@@ -139,15 +152,16 @@ public class PublisherConcatMapIterableTest {
     }
 
     private void multipleElementsSingleValue(boolean success) {
-        toSource(publisher.publisher().concatMapIterable(identity())).subscribe(subscriber.subscriber());
-        subscriber.verifySubscribe();
+        toSource(publisher.concatMapIterable(identity())).subscribe(subscriber);
+        publisher.onSubscribe(subscription);
+        assertTrue(subscriber.subscriptionReceived());
         subscriber.request(1);
-        publisher.sendItems(singletonList("one"));
-        subscriber.verifyItems("one");
+        publisher.onNext(singletonList("one"));
+        assertThat(subscriber.items(), contains("one"));
 
         subscriber.request(1);
-        publisher.sendItems(singletonList("two"));
-        subscriber.verifyItems("two");
+        publisher.onNext(singletonList("two"));
+        assertThat(subscriber.items(), endsWith("two"));
 
         verifyTermination(success);
     }
@@ -163,34 +177,36 @@ public class PublisherConcatMapIterableTest {
     }
 
     private void multipleElementsMultipleValues(boolean success) {
-        toSource(publisher.publisher().concatMapIterable(identity())).subscribe(subscriber.subscriber());
-        subscriber.verifySubscribe();
+        toSource(publisher.concatMapIterable(identity())).subscribe(subscriber);
+        publisher.onSubscribe(subscription);
+        assertTrue(subscriber.subscriptionReceived());
         subscriber.request(1);
-        publisher.sendItems(asList("one", "two"));
-        subscriber.verifyItems("one");
+        publisher.onNext(asList("one", "two"));
+        assertThat(subscriber.items(), contains("one"));
 
         subscriber.request(1);
-        subscriber.verifyItems("two");
+        assertThat(subscriber.items(), endsWith("two"));
 
         subscriber.request(1);
-        publisher.sendItems(asList("three", "four"));
-        subscriber.verifyItems("three");
+        publisher.onNext(asList("three", "four"));
+        assertThat(subscriber.items(), endsWith("three"));
 
         subscriber.request(1);
-        subscriber.verifyItems("four");
+        assertThat(subscriber.items(), endsWith("four"));
 
         verifyTermination(success);
     }
 
     @Test
     public void cancelIsPropagated() {
-        toSource(publisher.publisher().concatMapIterable(identity())).subscribe(subscriber.subscriber());
-        subscriber.verifySubscribe();
+        toSource(publisher.concatMapIterable(identity())).subscribe(subscriber);
+        publisher.onSubscribe(subscription);
+        assertTrue(subscriber.subscriptionReceived());
         subscriber.request(1);
-        publisher.sendItems(asList("one", "two"));
-        subscriber.verifyItems("one");
+        publisher.onNext(asList("one", "two"));
+        assertThat(subscriber.items(), contains("one"));
         subscriber.cancel();
-        publisher.verifyCancelled();
+        assertTrue(subscription.isCancelled());
     }
 
     @Test
@@ -204,54 +220,53 @@ public class PublisherConcatMapIterableTest {
     }
 
     private void requestWithEmptyIterable(boolean success) {
-        toSource(publisher.publisher().concatMapIterable(identity())).subscribe(subscriber.subscriber());
-        subscriber.verifySubscribe();
+        toSource(publisher.concatMapIterable(identity())).subscribe(subscriber);
+        publisher.onSubscribe(subscription);
+        assertTrue(subscriber.subscriptionReceived());
         subscriber.request(1);
         subscriber.request(1);
 
-        publisher.sendItems(asList("one", "two", "three"));
-        subscriber.verifyItems("one", "two");
-        try {
-            publisher.sendItems(asList("four"));
-            fail();
-        } catch (Throwable expected) {
-            // request(n) to the source isn't high enough
-        }
+        publisher.onNext(asList("one", "two", "three"));
+        assertThat(subscriber.items(), contains("one", "two"));
 
         subscriber.request(1);
-        subscriber.verifyItems("three");
+        assertThat(subscriber.items(), endsWith("three"));
         subscriber.request(1);
-        publisher.sendItems(asList("four"));
-        subscriber.verifyItems("four");
+        publisher.onNext(asList("four"));
+        assertThat(subscriber.items(), endsWith("four"));
         verifyTermination(success);
     }
 
     @Test
     public void exceptionFromOnErrorIsPropagated() {
-        toSource(publisher.publisher().concatMapIterable(identity())).subscribe(subscriber.subscriber());
-        subscriber.verifySubscribe();
-        doThrow(DELIBERATE_EXCEPTION).when(subscriber.subscriber()).onError(any());
+        toSource(publisher.concatMapIterable(identity())
+                .doOnError(t -> {
+                    throw DELIBERATE_EXCEPTION;
+                })).subscribe(subscriber);
+        assertTrue(subscriber.subscriptionReceived());
         expectedException.expect(is(DELIBERATE_EXCEPTION));
-        publisher.fail();
+        publisher.onError(DELIBERATE_EXCEPTION);
     }
 
     @Test
     public void exceptionFromOnCompleteIsPropagated() {
-        toSource(publisher.publisher().concatMapIterable(identity())).subscribe(subscriber.subscriber());
-        subscriber.verifySubscribe();
-        doThrow(DELIBERATE_EXCEPTION).when(subscriber.subscriber()).onComplete();
+        toSource(publisher.concatMapIterable(identity())
+                .doOnComplete(() -> {
+                    throw DELIBERATE_EXCEPTION;
+                })).subscribe(subscriber);
+        assertTrue(subscriber.subscriptionReceived());
         expectedException.expect(is(DELIBERATE_EXCEPTION));
-        publisher.complete();
+        publisher.onComplete();
     }
 
     private void verifyTermination(boolean success) {
         if (success) {
-            publisher.complete();
-            subscriber.verifySuccess();
+            publisher.onComplete();
+            assertTrue(subscriber.isCompleted());
         } else {
-            publisher.fail();
-            subscriber.verifyFailure(DELIBERATE_EXCEPTION);
+            publisher.onError(DELIBERATE_EXCEPTION);
+            assertThat(subscriber.error(), sameInstance(DELIBERATE_EXCEPTION));
         }
-        publisher.verifyNotCancelled();
+        assertFalse(subscription.isCancelled());
     }
 }

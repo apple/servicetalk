@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@ import io.servicetalk.client.api.partition.PartitionAttributes.Key;
 import io.servicetalk.client.api.partition.PartitionAttributesBuilder;
 import io.servicetalk.client.api.partition.PartitionedServiceDiscovererEvent;
 import io.servicetalk.client.internal.partition.DefaultPartitionAttributesBuilder;
-import io.servicetalk.concurrent.api.PublisherRule;
+import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.redis.api.PartitionedRedisClient;
 import io.servicetalk.redis.api.RedisData;
@@ -43,6 +43,7 @@ import java.util.function.Function;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.BlockingTestUtils.awaitIndefinitely;
+import static io.servicetalk.concurrent.api.TestPublisher.newTestPublisher;
 import static io.servicetalk.redis.api.RedisExecutionStrategies.noOffloadsStrategy;
 import static io.servicetalk.redis.api.RedisProtocolSupport.Command.INFO;
 import static io.servicetalk.redis.api.RedisProtocolSupport.CommandFlag.PUBSUB;
@@ -63,15 +64,16 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 public abstract class AbstractPartitionedRedisClientTest {
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
-    @Rule
-    public final PublisherRule<PartitionedServiceDiscovererEvent<InetSocketAddress>> serviceDiscoveryPublisher =
-            new PublisherRule<>();
 
     private static final Key<Boolean> MASTER_KEY = Key.newKey("master");
     private static final Key<Integer> SHARD_KEY = Key.newKey("shard");
     private static final Map<String, Integer> keyToShardMap;
+
+    @Rule
+    public final Timeout timeout = new ServiceTalkTestTimeout();
+
+    private final TestPublisher<PartitionedServiceDiscovererEvent<InetSocketAddress>> serviceDiscoveryPublisher =
+            newTestPublisher();
 
     static {
         Map<String, Integer> localMap = new HashMap<>();
@@ -137,7 +139,7 @@ public abstract class AbstractPartitionedRedisClientTest {
         ServiceDiscoverer<String, InetSocketAddress, PartitionedServiceDiscovererEvent<InetSocketAddress>> sd =
                 (ServiceDiscoverer<String, InetSocketAddress, PartitionedServiceDiscovererEvent<InetSocketAddress>>)
                         mock(ServiceDiscoverer.class);
-        when(sd.discover(any())).thenReturn(serviceDiscoveryPublisher.publisher());
+        when(sd.discover(any())).thenReturn(serviceDiscoveryPublisher);
         client = RedisClients.forPartitionedAddress(sd, "ignored", partitionAttributesBuilderFactory)
                 .maxPipelinedRequests(10)
                 .pingPeriod(ofSeconds(1))
@@ -190,7 +192,7 @@ public abstract class AbstractPartitionedRedisClientTest {
     }
 
     void sendServiceDiscoveryEvent(boolean available, PartitionAttributes partitionAddress) {
-        serviceDiscoveryPublisher.sendItems(new PartitionedServiceDiscovererEvent<InetSocketAddress>() {
+        serviceDiscoveryPublisher.onNext(new PartitionedServiceDiscovererEvent<InetSocketAddress>() {
             private final InetSocketAddress address = new InetSocketAddress(redisHost, redisPort);
 
             @Override

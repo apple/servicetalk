@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ import io.servicetalk.client.internal.partition.DefaultPartitionAttributesBuilde
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.TestPublisher;
+import io.servicetalk.concurrent.api.TestSubscription;
 import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.DefaultHttpHeadersFactory;
 import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
@@ -90,7 +91,8 @@ public class PartitionedHttpClientTest {
     @Before
     @SuppressWarnings("unchecked")
     public void setUp() {
-        sdPublisher = new TestPublisher<>();
+        sdPublisher = new TestPublisher.Builder<PartitionedServiceDiscovererEvent<ServerAddress>>()
+                .disableAutoOnSubscribe().build();
         psd = mock(ServiceDiscoverer.class);
         Publisher<PartitionedServiceDiscovererEvent<InetSocketAddress>> mappedSd =
                 sdPublisher.map(psde -> new PartitionedServiceDiscovererEvent<InetSocketAddress>() {
@@ -131,7 +133,8 @@ public class PartitionedHttpClientTest {
                         builder.enableHostHeaderFallback(pa.get(SRV_NAME)))
                 .buildBlocking()) {
 
-            sdPublisher.sendOnSubscribe().sendItems(
+            sdPublisher.onSubscribe(new TestSubscription());
+            sdPublisher.onNext(
                     new TestPSDE(SRV_1, (InetSocketAddress) srv1.listenAddress()),
                     new TestPSDE(SRV_2, (InetSocketAddress) srv2.listenAddress()));
 
@@ -157,7 +160,8 @@ public class PartitionedHttpClientTest {
                         builder.enableHostHeaderFallback(pa.get(SRV_NAME)))
                 .buildBlocking()) {
 
-            sdPublisher.sendOnSubscribe().sendItems(
+            sdPublisher.onSubscribe(new TestSubscription());
+            sdPublisher.onNext(
                     new TestPSDE(SRV_1, (InetSocketAddress) srv1.listenAddress()),
                     new TestPSDE(SRV_2, (InetSocketAddress) srv2.listenAddress()));
 
@@ -181,7 +185,8 @@ public class PartitionedHttpClientTest {
                 //         builder.enableHostHeaderFallback(pa.get(SRV_NAME)))
                 .buildBlocking()) {
 
-            sdPublisher.sendOnSubscribe().sendItems(
+            sdPublisher.onSubscribe(new TestSubscription());
+            sdPublisher.onNext(
                     new TestPSDE(SRV_1, false, (InetSocketAddress) srv1.listenAddress()),
                     new TestPSDE(SRV_2, true, (InetSocketAddress) srv2.listenAddress()));
 

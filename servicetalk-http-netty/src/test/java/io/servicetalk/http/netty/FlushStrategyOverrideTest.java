@@ -21,7 +21,6 @@ import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.concurrent.api.PublisherRule;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.HttpExecutionStrategy;
@@ -66,8 +65,6 @@ public class FlushStrategyOverrideTest {
 
     @Rule
     public final ExecutionContextRule ctx = immediate();
-    @Rule
-    public final PublisherRule<Object> payload = new PublisherRule<>();
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
 

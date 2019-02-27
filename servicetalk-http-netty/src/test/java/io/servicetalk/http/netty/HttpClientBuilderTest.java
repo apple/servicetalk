@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,6 +34,7 @@ import java.util.concurrent.ExecutionException;
 import javax.annotation.Nonnull;
 
 import static io.servicetalk.concurrent.api.Completable.completed;
+import static io.servicetalk.concurrent.api.TestPublisher.newTestPublisher;
 import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -56,15 +57,14 @@ public class HttpClientBuilderTest extends AbstractEchoServerBasedHttpRequesterT
     @Test
     public void httpClientWithDynamicLoadBalancing() throws Exception {
 
-        TestPublisher<ServiceDiscovererEvent<InetSocketAddress>> sdPub = new TestPublisher<>();
-        sdPub.sendOnSubscribe();
+        TestPublisher<ServiceDiscovererEvent<InetSocketAddress>> sdPub = newTestPublisher();
 
         DefaultServiceDiscovererEvent<InetSocketAddress> sdEvent = new DefaultServiceDiscovererEvent<>(
                 (InetSocketAddress) serverContext.listenAddress(), true);
 
         // Simulate delayed discovery
         CTX.executor().schedule(() -> {
-            sdPub.sendItems(sdEvent);
+            sdPub.onNext(sdEvent);
             sdPub.onComplete();
         }, 300, MILLISECONDS);
 

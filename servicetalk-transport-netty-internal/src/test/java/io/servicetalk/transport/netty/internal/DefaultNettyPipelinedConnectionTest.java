@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,15 +15,17 @@
  */
 package io.servicetalk.transport.netty.internal;
 
+import io.servicetalk.concurrent.api.AutoOnSubscribeSubscriberFunction;
 import io.servicetalk.concurrent.api.Completable;
-import io.servicetalk.concurrent.api.MockedSubscriberRule;
+import io.servicetalk.concurrent.api.SequentialPublisherSubscriberFunction;
 import io.servicetalk.concurrent.api.TestPublisher;
+import io.servicetalk.concurrent.api.TestPublisherSubscriber;
+import io.servicetalk.concurrent.api.TestSubscription;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.transport.netty.internal.NettyConnection.TerminalPredicate;
 
 import io.netty.channel.embedded.EmbeddedChannel;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
 import org.mockito.stubbing.Answer;
@@ -34,26 +36,37 @@ import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.Publisher.just;
 import static io.servicetalk.concurrent.api.Single.success;
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
+import static io.servicetalk.concurrent.api.TestPublisherSubscriber.newTestPublisherSubscriber;
 import static io.servicetalk.transport.netty.internal.CloseHandler.UNSUPPORTED_PROTOCOL_CLOSE_HANDLER;
 import static io.servicetalk.transport.netty.internal.FlushStrategies.defaultFlushStrategy;
 import static java.lang.Integer.MAX_VALUE;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 public class DefaultNettyPipelinedConnectionTest {
-    @Rule
+    // @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
-    @Rule
-    public final MockedSubscriberRule<Integer> readSubscriber = new MockedSubscriberRule<>();
-    @Rule
-    public final MockedSubscriberRule<Integer> secondReadSubscriber = new MockedSubscriberRule<>();
 
     public static final int MAX_PENDING_REQUESTS = 2;
+    private final TestPublisherSubscriber<Integer> readSubscriber = newTestPublisherSubscriber();
+    private final TestPublisherSubscriber<Integer> secondReadSubscriber = newTestPublisherSubscriber();
     private TestPublisher<Integer> writePublisher1;
+    private AutoOnSubscribeSubscriberFunction<Integer> writePublisher1AutoOnSubscribe =
+            new AutoOnSubscribeSubscriberFunction<>();
+    private SequentialPublisherSubscriberFunction<Integer> writePublisher1SequentialSubscriberFunction;
     private TestPublisher<Integer> writePublisher2;
+    private SequentialPublisherSubscriberFunction<Integer> writePublisher2SequentialSubscriberFunction;
     private int requestNext = MAX_VALUE;
     private DefaultNettyPipelinedConnection<Integer, Integer> requester;
     private DefaultNettyConnection<Integer, Integer> connection;
@@ -63,10 +76,14 @@ public class DefaultNettyPipelinedConnectionTest {
     public void setUp() throws Exception {
         channel = new EmbeddedChannel();
         NettyConnection.RequestNSupplier requestNSupplier = mock(NettyConnection.RequestNSupplier.class);
-        writePublisher1 = new TestPublisher<>();
-        writePublisher1.sendOnSubscribe();
-        writePublisher2 = new TestPublisher<>();
-        writePublisher2.sendOnSubscribe();
+        writePublisher1SequentialSubscriberFunction = new SequentialPublisherSubscriberFunction<>();
+        writePublisher1 = new TestPublisher.Builder<Integer>()
+                .autoOnSubscribe(writePublisher1AutoOnSubscribe)
+                .sequentialSubscribers(writePublisher1SequentialSubscriberFunction).build();
+        writePublisher2SequentialSubscriberFunction = new SequentialPublisherSubscriberFunction<>();
+        writePublisher2 = new TestPublisher.Builder<Integer>()
+                .sequentialSubscribers(writePublisher2SequentialSubscriberFunction)
+                .build();
         when(requestNSupplier.requestNFor(anyLong())).then(invocation1 -> requestNext);
         connection = DefaultNettyConnection.<Integer, Integer>initChannel(channel, DEFAULT_ALLOCATOR,
                 immediate(), new TerminalPredicate<>(integer -> true),
@@ -77,30 +94,41 @@ public class DefaultNettyPipelinedConnectionTest {
 
     @Test
     public void testSequencing() {
-        readSubscriber.subscribe(requester.request(writePublisher1)).request(1);
-        secondReadSubscriber.subscribe(requester.request(writePublisher2)).request(1);
-        writePublisher1.verifySubscribed();
-        writePublisher2.verifyNotSubscribed();
-        writePublisher1.sendItems(1).onComplete();
-        readSubscriber.verifySubscribe();
+        toSource(requester.request(writePublisher1)).subscribe(readSubscriber);
+        readSubscriber.request(1);
+        toSource(requester.request(writePublisher2)).subscribe(secondReadSubscriber);
+        secondReadSubscriber.request(1);
+        assertNotNull(writePublisher1SequentialSubscriberFunction.subscriber());
+        assertNull(writePublisher2SequentialSubscriberFunction.subscriber());
+        writePublisher1.onNext(1);
+        writePublisher1.onComplete();
+        assertTrue(readSubscriber.subscriptionReceived());
         channel.writeInbound(1);
-        readSubscriber.verifySuccess(1);
-        writePublisher2.verifySubscribed().sendItems(1).onComplete();
-        secondReadSubscriber.verifySubscribe();
+        assertThat(readSubscriber.items(), contains(1));
+        assertTrue(readSubscriber.isCompleted());
+        assertNotNull(writePublisher2SequentialSubscriberFunction.subscriber());
+        writePublisher2.onNext(1);
+        writePublisher2.onComplete();
+        assertTrue(secondReadSubscriber.subscriptionReceived());
         channel.writeInbound(2);
-        secondReadSubscriber.verifySuccess(2);
+        assertThat(secondReadSubscriber.items(), contains(2));
+        assertTrue(secondReadSubscriber.isCompleted());
     }
 
     @Test
     public void testWriteCancelAndPreviousRead() {
-        readSubscriber.subscribe(requester.request(writePublisher1)).request(1);
-        secondReadSubscriber.subscribe(requester.request(writePublisher2)).request(1);
-        writePublisher1.verifySubscribed();
-        writePublisher2.verifyNotSubscribed();
-        writePublisher1.sendItems(1).onComplete();
-        readSubscriber.verifySubscribe(); // Keep the first read active.
+        toSource(requester.request(writePublisher1)).subscribe(readSubscriber);
+        readSubscriber.request(1);
+        toSource(requester.request(writePublisher2)).subscribe(secondReadSubscriber);
+        secondReadSubscriber.request(1);
+        assertNotNull(writePublisher1SequentialSubscriberFunction.subscriber());
+        assertNull(writePublisher2SequentialSubscriberFunction.subscriber());
+        writePublisher1.onNext(1);
+        writePublisher1.onComplete();
+        assertTrue(readSubscriber.subscriptionReceived()); // Keep the first read active.
 
-        writePublisher2.verifySubscribed().onComplete();
+        assertNotNull(writePublisher2SequentialSubscriberFunction.subscriber());
+        writePublisher2.onComplete();
         // First read active, second write active. Cancel of request() should not start second read. However when we
         // complete the first read this will propagate the cancel and close the connection.
         secondReadSubscriber.cancel();
@@ -109,67 +137,89 @@ public class DefaultNettyPipelinedConnectionTest {
 
         // The first read completed successfully (after the second read was cancelled). After the first read completes
         // the second read subscriber is swapped in and the cancel state is propagated up which closes the channel.
-        secondReadSubscriber.verifyFailure(ClosedChannelException.class);
+        assertThat(secondReadSubscriber.error(), instanceOf(ClosedChannelException.class));
     }
 
     private void forceReadSubscriberComplete() {
         // We have to simulate some read event in order to complete the first read Subscriber because the
         // NettyChannelPublisher needs to read data to invoke the TerminalPredicate.
         channel.writeInbound(1);
-        readSubscriber.verifySuccess(1);
+        assertThat(readSubscriber.items(), contains(1));
+        assertTrue(readSubscriber.isCompleted());
     }
 
     @Test
     public void testItemWriteAndFlush() {
-        readSubscriber.subscribe(requester.request(1)).request(1);
+        toSource(requester.request(1)).subscribe(readSubscriber);
+        readSubscriber.request(1);
         forceReadSubscriberComplete();
     }
 
     @Test
     public void testSingleWriteAndFlush() {
-        readSubscriber.subscribe(requester.request(success(1))).request(1);
+        toSource(requester.request(success(1))).subscribe(readSubscriber);
+        readSubscriber.request(1);
         forceReadSubscriberComplete();
     }
 
     @Test
     public void testPublisherWrite() {
-        readSubscriber.subscribe(requester.request(just(1))).request(1);
+        toSource(requester.request(just(1))).subscribe(readSubscriber);
+        readSubscriber.request(1);
         forceReadSubscriberComplete();
     }
 
     @Test
     public void testPipelinedRequests() {
-        readSubscriber.subscribe(requester.request(writePublisher1)).request(1);
-        secondReadSubscriber.subscribe(requester.request(writePublisher2)).request(1);
-        writePublisher1.verifySubscribed().sendItems(1).onComplete();
+        toSource(requester.request(writePublisher1)).subscribe(readSubscriber);
+        readSubscriber.request(1);
+        toSource(requester.request(writePublisher2)).subscribe(secondReadSubscriber);
+        secondReadSubscriber.request(1);
+        assertNotNull(writePublisher1SequentialSubscriberFunction.subscriber());
+        writePublisher1.onNext(1);
+        writePublisher1.onComplete();
         channel.writeInbound(1);
-        readSubscriber.verifySuccess(1);
-        writePublisher2.sendItems(1).onComplete();
+        assertTrue(readSubscriber.isCompleted());
+        writePublisher2.onNext(1);
+        writePublisher2.onComplete();
         channel.writeInbound(2);
-        secondReadSubscriber.verifySuccess(2);
+        assertThat(secondReadSubscriber.items(), contains(2));
+        assertTrue(secondReadSubscriber.isCompleted());
     }
 
     @Test
     public void testWriteCancelAndThenWrite() {
-        readSubscriber.subscribe(requester.request(writePublisher1)).request(1);
-        secondReadSubscriber.subscribe(requester.request(writePublisher2)).request(1);
+        toSource(requester.request(writePublisher1)).subscribe(readSubscriber);
+        final TestSubscription subscription = new TestSubscription();
+        writePublisher1.onSubscribe(subscription);
+        readSubscriber.request(1);
+        toSource(requester.request(writePublisher2)).subscribe(secondReadSubscriber);
+        secondReadSubscriber.request(1);
         readSubscriber.cancel();
-        writePublisher1.verifyCancelled();
-        writePublisher2.verifySubscribed().sendItems(1).onComplete();
+        assertTrue(subscription.isCancelled());
+        assertNotNull(writePublisher2SequentialSubscriberFunction.subscriber());
+        writePublisher2.onNext(1);
+        writePublisher2.onComplete();
         channel.writeInbound(1);
-        secondReadSubscriber.verifySuccess(1);
+        assertThat(secondReadSubscriber.items(), contains(1));
+        assertTrue(secondReadSubscriber.isCompleted());
     }
 
     @Test
     public void testReadCancelAndThenWrite() {
-        readSubscriber.subscribe(requester.request(writePublisher1)).request(1);
-        secondReadSubscriber.subscribe(requester.request(writePublisher2)).request(1);
-        writePublisher1.verifySubscribed().sendItems(1).onComplete();
+        toSource(requester.request(writePublisher1)).subscribe(readSubscriber);
+        readSubscriber.request(1);
+        toSource(requester.request(writePublisher2)).subscribe(secondReadSubscriber);
+        secondReadSubscriber.request(1);
+        assertNotNull(writePublisher1SequentialSubscriberFunction.subscriber());
+        writePublisher1.onNext(1);
+        writePublisher1.onComplete();
         readSubscriber.cancel();
 
         // The active read subscriber cancelled, this should close the connection and stop all subsequent operations.
-        readSubscriber.verifyNoEmissions();
-        writePublisher2.verifyNotSubscribed();
+        assertThat(readSubscriber.items(), hasSize(0));
+        assertFalse(readSubscriber.isTerminated());
+        assertTrue(secondReadSubscriber.isTerminated());
         assertFalse(channel.isOpen());
     }
 
@@ -177,9 +227,11 @@ public class DefaultNettyPipelinedConnectionTest {
     public void testWriter() {
         NettyPipelinedConnection.Writer writer = mock(NettyPipelinedConnection.Writer.class);
         when(writer.write()).then((Answer<Completable>) invocation -> connection.writeAndFlush(1));
-        readSubscriber.subscribe(requester.request(writer)).request(1);
+        toSource(requester.request(writer)).subscribe(readSubscriber);
+        readSubscriber.request(1);
         verify(writer).write();
         channel.writeInbound(1);
-        readSubscriber.verifySuccess(1);
+        assertThat(readSubscriber.items(), contains(1));
+        assertTrue(readSubscriber.isCompleted());
     }
 }

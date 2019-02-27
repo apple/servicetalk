@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,10 @@ import org.junit.Test;
 
 import java.util.function.Consumer;
 
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static org.hamcrest.Matchers.sameInstance;
+import static org.junit.Assert.assertThat;
 
 public class DoBeforeNextTest extends AbstractDoNextTest {
     @Override
@@ -29,14 +32,16 @@ public class DoBeforeNextTest extends AbstractDoNextTest {
         return publisher.doBeforeNext(consumer);
     }
 
+    @Override
     @Test
     public void testCallbackThrowsError() {
         try {
-            rule.subscribe(doNext(Publisher.from("Hello"), s -> {
+            toSource(doNext(Publisher.from("Hello"), s1 -> {
                 throw DELIBERATE_EXCEPTION;
-            })).request(1);
+            })).subscribe(subscriber);
+            subscriber.request(1);
         } finally {
-            rule.verifyFailure(DELIBERATE_EXCEPTION);
+            assertThat(subscriber.error(), sameInstance(DELIBERATE_EXCEPTION));
         }
     }
 }

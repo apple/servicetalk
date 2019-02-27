@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,9 +15,11 @@
  */
 package io.servicetalk.concurrent.api.publisher;
 
-import io.servicetalk.concurrent.api.MockedSubscriberRule;
+import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.concurrent.api.PublisherRule;
+import io.servicetalk.concurrent.api.TestPublisher;
+import io.servicetalk.concurrent.api.TestPublisherSubscriber;
+import io.servicetalk.concurrent.api.TestSubscription;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -26,25 +28,27 @@ import org.junit.rules.ExpectedException;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static io.servicetalk.concurrent.api.TestPublisher.newTestPublisher;
+import static io.servicetalk.concurrent.api.TestPublisherSubscriber.newTestPublisherSubscriber;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.sameInstance;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 public abstract class AbstractDoFinallyTest {
 
     @Rule
-    public final PublisherRule<String> publisher = new PublisherRule<>();
-
-    @Rule
-    public final MockedSubscriberRule<String> subscriber = new MockedSubscriberRule<>();
-
-    @Rule
     public final ExpectedException thrown = ExpectedException.none();
 
+    final TestPublisher<String> publisher = newTestPublisher();
+    final TestPublisherSubscriber<String> subscriber = newTestPublisherSubscriber();
     private Runnable doFinally;
+    final TestSubscription subscription = new TestSubscription();
 
     @Before
     public void setUp() throws Exception {
@@ -53,73 +57,94 @@ public abstract class AbstractDoFinallyTest {
 
     @Test
     public void testForCancelPostEmissions() {
-        subscriber.subscribe(doFinally(publisher.publisher(), doFinally)).request(1);
-        publisher.sendItems("Hello");
-        subscriber.verifyItems("Hello").cancel();
+        doFinally(publisher, doFinally).subscribe(subscriber);
+        publisher.onSubscribe(subscription);
+        subscriber.request(1);
+        publisher.onNext("Hello");
+        assertThat(subscriber.items(), contains("Hello"));
+        subscriber.cancel();
         verify(doFinally).run();
-        publisher.verifyCancelled();
+        assertTrue(subscription.isCancelled());
     }
 
     @Test
     public void testForCancelNoEmissions() {
-        subscriber.subscribe(doFinally(publisher.publisher(), doFinally));
+        doFinally(publisher, doFinally).subscribe(subscriber);
+        publisher.onSubscribe(subscription);
         subscriber.cancel();
         verify(doFinally).run();
-        publisher.verifyCancelled();
+        assertTrue(subscription.isCancelled());
     }
 
     @Test
     public void testForCancelPostError() {
-        subscriber.subscribe(doFinally(publisher.publisher(), doFinally));
-        publisher.fail();
+        doFinally(publisher, doFinally).subscribe(subscriber);
+        publisher.onSubscribe(subscription);
+        publisher.onError(DELIBERATE_EXCEPTION);
         subscriber.cancel();
         verify(doFinally).run();
-        publisher.verifyCancelled();
+        assertTrue(subscription.isCancelled());
     }
 
     @Test
     public void testForCancelPostComplete() {
-        subscriber.subscribe(doFinally(publisher.publisher(), doFinally));
-        publisher.complete();
+        doFinally(publisher, doFinally).subscribe(subscriber);
+        publisher.onSubscribe(subscription);
+        assertFalse(subscription.isCancelled());
+        publisher.onComplete();
         subscriber.cancel();
         verify(doFinally).run();
-        publisher.verifyCancelled();
+        assertTrue(subscription.isCancelled());
     }
 
     @Test
     public void testForCompletePostEmissions() {
-        subscriber.subscribe(doFinally(publisher.publisher(), doFinally)).request(1);
-        publisher.sendItems("Hello").complete();
-        subscriber.verifySuccess("Hello");
+        doFinally(publisher, doFinally).subscribe(subscriber);
+        publisher.onSubscribe(subscription);
+        subscriber.request(1);
+        publisher.onNext("Hello");
+        assertFalse(subscription.isCancelled());
+        publisher.onComplete();
+        assertThat(subscriber.items(), contains("Hello"));
+        assertTrue(subscriber.isCompleted());
         verify(doFinally).run();
-        publisher.verifyNotCancelled();
+        assertFalse(subscription.isCancelled());
     }
 
     @Test
     public void testForCompleteNoEmissions() {
-        subscriber.subscribe(doFinally(publisher.publisher(), doFinally)).request(1);
-        publisher.complete();
-        subscriber.verifySuccess();
+        doFinally(publisher, doFinally).subscribe(subscriber);
+        publisher.onSubscribe(subscription);
+        subscriber.request(1);
+        assertFalse(subscription.isCancelled());
+        publisher.onComplete();
+        assertTrue(subscriber.isCompleted());
         verify(doFinally).run();
-        publisher.verifyNotCancelled();
+        assertFalse(subscription.isCancelled());
     }
 
     @Test
     public void testForErrorPostEmissions() {
-        subscriber.subscribe(doFinally(publisher.publisher(), doFinally)).request(1);
-        publisher.sendItems("Hello").fail();
-        subscriber.verifyItems("Hello").verifyFailure(DELIBERATE_EXCEPTION);
+        doFinally(publisher, doFinally).subscribe(subscriber);
+        publisher.onSubscribe(subscription);
+        subscriber.request(1);
+        publisher.onNext("Hello");
+        publisher.onError(DELIBERATE_EXCEPTION);
+        assertThat(subscriber.items(), contains("Hello"));
+        assertThat(subscriber.error(), sameInstance(DELIBERATE_EXCEPTION));
         verify(doFinally).run();
-        publisher.verifyNotCancelled();
+        assertFalse(subscription.isCancelled());
     }
 
     @Test
     public void testForErrorNoEmissions() {
-        subscriber.subscribe(doFinally(publisher.publisher(), doFinally)).request(1);
-        publisher.fail();
-        subscriber.verifyFailure(DELIBERATE_EXCEPTION);
+        doFinally(publisher, doFinally).subscribe(subscriber);
+        publisher.onSubscribe(subscription);
+        subscriber.request(1);
+        publisher.onError(DELIBERATE_EXCEPTION);
+        assertThat(subscriber.error(), sameInstance(DELIBERATE_EXCEPTION));
         verify(doFinally).run();
-        publisher.verifyNotCancelled();
+        assertFalse(subscription.isCancelled());
     }
 
     @Test
@@ -127,15 +152,16 @@ public abstract class AbstractDoFinallyTest {
         thrown.expect(is(sameInstance(DELIBERATE_EXCEPTION)));
         AtomicInteger invocationCount = new AtomicInteger();
         try {
-            subscriber.subscribe(doFinally(publisher.publisher(), () -> {
+            doFinally(publisher, () -> {
                 invocationCount.incrementAndGet();
                 throw DELIBERATE_EXCEPTION;
-            }));
+            }).subscribe(subscriber);
+            publisher.onSubscribe(subscription);
             subscriber.cancel();
         } finally {
             assertThat("Unexpected calls to doFinally callback.", invocationCount.get(), is(1));
 
-            publisher.verifyCancelled();
+            assertTrue(subscription.isCancelled());
         }
     }
 
@@ -145,5 +171,5 @@ public abstract class AbstractDoFinallyTest {
     @Test
     public abstract void testCallbackThrowsErrorOnError();
 
-    protected abstract <T> Publisher<T> doFinally(Publisher<T> publisher, Runnable runnable);
+    protected abstract <T> PublisherSource<T> doFinally(Publisher<T> publisher, Runnable runnable);
 }

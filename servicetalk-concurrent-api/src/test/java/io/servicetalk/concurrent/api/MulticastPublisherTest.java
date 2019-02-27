@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,13 +19,12 @@ import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
-import org.mockito.Mockito;
-import org.mockito.stubbing.Answer;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
@@ -36,50 +35,50 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static io.servicetalk.concurrent.api.Executors.immediate;
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
+import static io.servicetalk.concurrent.api.TestPublisher.newTestPublisher;
+import static io.servicetalk.concurrent.api.TestPublisherSubscriber.newTestPublisherSubscriber;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.sameInstance;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.Mockito.doAnswer;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 public class MulticastPublisherTest {
+
+    private TestPublisher<Integer> source = new TestPublisher.Builder<Integer>().disableAutoOnSubscribe().build();
+    private TestSubscription subscription = new TestSubscription();
+
     @Rule
-    public final MockedSubscriberRule<Boolean> subscriber = new MockedSubscriberRule<>();
-
-    private TestPublisher<Integer> source;
-
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout(60, SECONDS, () ->
-            System.out.println("sent: " + source.sent() + " requested: " + source.requested() + " outstanding: " +
-                    source.outstandingRequested()));
-
-    @Before
-    public void setUp() throws Exception {
-        source = new TestPublisher<>(true);
-    }
+    public final Timeout timeout = new ServiceTalkTestTimeout(60, SECONDS);
 
     @Test
     public void emitItemsAndThenError() {
         Publisher<Integer> multicast = source.multicast(2);
-        MockedSubscriberRule<Integer> subscriber1 = new MockedSubscriberRule<>();
-        MockedSubscriberRule<Integer> subscriber2 = new MockedSubscriberRule<>();
-        subscriber1.subscribe(multicast);
-        subscriber2.subscribe(multicast);
+        TestPublisherSubscriber<Integer> subscriber1 = newTestPublisherSubscriber();
+        TestPublisherSubscriber<Integer> subscriber2 = newTestPublisherSubscriber();
+        toSource(multicast).subscribe(subscriber1);
+        toSource(multicast).subscribe(subscriber2);
 
-        source.sendOnSubscribe();
+        source.onSubscribe(subscription);
 
         subscriber1.request(2);
         subscriber2.request(2);
-        source.verifyRequested(2);
-        source.sendItems(1, 2);
-        subscriber1.verifyItems(1, 2);
-        subscriber2.verifyItems(1, 2);
-        source.fail();
-        subscriber1.verifyFailure(DELIBERATE_EXCEPTION);
-        subscriber2.verifyFailure(DELIBERATE_EXCEPTION);
+        assertThat(subscription.requested(), is((long) 2));
+        source.onNext(1, 2);
+        assertThat(subscriber1.items(), contains(1, 2));
+        assertThat(subscriber2.items(), contains(1, 2));
+        source.onError(DELIBERATE_EXCEPTION);
+        assertThat(subscriber1.error(), sameInstance(DELIBERATE_EXCEPTION));
+        assertThat(subscriber2.error(), sameInstance(DELIBERATE_EXCEPTION));
     }
 
     @Test
@@ -108,41 +107,43 @@ public class MulticastPublisherTest {
     @Test
     public void sourceSubscribeAfter() {
         Publisher<Integer> multicast = source.multicast(2);
-        MockedSubscriberRule<Integer> subscriber1 = new MockedSubscriberRule<>();
-        MockedSubscriberRule<Integer> subscriber2 = new MockedSubscriberRule<>();
-        subscriber1.subscribe(multicast, false);
-        subscriber2.subscribe(multicast, false);
+        TestPublisherSubscriber<Integer> subscriber1 = newTestPublisherSubscriber();
+        TestPublisherSubscriber<Integer> subscriber2 = newTestPublisherSubscriber();
+        toSource(multicast).subscribe(subscriber1);
+        toSource(multicast).subscribe(subscriber2);
 
-        source.sendOnSubscribe();
+        source.onSubscribe(subscription);
 
-        subscriber1.verifySubscribe();
-        subscriber2.verifySubscribe();
+        assertTrue(subscriber1.subscriptionReceived());
+        assertTrue(subscriber2.subscriptionReceived());
 
         subscriber1.request(2);
-        source.verifyRequested(2);
-        source.sendItems(1, 2);
-        subscriber1.verifyItems(1, 2);
-        subscriber2.verifyNoEmissions();
+        assertThat(subscription.requested(), is(2L));
+        source.onNext(1, 2);
+        assertThat(subscriber1.items(), contains(1, 2));
+        assertTrue(subscriber2.subscriptionReceived());
+        assertThat(subscriber2.items(), hasSize(0));
+        assertFalse(subscriber2.isTerminated());
     }
 
     @Test
     public void sourceSubscribeBefore() {
+        source = newTestPublisher(); // With auto-on-subscribe enabled
         Publisher<Integer> multicast = source.multicast(2);
-        MockedSubscriberRule<Integer> subscriber1 = new MockedSubscriberRule<>();
-        MockedSubscriberRule<Integer> subscriber2 = new MockedSubscriberRule<>();
+        TestPublisherSubscriber<Integer> subscriber1 = newTestPublisherSubscriber();
+        TestPublisherSubscriber<Integer> subscriber2 = newTestPublisherSubscriber();
 
-        source.sendOnSubscribe();
-
-        subscriber1.subscribe(multicast, false);
-        subscriber2.subscribe(multicast);
-        subscriber1.verifySubscribe();
+        toSource(multicast).subscribe(subscriber1);
+        toSource(multicast).subscribe(subscriber2);
+        assertTrue(subscriber1.subscriptionReceived());
+        source.onSubscribe(subscription);
 
         subscriber1.request(2);
         subscriber2.request(2);
-        source.verifyRequested(2);
-        source.sendItems(1, 2);
-        subscriber1.verifyItems(1, 2);
-        subscriber2.verifyItems(1, 2);
+        assertThat(subscription.requested(), is(2L));
+        source.onNext(1, 2);
+        assertThat(subscriber1.items(), contains(1, 2));
+        assertThat(subscriber2.items(), contains(1, 2));
     }
 
     @Test
@@ -150,20 +151,20 @@ public class MulticastPublisherTest {
         final int expectedSubscribers = 2000;
         Publisher<Integer> multicast = source.multicast(expectedSubscribers, expectedSubscribers);
         @SuppressWarnings("unchecked")
-        MockedSubscriberRule<Integer>[] subscribers = (MockedSubscriberRule<Integer>[]) new MockedSubscriberRule[expectedSubscribers];
-
-        source.sendOnSubscribe();
+        TestPublisherSubscriber<Integer>[] subscribers = (TestPublisherSubscriber<Integer>[]) new TestPublisherSubscriber[expectedSubscribers];
 
         final int expectedSubscribersMinus1 = expectedSubscribers - 1;
         for (int i = 0; i < expectedSubscribersMinus1; ++i) {
-            subscribers[i] = new MockedSubscriberRule<>();
-            subscribers[i].subscribe(multicast, false);
+            subscribers[i] = newTestPublisherSubscriber();
+            toSource(multicast).subscribe(subscribers[i]);
         }
-        subscribers[expectedSubscribersMinus1] = new MockedSubscriberRule<>();
-        subscribers[expectedSubscribersMinus1].subscribe(multicast);
+        subscribers[expectedSubscribersMinus1] = newTestPublisherSubscriber();
+        toSource(multicast).subscribe(subscribers[expectedSubscribersMinus1]);
         for (int i = 0; i < expectedSubscribersMinus1; ++i) {
-            subscribers[i].verifySubscribe();
+            assertTrue(subscribers[i].subscriptionReceived());
         }
+
+        source.onSubscribe(subscription);
 
         ExecutorService executorService = new ThreadPoolExecutor(0, expectedSubscribers, 1, SECONDS, new SynchronousQueue<>());
         try {
@@ -176,8 +177,8 @@ public class MulticastPublisherTest {
 
             doneLatch.await();
             assertNull(throwableRef.get());
-            source.verifyRequested(expectedSubscribers);
-            source.verifyNotCancelled();
+            assertThat(subscription.requested(), is((long) expectedSubscribers));
+            assertFalse(subscription.isCancelled());
         } finally {
             executorService.shutdown();
         }
@@ -188,20 +189,20 @@ public class MulticastPublisherTest {
         final int expectedSubscribers = 400;
         Publisher<Integer> multicast = source.multicast(expectedSubscribers, expectedSubscribers);
         @SuppressWarnings("unchecked")
-        MockedSubscriberRule<Integer>[] subscribers = (MockedSubscriberRule<Integer>[]) new MockedSubscriberRule[expectedSubscribers];
-
-        source.sendOnSubscribe();
+        TestPublisherSubscriber<Integer>[] subscribers = (TestPublisherSubscriber<Integer>[]) new TestPublisherSubscriber[expectedSubscribers];
 
         final int expectedSubscribersMinus1 = expectedSubscribers - 1;
         for (int i = 0; i < expectedSubscribersMinus1; ++i) {
-            subscribers[i] = new MockedSubscriberRule<>();
-            subscribers[i].subscribe(multicast, false);
+            subscribers[i] = newTestPublisherSubscriber();
+            toSource(multicast).subscribe(subscribers[i]);
         }
-        subscribers[expectedSubscribersMinus1] = new MockedSubscriberRule<>();
-        subscribers[expectedSubscribersMinus1].subscribe(multicast);
+        subscribers[expectedSubscribersMinus1] = newTestPublisherSubscriber();
+        toSource(multicast).subscribe(subscribers[expectedSubscribersMinus1]);
         for (int i = 0; i < expectedSubscribersMinus1; ++i) {
-            subscribers[i].verifySubscribe();
+            assertTrue(subscribers[i].subscriptionReceived());
         }
+
+        source.onSubscribe(subscription);
 
         ExecutorService executorService = new ThreadPoolExecutor(0, expectedSubscribers, 1, SECONDS, new SynchronousQueue<>());
         try {
@@ -215,23 +216,29 @@ public class MulticastPublisherTest {
             barrier.await();
 
             for (int i = 0; i < expectedSubscribers; ++i) {
-                while (source.outstandingRequested() <= 0) {
+                while (subscription.requested() - i <= 0) {
                     Thread.yield();
                 }
-                source.sendItems(i);
+                source.onNext(i);
             }
 
             doneLatch.await();
             assertNull(throwableRef.get());
-            Integer[] expectedItems = new Integer[expectedSubscribers];
-            for (int x = 0; x < expectedItems.length; ++x) {
-                expectedItems[x] = x;
+            List<Integer> expectedItems = new ArrayList<>(expectedSubscribers);
+            for (int x = 0; x < expectedSubscribers; ++x) {
+                expectedItems.add(x);
             }
             for (int i = 0; i < expectedSubscribers; ++i) {
-                subscribers[i].verifyItems(Mockito::verify, 0, i, expectedItems);
+                final Integer[] expectedSubset = expectedItems.subList(0, i).toArray(new Integer[0]);
+                List<Integer> actual = subscribers[i].items().subList(0, i);
+                if (expectedSubset.length == 0) {
+                    assertTrue(actual.isEmpty());
+                } else {
+                    assertThat(actual, contains(expectedSubset));
+                }
             }
-            source.verifyRequested(expectedSubscribers);
-            source.verifyNotCancelled();
+            assertThat(subscription.requested(), is((long) expectedSubscribers));
+            assertFalse(subscription.isCancelled());
         } finally {
             executorService.shutdown();
         }
@@ -250,142 +257,132 @@ public class MulticastPublisherTest {
     @Test
     public void reentryBothSubscriberRequestCountIsCorrect() {
         Publisher<Integer> multicast = source.multicast(2);
-        MockedSubscriberRule<Integer> subscriber1 = new MockedSubscriberRule<>();
-        MockedSubscriberRule<Integer> subscriber2 = new MockedSubscriberRule<>();
-        subscriber1.subscribe(multicast, false);
-        subscriber2.subscribe(multicast, false);
-
-        source.sendOnSubscribe();
-
-        subscriber1.verifySubscribe();
-        subscriber2.verifySubscribe();
-
-        doAnswer((Answer<Void>) invocation -> {
+        TestPublisherSubscriber<Integer> subscriber1 = newTestPublisherSubscriber();
+        TestPublisherSubscriber<Integer> subscriber2 = newTestPublisherSubscriber();
+        toSource(multicast.doOnNext(n -> {
             subscriber1.request(1);
-            return null;
-        }).when(subscriber1.subscriber()).onNext(anyInt());
-        doAnswer((Answer<Void>) invocation -> {
+        })).subscribe(subscriber1);
+        toSource(multicast.doOnNext(n -> {
             subscriber2.request(1);
-            return null;
-        }).when(subscriber2.subscriber()).onNext(anyInt());
+        })).subscribe(subscriber2);
+
+        source.onSubscribe(subscription);
+
+        assertTrue(subscriber1.subscriptionReceived());
+        assertTrue(subscriber2.subscriptionReceived());
 
         subscriber1.request(1);
         subscriber2.request(1);
-        source.verifyRequested(1);
-        source.sendItemsNoDemandCheck(1, 2, 3);
-        source.verifyRequested(4);
-        subscriber1.verifyItems(1, 2, 3);
-        subscriber2.verifyItems(1, 2, 3);
+        assertThat(subscription.requested(), is((long) 1));
+        source.onNext(1, 2, 3);
+        assertThat(subscription.requested(), is((long) 4));
+        assertThat(subscriber1.items(), contains(1, 2, 3));
+        assertThat(subscriber2.items(), contains(1, 2, 3));
     }
 
     private void reentrySubscriberRequestCountIsCorrect(boolean firstIsReentry) {
         Publisher<Integer> multicast = source.multicast(2);
-        MockedSubscriberRule<Integer> subscriber1 = new MockedSubscriberRule<>();
-        MockedSubscriberRule<Integer> subscriber2 = new MockedSubscriberRule<>();
-        subscriber1.subscribe(multicast, false);
-        subscriber2.subscribe(multicast, false);
+        TestPublisherSubscriber<Integer> subscriber1 = newTestPublisherSubscriber();
+        TestPublisherSubscriber<Integer> subscriber2 = newTestPublisherSubscriber();
+        toSource(multicast.doOnNext(n -> {
+            if (firstIsReentry) {
+                subscriber1.request(1);
+            }
+        })).subscribe(subscriber1);
+        toSource(multicast.doOnNext(n -> {
+            if (!firstIsReentry) {
+                subscriber2.request(1);
+            }
+        })).subscribe(subscriber2);
 
-        source.sendOnSubscribe();
+        source.onSubscribe(subscription);
 
-        subscriber1.verifySubscribe();
-        subscriber2.verifySubscribe();
+        assertTrue(subscriber1.subscriptionReceived());
+        assertTrue(subscriber2.subscriptionReceived());
 
         if (firstIsReentry) {
-            doAnswer((Answer<Void>) invocation -> {
-                subscriber1.request(1);
-                return null;
-            }).when(subscriber1.subscriber()).onNext(anyInt());
-
             subscriber1.request(2);
             subscriber2.request(1);
-            source.verifyRequested(2);
-            source.sendItemsNoDemandCheck(1, 2, 3);
-            source.verifyRequested(5);
-            subscriber1.verifyItems(1, 2, 3);
-            subscriber2.verifyItems(1);
+            assertThat(subscription.requested(), is((long) 2));
+            source.onNext(1, 2, 3);
+            assertThat(subscription.requested(), is((long) 5));
+            assertThat(subscriber1.items(), contains(1, 2, 3));
+            assertThat(subscriber2.items(), contains(1));
         } else {
-            doAnswer((Answer<Void>) invocation -> {
-                subscriber2.request(1);
-                return null;
-            }).when(subscriber2.subscriber()).onNext(anyInt());
-
             subscriber2.request(2);
             subscriber1.request(1);
-            source.verifyRequested(2);
-            source.sendItemsNoDemandCheck(1, 2, 3);
-            source.verifyRequested(5);
-            subscriber2.verifyItems(1, 2, 3);
-            subscriber1.verifyItems(1);
+            assertThat(subscription.requested(), is((long) 2));
+            source.onNext(1, 2, 3);
+            assertThat(subscription.requested(), is((long) 5));
+            assertThat(subscriber2.items(), contains(1, 2, 3));
+            assertThat(subscriber1.items(), contains(1));
         }
     }
 
     @Test
     public void reentryAndMultiQueueSupportsNull() {
         Publisher<Integer> multicast = source.multicast(2);
-        MockedSubscriberRule<Integer> subscriber1 = new MockedSubscriberRule<>();
-        MockedSubscriberRule<Integer> subscriber2 = new MockedSubscriberRule<>();
-        subscriber1.subscribe(multicast, false);
-        subscriber2.subscribe(multicast, false);
-
-        source.sendOnSubscribe();
-
-        subscriber1.verifySubscribe();
-        subscriber2.verifySubscribe();
-
+        TestPublisherSubscriber<Integer> subscriber1 = newTestPublisherSubscriber();
+        TestPublisherSubscriber<Integer> subscriber2 = newTestPublisherSubscriber();
         AtomicBoolean onNextCalled = new AtomicBoolean();
-        doAnswer((Answer<Void>) invocation -> {
+        toSource(multicast.doOnNext(n -> {
             if (onNextCalled.compareAndSet(false, true)) {
-                source.sendItems(null, 3);
+                source.onNext(null, 3);
             }
-            return null;
-        }).when(subscriber1.subscriber()).onNext(anyInt());
+        })).subscribe(subscriber1);
+        toSource(multicast).subscribe(subscriber2);
+
+        source.onSubscribe(subscription);
+
+        assertTrue(subscriber1.subscriptionReceived());
+        assertTrue(subscriber2.subscriptionReceived());
 
         subscriber1.request(3);
         subscriber2.request(1);
-        source.verifyRequested(3);
+        assertThat(subscription.requested(), is((long) 3));
 
         // Deliver an item, which will trigger a re-entry null delivery.
-        source.sendItemsNoDemandCheck(1);
-        source.verifyRequested(3);
-        subscriber1.verifyItems(1, null, 3);
-        subscriber2.verifyItems(1);
+        source.onNext(1);
+        assertThat(subscription.requested(), is((long) 3));
+        assertThat(subscriber1.items(), contains(1, null, 3));
+        assertThat(subscriber2.items(), contains(1));
 
         // We now test that the queue can handle null items.
         subscriber2.request(2);
-        subscriber2.verifyItems(new Integer[]{null, 3});
+        assertThat(subscriber2.items(), contains(1, null, 3));
     }
 
     @Test
     public void requestLongMax() {
         final int maxQueueSize = 1000;
         Publisher<Integer> multicast = source.multicast(2, maxQueueSize);
-        MockedSubscriberRule<Integer> subscriber1 = new MockedSubscriberRule<>();
-        MockedSubscriberRule<Integer> subscriber2 = new MockedSubscriberRule<>();
-        subscriber1.subscribe(multicast, false);
-        subscriber2.subscribe(multicast, false);
+        TestPublisherSubscriber<Integer> subscriber1 = newTestPublisherSubscriber();
+        TestPublisherSubscriber<Integer> subscriber2 = newTestPublisherSubscriber();
+        toSource(multicast).subscribe(subscriber1);
+        toSource(multicast).subscribe(subscriber2);
 
-        source.sendOnSubscribe();
+        source.onSubscribe(subscription);
 
-        subscriber1.verifySubscribe();
-        subscriber2.verifySubscribe();
+        assertTrue(subscriber1.subscriptionReceived());
+        assertTrue(subscriber2.subscriptionReceived());
 
         subscriber1.request(Long.MAX_VALUE);
         subscriber2.request(1);
-        source.verifyRequested(maxQueueSize);
-        source.sendItemsNoDemandCheck(1, 2, 3);
-        source.verifyRequested(maxQueueSize);
-        subscriber1.verifyItems(1, 2, 3);
-        subscriber2.verifyItems(1);
+        assertThat(subscription.requested(), is((long) maxQueueSize));
+        source.onNext(1, 2, 3);
+        assertThat(subscription.requested(), is((long) maxQueueSize));
+        assertThat(subscriber1.items(), contains(1, 2, 3));
+        assertThat(subscriber2.items(), contains(1));
     }
 
-    private static Runnable requestIRunnable(MockedSubscriberRule<Integer>[] subscribers,
+    private static Runnable requestIRunnable(TestPublisherSubscriber<Integer>[] subscribers,
                                              int finalI,
                                              CyclicBarrier barrier,
                                              AtomicReference<Throwable> throwableRef,
                                              CountDownLatch doneLatch) {
         return () -> {
             try {
-                MockedSubscriberRule<Integer> subscriber = subscribers[finalI - 1];
+                TestPublisherSubscriber<Integer> subscriber = subscribers[finalI - 1];
                 barrier.await();
                 subscriber.request(finalI);
             } catch (Throwable cause) {

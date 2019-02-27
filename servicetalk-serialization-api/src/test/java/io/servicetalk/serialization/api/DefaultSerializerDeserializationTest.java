@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,8 +20,8 @@ import io.servicetalk.concurrent.BlockingIterable;
 import io.servicetalk.concurrent.BlockingIterator;
 import io.servicetalk.concurrent.CloseableIterable;
 import io.servicetalk.concurrent.CloseableIterator;
-import io.servicetalk.concurrent.api.MockedSubscriberRule;
 import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.concurrent.api.TestPublisherSubscriber;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 
 import org.junit.Before;
@@ -34,6 +34,8 @@ import java.util.concurrent.TimeUnit;
 
 import static io.servicetalk.concurrent.api.BlockingTestUtils.awaitIndefinitely;
 import static io.servicetalk.concurrent.api.Publisher.from;
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
+import static io.servicetalk.concurrent.api.TestPublisherSubscriber.newTestPublisherSubscriber;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
@@ -214,14 +216,16 @@ public class DefaultSerializerDeserializationTest {
         doThrow(e).when(deSerializer).close();
 
         final Publisher<String> deserialized = factory.deserialize(from(first, second), String.class);
-        MockedSubscriberRule<String> subscriber = new MockedSubscriberRule<>();
-        subscriber.subscribe(deserialized).request(2);
+        TestPublisherSubscriber<String> subscriber = newTestPublisherSubscriber();
+        toSource(deserialized).subscribe(subscriber);
+        subscriber.request(2);
 
         verify(provider).getDeserializer(String.class);
         verify(deSerializer).deserialize(first);
         verify(deSerializer).deserialize(second);
 
-        subscriber.verifyItems("Hello1").verifyFailure(e);
+        assertThat(subscriber.items(), contains("Hello1"));
+        assertThat(subscriber.error(), sameInstance(e));
     }
 
     @Test

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,9 +19,9 @@ import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.BlockingIterable;
 import io.servicetalk.concurrent.BlockingIterator;
-import io.servicetalk.concurrent.api.MockedSubscriberRule;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.TestPublisher;
+import io.servicetalk.concurrent.api.TestPublisherSubscriber;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 
 import org.junit.Before;
@@ -36,12 +36,17 @@ import java.util.function.IntUnaryOperator;
 
 import static io.servicetalk.concurrent.api.BlockingTestUtils.awaitIndefinitelyNonNull;
 import static io.servicetalk.concurrent.api.Publisher.from;
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
+import static io.servicetalk.concurrent.api.TestPublisher.newTestPublisher;
+import static io.servicetalk.concurrent.api.TestPublisherSubscriber.newTestPublisherSubscriber;
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -107,38 +112,42 @@ public class DefaultSerializerSerializationTest {
 
     @Test
     public void applySerializationForPublisherWithTypeAndEstimator() {
-        TestPublisher<String> source = new TestPublisher<>();
-        source.sendOnSubscribe();
+        TestPublisher<String> source = newTestPublisher();
 
         final Publisher<Buffer> serialized = factory.serialize(source, allocator, String.class, sizeEstimator);
-        MockedSubscriberRule<Buffer> subscriber = new MockedSubscriberRule<>();
-        subscriber.subscribe(serialized).request(2);
+        TestPublisherSubscriber<Buffer> subscriber = newTestPublisherSubscriber();
+        toSource(serialized).subscribe(subscriber);
+        subscriber.request(2);
 
         verify(provider).getSerializer(String.class);
 
-        subscriber.verifyItems(verifySerializedBufferWithSizes(source, "Hello", 1));
-        subscriber.verifyItems(verifySerializedBufferWithSizes(source, "Hello", 2));
+        Buffer expected1 = verifySerializedBufferWithSizes(source, "Hello", 1);
+        assertThat(subscriber.items(), contains(expected1));
+        Buffer expected2 = verifySerializedBufferWithSizes(source, "Hello", 2);
+        assertThat(subscriber.items(), contains(expected1, expected2));
 
         source.onComplete();
-        subscriber.verifySuccess();
+        assertTrue(subscriber.isCompleted());
     }
 
     @Test
     public void applySerializationForPublisherWithTypeHolderAndEstimator() {
-        TestPublisher<List<String>> source = new TestPublisher<>();
-        source.sendOnSubscribe();
+        TestPublisher<List<String>> source = TestPublisher.newTestPublisher();
 
         final Publisher<Buffer> serialized = factory.serialize(source, allocator, TYPE_FOR_LIST, sizeEstimator);
-        MockedSubscriberRule<Buffer> subscriber = new MockedSubscriberRule<>();
-        subscriber.subscribe(serialized).request(2);
+        TestPublisherSubscriber<Buffer> subscriber = newTestPublisherSubscriber();
+        toSource(serialized).subscribe(subscriber);
+        subscriber.request(2);
 
         verify(provider).getSerializer(TYPE_FOR_LIST);
 
-        subscriber.verifyItems(verifySerializedBufferWithSizes(source, singletonList("Hello"), 1));
-        subscriber.verifyItems(verifySerializedBufferWithSizes(source, singletonList("Hello"), 2));
+        Buffer expected1 = verifySerializedBufferWithSizes(source, singletonList("Hello"), 1);
+        assertThat(subscriber.items(), contains(expected1));
+        Buffer expected2 = verifySerializedBufferWithSizes(source, singletonList("Hello"), 2);
+        assertThat(subscriber.items(), contains(expected1, expected2));
 
         source.onComplete();
-        subscriber.verifySuccess();
+        assertTrue(subscriber.isCompleted());
     }
 
     @Test
@@ -275,7 +284,7 @@ public class DefaultSerializerSerializationTest {
 
     private <T> Buffer verifySerializedBufferWithSizes(final TestPublisher<T> source, T item, final int sizeEstimate) {
         when(sizeEstimator.applyAsInt(anyInt())).thenReturn(sizeEstimate);
-        source.sendItems(item);
+        source.onNext(item);
         verify(allocator).newBuffer(sizeEstimate);
         assertThat("Unexpected created buffers.", createdBuffers, hasSize(1));
         final Buffer serialized = createdBuffers.remove(0);

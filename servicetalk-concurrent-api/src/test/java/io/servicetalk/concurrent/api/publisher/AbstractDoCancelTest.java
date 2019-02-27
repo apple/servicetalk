@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,48 +15,57 @@
  */
 package io.servicetalk.concurrent.api.publisher;
 
-import io.servicetalk.concurrent.api.MockedSubscriberRule;
+import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.concurrent.api.PublisherRule;
+import io.servicetalk.concurrent.api.TestPublisher;
+import io.servicetalk.concurrent.api.TestPublisherSubscriber;
+import io.servicetalk.concurrent.api.TestSubscription;
 
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import static io.servicetalk.concurrent.api.TestPublisher.newTestPublisher;
+import static io.servicetalk.concurrent.api.TestPublisherSubscriber.newTestPublisherSubscriber;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.sameInstance;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 public abstract class AbstractDoCancelTest {
 
     @Rule
-    public final PublisherRule<String> publisher = new PublisherRule<>();
-
-    @Rule
-    public final MockedSubscriberRule<String> subscriber = new MockedSubscriberRule<>();
-
-    @Rule
     public final ExpectedException thrown = ExpectedException.none();
+
+    private final TestPublisher<String> publisher = newTestPublisher();
+    private final TestPublisherSubscriber<String> subscriber = newTestPublisherSubscriber();
+    private TestSubscription subscription = new TestSubscription();
 
     @Test
     public void testCancelAfterEmissions() {
         Runnable onCancel = mock(Runnable.class);
-        subscriber.subscribe(doCancel(publisher.publisher(), onCancel)).request(1);
-        publisher.sendItems("Hello");
-        subscriber.verifyItems("Hello").cancel();
+        doCancel(publisher, onCancel).subscribe(subscriber);
+        publisher.onSubscribe(subscription);
+        subscriber.request(1);
+        publisher.onNext("Hello");
+        assertThat(subscriber.items(), contains("Hello"));
+        subscriber.cancel();
         verify(onCancel).run();
-        publisher.verifyCancelled();
+        assertTrue(subscription.isCancelled());
     }
 
     @Test
     public void testCancelNoEmissions() {
         Runnable onCancel = mock(Runnable.class);
-        subscriber.subscribe(doCancel(publisher.publisher(), onCancel));
+        doCancel(publisher, onCancel).subscribe(subscriber);
+        publisher.onSubscribe(subscription);
         subscriber.cancel();
         verify(onCancel).run();
-        publisher.verifyCancelled();
+        assertTrue(subscription.isCancelled());
     }
 
     @Test
@@ -64,14 +73,15 @@ public abstract class AbstractDoCancelTest {
         thrown.expect(is(sameInstance(DELIBERATE_EXCEPTION)));
 
         try {
-            subscriber.subscribe(doCancel(publisher.publisher(), () -> {
+            doCancel(publisher, () -> {
                 throw DELIBERATE_EXCEPTION;
-            }));
+            }).subscribe(subscriber);
+            publisher.onSubscribe(subscription);
             subscriber.cancel();
         } finally {
-            publisher.verifyCancelled();
+            assertTrue(subscription.isCancelled());
         }
     }
 
-    protected abstract <T> Publisher<T> doCancel(Publisher<T> publisher, Runnable runnable);
+    protected abstract <T> PublisherSource<T> doCancel(Publisher<T> publisher, Runnable runnable);
 }

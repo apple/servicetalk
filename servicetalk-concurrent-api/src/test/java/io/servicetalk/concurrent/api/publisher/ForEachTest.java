@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,12 +17,15 @@ package io.servicetalk.concurrent.api.publisher;
 
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.api.TestPublisher;
+import io.servicetalk.concurrent.api.TestSubscription;
 
 import org.junit.Before;
 import org.junit.Test;
 
 import java.util.function.Consumer;
 
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -32,19 +35,20 @@ public final class ForEachTest {
     private TestPublisher<Integer> source;
     private Consumer<Integer> forEach;
     private Cancellable cancellable;
+    private TestSubscription subscription = new TestSubscription();
 
     @SuppressWarnings("unchecked")
     @Before
     public void setUp() {
-        source = new TestPublisher<>();
-        source.sendOnSubscribe();
+        source = new TestPublisher.Builder<Integer>().disableAutoOnSubscribe().build();
         forEach = (Consumer<Integer>) mock(Consumer.class);
         cancellable = source.forEach(forEach);
+        source.onSubscribe(subscription);
     }
 
     @Test
     public void testRequestedMax() {
-        source.sendItems(1, 2, 3); // Not requested explicitly
+        source.onNext(1, 2, 3); // Not requested explicitly
         verify(forEach).accept(1);
         verify(forEach).accept(2);
         verify(forEach).accept(3);
@@ -53,8 +57,8 @@ public final class ForEachTest {
 
     @Test
     public void testCancel() {
-        source.verifyNotCancelled();
+        assertFalse(subscription.isCancelled());
         cancellable.cancel();
-        source.verifyCancelled();
+        assertTrue(subscription.isCancelled());
     }
 }

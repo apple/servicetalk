@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,37 +15,34 @@
  */
 package io.servicetalk.concurrent.api;
 
-import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
+import static io.servicetalk.concurrent.api.TestPublisherSubscriber.newTestPublisherSubscriber;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 public class MapPublisherTest {
-    private TestPublisher<Integer> source;
-    @Rule
-    public final MockedSubscriberRule<Boolean> subscriber = new MockedSubscriberRule<>();
 
-    @Before
-    public void setUp() throws Exception {
-        source = new TestPublisher<>(true);
-    }
+    private TestPublisher<Integer> source = new TestPublisher.Builder<Integer>().disableAutoOnSubscribe().build();
+    private final TestPublisherSubscriber<String> subscriber = newTestPublisherSubscriber();
 
     @Test
     public void testMapFunctionReturnsNull() {
         Publisher<String> map = source.map(v -> null);
 
-        MockedSubscriberRule<String> subscriber1 = new MockedSubscriberRule<>();
-        subscriber1.subscribe(map, false);
+        toSource(map).subscribe(subscriber);
 
-        source.sendOnSubscribe();
+        TestSubscription subscription = new TestSubscription();
+        source.onSubscribe(subscription);
 
-        subscriber1.verifySubscribe();
+        assertTrue(subscriber.subscriptionReceived());
 
-        subscriber1.request(2);
-        source.verifyRequested(2);
-        source.sendItems(1, 2);
-        subscriber1.verifyItems(sub -> verify(sub, times(2)), new String[]{null});
+        subscriber.request(2);
+        assertThat(subscription.requested(), is((long) 2));
+        source.onNext(1, 2);
+        assertThat(subscriber.items(), contains((Integer) null, null));
     }
 }

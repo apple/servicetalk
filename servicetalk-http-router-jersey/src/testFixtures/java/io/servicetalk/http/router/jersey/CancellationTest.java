@@ -88,7 +88,7 @@ public class CancellationTest {
     private static final CharSequence TEST_DATA = newLargePayload();
 
     @ClassRule
-    public static final ExecutorRule EXEC = new ExecutorRule();
+    public static final ExecutorRule EXEC = ExecutorRule.newRule();
 
     @Rule
     public final MockitoRule rule = MockitoJUnit.rule();

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,6 @@ import io.servicetalk.concurrent.internal.DeliberateException;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 
 import org.junit.AfterClass;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
@@ -40,30 +39,38 @@ import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static io.servicetalk.concurrent.api.Executors.immediate;
+import static io.servicetalk.concurrent.api.IsIterableEndingWithInOrder.endsWith;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
+import static io.servicetalk.concurrent.api.TestPublisher.newTestPublisher;
+import static io.servicetalk.concurrent.api.TestPublisherSubscriber.newTestPublisherSubscriber;
+import static io.servicetalk.concurrent.api.VerificationTestUtils.verifyOriginalAndSuppressedCauses;
+import static io.servicetalk.concurrent.api.VerificationTestUtils.verifySuppressed;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.IntStream.range;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
 
 public class PublisherFlatMapSingleTest {
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout(30, SECONDS);
-    @Rule
-    public final MockedSubscriberRule<Integer> subscriber = new MockedSubscriberRule<>();
 
-    private TestPublisher<Integer> source;
+    private final TestPublisherSubscriber<Integer> subscriber = newTestPublisherSubscriber();
+    private final TestPublisher<Integer> source = newTestPublisher();
+    private final TestSubscription subscription = new TestSubscription();
     private static ExecutorService executorService;
     private static Executor executor;
 
@@ -76,11 +83,6 @@ public class PublisherFlatMapSingleTest {
     @AfterClass
     public static void afterClass() throws Exception {
         executor.closeAsync().toFuture().get();
-    }
-
-    @Before
-    public void setUp() throws Exception {
-        source = new TestPublisher<Integer>().sendOnSubscribe();
     }
 
     @Test
@@ -128,287 +130,341 @@ public class PublisherFlatMapSingleTest {
 
     @Test
     public void testSingleItemSyncSingle() {
-        subscriber.subscribe(source.flatMapSingle(integer -> Single.success(2), 2))
-                .request(1);
-        source.sendItems(1).onComplete();
-        subscriber.verifySuccess(2);
+        toSource(source.flatMapSingle(integer1 -> Single.success(2), 2)).subscribe(subscriber);
+        subscriber.request(1);
+        source.onNext(1);
+        source.onComplete();
+        assertThat(subscriber.items(), contains(2));
+        assertTrue(subscriber.isCompleted());
     }
 
     @Test
     public void testSingleItemCompletesWithNull() {
-        subscriber.subscribe(source.flatMapSingle(integer -> Single.success(null), 2))
-                .request(1);
-        source.sendItems(1).onComplete();
-        subscriber.verifyItems(new Integer[]{null}).verifySuccess();
+        toSource(source.<Integer>flatMapSingle(integer1 -> Single.success(null), 2)).subscribe(subscriber);
+        subscriber.request(1);
+        source.onNext(1);
+        source.onComplete();
+        assertThat(subscriber.items(), contains(new Integer[]{null}));
+        assertTrue(subscriber.isCompleted());
     }
 
     @Test
     public void testSingleItemSourceCompleteFirst() {
         TestSingle<Integer> single = new TestSingle<>();
-        subscriber.subscribe(source.flatMapSingle(integer -> single, 2))
-                .request(1);
-        source.sendItems(1).onComplete();
+        toSource(source.flatMapSingle(integer1 -> single, 2)).subscribe(subscriber);
+        subscriber.request(1);
+        source.onNext(1);
+        source.onComplete();
         single.onSuccess(2);
-        subscriber.verifySuccess(2);
+        assertThat(subscriber.items(), contains(2));
+        assertTrue(subscriber.isCompleted());
     }
 
     @Test
     public void testSingleItemSingleCompleteFirst() {
         TestSingle<Integer> single = new TestSingle<>();
-        subscriber.subscribe(source.flatMapSingle(integer -> single, 2))
-                .request(1);
-        source.sendItems(1);
+        toSource(source.flatMapSingle(integer1 -> single, 2)).subscribe(subscriber);
+        subscriber.request(1);
+        source.onNext(1);
         single.onSuccess(2);
         source.onComplete();
-        subscriber.verifySuccess(2);
+        assertThat(subscriber.items(), contains(2));
+        assertTrue(subscriber.isCompleted());
     }
 
     @Test
     public void testSingleItemSingleError() {
-        subscriber.subscribe(source.flatMapSingle(integer -> Single.error(DELIBERATE_EXCEPTION), 2))
-                .request(1);
-        source.sendItems(1);
-        subscriber.verifyFailure(DELIBERATE_EXCEPTION);
+        toSource(source.<Integer>flatMapSingle(integer1 -> Single.error(DELIBERATE_EXCEPTION), 2))
+                .subscribe(subscriber);
+        subscriber.request(1);
+        source.onNext(1);
+        assertThat(subscriber.error(), sameInstance(DELIBERATE_EXCEPTION));
     }
 
     @Test
     public void testSingleErrorPostSourceComplete() {
         TestSingle<Integer> single = new TestSingle<>();
-        subscriber.subscribe(source.flatMapSingle(integer -> single, 2)).request(1);
-        source.sendItems(1).onComplete();
+        toSource(source.flatMapSingle(integer1 -> single, 2)).subscribe(subscriber);
+        subscriber.request(1);
+        source.onNext(1);
+        source.onComplete();
         single.onError(DELIBERATE_EXCEPTION);
-        subscriber.verifyFailure(DELIBERATE_EXCEPTION);
+        assertThat(subscriber.error(), sameInstance(DELIBERATE_EXCEPTION));
     }
 
     @Test
     public void testSourceEmitsErrorNoOnNexts() {
-        subscriber.subscribe(source.flatMapSingle(integer -> Single.success(2), 2))
-                .request(1);
-        source.fail();
-        subscriber.verifyFailure(DELIBERATE_EXCEPTION);
+        toSource(source.flatMapSingle(integer1 -> Single.success(2), 2)).subscribe(subscriber);
+        subscriber.request(1);
+        source.onError(DELIBERATE_EXCEPTION);
+        assertThat(subscriber.error(), sameInstance(DELIBERATE_EXCEPTION));
     }
 
     @Test
     public void testSourceEmitsErrorPostOnNexts() {
-        subscriber.subscribe(source.flatMapSingle(integer -> Single.success(2), 2))
-                .request(1);
-        source.sendItems(1).fail();
-        subscriber.verifyItems(2).verifyFailure(DELIBERATE_EXCEPTION);
+        toSource(source.flatMapSingle(integer1 -> Single.success(2), 2)).subscribe(subscriber);
+        subscriber.request(1);
+        source.onNext(1);
+        source.onError(DELIBERATE_EXCEPTION);
+        assertThat(subscriber.items(), contains(2));
+        assertThat(subscriber.error(), sameInstance(DELIBERATE_EXCEPTION));
     }
 
     @Test
     public void testSourceEmitsErrorPostOnNextsSingleNotCompleted() {
         TestSingle<Integer> single = new TestSingle<>(true);
-        subscriber.subscribe(source.flatMapSingle(integer -> single, 2))
-                .request(1);
-        source.sendItems(1).fail();
-        subscriber.verifyFailure(DELIBERATE_EXCEPTION);
+        toSource(source.flatMapSingle(integer1 -> single, 2)).subscribe(subscriber);
+        subscriber.request(1);
+        source.onNext(1);
+        source.onError(DELIBERATE_EXCEPTION);
+        assertThat(subscriber.error(), sameInstance(DELIBERATE_EXCEPTION));
         single.verifyCancelled();
+        subscriber.clear();
         single.onError(new DeliberateException());
-        subscriber.verifyNoEmissions();
+        assertTrue(subscriber.subscriptionReceived());
+        assertThat(subscriber.items(), hasSize(0));
+        assertFalse(subscriber.isTerminated());
     }
 
     @Test
     public void testSubscriberCancel() {
         TestSingle<Integer> single = new TestSingle<>();
-        subscriber.subscribe(source.flatMapSingle(integer -> single, 2))
-                .request(1);
-        source.sendItems(1);
+        toSource(source.flatMapSingle(integer1 -> single, 2)).subscribe(subscriber);
+        subscriber.request(1);
+        source.onNext(1);
         subscriber.cancel();
         single.verifyCancelled();
-        subscriber.verifyNoEmissions();
+        assertTrue(subscriber.subscriptionReceived());
+        assertThat(subscriber.items(), hasSize(0));
+        assertFalse(subscriber.isTerminated());
     }
 
     @Test
     public void testSingleCompletePostCancel() {
-        source = new TestPublisher<Integer>(true).sendOnSubscribe();
         TestSingle<Integer> single = new TestSingle<>(true);
-        subscriber.subscribe(source.flatMapSingle(integer -> single, 2))
-                .request(1);
-        source.sendItems(1);
+        toSource(source.flatMapSingle(integer1 -> single, 2)).subscribe(subscriber);
+        subscriber.request(1);
+        source.onNext(1);
         subscriber.cancel();
         single.verifyCancelled();
-        subscriber.verifyNoEmissions();
+        assertTrue(subscriber.subscriptionReceived());
+        assertThat(subscriber.items(), hasSize(0));
+        assertFalse(subscriber.isTerminated());
         single.onSuccess(4);
-        subscriber.verifyItems(4);
+        assertThat(subscriber.items(), contains(4));
         source.onComplete();
-        subscriber.verifySuccess();
+        assertTrue(subscriber.isCompleted());
     }
 
     @Test
     public void testSingleErrorPostCancel() {
         TestSingle<Integer> single = new TestSingle<>(true);
-        subscriber.subscribe(source.flatMapSingle(integer -> single, 2))
-                .request(1);
-        source.sendItems(1);
+        toSource(source.flatMapSingle(integer1 -> single, 2)).subscribe(subscriber);
+        subscriber.request(1);
+        source.onNext(1);
         subscriber.cancel();
         single.verifyCancelled();
-        subscriber.verifyNoEmissions();
+        assertTrue(subscriber.subscriptionReceived());
+        assertThat(subscriber.items(), hasSize(0));
+        assertFalse(subscriber.isTerminated());
         single.onError(DELIBERATE_EXCEPTION);
-        subscriber.verifyFailure(DELIBERATE_EXCEPTION);
+        assertThat(subscriber.error(), sameInstance(DELIBERATE_EXCEPTION));
     }
 
     @Test
     public void testMaxConcurrency() {
         List<TestSingle<Integer>> emittedSingles = new ArrayList<>();
-        subscriber.subscribe(source.flatMapSingle(integer -> {
+        toSource(source.flatMapSingle(integer -> {
             TestSingle<Integer> s = new TestSingle<>();
             emittedSingles.add(s);
             return s;
-        }, 2)).request(3);
-        source.verifyRequested(2); // Should not request more than max concurrency.
+        }, 2)).subscribe(subscriber);
+        source.onSubscribe(subscription);
+        subscriber.request(3);
+        // Should not request more than max concurrency.
+        assertThat(subscription.requested(), is(2L));
 
-        source.sendItems(1, 1);
+        source.onNext(1, 1);
         assertThat("Unexpected number of Singles emitted.", emittedSingles, hasSize(2));
         emittedSingles.remove(0).onSuccess(2);
-        subscriber.verifyItems(2);
+        assertThat(subscriber.items(), contains(2));
 
-        source.verifyRequested(3); // Total requested must equal actual requested.
+        // Total requested must equal actual requested.
+        assertThat(subscription.requested(), is(3L));
 
         emittedSingles.remove(0).onSuccess(3);
-        subscriber.verifyItems(3);
-        source.sendItems(1).onComplete();
+        assertThat(subscriber.items(), endsWith(3));
+        source.onNext(1);
+        source.onComplete();
         assertThat("Unexpected number of Singles emitted.", emittedSingles, hasSize(1));
         emittedSingles.remove(0).onSuccess(4);
-        subscriber.verifySuccessNoRequestN(4);
+        assertThat(subscriber.items(), endsWith(4));
+        assertTrue(subscriber.isCompleted());
 
-        source.verifyRequested(3); // Total requested must equal actual requested.
+        // Total requested must equal actual requested.
+        assertThat(subscription.requested(), is(3L));
     }
 
     @Test
     public void testMapperThrows() {
-        subscriber.subscribe(source.flatMapSingle(integer -> {
+        toSource(source.<Integer>flatMapSingle(integer1 -> {
             throw DELIBERATE_EXCEPTION;
-        }, 2)).request(1);
+        }, 2)).subscribe(subscriber);
+        source.onSubscribe(subscription);
+        subscriber.request(1);
 
         try {
-            source.sendItems(1);
+            source.onNext(1);
             fail();
         } catch (Throwable cause) {
             assertSame(DELIBERATE_EXCEPTION, cause);
 
             // Now simulate failing the publisher by emit onError(...)
-            source.fail(cause);
+            source.onError(cause);
         }
-        source.verifyNotCancelled();
-        subscriber.verifyFailure(DELIBERATE_EXCEPTION);
+        assertFalse(subscription.isCancelled());
+        assertThat(subscriber.error(), sameInstance(DELIBERATE_EXCEPTION));
     }
 
     @Test
     public void testNoFlowControl() {
         List<TestSingle<Integer>> emittedSingles = new ArrayList<>();
-        subscriber.subscribe(source.flatMapSingle(integer -> {
-            TestSingle<Integer> s = new TestSingle<>();
-            emittedSingles.add(s);
-            return s;
-        }, 2)).request(Long.MAX_VALUE);
-        source.verifyRequested(2); // Should not request more than max concurrency.
+        toSource(source.flatMapSingle(integer1 -> {
+            TestSingle<Integer> s1 = new TestSingle<>();
+            emittedSingles.add(s1);
+            return s1;
+        }, 2)).subscribe(subscriber);
+        source.onSubscribe(subscription);
+        subscriber.request(Long.MAX_VALUE);
+        // Should not request more than max concurrency.
+        assertThat(subscription.requested(), is(2L));
 
-        source.sendItems(1, 1);
+        source.onNext(1, 1);
         assertThat("Unexpected number of Singles emitted.", emittedSingles, hasSize(2));
         emittedSingles.remove(0).onSuccess(2);
-        subscriber.verifyItems(2);
+        assertThat(subscriber.items(), contains(2));
 
-        source.verifyRequested(3); // Request enough on completion to reach max concurrency.
+        // Request enough on completion to reach max concurrency.
+        assertThat(subscription.requested(), is(3L));
 
         emittedSingles.remove(0).onSuccess(3);
-        source.verifyRequested(4); // Request enough on completion to reach max concurrency.
-        subscriber.verifyItems(3);
+        // Request enough on completion to reach max concurrency.
+        assertThat(subscription.requested(), is(4L));
+        assertThat(subscriber.items(), endsWith(3));
 
-        source.sendItems(1).onComplete();
+        source.onNext(1);
+        source.onComplete();
         assertThat("Unexpected number of Singles emitted.", emittedSingles, hasSize(1));
         emittedSingles.remove(0).onSuccess(4);
-        subscriber.verifySuccessNoRequestN(4);
+        assertThat(subscriber.items(), endsWith(4));
+        assertTrue(subscriber.isCompleted());
 
-        source.verifyRequested(6); // Request enough on completion to reach max concurrency.
+        // Request enough on completion to reach max concurrency.
+        assertThat(subscription.requested(), is(6L));
     }
 
     @Test
     public void testRequestPostSingleError() {
-        subscriber.subscribe(source.flatMapSingleDelayError(integer -> Single.error(DELIBERATE_EXCEPTION), 2))
-                .request(3);
-        source.verifyRequested(2).sendItems(1); // Request no more than max concurrency.
-        subscriber.verifyNoEmissions();
-        source.verifyRequested(3).sendItems(1); // Request more with 1 single completion.
-        source.verifyRequested(3).onComplete(); // Stop requesting more.
-        subscriber.verifySuppressedFailure(DELIBERATE_EXCEPTION);
+        toSource(source.<Integer>flatMapSingleDelayError(integer1 -> Single.error(DELIBERATE_EXCEPTION), 2))
+                .subscribe(subscriber);
+        source.onSubscribe(subscription);
+        subscriber.request(3);
+        assertThat(subscription.requested(), is(2L));
+        source.onNext(1); // Request no more than max concurrency.
+        assertTrue(subscriber.subscriptionReceived());
+        assertThat(subscriber.items(), hasSize(0));
+        assertFalse(subscriber.isTerminated());
+        assertThat(subscription.requested(), is(3L));
+        source.onNext(1); // Request more with 1 single completion.
+        assertThat(subscription.requested(), is(3L));
+        source.onComplete(); // Stop requesting more.
+        assertNotNull(subscriber.error());
+        verifySuppressed(subscriber.error(), DELIBERATE_EXCEPTION);
     }
 
     @Test
     public void testRequestMultipleTimes() {
-        subscriber.subscribe(source.flatMapSingle(integer -> Single.success(2), 10))
-                .request(2);
-        source.verifyRequested(2).sendItems(1, 1);
-        subscriber.verifyItems(sub -> verify(sub, times(2)), 2);
+        toSource(source.flatMapSingle(integer1 -> Single.success(2), 10)).subscribe(subscriber);
+        source.onSubscribe(subscription);
         subscriber.request(2);
-        source.sendItems(1, 1);
-        subscriber.verifyItems(sub -> verify(sub, times(4)), 2);
+        assertThat(subscription.requested(), is(2L));
+        source.onNext(1, 1);
+        assertThat(subscriber.items(), contains(2, 2));
+        subscriber.request(2);
+        source.onNext(1, 1);
+        assertThat(subscriber.items(), contains(2, 2, 2, 2));
     }
 
     @Test
     public void testRequestMultipleTimesBreachMaxConcurrency() {
-        subscriber.subscribe(source.flatMapSingle(integer -> Single.success(2), 2))
-                .request(2).request(2);
-        source.verifyRequested(2);
-        source.sendItems(1, 1).sendItems(1, 1).onComplete();
-        subscriber.verifyItems(sub -> verify(sub, times(4)), 2)
-                .verifySuccess();
+        toSource(source.flatMapSingle(integer -> Single.success(2), 2)).subscribe(subscriber);
+        source.onSubscribe(subscription);
+        subscriber.request(2);
+        subscriber.request(2);
+        assertThat(subscription.requested(), is(2L));
+        source.onNext(1, 1);
+        source.onNext(1, 1);
+        source.onComplete();
+        assertThat(subscriber.items(), contains(2, 2, 2, 2));
+        assertTrue(subscriber.isCompleted());
     }
 
     @Test
     public void testMultipleSingleErrors() {
         List<DeliberateException> errors = new ArrayList<>();
-        subscriber.subscribe(source.flatMapSingleDelayError(integer -> {
+        toSource(source.flatMapSingleDelayError(integer -> {
             DeliberateException de = new DeliberateException();
             errors.add(de);
-            return Single.error(de);
-        }, 2))
-                .request(3);
-        source.sendItems(1, 1).onComplete();
+            return Single.<Integer>error(de);
+        }, 2)).subscribe(subscriber);
+        subscriber.request(3);
+        source.onNext(1, 1);
+        source.onComplete();
         assertThat("Unexpected emitted error count.", errors, hasSize(2));
         DeliberateException first = errors.remove(0);
+        assertNotNull(subscriber.error());
         for (DeliberateException error : errors) {
-            subscriber.verifySuppressedFailure(first, error);
+            verifyOriginalAndSuppressedCauses(subscriber.error(), first, error);
         }
     }
 
     @Test
     public void testRequestLongMaxValue() {
         int maxConcurrency = 2;
-        subscriber.subscribe(source.flatMapSingle(integer -> Single.success(2), maxConcurrency))
-                .request(Long.MAX_VALUE);
-        source.verifyRequested(maxConcurrency).sendItems(2).verifyOutstanding(maxConcurrency);
+        toSource(source.flatMapSingle(integer1 -> Single.success(2), maxConcurrency)).subscribe(subscriber);
+        source.onSubscribe(subscription);
         subscriber.request(Long.MAX_VALUE);
-        source.verifyOutstanding(maxConcurrency);
-        source.verifyRequested(maxConcurrency + 1);
+        assertThat(subscription.requested(), is((long) maxConcurrency));
+        source.onNext(2);
+        assertThat(subscription.requested(), is((long) (maxConcurrency + 1)));
+        subscriber.request(Long.MAX_VALUE);
+        assertThat(subscription.requested(), is((long) (maxConcurrency + 1)));
     }
 
     @Test
     public void testAccumulateToLongMaxValue() {
         int maxConcurrency = 2;
-        subscriber.subscribe(source.flatMapSingle(integer -> Single.success(2), maxConcurrency))
-                .request(Long.MAX_VALUE - 1);
-        source.verifyRequested(maxConcurrency);
+        toSource(source.flatMapSingle(integer1 -> Single.success(2), maxConcurrency)).subscribe(subscriber);
+        source.onSubscribe(subscription);
+        subscriber.request(Long.MAX_VALUE - 1);
+        assertThat(subscription.requested(), is((long) maxConcurrency));
         subscriber.request(2);
-        source.verifyRequested(maxConcurrency);
-        source.verifyOutstanding(maxConcurrency);
-        source.sendItems(1, 2);
-        source.verifyRequested(maxConcurrency + 2);
-        source.verifyOutstanding(maxConcurrency);
+        assertThat(subscription.requested(), is((long) maxConcurrency));
+        source.onNext(1, 2);
+        assertThat(subscription.requested(), is((long) (maxConcurrency + 2)));
     }
 
     @Test
     public void testAccumulateToIntMaxValue() {
         int maxConcurrency = 2;
-        subscriber.subscribe(source.flatMapSingle(integer -> Single.success(2), maxConcurrency))
-                .request(Integer.MAX_VALUE - 1);
-        source.verifyRequested(maxConcurrency);
+        toSource(source.flatMapSingle(integer1 -> Single.success(2), maxConcurrency)).subscribe(subscriber);
+        source.onSubscribe(subscription);
+        subscriber.request(Integer.MAX_VALUE - 1);
+        assertThat(subscription.requested(), is((long) maxConcurrency));
         subscriber.request(2);
-        source.verifyRequested(maxConcurrency);
-        source.verifyOutstanding(maxConcurrency);
-        source.sendItems(1, 2);
-        source.verifyRequested(maxConcurrency + 2);
-        source.verifyOutstanding(maxConcurrency);
+        assertThat(subscription.requested(), is((long) maxConcurrency));
+        source.onNext(1, 2);
+        assertThat(subscription.requested(), is((long) (maxConcurrency + 2)));
     }
 
     @Test
@@ -468,7 +524,7 @@ public class PublisherFlatMapSingleTest {
             return s;
         }, 2)).subscribe(subscriber);
         subscriber.request(Long.MAX_VALUE);
-        source.sendItems(1, 1);
+        source.onNext(1, 1);
         assertThat("Unexpected number of Singles emitted.", emittedSingles, hasSize(2));
 
         TestSingle<Integer> single1 = emittedSingles.remove(0);
@@ -491,7 +547,8 @@ public class PublisherFlatMapSingleTest {
     public void testRequestAndEmitConcurrency() throws Exception {
         int totalToRequest = 100000;
         Set<Integer> received = new LinkedHashSet<>(totalToRequest);
-        subscriber.subscribe(source.flatMapSingle(Single::success, 2).doBeforeNext(received::add));
+        toSource(source.flatMapSingle(Single::success, 2).doBeforeNext(received::add)).subscribe(subscriber);
+        source.onSubscribe(subscription);
         CountDownLatch requestingStarting = new CountDownLatch(1);
         Future<?> submit = executorService.submit(() -> {
             requestingStarting.countDown();
@@ -502,11 +559,12 @@ public class PublisherFlatMapSingleTest {
         // Just to make sure we have both threads running concurrently.
         requestingStarting.await();
         for (int i = 1; i <= totalToRequest; i++) {
+            int sent = i - 1;
             //noinspection StatementWithEmptyBody
-            while (source.outstandingRequested() <= 0) {
+            while (subscription.requested() - sent <= 0) {
                 // Don't send if we emit faster than request.
             }
-            source.sendItems(i);
+            source.onNext(i);
         }
         submit.get(); // Await everything requested.
         assertThat("Unexpected items emitted.", received, hasSize(totalToRequest));

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,32 +15,42 @@
  */
 package io.servicetalk.transport.netty.internal;
 
-import io.servicetalk.concurrent.api.MockedSubscriberRule;
-import io.servicetalk.concurrent.api.PublisherRule;
+import io.servicetalk.concurrent.api.AutoOnSubscribeSubscriberFunction;
+import io.servicetalk.concurrent.api.TestPublisher;
+import io.servicetalk.concurrent.api.TestPublisherSubscriber;
+import io.servicetalk.concurrent.api.TestSubscription;
 import io.servicetalk.transport.netty.internal.FlushStrategy.FlushSender;
 
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
+import static io.servicetalk.concurrent.api.TestPublisherSubscriber.newTestPublisherSubscriber;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.sameInstance;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
 
 public class FlushTest extends AbstractFlushTest {
 
-    @Rule
-    public final MockedSubscriberRule<String> subscriber = new MockedSubscriberRule<>();
-    @Rule
-    public final PublisherRule<String> source = new PublisherRule<>();
+    private final AutoOnSubscribeSubscriberFunction<String> autoOnSubscribe =
+            new AutoOnSubscribeSubscriberFunction<>();
+    private final TestPublisher<String> source = new TestPublisher.Builder<String>()
+            .autoOnSubscribe(autoOnSubscribe).build();
+    private final TestPublisherSubscriber<String> subscriber = newTestPublisherSubscriber();
     private FlushSender flushSender;
     private MockFlushStrategy strategy;
 
     @Before
     public void setUp() {
         strategy = new MockFlushStrategy();
-        subscriber.subscribe(super.setup(source.publisher(), strategy));
+        toSource(super.setup(source, strategy)).subscribe(subscriber);
         flushSender = strategy.verifyApplied();
     }
 
@@ -75,26 +85,31 @@ public class FlushTest extends AbstractFlushTest {
 
     @Test
     public void testCancel() {
+        final TestSubscription subscription = new TestSubscription();
+        source.onSubscribe(subscription);
         subscriber.cancel();
 
         verify(channel).eventLoop();
         verifyZeroInteractions(channel);
-        subscriber.verifyNoEmissions();
-        source.verifyCancelled();
+        assertTrue(subscriber.subscriptionReceived());
+        assertThat(subscriber.items(), hasSize(0));
+        assertFalse(subscriber.isTerminated());
+
+        assertTrue(subscription.isCancelled());
         strategy.verifyWriteCancelled();
     }
 
     @Test
     public void testSourceComplete() {
-        source.complete();
-        subscriber.verifySuccess();
+        source.onComplete();
+        assertTrue(subscriber.isCompleted());
         strategy.verifyWriteTerminated();
     }
 
     @Test
     public void testSourceEmitError() {
-        source.fail();
-        subscriber.verifyFailure(DELIBERATE_EXCEPTION);
+        source.onError(DELIBERATE_EXCEPTION);
+        assertThat(subscriber.error(), sameInstance(DELIBERATE_EXCEPTION));
         strategy.verifyWriteTerminated();
     }
 
@@ -103,14 +118,14 @@ public class FlushTest extends AbstractFlushTest {
             return;
         }
         subscriber.request(items.length);
-        source.sendItems(items);
+        source.onNext(items);
         flushSender.flush();
     }
 
     @Override
     void verifyWriteAndFlushAfter(final String... items) {
         super.verifyWriteAndFlushAfter(items);
-        subscriber.verifyItems(items);
+        assertThat(subscriber.takeItems(), contains(items));
         strategy.verifyItemWritten(items.length);
     }
 }
