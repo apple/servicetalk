@@ -49,7 +49,6 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Single.error;
 import static io.servicetalk.concurrent.api.Single.success;
-import static io.servicetalk.transport.api.ConnectionAcceptor.ACCEPT_ALL;
 import static io.servicetalk.transport.netty.internal.BuilderUtils.toNettyAddress;
 import static io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutors.toEventLoopAwareNettyIoExecutor;
 import static java.util.Objects.requireNonNull;
@@ -83,11 +82,10 @@ public final class TcpServerBinder {
      */
     public static <T extends ConnectionContext> Single<ServerContext> bind(
          SocketAddress listenAddress, ReadOnlyTcpServerConfig config, ExecutionContext executionContext,
-         ConnectionAcceptor connectionAcceptor,
+         @Nullable ConnectionAcceptor connectionAcceptor,
          Function<Channel, Single<T>> connectionFunction, Consumer<T> connectionConsumer) {
         requireNonNull(connectionFunction);
         requireNonNull(connectionConsumer);
-        requireNonNull(connectionAcceptor);
         listenAddress = toNettyAddress(listenAddress);
         EventLoopAwareNettyIoExecutor nettyIoExecutor = toEventLoopAwareNettyIoExecutor(executionContext.ioExecutor());
         ServerBootstrap bs = new ServerBootstrap();
@@ -108,9 +106,7 @@ public final class TcpServerBinder {
             @Override
             protected void initChannel(Channel channel) {
                 Single<T> connectionSingle = connectionFunction.apply(channel);
-                // TODO(scott): this optimization no longer works because of DefaultHttpServerBuilder's usage of
-                // ConnectionAcceptorFilterFactory and ConnectionAcceptorFilter wrapping the ACCEPT_ALL.
-                if (connectionAcceptor != ACCEPT_ALL) {
+                if (connectionAcceptor != null) {
                     connectionSingle = connectionSingle
                             .flatMap(conn ->
                                 executionContext.executor().submit(() -> connectionAcceptor.accept(conn)
@@ -150,8 +146,8 @@ public final class TcpServerBinder {
                     Channel channel = f.channel();
                     Throwable cause = f.cause();
                     if (cause == null) {
-                        subscriber.onSuccess(NettyServerContext.wrap(channel, channelSet, connectionAcceptor,
-                                executionContext));
+                        subscriber.onSuccess(NettyServerContext.wrap(channel, channelSet,
+                                connectionAcceptor, executionContext));
                     } else {
                         channel.close();
                         subscriber.onError(f.cause());

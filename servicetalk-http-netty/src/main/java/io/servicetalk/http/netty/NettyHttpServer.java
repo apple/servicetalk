@@ -86,7 +86,8 @@ final class NettyHttpServer {
     }
 
     static Single<ServerContext> bind(final ExecutionContext executionContext, final ReadOnlyHttpServerConfig config,
-                                      final SocketAddress address, final ConnectionAcceptor connectionAcceptor,
+                                      final SocketAddress address,
+                                      @Nullable final ConnectionAcceptor connectionAcceptor,
                                       final StreamingHttpService service) {
         // This state is read only, so safe to keep a copy across Subscribers
         final ReadOnlyTcpServerConfig tcpServerConfig = config.tcpConfig();

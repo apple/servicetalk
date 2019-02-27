@@ -18,8 +18,7 @@ package io.servicetalk.http.api;
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.transport.api.ConnectionAcceptor;
-import io.servicetalk.transport.api.ConnectionAcceptorFilter;
-import io.servicetalk.transport.api.ConnectionAcceptorFilterFactory;
+import io.servicetalk.transport.api.ConnectionAcceptorFactory;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.api.SslConfig;
@@ -42,8 +41,8 @@ import static java.util.Objects.requireNonNull;
  */
 public abstract class HttpServerBuilder {
 
-    private ConnectionAcceptorFilterFactory connectionAcceptorFilterFactory =
-            ConnectionAcceptorFilterFactory.identity();
+    @Nullable
+    private ConnectionAcceptorFactory connectionAcceptorFactory;
     private HttpServiceFilterFactory serviceFilter = identity();
 
     /**
@@ -173,12 +172,16 @@ public abstract class HttpServerBuilder {
      * <pre>
      *     filter1 =&gt; filter2 =&gt; filter3
      * </pre>
-     * @param factory {@link ConnectionAcceptorFilterFactory} to append. Lifetime of this
-     * {@link ConnectionAcceptorFilterFactory} is managed by this builder and the server started thereof.
+     * @param factory {@link ConnectionAcceptorFactory} to append. Lifetime of this
+     * {@link ConnectionAcceptorFactory} is managed by this builder and the server started thereof.
      * @return {@code this}
      */
-    public final HttpServerBuilder appendConnectionAcceptorFilter(final ConnectionAcceptorFilterFactory factory) {
-        this.connectionAcceptorFilterFactory = connectionAcceptorFilterFactory.append(factory);
+    public final HttpServerBuilder appendConnectionAcceptorFilter(final ConnectionAcceptorFactory factory) {
+        if (connectionAcceptorFactory == null) {
+            connectionAcceptorFactory = factory;
+        } else {
+            connectionAcceptorFactory = connectionAcceptorFactory.append(factory);
+        }
         return this;
     }
 
@@ -401,13 +404,14 @@ public abstract class HttpServerBuilder {
      * the server could not be started.
      */
     public final Single<ServerContext> listenStreaming(final StreamingHttpRequestHandler handler) {
-        ConnectionAcceptorFilter connectionAcceptorFilter = connectionAcceptorFilterFactory.create(ACCEPT_ALL);
+        ConnectionAcceptor connectionAcceptor = connectionAcceptorFactory == null ? null :
+                connectionAcceptorFactory.create(ACCEPT_ALL);
         StreamingHttpService svc = handler.asStreamingService();
         HttpExecutionStrategy strategy = svc.executionStrategy();
         StreamingHttpServiceFilter filterChain = serviceFilter.create(svc);
         HttpExecutionStrategy effectiveStrategy = filterChain.effectiveExecutionStrategy(strategy);
         StreamingHttpServiceFilter finalService = new StreamingHttpServiceFilter(filterChain, effectiveStrategy);
-        return doListen(connectionAcceptorFilter, finalService);
+        return doListen(connectionAcceptor, finalService);
     }
 
     /**
@@ -443,11 +447,11 @@ public abstract class HttpServerBuilder {
      * <p>
      * If the underlying protocol (eg. TCP) supports it this should result in a socket bind/listen on {@code address}.
      *
-     * @param connectionAcceptorFilter {@link ConnectionAcceptorFilter} to use for the server.
+     * @param connectionAcceptor {@link ConnectionAcceptor} to use for the server.
      * @param service {@link StreamingHttpService} to use for the server.
      * @return A {@link Single} that completes when the server is successfully started or terminates with an error if
      * the server could not be started.
      */
-    protected abstract Single<ServerContext> doListen(ConnectionAcceptorFilter connectionAcceptorFilter,
+    protected abstract Single<ServerContext> doListen(@Nullable ConnectionAcceptor connectionAcceptor,
                                                       StreamingHttpService service);
 }

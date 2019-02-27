@@ -18,18 +18,18 @@ package io.servicetalk.transport.api;
 import static java.util.Objects.requireNonNull;
 
 /**
- * A factory of {@link ConnectionAcceptorFilter}.
+ * A factory of {@link ConnectionAcceptorAdapter}.
  */
 @FunctionalInterface
-public interface ConnectionAcceptorFilterFactory {
+public interface ConnectionAcceptorFactory {
 
     /**
-     * Create a {@link ConnectionAcceptorFilter} using the provided {@link ConnectionAcceptor}.
+     * Create a {@link ConnectionAcceptor} using the provided {@link ConnectionAcceptor}.
      *
      * @param original {@link ConnectionAcceptor} to filter
-     * @return {@link ConnectionAcceptorFilter} using the provided {@link ConnectionAcceptor}
+     * @return {@link ConnectionAcceptor} using the provided {@link ConnectionAcceptor}
      */
-    ConnectionAcceptorFilter create(ConnectionAcceptor original);
+    ConnectionAcceptor create(ConnectionAcceptor original);
 
     /**
      * Returns a composed function that first applies the {@code before} function to its input, and then applies
@@ -48,7 +48,7 @@ public interface ConnectionAcceptorFilterFactory {
      * @return a composed function that first applies the {@code before}
      * function and then applies this function
      */
-    default ConnectionAcceptorFilterFactory append(ConnectionAcceptorFilterFactory before) {
+    default ConnectionAcceptorFactory append(ConnectionAcceptorFactory before) {
         requireNonNull(before);
         return service -> create(before.create(service));
     }
@@ -58,7 +58,7 @@ public interface ConnectionAcceptorFilterFactory {
      *
      * @return a function that always returns its input {@link ConnectionAcceptor}.
      */
-    static ConnectionAcceptorFilterFactory identity() {
-        return ConnectionAcceptorFilter::new;
+    static ConnectionAcceptorFactory identity() {
+        return original -> original;
     }
 }
