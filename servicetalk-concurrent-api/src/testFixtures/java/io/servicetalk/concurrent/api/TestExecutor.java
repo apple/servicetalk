@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.SortedMap;
 import java.util.concurrent.ConcurrentNavigableMap;
 import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
@@ -53,7 +54,7 @@ public class TestExecutor implements Executor {
         final long scheduledNanos = currentNanos() + unit.toNanos(delay);
 
         final List<RunnableWrapper> tasksForNanos = scheduledTasksByNano.computeIfAbsent(scheduledNanos,
-                k -> new ArrayList<>());
+                k -> new CopyOnWriteArrayList<>());
         tasksForNanos.add(wrappedTask);
 
         return () -> scheduledTasksByNano.computeIfPresent(scheduledNanos, (k, tasks) -> {
