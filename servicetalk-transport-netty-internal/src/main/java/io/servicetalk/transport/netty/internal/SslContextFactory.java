@@ -31,9 +31,9 @@ import static java.util.Objects.requireNonNull;
 /**
  * A factory for creating {@link SslContext}s.
  */
-public final class SSLContextFactory {
+public final class SslContextFactory {
 
-    private SSLContextFactory() {
+    private SslContextFactory() {
         // No instances.
     }
 

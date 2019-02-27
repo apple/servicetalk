@@ -25,7 +25,7 @@ import java.io.InputStream;
 import java.net.SocketOption;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.transport.netty.internal.SSLContextFactory.forClient;
+import static io.servicetalk.transport.netty.internal.SslContextFactory.forClient;
 import static java.util.Objects.requireNonNull;
 
 /**
