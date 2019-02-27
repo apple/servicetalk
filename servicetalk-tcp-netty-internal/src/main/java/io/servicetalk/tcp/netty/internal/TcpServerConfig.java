@@ -29,7 +29,7 @@ import java.net.SocketOption;
 import java.util.Map;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.transport.netty.internal.SSLContextFactory.forServer;
+import static io.servicetalk.transport.netty.internal.SslContextFactory.forServer;
 import static java.util.Objects.requireNonNull;
 
 /**
