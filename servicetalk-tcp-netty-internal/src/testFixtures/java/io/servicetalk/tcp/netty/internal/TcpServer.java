@@ -33,6 +33,7 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
+import javax.annotation.Nullable;
 
 import static io.servicetalk.transport.api.ConnectionAcceptor.ACCEPT_ALL;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
@@ -92,7 +93,8 @@ public class TcpServer {
      * @throws ExecutionException If the server start failed.
      * @throws InterruptedException If the calling thread was interrupted waiting for the server to start.
      */
-    public ServerContext bind(ExecutionContext executionContext, int port, ConnectionAcceptor connectionAcceptor,
+    public ServerContext bind(ExecutionContext executionContext, int port,
+                              @Nullable ConnectionAcceptor connectionAcceptor,
                               Function<NettyConnection<Buffer, Buffer>, Completable> service)
             throws ExecutionException, InterruptedException {
         return TcpServerBinder.bind(localAddress(port), config,

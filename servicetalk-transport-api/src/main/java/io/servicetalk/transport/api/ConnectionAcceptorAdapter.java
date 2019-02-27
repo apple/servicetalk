@@ -18,46 +18,27 @@ package io.servicetalk.transport.api;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
 
-import java.util.function.BiFunction;
-import javax.annotation.Nullable;
+import static java.util.Objects.requireNonNull;
 
 /**
  * An implementation of {@link ConnectionAcceptor} that delegates all methods to another {@link ConnectionAcceptor}.
  */
-public class ConnectionAcceptorFilter implements ConnectionAcceptor {
+public class ConnectionAcceptorAdapter implements ConnectionAcceptor {
 
     private final ConnectionAcceptor delegate;
-    @Nullable
-    private final BiFunction<ConnectionContext, Boolean, Single<Boolean>> apply;
 
     /**
      * New instance.
      *
      * @param delegate {@link ConnectionAcceptor} to delegate all calls to.
      */
-    public ConnectionAcceptorFilter(final ConnectionAcceptor delegate) {
-        this.delegate = delegate;
-        apply = null;
-    }
-
-    /**
-     * New instance.
-     *
-     * @param delegate {@link ConnectionAcceptor} to delegate all calls to.
-     * @param apply A {@link BiFunction} that is called after {@link ConnectionAcceptor#accept(ConnectionContext)} is
-     * called on the passed {@code delegate}. The second argument to the {@link BiFunction} is the result from the
-     * {@code delegate}.
-     */
-    public ConnectionAcceptorFilter(final ConnectionAcceptor delegate,
-                                    final BiFunction<ConnectionContext, Boolean, Single<Boolean>> apply) {
-        this.delegate = delegate;
-        this.apply = apply;
+    public ConnectionAcceptorAdapter(final ConnectionAcceptor delegate) {
+        this.delegate = requireNonNull(delegate);
     }
 
     @Override
     public Single<Boolean> accept(final ConnectionContext context) {
-        return apply == null ? delegate.accept(context) :
-                delegate.accept(context).flatMap(result -> apply.apply(context, result != null && result));
+        return delegate.accept(context);
     }
 
     @Override

@@ -76,7 +76,6 @@ import static io.servicetalk.http.api.HttpHeaderValues.KEEP_ALIVE;
 import static io.servicetalk.http.api.HttpProtocolVersions.HTTP_1_1;
 import static io.servicetalk.http.api.HttpRequestMetaDataFactory.newRequestMetaData;
 import static io.servicetalk.http.api.HttpRequestMethods.GET;
-import static io.servicetalk.transport.api.ConnectionAcceptor.ACCEPT_ALL;
 import static io.servicetalk.transport.netty.NettyIoExecutors.createIoExecutor;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
@@ -407,7 +406,7 @@ public class HttpRequestEncoderTest {
             ReadOnlyTcpServerConfig sConfig = new TcpServerConfig(true).asReadOnly();
             ServerContext serverContext = resources.prepend(
                     TcpServerBinder.bind(localAddress(0), sConfig,
-                            SEC, ACCEPT_ALL,
+                            SEC, null,
                             channel -> DefaultNettyConnection.initChannel(channel, SEC.bufferAllocator(),
                                     SEC.executor(), new TerminalPredicate<>(o -> o instanceof HttpHeaders),
                                     UNSUPPORTED_PROTOCOL_CLOSE_HANDLER, defaultFlushStrategy(),

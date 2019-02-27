@@ -25,6 +25,7 @@ import io.servicetalk.transport.api.ServerContext;
 import io.netty.channel.Channel;
 
 import java.net.SocketAddress;
+import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.concurrent.api.AsyncCloseables.toListenableAsyncCloseable;
@@ -68,11 +69,12 @@ public final class NettyServerContext implements ServerContext {
      * @return A new {@link NettyServerContext} instance.
      */
     public static ServerContext wrap(Channel listenChannel, ListenableAsyncCloseable channelSetCloseable,
-                                     AsyncCloseable closeBefore, ExecutionContext executionContext) {
+                                     @Nullable AsyncCloseable closeBefore, ExecutionContext executionContext) {
         final NettyChannelListenableAsyncCloseable channelCloseable =
                 new NettyChannelListenableAsyncCloseable(listenChannel, executionContext.executor());
-        final CompositeCloseable closeAsync = newCompositeCloseable().appendAll(
-                closeBefore, channelCloseable, channelSetCloseable);
+        final CompositeCloseable closeAsync = closeBefore == null ?
+                newCompositeCloseable().appendAll(channelCloseable, channelSetCloseable) :
+                newCompositeCloseable().appendAll(closeBefore, channelCloseable, channelSetCloseable);
         return new NettyServerContext(listenChannel, toListenableAsyncCloseable(closeAsync), executionContext);
     }
 

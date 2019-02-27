@@ -44,6 +44,28 @@ public interface ConnectionAcceptor extends AsyncCloseable {
      */
     Single<Boolean> accept(ConnectionContext context);
 
+    /**
+     * Returns a composed {@link ConnectionAcceptor} that first applies {@code this} {@link ConnectionAcceptor}, and if
+     * this is successful then applies {@code after} {@link ConnectionAcceptor}.
+     * <p>
+     * The order of execution of these filters are in order of append. If 3 filters are added as follows:
+     * <pre>
+     *     this.append(filter1).append(filter2).append(filter3)
+     * </pre>
+     * accepting a connection by a filter wrapped by this filter chain, the order of invocation of these filters will
+     * be:
+     * <pre>
+     *     this =&gt; filter1 =&gt; filter2 =&gt; filter3
+     * </pre>
+     * @param after the {@link ConnectionAcceptor} to apply after {@code this} {@link ConnectionAcceptor} is
+     * applied
+     * @return a composed {@link ConnectionAcceptor} that first applies {@code this} {@link ConnectionAcceptor}, and if
+     * this is successful then applies {@code after} {@link ConnectionAcceptor}.
+     */
+    default ConnectionAcceptor append(ConnectionAcceptor after) {
+        return new ConnectionAcceptorAppender(this, after);
+    }
+
     @Override
     default Completable closeAsync() {
         return completed();

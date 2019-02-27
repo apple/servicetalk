@@ -56,11 +56,11 @@ public class ConnectionAcceptorTest {
 
     @Test
     public void factoryAppend() throws Exception {
-        ConnectionAcceptorFilterFactory f = ConnectionAcceptorFilterFactory.identity();
+        ConnectionAcceptorFactory f = ConnectionAcceptorFactory.identity();
         ConcurrentLinkedQueue<Integer> order = new ConcurrentLinkedQueue<>();
-        f.append(original -> new OrderVerifyingConnectionAcceptorFilter(original, order, 1))
-                .append(original -> new OrderVerifyingConnectionAcceptorFilter(original, order, 2))
-                .append(original -> new OrderVerifyingConnectionAcceptorFilter(original, order, 3))
+        f.append(original -> new OrderVerifyingConnectionAcceptorAdapter(original, order, 1))
+                .append(original -> new OrderVerifyingConnectionAcceptorAdapter(original, order, 2))
+                .append(original -> new OrderVerifyingConnectionAcceptorAdapter(original, order, 3))
                 .create(ACCEPT_ALL).accept(context).toFuture().get();
         assertThat("Unexpected filter order.", order, contains(1, 2, 3));
     }
@@ -107,10 +107,10 @@ public class ConnectionAcceptorTest {
         setFilterResult(second, Single.success(true));
 
         applyFilters();
-        listener.verifySuccess(TRUE);
+        listener.verifySuccess(FALSE);
 
         verify(first).accept(context);
-        verify(second).accept(context);
+        verify(second, never()).accept(context);
     }
 
     @Test
@@ -119,10 +119,10 @@ public class ConnectionAcceptorTest {
         setFilterResult(second, Single.success(true));
 
         applyFilters();
-        listener.verifySuccess(TRUE);
+        listener.verifySuccess(null);
 
         verify(first).accept(context);
-        verify(second).accept(context);
+        verify(second, never()).accept(context);
     }
 
     @Test
@@ -142,17 +142,17 @@ public class ConnectionAcceptorTest {
 
     @Nonnull
     protected void applyFilters() {
-        ConnectionAcceptorFilterFactory f = (original -> new ConnectionAcceptorFilter(original, (ctx, prevResult) -> second.accept(ctx)));
-        f = f.append(original -> new ConnectionAcceptorFilter(original, (ctx, prevResult) -> first.accept(ctx)));
+        ConnectionAcceptorFactory f = (original -> original.append(ctx -> second.accept(ctx)));
+        f = f.append(original -> original.append(ctx -> first.accept(ctx)));
         listener.listen(f.create(ACCEPT_ALL).accept(context));
     }
 
-    private static class OrderVerifyingConnectionAcceptorFilter extends ConnectionAcceptorFilter {
+    private static class OrderVerifyingConnectionAcceptorAdapter extends ConnectionAcceptorAdapter {
         private final ConcurrentLinkedQueue<Integer> order;
         private final int index;
 
-        OrderVerifyingConnectionAcceptorFilter(final ConnectionAcceptor original, final ConcurrentLinkedQueue<Integer> order,
-                                               final int index) {
+        OrderVerifyingConnectionAcceptorAdapter(final ConnectionAcceptor original, final ConcurrentLinkedQueue<Integer> order,
+                                                final int index) {
             super(original);
             this.order = order;
             this.index = index;
