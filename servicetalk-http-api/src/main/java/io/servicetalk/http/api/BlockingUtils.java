@@ -19,6 +19,8 @@ import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.concurrent.api.internal.SubscribableCompletable;
+import io.servicetalk.concurrent.api.internal.SubscribableSingle;
 import io.servicetalk.concurrent.internal.ThreadInterruptingCancellable;
 
 import java.util.concurrent.ExecutionException;
@@ -43,7 +45,7 @@ final class BlockingUtils {
     }
 
     static Completable blockingToCompletable(RunnableCheckedException r) {
-        return new Completable() {
+        return new SubscribableCompletable() {
             @Override
             protected void handleSubscribe(final CompletableSource.Subscriber subscriber) {
                 ThreadInterruptingCancellable cancellable = new ThreadInterruptingCancellable(currentThread());
@@ -65,7 +67,7 @@ final class BlockingUtils {
     }
 
     static <T> Single<T> blockingToSingle(SupplierCheckedException<T> supplier) {
-        return new Single<T>() {
+        return new SubscribableSingle<T>() {
             @Override
             protected void handleSubscribe(final SingleSource.Subscriber<? super T> subscriber) {
                 ThreadInterruptingCancellable cancellable = new ThreadInterruptingCancellable(currentThread());

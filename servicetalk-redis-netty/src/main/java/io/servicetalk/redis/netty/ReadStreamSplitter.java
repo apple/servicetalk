@@ -24,6 +24,7 @@ import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.GroupedPublisher;
 import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.concurrent.api.internal.SubscribablePublisher;
 import io.servicetalk.concurrent.internal.ConcurrentSubscription;
 import io.servicetalk.concurrent.internal.QueueFullAndRejectedSubscribeException;
 import io.servicetalk.concurrent.internal.RejectedSubscribeException;
@@ -139,7 +140,7 @@ final class ReadStreamSplitter {
      * @return {@link Publisher} containing response for this command.
      */
     Publisher<PubSubChannelMessage> registerNewCommand(Command command) {
-        return new Publisher<PubSubChannelMessage>() {
+        return new SubscribablePublisher<PubSubChannelMessage>() {
             @Override
             protected void handleSubscribe(Subscriber<? super PubSubChannelMessage> subscriber) {
                 TerminalMessagePredicate cmdPredicate = null;

@@ -1029,7 +1029,13 @@ public abstract class Single<T> {
     // Conversion Operators End
     //
 
-    final void subscribe(Subscriber<? super T> subscriber) {
+    /**
+     * A internal subscribe method similar to {@link SingleSource#subscribe(Subscriber)} which can be used by
+     * different implementations to subscribe.
+     *
+     * @param subscriber {@link Subscriber} to subscribe for the result.
+     */
+    protected final void subscribeInternal(Subscriber<? super T> subscriber) {
         subscribeCaptureContext(subscriber, AsyncContext.provider());
     }
 
@@ -1044,7 +1050,7 @@ public abstract class Single<T> {
      */
     public final Cancellable subscribe(Consumer<? super T> resultConsumer) {
         SimpleSingleSubscriber<T> subscriber = new SimpleSingleSubscriber<>(resultConsumer);
-        subscribe(subscriber);
+        subscribeInternal(subscriber);
         return subscriber;
     }
 
@@ -1438,7 +1444,7 @@ public abstract class Single<T> {
     //
 
     /**
-     * Replicating a call to {@link #subscribe(SingleSource.Subscriber)} but allows an override of the
+     * Replicating a call to {@link #subscribeInternal(SingleSource.Subscriber)} but allows an override of the
      * {@link AsyncContextMap}.
      * @param subscriber the subscriber.
      * @param provider the {@link AsyncContextProvider} used to wrap any objects to preserve
@@ -1451,7 +1457,7 @@ public abstract class Single<T> {
     }
 
     /**
-     * Replicating a call to {@link #subscribe(SingleSource.Subscriber)} but with a materialized
+     * Replicating a call to {@link #subscribeInternal(SingleSource.Subscriber)} but with a materialized
      * {@link AsyncContextMap}.
      * @param subscriber the subscriber.
      * @param contextMap the {@link AsyncContextMap} to use for this {@link Subscriber}.
@@ -1479,7 +1485,7 @@ public abstract class Single<T> {
     }
 
     /**
-     * Replicating a call to {@link #subscribe(SingleSource.Subscriber)} but with a materialized {@link SignalOffloader}
+     * Replicating a call to {@link #subscribeInternal(SingleSource.Subscriber)} but with a materialized {@link SignalOffloader}
      * and {@link AsyncContextMap}.
      * @param subscriber the subscriber.
      * @param signalOffloader {@link SignalOffloader} to use for this {@link SingleSource.Subscriber}.

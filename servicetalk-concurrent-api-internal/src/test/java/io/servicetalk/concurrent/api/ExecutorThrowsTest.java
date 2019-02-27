@@ -35,6 +35,7 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.api.Executors.from;
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.concurrent.internal.EmptySubscription.EMPTY_SUBSCRIPTION;
 import static io.servicetalk.concurrent.internal.SignalOffloaders.threadBasedOffloaderFactory;
@@ -70,7 +71,7 @@ public class ExecutorThrowsTest {
                 subscriber.onError(new AssertionError("Offloading failed but onSubscribe passed."));
             }
         }.publishAndSubscribeOn(newAlwaysFailingExecutor());
-        p.subscribe(new Subscriber<String>() {
+        SourceAdapters.toSource(p).subscribe(new Subscriber<String>() {
             @Override
             public void onSubscribe(final Subscription s) {
                 // Noop
@@ -108,7 +109,7 @@ public class ExecutorThrowsTest {
                 subscriber.onError(new AssertionError("Offloading failed but onSubscribe passed."));
             }
         }.publishAndSubscribeOn(newAlwaysFailingExecutor());
-        s.subscribe(new SingleSource.Subscriber<String>() {
+        toSource(s).subscribe(new SingleSource.Subscriber<String>() {
             @Override
             public void onSubscribe(final Cancellable cancellable) {
                 // Noop
@@ -141,7 +142,7 @@ public class ExecutorThrowsTest {
                 subscriber.onError(new AssertionError("Offloading failed but onSubscribe passed."));
             }
         }.publishAndSubscribeOn(newAlwaysFailingExecutor());
-        c.subscribe(new CompletableSource.Subscriber() {
+        toSource(c).subscribe(new CompletableSource.Subscriber() {
             @Override
             public void onSubscribe(final Cancellable cancellable) {
                 // Noop

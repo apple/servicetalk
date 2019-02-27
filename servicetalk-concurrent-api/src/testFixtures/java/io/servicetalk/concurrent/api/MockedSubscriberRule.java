@@ -27,6 +27,7 @@ import org.mockito.Mockito;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.api.VerificationTestUtils.verifyOriginalAndSuppressedCauses;
 import static io.servicetalk.concurrent.api.VerificationTestUtils.verifySuppressed;
 import static org.junit.Assert.assertNotNull;
@@ -76,7 +77,7 @@ public class MockedSubscriberRule<T> implements TestRule {
     public MockedSubscriberRule<T> subscribe(Publisher<T> src, boolean verifyOnSubscribe) {
         newSubscriber();
         assert subscriber != null;
-        src.subscribe(subscriber);
+        toSource(src).subscribe(subscriber);
         return verifyOnSubscribe ? verifySubscribe() : this;
     }
 

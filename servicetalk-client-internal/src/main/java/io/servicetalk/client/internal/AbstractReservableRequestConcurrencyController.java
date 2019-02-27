@@ -19,6 +19,7 @@ import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.CompletableSource.Subscriber;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.concurrent.api.internal.SubscribableCompletable;
 import io.servicetalk.concurrent.internal.LatestValueSubscriber;
 
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
@@ -81,7 +82,7 @@ abstract class AbstractReservableRequestConcurrencyController implements Reserva
 
     @Override
     public Completable releaseAsync() {
-        return new Completable() {
+        return new SubscribableCompletable() {
             @Override
             protected void handleSubscribe(Subscriber subscriber) {
                 subscriber.onSubscribe(IGNORE_CANCEL);

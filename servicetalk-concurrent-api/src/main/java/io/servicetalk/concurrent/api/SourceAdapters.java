@@ -15,12 +15,9 @@
  */
 package io.servicetalk.concurrent.api;
 
-import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.SingleSource;
-
-import javax.annotation.Nullable;
 
 import static java.util.Objects.requireNonNull;
 
@@ -97,27 +94,7 @@ public final class SourceAdapters {
 
         @Override
         public void subscribe(final Subscriber<? super T> subscriber) {
-            publisher.subscribe(new Subscriber<T>() {
-                @Override
-                public void onSubscribe(final Subscription subscription) {
-                    subscriber.onSubscribe(subscription);
-                }
-
-                @Override
-                public void onNext(@Nullable final T t) {
-                    subscriber.onNext(t);
-                }
-
-                @Override
-                public void onError(final Throwable t) {
-                    subscriber.onError(t);
-                }
-
-                @Override
-                public void onComplete() {
-                    subscriber.onComplete();
-                }
-            });
+            publisher.subscribeInternal(subscriber);
         }
     }
 
@@ -130,22 +107,7 @@ public final class SourceAdapters {
 
         @Override
         public void subscribe(final Subscriber<? super T> subscriber) {
-            single.subscribe(new Subscriber<T>() {
-                @Override
-                public void onSubscribe(final Cancellable cancellable) {
-                    subscriber.onSubscribe(cancellable);
-                }
-
-                @Override
-                public void onSuccess(@Nullable final T result) {
-                    subscriber.onSuccess(result);
-                }
-
-                @Override
-                public void onError(final Throwable t) {
-                    subscriber.onError(t);
-                }
-            });
+            single.subscribeInternal(subscriber);
         }
     }
 
@@ -158,22 +120,7 @@ public final class SourceAdapters {
 
         @Override
         public void subscribe(final Subscriber subscriber) {
-            completable.subscribe(new Subscriber() {
-                @Override
-                public void onSubscribe(final Cancellable cancellable) {
-                    subscriber.onSubscribe(cancellable);
-                }
-
-                @Override
-                public void onComplete() {
-                    subscriber.onComplete();
-                }
-
-                @Override
-                public void onError(final Throwable t) {
-                    subscriber.onError(t);
-                }
-            });
+            completable.subscribeInternal(subscriber);
         }
     }
 }

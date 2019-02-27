@@ -15,7 +15,7 @@
  */
 package io.servicetalk.concurrent.api;
 
-import io.servicetalk.concurrent.SingleSource.Subscriber;
+import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.internal.SignalOffloader;
 
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
@@ -26,7 +26,7 @@ import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
  *
  * @param <T> Type of the result of the single.
  */
-abstract class AbstractNoHandleSubscribeSingle<T> extends Single<T> {
+abstract class AbstractNoHandleSubscribeSingle<T> extends Single<T> implements SingleSource<T> {
 
     AbstractNoHandleSubscribeSingle() {
     }
@@ -40,5 +40,10 @@ abstract class AbstractNoHandleSubscribeSingle<T> extends Single<T> {
         subscriber.onSubscribe(IGNORE_CANCEL);
         subscriber.onError(new UnsupportedOperationException("Subscribe with no executor is not supported for "
                 + getClass()));
+    }
+
+    @Override
+    public final void subscribe(final Subscriber<? super T> subscriber) {
+        subscribeInternal(subscriber);
     }
 }

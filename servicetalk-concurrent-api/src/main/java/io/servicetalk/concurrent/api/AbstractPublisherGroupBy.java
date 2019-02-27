@@ -15,8 +15,7 @@
  */
 package io.servicetalk.concurrent.api;
 
-import io.servicetalk.concurrent.PublisherSource.Subscriber;
-import io.servicetalk.concurrent.PublisherSource.Subscription;
+import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.api.GroupedPublisher.QueueSizeProvider;
 import io.servicetalk.concurrent.api.MulticastUtils.IndividualMulticastSubscriber;
 import io.servicetalk.concurrent.api.MulticastUtils.SpscQueue;
@@ -423,7 +422,7 @@ abstract class AbstractPublisherGroupBy<Key, T>
         GroupSink(Executor executor, Key key, int maxQueueSize, AbstractSourceSubscriber<Key, T> sourceSubscriber) {
             super(maxQueueSize);
             this.sourceSubscriber = sourceSubscriber;
-            groupedPublisher = new GroupedPublisher<Key, T>(executor, key) {
+            groupedPublisher = new GroupedPublisherSource<Key, T>(executor, key) {
                 @Override
                 protected void handleSubscribe(Subscriber<? super T> subscriber) {
                     requireNonNull(subscriber);
@@ -437,7 +436,8 @@ abstract class AbstractPublisherGroupBy<Key, T>
                     // Subscriber before we call onSubscribe.
                     subscriber.onSubscribe(GroupSink.this);
                     GroupSink.this.target = subscriber;
-                    SpscQueue<T> subscriberQueue = subscriberQueue(); // We must read this after we set the subscriber and call onSubscribe.
+                    // We must read this after we set the subscriber and call onSubscribe.
+                    SpscQueue<T> subscriberQueue = subscriberQueue();
                     if (subscriberQueue != null) {
                         drainPendingFromExternal(subscriberQueue, subscriber);
                     }
@@ -480,6 +480,19 @@ abstract class AbstractPublisherGroupBy<Key, T>
         @Override
         public void cancel() {
             sourceSubscriber.removeGroup(this);
+        }
+    }
+
+    private abstract static class GroupedPublisherSource<Key, T> extends GroupedPublisher<Key, T>
+            implements PublisherSource<T> {
+
+        GroupedPublisherSource(final Executor executor, final Key key) {
+            super(executor, key);
+        }
+
+        @Override
+        public final void subscribe(final Subscriber<? super T> subscriber) {
+            subscribeInternal(subscriber);
         }
     }
 }

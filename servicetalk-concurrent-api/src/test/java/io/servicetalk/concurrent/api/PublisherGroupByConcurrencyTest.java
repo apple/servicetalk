@@ -38,6 +38,7 @@ import java.util.function.Predicate;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.Executors.newCachedThreadPool;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -109,7 +110,7 @@ public final class PublisherGroupByConcurrencyTest {
         groupsSubscriber.subscribe(source.groupBy(integer -> integer, bufferSize).map(grp -> {
             GroupSubscriber sub = new GroupSubscriber();
             // Each group must only ever get one item.
-            grp.doBeforeNext(integer -> allItemsReceivedOnAllGroups.add(integer)).subscribe(sub);
+            toSource(grp.doBeforeNext(integer -> allItemsReceivedOnAllGroups.add(integer))).subscribe(sub);
             if (requestFromEachGroupOnSubscribe) {
                 sub.request(1); // Only one item ever comes on every group as each int is a new group.
             }

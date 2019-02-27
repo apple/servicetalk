@@ -19,7 +19,7 @@ import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.SingleSource;
-import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.concurrent.api.internal.SubscribableSingle;
 import io.servicetalk.concurrent.internal.ConcurrentSubscription;
 import io.servicetalk.redis.api.RedisData.BulkStringChunk;
 import io.servicetalk.redis.api.RedisData.FirstBulkStringChunk;
@@ -42,9 +42,9 @@ final class RedisRequesterUtils {
     }
 
     abstract static class AggregatingSubscriber<R> implements Subscriber<RedisData> {
-        final SingleSource.Subscriber<? super R> singleSubscriber;
+        final SingleSource.Subscriber singleSubscriber;
 
-        AggregatingSubscriber(SingleSource.Subscriber<? super R> singleSubscriber) {
+        AggregatingSubscriber(SingleSource.Subscriber singleSubscriber) {
             this.singleSubscriber = singleSubscriber;
         }
 
@@ -56,7 +56,7 @@ final class RedisRequesterUtils {
         }
     }
 
-    static final class ToStringSingle<R> extends Single<R> {
+    static final class ToStringSingle<R> extends SubscribableSingle<R> {
         private final RedisExecutionStrategy strategy;
         private final RedisRequester requester;
         private final RedisRequest request;
@@ -69,7 +69,7 @@ final class RedisRequesterUtils {
         }
 
         @Override
-        protected void handleSubscribe(final SingleSource.Subscriber<? super R> subscriber) {
+        protected void handleSubscribe(final Subscriber<? super R> subscriber) {
             toSource(requester.request(strategy, request)).subscribe(new AggregatingSubscriber<R>(subscriber) {
                 @Nullable
                 private CharSequence simpleString;
@@ -132,7 +132,7 @@ final class RedisRequesterUtils {
         }
     }
 
-    static final class ToBufferSingle<R> extends Single<R> {
+    static final class ToBufferSingle<R> extends SubscribableSingle<R> {
         private final RedisExecutionStrategy strategy;
         private final RedisRequester requester;
         private final RedisRequest request;
@@ -145,7 +145,7 @@ final class RedisRequesterUtils {
         }
 
         @Override
-        protected void handleSubscribe(final SingleSource.Subscriber<? super R> subscriber) {
+        protected void handleSubscribe(final Subscriber<? super R> subscriber) {
             toSource(requester.request(strategy, request)).subscribe(new AggregatingSubscriber<R>(subscriber) {
                 @Nullable
                 private Buffer aggregator;
@@ -202,7 +202,7 @@ final class RedisRequesterUtils {
         }
     }
 
-    static final class ToLongSingle<R> extends Single<R> {
+    static final class ToLongSingle<R> extends SubscribableSingle<R> {
         private final RedisExecutionStrategy strategy;
         private final RedisRequester requester;
         private final RedisRequest request;
@@ -215,7 +215,7 @@ final class RedisRequesterUtils {
         }
 
         @Override
-        protected void handleSubscribe(final SingleSource.Subscriber<? super R> subscriber) {
+        protected void handleSubscribe(final Subscriber<? super R> subscriber) {
             toSource(requester.request(strategy, request)).subscribe(new AggregatingSubscriber<R>(subscriber) {
                 @Nullable
                 private Long answer;
@@ -256,7 +256,7 @@ final class RedisRequesterUtils {
         }
     }
 
-    static final class ToListSingle<R> extends Single<R> {
+    static final class ToListSingle<R> extends SubscribableSingle<R> {
         private final RedisExecutionStrategy strategy;
         private final boolean coerceBuffersToCharSequences;
         private final RedisRequester requester;
@@ -271,7 +271,7 @@ final class RedisRequesterUtils {
         }
 
         @Override
-        protected void handleSubscribe(final SingleSource.Subscriber<? super R> subscriber) {
+        protected void handleSubscribe(final Subscriber<? super R> subscriber) {
             toSource(requester.request(strategy, request)).subscribe(new AggregatingSubscriber<R>(subscriber) {
                 @Nullable
                 private RedisServerException redisError;

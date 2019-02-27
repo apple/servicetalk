@@ -26,6 +26,8 @@ import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.SingleProcessor;
+import io.servicetalk.concurrent.api.internal.SubscribableCompletable;
+import io.servicetalk.concurrent.api.internal.SubscribableSingle;
 import io.servicetalk.concurrent.internal.DelayedCancellable;
 import io.servicetalk.transport.api.DefaultExecutionContext;
 import io.servicetalk.transport.api.ExecutionContext;
@@ -188,7 +190,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
     public static <Read, Write> Single<DefaultNettyConnection<Read, Write>> initChannel(
             Channel channel, BufferAllocator allocator, Executor executor, TerminalPredicate<Read> terminalMsgPredicate,
             CloseHandler closeHandler, FlushStrategy flushStrategy, ChannelInitializer initializer) {
-        return new Single<DefaultNettyConnection<Read, Write>>() {
+        return new SubscribableSingle<DefaultNettyConnection<Read, Write>>() {
             @Override
             protected void handleSubscribe(
                     final SingleSource.Subscriber<? super DefaultNettyConnection<Read, Write>> subscriber) {
@@ -258,7 +260,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
 
     @Override
     public Completable write(Publisher<Write> write, Supplier<RequestNSupplier> requestNSupplierFactory) {
-        return cleanupStateWhenDone(new Completable() {
+        return cleanupStateWhenDone(new SubscribableCompletable() {
             @Override
             protected void handleSubscribe(Subscriber completableSubscriber) {
                 WriteStreamSubscriber subscriber = new WriteStreamSubscriber(channel(), requestNSupplierFactory.get(),
@@ -273,7 +275,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
     @Override
     public Completable writeAndFlush(Single<Write> write) {
         requireNonNull(write);
-        return cleanupStateWhenDone(new Completable() {
+        return cleanupStateWhenDone(new SubscribableCompletable() {
             @Override
             protected void handleSubscribe(Subscriber completableSubscriber) {
                 WriteSingleSubscriber subscriber = new WriteSingleSubscriber(

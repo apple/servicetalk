@@ -37,6 +37,7 @@ dependencies {
 
   implementation "com.google.code.findbugs:jsr305"
   implementation "io.servicetalk:servicetalk-annotations:$project.version"
+  implementation "io.servicetalk:servicetalk-concurrent-api-internal:$project.version"
   implementation "io.servicetalk:servicetalk-concurrent-internal:$project.version"
   implementation "io.servicetalk:servicetalk-http-utils:$project.version"
   implementation "org.glassfish.jersey.core:jersey-common:$jerseyVersion"

@@ -30,6 +30,7 @@ import java.util.concurrent.CountDownLatch;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Executors.immediate;
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
 import static io.servicetalk.concurrent.internal.TerminalNotification.error;
@@ -55,8 +56,8 @@ public class MulticastRealizedSourcePublisherTest {
         Publisher<Integer> multicast = new TerminateFromOnSubscribePublisher(error(DELIBERATE_EXCEPTION)).multicast(2);
         MulticastSubscriber subscriber1 = new MulticastSubscriber(latch);
         MulticastSubscriber subscriber2 = new MulticastSubscriber(latch);
-        multicast.subscribe(subscriber1);
-        multicast.subscribe(subscriber2);
+        toSource(multicast).subscribe(subscriber1);
+        toSource(multicast).subscribe(subscriber2);
         latch.await();
         subscriber1.verifyNoFailedAssertions().verifyOnError(DELIBERATE_EXCEPTION);
         subscriber2.verifyNoFailedAssertions().verifyOnError(DELIBERATE_EXCEPTION);
@@ -68,8 +69,8 @@ public class MulticastRealizedSourcePublisherTest {
         Publisher<Integer> multicast = new TerminateFromOnSubscribePublisher(complete()).multicast(2);
         MulticastSubscriber subscriber1 = new MulticastSubscriber(latch);
         MulticastSubscriber subscriber2 = new MulticastSubscriber(latch);
-        multicast.subscribe(subscriber1);
-        multicast.subscribe(subscriber2);
+        toSource(multicast).subscribe(subscriber1);
+        toSource(multicast).subscribe(subscriber2);
         latch.await();
         subscriber1.verifyNoFailedAssertions().verifyOnComplete();
         subscriber2.verifyNoFailedAssertions().verifyOnComplete();
@@ -81,8 +82,8 @@ public class MulticastRealizedSourcePublisherTest {
         Publisher<Integer> multicast = Publisher.from(1, 2).multicast(2);
         MulticastSubscriber subscriber1 = new MulticastSubscriber(latch);
         MulticastSubscriber subscriber2 = new MulticastSubscriber(latch);
-        multicast.subscribe(subscriber1);
-        multicast.subscribe(subscriber2);
+        toSource(multicast).subscribe(subscriber1);
+        toSource(multicast).subscribe(subscriber2);
         latch.await();
         subscriber1.verifyNoFailedAssertions().verifyItems(1, 2).verifyOnComplete();
         subscriber2.verifyNoFailedAssertions().verifyItems(1, 2).verifyOnComplete();
@@ -94,8 +95,8 @@ public class MulticastRealizedSourcePublisherTest {
         Publisher<Integer> multicast = Publisher.just(1).multicast(2);
         MulticastSubscriber subscriber1 = new MulticastSubscriber(latch);
         MulticastSubscriber subscriber2 = new MulticastSubscriber(latch);
-        multicast.subscribe(subscriber1);
-        multicast.subscribe(subscriber2);
+        toSource(multicast).subscribe(subscriber1);
+        toSource(multicast).subscribe(subscriber2);
         latch.await();
         subscriber1.verifyNoFailedAssertions().verifyItems(1).verifyOnComplete();
         subscriber2.verifyNoFailedAssertions().verifyItems(1).verifyOnComplete();

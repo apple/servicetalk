@@ -15,9 +15,9 @@
  */
 package io.servicetalk.redis.api;
 
-import io.servicetalk.concurrent.CompletableSource.Subscriber;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.concurrent.api.internal.SubscribableCompletable;
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ExecutionContext;
 
@@ -38,7 +38,7 @@ final class StandAloneReservedRedisConnection extends RedisClient.ReservedRedisC
 
     @Override
     public Completable releaseAsync() {
-        return new Completable() {
+        return new SubscribableCompletable() {
             @Override
             protected void handleSubscribe(Subscriber subscriber) {
                 subscriber.onSubscribe(IGNORE_CANCEL);

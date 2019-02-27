@@ -22,6 +22,8 @@ import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.concurrent.api.internal.SubscribableCompletable;
+import io.servicetalk.concurrent.api.internal.SubscribablePublisher;
 import io.servicetalk.concurrent.internal.QueueFullAndRejectedSubscribeException;
 import io.servicetalk.concurrent.internal.RejectedSubscribeException;
 import io.servicetalk.redis.api.RedisConnection;
@@ -104,7 +106,7 @@ final class InternalSubscribedRedisConnection extends AbstractRedisConnection {
         final RedisProtocolSupport.Command command = request.command();
         final Publisher<ByteBuf> reqContent = RedisUtils.encodeRequestContent(request,
                 connection.executionContext().bufferAllocator());
-        return new Publisher<RedisData>() {
+        return new SubscribablePublisher<RedisData>() {
             @Override
             protected void handleSubscribe(PublisherSource.Subscriber<? super RedisData> subscriber) {
                 Completable write;
@@ -247,7 +249,7 @@ final class InternalSubscribedRedisConnection extends AbstractRedisConnection {
         }
 
         Completable write(Completable toWrite, RedisProtocolSupport.Command command) {
-            return new Completable() {
+            return new SubscribableCompletable() {
                 @Override
                 protected void handleSubscribe(CompletableSource.Subscriber subscriber) {
                     // Don't add more items to the queue if the connection is closed already.
@@ -270,7 +272,7 @@ final class InternalSubscribedRedisConnection extends AbstractRedisConnection {
         }
 
         Completable quit(Completable quitRequestWrite) {
-            return new Completable() {
+            return new SubscribableCompletable() {
                 @Override
                 protected void handleSubscribe(CompletableSource.Subscriber subscriber) {
                     if (closedUpdater.compareAndSet(WriteQueue.this, 0, 1)) {
@@ -380,7 +382,7 @@ final class InternalSubscribedRedisConnection extends AbstractRedisConnection {
     private static Publisher<PubSubChannelMessage> concatDeferOnSubscribe(Completable queuedWrite,
                                                                           Publisher<PubSubChannelMessage> next) {
 
-        return new Publisher<PubSubChannelMessage>() {
+        return new SubscribablePublisher<PubSubChannelMessage>() {
             @Override
             protected void handleSubscribe(PublisherSource.Subscriber<? super PubSubChannelMessage> subscriber) {
                 toSource(queuedWrite).subscribe(new CompletableSource.Subscriber() {

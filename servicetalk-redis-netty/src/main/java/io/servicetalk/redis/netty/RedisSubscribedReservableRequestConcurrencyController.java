@@ -16,8 +16,8 @@
 package io.servicetalk.redis.netty;
 
 import io.servicetalk.client.internal.ReservableRequestConcurrencyController;
-import io.servicetalk.concurrent.CompletableSource.Subscriber;
 import io.servicetalk.concurrent.api.Completable;
+import io.servicetalk.concurrent.api.internal.SubscribableCompletable;
 
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
@@ -46,7 +46,7 @@ final class RedisSubscribedReservableRequestConcurrencyController implements Res
 
     @Override
     public Completable releaseAsync() {
-        return new Completable() {
+        return new SubscribableCompletable() {
             @Override
             protected void handleSubscribe(Subscriber subscriber) {
                 subscriber.onSubscribe(IGNORE_CANCEL);

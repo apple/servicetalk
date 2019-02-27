@@ -15,8 +15,7 @@
  */
 package io.servicetalk.concurrent.api;
 
-import io.servicetalk.concurrent.PublisherSource.Subscriber;
-import io.servicetalk.concurrent.PublisherSource.Subscription;
+import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.internal.DuplicateSubscribeException;
 
 import org.slf4j.Logger;
@@ -43,7 +42,7 @@ import static java.util.Objects.requireNonNull;
  * Subscription#request(long)} until there is sufficient data available. The implementation attempts to minimize
  * blocking, however by reading data faster than the writer is sending, blocking is inevitable.
  */
-final class FromInputStreamPublisher extends Publisher<byte[]> {
+final class FromInputStreamPublisher extends Publisher<byte[]> implements PublisherSource<byte[]> {
     private static final Logger LOGGER = LoggerFactory.getLogger(FromInputStreamPublisher.class);
     private static final AtomicIntegerFieldUpdater<FromInputStreamPublisher> subscribedUpdater =
             AtomicIntegerFieldUpdater.newUpdater(FromInputStreamPublisher.class, "subscribed");
@@ -70,6 +69,11 @@ final class FromInputStreamPublisher extends Publisher<byte[]> {
      */
     FromInputStreamPublisher(final InputStream stream) {
         this.stream = requireNonNull(stream);
+    }
+
+    @Override
+    public void subscribe(final Subscriber<? super byte[]> subscriber) {
+        subscribeInternal(subscriber);
     }
 
     @Override

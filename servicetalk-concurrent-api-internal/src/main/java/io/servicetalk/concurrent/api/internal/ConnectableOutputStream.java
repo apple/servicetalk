@@ -65,7 +65,7 @@ public final class ConnectableOutputStream extends OutputStream {
      * <ul>
      *      <li>{@link #DISCONNECTED} - waiting for {@link #connect()} to be called</li>
      *      <li>{@link #CONNECTED} - {@link Publisher} created, logically connected but awaiting {@link Subscriber}</li>
-     *      <li>{@link #CLOSE_ON_SUB} - stream closed, terminates on {@link Publisher#subscribe(Subscriber)}</li>
+     *      <li>{@link #CLOSE_ON_SUB} - stream closed, terminates on subscribe</li>
      *      <li>{@link #CLOSED} - stream closed, draining buffers, delivering terminal event to {@link Subscriber}</li>
      *      <li>{@link #EMITTING} - emitting from {@link Subscription#request(long)} or {@link #flush()}</li>
      *      <li>{@link #CANCEL_AFTER_EMIT} - {@link Subscription#cancel()} to be executed after emitting</li>
@@ -412,7 +412,7 @@ public final class ConnectableOutputStream extends OutputStream {
         }
     }
 
-    private static final class ConnectedPublisher extends Publisher<byte[]> {
+    private static final class ConnectedPublisher extends SubscribablePublisher<byte[]> {
 
         private final ConnectableOutputStream stream;
 

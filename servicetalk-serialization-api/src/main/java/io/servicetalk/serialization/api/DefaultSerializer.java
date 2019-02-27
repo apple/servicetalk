@@ -23,6 +23,7 @@ import io.servicetalk.concurrent.CloseableIterable;
 import io.servicetalk.concurrent.CloseableIterator;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.concurrent.api.internal.SubscribablePublisher;
 import io.servicetalk.concurrent.internal.AbstractCloseableIterable;
 
 import java.util.Iterator;
@@ -87,7 +88,7 @@ public final class DefaultSerializer implements Serializer {
     @Override
     public <T> Publisher<Buffer> serialize(final Publisher<T> source, final BufferAllocator allocator, final Class<T> type,
                                            final IntUnaryOperator bytesEstimator) {
-        return new Publisher<Buffer>() {
+        return new SubscribablePublisher<Buffer>() {
             @Override
             protected void handleSubscribe(final Subscriber<? super Buffer> subscriber) {
                 applySerializer0(subscriber, allocator, bytesEstimator, serializationProvider.getSerializer(type),
@@ -126,7 +127,7 @@ public final class DefaultSerializer implements Serializer {
     @Override
     public <T> Publisher<Buffer> serialize(final Publisher<T> source, final BufferAllocator allocator, final TypeHolder<T> typeHolder,
                                            final IntUnaryOperator bytesEstimator) {
-        return new Publisher<Buffer>() {
+        return new SubscribablePublisher<Buffer>() {
             @Override
             protected void handleSubscribe(final Subscriber<? super Buffer> subscriber) {
                 applySerializer0(subscriber, allocator, bytesEstimator, serializationProvider.getSerializer(typeHolder),
@@ -167,7 +168,7 @@ public final class DefaultSerializer implements Serializer {
 
     @Override
     public <T> Publisher<T> deserialize(final Publisher<Buffer> source, final TypeHolder<T> typeHolder) {
-        return new Publisher<T>() {
+        return new SubscribablePublisher<T>() {
             @Override
             protected void handleSubscribe(final Subscriber<? super T> subscriber) {
                 applyDeserializer0(source, subscriber, serializationProvider.getDeserializer(typeHolder));
@@ -188,7 +189,7 @@ public final class DefaultSerializer implements Serializer {
 
     @Override
     public <T> Publisher<T> deserialize(final Publisher<Buffer> source, final Class<T> type) {
-        return new Publisher<T>() {
+        return new SubscribablePublisher<T>() {
             @Override
             protected void handleSubscribe(final Subscriber<? super T> subscriber) {
                 applyDeserializer0(source, subscriber, serializationProvider.getDeserializer(type));
