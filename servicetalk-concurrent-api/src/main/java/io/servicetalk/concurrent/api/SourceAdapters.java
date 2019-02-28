@@ -42,7 +42,6 @@ public final class SourceAdapters {
         if (publisher instanceof PublisherSource) {
             return uncheckedCast(publisher);
         }
-        requireNonNull(publisher);
         return new PublisherToPublisherSource<>(publisher);
     }
 
@@ -57,7 +56,6 @@ public final class SourceAdapters {
         if (single instanceof SingleSource) {
             return uncheckedCast(single);
         }
-        requireNonNull(single);
         return new SingleToSingleSource<>(single);
     }
 
@@ -71,8 +69,58 @@ public final class SourceAdapters {
         if (completable instanceof CompletableSource) {
             return (CompletableSource) completable;
         }
-        requireNonNull(completable);
         return new CompletableToCompletableSource(completable);
+    }
+
+    /**
+     * Converts the provided {@link PublisherSource} into a {@link Publisher}.
+     *
+     * @param source {@link PublisherSource} to convert to a {@link Publisher}.
+     * @param <T> Type of items emitted from the {@code source} and the returned {@link Publisher}.
+     * @return A {@link Publisher} representation of the passed {@link PublisherSource}.
+     */
+    public static <T> Publisher<T> fromSource(PublisherSource<T> source) {
+        if (source instanceof Publisher) {
+            return uncheckedCast(source);
+        }
+        return new PublisherSourceToPublisher<>(source);
+    }
+
+    /**
+     * Converts the provided {@link SingleSource} into a {@link Single}.
+     *
+     * @param source {@link SingleSource} to convert to a {@link Single}.
+     * @param <T> Type of items emitted from the {@code source} and the returned {@link Single}.
+     * @return A {@link Single} representation of the passed {@link SingleSource}.
+     */
+    public static <T> Single<T> fromSource(SingleSource<T> source) {
+        if (source instanceof Single) {
+            return uncheckedCast(source);
+        }
+        return new SingleSourceToSingle<>(source);
+    }
+
+    /**
+     * Converts the provided {@link CompletableSource} into a {@link Completable}.
+     *
+     * @param source {@link CompletableSource} to convert to a {@link Completable}.
+     * @return A {@link Completable} representation of the passed {@link CompletableSource}.
+     */
+    public static Completable fromSource(CompletableSource source) {
+        if (source instanceof Completable) {
+            return (Completable) source;
+        }
+        return new CompletableSourceToCompletable(source);
+    }
+
+    @SuppressWarnings("unchecked")
+    private static <T> Publisher<T> uncheckedCast(final PublisherSource<T> source) {
+        return (Publisher<T>) source;
+    }
+
+    @SuppressWarnings("unchecked")
+    private static <T> Single<T> uncheckedCast(final SingleSource<T> source) {
+        return (Single<T>) source;
     }
 
     @SuppressWarnings("unchecked")
@@ -89,7 +137,7 @@ public final class SourceAdapters {
         private final Publisher<T> publisher;
 
         PublisherToPublisherSource(final Publisher<T> publisher) {
-            this.publisher = publisher;
+            this.publisher = requireNonNull(publisher);
         }
 
         @Override
@@ -102,7 +150,7 @@ public final class SourceAdapters {
         private final Single<T> single;
 
         SingleToSingleSource(final Single<T> single) {
-            this.single = single;
+            this.single = requireNonNull(single);
         }
 
         @Override
@@ -115,12 +163,66 @@ public final class SourceAdapters {
         private final Completable completable;
 
         CompletableToCompletableSource(final Completable completable) {
-            this.completable = completable;
+            this.completable = requireNonNull(completable);
         }
 
         @Override
         public void subscribe(final Subscriber subscriber) {
             completable.subscribeInternal(subscriber);
+        }
+    }
+
+    private static final class PublisherSourceToPublisher<T> extends Publisher<T> implements PublisherSource<T> {
+        private final PublisherSource<T> source;
+
+        PublisherSourceToPublisher(final PublisherSource<T> source) {
+            this.source = requireNonNull(source);
+        }
+
+        @Override
+        protected void handleSubscribe(final PublisherSource.Subscriber<? super T> subscriber) {
+            source.subscribe(subscriber);
+        }
+
+        @Override
+        public void subscribe(final Subscriber<? super T> subscriber) {
+            source.subscribe(subscriber);
+        }
+    }
+
+    private static final class SingleSourceToSingle<T> extends Single<T> implements SingleSource<T> {
+        private final SingleSource<T> source;
+
+        SingleSourceToSingle(final SingleSource<T> source) {
+            this.source = requireNonNull(source);
+        }
+
+        @Override
+        protected void handleSubscribe(final SingleSource.Subscriber<? super T> subscriber) {
+            source.subscribe(subscriber);
+        }
+
+        @Override
+        public void subscribe(final Subscriber<? super T> subscriber) {
+            source.subscribe(subscriber);
+        }
+    }
+
+    private static final class CompletableSourceToCompletable extends Completable implements CompletableSource {
+        private final CompletableSource source;
+
+        CompletableSourceToCompletable(final CompletableSource source) {
+            this.source = requireNonNull(source);
+        }
+
+        @Override
+        protected void handleSubscribe(final CompletableSource.Subscriber subscriber) {
+            source.subscribe(subscriber);
+        }
+
+        @Override
+        public void subscribe(final Subscriber subscriber) {
+            source.subscribe(subscriber);
         }
     }
 }
