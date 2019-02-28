@@ -142,6 +142,9 @@ public class InsufficientlySizedExecutorHttpTest {
                     .buildStreaming();
         } else {
             server = forAddress(localAddress(0))
+                    // TODO(scott): the server use case hangs now that the ConnectionAcceptor induced offloading is
+                    // skipped when there is no ConnectionAcceptor specified.
+                    .appendConnectionAcceptorFilter(original -> original)
                     .listenStreamingAndAwait(new StreamingHttpService() {
                         @Override
                         public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
