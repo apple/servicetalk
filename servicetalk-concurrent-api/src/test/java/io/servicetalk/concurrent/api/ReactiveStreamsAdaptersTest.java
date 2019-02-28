@@ -37,11 +37,11 @@ import static io.servicetalk.concurrent.api.ReactiveStreamsAdapters.fromReactive
 import static io.servicetalk.concurrent.api.ReactiveStreamsAdapters.toReactiveStreamsPublisher;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.concurrent.internal.EmptySubscription.EMPTY_SUBSCRIPTION;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.sameInstance;
-import static org.junit.Assert.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.doAnswer;
@@ -127,13 +127,14 @@ public class ReactiveStreamsAdaptersTest {
     @Test
     public void toRSCancel() {
         TestPublisher<Integer> stPublisher = new TestPublisher<>();
-        stPublisher.sendOnSubscribe();
         Subscriber<Integer> subscriber = toRSPublisherAndSubscribe(stPublisher);
-        stPublisher.verifySubscribed();
+        TestSubscription subscription = new TestSubscription();
+        stPublisher.onSubscribe(subscription);
+        assertThat("Source not subscribed.", stPublisher.isSubscribed(), is(true));
         ArgumentCaptor<Subscription> subscriptionCaptor = ArgumentCaptor.forClass(Subscription.class);
         verify(subscriber).onSubscribe(subscriptionCaptor.capture());
         subscriptionCaptor.getValue().cancel();
-        stPublisher.verifyCancelled();
+        assertThat("Subscription not cancelled.", subscription.isCancelled(), is(true));
     }
 
     @Test

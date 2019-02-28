@@ -70,13 +70,14 @@ public class SourceAdaptersTest {
     @Test
     public void publisherToSourceCancel() {
         TestPublisher<Integer> stPublisher = new TestPublisher<>();
-        stPublisher.sendOnSubscribe();
         PublisherSource.Subscriber<Integer> subscriber = toSourceAndSubscribe(stPublisher);
-        stPublisher.verifySubscribed();
+        TestSubscription subscription = new TestSubscription();
+        stPublisher.onSubscribe(subscription);
+        assertThat("Source not subscribed.", stPublisher.isSubscribed(), is(true));
         ArgumentCaptor<Subscription> subscriptionCaptor = forClass(Subscription.class);
         verify(subscriber).onSubscribe(subscriptionCaptor.capture());
         subscriptionCaptor.getValue().cancel();
-        stPublisher.verifyCancelled();
+        assertThat("Subscription not cancelled.", subscription.isCancelled(), is(true));
     }
 
     @Test
