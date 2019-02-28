@@ -18,7 +18,7 @@ package io.servicetalk.concurrent.api.publisher;
 import io.servicetalk.concurrent.api.ExecutorRule;
 import io.servicetalk.concurrent.api.MockedSingleListenerRule;
 import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.concurrent.api.PublisherRule;
+import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 
 import org.junit.Rule;
@@ -36,9 +36,8 @@ public class PubToSingleOrErrorTest {
     @Rule
     public final MockedSingleListenerRule<String> listenerRule = new MockedSingleListenerRule<>();
     @Rule
-    public final ExecutorRule executorRule = new ExecutorRule();
-    @Rule
-    public final PublisherRule<String> publisher = new PublisherRule<>();
+    public final ExecutorRule executorRule = ExecutorRule.newRule();
+    private final TestPublisher<String> publisher = new TestPublisher<>();
 
     @Test
     public void syncSingleItemCompleted() {
@@ -53,60 +52,58 @@ public class PubToSingleOrErrorTest {
 
     @Test
     public void asyncSingleItemCompleted() throws Exception {
-        listenerRule.listen(publisher.publisher().toSingleOrError());
+        listenerRule.listen(publisher.toSingleOrError());
         executorRule.executor().submit(() -> {
-            publisher.sendItems("hello");
-            publisher.complete();
+            publisher.onNext("hello");
+            publisher.onComplete();
         }).toFuture().get();
         listenerRule.verifySuccess("hello");
     }
 
     @Test
     public void asyncMultipleItemCompleted() throws Exception {
-        listenerRule.listen(publisher.publisher().toSingleOrError());
+        listenerRule.listen(publisher.toSingleOrError());
         executorRule.executor().submit(() -> {
-            publisher.sendItems("foo");
-            publisher.sendItems("bar");
-            publisher.complete(true);
+            publisher.onNext("foo", "bar");
+            publisher.onComplete();
         }).toFuture().get();
         listenerRule.verifyFailure(IllegalArgumentException.class);
     }
 
     @Test
     public void singleItemNoComplete() {
-        listenerRule.listen(publisher.publisher().toSingleOrError());
-        publisher.sendItems("hello");
+        listenerRule.listen(publisher.toSingleOrError());
+        publisher.onNext("hello");
         listenerRule.verifyNoEmissions();
     }
 
     @Test
     public void singleItemErrorPropagates() {
-        listenerRule.listen(publisher.publisher().toSingleOrError());
-        publisher.sendItems("hello");
-        publisher.fail();
+        listenerRule.listen(publisher.toSingleOrError());
+        publisher.onNext("hello");
+        publisher.onError(DELIBERATE_EXCEPTION);
         listenerRule.verifyFailure(DELIBERATE_EXCEPTION);
     }
 
     @Test
     public void noItemsFails() {
-        listenerRule.listen(publisher.publisher().toSingleOrError());
-        publisher.complete();
+        listenerRule.listen(publisher.toSingleOrError());
+        publisher.onComplete();
         listenerRule.verifyFailure(NoSuchElementException.class);
     }
 
     @Test
     public void noItemErrorPropagates() {
-        listenerRule.listen(publisher.publisher().toSingleOrError());
-        publisher.fail();
+        listenerRule.listen(publisher.toSingleOrError());
+        publisher.onError(DELIBERATE_EXCEPTION);
         listenerRule.verifyFailure(DELIBERATE_EXCEPTION);
     }
 
     @Test
     public void multipleItemsFails() {
-        listenerRule.listen(publisher.publisher().toSingleOrError());
-        publisher.sendItems("foo");
-        publisher.sendItems("bar");
-        publisher.complete(true);
+        listenerRule.listen(publisher.toSingleOrError());
+        publisher.onNext("foo", "bar");
+        publisher.onComplete();
         listenerRule.verifyFailure(IllegalArgumentException.class);
     }
 }

@@ -31,7 +31,7 @@ public class ConcatWithCompletableTest {
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
     @Rule
-    public final ExecutorRule executorRule = new ExecutorRule();
+    public final ExecutorRule executorRule = ExecutorRule.newRule();
     @Rule
     public final MockedSingleListenerRule<String> listener = new MockedSingleListenerRule<>();
     private TestSingle<String> single = new TestSingle<>();
