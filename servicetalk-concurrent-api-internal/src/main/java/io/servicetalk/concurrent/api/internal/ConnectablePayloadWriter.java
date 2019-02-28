@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.http.api;
+package io.servicetalk.concurrent.api.internal;
 
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
@@ -21,6 +21,7 @@ import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.internal.DuplicateSubscribeException;
 import io.servicetalk.concurrent.internal.FlowControlUtil;
 import io.servicetalk.concurrent.internal.TerminalNotification;
+import io.servicetalk.oio.api.PayloadWriter;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,7 +45,7 @@ import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater
  *
  * @param <T> The type of data for the {@link PayloadWriter}.
  */
-final class ConnectablePayloadWriter<T> implements PayloadWriter<T> {
+public final class ConnectablePayloadWriter<T> implements PayloadWriter<T> {
     private static final AtomicLongFieldUpdater<ConnectablePayloadWriter> requestedUpdater =
             AtomicLongFieldUpdater.newUpdater(ConnectablePayloadWriter.class, "requested");
     private static final AtomicReferenceFieldUpdater<ConnectablePayloadWriter, TerminalNotification> closedUpdater =
@@ -152,23 +153,32 @@ final class ConnectablePayloadWriter<T> implements PayloadWriter<T> {
 
     private void waitForRequestNDemand() throws IOException {
         writerThread = Thread.currentThread();
-        for (;;) {
-            LockSupport.park();
-            final long currRequested = requested;
-            if (currRequested > 0) {
-                if (requestedUpdater.compareAndSet(this, currRequested, currRequested - 1)) {
+        // After we set the writerThread, and before we park we have to check if there has been some requested demand in
+        // the mean time or else we may deadlock because the Subscription thread may not have seen the writerThread.
+        if (requested > 0) {
+            writerThread = null;
+            // There will only ever be a single thread decrementing, so no need to use a CaS, we can just decrement.
+            requestedUpdater.decrementAndGet(this);
+        } else {
+            for (;;) {
+                LockSupport.park();
+                // There will only ever be a single thread decrementing, so no need to use a CaS, we can just decrement.
+                final long currRequested = requestedUpdater.decrementAndGet(this);
+                if (currRequested >= 0) {
                     writerThread = null;
                     break;
-                }
-            } else {
-                // While we are waiting for interaction with the Subscription, if the Subscription contract is violated
-                // that may result in a terminal notification, which doesn't require any demand to deliver.
-                TerminalNotification currClosed = closed;
-                if (currClosed != null) {
-                    final Subscriber<? super T> s = waitForSubscriber();
-                    state = State.TERMINATED;
-                    currClosed.terminate(s);
-                    throw new IOException("Already closed " + currClosed);
+                } else {
+                    requestedUpdater.incrementAndGet(this);
+                    // While we are waiting for interaction with the Subscription, if the Subscription contract is
+                    // violated that may result in a terminal notification, which doesn't require any demand to deliver.
+                    TerminalNotification currClosed = closed;
+                    if (currClosed != null) {
+                        writerThread = null;
+                        final Subscriber<? super T> s = waitForSubscriber();
+                        state = State.TERMINATED;
+                        currClosed.terminate(s);
+                        throw new IOException("Already closed " + currClosed);
+                    }
                 }
             }
         }
@@ -186,6 +196,7 @@ final class ConnectablePayloadWriter<T> implements PayloadWriter<T> {
                     writerThread = null;
                     break;
                 } else if (currState == State.TERMINATED) {
+                    writerThread = null;
                     throw new IOException("Already closed " + closed);
                 }
             }

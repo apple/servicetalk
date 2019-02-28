@@ -15,12 +15,14 @@
  */
 package io.servicetalk.concurrent.api.internal;
 
+import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.TestPublisherSubscriber;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -32,11 +34,16 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.IntBinaryOperator;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
+import static io.servicetalk.concurrent.api.internal.ConnectablePayloadWriterTest.toRunnable;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
 import static java.lang.Math.max;
@@ -45,19 +52,15 @@ import static java.lang.Runtime.getRuntime;
 import static java.lang.System.arraycopy;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.fail;
 import static org.junit.rules.ExpectedException.none;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.when;
 
 public class ConnectableOutputStreamTest {
     private static final Logger LOGGER = LoggerFactory.getLogger(ConnectableOutputStreamTest.class);
@@ -68,49 +71,39 @@ public class ConnectableOutputStreamTest {
     public final ExpectedException expectedException = none();
 
     private final TestPublisherSubscriber<byte[]> subscriber = new TestPublisherSubscriber<>();
-
-    private IntBinaryOperator nextSizeSupplier;
     private ConnectableOutputStream cos;
+    private ExecutorService executorService;
 
     @Before
     public void setUp() {
-        nextSizeSupplier = mock(IntBinaryOperator.class);
-        when(nextSizeSupplier.applyAsInt(anyInt(), anyInt())).thenAnswer(invocation -> invocation.getArgument(1));
-        cos = new ConnectableOutputStream(nextSizeSupplier);
+        cos = new ConnectableOutputStream();
+        executorService = Executors.newCachedThreadPool();
+    }
+
+    @After
+    public void teardown() {
+        executorService.shutdown();
     }
 
     @Test
-    public void writeConnectFlushCloseSubscribe() throws IOException {
-        cos.write(1);
-        final Publisher<byte[]> connect = cos.connect();
-        cos.flush();
-        cos.close();
-        toSource(connect).subscribe(subscriber);
-        subscriber.request(1);
-        assertThat(subscriber.takeItems(), contains(new byte[]{1}));
-        assertThat(subscriber.takeTerminal(), is(complete()));
-        verify(nextSizeSupplier).applyAsInt(0, 1);
-    }
+    public void closeShouldBeIdempotent() throws Exception {
+        Future<?> f = executorService.submit(toRunnable(() -> {
+            cos.write(1);
+            cos.flush();
+            cos.close();
+        }));
 
-    @Test
-    public void closeShouldBeIdempotent() throws IOException {
-        cos.write(1);
-        final Publisher<byte[]> connect = cos.connect();
-        cos.flush();
-        cos.close();
-        toSource(connect).subscribe(subscriber);
+        toSource(cos.connect()).subscribe(subscriber);
         subscriber.request(1);
+        f.get();
         assertThat(subscriber.takeItems(), contains(new byte[]{1}));
         assertThat(subscriber.takeTerminal(), is(complete()));
-        verify(nextSizeSupplier).applyAsInt(0, 1);
         cos.close(); // should be idempotent
-        verifyNoMoreInteractions(nextSizeSupplier);
     }
 
     @Test
     public void closeShouldBeIdempotentWhenNotSubscribed() throws IOException {
         cos.connect();
-        cos.write(1);
         cos.close();
         cos.close(); // should be idempotent
     }
@@ -237,12 +230,17 @@ public class ConnectableOutputStreamTest {
                 onComplete.countDown();
             }
         });
-        cos.write(0);
+        try {
+            cos.write(1);
+            fail();
+        } catch (RuntimeException cause) {
+            assertSame(DELIBERATE_EXCEPTION, cause);
+        }
         try {
             cos.flush();
-            fail("Should fail with premature termination");
-        } catch (IOException e) {
-            // Expected
+            fail();
+        } catch (IOException ignored) {
+            // expected
         }
         cos.close();
         onError.await();
@@ -252,215 +250,107 @@ public class ConnectableOutputStreamTest {
     }
 
     @Test
-    public void writeFlushConnectCloseSubscribe() throws IOException {
-        cos.write(1);
-        verify(nextSizeSupplier).applyAsInt(0, 1);
-        cos.flush();
-        final Publisher<byte[]> connect = cos.connect();
-        cos.close();
-        toSource(connect).subscribe(subscriber);
-        subscriber.request(1);
-        assertThat(subscriber.takeItems(), contains(new byte[]{1}));
-        assertThat(subscriber.takeTerminal(), is(complete()));
-    }
+    public void writeFlushCloseConnectSubscribeRequest() throws Exception {
+        Future<?> f = executorService.submit(toRunnable(() -> {
+            cos.write(1);
+            cos.flush();
+            cos.close();
+        }));
 
-    @Test
-    public void writeFlushCloseConnectSubscribe() throws IOException {
-        cos.write(1);
-        verify(nextSizeSupplier).applyAsInt(0, 1);
-        cos.flush();
-        cos.close();
         toSource(cos.connect()).subscribe(subscriber);
-        assertThat(subscriber.takeError(), instanceOf(IllegalStateException.class));
-    }
-
-    @Test
-    public void connectWriteFlushCloseSubscribe() throws IOException {
-        final Publisher<byte[]> connect = cos.connect();
-        cos.write(1);
-        verify(nextSizeSupplier).applyAsInt(0, 1);
-        cos.flush();
-        cos.close();
-        toSource(connect).subscribe(subscriber);
         subscriber.request(1);
+        f.get();
         assertThat(subscriber.takeItems(), contains(new byte[]{1}));
         assertThat(subscriber.takeTerminal(), is(complete()));
     }
 
     @Test
-    public void connectSubscribeWriteFlushCloseRequest() throws IOException {
-        final Publisher<byte[]> connect = cos.connect();
-        toSource(connect).subscribe(subscriber);
-        cos.write(1);
-        verify(nextSizeSupplier).applyAsInt(0, 1);
-        cos.flush();
-        cos.close();
+    public void connectSubscribeRequestWriteFlushClose() throws Exception {
+        toSource(cos.connect()).subscribe(subscriber);
+        assertThat(subscriber.takeItems(), is(empty()));
         subscriber.request(1);
+        Future<?> f = executorService.submit(toRunnable(() -> {
+            cos.write(1);
+            cos.flush();
+            cos.close();
+        }));
+        f.get();
         assertThat(subscriber.takeItems(), contains(new byte[]{1}));
         assertThat(subscriber.takeTerminal(), is(complete()));
     }
 
     @Test
-    public void connectSubscribeRequestWriteFlushClose() throws IOException {
-        final Publisher<byte[]> connect = cos.connect();
-        toSource(connect).subscribe(subscriber);
+    public void connectSubscribeWriteFlushCloseRequest() throws Exception {
+        toSource(cos.connect()).subscribe(subscriber);
+        Future<?> f = executorService.submit(toRunnable(() -> {
+            cos.write(1);
+            cos.flush();
+            cos.close();
+        }));
+        assertThat(subscriber.takeItems(), is(empty()));
         subscriber.request(1);
-        cos.write(1);
-        verify(nextSizeSupplier).applyAsInt(0, 1);
-        cos.flush();
-        cos.close();
+        f.get();
         assertThat(subscriber.takeItems(), contains(new byte[]{1}));
         assertThat(subscriber.takeTerminal(), is(complete()));
     }
 
     @Test
-    public void requestWriteSingleWriteSingleFlushClose() throws IOException {
-        final Publisher<byte[]> connect = cos.connect();
-        toSource(connect).subscribe(subscriber);
-        subscriber.request(1);
-        cos.write(1);
-        verify(nextSizeSupplier).applyAsInt(0, 1);
-        cos.write(1);
-        verify(nextSizeSupplier).applyAsInt(1, 2);
-        cos.flush();
-        cos.close();
-        assertThat(subscriber.takeItems(), contains(new byte[]{1, 1}));
-        assertThat(subscriber.takeTerminal(), is(complete()));
-    }
-
-    @Test
-    public void requestWriteSingleFlushWriteSingleFlushClose() throws IOException {
-        final Publisher<byte[]> connect = cos.connect();
-        toSource(connect).subscribe(subscriber);
+    public void requestWriteSingleWriteSingleFlushClose() throws Exception {
+        toSource(cos.connect()).subscribe(subscriber);
+        assertThat(subscriber.takeItems(), is(empty()));
         subscriber.request(2);
-        cos.write(1);
-        cos.flush();
-        cos.write(2);
-        verify(nextSizeSupplier, times(2)).applyAsInt(0, 1);
-        verifyNoMoreInteractions(nextSizeSupplier);
-        cos.flush();
-        cos.close();
+        Future<?> f = executorService.submit(toRunnable(() -> {
+            cos.write(1);
+            cos.write(2);
+            cos.flush();
+            cos.close();
+        }));
+        f.get();
         assertThat(subscriber.takeItems(), contains(new byte[]{1}, new byte[]{2}));
         assertThat(subscriber.takeTerminal(), is(complete()));
     }
 
     @Test
-    public void writeSingleFlushWriteSingleFlushRequestClose() throws IOException {
-        final Publisher<byte[]> connect = cos.connect();
-        toSource(connect).subscribe(subscriber);
-        cos.write(1);
-        cos.flush();
-        cos.write(2);
-        verify(nextSizeSupplier, times(2)).applyAsInt(0, 1);
-        verifyNoMoreInteractions(nextSizeSupplier);
-        cos.flush();
-        cos.close();
-        subscriber.request(1);
-        assertThat(subscriber.takeItems(), contains(new byte[]{1, 2}));
-        assertThat(subscriber.takeTerminal(), is(complete()));
-    }
-
-    @Test
-    public void requestWriteArrWriteArrFlushClose() throws IOException {
-        final Publisher<byte[]> connect = cos.connect();
-        toSource(connect).subscribe(subscriber);
-        subscriber.request(1);
-        cos.write(new byte[]{1, 2});
-        verify(nextSizeSupplier).applyAsInt(0, 2);
-        cos.write(new byte[]{3, 4});
-        verify(nextSizeSupplier).applyAsInt(2, 4);
-        cos.flush();
-        cos.close();
-        assertThat(subscriber.takeItems(), contains(new byte[]{1, 2, 3, 4}));
-        assertThat(subscriber.takeTerminal(), is(complete()));
-    }
-
-    @Test
-    public void requestWriteArrFlushWriteArrFlushClose() throws IOException {
-        final Publisher<byte[]> connect = cos.connect();
-        toSource(connect).subscribe(subscriber);
+    public void requestWriteSingleFlushWriteSingleFlushClose() throws Exception {
+        toSource(cos.connect()).subscribe(subscriber);
+        assertThat(subscriber.takeItems(), is(empty()));
         subscriber.request(2);
-        cos.write(new byte[]{1, 2});
-        cos.flush();
-        cos.write(new byte[]{3, 4});
-        cos.flush();
-        verify(nextSizeSupplier, times(2)).applyAsInt(0, 2);
-        verifyNoMoreInteractions(nextSizeSupplier);
-        cos.close();
-        assertThat(subscriber.takeItems(), contains(new byte[]{1, 2}, new byte[]{3, 4}));
+        Future<?> f = executorService.submit(toRunnable(() -> {
+            cos.write(1);
+            cos.flush();
+            cos.write(2);
+            cos.flush();
+            cos.close();
+        }));
+        f.get();
+        assertThat(subscriber.takeItems(), contains(new byte[]{1}, new byte[]{2}));
         assertThat(subscriber.takeTerminal(), is(complete()));
     }
 
     @Test
-    public void writeArrFlushWriteArrFlushRequestClose() throws IOException {
-        final Publisher<byte[]> connect = cos.connect();
-        toSource(connect).subscribe(subscriber);
-        cos.write(new byte[]{1, 2});
-        cos.flush();
-        cos.write(new byte[]{3, 4});
-        verify(nextSizeSupplier, times(2)).applyAsInt(0, 2);
-        verifyNoMoreInteractions(nextSizeSupplier);
-        cos.flush();
-        cos.close();
+    public void writeSingleFlushWriteSingleFlushRequestClose() throws Exception {
+        toSource(cos.connect()).subscribe(subscriber);
+        assertThat(subscriber.takeItems(), is(empty()));
         subscriber.request(1);
-        assertThat(subscriber.takeItems(), contains(new byte[]{1, 2, 3, 4}));
-        assertThat(subscriber.takeTerminal(), is(complete()));
-    }
-
-    @Test
-    public void requestWriteArrOffWriteArrOffFlushClose() throws IOException {
-        final Publisher<byte[]> connect = cos.connect();
-        toSource(connect).subscribe(subscriber);
+        Future<?> f = executorService.submit(toRunnable(() -> {
+            cos.write(1);
+            cos.flush();
+            cos.write(2);
+            cos.flush();
+            cos.close();
+        }));
         subscriber.request(1);
-        cos.write(new byte[]{1, 2, 3, 4}, 1, 3);
-        verify(nextSizeSupplier).applyAsInt(0, 3);
-        cos.write(new byte[]{5, 6, 7, 8}, 1, 3);
-        verify(nextSizeSupplier).applyAsInt(3, 6);
-        cos.flush();
-        cos.close();
-        assertThat(subscriber.takeItems(), contains(new byte[]{2, 3, 4, 6, 7, 8}));
+        f.get();
+        assertThat(subscriber.takeItems(), contains(new byte[]{1}, new byte[]{2}));
         assertThat(subscriber.takeTerminal(), is(complete()));
     }
 
     @Test
-    public void requestWriteArrOffFlushWriteArrOffFlushClose() throws IOException {
-        final Publisher<byte[]> connect = cos.connect();
-        toSource(connect).subscribe(subscriber);
-        subscriber.request(2);
-        cos.write(new byte[]{1, 2, 3, 4}, 1, 3);
-        cos.flush();
-        cos.write(new byte[]{5, 6, 7, 8}, 1, 3);
-        verify(nextSizeSupplier, times(2)).applyAsInt(0, 3);
-        verifyNoMoreInteractions(nextSizeSupplier);
-        cos.flush();
-        cos.close();
-        assertThat(subscriber.takeItems(), contains(new byte[]{2, 3, 4}, new byte[]{6, 7, 8}));
-        assertThat(subscriber.takeTerminal(), is(complete()));
-    }
-
-    @Test
-    public void writeArrOffFlushWriteArrOffFlushRequestClose() throws IOException {
-        final Publisher<byte[]> connect = cos.connect();
-        toSource(connect).subscribe(subscriber);
-        cos.write(new byte[]{1, 2, 3, 4}, 1, 3);
-        verify(nextSizeSupplier).applyAsInt(0, 3);
-        cos.flush();
-        cos.write(new byte[]{5, 6, 7, 8}, 1, 2);
-        verify(nextSizeSupplier).applyAsInt(0, 2);
-        verifyNoMoreInteractions(nextSizeSupplier);
-        cos.flush();
-        cos.close();
-        subscriber.request(1);
-        assertThat(subscriber.takeItems(), contains(new byte[]{2, 3, 4, 6, 7}));
-        assertThat(subscriber.takeTerminal(), is(complete()));
-    }
-
-    @Test
-    public void invalidRequestN() {
+    public void invalidRequestN() throws IOException {
         AtomicReference<Throwable> failure = new AtomicReference<>();
-        toSource(cos.connect()).subscribe(new Subscriber<byte[]>() {
+        toSource(cos.connect()).subscribe(new PublisherSource.Subscriber<byte[]>() {
             @Override
-            public void onSubscribe(final Subscription s) {
+            public void onSubscribe(final PublisherSource.Subscription s) {
                 s.request(-1);
             }
 
@@ -480,15 +370,16 @@ public class ConnectableOutputStreamTest {
             }
         });
 
+        cos.close();
         assertThat("Unexpected failure", failure.get(), is(instanceOf(IllegalArgumentException.class)));
     }
 
     @Test
     public void onNextThrows() throws IOException {
         AtomicReference<Throwable> failure = new AtomicReference<>();
-        toSource(cos.connect()).subscribe(new Subscriber<byte[]>() {
+        toSource(cos.connect()).subscribe(new PublisherSource.Subscriber<byte[]>() {
             @Override
-            public void onSubscribe(final Subscription s) {
+            public void onSubscribe(final PublisherSource.Subscription s) {
                 s.request(1);
             }
 
@@ -507,14 +398,197 @@ public class ConnectableOutputStreamTest {
                 failure.set(new AssertionError("onComplete received when onNext threw."));
             }
         });
-        cos.write(1);
         try {
-            cos.close();
-            fail("Expected close() to fail.");
-        } catch (IOException e) {
-            assertThat("Unexpected failure", e.getCause(), is(DELIBERATE_EXCEPTION));
+            cos.write(1);
+            fail();
+        } catch (RuntimeException cause) {
+            assertSame(DELIBERATE_EXCEPTION, cause);
         }
+        cos.close();
         assertThat("Unexpected failure", failure.get(), is(DELIBERATE_EXCEPTION));
+    }
+
+    @Test
+    public void cancelCloses() throws Exception {
+        toSource(cos.connect()).subscribe(subscriber);
+        assertThat(subscriber.takeItems(), is(empty()));
+        subscriber.cancel();
+        Future<?> f = executorService.submit(toRunnable(() -> cos.write(1)));
+        expectedException.expect(ExecutionException.class);
+        expectedException.expectCause(is(instanceOf(RuntimeException.class)));
+        f.get();
+    }
+
+    @Test
+    public void cancelCloseAfterWrite() throws Exception {
+        toSource(cos.connect()).subscribe(subscriber);
+        assertThat(subscriber.takeItems(), is(empty()));
+        subscriber.request(1);
+        Future<?> f = executorService.submit(toRunnable(() -> {
+            cos.write(1);
+            cos.flush();
+        }));
+        f.get();
+        assertThat(subscriber.takeItems(), contains(new byte[]{1}));
+
+        subscriber.cancel();
+        expectedException.expect(is(instanceOf(IOException.class)));
+        cos.write(2);
+    }
+
+    @Test
+    public void requestNegativeWrite() throws Exception {
+        toSource(cos.connect()).subscribe(subscriber);
+        assertThat(subscriber.takeItems(), is(empty()));
+        subscriber.request(-1);
+        Future<?> f = executorService.submit(toRunnable(() -> {
+            cos.write(1);
+            cos.flush();
+        }));
+        try {
+            f.get();
+            fail();
+        } catch (ExecutionException e) {
+            assertThat(e.getCause(), is(instanceOf(RuntimeException.class)));
+            assertThat(e.getCause().getCause(), is(instanceOf(IOException.class)));
+        }
+        assertThat(subscriber.takeError(), is(instanceOf(IllegalArgumentException.class)));
+    }
+
+    @Test
+    public void writeRequestNegative() throws Exception {
+        toSource(cos.connect()).subscribe(subscriber);
+        assertThat(subscriber.takeItems(), is(empty()));
+        CyclicBarrier cb = new CyclicBarrier(2);
+        Future<?> f = executorService.submit(toRunnable(() -> {
+            cb.await();
+            cos.write(1);
+            cos.flush();
+        }));
+        cb.await();
+        subscriber.request(-1);
+        try {
+            f.get();
+            fail();
+        } catch (ExecutionException e) {
+            assertThat(e.getCause(), is(instanceOf(RuntimeException.class)));
+            assertThat(e.getCause().getCause(), is(instanceOf(IOException.class)));
+        }
+        assertThat(subscriber.takeError(), is(instanceOf(IllegalArgumentException.class)));
+    }
+
+    @Test
+    public void closeNoWrite() throws Exception {
+        CyclicBarrier cb = new CyclicBarrier(2);
+        Future<?> f = executorService.submit(toRunnable(() -> {
+            cb.await();
+            cos.close();
+        }));
+        final Publisher<byte[]> connect = cos.connect();
+        cb.await();
+        toSource(connect).subscribe(subscriber);
+        subscriber.request(1);
+        f.get();
+        assertThat(subscriber.takeItems(), is(empty()));
+        assertThat(subscriber.takeTerminal(), is(complete()));
+    }
+
+    @Test
+    public void requestWriteArrWriteArrFlushClose() throws Exception {
+        final Publisher<byte[]> connect = cos.connect();
+        toSource(connect).subscribe(subscriber);
+        subscriber.request(1);
+        Future<?> f = executorService.submit(toRunnable(() -> {
+            cos.write(new byte[]{1, 2});
+            cos.write(new byte[]{3, 4});
+            cos.flush();
+            cos.close();
+        }));
+        subscriber.request(1);
+        f.get();
+        assertThat(subscriber.takeItems(), contains(new byte[]{1, 2}, new byte[]{3, 4}));
+        assertThat(subscriber.takeTerminal(), is(complete()));
+    }
+
+    @Test
+    public void requestWriteArrFlushWriteArrFlushClose() throws Exception {
+        final Publisher<byte[]> connect = cos.connect();
+        toSource(connect).subscribe(subscriber);
+        subscriber.request(2);
+        executorService.submit(toRunnable(() -> {
+            cos.write(new byte[]{1, 2});
+            cos.flush();
+            cos.write(new byte[]{3, 4});
+            cos.flush();
+            cos.close();
+        })).get();
+        assertThat(subscriber.takeItems(), contains(new byte[]{1, 2}, new byte[]{3, 4}));
+        assertThat(subscriber.takeTerminal(), is(complete()));
+    }
+
+    @Test
+    public void writeArrFlushWriteArrFlushRequestClose() throws Exception {
+        final Publisher<byte[]> connect = cos.connect();
+        toSource(connect).subscribe(subscriber);
+        Future<?> f = executorService.submit(toRunnable(() -> {
+            cos.write(new byte[]{1, 2});
+            cos.flush();
+            cos.write(new byte[]{3, 4});
+            cos.flush();
+            cos.close();
+        }));
+        subscriber.request(2);
+        f.get();
+        assertThat(subscriber.takeItems(), contains(new byte[]{1, 2}, new byte[]{3, 4}));
+        assertThat(subscriber.takeTerminal(), is(complete()));
+    }
+
+    @Test
+    public void requestWriteArrOffWriteArrOffFlushClose() throws Exception {
+        final Publisher<byte[]> connect = cos.connect();
+        toSource(connect).subscribe(subscriber);
+        subscriber.request(2);
+        executorService.submit(toRunnable(() -> {
+            cos.write(new byte[]{1, 2, 3, 4}, 1, 3);
+            cos.write(new byte[]{5, 6, 7, 8}, 1, 3);
+            cos.flush();
+            cos.close();
+        })).get();
+        assertThat(subscriber.takeItems(), contains(new byte[]{2, 3, 4}, new byte[]{6, 7, 8}));
+        assertThat(subscriber.takeTerminal(), is(complete()));
+    }
+
+    @Test
+    public void requestWriteArrOffFlushWriteArrOffFlushClose() throws Exception {
+        final Publisher<byte[]> connect = cos.connect();
+        toSource(connect).subscribe(subscriber);
+        subscriber.request(2);
+        executorService.submit(toRunnable(() -> {
+            cos.write(new byte[]{1, 2, 3, 4}, 1, 3);
+            cos.flush();
+            cos.write(new byte[]{5, 6, 7, 8}, 1, 3);
+            cos.flush();
+            cos.close();
+        })).get();
+        assertThat(subscriber.takeItems(), contains(new byte[]{2, 3, 4}, new byte[]{6, 7, 8}));
+        assertThat(subscriber.takeTerminal(), is(complete()));
+    }
+
+    @Test
+    public void writeArrOffFlushWriteArrOffFlushRequestClose() throws Exception {
+        final Publisher<byte[]> connect = cos.connect();
+        toSource(connect).subscribe(subscriber);
+        Future<?> f = executorService.submit(toRunnable(() -> {
+            cos.write(new byte[]{1, 2, 3, 4}, 1, 3);
+            cos.flush();
+            cos.write(new byte[]{5, 6, 7, 8}, 1, 2);
+            cos.flush();
+            cos.close();
+        }));
+        subscriber.request(2);
+        f.get();
+        assertThat(subscriber.takeItems(), contains(new byte[]{2, 3, 4}, new byte[]{6, 7}));
+        assertThat(subscriber.takeTerminal(), is(complete()));
     }
 
     @Test

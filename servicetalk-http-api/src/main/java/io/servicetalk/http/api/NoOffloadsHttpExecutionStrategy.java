@@ -39,7 +39,7 @@ final class NoOffloadsHttpExecutionStrategy implements HttpExecutionStrategy {
             final Function<Publisher<Object>, Single<StreamingHttpResponse>> client) {
         Publisher<Object> flatReq = flatten(request, request.payloadBodyAndTrailers()).subscribeOnOverride(immediate());
         return client.apply(flatReq)
-                .map(response -> response.transformPayloadBody(p -> p.publishOnOverride(immediate())))
+                .map(response -> response.transformRawPayloadBody(p -> p.publishOnOverride(immediate())))
                 .publishOnOverride(immediate());
     }
 
@@ -48,7 +48,7 @@ final class NoOffloadsHttpExecutionStrategy implements HttpExecutionStrategy {
             final Executor fallback, StreamingHttpRequest request,
             final Function<StreamingHttpRequest, Single<StreamingHttpResponse>> service,
             final BiFunction<Throwable, Executor, Single<StreamingHttpResponse>> errorHandler) {
-        request = request.transformPayloadBody(payload -> payload.publishOnOverride(immediate()));
+        request = request.transformRawPayloadBody(payload -> payload.publishOnOverride(immediate()));
         return service.apply(request)
                 .onErrorResume(t -> errorHandler.apply(t, immediate()))
                 .flatMapPublisher(response -> flatten(response, response.payloadBodyAndTrailers()))
@@ -64,9 +64,9 @@ final class NoOffloadsHttpExecutionStrategy implements HttpExecutionStrategy {
                                                         final StreamingHttpResponseFactory responseFactory) {
                 // Always use fallback as the Executor as this strategy does not specify an Executor.
                 HttpServiceContext wrappedCtx = new ExecutionContextOverridingServiceContext(ctx, fallback);
-                request = request.transformPayloadBody(p -> p.publishOnOverride(immediate()));
+                request = request.transformRawPayloadBody(p -> p.publishOnOverride(immediate()));
                 return handler.handle(wrappedCtx, request, responseFactory)
-                        .map(r -> r.transformPayloadBody(p -> p.subscribeOnOverride(immediate())))
+                        .map(r -> r.transformRawPayloadBody(p -> p.subscribeOnOverride(immediate())))
                         .subscribeOnOverride(immediate());
             }
 

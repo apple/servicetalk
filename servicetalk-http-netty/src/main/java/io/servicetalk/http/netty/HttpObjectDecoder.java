@@ -41,6 +41,7 @@ import io.servicetalk.transport.netty.internal.ByteToMessageDecoder;
 import io.servicetalk.transport.netty.internal.CloseHandler;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.DecoderException;
@@ -397,14 +398,15 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
     }
 
     @Override
-    protected final void discardSomeReadBytes() {
-        final int readerIndex = cumulationReaderIndex();
-        super.discardSomeReadBytes();
-        cumulationIndex -= readerIndex - cumulationReaderIndex();
+    protected final ByteBuf swapCumulation(ByteBuf cumulation, ByteBufAllocator allocator) {
+        final int readerIndex = cumulation.readerIndex();
+        ByteBuf newCumulation = super.swapCumulation(cumulation, allocator);
+        cumulationIndex -= readerIndex - newCumulation.readerIndex();
+        return newCumulation;
     }
 
     @Override
-    protected void cumulationReset() {
+    protected final void cumulationReset() {
         cumulationIndex = -1;
     }
 

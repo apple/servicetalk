@@ -21,7 +21,7 @@ import io.servicetalk.http.api.StreamingHttpResponse;
 
 import java.util.Random;
 
-import static io.servicetalk.concurrent.api.BlockingTestUtils.awaitIndefinitelyNonNull;
+import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.glassfish.jersey.message.internal.CommittingOutputStream.DEFAULT_BUFFER_SIZE;
 
@@ -54,8 +54,9 @@ public final class TestUtils {
 
     public static String getContentAsString(final Publisher<Buffer> content) {
         try {
-            return awaitIndefinitelyNonNull(
-                    content.reduce(StringBuilder::new, (sb, b) -> sb.append(b.toString(UTF_8)))).toString();
+            return content.reduce(DEFAULT_ALLOCATOR::newBuffer, Buffer::writeBytes)
+                    .map(buffer -> buffer.toString(UTF_8))
+                    .toFuture().get();
         } catch (final Throwable t) {
             throw new ContentReadException("Failed to extract content from: " + content, t);
         }
