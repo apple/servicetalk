@@ -349,7 +349,7 @@ public abstract class Completable {
      * {@link Completable} has terminated successfully.
      */
     public final <T> Publisher<T> concatWith(Publisher<? extends T> next) {
-        return toSingle().flatMapPublisher(aVoid -> next);
+        return this.<T>toPublisher().concatWith(next);
     }
 
     /**
