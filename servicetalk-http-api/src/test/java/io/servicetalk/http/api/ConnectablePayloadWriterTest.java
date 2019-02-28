@@ -16,8 +16,8 @@
 package io.servicetalk.http.api;
 
 import io.servicetalk.concurrent.PublisherSource;
-import io.servicetalk.concurrent.api.MockedSubscriberRule;
 import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.concurrent.api.TestPublisherSubscriber;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 
 import org.junit.After;
@@ -48,12 +48,15 @@ import static java.lang.Runtime.getRuntime;
 import static java.lang.System.arraycopy;
 import static java.nio.charset.StandardCharsets.ISO_8859_1;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 public class ConnectablePayloadWriterTest {
@@ -62,8 +65,7 @@ public class ConnectablePayloadWriterTest {
     public final Timeout timeout = new ServiceTalkTestTimeout();
     @Rule
     public final ExpectedException exception = ExpectedException.none();
-    @Rule
-    public final MockedSubscriberRule<String> subscriberRule = new MockedSubscriberRule<>();
+    public final TestPublisherSubscriber<String> subscriber = new TestPublisherSubscriber<>();
     private ConnectablePayloadWriter<String> cpw;
     private ExecutorService executorService;
 
@@ -85,12 +87,11 @@ public class ConnectablePayloadWriterTest {
             cpw.flush();
             cpw.close();
         }));
-        final Publisher<String> connect = cpw.connect();
-        subscriberRule.subscribe(connect);
-        subscriberRule.verifyNoEmissions();
-        subscriberRule.request(1);
+        toSource(cpw.connect()).subscribe(subscriber);
+        subscriber.request(1);
         f.get();
-        subscriberRule.verifySuccessNoRequestN("foo");
+        assertThat(subscriber.items(), contains("foo"));
+        assertTrue(subscriber.isCompleted());
         cpw.close(); // should be idempotent
     }
 
@@ -123,7 +124,8 @@ public class ConnectablePayloadWriterTest {
         cpw.close();
         onSubscribe.await();
         assertThat(errorRef.get(), instanceOf(IllegalArgumentException.class));
-        subscriberRule.subscribe(cpw.connect()).verifyFailure(IllegalStateException.class);
+        toSource(cpw.connect()).subscribe(subscriber);
+        assertThat(subscriber.error(), is(instanceOf(IllegalStateException.class)));
         assertThat(onComplete.getCount(), equalTo(1L));
     }
 
@@ -155,7 +157,8 @@ public class ConnectablePayloadWriterTest {
         cpw.flush();
         cpw.close();
         onNext.await();
-        subscriberRule.subscribe(cpw.connect()).verifyFailure(IllegalStateException.class);
+        toSource(cpw.connect()).subscribe(subscriber);
+        assertThat(subscriber.error(), is(instanceOf(IllegalStateException.class)));
         onComplete.await();
     }
 
@@ -184,7 +187,8 @@ public class ConnectablePayloadWriterTest {
         });
         cpw.close();
         onSubscribe.await();
-        subscriberRule.subscribe(cpw.connect()).verifyFailure(IllegalStateException.class);
+        toSource(cpw.connect()).subscribe(subscriber);
+        assertThat(subscriber.error(), is(instanceOf(IllegalStateException.class)));
         onComplete.await();
     }
 
@@ -227,7 +231,8 @@ public class ConnectablePayloadWriterTest {
         }
         cpw.close();
         onError.await();
-        subscriberRule.subscribe(cpw.connect()).verifyFailure(IllegalStateException.class);
+        toSource(cpw.connect()).subscribe(subscriber);
+        assertThat(subscriber.error(), is(instanceOf(IllegalStateException.class)));
         assertThat(onComplete.getCount(), equalTo(1L));
     }
 
@@ -239,50 +244,48 @@ public class ConnectablePayloadWriterTest {
             cpw.close();
         }));
 
-        final Publisher<String> connect = cpw.connect();
-        subscriberRule.subscribe(connect);
-        subscriberRule.verifyNoEmissions();
-        subscriberRule.request(1);
+        toSource(cpw.connect()).subscribe(subscriber);
+        subscriber.request(1);
         f.get();
-        subscriberRule.verifySuccessNoRequestN("foo");
+        assertThat(subscriber.items(), contains("foo"));
+        assertTrue(subscriber.isCompleted());
     }
 
     @Test
     public void connectSubscribeRequestWriteFlushClose() throws Exception {
-        final Publisher<String> connect = cpw.connect();
-        subscriberRule.subscribe(connect);
-        subscriberRule.verifyNoEmissions();
-        subscriberRule.request(1);
+        toSource(cpw.connect()).subscribe(subscriber);
+        assertThat(subscriber.items(), is(empty()));
+        subscriber.request(1);
         Future<?> f = executorService.submit(toRunnable(() -> {
             cpw.write("foo");
             cpw.flush();
             cpw.close();
         }));
         f.get();
-        subscriberRule.verifySuccessNoRequestN("foo");
+        assertThat(subscriber.items(), contains("foo"));
+        assertTrue(subscriber.isCompleted());
     }
 
     @Test
     public void connectSubscribeWriteFlushCloseRequest() throws Exception {
-        final Publisher<String> connect = cpw.connect();
-        subscriberRule.subscribe(connect);
+        toSource(cpw.connect()).subscribe(subscriber);
         Future<?> f = executorService.submit(toRunnable(() -> {
             cpw.write("foo");
             cpw.flush();
             cpw.close();
         }));
-        subscriberRule.verifyNoEmissions();
-        subscriberRule.request(1);
+        assertThat(subscriber.items(), is(empty()));
+        subscriber.request(1);
         f.get();
-        subscriberRule.verifySuccessNoRequestN("foo");
+        assertThat(subscriber.items(), contains("foo"));
+        assertTrue(subscriber.isCompleted());
     }
 
     @Test
     public void requestWriteSingleWriteSingleFlushClose() throws Exception {
-        final Publisher<String> connect = cpw.connect();
-        subscriberRule.subscribe(connect);
-        subscriberRule.verifyNoEmissions();
-        subscriberRule.request(2);
+        toSource(cpw.connect()).subscribe(subscriber);
+        assertThat(subscriber.items(), is(empty()));
+        subscriber.request(2);
         Future<?> f = executorService.submit(toRunnable(() -> {
             cpw.write("foo");
             cpw.write("bar");
@@ -290,15 +293,15 @@ public class ConnectablePayloadWriterTest {
             cpw.close();
         }));
         f.get();
-        subscriberRule.verifySuccessNoRequestN("foo", "bar");
+        assertThat(subscriber.items(), contains("foo", "bar"));
+        assertTrue(subscriber.isCompleted());
     }
 
     @Test
     public void requestWriteSingleFlushWriteSingleFlushClose() throws Exception {
-        final Publisher<String> connect = cpw.connect();
-        subscriberRule.subscribe(connect);
-        subscriberRule.verifyNoEmissions();
-        subscriberRule.request(2);
+        toSource(cpw.connect()).subscribe(subscriber);
+        assertThat(subscriber.items(), is(empty()));
+        subscriber.request(2);
         Future<?> f = executorService.submit(toRunnable(() -> {
             cpw.write("foo");
             cpw.flush();
@@ -307,15 +310,15 @@ public class ConnectablePayloadWriterTest {
             cpw.close();
         }));
         f.get();
-        subscriberRule.verifySuccessNoRequestN("foo", "bar");
+        assertThat(subscriber.items(), contains("foo", "bar"));
+        assertTrue(subscriber.isCompleted());
     }
 
     @Test
     public void writeSingleFlushWriteSingleFlushRequestClose() throws Exception {
-        final Publisher<String> connect = cpw.connect();
-        subscriberRule.subscribe(connect);
-        subscriberRule.verifyNoEmissions();
-        subscriberRule.request(1);
+        toSource(cpw.connect()).subscribe(subscriber);
+        assertThat(subscriber.items(), is(empty()));
+        subscriber.request(1);
         Future<?> f = executorService.submit(toRunnable(() -> {
             cpw.write("foo");
             cpw.flush();
@@ -323,9 +326,10 @@ public class ConnectablePayloadWriterTest {
             cpw.flush();
             cpw.close();
         }));
-        subscriberRule.request(1);
+        subscriber.request(1);
         f.get();
-        subscriberRule.verifySuccessNoRequestN("foo", "bar");
+        assertThat(subscriber.items(), contains("foo", "bar"));
+        assertTrue(subscriber.isCompleted());
     }
 
     @Test
@@ -393,13 +397,10 @@ public class ConnectablePayloadWriterTest {
 
     @Test
     public void cancelCloses() throws Exception {
-        final Publisher<String> connect = cpw.connect();
-        subscriberRule.subscribe(connect);
-        subscriberRule.verifyNoEmissions();
-        subscriberRule.cancel();
-        Future<?> f = executorService.submit(toRunnable(() -> {
-            cpw.write("foo");
-        }));
+        toSource(cpw.connect()).subscribe(subscriber);
+        assertThat(subscriber.items(), is(empty()));
+        subscriber.cancel();
+        Future<?> f = executorService.submit(toRunnable(() -> cpw.write("foo")));
         exception.expect(ExecutionException.class);
         exception.expectCause(is(instanceOf(RuntimeException.class)));
         f.get();
@@ -407,28 +408,26 @@ public class ConnectablePayloadWriterTest {
 
     @Test
     public void cancelCloseAfterWrite() throws Exception {
-        final Publisher<String> connect = cpw.connect();
-        subscriberRule.subscribe(connect);
-        subscriberRule.verifyNoEmissions();
-        subscriberRule.request(1);
+        toSource(cpw.connect()).subscribe(subscriber);
+        assertThat(subscriber.items(), is(empty()));
+        subscriber.request(1);
         Future<?> f = executorService.submit(toRunnable(() -> {
             cpw.write("foo");
             cpw.flush();
         }));
         f.get();
-        subscriberRule.verifyItems("foo");
+        assertThat(subscriber.items(), contains("foo"));
 
-        subscriberRule.cancel();
+        subscriber.cancel();
         exception.expect(is(instanceOf(IOException.class)));
         cpw.write("foo");
     }
 
     @Test
     public void requestNegativeWrite() throws Exception {
-        final Publisher<String> connect = cpw.connect();
-        subscriberRule.subscribe(connect);
-        subscriberRule.verifyNoEmissions();
-        subscriberRule.request(-1);
+        toSource(cpw.connect()).subscribe(subscriber);
+        assertThat(subscriber.items(), is(empty()));
+        subscriber.request(-1);
         Future<?> f = executorService.submit(toRunnable(() -> {
             cpw.write("foo");
             cpw.flush();
@@ -440,14 +439,13 @@ public class ConnectablePayloadWriterTest {
             assertThat(e.getCause(), is(instanceOf(RuntimeException.class)));
             assertThat(e.getCause().getCause(), is(instanceOf(IOException.class)));
         }
-        subscriberRule.verifyFailure(IllegalArgumentException.class);
+        assertThat(subscriber.error(), is(instanceOf(IllegalArgumentException.class)));
     }
 
     @Test
     public void writeRequestNegative() throws Exception {
-        final Publisher<String> connect = cpw.connect();
-        subscriberRule.subscribe(connect);
-        subscriberRule.verifyNoEmissions();
+        toSource(cpw.connect()).subscribe(subscriber);
+        assertThat(subscriber.items(), is(empty()));
         CyclicBarrier cb = new CyclicBarrier(2);
         Future<?> f = executorService.submit(toRunnable(() -> {
             cb.await();
@@ -455,7 +453,7 @@ public class ConnectablePayloadWriterTest {
             cpw.flush();
         }));
         cb.await();
-        subscriberRule.request(-1);
+        subscriber.request(-1);
         try {
             f.get();
             fail();
@@ -463,7 +461,7 @@ public class ConnectablePayloadWriterTest {
             assertThat(e.getCause(), is(instanceOf(RuntimeException.class)));
             assertThat(e.getCause().getCause(), is(instanceOf(IOException.class)));
         }
-        subscriberRule.verifyFailure(IllegalArgumentException.class);
+        assertThat(subscriber.error(), is(instanceOf(IllegalArgumentException.class)));
     }
 
     @Test
@@ -475,10 +473,11 @@ public class ConnectablePayloadWriterTest {
         }));
         final Publisher<String> connect = cpw.connect();
         cb.await();
-        subscriberRule.subscribe(connect);
-        subscriberRule.request(1);
+        toSource(connect).subscribe(subscriber);
+        subscriber.request(1);
         f.get();
-        subscriberRule.verifySuccess();
+        assertThat(subscriber.items(), is(empty()));
+        assertTrue(subscriber.isCompleted());
     }
 
     @Test
