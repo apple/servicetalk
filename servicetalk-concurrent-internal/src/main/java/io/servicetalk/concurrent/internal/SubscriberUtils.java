@@ -376,4 +376,15 @@ public final class SubscriberUtils {
             LOGGER.debug("Ignoring exception from onError of Subscriber {}.", subscriber, t);
         }
     }
+
+    /**
+     * Handle the case when a call to {@link Subscriber#onSubscribe(PublisherSource.Subscription)} throws from a source.
+     * @param subscriber The {@link Subscriber} that threw an exception from
+     * {@link Subscriber#onSubscribe(PublisherSource.Subscription)}.
+     * @param cause The exception thrown by {@code subscriber}.
+     * @param <T> The type of {@link Subscriber}.
+     */
+    public static <T> void handleExceptionFromOnSubscribe(Subscriber<T> subscriber, Throwable cause) {
+        LOGGER.warn("Ignoring exception from onSubscribe of Subscriber {}.", subscriber, cause);
+    }
 }
