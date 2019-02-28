@@ -47,7 +47,8 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.concurrent.api.Single.error;
+import static io.servicetalk.concurrent.api.Completable.error;
+import static io.servicetalk.concurrent.api.Single.defer;
 import static io.servicetalk.concurrent.api.Single.success;
 import static io.servicetalk.transport.netty.internal.BuilderUtils.toNettyAddress;
 import static io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutors.toEventLoopAwareNettyIoExecutor;
@@ -110,9 +111,9 @@ public final class TcpServerBinder {
                     connectionSingle = connectionSingle
                             .flatMap(conn ->
                                 executionContext.executor().submit(() -> connectionAcceptor.accept(conn)
-                                        .flatMap(result -> result != null && result ? success(conn) :
-                                            error(new ConnectionRejectedException(
-                                                    "connection acceptor rejected a connection")))
+                                        .onErrorResume(t -> error(new ConnectionRejectedException(
+                                                "connection acceptor rejected a connection", t)))
+                                        .concatWith(defer(() -> success(conn)))
                             ).flatMap(identity())
                             // The defer gives us isolation for AsyncContext. We don't want the Acceptor's AsyncContext
                             // to leak into the Service's AsyncContext.

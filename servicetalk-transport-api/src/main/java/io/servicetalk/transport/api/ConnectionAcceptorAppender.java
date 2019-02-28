@@ -17,10 +17,9 @@ package io.servicetalk.transport.api;
 
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.CompositeCloseable;
-import io.servicetalk.concurrent.api.Single;
 
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
-import static io.servicetalk.concurrent.api.Single.success;
+import static io.servicetalk.concurrent.api.Completable.defer;
 import static java.util.Objects.requireNonNull;
 
 final class ConnectionAcceptorAppender implements ConnectionAcceptor {
@@ -35,9 +34,8 @@ final class ConnectionAcceptorAppender implements ConnectionAcceptor {
     }
 
     @Override
-    public Single<Boolean> accept(final ConnectionContext context) {
-        return first.accept(context).flatMap(firstResult ->
-                firstResult != null && firstResult ? second.accept(context) : success(firstResult));
+    public Completable accept(final ConnectionContext context) {
+        return first.accept(context).concatWith(defer(() -> second.accept(context)));
     }
 
     @Override

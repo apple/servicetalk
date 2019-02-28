@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,8 +18,8 @@ package io.servicetalk.http.netty;
 import io.servicetalk.client.api.ConnectionClosedException;
 import io.servicetalk.client.api.MaxRequestLimitExceededException;
 import io.servicetalk.client.api.NoAvailableHostException;
+import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Executor;
-import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.DeliberateException;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
@@ -39,8 +39,8 @@ import java.util.function.BiFunction;
 import javax.annotation.Nullable;
 import javax.net.ssl.SSLSession;
 
-import static io.servicetalk.concurrent.api.Single.error;
-import static io.servicetalk.concurrent.api.Single.success;
+import static io.servicetalk.concurrent.api.Completable.completed;
+import static io.servicetalk.concurrent.api.Completable.error;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpProtocolVersions.HTTP_1_1;
@@ -59,18 +59,18 @@ import static org.junit.Assert.assertThat;
 public class NettyHttpServerConnectionAcceptorTest extends AbstractNettyHttpServerTest {
 
     enum FilterMode {
-        ACCEPT_ALL(true, (executor, context) -> success(true)),
-        DELAY_ACCEPT_ALL(true, (executor, context) -> executor.timer(100, MILLISECONDS).concatWith(success(true))),
-        REJECT_ALL(false, (executor, context) -> success(false)),
+        ACCEPT_ALL(true, (executor, context) -> completed()),
+        DELAY_ACCEPT_ALL(true, (executor, context) -> executor.timer(100, MILLISECONDS).concatWith(completed())),
+        REJECT_ALL(false, (executor, context) -> error(DELIBERATE_EXCEPTION)),
         DELAY_REJECT_ALL(false, (executor, context) ->
-                executor.timer(100, MILLISECONDS).concatWith(success(false))),
+                executor.timer(100, MILLISECONDS).concatWith(error(DELIBERATE_EXCEPTION))),
         THROW_EXCEPTION(false, (executor, context) -> {
             throw DELIBERATE_EXCEPTION;
         }),
         DELAY_SINGLE_ERROR(false, (executor, context) ->
                 executor.timer(100, MILLISECONDS).concatWith(error(DELIBERATE_EXCEPTION))),
         SINGLE_ERROR(false, (executor, context) -> error(new DeliberateException())),
-        ACCEPT_ALL_CONSTANT(true, (executor, context) -> success(true)) {
+        ACCEPT_ALL_CONSTANT(true, (executor, context) -> completed()) {
             @Override
             ConnectionAcceptor getContextFilter(final Executor executor) {
                 return ConnectionAcceptor.ACCEPT_ALL;
@@ -78,11 +78,11 @@ public class NettyHttpServerConnectionAcceptorTest extends AbstractNettyHttpServ
         };
 
         private final boolean expectAccept;
-        private final BiFunction<Executor, ConnectionContext, Single<Boolean>>
+        private final BiFunction<Executor, ConnectionContext, Completable>
                 contextFilterFunction;
 
         FilterMode(boolean expectAccept, BiFunction<Executor, ConnectionContext,
-                Single<Boolean>> contextFilterFunction) {
+                Completable> contextFilterFunction) {
             this.expectAccept = expectAccept;
             this.contextFilterFunction = contextFilterFunction;
         }

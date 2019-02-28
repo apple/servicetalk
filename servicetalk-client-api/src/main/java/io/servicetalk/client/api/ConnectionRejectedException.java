@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,5 +28,15 @@ public final class ConnectionRejectedException extends RuntimeException implemen
      */
     public ConnectionRejectedException(final String message) {
         super(message);
+    }
+
+    /**
+     * Creates a new instance.
+     *
+     * @param message the detail message.
+     * @param cause the cause.
+     */
+    public ConnectionRejectedException(final String message, final Throwable cause) {
+        super(message, cause);
     }
 }
