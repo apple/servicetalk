@@ -38,6 +38,11 @@ public class PublisherExecutorPreservationTest {
     }
 
     @Test
+    public void testPubToSingleOrError() {
+        assertSame(EXEC.executor(), publisher.toSingleOrError().executor());
+    }
+
+    @Test
     public void testPubToCompletable() {
         assertSame(EXEC.executor(), publisher.ignoreElements().executor());
     }

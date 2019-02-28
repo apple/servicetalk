@@ -474,7 +474,7 @@ public final class RedisRequests {
                                                           final Predicate<RedisData> responsePredicate,
                                                       final BiFunction<ReservedRedisConnection, Boolean, C> builder) {
         return reservedCnx.request(request)
-                .first()
+                .toSingleOrError()
                 .map(res -> {
                     if (responsePredicate.test(res)) {
                         return builder.apply(reservedCnx, closeCnx);

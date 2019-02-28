@@ -62,7 +62,7 @@ public class PublisherJsonResources {
     @POST
     public Single<Response> postJsonResponse(@QueryParam("fail") final boolean fail,
                                              final Publisher<Map<String, Object>> publisher) {
-        return postJson(fail, publisher).first().map(m -> accepted(m).build());
+        return postJson(fail, publisher).toSingleOrError().map(m -> accepted(m).build());
     }
 
     @Consumes(APPLICATION_JSON)

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,6 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.PublisherSource;
-import io.servicetalk.concurrent.PublisherSource.Subscription;
-import io.servicetalk.concurrent.SingleSource.Subscriber;
 import io.servicetalk.concurrent.internal.SignalOffloader;
 
 import org.slf4j.Logger;
@@ -29,20 +27,10 @@ import javax.annotation.Nullable;
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.checkDuplicateSubscription;
 
-/**
- * A single created from a {@link Publisher}.
- *
- * @param <T> Type of items emitted by this {@link Single}.
- */
-final class PubToSingle<T> extends AbstractNoHandleSubscribeSingle<T> {
+final class PubToSingleOrError<T> extends AbstractNoHandleSubscribeSingle<T> {
     private final Publisher<T> source;
 
-    /**
-     * New instance.
-     *
-     * @param source {@link Publisher} for this {@link Single}.
-     */
-    PubToSingle(Publisher<T> source) {
+    PubToSingleOrError(Publisher<T> source) {
         super(source.executor());
         this.source = source;
     }
@@ -62,15 +50,16 @@ final class PubToSingle<T> extends AbstractNoHandleSubscribeSingle<T> {
     }
 
     private static final class PubToSingleSubscriber<T> implements PublisherSource.Subscriber<T> {
-
         private static final Logger LOGGER = LoggerFactory.getLogger(PubToSingleSubscriber.class);
-
+        private static final Object NULL_VALUE = new Object();
         private static final byte STATE_SENT_ON_SUBSCRIBE = 1;
         private static final byte STATE_SENT_ON_SUBSCRIBE_AND_DONE = 2;
 
         private final Subscriber<? super T> subscriber;
         @Nullable
-        private Subscription subscription;
+        private PublisherSource.Subscription subscription;
+        @Nullable
+        private Object lastValue;
         private byte state;
 
         PubToSingleSubscriber(final Subscriber<? super T> subscriber) {
@@ -78,10 +67,10 @@ final class PubToSingle<T> extends AbstractNoHandleSubscribeSingle<T> {
         }
 
         @Override
-        public void onSubscribe(Subscription s) {
+        public void onSubscribe(PublisherSource.Subscription s) {
             if (checkDuplicateSubscription(subscription, s)) {
                 subscription = s;
-                s.request(1);
+                s.request(2); // Request 2 items because we want to see if there are multiple items before termination.
                 if (state != STATE_SENT_ON_SUBSCRIBE_AND_DONE) {
                     state = STATE_SENT_ON_SUBSCRIBE;
                     subscriber.onSubscribe(s);
@@ -91,7 +80,16 @@ final class PubToSingle<T> extends AbstractNoHandleSubscribeSingle<T> {
 
         @Override
         public void onNext(T t) {
-            terminate(t);
+            if (lastValue == null) {
+                lastValue = t == null ? NULL_VALUE : t;
+            } else {
+                try {
+                    assert subscription != null;
+                    subscription.cancel();
+                } finally {
+                    terminate(new IllegalArgumentException("only a single item expected, but saw second value: " + t));
+                }
+            }
         }
 
         @Override
@@ -101,14 +99,10 @@ final class PubToSingle<T> extends AbstractNoHandleSubscribeSingle<T> {
 
         @Override
         public void onComplete() {
-            if (isDone()) {
-                // Avoid creating a new exception if we are already done.
-                return;
-            }
-            terminate(new NoSuchElementException());
+            terminate(lastValue == null ? new NoSuchElementException() : null);
         }
 
-        private void terminate(Object terminal) {
+        private void terminate(@Nullable Object terminal) {
             if (isDone()) {
                 return;
             }
@@ -129,15 +123,17 @@ final class PubToSingle<T> extends AbstractNoHandleSubscribeSingle<T> {
                 state = STATE_SENT_ON_SUBSCRIBE_AND_DONE;
             }
 
-            if (terminal instanceof Throwable) {
-                subscriber.onError((Throwable) terminal);
-            } else {
-                assert subscription != null : "Subscription can not be null.";
-                subscription.cancel();
-
-                @SuppressWarnings("unchecked")
-                final T t = (T) terminal;
-                subscriber.onSuccess(t);
+            try {
+                if (terminal instanceof Throwable) {
+                    subscriber.onError((Throwable) terminal);
+                } else {
+                    @SuppressWarnings("unchecked")
+                    final T t = lastValue == NULL_VALUE ? null : (T) lastValue;
+                    subscriber.onSuccess(t);
+                }
+            } finally {
+                // De-reference the last value to allow for GC.
+                lastValue = null;
             }
         }
 
