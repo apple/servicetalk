@@ -18,7 +18,6 @@ package io.servicetalk.transport.netty.internal;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.api.TestPublisherSubscriber;
-import io.servicetalk.concurrent.api.TestSubscription;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.transport.netty.internal.NettyConnection.TerminalPredicate;
 
@@ -176,13 +175,10 @@ public class DefaultNettyPipelinedConnectionTest {
     @Test
     public void testWriteCancelAndThenWrite() {
         toSource(requester.request(writePublisher1)).subscribe(readSubscriber);
-        final TestSubscription subscription = new TestSubscription();
-        writePublisher1.onSubscribe(subscription);
         readSubscriber.request(1);
         toSource(requester.request(writePublisher2)).subscribe(secondReadSubscriber);
         secondReadSubscriber.request(1);
         readSubscriber.cancel();
-        assertTrue(subscription.isCancelled());
         assertTrue(writePublisher2.isSubscribed());
         writePublisher2.onNext(1);
         writePublisher2.onComplete();
