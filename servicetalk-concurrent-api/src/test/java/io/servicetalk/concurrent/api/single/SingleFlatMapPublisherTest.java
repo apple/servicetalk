@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,11 +16,12 @@
 package io.servicetalk.concurrent.api.single;
 
 import io.servicetalk.concurrent.api.ExecutorRule;
-import io.servicetalk.concurrent.api.MockedSubscriberRule;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.TestPublisher;
+import io.servicetalk.concurrent.api.TestPublisherSubscriber;
 import io.servicetalk.concurrent.api.TestSingle;
+import io.servicetalk.concurrent.api.TestSubscription;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 
 import org.junit.Rule;
@@ -33,59 +34,76 @@ import java.util.concurrent.CountDownLatch;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Single.error;
 import static io.servicetalk.concurrent.api.Single.success;
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static java.lang.Thread.currentThread;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.sameInstance;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 public final class SingleFlatMapPublisherTest {
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
     @Rule
-    public final ExecutorRule executorRule = new ExecutorRule();
-    @Rule
-    public final MockedSubscriberRule<String> subscriber = new MockedSubscriberRule<>();
+    public final ExecutorRule executorRule = ExecutorRule.newRule();
 
-    private final TestPublisher<String> publisher = new TestPublisher<>();
+    private final TestPublisherSubscriber<String> subscriber = new TestPublisherSubscriber<>();
+    private final TestPublisher<String> publisher = new TestPublisher.Builder<String>()
+            .disableAutoOnSubscribe().build();
     private final TestSingle<String> single = new TestSingle<>();
+    private final TestSubscription subscription = new TestSubscription();
 
     @Test
     public void testFirstAndSecondPropagate() {
-        subscriber.subscribe(success(1).flatMapPublisher(s -> from(new String[]{"Hello1", "Hello2"}).map(str -> str + s))).request(2);
-        subscriber.verifySuccess("Hello11", "Hello21");
+        toSource(success(1).flatMapPublisher(s1 -> from(new String[]{"Hello1", "Hello2"}).map(str1 -> str1 + s1)))
+                .subscribe(subscriber);
+        subscriber.request(2);
+        assertThat(subscriber.items(), contains("Hello11", "Hello21"));
+        assertTrue(subscriber.isCompleted());
     }
 
     @Test
     public void testSuccess() {
-        subscriber.subscribe(success(1).flatMapPublisher(s -> publisher.sendOnSubscribe())).request(2);
-        publisher.sendItems("Hello1", "Hello2").onComplete();
-        subscriber.verifySuccess("Hello1", "Hello2");
+        toSource(success(1).flatMapPublisher(s1 -> publisher)).subscribe(subscriber);
+        subscriber.request(2);
+        publisher.onNext("Hello1", "Hello2");
+        publisher.onComplete();
+        assertThat(subscriber.items(), contains("Hello1", "Hello2"));
+        assertTrue(subscriber.isCompleted());
     }
 
     @Test
     public void testPublisherEmitsError() {
-        subscriber.subscribe(success(1).flatMapPublisher(s -> publisher.sendOnSubscribe())).request(1);
-        publisher.fail();
-        subscriber.verifyFailure(DELIBERATE_EXCEPTION);
+        toSource(success(1).flatMapPublisher(s1 -> publisher)).subscribe(subscriber);
+        subscriber.request(1);
+        publisher.onError(DELIBERATE_EXCEPTION);
+        assertThat(subscriber.error(), sameInstance(DELIBERATE_EXCEPTION));
     }
 
     @Test
     public void testSingleEmitsError() {
-        subscriber.subscribe(error(DELIBERATE_EXCEPTION).flatMapPublisher(s -> publisher.sendOnSubscribe())).request(1);
-        subscriber.verifyFailure(DELIBERATE_EXCEPTION);
+        toSource(error(DELIBERATE_EXCEPTION).flatMapPublisher(s1 -> publisher)).subscribe(subscriber);
+        subscriber.request(1);
+        assertFalse(publisher.isSubscribed());
+        assertThat(subscriber.error(), sameInstance(DELIBERATE_EXCEPTION));
     }
 
     @Test
     public void testCancelBeforeNextPublisher() {
-        subscriber.subscribe(single.flatMapPublisher(s -> publisher)).request(2);
+        toSource(single.flatMapPublisher(s1 -> publisher)).subscribe(subscriber);
+        subscriber.request(2);
         subscriber.cancel();
         assertThat("Original single not cancelled.", single.isCancelled(), is(true));
     }
 
     @Test
     public void testCancelNoRequest() {
-        subscriber.subscribe(single.flatMapPublisher(s -> publisher));
+        toSource(single.flatMapPublisher(s -> publisher)).subscribe(subscriber);
         subscriber.cancel();
         subscriber.request(1);
         single.verifyListenNotCalled();
@@ -93,35 +111,43 @@ public final class SingleFlatMapPublisherTest {
 
     @Test
     public void testCancelBeforeOnSubscribe() {
-        subscriber.subscribe(single.flatMapPublisher(s -> publisher)).request(2);
+        toSource(single.flatMapPublisher(s1 -> publisher)).subscribe(subscriber);
+        subscriber.request(2);
         single.onSuccess("Hello");
         subscriber.cancel();
         single.verifyCancelled();
-        publisher.sendOnSubscribe().verifyCancelled();
-        subscriber.verifyNoEmissions();
+        publisher.onSubscribe(subscription);
+        assertTrue(subscription.isCancelled());
+        assertTrue(subscriber.subscriptionReceived());
+        assertThat(subscriber.items(), hasSize(0));
+        assertFalse(subscriber.isTerminated());
     }
 
     @Test
     public void testCancelPostOnSubscribe() {
-        subscriber.subscribe(success(1).flatMapPublisher(s -> publisher.sendOnSubscribe())).request(2);
+        toSource(success(1).flatMapPublisher(s1 -> publisher)).subscribe(subscriber);
+        subscriber.request(2);
+        publisher.onSubscribe(subscription);
         subscriber.cancel();
-        publisher.verifyCancelled();
+        assertTrue(subscription.isCancelled());
     }
 
     @Test
     public void exceptionInTerminalCallsOnError() {
-        subscriber.subscribe(success(1).flatMapPublisher(s -> {
+        toSource(success(1).<String>flatMapPublisher(s1 -> {
             throw DELIBERATE_EXCEPTION;
-        })).request(2);
+        })).subscribe(subscriber);
+        subscriber.request(2);
         single.onSuccess("Hello");
-        subscriber.verifyFailure(DELIBERATE_EXCEPTION);
+        assertThat(subscriber.error(), sameInstance(DELIBERATE_EXCEPTION));
     }
 
     @Test
     public void nullInTerminalCallsOnError() {
-        subscriber.subscribe(success(1).flatMapPublisher(s -> null)).request(2);
+        toSource(success(1).<String>flatMapPublisher(s1 -> null)).subscribe(subscriber);
+        subscriber.request(2);
         single.onSuccess("Hello");
-        subscriber.verifyFailure(NullPointerException.class);
+        assertThat(subscriber.error(), instanceOf(NullPointerException.class));
     }
 
     @Test

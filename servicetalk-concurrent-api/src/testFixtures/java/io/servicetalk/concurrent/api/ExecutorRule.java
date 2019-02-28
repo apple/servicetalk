@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,45 +18,49 @@ package io.servicetalk.concurrent.api;
 import org.junit.rules.ExternalResource;
 
 import java.util.concurrent.ExecutionException;
-import java.util.function.Supplier;
+
+import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
+import static java.lang.Thread.NORM_PRIORITY;
 
 /**
  * An {@link ExternalResource} wrapper for an {@link Executor}.
  */
-public final class ExecutorRule extends ExternalResource {
+public final class ExecutorRule<E extends Executor> extends ExternalResource {
 
-    private Executor executor;
-    private final Supplier<Executor> executorFactory;
+    private final E executor;
 
-    /**
-     * New instance. Uses a default {@link Executor}.
-     */
-    public ExecutorRule() {
-        this(Executors::newCachedThreadExecutor);
+    private ExecutorRule(final E executor) {
+        this.executor = executor;
     }
 
-    /**
-     * New instance.
-     * @param executorFactory {@link Supplier} called to create a new {@link Executor} every time {@link #before()} is
-     * invoked.
-     */
-    public ExecutorRule(final Supplier<Executor> executorFactory) {
-        this.executorFactory = executorFactory;
+    public static ExecutorRule<Executor> newRule() {
+        return withExecutor(Executors.newCachedThreadExecutor());
+    }
+
+    public static ExecutorRule<TestExecutor> withTestExecutor() {
+        return new ExecutorRule<>(new TestExecutor());
+    }
+
+    public static ExecutorRule<Executor> withExecutor(Executor executor) {
+        return new ExecutorRule<>(executor);
+    }
+
+    public static ExecutorRule<Executor> withNamePrefix(String namePrefix) {
+        return new ExecutorRule<>(newCachedThreadExecutor(new DefaultThreadFactory(namePrefix, true, NORM_PRIORITY)));
     }
 
     /**
      * Returns {@link Executor} created on the last call to {@link #before()}.
      *
-     * @return {@link Executor} created on the last call to {@link #before()}. {@code null} if {@link #before()} has not
-     * been called yet.
+     * @return {@link Executor} created on the last call to {@link #before()}. {@code null} if {@link #before()} has
+     * not been called yet.
      */
-    public Executor executor() {
+    public E executor() {
         return executor;
     }
 
     @Override
     protected void before() {
-        executor = executorFactory.get();
     }
 
     @Override

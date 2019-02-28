@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,32 +15,32 @@
  */
 package io.servicetalk.concurrent.api.publisher;
 
-import io.servicetalk.concurrent.api.MockedSubscriberRule;
 import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.concurrent.api.PublisherRule;
+import io.servicetalk.concurrent.api.TestPublisher;
+import io.servicetalk.concurrent.api.TestPublisherSubscriber;
 import io.servicetalk.concurrent.internal.DeliberateException;
 
-import org.junit.Rule;
 import org.junit.Test;
 
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static org.hamcrest.Matchers.sameInstance;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 public abstract class AbstractDoCompleteTest {
 
-    @Rule
-    public final MockedSubscriberRule<String> rule = new MockedSubscriberRule<>();
-
-    @Rule
-    public final PublisherRule<String> publisher = new PublisherRule<>();
+    private final TestPublisher<String> publisher = new TestPublisher<>();
+    private final TestPublisherSubscriber<String> subscriber = new TestPublisherSubscriber<>();
 
     @Test
     public void testComplete() {
         Runnable onComplete = mock(Runnable.class);
-        rule.subscribe(doComplete(publisher.publisher(), onComplete));
-        publisher.complete();
-        rule.verifySuccess();
+        toSource(doComplete(publisher, onComplete)).subscribe(subscriber);
+        publisher.onComplete();
+        assertTrue(subscriber.isCompleted());
         verify(onComplete).run();
     }
 
@@ -50,7 +50,9 @@ public abstract class AbstractDoCompleteTest {
         Publisher<String> src = doComplete(Publisher.error(srcEx), () -> {
             throw DELIBERATE_EXCEPTION;
         });
-        rule.subscribe(src).requestAndVerifyFailure(srcEx);
+        toSource(src).subscribe(subscriber);
+        subscriber.request(1);
+        assertThat(subscriber.error(), sameInstance(srcEx));
     }
 
     protected abstract <T> Publisher<T> doComplete(Publisher<T> publisher, Runnable runnable);

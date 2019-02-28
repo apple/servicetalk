@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
  */
 package io.servicetalk.concurrent.api.publisher;
 
-import io.servicetalk.concurrent.api.PublisherRule;
+import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 
 import org.junit.AfterClass;
@@ -40,14 +40,14 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.collection.IsEmptyCollection.empty;
 
 public class PublisherToCompletionStageTest {
+
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
-    @Rule
-    public final PublisherRule<String> publisher = new PublisherRule<>();
 
     @Rule
     public final ExpectedException thrown = ExpectedException.none();
 
+    private final TestPublisher<String> publisher = new TestPublisher<>();
     private static ExecutorService jdkExecutor;
 
     @BeforeClass
@@ -77,12 +77,12 @@ public class PublisherToCompletionStageTest {
     private void verifyComplete(boolean completeBeforeListen, boolean sendData) throws InterruptedException {
         CountDownLatch latch = new CountDownLatch(1);
         AtomicReference<Collection<String>> resultRef = new AtomicReference<>();
-        CompletionStage<? extends Collection<String>> stage = publisher.publisher().toCompletionStage();
+        CompletionStage<? extends Collection<String>> stage = publisher.toCompletionStage();
         if (completeBeforeListen) {
             if (sendData) {
-                publisher.sendItems("Hello", "World");
+                publisher.onNext("Hello", "World");
             }
-            publisher.complete();
+            publisher.onComplete();
             stage.thenAccept(result -> {
                 resultRef.compareAndSet(null, result);
                 latch.countDown();
@@ -93,9 +93,9 @@ public class PublisherToCompletionStageTest {
                 latch.countDown();
             });
             if (sendData) {
-                publisher.sendItems("Hello", "World");
+                publisher.onNext("Hello", "World");
             }
-            publisher.complete();
+            publisher.onComplete();
         }
         latch.await();
         if (sendData) {
@@ -120,12 +120,12 @@ public class PublisherToCompletionStageTest {
     private void verifyError(boolean completeBeforeListen, boolean sendData) throws InterruptedException {
         CountDownLatch latch = new CountDownLatch(1);
         AtomicReference<Throwable> resultRef = new AtomicReference<>();
-        CompletionStage<? extends Collection<String>> stage = publisher.publisher().toCompletionStage();
+        CompletionStage<? extends Collection<String>> stage = publisher.toCompletionStage();
         if (completeBeforeListen) {
             if (sendData) {
-                publisher.sendItems("Hello", "World");
+                publisher.onNext("Hello", "World");
             }
-            publisher.fail();
+            publisher.onError(DELIBERATE_EXCEPTION);
             stage.exceptionally(cause -> {
                 resultRef.compareAndSet(null, cause);
                 latch.countDown();
@@ -138,9 +138,9 @@ public class PublisherToCompletionStageTest {
                 return null;
             });
             if (sendData) {
-                publisher.sendItems("Hello", "World");
+                publisher.onNext("Hello", "World");
             }
-            publisher.fail();
+            publisher.onError(DELIBERATE_EXCEPTION);
         }
         latch.await();
         assertThat(resultRef.get(), is(DELIBERATE_EXCEPTION));
@@ -148,40 +148,40 @@ public class PublisherToCompletionStageTest {
 
     @Test
     public void futureEmptyComplete() throws Exception {
-        Future<? extends Collection<String>> f = publisher.publisher().toFuture();
-        jdkExecutor.execute(publisher::complete);
+        Future<? extends Collection<String>> f = publisher.toFuture();
+        jdkExecutor.execute(publisher::onComplete);
         assertThat(f.get(), is(empty()));
     }
 
     @Test
     public void futureComplete() throws Exception {
-        Future<? extends Collection<String>> f = publisher.publisher().toFuture();
+        Future<? extends Collection<String>> f = publisher.toFuture();
         jdkExecutor.execute(() -> {
-            publisher.sendItems("Hello", "World");
-            publisher.complete();
+            publisher.onNext("Hello", "World");
+            publisher.onComplete();
         });
         assertThat(f.get(), contains("Hello", "World"));
     }
 
     @Test
     public void futureReduceComplete() throws Exception {
-        Future<StringBuilder> f = publisher.publisher().toFuture(StringBuilder::new, (sb, next) -> {
+        Future<StringBuilder> f = publisher.toFuture(StringBuilder::new, (sb, next) -> {
             sb.append(next);
             return sb;
         });
         jdkExecutor.execute(() -> {
-            publisher.sendItems("Hello", "World");
-            publisher.complete();
+            publisher.onNext("Hello", "World");
+            publisher.onComplete();
         });
         assertThat(f.get().toString(), is("HelloWorld"));
     }
 
     @Test
     public void futureFail() throws Exception {
-        Future<? extends Collection<String>> f = publisher.publisher().toFuture();
+        Future<? extends Collection<String>> f = publisher.toFuture();
         jdkExecutor.execute(() -> {
-            publisher.sendItems("Hello", "World");
-            publisher.fail();
+            publisher.onNext("Hello", "World");
+            publisher.onError(DELIBERATE_EXCEPTION);
         });
         thrown.expect(ExecutionException.class);
         thrown.expectCause(is(DELIBERATE_EXCEPTION));

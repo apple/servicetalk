@@ -40,7 +40,7 @@ public abstract class AbstractPublishAndSubscribeOnTest {
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
     @Rule
-    public final ExecutorRule originalSourceExecutorRule = new ExecutorRule();
+    public final ExecutorRule originalSourceExecutorRule = ExecutorRule.newRule();
 
     protected AtomicReferenceArray<Thread> setupAndSubscribe(Function<Completable, Completable> offloadingFunction)
             throws InterruptedException {

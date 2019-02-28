@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,9 +21,9 @@ import io.servicetalk.concurrent.api.Publisher;
 import org.junit.Test;
 
 import static io.servicetalk.concurrent.api.Publisher.from;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 public final class FromArrayPublisherTest extends FromInMemoryPublisherAbstractTest {
     @Override
@@ -40,8 +40,9 @@ public final class FromArrayPublisherTest extends FromInMemoryPublisherAbstractT
     @Test
     public void testEmptyInvalidRequestAfterCompleteDoesNotDeliverOnError() {
         InMemorySource source = newSource(0);
-        subscriber.subscribe(source.publisher()).verifySuccess();
+        toSource(source.publisher()).subscribe(subscriber);
+        assertTrue(subscriber.isCompleted());
         subscriber.request(-1);
-        verify(subscriber.subscriber(), never()).onError(any());
+        assertFalse(subscriber.isErrored());
     }
 }

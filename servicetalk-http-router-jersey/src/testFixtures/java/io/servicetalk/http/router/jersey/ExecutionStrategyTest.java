@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,6 @@
  */
 package io.servicetalk.http.router.jersey;
 
-import io.servicetalk.concurrent.api.DefaultThreadFactory;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.ExecutorRule;
 import io.servicetalk.http.api.HttpExecutionStrategy;
@@ -41,7 +40,6 @@ import java.util.function.Function;
 import javax.ws.rs.core.Application;
 
 import static io.servicetalk.concurrent.api.Executors.immediate;
-import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
 import static io.servicetalk.http.api.HttpHeaderValues.APPLICATION_JSON;
@@ -57,7 +55,6 @@ import static io.servicetalk.http.router.jersey.resources.ExecutionStrategyResou
 import static io.servicetalk.http.router.jersey.resources.ExecutionStrategyResources.THREAD_NAME;
 import static io.servicetalk.transport.netty.internal.GlobalExecutionContext.globalExecutionContext;
 import static java.lang.String.format;
-import static java.lang.Thread.NORM_PRIORITY;
 import static java.util.Arrays.asList;
 import static java.util.Arrays.stream;
 import static java.util.Collections.singletonMap;
@@ -71,12 +68,10 @@ public final class ExecutionStrategyTest extends AbstractJerseyStreamingHttpServ
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     @ClassRule
-    public static final ExecutorRule ROUTER_EXEC = new ExecutorRule(() ->
-            newCachedThreadExecutor(new DefaultThreadFactory("router-", true, NORM_PRIORITY)));
+    public static final ExecutorRule ROUTER_EXEC = ExecutorRule.withNamePrefix("router-");
 
     @ClassRule
-    public static final ExecutorRule ROUTE_EXEC = new ExecutorRule(() ->
-            newCachedThreadExecutor(new DefaultThreadFactory("route-", true, NORM_PRIORITY)));
+    public static final ExecutorRule ROUTE_EXEC = ExecutorRule.withNamePrefix("route-");
 
     public static class TestApplication extends Application {
         @Override

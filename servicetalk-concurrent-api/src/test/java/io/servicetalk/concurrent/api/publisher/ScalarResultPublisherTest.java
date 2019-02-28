@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,36 +15,49 @@
  */
 package io.servicetalk.concurrent.api.publisher;
 
-import io.servicetalk.concurrent.api.MockedSubscriberRule;
 import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.concurrent.api.TestPublisherSubscriber;
 
-import org.junit.Rule;
 import org.junit.Test;
 
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.sameInstance;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 public class ScalarResultPublisherTest {
 
-    @Rule
-    public MockedSubscriberRule<String> subscriberRule = new MockedSubscriberRule<>();
+    private TestPublisherSubscriber<String> subscriber = new TestPublisherSubscriber<>();
 
     @Test
     public void testJust() {
-        subscriberRule.subscribe(Publisher.just("Hello")).verifySuccess("Hello");
+        toSource(Publisher.just("Hello")).subscribe(subscriber);
+        subscriber.request(1);
+        assertThat(subscriber.items(), contains("Hello"));
+        assertTrue(subscriber.isCompleted());
     }
 
     @Test
     public void testError() {
-        subscriberRule.subscribe(Publisher.error(DELIBERATE_EXCEPTION)).verifyFailure(DELIBERATE_EXCEPTION);
+        toSource(Publisher.<String>error(DELIBERATE_EXCEPTION)).subscribe(subscriber);
+        assertThat(subscriber.error(), sameInstance(DELIBERATE_EXCEPTION));
     }
 
     @Test
     public void testEmpty() {
-        subscriberRule.subscribe(Publisher.empty()).verifySuccess();
+        toSource(Publisher.<String>empty()).subscribe(subscriber);
+        assertTrue(subscriber.isCompleted());
     }
 
     @Test
     public void testNever() {
-        subscriberRule.subscribe(Publisher.never()).verifyNoEmissions();
+        toSource(Publisher.<String>never()).subscribe(subscriber);
+        assertTrue(subscriber.subscriptionReceived());
+        assertThat(subscriber.items(), hasSize(0));
+        assertFalse(subscriber.isTerminated());
     }
 }

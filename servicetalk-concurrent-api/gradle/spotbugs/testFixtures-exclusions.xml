@@ -21,8 +21,4 @@
     <Field name="executor"/>
     <Bug pattern="NP_NONNULL_FIELD_NOT_INITIALIZED_IN_CONSTRUCTOR"/>
   </Match>
-  <Match>
-    <Class name="io.servicetalk.concurrent.api.PublisherRule"/>
-    <Bug pattern="NP_NONNULL_FIELD_NOT_INITIALIZED_IN_CONSTRUCTOR"/>
-  </Match>
 </FindBugsFilter>

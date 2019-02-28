@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,8 +19,8 @@ import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.SingleSource;
-import io.servicetalk.concurrent.api.MockedSubscriberRule;
 import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.concurrent.api.TestPublisherSubscriber;
 import io.servicetalk.concurrent.internal.DuplicateSubscribeException;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.transport.netty.internal.NettyConnection.TerminalPredicate;
@@ -52,8 +52,11 @@ import static io.servicetalk.transport.netty.internal.CloseHandler.UNSUPPORTED_P
 import static io.servicetalk.transport.netty.internal.FlushStrategies.defaultFlushStrategy;
 import static java.util.Objects.requireNonNull;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertSame;
@@ -67,11 +70,9 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 public class NettyChannelPublisherTest {
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
-    @Rule
-    public final MockedSubscriberRule<Integer> subscriber = new MockedSubscriberRule<>();
-    @Rule
-    public final MockedSubscriberRule<Integer> subscriber2 = new MockedSubscriberRule<>();
 
+    private final TestPublisherSubscriber<Integer> subscriber = new TestPublisherSubscriber<>();
+    private final TestPublisherSubscriber<Integer> subscriber2 = new TestPublisherSubscriber<>();
     private Publisher<Integer> publisher;
     private EmbeddedChannel channel;
     private boolean nextItemTerminal;
@@ -109,86 +110,107 @@ public class NettyChannelPublisherTest {
 
     @Test
     public void testSupplyEqualsDemand() {
-        subscriber.subscribe(publisher).request(3);
+        toSource(publisher).subscribe(subscriber);
+        subscriber.request(3);
         fireChannelRead(1, 2);
-        subscriber.verifyItems(1, 2);
+        assertThat(subscriber.items(), contains(1, 2));
         nextItemTerminal = true;
         fireChannelRead(false, 3);
-        subscriber.verifySuccessNoRequestN(1, 2, 3);
+        assertThat(subscriber.items(), contains(1, 2, 3));
+        assertTrue(subscriber.isCompleted());
     }
 
     @Test
     public void testSupplyLessThanDemand() {
-        subscriber.subscribe(publisher).request(4);
+        toSource(publisher).subscribe(subscriber);
+        subscriber.request(4);
         fireChannelRead(1, 2);
-        subscriber.verifyItems(1, 2);
+        assertThat(subscriber.items(), contains(1, 2));
         nextItemTerminal = true;
         fireChannelRead(false, 3);
-        subscriber.verifySuccessNoRequestN(1, 2, 3);
+        assertThat(subscriber.items(), contains(1, 2, 3));
+        assertTrue(subscriber.isCompleted());
     }
 
     @Test
     public void testDemandLessThanSupply() {
-        subscriber.subscribe(publisher).request(1);
+        toSource(publisher).subscribe(subscriber);
+        subscriber.request(1);
         fireChannelRead(1, 2);
-        subscriber.verifyItems(1).request(1);
+        assertThat(subscriber.items(), contains(1));
+        subscriber.request(1);
         nextItemTerminal = true;
         fireChannelReadToBuffer(3);
-        subscriber.request(1).verifySuccessNoRequestN(1, 2, 3);
+        subscriber.request(1);
+        assertThat(subscriber.items(), contains(1, 2, 3));
+        assertTrue(subscriber.isCompleted());
     }
 
     @Test
     public void testBufferDrainOnClose() throws Exception {
-        subscriber.subscribe(publisher);
+        toSource(publisher).subscribe(subscriber);
         fireChannelReadToBuffer(1, 2);
         channel.close().await();
         subscriber.request(2);
-        subscriber.verifyItems(1, 2).verifyFailure(ClosedChannelException.class);
+        assertThat(subscriber.items(), contains(1, 2));
+        assertThat(subscriber.error(), instanceOf(ClosedChannelException.class));
     }
 
     @Test
     public void testErrorBufferedWithExactDemand() {
-        subscriber.subscribe(publisher).request(1);
+        toSource(publisher).subscribe(subscriber);
+        subscriber.request(1);
         fireChannelRead(1, 2);
         channel.pipeline().fireExceptionCaught(DELIBERATE_EXCEPTION);
-        subscriber.verifyItems(1).request(1).verifyItems(1, 2).verifyFailure(DELIBERATE_EXCEPTION);
+        assertThat(subscriber.items(), contains(1));
+        subscriber.request(1);
+        assertThat(subscriber.items(), contains(1, 2));
+        assertThat(subscriber.error(), sameInstance(DELIBERATE_EXCEPTION));
     }
 
     @Test
     public void testErrorBufferedWithMoreDemand() {
-        subscriber.subscribe(publisher).request(1);
+        toSource(publisher).subscribe(subscriber);
+        subscriber.request(1);
         fireChannelRead(1, 2);
         channel.pipeline().fireExceptionCaught(DELIBERATE_EXCEPTION);
-        subscriber.verifyItems(1).request(2).verifyItems(1, 2).verifyFailure(DELIBERATE_EXCEPTION);
+        assertThat(subscriber.items(), contains(1));
+        subscriber.request(2);
+        assertThat(subscriber.items(), contains(1, 2));
+        assertThat(subscriber.error(), sameInstance(DELIBERATE_EXCEPTION));
     }
 
     @Test
     public void testErrorWithNoDemandNoBuffer() {
-        subscriber.subscribe(publisher);
+        toSource(publisher).subscribe(subscriber);
         channel.pipeline().fireExceptionCaught(DELIBERATE_EXCEPTION);
-        subscriber.verifyFailure(DELIBERATE_EXCEPTION);
+        assertThat(subscriber.error(), sameInstance(DELIBERATE_EXCEPTION));
     }
 
     @Test
     public void testErrorWithNoDemandAndBuffer() {
-        subscriber.subscribe(publisher);
+        toSource(publisher).subscribe(subscriber);
         fireChannelReadToBuffer(1);
         channel.pipeline().fireExceptionCaught(DELIBERATE_EXCEPTION);
-        subscriber.request(1).verifyItems(1).verifyFailure(DELIBERATE_EXCEPTION);
+        subscriber.request(1);
+        assertThat(subscriber.items(), contains(1));
+        assertThat(subscriber.error(), sameInstance(DELIBERATE_EXCEPTION));
     }
 
     @Test
     public void testErrorNoEmission() {
-        subscriber.subscribe(publisher).request(1);
+        toSource(publisher).subscribe(subscriber);
+        subscriber.request(1);
         channel.pipeline().fireExceptionCaught(DELIBERATE_EXCEPTION);
-        subscriber.verifyFailure(DELIBERATE_EXCEPTION);
+        assertThat(subscriber.error(), sameInstance(DELIBERATE_EXCEPTION));
     }
 
     @Test
     public void testConcurrentSubscribers() {
-        subscriber.subscribe(publisher).request(1);
+        toSource(publisher).subscribe(subscriber);
+        subscriber.request(1);
         fireChannelRead(1);
-        subscriber.verifyItems(1);
+        assertThat(subscriber.items(), contains(1));
 
         @SuppressWarnings("unchecked")
         Subscriber<Integer> sub2 = mock(Subscriber.class);
@@ -199,107 +221,143 @@ public class NettyChannelPublisherTest {
 
         nextItemTerminal = true;
         fireChannelReadToBuffer(2);
-        subscriber.request(1).verifySuccess(1, 2);
+        subscriber.request(1);
+        assertThat(subscriber.items(), contains(1, 2));
+        assertTrue(subscriber.isCompleted());
     }
 
     @Test
     public void testSequentialSubscriptionsNoCarryOverDemand() {
         nextItemTerminal = true;
-        subscriber.subscribe(publisher).request(1);
+        toSource(publisher).subscribe(subscriber);
+        subscriber.request(1);
         fireChannelRead(1);
-        subscriber.verifySuccessNoRequestN(1);
+        assertThat(subscriber.items(), contains(1));
+        assertTrue(subscriber.isCompleted());
 
-        subscriber.subscribe(publisher).request(1);
-        fireChannelRead(1);
-        subscriber.verifySuccessNoRequestN(1);
+        toSource(publisher).subscribe(subscriber2);
+        subscriber2.request(1);
+        fireChannelRead(2);
+        assertThat(subscriber2.items(), contains(2));
+        assertTrue(subscriber2.isCompleted());
     }
 
     @Test
     public void testSequentialSubscriptionsCarryOverDemand() {
         nextItemTerminal = true;
-        subscriber.subscribe(publisher).request(3);
+        toSource(publisher).subscribe(subscriber);
+        subscriber.request(3);
         fireChannelRead(1);
-        subscriber.verifySuccessNoRequestN(1);
+        assertThat(subscriber.items(), contains(1));
+        assertTrue(subscriber.isCompleted());
 
         nextItemTerminal = false;
         assertThat("Unexpected read requested from the channel.", readRequested, is(false));
-        subscriber.subscribe(publisher).request(2);
+        toSource(publisher).subscribe(subscriber2);
+        subscriber2.request(2);
         fireChannelRead(2);
         nextItemTerminal = true;
         fireChannelRead(false, 3);
-        subscriber.verifySuccessNoRequestN(2, 3);
+        assertThat(subscriber2.items(), contains(2, 3));
+        assertTrue(subscriber2.isCompleted());
     }
 
     @Test
     public void testBufferBetweenSubscriptions() {
         nextItemTerminal = true;
-        subscriber.subscribe(publisher).request(3);
+        toSource(publisher).subscribe(subscriber);
+        subscriber.request(3);
         fireChannelRead(1);
-        subscriber.verifySuccessNoRequestN(1);
+        assertThat(subscriber.items(), contains(1));
+        assertTrue(subscriber.isCompleted());
 
         fireChannelReadToBuffer(2);
-        subscriber.subscribe(publisher).request(3).verifySuccess(2);
+        toSource(publisher).subscribe(subscriber2);
+        subscriber2.request(3);
+        assertThat(subscriber2.items(), contains(2));
+        assertTrue(subscriber2.isCompleted());
     }
 
     @Test
     public void testCancelBeforeTerminal() {
-        subscriber.subscribe(publisher).request(3);
+        toSource(publisher).subscribe(subscriber);
+        subscriber.request(3);
         fireChannelRead(1);
-        subscriber.verifyItems(1).cancel();
+        assertThat(subscriber.items(), contains(1));
+        subscriber.cancel();
         assertThat("Channel not closed post cancel.", channel.closeFuture().isDone(), is(true));
     }
 
     @Test
     public void testCancelAfterTerminal() {
-        subscriber.subscribe(publisher).request(3);
+        toSource(publisher).subscribe(subscriber);
+        subscriber.request(3);
         nextItemTerminal = true;
         fireChannelRead(1);
-        subscriber.verifySuccess(1).cancel();
+        assertThat(subscriber.items(), contains(1));
+        assertTrue(subscriber.isCompleted());
+        subscriber.cancel();
         assertThat("Channel closed on cancel post terminate.", channel.closeFuture().isDone(), is(false));
     }
 
     @Test
     public void testDelayedCancel() {
         nextItemTerminal = true;
-        subscriber.subscribe(publisher).request(3);
+        toSource(publisher).subscribe(subscriber);
+        subscriber.request(3);
         final Subscription firstSubscription = requireNonNull(subscriber.subscription());
         fireChannelRead(1);
-        subscriber.verifySuccessNoRequestN(1);
+        assertThat(subscriber.items(), contains(1));
+        assertTrue(subscriber.isCompleted());
 
         nextItemTerminal = false;
         fireChannelReadToBuffer(2);
-        subscriber.subscribe(publisher).request(3).verifyItems(2);
+        toSource(publisher).subscribe(subscriber2);
+        subscriber2.request(3);
+        assertThat(subscriber2.items(), contains(2));
 
         firstSubscription.cancel();
 
         nextItemTerminal = true;
         fireChannelRead(3);
-        subscriber.verifyItems(2, 3);
+        assertThat(subscriber2.items(), contains(2, 3));
     }
 
     @Test
     public void testDelayedRequestN() {
         nextItemTerminal = true;
-        subscriber.subscribe(publisher).request(3);
+        toSource(publisher).subscribe(subscriber);
+        subscriber.request(3);
         final Subscription firstSubscription = subscriber.subscription();
         fireChannelRead(1);
-        subscriber.verifySuccessNoRequestN(1);
+        assertThat(subscriber.items(), contains(1));
+        assertTrue(subscriber.isCompleted());
 
         fireChannelReadToBuffer(2);
-        subscriber.subscribe(publisher).verifyNoEmissions();
+        toSource(publisher).subscribe(subscriber2);
+        assertTrue(subscriber2.subscriptionReceived());
+        assertThat(subscriber2.items(), hasSize(0));
+        assertFalse(subscriber2.isTerminated());
 
         //noinspection ConstantConditions
         firstSubscription.request(3);
 
-        subscriber.verifyNoEmissions();
-        subscriber.request(1).verifySuccess(2);
+        assertTrue(subscriber2.subscriptionReceived());
+        assertThat(subscriber2.items(), hasSize(0));
+        assertFalse(subscriber2.isTerminated());
+        subscriber2.request(1);
+        assertThat(subscriber2.items(), contains(2));
+        assertTrue(subscriber2.isCompleted());
     }
 
     @Test
     public void testEmitItemsWithNoSubscriber() {
         nextItemTerminal = true;
         fireChannelReadToBuffer(1);
-        subscriber.subscribe(publisher).request(1).verifySuccess(1);
+        toSource(publisher).subscribe(subscriber);
+        subscriber.request(1);
+        assertThat(subscriber.items(), contains(1));
+        assertTrue(subscriber.isCompleted());
     }
 
     @Test
@@ -330,15 +388,15 @@ public class NettyChannelPublisherTest {
     @Test
     public void testSubscribePostChannelClose() throws Exception {
         channel.close().await();
-        subscriber.subscribe(publisher);
-        subscriber.verifyFailure(ClosedChannelException.class);
+        toSource(publisher).subscribe(subscriber);
+        assertThat(subscriber.error(), instanceOf(ClosedChannelException.class));
     }
 
     @Test
     public void testTwoSubscribersPostChannelClose() throws Exception {
         channel.close().await();
-        subscriber.subscribe(publisher);
-        subscriber.verifyFailure(ClosedChannelException.class);
+        toSource(publisher).subscribe(subscriber);
+        assertThat(subscriber.error(), instanceOf(ClosedChannelException.class));
         @SuppressWarnings("unchecked")
         Subscriber<Integer> mock = Mockito.mock(Subscriber.class);
         toSource(publisher).subscribe(mock);
@@ -349,47 +407,61 @@ public class NettyChannelPublisherTest {
 
     @Test
     public void testQueuedCompleteAndFatalErrorExactDemand() {
-        subscriber.subscribe(publisher);
+        toSource(publisher).subscribe(subscriber);
         nextItemTerminal = true;
         fireChannelReadToBuffer(1);
         channel.close();
-        subscriber.request(1).verifySuccess(1);
+        subscriber.request(1);
+        assertThat(subscriber.items(), contains(1));
+        assertTrue(subscriber.isCompleted());
     }
 
     @Test
     public void testQueuedCompleteAndFatalErrorMoreDemand() {
-        subscriber.subscribe(publisher);
+        toSource(publisher).subscribe(subscriber);
         nextItemTerminal = true;
         fireChannelReadToBuffer(1);
         channel.close();
-        subscriber.request(2).verifySuccess(1);
+        subscriber.request(2);
+        assertThat(subscriber.items(), contains(1));
+        assertTrue(subscriber.isCompleted());
     }
 
     @Test
     public void testQueuedErrorAndFatalErrorExactDemand() {
-        subscriber.subscribe(publisher);
+        toSource(publisher).subscribe(subscriber);
         fireChannelReadToBuffer(1);
         channel.pipeline().fireExceptionCaught(DELIBERATE_EXCEPTION);
         channel.close();
-        subscriber.request(1).verifyItems(1).verifyFailure(DELIBERATE_EXCEPTION);
+        subscriber.request(1);
+        assertThat(subscriber.items(), contains(1));
+        assertThat(subscriber.error(), sameInstance(DELIBERATE_EXCEPTION));
     }
 
     @Test
     public void testQueuedErrorAndFatalErrorMoreDemand() {
-        subscriber.subscribe(publisher);
+        toSource(publisher).subscribe(subscriber);
         fireChannelReadToBuffer(1);
         channel.pipeline().fireExceptionCaught(DELIBERATE_EXCEPTION);
         channel.close();
-        subscriber.request(2).verifyItems(1).verifyFailure(DELIBERATE_EXCEPTION);
+        subscriber.request(2);
+        assertThat(subscriber.items(), contains(1));
+        assertThat(subscriber.error(), sameInstance(DELIBERATE_EXCEPTION));
     }
 
     @Test
     public void invalidRequestNDoesCancel() {
-        subscriber.subscribe(publisher);
+        toSource(publisher).subscribe(subscriber);
         fireChannelReadToBuffer(1, 2, 3);
-        subscriber.request(1).verifyItems(1);
-        subscriber.request(-1).verifyFailure(IllegalArgumentException.class);
-        subscriber.request(2).verifyNoEmissions();
+        subscriber.request(1);
+        assertThat(subscriber.items(), contains(1));
+        subscriber.request(-1);
+        assertThat(subscriber.error(), instanceOf(IllegalArgumentException.class));
+        subscriber.clear();
+        subscriber.request(2);
+        assertTrue(subscriber.subscriptionReceived());
+        assertThat(subscriber.items(), hasSize(0));
+        assertFalse(subscriber.isTerminated());
         assertFalse(channel.isActive());
         assertFalse(channel.isOpen());
     }
@@ -406,11 +478,12 @@ public class NettyChannelPublisherTest {
 
     @Test
     public void resubscribePostErrorEmitsError() {
-        subscriber.subscribe(publisher);
+        toSource(publisher).subscribe(subscriber);
         fireChannelReadToBuffer(1, 2, 3);
-        subscriber.request(3).verifyItems(1, 2, 3);
+        subscriber.request(3);
+        assertThat(subscriber.items(), contains(1, 2, 3));
         channel.pipeline().fireExceptionCaught(DELIBERATE_EXCEPTION);
-        subscriber.verifyFailure(DELIBERATE_EXCEPTION);
+        assertThat(subscriber.error(), sameInstance(DELIBERATE_EXCEPTION));
         assertFalse(channel.isActive());
         assertFalse(channel.isOpen());
 
@@ -432,14 +505,18 @@ public class NettyChannelPublisherTest {
         fireChannelReadToBuffer(1, 2);
         fireChannelReadToBuffer(3, 4);
 
-        subscriber.subscribe(publisher.
-                doAfterFinally(() ->
-                        // re-subscribing from the previous completion event
-                        subscriber2.subscribe(publisher).request(2))
-        ).request(2);
+        toSource(publisher.
+                doAfterFinally(() -> {
+                    // re-subscribing from the previous completion event
+                    toSource(publisher).subscribe(subscriber2);
+                    subscriber2.request(2);
+                })).subscribe(subscriber);
+        subscriber.request(2);
 
-        subscriber.verifySuccessNoRequestN(1, 2);
-        subscriber2.verifySuccessNoRequestN(3, 4);
+        assertThat(subscriber.items(), contains(1, 2));
+        assertTrue(subscriber.isCompleted());
+        assertThat(subscriber2.items(), contains(3, 4));
+        assertTrue(subscriber2.isCompleted());
     }
 
     @Test
@@ -452,15 +529,18 @@ public class NettyChannelPublisherTest {
         fireChannelReadToBuffer(1);
         channel.pipeline().fireExceptionCaught(DELIBERATE_EXCEPTION);
 
-        subscriber.subscribe(publisher
-                .doAfterFinally(() ->
-                        // re-subscribing from the previous completion event
-                        subscriber2.subscribe(publisher).request(1))
-        ).request(2);
+        toSource(publisher
+                .doAfterFinally(() -> {
+                    // re-subscribing from the previous completion event
+                    toSource(publisher).subscribe(subscriber2);
+                    subscriber2.request(1);
+                })).subscribe(subscriber);
+        subscriber.request(2);
 
-        subscriber.verifyItems(1).verifyFailure(DELIBERATE_EXCEPTION);
+        assertThat(subscriber.items(), contains(1));
+        assertThat(subscriber.error(), sameInstance(DELIBERATE_EXCEPTION));
         // only the active subscriber sees the initial exception, subsequent subscribers will observe a closed channel
-        subscriber2.verifyFailure(ClosedChannelException.class);
+        assertThat(subscriber2.error(), instanceOf(ClosedChannelException.class));
     }
 
     private void testChannelReadThrows(boolean requestLate) {

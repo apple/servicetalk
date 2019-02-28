@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,8 +41,11 @@ import static java.lang.Math.min;
 import static java.lang.System.arraycopy;
 import static java.util.stream.IntStream.generate;
 import static java.util.stream.IntStream.of;
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.doAnswer;
@@ -52,17 +55,13 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-@SuppressWarnings("unchecked")
 public class FromInputStreamPublisherTest {
 
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
 
-    @Rule
-    public final MockedSubscriberRule<byte[]> sub1 = new MockedSubscriberRule();
-
-    @Rule
-    public final MockedSubscriberRule<byte[]> sub2 = new MockedSubscriberRule();
+    private final TestPublisherSubscriber<byte[]> sub1 = new TestPublisherSubscriber<>();
+    private final TestPublisherSubscriber<byte[]> sub2 = new TestPublisherSubscriber<>();
 
     private final byte[] smallBuff = init0toN(10);
     private final byte[] bigBuff = init0toN(37);
@@ -80,48 +79,51 @@ public class FromInputStreamPublisherTest {
     public void noDuplicateSubscription() throws Exception {
         initEmptyStream();
 
-        sub1.subscribe(pub);
+        toSource(pub).subscribe(sub1);
 
-        sub2.subscribe(pub);
-        sub2.verifyFailure(DuplicateSubscribeException.class);
+        toSource(pub).subscribe(sub2);
+        assertThat(sub2.error(), instanceOf(DuplicateSubscribeException.class));
 
-        sub1.request(1).verifySuccess();
+        sub1.request(1);
+        assertTrue(sub1.isCompleted());
     }
 
     @Test
     public void noDuplicateSubscriptionAfterError() throws Exception {
         when(is.available()).thenThrow(IOException.class);
 
-        sub1.subscribe(pub);
-        sub1.request(1).verifyFailure(IOException.class);
+        toSource(pub).subscribe(sub1);
+        sub1.request(1);
+        assertThat(sub1.error(), instanceOf(IOException.class));
 
-        sub2.subscribe(pub);
-        sub2.verifyFailure(DuplicateSubscribeException.class);
+        toSource(pub).subscribe(sub2);
+        assertThat(sub2.error(), instanceOf(DuplicateSubscribeException.class));
     }
 
     @Test
     public void noDuplicateSubscriptionAfterComplete() throws Exception {
         initEmptyStream();
 
-        sub1.subscribe(pub);
-        sub1.request(1).verifySuccess();
+        toSource(pub).subscribe(sub1);
+        sub1.request(1);
+        assertTrue(sub1.isCompleted());
 
-        sub2.subscribe(pub);
-        sub2.verifyFailure(DuplicateSubscribeException.class);
+        toSource(pub).subscribe(sub2);
+        assertThat(sub2.error(), instanceOf(DuplicateSubscribeException.class));
     }
 
     @Test
     public void closeStreamOnCancelByDefault() throws Exception {
-        sub1.subscribe(pub);
+        toSource(pub).subscribe(sub1);
         sub1.cancel();
         verify(is).close();
     }
 
     @Test
     public void streamClosedAndErrorOnInvalidReqN() throws Exception {
-        sub1.subscribe(pub);
+        toSource(pub).subscribe(sub1);
         sub1.request(-1);
-        sub1.verifyFailure(IllegalArgumentException.class);
+        assertThat(sub1.error(), instanceOf(IllegalArgumentException.class));
 
         verify(is).close();
     }
@@ -130,11 +132,11 @@ public class FromInputStreamPublisherTest {
     public void streamClosedAndErrorOnInvalidReqNAndValidReqN() throws Exception {
         initChunkedStream(smallBuff, of(10, 0), of(10, 0));
 
-        sub1.subscribe(pub);
+        toSource(pub).subscribe(sub1);
         sub1.request(-1);
         sub1.request(10);
 
-        sub1.verifyFailure(IllegalArgumentException.class);
+        assertThat(sub1.error(), instanceOf(IllegalArgumentException.class));
         verify(is).close();
     }
 
@@ -142,19 +144,20 @@ public class FromInputStreamPublisherTest {
     public void streamClosedAndErrorOnDoubleInvalidReqN() throws Exception {
         initChunkedStream(smallBuff, of(10, 0), of(10, 0));
 
-        sub1.subscribe(pub);
+        toSource(pub).subscribe(sub1);
         sub1.request(-1);
         sub1.request(-1);
 
-        sub1.verifyFailure(IllegalArgumentException.class);
+        assertThat(sub1.error(), instanceOf(IllegalArgumentException.class));
         verify(is).close();
     }
 
     @Test
     public void streamClosedAndErrorOnAvailableIOError() throws Exception {
         when(is.available()).thenThrow(IOException.class);
-        sub1.subscribe(pub);
-        sub1.request(1).verifyFailure(IOException.class);
+        toSource(pub).subscribe(sub1);
+        sub1.request(1);
+        assertThat(sub1.error(), instanceOf(IOException.class));
         verify(is).close();
     }
 
@@ -163,12 +166,14 @@ public class FromInputStreamPublisherTest {
         when(is.available()).thenReturn(10);
         when(is.read(any(), anyInt(), anyInt())).thenThrow(IOException.class);
 
-        sub1.subscribe(pub);
-        sub1.request(1).verifyFailure(IOException.class);
+        toSource(pub).subscribe(sub1);
+        sub1.request(1);
+        assertThat(sub1.error(), instanceOf(IOException.class));
         verify(is).close();
     }
 
     @Test
+    @SuppressWarnings("unchecked")
     public void streamClosedAndErrorOnDeliveryError() throws Exception {
         initChunkedStream(smallBuff, of(10), of(10));
 
@@ -189,6 +194,7 @@ public class FromInputStreamPublisherTest {
     }
 
     @Test
+    @SuppressWarnings("unchecked")
     public void streamClosedAndErrorOnDeliveryErrorOnce() throws Exception {
         initChunkedStream(smallBuff, ofAll(10), ofAll(10));
 
@@ -213,6 +219,7 @@ public class FromInputStreamPublisherTest {
     }
 
     @Test
+    @SuppressWarnings("unchecked")
     public void streamCanceledShouldCloseOnce() throws Exception {
         initChunkedStream(smallBuff, ofAll(10), ofAll(10));
 
@@ -282,11 +289,11 @@ public class FromInputStreamPublisherTest {
     @Test
     public void consumeSimpleStream() throws Exception {
         initChunkedStream(smallBuff, of(10, 0), of(10, 0));
-        sub1.subscribe(pub)
-                .request(1) // smallBuff
-                .verifyItems(smallBuff)
-                .request(1) // read EOF
-                .verifySuccess();
+        toSource(pub).subscribe(sub1);
+        sub1.request(1); // smallBuff
+        assertThat(sub1.items(), contains(smallBuff));
+        sub1.request(1); // read EOF
+        assertTrue(sub1.isCompleted());
     }
 
     @Test
@@ -297,10 +304,14 @@ public class FromInputStreamPublisherTest {
         byte[] second = new byte[2];
         arraycopy(smallBuff, 8, second, 0, 2);
 
-        sub1.subscribe(pub);
-        sub1.request(1).verifyItems(first)
-                .request(1).verifyItems(second)
-                .request(1).verifySuccess(); // read EOF
+        toSource(pub).subscribe(sub1);
+        sub1.request(1);
+        assertThat(sub1.items(), contains(first));
+        sub1.request(1);
+        assertThat(sub1.items(), contains(first, second));
+        sub1.request(1);
+        // read EOF
+        assertTrue(sub1.isCompleted());
     }
 
     @Test
@@ -458,7 +469,7 @@ public class FromInputStreamPublisherTest {
     }
 
     /**
-     * The mockito {@link MockedSubscriberRule} gets confused about verifying multiple emitted {@code byte[]}.
+     * The mockito {@link TestPublisherSubscriber} gets confused about verifying multiple emitted {@code byte[]}.
      * <p>
      * This is equivalent to:
      * <pre>{@code

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,13 +46,13 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertTrue;
 
 public final class PublisherGroupByConcurrencyTest {
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout(30, SECONDS);
-    @Rule
-    public final MockedSubscriberRule<Integer> groupsSubscriber = new MockedSubscriberRule<>();
 
+    private final TestPublisherSubscriber<Integer> groupsSubscriber = new TestPublisherSubscriber<>();
     private ConcurrentLinkedQueue<Integer> allItemsReceivedOnAllGroups;
     private TestPublisher<Integer> source;
     private ExecutorService executor;
@@ -61,7 +61,6 @@ public final class PublisherGroupByConcurrencyTest {
     @Before
     public void setUp() throws Exception {
         source = new TestPublisher<>();
-        source.sendOnSubscribe();
         allItemsReceivedOnAllGroups = new ConcurrentLinkedQueue<>();
         executor = newCachedThreadPool();
         allWorkDone = new AtomicBoolean();
@@ -97,17 +96,19 @@ public final class PublisherGroupByConcurrencyTest {
     public void testConcurrentGroupsCancel() throws Exception {
         int itemCount = 100_000;
         Queue<GroupSubscriber> subs = subscribeToAll(itemCount, false);
+        final TestSubscription subscription = new TestSubscription();
+        source.onSubscribe(subscription);
         Task requestNs = requestAndDrainGroupSubscribers(subs).awaitStart();
         sendRangeToSource(0, itemCount);
         groupsSubscriber.cancel();
         requestNs.awaitCompletion();
         assertThat("Unexpected items received.", allItemsReceivedOnAllGroups, hasSize(itemCount));
-        source.verifyCancelled();
+        assertTrue(subscription.isCancelled());
     }
 
     private Queue<GroupSubscriber> subscribeToAll(int bufferSize, boolean requestFromEachGroupOnSubscribe) {
         ConcurrentLinkedQueue<GroupSubscriber> subs = new ConcurrentLinkedQueue<>();
-        groupsSubscriber.subscribe(source.groupBy(integer -> integer, bufferSize).map(grp -> {
+        toSource(source.groupBy(integer -> integer, bufferSize).map(grp -> {
             GroupSubscriber sub = new GroupSubscriber();
             // Each group must only ever get one item.
             toSource(grp.doBeforeNext(integer -> allItemsReceivedOnAllGroups.add(integer))).subscribe(sub);
@@ -116,13 +117,14 @@ public final class PublisherGroupByConcurrencyTest {
             }
             subs.add(sub);
             return grp.key();
-        })).request(Long.MAX_VALUE);
+        })).subscribe(groupsSubscriber);
+        groupsSubscriber.request(Long.MAX_VALUE);
         return subs;
     }
 
     private TestPublisher<Integer> sendRangeToSource(int start, int end) {
         for (int i = start; i < end; i++) {
-            source.sendItemsNoDemandCheck(i);
+            source.onNext(i);
         }
         return source;
     }

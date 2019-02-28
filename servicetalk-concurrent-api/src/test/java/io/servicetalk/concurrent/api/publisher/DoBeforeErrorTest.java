@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
  */
 package io.servicetalk.concurrent.api.publisher;
 
+import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.internal.DeliberateException;
 
@@ -22,22 +23,30 @@ import org.junit.Test;
 
 import java.util.function.Consumer;
 
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
+import static io.servicetalk.concurrent.api.VerificationTestUtils.verifySuppressed;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static org.hamcrest.Matchers.sameInstance;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
 
 public class DoBeforeErrorTest extends AbstractDoErrorTest {
 
     @Override
-    protected <T> Publisher<T> doError(Publisher<T> publisher, Consumer<Throwable> consumer) {
-        return publisher.doBeforeError(consumer);
+    protected <T> PublisherSource<T> doError(Publisher<T> publisher, Consumer<Throwable> consumer) {
+        return toSource(publisher.doBeforeError(consumer));
     }
 
     @Override
     @Test
     public void testCallbackThrowsError() {
         DeliberateException srcEx = new DeliberateException();
-        rule.subscribe(doError(Publisher.error(srcEx), t -> {
+        this.<String>doError(Publisher.error(srcEx), t1 -> {
             throw DELIBERATE_EXCEPTION;
-        })).request(1);
-        rule.verifyFailure(srcEx).verifySuppressedFailure(DELIBERATE_EXCEPTION);
+        }).subscribe(subscriber);
+        subscriber.request(1);
+        assertThat(subscriber.error(), sameInstance(srcEx));
+        assertNotNull(subscriber.error());
+        verifySuppressed(subscriber.error(), DELIBERATE_EXCEPTION);
     }
 }

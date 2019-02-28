@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@ package io.servicetalk.client.internal;
 
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.concurrent.api.PublisherRule;
+import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 
 import org.junit.Rule;
@@ -36,8 +36,8 @@ import static org.junit.Assert.assertThat;
 public abstract class AbstractRequestConcurrencyControllerOnlySingleTest {
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
-    @Rule
-    public final PublisherRule<Integer> limitRule = new PublisherRule<>();
+
+    private final TestPublisher<Integer> limitPublisher = new TestPublisher<>();
 
     protected abstract RequestConcurrencyController newController(Publisher<Integer> maxSetting, Completable onClose);
 
@@ -53,9 +53,9 @@ public abstract class AbstractRequestConcurrencyControllerOnlySingleTest {
 
     @Test
     public void singleRequestEventIfLimitIsHigher() {
-        RequestConcurrencyController controller = newController(limitRule.publisher(), never());
+        RequestConcurrencyController controller = newController(limitPublisher, never());
         for (int i = 1; i < 100; ++i) {
-            limitRule.sendItems(i);
+            limitPublisher.onNext(i);
             assertThat(controller.tryRequest(), is(Accepted));
             assertThat(controller.tryRequest(), is(RejectedTemporary));
             controller.requestFinished();
@@ -64,20 +64,20 @@ public abstract class AbstractRequestConcurrencyControllerOnlySingleTest {
 
     @Test
     public void singleRequestEventIfLimitIsLower() {
-        RequestConcurrencyController controller = newController(limitRule.publisher(), never());
-        limitRule.sendItems(0);
+        RequestConcurrencyController controller = newController(limitPublisher, never());
+        limitPublisher.onNext(0);
         assertThat(controller.tryRequest(), is(RejectedPermanently));
 
-        limitRule.sendItems(1);
+        limitPublisher.onNext(1);
         assertThat(controller.tryRequest(), is(Accepted));
         assertThat(controller.tryRequest(), is(RejectedTemporary));
 
-        limitRule.sendItems(0);
+        limitPublisher.onNext(0);
         controller.requestFinished();
 
         assertThat(controller.tryRequest(), is(RejectedPermanently));
 
-        limitRule.sendItems(1);
+        limitPublisher.onNext(1);
         assertThat(controller.tryRequest(), is(Accepted));
         assertThat(controller.tryRequest(), is(RejectedTemporary));
     }

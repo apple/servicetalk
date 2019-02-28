@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,12 @@ import org.junit.Test;
 
 import java.util.function.Consumer;
 
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static org.hamcrest.Matchers.hasSize;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 public class DoAfterSubscribeTest extends AbstractDoSubscribeTest {
 
@@ -31,7 +36,10 @@ public class DoAfterSubscribeTest extends AbstractDoSubscribeTest {
         Publisher<String> src = doSubscribe(Publisher.just("Hello"), s -> {
             throw DELIBERATE_EXCEPTION;
         });
-        rule.subscribe(src).verifyNoEmissions();
+        toSource(src).subscribe(subscriber);
+        assertTrue(subscriber.subscriptionReceived());
+        assertThat(subscriber.items(), hasSize(0));
+        assertFalse(subscriber.isTerminated());
     }
 
     @Override

@@ -33,9 +33,8 @@ import static org.hamcrest.Matchers.not;
 public class PublishAndSubscribeOnTest extends AbstractPublishAndSubscribeOnTest {
 
     @Rule
-    public final ExecutorRule executorRule =
-            new ExecutorRule(() -> new OffloaderAwareExecutor(newCachedThreadExecutor(),
-                    threadBasedOffloaderFactory()));
+    public final ExecutorRule executorRule = ExecutorRule.withExecutor(
+            new OffloaderAwareExecutor(newCachedThreadExecutor(), threadBasedOffloaderFactory()));
 
     @Test
     public void testPublishOnNoOverride() throws InterruptedException {

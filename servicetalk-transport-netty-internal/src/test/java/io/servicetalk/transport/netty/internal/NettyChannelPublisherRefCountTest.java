@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,8 +15,8 @@
  */
 package io.servicetalk.transport.netty.internal;
 
-import io.servicetalk.concurrent.api.MockedSubscriberRule;
 import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.concurrent.api.TestPublisherSubscriber;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 
 import io.netty.buffer.ByteBuf;
@@ -31,17 +31,18 @@ import java.util.concurrent.TimeUnit;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Executors.immediate;
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.ServiceTalkTestTimeout.DEFAULT_TIMEOUT_SECONDS;
 import static io.servicetalk.transport.netty.internal.FlushStrategies.defaultFlushStrategy;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 
 public class NettyChannelPublisherRefCountTest {
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
-    @Rule
-    public final MockedSubscriberRule<Object> subscriber = new MockedSubscriberRule<>();
 
+    private final TestPublisherSubscriber<Object> subscriber = new TestPublisherSubscriber<>();
     private Publisher<Object> publisher;
     private EmbeddedChannel channel;
 
@@ -61,10 +62,11 @@ public class NettyChannelPublisherRefCountTest {
 
     @Test
     public void testRefCountedLeaked() {
-        subscriber.subscribe(publisher).request(3);
+        toSource(publisher).subscribe(subscriber);
+        subscriber.request(3);
         ByteBuf buffer = channel.alloc().buffer();
         channel.writeInbound(buffer);
-        subscriber.verifyFailure(IllegalArgumentException.class);
+        assertThat(subscriber.error(), instanceOf(IllegalArgumentException.class));
         assertThat("Buffer not released.", buffer.refCnt(), is(0));
         assertThat("Channel not closed post ref count leaked.", channel.closeFuture().isDone(), is(true));
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,9 +15,10 @@
  */
 package io.servicetalk.concurrent.api.publisher;
 
-import io.servicetalk.concurrent.api.MockedSubscriberRule;
+import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.concurrent.api.PublisherRule;
+import io.servicetalk.concurrent.api.TestPublisher;
+import io.servicetalk.concurrent.api.TestPublisherSubscriber;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -26,8 +27,13 @@ import org.junit.rules.ExpectedException;
 import java.util.function.LongConsumer;
 
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.sameInstance;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -35,21 +41,20 @@ import static org.mockito.Mockito.verify;
 public abstract class AbstractDoRequestTest {
 
     @Rule
-    public final PublisherRule<String> publisher = new PublisherRule<>();
-
-    @Rule
-    public final MockedSubscriberRule<String> subscriber = new MockedSubscriberRule<>();
-
-    @Rule
     public final ExpectedException thrown = ExpectedException.none();
+
+    private final TestPublisher<String> publisher = new TestPublisher<>();
+    private final TestPublisherSubscriber<String> subscriber = new TestPublisherSubscriber<>();
 
     @Test
     public void testSingleRequest() {
         LongConsumer onRequest = mock(LongConsumer.class);
 
-        subscriber.subscribe(doRequest(publisher.publisher(), onRequest)).request(1);
-        publisher.sendItems("Hello").complete();
-        subscriber.verifyItems("Hello");
+        doRequest(publisher, onRequest).subscribe(subscriber);
+        subscriber.request(1);
+        publisher.onNext("Hello");
+        publisher.onComplete();
+        assertThat(subscriber.items(), contains("Hello"));
         verify(onRequest).accept(1L);
     }
 
@@ -57,11 +62,13 @@ public abstract class AbstractDoRequestTest {
     public void testMultiRequest() {
         LongConsumer onRequest = mock(LongConsumer.class);
 
-        subscriber.subscribe(doRequest(publisher.publisher(), onRequest)).request(1).request(1);
-        publisher.sendItems("Hello");
-        subscriber.verifyItems("Hello");
-        publisher.sendItems("Hello1");
-        subscriber.verifyItems("Hello1");
+        doRequest(publisher, onRequest).subscribe(subscriber);
+        subscriber.request(1);
+        subscriber.request(1);
+        publisher.onNext("Hello");
+        assertThat(subscriber.items(), contains("Hello"));
+        publisher.onNext("Hello1");
+        assertThat(subscriber.items(), contains("Hello", "Hello1"));
         verify(onRequest, times(2)).accept(1L);
     }
 
@@ -69,8 +76,11 @@ public abstract class AbstractDoRequestTest {
     public void testRequestNoEmissions() {
         LongConsumer onRequest = mock(LongConsumer.class);
 
-        subscriber.subscribe(doRequest(publisher.publisher(), onRequest)).request(10);
-        subscriber.verifyNoEmissions();
+        doRequest(publisher, onRequest).subscribe(subscriber);
+        subscriber.request(10);
+        assertTrue(subscriber.subscriptionReceived());
+        assertThat(subscriber.items(), hasSize(0));
+        assertFalse(subscriber.isTerminated());
         verify(onRequest).accept(10L);
     }
 
@@ -78,11 +88,11 @@ public abstract class AbstractDoRequestTest {
     public void testCallbackThrowsError() {
         thrown.expect(is(sameInstance(DELIBERATE_EXCEPTION)));
 
-        subscriber.subscribe(doRequest(Publisher.just("Hello"), n -> {
+        doRequest(Publisher.just("Hello"), n -> {
             throw DELIBERATE_EXCEPTION;
-        }));
+        }).subscribe(subscriber);
         subscriber.request(1);
     }
 
-    protected abstract <T> Publisher<T> doRequest(Publisher<T> publisher, LongConsumer consumer);
+    protected abstract <T> PublisherSource<T> doRequest(Publisher<T> publisher, LongConsumer consumer);
 }

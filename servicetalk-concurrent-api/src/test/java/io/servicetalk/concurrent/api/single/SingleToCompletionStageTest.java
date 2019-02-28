@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,6 @@
  */
 package io.servicetalk.concurrent.api.single;
 
-import io.servicetalk.concurrent.api.DefaultThreadFactory;
 import io.servicetalk.concurrent.api.ExecutorRule;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.TestSingle;
@@ -45,9 +44,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
-import static java.lang.Thread.NORM_PRIORITY;
 import static java.lang.Thread.currentThread;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.MINUTES;
@@ -64,8 +61,7 @@ public class SingleToCompletionStageTest {
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
     @Rule
-    public final ExecutorRule executorRule = new ExecutorRule(() ->
-            newCachedThreadExecutor(new DefaultThreadFactory(ST_THREAD_PREFIX_NAME, true, NORM_PRIORITY)));
+    public final ExecutorRule executorRule = ExecutorRule.withNamePrefix(ST_THREAD_PREFIX_NAME);
     @Rule
     public final ExpectedException thrown = ExpectedException.none();
 

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,13 +18,15 @@ package io.servicetalk.concurrent.api.publisher;
 import io.servicetalk.concurrent.api.BiIntFunction;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Executor;
-import io.servicetalk.concurrent.api.MockedSubscriberRule;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.TestCompletable;
 import io.servicetalk.concurrent.api.TestPublisher;
+import io.servicetalk.concurrent.api.TestPublisherSubscriber;
+import io.servicetalk.concurrent.api.TestSubscription;
 import io.servicetalk.concurrent.internal.DeliberateException;
 
 import org.junit.After;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -33,11 +35,17 @@ import java.util.concurrent.ExecutionException;
 
 import static io.servicetalk.concurrent.api.Completable.error;
 import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
@@ -50,12 +58,24 @@ public class RetryWhenTest {
 
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
-    @Rule
-    public MockedSubscriberRule<Integer> subscriberRule = new MockedSubscriberRule<>();
-    private TestPublisher<Integer> source;
+
+    private TestPublisher<Integer> source = new TestPublisher<>();
+    private TestPublisherSubscriber<Integer> subscriber = new TestPublisherSubscriber<>();
     private BiIntFunction<Throwable, Completable> shouldRetry;
     private TestCompletable retrySignal;
     private Executor executor;
+
+    @Before
+    @SuppressWarnings("unchecked")
+    public void setUp() {
+        shouldRetry = (BiIntFunction<Throwable, Completable>) mock(BiIntFunction.class);
+        retrySignal = new TestCompletable();
+        when(shouldRetry.apply(anyInt(), any())).thenAnswer(invocation -> {
+            retrySignal = new TestCompletable();
+            return retrySignal;
+        });
+        toSource(source.retryWhen(shouldRetry)).subscribe(subscriber);
+    }
 
     @After
     public void tearDown() throws Exception {
@@ -85,127 +105,124 @@ public class RetryWhenTest {
 
     @Test
     public void testComplete() {
-        init(true);
-        subscriberRule.request(2);
-        source.sendItems(1, 2).onComplete();
-        subscriberRule.verifySuccess(1, 2);
+        subscriber.request(2);
+        source.onNext(1, 2);
+        source.onComplete();
+        assertThat(subscriber.items(), contains(1, 2));
+        assertTrue(subscriber.isCompleted());
         verifyZeroInteractions(shouldRetry);
     }
 
     @Test
     public void testRetryCount() {
-        init(true);
-        subscriberRule.request(2);
-        source.sendItems(1, 2).fail();
-        subscriberRule.verifyItems(1, 2);
+        subscriber.request(2);
+        source.onNext(1, 2);
+        source.onError(DELIBERATE_EXCEPTION);
+        assertThat(subscriber.items(), contains(1, 2));
         DeliberateException fatal = new DeliberateException();
         retrySignal.onError(fatal); // stop retry
-        subscriberRule.verifyFailure(fatal);
+        assertThat(subscriber.error(), sameInstance(fatal));
         verify(shouldRetry).apply(1, DELIBERATE_EXCEPTION);
         verifyNoMoreInteractions(shouldRetry);
     }
 
     @Test
     public void testRequestAcrossRepeat() {
-        init(true);
-        subscriberRule.request(3);
-        source.sendItems(1, 2).fail();
-        subscriberRule.verifyItems(1, 2);
+        subscriber.request(3);
+        source.onNext(1, 2);
+        source.onError(DELIBERATE_EXCEPTION);
+        assertThat(subscriber.items(), contains(1, 2));
         retrySignal.onComplete(); // trigger retry
         verify(shouldRetry).apply(1, DELIBERATE_EXCEPTION);
-        source.verifySubscribed().sendItems(3);
-        subscriberRule.verifyItems(3).verifyNoEmissions();
+        assertTrue(source.isSubscribed());
+        source.onNext(3);
+        assertThat(subscriber.items(), contains(1, 2, 3));
+        assertTrue(subscriber.subscriptionReceived());
+        assertFalse(subscriber.isTerminated());
     }
 
     @Test
     public void testTwoError() {
-        init(true);
-        subscriberRule.request(3);
-        source.sendItems(1, 2).fail();
-        subscriberRule.verifyItems(1, 2).verifyNoEmissions();
+        subscriber.request(3);
+        source.onNext(1, 2);
+        source.onError(DELIBERATE_EXCEPTION);
+        assertThat(subscriber.items(), contains(1, 2));
+        assertTrue(subscriber.subscriptionReceived());
+        assertFalse(subscriber.isTerminated());
         verify(shouldRetry).apply(1, DELIBERATE_EXCEPTION);
         retrySignal.onComplete(); // trigger retry
-        source.verifySubscribed();
-        source.sendItems(3).fail();
+        assertTrue(source.isSubscribed());
+        source.onNext(3);
+        source.onError(DELIBERATE_EXCEPTION);
         verify(shouldRetry).apply(2, DELIBERATE_EXCEPTION);
         retrySignal.onComplete(); // trigger retry
         source.onComplete();
-        subscriberRule.verifySuccess(1, 2, 3);
+        assertThat(subscriber.items(), contains(1, 2, 3));
+        assertTrue(subscriber.isCompleted());
     }
 
     @Test
     public void testMaxRetries() {
-        init(true);
-        subscriberRule.request(3);
-        source.sendItems(1, 2).fail();
+        subscriber.request(3);
+        source.onNext(1, 2);
+        source.onError(DELIBERATE_EXCEPTION);
         retrySignal.onComplete(); // trigger retry
-        subscriberRule.verifyItems(1, 2).verifyNoEmissions();
+        assertThat(subscriber.items(), contains(1, 2));
+        assertTrue(subscriber.subscriptionReceived());
+        assertFalse(subscriber.isTerminated());
         verify(shouldRetry).apply(1, DELIBERATE_EXCEPTION);
-        source.verifySubscribed().fail();
+        assertTrue(source.isSubscribed());
+        source.onError(DELIBERATE_EXCEPTION);
         DeliberateException fatal = new DeliberateException();
         retrySignal.verifyListenCalled().onError(fatal); // stop retry
-        subscriberRule.verifyFailure(fatal);
+        assertThat(subscriber.error(), sameInstance(fatal));
     }
 
     @Test
     public void testCancelPostErrorButBeforeRetryStart() {
-        init(false);
-        subscriberRule.request(2);
-        source.sendItems(1, 2).fail();
+        subscriber.request(2);
+        source.onNext(1, 2);
+        source.onError(DELIBERATE_EXCEPTION);
         retrySignal.verifyListenCalled();
-        subscriberRule.verifyItems(1, 2).cancel();
+        assertThat(subscriber.items(), contains(1, 2));
+        subscriber.cancel();
         retrySignal.verifyCancelled();
-        source.verifyNotSubscribed();
         verify(shouldRetry).apply(1, DELIBERATE_EXCEPTION);
     }
 
     @Test
     public void testCancelBeforeRetry() {
-        init(true);
-        subscriberRule.request(2);
-        source.sendItems(1, 2);
-        subscriberRule.verifyItems(1, 2).cancel();
+        final TestSubscription subscription = new TestSubscription();
+        source.onSubscribe(subscription);
+        subscriber.request(2);
+        source.onNext(1, 2);
+        assertThat(subscriber.items(), contains(1, 2));
+        subscriber.cancel();
         source.onComplete();
-        source.verifyCancelled();
+        assertTrue(subscription.isCancelled());
     }
 
     @Test
     public void exceptionInTerminalCallsOnError() {
-        init(true);
         DeliberateException ex = new DeliberateException();
-        subscriberRule = new MockedSubscriberRule<>();
-        source = new TestPublisher<>(true);
-        source.sendOnSubscribe();
-        subscriberRule.subscribe(source.retryWhen((times, cause) -> {
+        subscriber = new TestPublisherSubscriber<>();
+        source = new TestPublisher<>();
+        toSource(source.retryWhen((times, cause) -> {
             throw ex;
-        })).request(1);
-        source.fail();
-        subscriberRule.verifyFailure(ex);
+        })).subscribe(subscriber);
+        subscriber.request(1);
+        source.onError(DELIBERATE_EXCEPTION);
+        assertThat(subscriber.error(), sameInstance(ex));
         assertEquals(1, ex.getSuppressed().length);
         assertSame(DELIBERATE_EXCEPTION, ex.getSuppressed()[0]);
     }
 
     @Test
     public void nullInTerminalCallsOnError() {
-        init(true);
-        subscriberRule = new MockedSubscriberRule<>();
-        source = new TestPublisher<>(true);
-        source.sendOnSubscribe();
-        subscriberRule.subscribe(source.retryWhen((times, cause) -> null)).request(1);
-        source.fail();
-        subscriberRule.verifyFailure(NullPointerException.class);
-    }
-
-    @SuppressWarnings("unchecked")
-    private void init(boolean preserveSubscriber) {
-        source = new TestPublisher<>(preserveSubscriber);
-        source.sendOnSubscribe();
-        shouldRetry = (BiIntFunction<Throwable, Completable>) mock(BiIntFunction.class);
-        retrySignal = new TestCompletable();
-        when(shouldRetry.apply(anyInt(), any())).thenAnswer(invocation -> {
-            retrySignal = new TestCompletable();
-            return retrySignal;
-        });
-        subscriberRule.subscribe(source.retryWhen(shouldRetry));
+        source = new TestPublisher<>();
+        toSource(source.retryWhen((times1, cause1) -> null)).subscribe(subscriber);
+        subscriber.request(1);
+        source.onError(DELIBERATE_EXCEPTION);
+        assertThat(subscriber.error(), instanceOf(NullPointerException.class));
     }
 }

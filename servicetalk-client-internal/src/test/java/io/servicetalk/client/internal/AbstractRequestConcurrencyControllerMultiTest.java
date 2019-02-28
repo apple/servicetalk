@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@ package io.servicetalk.client.internal;
 
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.concurrent.api.PublisherRule;
+import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 
 import org.junit.Rule;
@@ -36,8 +36,8 @@ import static org.junit.Assert.assertThat;
 public abstract class AbstractRequestConcurrencyControllerMultiTest {
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
-    @Rule
-    public final PublisherRule<Integer> limitRule = new PublisherRule<>();
+
+    private final TestPublisher<Integer> limitPublisher = new TestPublisher<>();
 
     protected abstract RequestConcurrencyController newController(Publisher<Integer> maxSetting,
                                                                   Completable onClose,
@@ -60,9 +60,9 @@ public abstract class AbstractRequestConcurrencyControllerMultiTest {
 
     @Test
     public void limitIsAllowedToIncrease() {
-        RequestConcurrencyController controller = newController(limitRule.publisher(), never(), 10);
+        RequestConcurrencyController controller = newController(limitPublisher, never(), 10);
         for (int i = 1; i < 100; ++i) {
-            limitRule.sendItems(i);
+            limitPublisher.onNext(i);
             for (int j = 0; j < i; ++j) {
                 assertThat(controller.tryRequest(), is(Accepted));
             }
@@ -76,13 +76,13 @@ public abstract class AbstractRequestConcurrencyControllerMultiTest {
     @Test
     public void limitIsAllowedToDecrease() {
         int maxRequestCount = 10;
-        RequestConcurrencyController controller = newController(limitRule.publisher(), never(), 10);
+        RequestConcurrencyController controller = newController(limitPublisher, never(), 10);
 
         for (int j = 0; j < maxRequestCount; ++j) {
             assertThat(controller.tryRequest(), is(Accepted));
         }
         assertThat(controller.tryRequest(), is(RejectedTemporary));
-        limitRule.sendItems(0);
+        limitPublisher.onNext(0);
 
         for (int j = 0; j < maxRequestCount; ++j) {
             controller.requestFinished();
@@ -100,7 +100,7 @@ public abstract class AbstractRequestConcurrencyControllerMultiTest {
     @Test
     public void defaultValueIsUsed() {
         final int maxRequestCount = 10;
-        RequestConcurrencyController controller = newController(limitRule.publisher(), never(), 10);
+        RequestConcurrencyController controller = newController(limitPublisher, never(), 10);
         for (int j = 0; j < maxRequestCount; ++j) {
             assertThat(controller.tryRequest(), is(Accepted));
         }

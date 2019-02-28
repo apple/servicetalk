@@ -23,8 +23,8 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.CompletableProcessor;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.concurrent.api.PublisherRule;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.DefaultHttpHeadersFactory;
 import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
@@ -91,12 +91,10 @@ public class ConcurrentRequestsHttpConnectionFilterTest {
     private ConnectionContext connectionContext;
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
-    @Rule
-    public final PublisherRule<Buffer> response1Publisher = new PublisherRule<>();
-    @Rule
-    public final PublisherRule<Buffer> response2Publisher = new PublisherRule<>();
-    @Rule
-    public final PublisherRule<Buffer> response3Publisher = new PublisherRule<>();
+
+    private final TestPublisher<Buffer> response1Publisher = new TestPublisher<>();
+    private final TestPublisher<Buffer> response2Publisher = new TestPublisher<>();
+    private final TestPublisher<Buffer> response3Publisher = new TestPublisher<>();
 
     // TODO(jayv) Temporary workaround until DefaultNettyConnection leverages strategy.offloadReceive()
     private static final HttpExecutionStrategy FULLY_NO_OFFLOAD_STRATEGY =
@@ -121,9 +119,12 @@ public class ConcurrentRequestsHttpConnectionFilterTest {
             public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
                                                          final StreamingHttpRequest request) {
                 switch (reqCount.incrementAndGet()) {
-                    case 1: return success(reqRespFactory.ok().payloadBody(response1Publisher.publisher()));
-                    case 2: return success(reqRespFactory.ok().payloadBody(response2Publisher.publisher()));
-                    case 3: return success(reqRespFactory.ok().payloadBody(response3Publisher.publisher()));
+                    case 1:
+                        return success(reqRespFactory.ok().payloadBody(response1Publisher));
+                    case 2:
+                        return success(reqRespFactory.ok().payloadBody(response2Publisher));
+                    case 3:
+                        return success(reqRespFactory.ok().payloadBody(response3Publisher));
                     default: return error(new UnsupportedOperationException());
                 }
             }
@@ -147,8 +148,8 @@ public class ConcurrentRequestsHttpConnectionFilterTest {
 
         // Consume the first response payload and ignore the content.
         resp1.payloadBody().forEach(chunk -> { });
-        response1Publisher.sendItems(EMPTY_BUFFER);
-        response1Publisher.complete();
+        response1Publisher.onNext(EMPTY_BUFFER);
+        response1Publisher.onComplete();
 
         // Verify that a new request can be made after the first request completed.
         awaitIndefinitelyNonNull(limitedConnection.request(limitedConnection.get("/baz")));

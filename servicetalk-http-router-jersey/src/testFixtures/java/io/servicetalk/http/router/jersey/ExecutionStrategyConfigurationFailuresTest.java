@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,6 @@
  */
 package io.servicetalk.http.router.jersey;
 
-import io.servicetalk.concurrent.api.DefaultThreadFactory;
 import io.servicetalk.concurrent.api.ExecutorRule;
 import io.servicetalk.http.router.jersey.ExecutionStrategyTest.TestApplication;
 import io.servicetalk.http.router.jersey.resources.ExecutionStrategyResources.ResourceInvalidExecStrategy;
@@ -29,10 +28,8 @@ import org.junit.rules.ExpectedException;
 import java.util.Set;
 import javax.ws.rs.core.Application;
 
-import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.router.jersey.ExecutionStrategyTest.asFactory;
-import static java.lang.Thread.NORM_PRIORITY;
 import static java.util.Collections.singleton;
 import static java.util.Collections.singletonMap;
 import static org.hamcrest.Matchers.allOf;
@@ -44,8 +41,7 @@ public class ExecutionStrategyConfigurationFailuresTest {
     public final ExpectedException expected = ExpectedException.none();
 
     @ClassRule
-    public static final ExecutorRule TEST_EXEC = new ExecutorRule(() ->
-            newCachedThreadExecutor(new DefaultThreadFactory("test-", true, NORM_PRIORITY)));
+    public static final ExecutorRule TEST_EXEC = ExecutorRule.withNamePrefix("test-");
 
     @Test
     public void invalidStrategies() {

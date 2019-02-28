@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,6 @@ import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.client.api.NoAvailableHostException;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.SingleSource.Subscriber;
-import io.servicetalk.concurrent.api.PublisherRule;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
@@ -62,10 +61,10 @@ public class LoadBalancerReadyHttpClientTest {
             allocator, INSTANCE);
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
-    @Rule
-    public final PublisherRule<Object> loadBalancerPublisher = new PublisherRule<>();
     @Mock
     private ExecutionContext mockExecutionCtx;
+
+    private final TestPublisher<Object> loadBalancerPublisher = new TestPublisher<>();
 
     private StreamingHttpClient client = new TestStreamingHttpClient(reqRespFactory, mockExecutionCtx) {
         @Override
@@ -139,7 +138,7 @@ public class LoadBalancerReadyHttpClientTest {
         assertThat(latch.await(100, MILLISECONDS), is(false));
 
         // When a failure occurs that should also fail the action!
-        loadBalancerPublisher.fail(DELIBERATE_EXCEPTION);
+        loadBalancerPublisher.onError(DELIBERATE_EXCEPTION);
         latch.await();
         assertThat(causeRef.get(), is(DELIBERATE_EXCEPTION));
     }
@@ -147,14 +146,14 @@ public class LoadBalancerReadyHttpClientTest {
     private void verifyActionIsDelayedUntilAfterInitialized(Function<StreamingHttpClient, Single<?>> action)
             throws InterruptedException {
         LoadBalancerReadyStreamingHttpClient filter =
-                new LoadBalancerReadyStreamingHttpClient(1, loadBalancerPublisher.publisher(), client);
+                new LoadBalancerReadyStreamingHttpClient(1, loadBalancerPublisher, client);
         CountDownLatch latch = new CountDownLatch(1);
         action.apply(filter).subscribe(resp -> latch.countDown());
 
         // We don't expect the request to complete until onInitialized completes.
         assertThat(latch.await(100, MILLISECONDS), is(false));
 
-        loadBalancerPublisher.sendItems(LOAD_BALANCER_READY_EVENT);
+        loadBalancerPublisher.onNext(LOAD_BALANCER_READY_EVENT);
         latch.await();
     }
 

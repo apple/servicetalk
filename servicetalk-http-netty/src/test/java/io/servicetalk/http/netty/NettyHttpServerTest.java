@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,8 +19,8 @@ import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.BlockingIterator;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.api.MockedCompletableListenerRule;
-import io.servicetalk.concurrent.api.PublisherRule;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StreamingHttpRequest;
@@ -65,9 +65,9 @@ import static io.servicetalk.http.netty.TestServiceStreaming.SVC_ERROR_BEFORE_RE
 import static io.servicetalk.http.netty.TestServiceStreaming.SVC_ERROR_DURING_READ;
 import static io.servicetalk.http.netty.TestServiceStreaming.SVC_LARGE_LAST;
 import static io.servicetalk.http.netty.TestServiceStreaming.SVC_NO_CONTENT;
-import static io.servicetalk.http.netty.TestServiceStreaming.SVC_PUBLISHER_RULE;
 import static io.servicetalk.http.netty.TestServiceStreaming.SVC_ROT13;
 import static io.servicetalk.http.netty.TestServiceStreaming.SVC_SINGLE_ERROR;
+import static io.servicetalk.http.netty.TestServiceStreaming.SVC_TEST_PUBLISHER;
 import static io.servicetalk.http.netty.TestServiceStreaming.SVC_THROW_ERROR;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.util.Arrays.asList;
@@ -92,12 +92,11 @@ public class NettyHttpServerTest extends AbstractNettyHttpServerTest {
     @Rule
     public final ExpectedException thrown = ExpectedException.none();
     @Rule
-    public final PublisherRule<Buffer> publisherRule = new PublisherRule<>();
-    @Rule
     public final MockedCompletableListenerRule completableListenerRule = new MockedCompletableListenerRule();
     private final StreamingHttpRequestResponseFactory reqRespFactory =
             new DefaultStreamingHttpRequestResponseFactory(DEFAULT_ALLOCATOR, INSTANCE);
 
+    private final TestPublisher<Buffer> publisher = new TestPublisher<>();
     private AtomicReference<Single<Throwable>> capturedServiceTransportErrorRef = new AtomicReference<>();
 
     public NettyHttpServerTest(final ExecutorSupplier clientExecutorSupplier,
@@ -305,14 +304,14 @@ public class NettyHttpServerTest extends AbstractNettyHttpServerTest {
     public void testGracefulShutdownWhileReadingPayload() throws Exception {
         ignoreTestWhen(IMMEDIATE, IMMEDIATE);
 
-        when(publisherSupplier.apply(any())).thenReturn(publisherRule.publisher());
+        when(publisherSupplier.apply(any())).thenReturn(publisher);
 
-        final StreamingHttpRequest request1 = reqRespFactory.newRequest(GET, SVC_PUBLISHER_RULE);
+        final StreamingHttpRequest request1 = reqRespFactory.newRequest(GET, SVC_TEST_PUBLISHER);
         final StreamingHttpResponse response1 = makeRequest(request1);
 
         closeAsyncGracefully(serverContext(), 1000, SECONDS).subscribe();
-        publisherRule.sendItems(getChunkFromString("Hello"));
-        publisherRule.complete();
+        publisher.onNext(getChunkFromString("Hello"));
+        publisher.onComplete();
 
         assertResponse(response1, HTTP_1_1, OK, singletonList("Hello"));
         assertFalse(response1.headers().contains(CONNECTION)); // Eventually this should be assertTrue
@@ -322,9 +321,9 @@ public class NettyHttpServerTest extends AbstractNettyHttpServerTest {
 
     @Test
     public void testImmediateShutdownWhileReadingPayload() throws Exception {
-        when(publisherSupplier.apply(any())).thenReturn(publisherRule.publisher());
+        when(publisherSupplier.apply(any())).thenReturn(publisher);
 
-        final StreamingHttpRequest request1 = reqRespFactory.newRequest(GET, SVC_PUBLISHER_RULE);
+        final StreamingHttpRequest request1 = reqRespFactory.newRequest(GET, SVC_TEST_PUBLISHER);
         makeRequest(request1);
 
         serverContext().closeAsync().toFuture().get();
@@ -334,10 +333,10 @@ public class NettyHttpServerTest extends AbstractNettyHttpServerTest {
 
     @Test
     public void testCancelGracefulShutdownWhileReadingPayloadAndThenGracefulShutdownAgain() throws Exception {
-        when(publisherSupplier.apply(any())).thenReturn(publisherRule.publisher());
+        when(publisherSupplier.apply(any())).thenReturn(publisher);
         MockedCompletableListenerRule onCloseListener = completableListenerRule.listen(serverContext().onClose());
 
-        final StreamingHttpRequest request1 = reqRespFactory.newRequest(GET, SVC_PUBLISHER_RULE);
+        final StreamingHttpRequest request1 = reqRespFactory.newRequest(GET, SVC_TEST_PUBLISHER);
         makeRequest(request1);
 
         // cancelling the Completable while in the timeout cancels the forceful shutdown.
@@ -354,10 +353,10 @@ public class NettyHttpServerTest extends AbstractNettyHttpServerTest {
 
     @Test
     public void testCancelGracefulShutdownWhileReadingPayloadAndThenShutdown() throws Exception {
-        when(publisherSupplier.apply(any())).thenReturn(publisherRule.publisher());
+        when(publisherSupplier.apply(any())).thenReturn(publisher);
         MockedCompletableListenerRule onCloseListener = completableListenerRule.listen(serverContext().onClose());
 
-        final StreamingHttpRequest request1 = reqRespFactory.newRequest(GET, SVC_PUBLISHER_RULE);
+        final StreamingHttpRequest request1 = reqRespFactory.newRequest(GET, SVC_TEST_PUBLISHER);
         makeRequest(request1);
 
         // cancelling the Completable while in the timeout cancels the forceful shutdown.
@@ -374,9 +373,9 @@ public class NettyHttpServerTest extends AbstractNettyHttpServerTest {
 
     @Test
     public void testGracefulShutdownTimesOutWhileReadingPayload() throws Exception {
-        when(publisherSupplier.apply(any())).thenReturn(publisherRule.publisher());
+        when(publisherSupplier.apply(any())).thenReturn(publisher);
 
-        final StreamingHttpRequest request1 = reqRespFactory.newRequest(GET, SVC_PUBLISHER_RULE);
+        final StreamingHttpRequest request1 = reqRespFactory.newRequest(GET, SVC_TEST_PUBLISHER);
         makeRequest(request1);
 
         closeAsyncGracefully(serverContext(), 500, MILLISECONDS).toFuture().get();
@@ -386,9 +385,9 @@ public class NettyHttpServerTest extends AbstractNettyHttpServerTest {
 
     @Test
     public void testImmediateCloseAfterGracefulShutdownWhileReadingPayload() throws Exception {
-        when(publisherSupplier.apply(any())).thenReturn(publisherRule.publisher());
+        when(publisherSupplier.apply(any())).thenReturn(publisher);
 
-        final StreamingHttpRequest request1 = reqRespFactory.newRequest(GET, SVC_PUBLISHER_RULE);
+        final StreamingHttpRequest request1 = reqRespFactory.newRequest(GET, SVC_TEST_PUBLISHER);
         makeRequest(request1);
 
         closeAsyncGracefully(serverContext(), 1000, SECONDS).subscribe();

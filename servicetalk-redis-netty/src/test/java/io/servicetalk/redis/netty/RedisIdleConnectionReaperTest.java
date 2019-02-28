@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@ import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.api.CompletableProcessor;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.MockedSingleListenerRule;
-import io.servicetalk.concurrent.api.MockedSubscriberRule;
+import io.servicetalk.concurrent.api.TestPublisherSubscriber;
 import io.servicetalk.redis.api.RedisConnection;
 import io.servicetalk.redis.api.RedisData;
 import io.servicetalk.redis.api.RedisExecutionStrategy;
@@ -47,12 +47,16 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Publisher.just;
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.redis.api.RedisData.NULL;
 import static io.servicetalk.redis.api.RedisProtocolSupport.Command.PING;
 import static io.servicetalk.redis.api.RedisRequests.newRequest;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
+import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
@@ -65,9 +69,6 @@ import static org.mockito.Mockito.when;
 public class RedisIdleConnectionReaperTest {
     @Rule
     public final MockitoRule rule = MockitoJUnit.rule();
-
-    @Rule
-    public final MockedSubscriberRule<RedisData> requestSubscriber = new MockedSubscriberRule<>();
 
     @Rule
     public final MockedSingleListenerRule<String> commandSubscriber = new MockedSingleListenerRule<>();
@@ -86,6 +87,8 @@ public class RedisIdleConnectionReaperTest {
 
     @Mock
     private ExecutionContext mockExecutionCtx;
+
+    private final TestPublisherSubscriber<RedisData> requestSubscriber = new TestPublisherSubscriber<>();
 
     private CompletableProcessor delegateConnectionOnCloseCompletable;
 
@@ -155,9 +158,11 @@ public class RedisIdleConnectionReaperTest {
 
     @Test
     public void connectionWithActiveRequestNeverIdles() {
-        requestSubscriber.subscribe(idleAwareConnection.request(newRequest(PING)))
-                .verifySubscribe()
-                .verifyNoEmissions();
+        toSource(idleAwareConnection.request(newRequest(PING))).subscribe(requestSubscriber);
+        assertTrue(requestSubscriber.subscriptionReceived());
+        assertTrue(requestSubscriber.subscriptionReceived());
+        assertThat(requestSubscriber.items(), hasSize(0));
+        assertFalse(requestSubscriber.isTerminated());
 
         completeTimer();
         completeTimer();
@@ -170,10 +175,10 @@ public class RedisIdleConnectionReaperTest {
 
     @Test
     public void connectionIdlesAfterFinishedRequest() {
-        requestSubscriber.subscribe(idleAwareConnection.request(newRequest(PING)))
-                .verifySubscribe()
-                .request(1)
-                .verifySuccess();
+        toSource(idleAwareConnection.request(newRequest(PING))).subscribe(requestSubscriber);
+        assertTrue(requestSubscriber.subscriptionReceived());
+        requestSubscriber.request(1);
+        assertTrue(requestSubscriber.isCompleted());
 
         completeTimer();
         completeTimer();

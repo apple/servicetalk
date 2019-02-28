@@ -196,7 +196,6 @@ public class DoBeforeFinallyOnHttpResponseOperatorTest {
     @Test
     public void payloadComplete() {
         TestPublisher<Buffer> payload = new TestPublisher<>();
-        payload.sendOnSubscribe();
         TestSingle<StreamingHttpResponse> responseSingle = new TestSingle<>(true);
         final ResponseSubscriber subscriber = new ResponseSubscriber();
         toSource(responseSingle.liftSynchronous(operator)).subscribe(subscriber);

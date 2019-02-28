@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,32 +15,37 @@
  */
 package io.servicetalk.concurrent.api.publisher;
 
-import io.servicetalk.concurrent.api.MockedSubscriberRule;
 import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.concurrent.api.TestPublisherSubscriber;
 
-import org.junit.Rule;
 import org.junit.Test;
 
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doAnswer;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.sameInstance;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 public class JustPublisherTest {
-    @Rule
-    public final MockedSubscriberRule<String> subscriberRule = new MockedSubscriberRule<>();
+
+    private final TestPublisherSubscriber<String> subscriber = new TestPublisherSubscriber<>();
 
     @Test
     public void exceptionInTerminalCallsOnError() {
-        subscriberRule.subscribe(Publisher.just("foo"));
-        // The mock action must be setup after subscribe, because this creates a new mock object internally.
-        doAnswer(invocation -> {
+        toSource(Publisher.just("foo").doOnNext(n -> {
             throw DELIBERATE_EXCEPTION;
-        }).when(subscriberRule.subscriber()).onNext(any());
-        subscriberRule.request(1).verifyItems("foo").verifyFailure(DELIBERATE_EXCEPTION);
+        })).subscribe(subscriber);
+        subscriber.request(1);
+        assertThat(subscriber.items(), contains("foo"));
+        assertThat(subscriber.error(), sameInstance(DELIBERATE_EXCEPTION));
     }
 
     @Test
     public void nullInTerminalSucceeds() {
-        subscriberRule.subscribe(Publisher.just(null)).request(1).verifyItems(new String[]{null}).verifySuccess();
+        toSource(Publisher.<String>just(null)).subscribe(subscriber);
+        subscriber.request(1);
+        assertThat(subscriber.items(), contains(new String[]{null}));
+        assertTrue(subscriber.isCompleted());
     }
 }

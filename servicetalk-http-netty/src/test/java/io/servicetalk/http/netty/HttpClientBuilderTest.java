@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -57,14 +57,13 @@ public class HttpClientBuilderTest extends AbstractEchoServerBasedHttpRequesterT
     public void httpClientWithDynamicLoadBalancing() throws Exception {
 
         TestPublisher<ServiceDiscovererEvent<InetSocketAddress>> sdPub = new TestPublisher<>();
-        sdPub.sendOnSubscribe();
 
         DefaultServiceDiscovererEvent<InetSocketAddress> sdEvent = new DefaultServiceDiscovererEvent<>(
                 (InetSocketAddress) serverContext.listenAddress(), true);
 
         // Simulate delayed discovery
         CTX.executor().schedule(() -> {
-            sdPub.sendItems(sdEvent);
+            sdPub.onNext(sdEvent);
             sdPub.onComplete();
         }, 300, MILLISECONDS);
 

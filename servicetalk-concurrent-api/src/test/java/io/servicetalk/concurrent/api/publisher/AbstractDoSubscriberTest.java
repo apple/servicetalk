@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,47 +16,45 @@
 package io.servicetalk.concurrent.api.publisher;
 
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
-import io.servicetalk.concurrent.api.MockedSubscriberRule;
 import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.concurrent.api.TestPublisherSubscriber;
 import io.servicetalk.concurrent.internal.DeliberateException;
 
-import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.function.Supplier;
 
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.sameInstance;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 public abstract class AbstractDoSubscriberTest {
 
-    @Rule
-    public final MockedSubscriberRule<String> rule = new MockedSubscriberRule<>();
-
-    private Subscriber<String> subscriber;
-
-    @SuppressWarnings("unchecked")
-    @Before
-    public void setUp() throws Exception {
-        subscriber = mock(Subscriber.class);
-    }
+    private final TestPublisherSubscriber<String> subscriber = new TestPublisherSubscriber.Builder<String>()
+            .disableDemandCheck().build();
+    private final TestPublisherSubscriber<String> finalSubscriber = new TestPublisherSubscriber<>();
 
     @Test
     public void testOnWithOnComplete() {
-        rule.subscribe(doSubscriber(Publisher.just("Hello"), () -> subscriber)).verifySuccess("Hello");
-        verify(subscriber).onSubscribe(any());
-        verify(subscriber).onNext("Hello");
-        verify(subscriber).onComplete();
+        toSource(doSubscriber(Publisher.just("Hello"), () -> subscriber)).subscribe(finalSubscriber);
+        finalSubscriber.request(1);
+        assertThat(finalSubscriber.items(), contains("Hello"));
+        assertTrue(finalSubscriber.isCompleted());
+        assertTrue(subscriber.subscriptionReceived());
+        assertThat(subscriber.items(), contains("Hello"));
+        assertTrue(subscriber.isCompleted());
     }
 
     @Test
     public void testOnWithOnError() {
-        rule.subscribe(doSubscriber(Publisher.error(DeliberateException.DELIBERATE_EXCEPTION), () -> subscriber)).verifyFailure(DELIBERATE_EXCEPTION);
-        verify(subscriber).onSubscribe(any());
-        verify(subscriber).onError(DeliberateException.DELIBERATE_EXCEPTION);
+        toSource(doSubscriber(Publisher.error(DeliberateException.DELIBERATE_EXCEPTION), () -> subscriber))
+                .subscribe(finalSubscriber);
+        assertThat(finalSubscriber.error(), sameInstance(DELIBERATE_EXCEPTION));
+        assertTrue(subscriber.subscriptionReceived());
+        assertThat(subscriber.error(), sameInstance(DELIBERATE_EXCEPTION));
     }
 
     protected abstract <T> Publisher<T> doSubscriber(Publisher<T> publisher, Supplier<Subscriber<? super T>> subscriberSupplier);

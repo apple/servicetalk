@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,7 +48,7 @@ final class TestServiceStreaming extends StreamingHttpService {
     static final String SVC_COUNTER_NO_LAST_CHUNK = "/counterNoLastChunk";
     static final String SVC_COUNTER = "/counter";
     static final String SVC_LARGE_LAST = "/largeLast";
-    static final String SVC_PUBLISHER_RULE = "/publisherRule";
+    static final String SVC_TEST_PUBLISHER = "/testPublisher";
     static final String SVC_NO_CONTENT = "/noContent";
     static final String SVC_ROT13 = "/rot13";
     static final String SVC_THROW_ERROR = "/throwError";
@@ -85,8 +85,8 @@ final class TestServiceStreaming extends StreamingHttpService {
             case SVC_LARGE_LAST:
                 response = newLargeLastChunkResponse(context, req, factory);
                 break;
-            case SVC_PUBLISHER_RULE:
-                response = newPublisherRuleResponse(req, factory);
+            case SVC_TEST_PUBLISHER:
+                response = newTestPublisherResponse(req, factory);
                 break;
             case SVC_NO_CONTENT:
                 response = newNoContentResponse(req, factory);
@@ -157,7 +157,7 @@ final class TestServiceStreaming extends StreamingHttpService {
         return factory.ok().version(req.version()).payloadBody(from(chunk, lastChunk));
     }
 
-    private StreamingHttpResponse newPublisherRuleResponse(
+    private StreamingHttpResponse newTestPublisherResponse(
             final StreamingHttpRequest req, final StreamingHttpResponseFactory factory) {
         return factory.ok().version(req.version()).payloadBody(publisherSupplier.apply(req));
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,13 +15,16 @@
  */
 package io.servicetalk.concurrent.api.publisher;
 
+import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.api.Publisher;
 
 import java.util.function.LongConsumer;
 
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
+
 public class DoAfterRequestTest extends AbstractDoRequestTest {
     @Override
-    protected <T> Publisher<T> doRequest(Publisher<T> publisher, LongConsumer consumer) {
-        return publisher.doAfterRequest(consumer);
+    protected <T> PublisherSource<T> doRequest(Publisher<T> publisher, LongConsumer consumer) {
+        return toSource(publisher.doAfterRequest(consumer));
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,9 +15,10 @@
  */
 package io.servicetalk.concurrent.api.publisher;
 
-import io.servicetalk.concurrent.api.MockedSubscriberRule;
+import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.concurrent.api.PublisherRule;
+import io.servicetalk.concurrent.api.TestPublisher;
+import io.servicetalk.concurrent.api.TestPublisherSubscriber;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -26,27 +27,26 @@ import org.junit.rules.ExpectedException;
 import java.util.function.Consumer;
 
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static org.hamcrest.Matchers.sameInstance;
+import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 public abstract class AbstractDoErrorTest {
 
     @Rule
-    public final MockedSubscriberRule<String> rule = new MockedSubscriberRule<>();
-
-    @Rule
-    public final PublisherRule<String> publisher = new PublisherRule<>();
-
-    @Rule
     public final ExpectedException thrown = ExpectedException.none();
+
+    private final TestPublisher<String> publisher = new TestPublisher<>();
+    final TestPublisherSubscriber<String> subscriber = new TestPublisherSubscriber<>();
 
     @Test
     public void testError() {
         @SuppressWarnings("unchecked")
         Consumer<Throwable> onError = mock(Consumer.class);
-        rule.subscribe(doError(publisher.publisher(), onError));
-        publisher.fail();
-        rule.verifyFailure(DELIBERATE_EXCEPTION);
+        doError(publisher, onError).subscribe(subscriber);
+        publisher.onError(DELIBERATE_EXCEPTION);
+        assertThat(subscriber.error(), sameInstance(DELIBERATE_EXCEPTION));
 
         verify(onError).accept(DELIBERATE_EXCEPTION);
     }
@@ -54,5 +54,5 @@ public abstract class AbstractDoErrorTest {
     @Test
     public abstract void testCallbackThrowsError();
 
-    protected abstract <T> Publisher<T> doError(Publisher<T> publisher, Consumer<Throwable> consumer);
+    protected abstract <T> PublisherSource<T> doError(Publisher<T> publisher, Consumer<Throwable> consumer);
 }

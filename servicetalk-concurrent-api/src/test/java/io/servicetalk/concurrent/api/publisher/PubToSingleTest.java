@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,8 @@ import io.servicetalk.concurrent.api.DeferredEmptySubscription;
 import io.servicetalk.concurrent.api.ExecutorRule;
 import io.servicetalk.concurrent.api.MockedSingleListenerRule;
 import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.concurrent.api.PublisherRule;
+import io.servicetalk.concurrent.api.TestPublisher;
+import io.servicetalk.concurrent.api.TestSubscription;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.concurrent.internal.TerminalNotification;
 
@@ -38,17 +39,19 @@ import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
 import static java.lang.Thread.currentThread;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
+import static org.junit.Assert.assertTrue;
 
 public class PubToSingleTest {
 
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
     @Rule
-    public final ExecutorRule executorRule = new ExecutorRule();
+    public final ExecutorRule executorRule = ExecutorRule.newRule();
     @Rule
     public final MockedSingleListenerRule<String> listenerRule = new MockedSingleListenerRule<>();
-    @Rule
-    public final PublisherRule<String> publisher = new PublisherRule<>();
+
+    private final TestPublisher<String> publisher = new TestPublisher<>();
+    private final TestSubscription subscription = new TestSubscription();
 
     @Test
     public void testSuccess() {
@@ -67,27 +70,29 @@ public class PubToSingleTest {
 
     @Test
     public void testCancelled() {
-        listen(publisher.publisher());
-        publisher.sendItems("Hello");
+        listen(publisher);
+        publisher.onSubscribe(subscription);
+        publisher.onNext("Hello");
         listenerRule.verifySuccess("Hello");
-        publisher.verifyCancelled();
+        assertTrue(subscription.isCancelled());
     }
 
     @Test
     public void testErrorPostEmit() {
-        listen(publisher.publisher());
-        publisher.sendItems("Hello");
+        listen(publisher);
+        publisher.onSubscribe(subscription);
+        publisher.onNext("Hello");
         listenerRule.verifySuccess("Hello");
-        publisher.fail(true);
+        assertTrue(subscription.isCancelled());
         listenerRule.noMoreInteractions();
     }
 
     @Test
     public void testCompletePostEmit() {
-        listen(publisher.publisher());
-        publisher.sendItems("Hello");
+        listen(publisher);
+        publisher.onNext("Hello");
         listenerRule.verifySuccess("Hello");
-        publisher.complete(true);
+        publisher.onComplete();
         listenerRule.noMoreInteractions();
     }
 

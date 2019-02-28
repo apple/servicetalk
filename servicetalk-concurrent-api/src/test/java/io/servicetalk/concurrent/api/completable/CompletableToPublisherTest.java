@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,7 @@ package io.servicetalk.concurrent.api.completable;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.ExecutorRule;
-import io.servicetalk.concurrent.api.MockedSubscriberRule;
+import io.servicetalk.concurrent.api.TestPublisherSubscriber;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 
 import org.junit.Rule;
@@ -28,22 +28,25 @@ import org.junit.rules.Timeout;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static java.lang.Thread.currentThread;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
+import static org.junit.Assert.assertTrue;
 
 public class CompletableToPublisherTest {
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
     @Rule
-    public final ExecutorRule executorRule = new ExecutorRule();
-    @Rule
-    public MockedSubscriberRule<String> subscriberRule = new MockedSubscriberRule<>();
+    public final ExecutorRule executorRule = ExecutorRule.newRule();
+
+    private TestPublisherSubscriber<String> subscriber = new TestPublisherSubscriber<>();
 
     @Test
     public void noTerminalSucceeds() {
-        subscriberRule.subscribe(Completable.completed().toPublisher())
-                .request(1).verifySuccess();
+        toSource(Completable.completed().<String>toPublisher()).subscribe(subscriber);
+        subscriber.request(1);
+        assertTrue(subscriber.isCompleted());
     }
 
     @Test

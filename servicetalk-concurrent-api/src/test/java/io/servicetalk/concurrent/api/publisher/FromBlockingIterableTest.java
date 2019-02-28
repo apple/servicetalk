@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,9 +27,13 @@ import java.util.function.BiConsumer;
 
 import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.Publisher.from;
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.sameInstance;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 public class FromBlockingIterableTest extends FromInMemoryPublisherAbstractTest {
@@ -73,8 +77,10 @@ public class FromBlockingIterableTest extends FromInMemoryPublisherAbstractTest 
         };
         AtomicBoolean cancelled = new AtomicBoolean();
         InMemorySource source = newSource(1, hashNextConsumer, nextConsumer, () -> cancelled.set(true));
-        subscriber.subscribe(source.publisher()).request(1)
-                .verifyFailure(DELIBERATE_EXCEPTION).verifyNoEmissions();
+        toSource(source.publisher()).subscribe(subscriber);
+        subscriber.request(1);
+        assertThat(subscriber.error(), sameInstance(DELIBERATE_EXCEPTION));
+        assertThat(subscriber.items(), hasSize(0));
         assertTrue(cancelled.get());
     }
 
@@ -87,8 +93,10 @@ public class FromBlockingIterableTest extends FromInMemoryPublisherAbstractTest 
         };
         AtomicBoolean cancelled = new AtomicBoolean();
         InMemorySource source = newSource(1, hashNextConsumer, nextConsumer, () -> cancelled.set(true));
-        subscriber.subscribe(source.publisher()).request(1)
-                .verifyFailure(DELIBERATE_EXCEPTION).verifyNoEmissions();
+        toSource(source.publisher()).subscribe(subscriber);
+        subscriber.request(1);
+        assertThat(subscriber.error(), sameInstance(DELIBERATE_EXCEPTION));
+        assertThat(subscriber.items(), hasSize(0));
         assertTrue(cancelled.get());
     }
 }

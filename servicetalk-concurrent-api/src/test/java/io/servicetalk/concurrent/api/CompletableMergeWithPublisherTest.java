@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,167 +15,188 @@
  */
 package io.servicetalk.concurrent.api;
 
-import org.junit.Rule;
 import org.junit.Test;
 
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.sameInstance;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 public class CompletableMergeWithPublisherTest {
 
-    @Rule
-    public final PublisherRule<String> publisher = new PublisherRule<>();
-    @Rule
-    public final MockedSubscriberRule<String> subscriber = new MockedSubscriberRule<>();
+    private final TestSubscription subscription = new TestSubscription();
+    private final TestPublisher<String> publisher = new TestPublisher.Builder<String>()
+            .disableAutoOnSubscribe().build();
+    private final TestPublisherSubscriber<String> subscriber = new TestPublisherSubscriber<>();
 
     @Test
     public void testDelayedPublisherSubscriptionForReqNBuffering() {
         TestCompletable completable = new TestCompletable();
-        subscriber.subscribe(completable.merge(publisher.publisher(true)));
-        subscriber.verifySubscribe();
+        toSource(completable.merge(publisher)).subscribe(subscriber);
+        assertTrue(subscriber.subscriptionReceived());
         subscriber.request(5);
-        publisher.sendOnSubscribe();
         completable.onComplete();
         subscriber.request(7);
-        publisher.sendItems("1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12");
-        publisher.complete();
-        subscriber.verifySuccessNoRequestN("1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12");
+        publisher.onNext("1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12");
+        publisher.onComplete();
+        assertThat(subscriber.items(), contains("1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"));
+        assertTrue(subscriber.isCompleted());
     }
 
     @Test
     public void testDelayedPublisherSubscriptionForCancelBuffering() {
         TestCompletable completable = new TestCompletable();
-        subscriber.subscribe(completable.merge(publisher.publisher(true)));
-        subscriber.verifySubscribe();
+        toSource(completable.merge(publisher)).subscribe(subscriber);
+        assertTrue(subscriber.subscriptionReceived());
         subscriber.request(5);
-        publisher.sendOnSubscribe();
+        publisher.onSubscribe(subscription);
         completable.onComplete();
         subscriber.cancel();
-        publisher.verifyCancelled();
+        assertTrue(subscription.isCancelled());
     }
 
     @Test
     public void testDelayedCompletableSubscriptionForCancelBuffering() {
         TestCompletable completable = new TestCompletable(false, true);
-        subscriber.subscribe(completable.merge(publisher.publisher(true)));
-        subscriber.verifySubscribe();
+        toSource(completable.merge(publisher)).subscribe(subscriber);
+        assertTrue(subscriber.subscriptionReceived());
         subscriber.request(5);
         completable.sendOnSubscribe();
-        publisher.sendOnSubscribe();
+        publisher.onSubscribe(subscription);
         completable.onComplete();
         subscriber.cancel();
-        publisher.verifyCancelled();
+        assertTrue(subscription.isCancelled());
         completable.verifyCancelled();
     }
 
     @Test
     public void testCompletableFailCancelsPublisher() {
         TestCompletable completable = new TestCompletable();
-        subscriber.subscribe(completable.merge(publisher.publisher()));
-        subscriber.verifySubscribe();
+        toSource(completable.merge(publisher)).subscribe(subscriber);
+        publisher.onSubscribe(subscription);
+        assertTrue(subscriber.subscriptionReceived());
         completable.onError(DELIBERATE_EXCEPTION);
-        publisher.verifyCancelled();
-        subscriber.verifyFailure(DELIBERATE_EXCEPTION);
+        assertTrue(subscription.isCancelled());
+        assertThat(subscriber.error(), sameInstance(DELIBERATE_EXCEPTION));
     }
 
     @Test
     public void testPublisherFailCancelsCompletable() {
         TestCompletable completable = new TestCompletable();
-        subscriber.subscribe(completable.merge(publisher.publisher()));
-        subscriber.verifySubscribe();
-        publisher.fail(false, DELIBERATE_EXCEPTION);
+        toSource(completable.merge(publisher)).subscribe(subscriber);
+        publisher.onSubscribe(subscription);
+        assertTrue(subscriber.subscriptionReceived());
+        assertFalse(subscription.isCancelled());
+        publisher.onError(DELIBERATE_EXCEPTION);
         completable.verifyCancelled();
-        publisher.verifyNotCancelled();
-        subscriber.verifyFailure(DELIBERATE_EXCEPTION);
+        assertFalse(subscription.isCancelled());
+        assertThat(subscriber.error(), sameInstance(DELIBERATE_EXCEPTION));
     }
 
     @Test
     public void testCancelCancelsPendingSourceSubscription() {
         TestCompletable completable = new TestCompletable();
-        subscriber.subscribe(completable.merge(publisher.publisher()));
-        subscriber.verifySubscribe();
+        toSource(completable.merge(publisher)).subscribe(subscriber);
+        publisher.onSubscribe(subscription);
+        assertTrue(subscriber.subscriptionReceived());
         subscriber.cancel();
-        publisher.verifyCancelled();
+        assertTrue(subscription.isCancelled());
         completable.verifyCancelled();
-        subscriber.verifyNoEmissions();
+        assertTrue(subscriber.subscriptionReceived());
+        assertThat(subscriber.items(), hasSize(0));
+        assertFalse(subscriber.isTerminated());
     }
 
     @Test
     public void testCancelCompletableCompletePublisherPendingCancelsNoMoreInteraction() {
         TestCompletable completable = new TestCompletable();
-        subscriber.subscribe(completable.merge(publisher.publisher()));
-        subscriber.verifySubscribe();
+        toSource(completable.merge(publisher)).subscribe(subscriber);
+        publisher.onSubscribe(subscription);
+        assertTrue(subscriber.subscriptionReceived());
         completable.onComplete();
         subscriber.request(2);
-        publisher.sendItems("one", "two");
+        publisher.onNext("one", "two");
         subscriber.cancel();
-        subscriber.verifyItems("one", "two");
-        publisher.verifyCancelled();
-        subscriber.verifyNoEmissions();
+        assertThat(subscriber.takeItems(), contains("one", "two"));
+        assertTrue(subscription.isCancelled());
+        assertTrue(subscriber.subscriptionReceived());
+        assertThat(subscriber.items(), hasSize(0));
+        assertFalse(subscriber.isTerminated());
     }
 
     @Test
     public void testCancelPublisherCompleteCompletablePendingCancelsNoMoreInteraction() {
         TestCompletable completable = new TestCompletable();
-        subscriber.subscribe(completable.merge(publisher.publisher()));
-        subscriber.verifySubscribe();
+        toSource(completable.merge(publisher)).subscribe(subscriber);
+        assertTrue(subscriber.subscriptionReceived());
         subscriber.request(2);
-        publisher.sendItems("one", "two");
-        publisher.complete();
+        publisher.onNext("one", "two");
+        publisher.onComplete();
         subscriber.cancel();
-        subscriber.verifyItems("one", "two");
-        subscriber.verifyNoEmissions();
+        assertThat(subscriber.takeItems(), contains("one", "two"));
+        assertTrue(subscriber.subscriptionReceived());
+        assertThat(subscriber.items(), hasSize(0));
+        assertFalse(subscriber.isTerminated());
         completable.verifyCancelled();
     }
 
     @Test
     public void testCompletableAndPublisherCompleteSingleCompleteSignal() {
         TestCompletable completable = new TestCompletable();
-        subscriber.subscribe(completable.merge(publisher.publisher()));
-        subscriber.verifySubscribe();
+        toSource(completable.merge(publisher)).subscribe(subscriber);
+        assertTrue(subscriber.subscriptionReceived());
         subscriber.request(2);
         completable.onComplete();
-        publisher.sendItems("one", "two");
-        publisher.complete();
-        subscriber.verifyItems("one", "two");
-        subscriber.verifySuccess("one", "two");
+        publisher.onNext("one", "two");
+        publisher.onComplete();
+        assertThat(subscriber.items(), contains("one", "two"));
+        assertTrue(subscriber.isCompleted());
     }
 
     @Test
     public void testCompletableAndPublisherFailOnlySingleErrorSignal() {
         TestCompletable completable = new TestCompletable();
-        subscriber.subscribe(completable.merge(publisher.publisher()));
-        subscriber.verifySubscribe();
+        toSource(completable.merge(publisher)).subscribe(subscriber);
+        publisher.onSubscribe(subscription);
+        assertTrue(subscriber.subscriptionReceived());
         subscriber.request(3);
-        publisher.sendItems("one", "two");
+        publisher.onNext("one", "two");
         completable.onError(DELIBERATE_EXCEPTION);
-        publisher.fail(true, DELIBERATE_EXCEPTION);
-        subscriber.verifyItems("one", "two");
-        subscriber.verifyFailure(DELIBERATE_EXCEPTION);
+        assertTrue(subscription.isCancelled());
+        publisher.onError(DELIBERATE_EXCEPTION);
+        assertThat(subscriber.items(), contains("one", "two"));
+        assertThat(subscriber.error(), sameInstance(DELIBERATE_EXCEPTION));
     }
 
     @Test
     public void testCompletableFailsAndPublisherCompletesSingleErrorSignal() {
         TestCompletable completable = new TestCompletable();
-        subscriber.subscribe(completable.merge(publisher.publisher()));
-        subscriber.verifySubscribe();
+        toSource(completable.merge(publisher)).subscribe(subscriber);
+        assertTrue(subscriber.subscriptionReceived());
         subscriber.request(2);
-        publisher.sendItems("one", "two");
-        publisher.complete();
+        publisher.onNext("one", "two");
+        publisher.onComplete();
         completable.onError(DELIBERATE_EXCEPTION);
-        subscriber.verifyItems("one", "two");
-        subscriber.verifyFailure(DELIBERATE_EXCEPTION);
+        assertThat(subscriber.items(), contains("one", "two"));
+        assertThat(subscriber.error(), sameInstance(DELIBERATE_EXCEPTION));
     }
 
     @Test
     public void testPublisherFailsAndCompletableCompletesSingleErrorSignal() {
         TestCompletable completable = new TestCompletable();
-        subscriber.subscribe(completable.merge(publisher.publisher()));
-        subscriber.verifySubscribe();
+        toSource(completable.merge(publisher)).subscribe(subscriber);
+        publisher.onSubscribe(subscription);
+        assertTrue(subscriber.subscriptionReceived());
         subscriber.request(2);
-        publisher.sendItems("one", "two");
+        publisher.onNext("one", "two");
         completable.onComplete();
-        publisher.fail(false, DELIBERATE_EXCEPTION);
-        subscriber.verifyItems("one", "two");
-        subscriber.verifyFailure(DELIBERATE_EXCEPTION);
+        assertFalse(subscription.isCancelled());
+        publisher.onError(DELIBERATE_EXCEPTION);
+        assertThat(subscriber.items(), contains("one", "two"));
+        assertThat(subscriber.error(), sameInstance(DELIBERATE_EXCEPTION));
     }
 }
