@@ -18,7 +18,6 @@ package io.servicetalk.concurrent.api;
 import org.junit.Test;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
-import static io.servicetalk.concurrent.api.TestPublisherSubscriber.newTestPublisherSubscriber;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
@@ -28,7 +27,7 @@ import static org.junit.Assert.assertTrue;
 public class TakePublisherTest {
 
     private final TestPublisher<String> publisher = new TestPublisher<>();
-    private final TestPublisherSubscriber<String> subscriber = newTestPublisherSubscriber();
+    private final TestPublisherSubscriber<String> subscriber = new TestPublisherSubscriber<>();
     private final TestSubscription subscription = new TestSubscription();
 
     @Test

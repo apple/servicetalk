@@ -31,7 +31,6 @@ import java.util.concurrent.CancellationException;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Publisher.just;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
-import static io.servicetalk.concurrent.api.TestPublisherSubscriber.newTestPublisherSubscriber;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.empty;
@@ -57,8 +56,8 @@ public class SpliceFlatStreamToMetaSingleTest {
     private final LastPayload last = new LastPayload();
     private final Data data = new Data(metaData, from(one, two, last));
 
-    private final TestPublisherSubscriber<Payload> payloadSubscriber = newTestPublisherSubscriber();
-    private final TestPublisherSubscriber<Payload> dupePayloadSubscriber = newTestPublisherSubscriber();
+    private final TestPublisherSubscriber<Payload> payloadSubscriber = new TestPublisherSubscriber<>();
+    private final TestPublisherSubscriber<Payload> dupePayloadSubscriber = new TestPublisherSubscriber<>();
     private final TestSubscription subscription = new TestSubscription();
 
     @Test

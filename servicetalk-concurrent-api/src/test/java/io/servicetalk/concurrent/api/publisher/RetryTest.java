@@ -25,7 +25,6 @@ import org.junit.Before;
 import org.junit.Test;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
-import static io.servicetalk.concurrent.api.TestPublisherSubscriber.newTestPublisherSubscriber;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.sameInstance;
@@ -44,7 +43,7 @@ import static org.mockito.Mockito.when;
 
 public class RetryTest {
 
-    private TestPublisherSubscriber<Integer> subscriber = newTestPublisherSubscriber();
+    private TestPublisherSubscriber<Integer> subscriber = new TestPublisherSubscriber<>();
     private TestPublisher<Integer> source;
     private BiIntPredicate<Throwable> shouldRetry;
     private boolean shouldRetryValue;
@@ -144,7 +143,7 @@ public class RetryTest {
     @Test
     public void exceptionInTerminalCallsOnError() {
         DeliberateException ex = new DeliberateException();
-        subscriber = newTestPublisherSubscriber();
+        subscriber = new TestPublisherSubscriber<>();
         source = new TestPublisher<>();
         toSource(source.retry((times, cause) -> {
             throw ex;

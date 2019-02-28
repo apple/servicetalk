@@ -36,7 +36,6 @@ import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.Publisher.just;
 import static io.servicetalk.concurrent.api.Single.success;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
-import static io.servicetalk.concurrent.api.TestPublisherSubscriber.newTestPublisherSubscriber;
 import static io.servicetalk.transport.netty.internal.CloseHandler.UNSUPPORTED_PROTOCOL_CLOSE_HANDLER;
 import static io.servicetalk.transport.netty.internal.FlushStrategies.defaultFlushStrategy;
 import static java.lang.Integer.MAX_VALUE;
@@ -56,8 +55,8 @@ public class DefaultNettyPipelinedConnectionTest {
     public final Timeout timeout = new ServiceTalkTestTimeout();
 
     public static final int MAX_PENDING_REQUESTS = 2;
-    private final TestPublisherSubscriber<Integer> readSubscriber = newTestPublisherSubscriber();
-    private final TestPublisherSubscriber<Integer> secondReadSubscriber = newTestPublisherSubscriber();
+    private final TestPublisherSubscriber<Integer> readSubscriber = new TestPublisherSubscriber<>();
+    private final TestPublisherSubscriber<Integer> secondReadSubscriber = new TestPublisherSubscriber<>();
     private TestPublisher<Integer> writePublisher1;
     private TestPublisher<Integer> writePublisher2;
     private int requestNext = MAX_VALUE;

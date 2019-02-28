@@ -30,6 +30,11 @@ public final class TestPublisherSubscriber<T> implements Subscriber<T>, Subscrip
     private final CollectingPublisherSubscriber<T> collector;
     private final Subscriber<T> delegate;
 
+    public TestPublisherSubscriber() {
+        collector = new CollectingPublisherSubscriber<>();
+        delegate = new DemandCheckingSubscriber<>(collector);
+    }
+
     private TestPublisherSubscriber(final CollectingPublisherSubscriber<T> collector, final Subscriber<T> delegate) {
         this.collector = collector;
         this.delegate = delegate;
@@ -110,10 +115,6 @@ public final class TestPublisherSubscriber<T> implements Subscriber<T>, Subscrip
 
     public void clear() {
         collector.clear();
-    }
-
-    public static <T> TestPublisherSubscriber<T> newTestPublisherSubscriber() {
-        return new Builder<T>().build();
     }
 
     public static class Builder<T> {

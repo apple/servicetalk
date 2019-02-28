@@ -26,7 +26,6 @@ import org.junit.rules.ExpectedException;
 
 import java.util.function.LongConsumer;
 
-import static io.servicetalk.concurrent.api.TestPublisherSubscriber.newTestPublisherSubscriber;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.hasSize;
@@ -45,7 +44,7 @@ public abstract class AbstractDoRequestTest {
     public final ExpectedException thrown = ExpectedException.none();
 
     private final TestPublisher<String> publisher = new TestPublisher<>();
-    private final TestPublisherSubscriber<String> subscriber = newTestPublisherSubscriber();
+    private final TestPublisherSubscriber<String> subscriber = new TestPublisherSubscriber<>();
 
     @Test
     public void testSingleRequest() {

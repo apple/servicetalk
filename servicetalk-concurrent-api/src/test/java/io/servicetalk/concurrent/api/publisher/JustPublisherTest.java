@@ -21,7 +21,6 @@ import io.servicetalk.concurrent.api.TestPublisherSubscriber;
 import org.junit.Test;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
-import static io.servicetalk.concurrent.api.TestPublisherSubscriber.newTestPublisherSubscriber;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.sameInstance;
@@ -30,7 +29,7 @@ import static org.junit.Assert.assertTrue;
 
 public class JustPublisherTest {
 
-    private final TestPublisherSubscriber<String> subscriber = newTestPublisherSubscriber();
+    private final TestPublisherSubscriber<String> subscriber = new TestPublisherSubscriber<>();
 
     @Test
     public void exceptionInTerminalCallsOnError() {

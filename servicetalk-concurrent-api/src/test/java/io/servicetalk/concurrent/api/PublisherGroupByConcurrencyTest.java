@@ -39,7 +39,6 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
-import static io.servicetalk.concurrent.api.TestPublisherSubscriber.newTestPublisherSubscriber;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.Executors.newCachedThreadPool;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -53,7 +52,7 @@ public final class PublisherGroupByConcurrencyTest {
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout(30, SECONDS);
 
-    private final TestPublisherSubscriber<Integer> groupsSubscriber = newTestPublisherSubscriber();
+    private final TestPublisherSubscriber<Integer> groupsSubscriber = new TestPublisherSubscriber<>();
     private ConcurrentLinkedQueue<Integer> allItemsReceivedOnAllGroups;
     private TestPublisher<Integer> source;
     private ExecutorService executor;

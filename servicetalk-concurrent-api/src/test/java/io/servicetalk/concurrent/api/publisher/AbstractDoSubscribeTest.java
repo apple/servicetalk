@@ -27,7 +27,6 @@ import org.junit.rules.ExpectedException;
 import java.util.function.Consumer;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
-import static io.servicetalk.concurrent.api.TestPublisherSubscriber.newTestPublisherSubscriber;
 import static org.hamcrest.Matchers.contains;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -40,7 +39,7 @@ public abstract class AbstractDoSubscribeTest {
     @Rule
     public final ExpectedException thrown = ExpectedException.none();
 
-    final TestPublisherSubscriber<String> subscriber = newTestPublisherSubscriber();
+    final TestPublisherSubscriber<String> subscriber = new TestPublisherSubscriber<>();
     private Consumer<Subscription> doOnSubscribe;
 
     @SuppressWarnings("unchecked")

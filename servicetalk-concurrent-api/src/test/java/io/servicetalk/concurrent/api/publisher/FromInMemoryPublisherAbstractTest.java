@@ -30,7 +30,6 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
-import static io.servicetalk.concurrent.api.TestPublisherSubscriber.newTestPublisherSubscriber;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static java.util.Arrays.copyOf;
 import static java.util.Objects.requireNonNull;
@@ -45,7 +44,7 @@ import static org.junit.Assert.fail;
 
 public abstract class FromInMemoryPublisherAbstractTest {
 
-    final TestPublisherSubscriber<String> subscriber = newTestPublisherSubscriber();
+    final TestPublisherSubscriber<String> subscriber = new TestPublisherSubscriber<>();
 
     protected abstract InMemorySource newPublisher(Executor executor, String[] values);
 

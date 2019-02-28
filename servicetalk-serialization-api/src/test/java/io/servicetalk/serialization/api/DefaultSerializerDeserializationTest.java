@@ -35,7 +35,6 @@ import java.util.concurrent.TimeUnit;
 import static io.servicetalk.concurrent.api.BlockingTestUtils.awaitIndefinitely;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
-import static io.servicetalk.concurrent.api.TestPublisherSubscriber.newTestPublisherSubscriber;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
@@ -216,7 +215,7 @@ public class DefaultSerializerDeserializationTest {
         doThrow(e).when(deSerializer).close();
 
         final Publisher<String> deserialized = factory.deserialize(from(first, second), String.class);
-        TestPublisherSubscriber<String> subscriber = newTestPublisherSubscriber();
+        TestPublisherSubscriber<String> subscriber = new TestPublisherSubscriber<>();
         toSource(deserialized).subscribe(subscriber);
         subscriber.request(2);
 

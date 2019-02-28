@@ -30,7 +30,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
-import static io.servicetalk.concurrent.api.TestPublisherSubscriber.newTestPublisherSubscriber;
 import static java.lang.Long.MAX_VALUE;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.contains;
@@ -46,8 +45,8 @@ public class TestPublisherTest {
     @Rule
     public final ExpectedException expected = ExpectedException.none();
 
-    private final TestPublisherSubscriber<String> subscriber1 = newTestPublisherSubscriber();
-    private final TestPublisherSubscriber<String> subscriber2 = newTestPublisherSubscriber();
+    private final TestPublisherSubscriber<String> subscriber1 = new TestPublisherSubscriber<>();
+    private final TestPublisherSubscriber<String> subscriber2 = new TestPublisherSubscriber<>();
 
     @Test
     public void testNonResubscribeablePublisher() {

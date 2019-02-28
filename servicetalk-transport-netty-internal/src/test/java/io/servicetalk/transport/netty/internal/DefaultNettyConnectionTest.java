@@ -50,7 +50,6 @@ import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Publisher.just;
 import static io.servicetalk.concurrent.api.Publisher.never;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
-import static io.servicetalk.concurrent.api.TestPublisherSubscriber.newTestPublisherSubscriber;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.transport.netty.internal.CloseHandler.UNSUPPORTED_PROTOCOL_CLOSE_HANDLER;
 import static io.servicetalk.transport.netty.internal.CloseHandler.forPipelinedRequestResponse;
@@ -88,7 +87,7 @@ public class DefaultNettyConnectionTest {
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
 
-    private final TestPublisherSubscriber<Buffer> subscriber = newTestPublisherSubscriber();
+    private final TestPublisherSubscriber<Buffer> subscriber = new TestPublisherSubscriber<>();
     private BufferAllocator allocator;
     private EmbeddedChannel channel;
     private NettyConnection.RequestNSupplier requestNSupplier;

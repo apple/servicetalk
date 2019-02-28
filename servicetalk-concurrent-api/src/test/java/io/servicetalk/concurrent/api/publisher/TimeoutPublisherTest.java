@@ -42,7 +42,6 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
-import static io.servicetalk.concurrent.api.TestPublisherSubscriber.newTestPublisherSubscriber;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
@@ -64,7 +63,7 @@ public class TimeoutPublisherTest {
     public final Timeout timeout = new ServiceTalkTestTimeout();
 
     private final TestPublisher<Integer> publisher = new TestPublisher<>();
-    private final TestPublisherSubscriber<Integer> subscriber = newTestPublisherSubscriber();
+    private final TestPublisherSubscriber<Integer> subscriber = new TestPublisherSubscriber<>();
     private final ScheduleQueueTestExecutor testExecutor = new ScheduleQueueTestExecutor();
     private java.util.concurrent.ExecutorService timerSimulator;
     private TestSubscription subscription = new TestSubscription();

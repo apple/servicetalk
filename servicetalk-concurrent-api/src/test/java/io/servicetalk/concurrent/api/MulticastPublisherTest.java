@@ -36,7 +36,6 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
-import static io.servicetalk.concurrent.api.TestPublisherSubscriber.newTestPublisherSubscriber;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.Matchers.contains;
@@ -62,8 +61,8 @@ public class MulticastPublisherTest {
     @Test
     public void emitItemsAndThenError() {
         Publisher<Integer> multicast = source.multicast(2);
-        TestPublisherSubscriber<Integer> subscriber1 = newTestPublisherSubscriber();
-        TestPublisherSubscriber<Integer> subscriber2 = newTestPublisherSubscriber();
+        TestPublisherSubscriber<Integer> subscriber1 = new TestPublisherSubscriber<>();
+        TestPublisherSubscriber<Integer> subscriber2 = new TestPublisherSubscriber<>();
         toSource(multicast).subscribe(subscriber1);
         toSource(multicast).subscribe(subscriber2);
 
@@ -106,8 +105,8 @@ public class MulticastPublisherTest {
     @Test
     public void sourceSubscribeAfter() {
         Publisher<Integer> multicast = source.multicast(2);
-        TestPublisherSubscriber<Integer> subscriber1 = newTestPublisherSubscriber();
-        TestPublisherSubscriber<Integer> subscriber2 = newTestPublisherSubscriber();
+        TestPublisherSubscriber<Integer> subscriber1 = new TestPublisherSubscriber<>();
+        TestPublisherSubscriber<Integer> subscriber2 = new TestPublisherSubscriber<>();
         toSource(multicast).subscribe(subscriber1);
         toSource(multicast).subscribe(subscriber2);
 
@@ -129,8 +128,8 @@ public class MulticastPublisherTest {
     public void sourceSubscribeBefore() {
         source = new TestPublisher<>(); // With auto-on-subscribe enabled
         Publisher<Integer> multicast = source.multicast(2);
-        TestPublisherSubscriber<Integer> subscriber1 = newTestPublisherSubscriber();
-        TestPublisherSubscriber<Integer> subscriber2 = newTestPublisherSubscriber();
+        TestPublisherSubscriber<Integer> subscriber1 = new TestPublisherSubscriber<>();
+        TestPublisherSubscriber<Integer> subscriber2 = new TestPublisherSubscriber<>();
 
         toSource(multicast).subscribe(subscriber1);
         toSource(multicast).subscribe(subscriber2);
@@ -150,14 +149,15 @@ public class MulticastPublisherTest {
         final int expectedSubscribers = 2000;
         Publisher<Integer> multicast = source.multicast(expectedSubscribers, expectedSubscribers);
         @SuppressWarnings("unchecked")
-        TestPublisherSubscriber<Integer>[] subscribers = (TestPublisherSubscriber<Integer>[]) new TestPublisherSubscriber[expectedSubscribers];
+        TestPublisherSubscriber<Integer>[] subscribers = (TestPublisherSubscriber<Integer>[])
+                new TestPublisherSubscriber[expectedSubscribers];
 
         final int expectedSubscribersMinus1 = expectedSubscribers - 1;
         for (int i = 0; i < expectedSubscribersMinus1; ++i) {
-            subscribers[i] = newTestPublisherSubscriber();
+            subscribers[i] = new TestPublisherSubscriber<>();
             toSource(multicast).subscribe(subscribers[i]);
         }
-        subscribers[expectedSubscribersMinus1] = newTestPublisherSubscriber();
+        subscribers[expectedSubscribersMinus1] = new TestPublisherSubscriber<>();
         toSource(multicast).subscribe(subscribers[expectedSubscribersMinus1]);
         for (int i = 0; i < expectedSubscribersMinus1; ++i) {
             assertTrue(subscribers[i].subscriptionReceived());
@@ -165,7 +165,8 @@ public class MulticastPublisherTest {
 
         source.onSubscribe(subscription);
 
-        ExecutorService executorService = new ThreadPoolExecutor(0, expectedSubscribers, 1, SECONDS, new SynchronousQueue<>());
+        ExecutorService executorService = new ThreadPoolExecutor(0, expectedSubscribers, 1, SECONDS,
+                new SynchronousQueue<>());
         try {
             CyclicBarrier barrier = new CyclicBarrier(expectedSubscribers);
             CountDownLatch doneLatch = new CountDownLatch(expectedSubscribers);
@@ -188,14 +189,15 @@ public class MulticastPublisherTest {
         final int expectedSubscribers = 400;
         Publisher<Integer> multicast = source.multicast(expectedSubscribers, expectedSubscribers);
         @SuppressWarnings("unchecked")
-        TestPublisherSubscriber<Integer>[] subscribers = (TestPublisherSubscriber<Integer>[]) new TestPublisherSubscriber[expectedSubscribers];
+        TestPublisherSubscriber<Integer>[] subscribers = (TestPublisherSubscriber<Integer>[])
+                new TestPublisherSubscriber[expectedSubscribers];
 
         final int expectedSubscribersMinus1 = expectedSubscribers - 1;
         for (int i = 0; i < expectedSubscribersMinus1; ++i) {
-            subscribers[i] = newTestPublisherSubscriber();
+            subscribers[i] = new TestPublisherSubscriber<>();
             toSource(multicast).subscribe(subscribers[i]);
         }
-        subscribers[expectedSubscribersMinus1] = newTestPublisherSubscriber();
+        subscribers[expectedSubscribersMinus1] = new TestPublisherSubscriber<>();
         toSource(multicast).subscribe(subscribers[expectedSubscribersMinus1]);
         for (int i = 0; i < expectedSubscribersMinus1; ++i) {
             assertTrue(subscribers[i].subscriptionReceived());
@@ -203,7 +205,8 @@ public class MulticastPublisherTest {
 
         source.onSubscribe(subscription);
 
-        ExecutorService executorService = new ThreadPoolExecutor(0, expectedSubscribers, 1, SECONDS, new SynchronousQueue<>());
+        ExecutorService executorService = new ThreadPoolExecutor(0, expectedSubscribers, 1, SECONDS,
+                new SynchronousQueue<>());
         try {
             CyclicBarrier barrier = new CyclicBarrier(expectedSubscribers + 1);
             CountDownLatch doneLatch = new CountDownLatch(expectedSubscribers);
@@ -256,8 +259,8 @@ public class MulticastPublisherTest {
     @Test
     public void reentryBothSubscriberRequestCountIsCorrect() {
         Publisher<Integer> multicast = source.multicast(2);
-        TestPublisherSubscriber<Integer> subscriber1 = newTestPublisherSubscriber();
-        TestPublisherSubscriber<Integer> subscriber2 = newTestPublisherSubscriber();
+        TestPublisherSubscriber<Integer> subscriber1 = new TestPublisherSubscriber<>();
+        TestPublisherSubscriber<Integer> subscriber2 = new TestPublisherSubscriber<>();
         toSource(multicast.doOnNext(n -> {
             subscriber1.request(1);
         })).subscribe(subscriber1);
@@ -281,8 +284,8 @@ public class MulticastPublisherTest {
 
     private void reentrySubscriberRequestCountIsCorrect(boolean firstIsReentry) {
         Publisher<Integer> multicast = source.multicast(2);
-        TestPublisherSubscriber<Integer> subscriber1 = newTestPublisherSubscriber();
-        TestPublisherSubscriber<Integer> subscriber2 = newTestPublisherSubscriber();
+        TestPublisherSubscriber<Integer> subscriber1 = new TestPublisherSubscriber<>();
+        TestPublisherSubscriber<Integer> subscriber2 = new TestPublisherSubscriber<>();
         toSource(multicast.doOnNext(n -> {
             if (firstIsReentry) {
                 subscriber1.request(1);
@@ -321,8 +324,8 @@ public class MulticastPublisherTest {
     @Test
     public void reentryAndMultiQueueSupportsNull() {
         Publisher<Integer> multicast = source.multicast(2);
-        TestPublisherSubscriber<Integer> subscriber1 = newTestPublisherSubscriber();
-        TestPublisherSubscriber<Integer> subscriber2 = newTestPublisherSubscriber();
+        TestPublisherSubscriber<Integer> subscriber1 = new TestPublisherSubscriber<>();
+        TestPublisherSubscriber<Integer> subscriber2 = new TestPublisherSubscriber<>();
         AtomicBoolean onNextCalled = new AtomicBoolean();
         toSource(multicast.doOnNext(n -> {
             if (onNextCalled.compareAndSet(false, true)) {
@@ -355,8 +358,8 @@ public class MulticastPublisherTest {
     public void requestLongMax() {
         final int maxQueueSize = 1000;
         Publisher<Integer> multicast = source.multicast(2, maxQueueSize);
-        TestPublisherSubscriber<Integer> subscriber1 = newTestPublisherSubscriber();
-        TestPublisherSubscriber<Integer> subscriber2 = newTestPublisherSubscriber();
+        TestPublisherSubscriber<Integer> subscriber1 = new TestPublisherSubscriber<>();
+        TestPublisherSubscriber<Integer> subscriber2 = new TestPublisherSubscriber<>();
         toSource(multicast).subscribe(subscriber1);
         toSource(multicast).subscribe(subscriber2);
 

@@ -34,7 +34,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
-import static io.servicetalk.concurrent.api.TestPublisherSubscriber.newTestPublisherSubscriber;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static java.lang.Integer.MAX_VALUE;
 import static java.lang.Math.ceil;
@@ -61,8 +60,8 @@ public class FromInputStreamPublisherTest {
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
 
-    private final TestPublisherSubscriber<byte[]> sub1 = newTestPublisherSubscriber();
-    private final TestPublisherSubscriber<byte[]> sub2 = newTestPublisherSubscriber();
+    private final TestPublisherSubscriber<byte[]> sub1 = new TestPublisherSubscriber<>();
+    private final TestPublisherSubscriber<byte[]> sub2 = new TestPublisherSubscriber<>();
 
     private final byte[] smallBuff = init0toN(10);
     private final byte[] bigBuff = init0toN(37);

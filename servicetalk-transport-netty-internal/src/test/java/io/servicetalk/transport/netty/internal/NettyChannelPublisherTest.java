@@ -46,7 +46,6 @@ import javax.annotation.Nullable;
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
-import static io.servicetalk.concurrent.api.TestPublisherSubscriber.newTestPublisherSubscriber;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.concurrent.internal.ServiceTalkTestTimeout.DEFAULT_TIMEOUT_SECONDS;
 import static io.servicetalk.transport.netty.internal.CloseHandler.UNSUPPORTED_PROTOCOL_CLOSE_HANDLER;
@@ -72,8 +71,8 @@ public class NettyChannelPublisherTest {
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
 
-    private final TestPublisherSubscriber<Integer> subscriber = newTestPublisherSubscriber();
-    private final TestPublisherSubscriber<Integer> subscriber2 = newTestPublisherSubscriber();
+    private final TestPublisherSubscriber<Integer> subscriber = new TestPublisherSubscriber<>();
+    private final TestPublisherSubscriber<Integer> subscriber2 = new TestPublisherSubscriber<>();
     private Publisher<Integer> publisher;
     private EmbeddedChannel channel;
     private boolean nextItemTerminal;

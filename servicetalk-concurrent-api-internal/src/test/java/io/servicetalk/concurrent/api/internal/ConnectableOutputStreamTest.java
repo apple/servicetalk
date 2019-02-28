@@ -37,7 +37,6 @@ import java.util.function.IntBinaryOperator;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
-import static io.servicetalk.concurrent.api.TestPublisherSubscriber.newTestPublisherSubscriber;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static java.lang.Math.max;
 import static java.lang.Math.min;
@@ -69,7 +68,7 @@ public class ConnectableOutputStreamTest {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ConnectableOutputStreamTest.class);
 
-    private final TestPublisherSubscriber<byte[]> subscriber = newTestPublisherSubscriber();
+    private final TestPublisherSubscriber<byte[]> subscriber = new TestPublisherSubscriber<>();
     private IntBinaryOperator nextSizeSupplier;
     private ConnectableOutputStream cos;
 

@@ -23,7 +23,6 @@ import io.servicetalk.concurrent.internal.DeliberateException;
 import org.junit.Test;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
-import static io.servicetalk.concurrent.api.TestPublisherSubscriber.newTestPublisherSubscriber;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.Assert.assertThat;
@@ -34,7 +33,7 @@ import static org.mockito.Mockito.verify;
 public abstract class AbstractDoCompleteTest {
 
     private final TestPublisher<String> publisher = new TestPublisher<>();
-    private final TestPublisherSubscriber<String> subscriber = newTestPublisherSubscriber();
+    private final TestPublisherSubscriber<String> subscriber = new TestPublisherSubscriber<>();
 
     @Test
     public void testComplete() {

@@ -28,7 +28,6 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
-import static io.servicetalk.concurrent.api.TestPublisherSubscriber.newTestPublisherSubscriber;
 import static java.lang.Thread.currentThread;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
@@ -40,7 +39,7 @@ public class CompletableToSingleTest {
     @Rule
     public final ExecutorRule executorRule = ExecutorRule.newRule();
 
-    private TestPublisherSubscriber<String> subscriber = newTestPublisherSubscriber();
+    private TestPublisherSubscriber<String> subscriber = new TestPublisherSubscriber<>();
 
     @Test
     public void noTerminalSucceeds() {

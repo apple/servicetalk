@@ -40,7 +40,6 @@ import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Completable.never;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
-import static io.servicetalk.concurrent.api.TestPublisherSubscriber.newTestPublisherSubscriber;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpProtocolVersions.HTTP_1_0;
 import static io.servicetalk.http.api.HttpProtocolVersions.newProtocolVersion;
@@ -65,8 +64,8 @@ public class PipelinedHttpConnectionTest {
     @SuppressWarnings("unchecked")
     private final NettyConnection<Object, Object> connection = mock(NettyConnection.class);
 
-    private final TestPublisherSubscriber<StreamingHttpResponse> dataSubscriber1 = newTestPublisherSubscriber();
-    private final TestPublisherSubscriber<StreamingHttpResponse> dataSubscriber2 = newTestPublisherSubscriber();
+    private final TestPublisherSubscriber<StreamingHttpResponse> dataSubscriber1 = new TestPublisherSubscriber<>();
+    private final TestPublisherSubscriber<StreamingHttpResponse> dataSubscriber2 = new TestPublisherSubscriber<>();
 
     private TestPublisher<Object> readPublisher1;
     private TestPublisher<Object> readPublisher2;

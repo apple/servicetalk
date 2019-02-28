@@ -32,7 +32,6 @@ import java.util.concurrent.TimeUnit;
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
-import static io.servicetalk.concurrent.api.TestPublisherSubscriber.newTestPublisherSubscriber;
 import static io.servicetalk.concurrent.internal.ServiceTalkTestTimeout.DEFAULT_TIMEOUT_SECONDS;
 import static io.servicetalk.transport.netty.internal.FlushStrategies.defaultFlushStrategy;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -43,7 +42,7 @@ public class NettyChannelPublisherRefCountTest {
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
 
-    private final TestPublisherSubscriber<Object> subscriber = newTestPublisherSubscriber();
+    private final TestPublisherSubscriber<Object> subscriber = new TestPublisherSubscriber<>();
     private Publisher<Object> publisher;
     private EmbeddedChannel channel;
 

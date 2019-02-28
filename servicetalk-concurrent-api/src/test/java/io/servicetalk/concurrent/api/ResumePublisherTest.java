@@ -21,7 +21,6 @@ import org.junit.Test;
 
 import static io.servicetalk.concurrent.api.IsIterableEndingWithInOrder.endsWith;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
-import static io.servicetalk.concurrent.api.TestPublisherSubscriber.newTestPublisherSubscriber;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.hasSize;
@@ -35,7 +34,7 @@ import static org.junit.Assert.assertTrue;
 
 public final class ResumePublisherTest {
 
-    private final TestPublisherSubscriber<Integer> subscriber = newTestPublisherSubscriber();
+    private final TestPublisherSubscriber<Integer> subscriber = new TestPublisherSubscriber<>();
     private TestPublisher<Integer> first = new TestPublisher<>();
     private TestPublisher<Integer> second = new TestPublisher<>();
 

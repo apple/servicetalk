@@ -41,7 +41,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.IsIterableEndingWithInOrder.endsWith;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
-import static io.servicetalk.concurrent.api.TestPublisherSubscriber.newTestPublisherSubscriber;
 import static io.servicetalk.concurrent.api.VerificationTestUtils.verifyOriginalAndSuppressedCauses;
 import static io.servicetalk.concurrent.api.VerificationTestUtils.verifySuppressed;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
@@ -67,7 +66,7 @@ public class PublisherFlatMapSingleTest {
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout(30, SECONDS);
 
-    private final TestPublisherSubscriber<Integer> subscriber = newTestPublisherSubscriber();
+    private final TestPublisherSubscriber<Integer> subscriber = new TestPublisherSubscriber<>();
     private final TestPublisher<Integer> source = new TestPublisher<>();
     private final TestSubscription subscription = new TestSubscription();
     private static ExecutorService executorService;

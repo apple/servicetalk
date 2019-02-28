@@ -48,7 +48,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Publisher.just;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
-import static io.servicetalk.concurrent.api.TestPublisherSubscriber.newTestPublisherSubscriber;
 import static io.servicetalk.redis.api.RedisData.NULL;
 import static io.servicetalk.redis.api.RedisProtocolSupport.Command.PING;
 import static io.servicetalk.redis.api.RedisRequests.newRequest;
@@ -89,7 +88,7 @@ public class RedisIdleConnectionReaperTest {
     @Mock
     private ExecutionContext mockExecutionCtx;
 
-    private final TestPublisherSubscriber<RedisData> requestSubscriber = newTestPublisherSubscriber();
+    private final TestPublisherSubscriber<RedisData> requestSubscriber = new TestPublisherSubscriber<>();
 
     private CompletableProcessor delegateConnectionOnCloseCompletable;
 

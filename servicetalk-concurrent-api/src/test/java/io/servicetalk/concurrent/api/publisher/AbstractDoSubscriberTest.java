@@ -25,7 +25,6 @@ import org.junit.Test;
 import java.util.function.Supplier;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
-import static io.servicetalk.concurrent.api.TestPublisherSubscriber.newTestPublisherSubscriber;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.sameInstance;
@@ -36,7 +35,7 @@ public abstract class AbstractDoSubscriberTest {
 
     private final TestPublisherSubscriber<String> subscriber = new TestPublisherSubscriber.Builder<String>()
             .disableDemandCheck().build();
-    private final TestPublisherSubscriber<String> finalSubscriber = newTestPublisherSubscriber();
+    private final TestPublisherSubscriber<String> finalSubscriber = new TestPublisherSubscriber<>();
 
     @Test
     public void testOnWithOnComplete() {

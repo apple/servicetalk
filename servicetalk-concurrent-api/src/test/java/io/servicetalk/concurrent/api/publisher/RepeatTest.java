@@ -25,7 +25,6 @@ import org.junit.Test;
 import java.util.function.IntPredicate;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
-import static io.servicetalk.concurrent.api.TestPublisherSubscriber.newTestPublisherSubscriber;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.sameInstance;
@@ -41,7 +40,7 @@ import static org.mockito.Mockito.when;
 
 public class RepeatTest {
 
-    private final TestPublisherSubscriber<Integer> subscriber = newTestPublisherSubscriber();
+    private final TestPublisherSubscriber<Integer> subscriber = new TestPublisherSubscriber<>();
     private final TestPublisher<Integer> source = new TestPublisher<>();
     private final IntPredicate shouldRepeat = mock(IntPredicate.class);
     private boolean shouldRepeatValue;

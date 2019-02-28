@@ -29,7 +29,6 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
-import static io.servicetalk.concurrent.api.TestPublisherSubscriber.newTestPublisherSubscriber;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static java.lang.Thread.currentThread;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -47,7 +46,7 @@ public class SingleToPublisherTest {
     @Rule
     public final ExecutorRule executorRule = ExecutorRule.newRule();
 
-    private TestPublisherSubscriber<String> verifier = newTestPublisherSubscriber();
+    private TestPublisherSubscriber<String> verifier = new TestPublisherSubscriber<>();
 
     @Test
     public void testSuccessfulFuture() {

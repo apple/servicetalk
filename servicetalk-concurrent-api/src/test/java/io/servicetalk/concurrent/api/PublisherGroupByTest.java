@@ -43,7 +43,6 @@ import java.util.function.Supplier;
 
 import static io.servicetalk.concurrent.api.IsIterableEndingWithInOrder.endsWith;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
-import static io.servicetalk.concurrent.api.TestPublisherSubscriber.newTestPublisherSubscriber;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
@@ -70,7 +69,7 @@ public class PublisherGroupByTest {
     @Before
     public void setUp() {
         source = new TestPublisher<>();
-        subscriber = newTestPublisherSubscriber();
+        subscriber = new TestPublisherSubscriber<>();
     }
 
     @Test
@@ -340,7 +339,7 @@ public class PublisherGroupByTest {
             final Thread writerThread = Thread.currentThread();
             final AtomicInteger pendingDemand = new AtomicInteger();
             toSource(subscribeToAllGroups(totalData,
-                    TestPublisherSubscriber::newTestPublisherSubscriber,
+                    TestPublisherSubscriber::new,
                     s -> s)).subscribe(subscriber);
             CountDownLatch latch1 = new CountDownLatch(1);
             CountDownLatch latch2 = new CountDownLatch(1);
@@ -444,7 +443,7 @@ public class PublisherGroupByTest {
         assertTrue(subscriber.isCompleted());
         assertThat("Unexpected groups.", groups, hasSize(1));
         GroupedPublisher<Boolean, Integer> grp = groups.remove(0);
-        TestPublisherSubscriber<Integer> subscriber = newTestPublisherSubscriber();
+        TestPublisherSubscriber<Integer> subscriber = new TestPublisherSubscriber<>();
         toSource(grp).subscribe(subscriber);
         subscriber.request(1);
         assertThat(subscriber.items(), contains(1));
@@ -464,7 +463,7 @@ public class PublisherGroupByTest {
         assertThat(subscriber.error(), instanceOf(QueueFullException.class));
         assertThat("Unexpected groups.", groups, hasSize(1));
         GroupedPublisher<Boolean, Integer> grp = groups.remove(0);
-        TestPublisherSubscriber<Integer> subscriber = newTestPublisherSubscriber();
+        TestPublisherSubscriber<Integer> subscriber = new TestPublisherSubscriber<>();
         toSource(grp).subscribe(subscriber);
         subscriber.request(16);
         assertThat(subscriber.items(), contains(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15));
@@ -645,7 +644,7 @@ public class PublisherGroupByTest {
             Function<Integer, Boolean> keySelector, int maxBufferPerGroup,
             Function<TestPublisherSubscriber<Integer>, Subscriber<Integer>> subscriberFunction) {
         return subscribeToAllGroups(keySelector, maxBufferPerGroup,
-                TestPublisherSubscriber::newTestPublisherSubscriber, subscriberFunction);
+                TestPublisherSubscriber::new, subscriberFunction);
     }
 
     private Publisher<Boolean> subscribeToAllGroups(
@@ -663,7 +662,7 @@ public class PublisherGroupByTest {
     private Publisher<Boolean> subscribeToAllGroups(
             int maxBufferPerGroup,
             Function<TestPublisherSubscriber<Integer>, Subscriber<Integer>> subscriberFunction) {
-        return subscribeToAllGroups(maxBufferPerGroup, TestPublisherSubscriber::newTestPublisherSubscriber,
+        return subscribeToAllGroups(maxBufferPerGroup, TestPublisherSubscriber::new,
                 subscriberFunction);
     }
 

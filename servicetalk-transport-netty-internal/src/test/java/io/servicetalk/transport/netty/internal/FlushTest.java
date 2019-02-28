@@ -24,7 +24,6 @@ import org.junit.Before;
 import org.junit.Test;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
-import static io.servicetalk.concurrent.api.TestPublisherSubscriber.newTestPublisherSubscriber;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.hasSize;
@@ -39,7 +38,7 @@ import static org.mockito.Mockito.verifyZeroInteractions;
 public class FlushTest extends AbstractFlushTest {
 
     private final TestPublisher<String> source = new TestPublisher<>();
-    private final TestPublisherSubscriber<String> subscriber = newTestPublisherSubscriber();
+    private final TestPublisherSubscriber<String> subscriber = new TestPublisherSubscriber<>();
     private FlushSender flushSender;
     private MockFlushStrategy strategy;
 
