@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,6 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.buffer.api.Buffer;
 
-import static io.servicetalk.http.api.HttpRequestMethods.HttpRequestMethodProperties.NONE;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.util.Objects.requireNonNull;
 
@@ -27,12 +26,11 @@ final class DefaultHttpRequestMethod implements HttpRequestMethod {
     private final Buffer name;
     private final Properties properties;
 
-    DefaultHttpRequestMethod(final Buffer name) {
-        this(name, NONE);
-    }
-
     DefaultHttpRequestMethod(final Buffer name, final Properties properties) {
         this.name = requireNonNull(name);
+        if (name.readableBytes() == 0) {
+            throw new IllegalArgumentException("Method name cannot be empty");
+        }
         this.properties = requireNonNull(properties);
         this.nameString = name.toString(US_ASCII);
     }
@@ -43,12 +41,12 @@ final class DefaultHttpRequestMethod implements HttpRequestMethod {
     }
 
     @Override
-    public String methodName() {
+    public String name() {
         return nameString;
     }
 
     @Override
-    public Properties methodProperties() {
+    public Properties properties() {
         return properties;
     }
 
@@ -62,7 +60,6 @@ final class DefaultHttpRequestMethod implements HttpRequestMethod {
         }
 
         final DefaultHttpRequestMethod that = (DefaultHttpRequestMethod) o;
-
         return nameString.equals(that.nameString) && properties.equals(that.properties);
     }
 
@@ -77,6 +74,7 @@ final class DefaultHttpRequestMethod implements HttpRequestMethod {
     }
 
     static final class DefaultHttpRequestMethodProperties implements Properties {
+
         private final boolean safe;
         private final boolean idempotent;
         private final boolean cacheable;
@@ -112,13 +110,12 @@ final class DefaultHttpRequestMethod implements HttpRequestMethod {
             }
 
             final DefaultHttpRequestMethodProperties that = (DefaultHttpRequestMethodProperties) o;
-
             return safe == that.safe && idempotent == that.idempotent && cacheable == that.cacheable;
         }
 
         @Override
         public int hashCode() {
-            int result = (safe ? 1 : 0);
+            int result = safe ? 1 : 0;
             result = 31 * result + (idempotent ? 1 : 0);
             result = 31 * result + (cacheable ? 1 : 0);
             return result;
