@@ -69,7 +69,7 @@ final class DefaultPubSubRedisConnection extends PubSubRedisConnection {
         writeRequestArraySize(buffer, len);
         RedisProtocolSupport.Command.PING.encodeTo(buffer);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.PING, buffer);
-        return toPubSubPongMessages(reservedCnx.request(request), String.class).first();
+        return toPubSubPongMessages(reservedCnx.request(request), String.class).toSingleOrError();
     }
 
     @Override
@@ -84,7 +84,7 @@ final class DefaultPubSubRedisConnection extends PubSubRedisConnection {
         RedisProtocolSupport.Command.PING.encodeTo(buffer);
         writeRequestArgument(buffer, message, messageBytes);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.PING, buffer);
-        return toPubSubPongMessages(reservedCnx.request(request), String.class).first();
+        return toPubSubPongMessages(reservedCnx.request(request), String.class).toSingleOrError();
     }
 
     @Override

@@ -1947,7 +1947,20 @@ public abstract class Publisher<T> {
      * @see <a href="http://reactivex.io/documentation/operators/first.html">ReactiveX first operator.</a>
      */
     public final Single<T> first() {
-        return new PubToSingle<>(this);
+        return new PubToSingleFirst<>(this);
+    }
+
+    /**
+     * Converts this {@link Publisher} to a {@link Single}. If this {@link Publisher} terminates without emitting any
+     * items a {@link NoSuchElementException} will be signaled and if this {@link Publisher} emits more than one item,
+     * an {@link IllegalArgumentException} will be signaled.
+     *
+     * @return A {@link Single} that will contain the first item emitted from the this {@link Publisher}.
+     * If the source {@link Publisher} does not emit any item, then the returned {@link Single} will terminate with
+     * {@link NoSuchElementException}.
+     */
+    public final Single<T> toSingleOrError() {
+        return new PubToSingleOrError<>(this);
     }
 
     /**
