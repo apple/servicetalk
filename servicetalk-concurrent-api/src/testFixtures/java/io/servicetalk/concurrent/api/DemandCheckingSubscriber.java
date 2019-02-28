@@ -21,6 +21,11 @@ import io.servicetalk.concurrent.internal.FlowControlUtil;
 
 import java.util.concurrent.atomic.AtomicLong;
 
+/**
+ * A {@link Subscriber} that wraps another, and asserts that items are not delivered without sufficient demand.
+ *
+ * @param <T> Type of items received by the {@code Subscriber}.
+ */
 public final class DemandCheckingSubscriber<T> implements Subscriber<T> {
 
     private final Subscriber<? super T> delegate;
@@ -28,6 +33,11 @@ public final class DemandCheckingSubscriber<T> implements Subscriber<T> {
     private final AtomicLong pending = new AtomicLong();
     private boolean subscribed;
 
+    /**
+     * Create a new {@link DemandCheckingSubscriber} that delegates to {@code delegate}.
+     *
+     * @param delegate the {@link Subscriber} to delegate to.
+     */
     public DemandCheckingSubscriber(final Subscriber<? super T> delegate) {
         this.delegate = delegate;
     }

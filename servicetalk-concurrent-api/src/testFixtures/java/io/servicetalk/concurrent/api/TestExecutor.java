@@ -32,6 +32,10 @@ import javax.annotation.Nullable;
 
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
+/**
+ * An {@link Executor} implementation that provides methods for controlling execution of queued and schedules tasks,
+ * for testing.
+ */
 public class TestExecutor implements Executor {
 
     private final Queue<RunnableWrapper> tasks = new ConcurrentLinkedQueue<>();
@@ -78,18 +82,45 @@ public class TestExecutor implements Executor {
         };
     }
 
+    /**
+     * Returns the internal clock time in nanoseconds.
+     *
+     * @return the internal clock time in nanoseconds.
+     */
     public long currentNanos() {
         return currentNanos;
     }
 
+    /**
+     * Returns the internal clock time in milliseconds.
+     *
+     * @return the internal clock time in milliseconds.
+     */
     public long currentMillis() {
         return currentTime(NANOSECONDS);
     }
 
+    /**
+     * Returns the internal clock time in the specified {@code unit}.
+     *
+     * @param unit the time unit to calculate
+     * @return the internal clock time in the specified {@code unit}.
+     */
     public long currentTime(final TimeUnit unit) {
         return unit.convert(currentNanos, NANOSECONDS);
     }
 
+    /**
+     * Advance the internal clock time by {@code time} in the specified {@code unit}s, executing scheduled tasks
+     * whose time has come.
+     * <p>
+     * Queued tasks ({@code execute}/{@code submit} methods as opposed to {@code schedule}/{@code timer} methods) are
+     * not executed.
+     *
+     * @param time the duration to advance by
+     * @param unit The units for {@code time}.
+     * @return this.
+     */
     public TestExecutor advanceTimeBy(final long time, final TimeUnit unit) {
         advanceTimeByNoExecuteTasks(time, unit);
         executeTasks();
@@ -97,6 +128,14 @@ public class TestExecutor implements Executor {
         return this;
     }
 
+    /**
+     * Advance the internal clock time by {@code time} in the specified {@code unit}s, <b>without</b> executing
+     * scheduled tasks.
+     *
+     * @param time the duration to advance by
+     * @param unit The units for {@code time}.
+     * @return this.
+     */
     public TestExecutor advanceTimeByNoExecuteTasks(final long time, final TimeUnit unit) {
         if (time <= 0) {
             throw new IllegalArgumentException("time (" + time + ") must be >0");
@@ -105,11 +144,23 @@ public class TestExecutor implements Executor {
         return this;
     }
 
+    /**
+     * Execute all queued ({@code execute}/{@code submit} methods) tasks.  Any exceptions thrown by tasks will
+     * propagate, preventing execution of any further tasks.
+     *
+     * @return this.
+     */
     public TestExecutor executeTasks() {
         execute(tasks);
         return this;
     }
 
+    /**
+     * Execute the next queued ({@code execute}/{@code submit} methods) task.  Any exceptions thrown by the task will
+     * propagate.
+     *
+     * @return this.
+     */
     public TestExecutor executeNextTask() {
         if (!executeOne(tasks)) {
             throw new IllegalStateException("No tasks to execute");
@@ -117,6 +168,12 @@ public class TestExecutor implements Executor {
         return this;
     }
 
+    /**
+     * Execute all scheduled ({@code schedule}/{@code timer} methods) tasks whose time has come.  Any exceptions thrown
+     * by tasks will propagate, preventing execution of any further tasks.
+     *
+     * @return this.
+     */
     public TestExecutor executeScheduledTasks() {
         SortedMap<Long, Queue<RunnableWrapper>> headMap = scheduledTasksByNano.headMap(currentNanos + 1);
 
@@ -128,6 +185,12 @@ public class TestExecutor implements Executor {
         return this;
     }
 
+    /**
+     * Execute the next scheduled ({@code schedule}/{@code timer} methods) task whose time has come.  Any exceptions
+     * thrown by the task will propagate.
+     *
+     * @return this.
+     */
     public TestExecutor executeNextScheduledTask() {
         SortedMap<Long, Queue<RunnableWrapper>> headMap = scheduledTasksByNano.headMap(currentNanos + 1);
 

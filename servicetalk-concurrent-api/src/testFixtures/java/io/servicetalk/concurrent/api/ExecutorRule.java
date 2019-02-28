@@ -24,6 +24,7 @@ import static java.lang.Thread.NORM_PRIORITY;
 
 /**
  * An {@link ExternalResource} wrapper for an {@link Executor}.
+ * @param <E> The type of {@link Executor}.
  */
 public final class ExecutorRule<E extends Executor> extends ExternalResource {
 
@@ -33,18 +34,43 @@ public final class ExecutorRule<E extends Executor> extends ExternalResource {
         this.executor = executor;
     }
 
+    /**
+     * Create an {@link ExecutorRule} with the default cached thread executor.
+     *
+     * @return a new {@link ExecutorRule}.
+     */
     public static ExecutorRule<Executor> newRule() {
         return withExecutor(Executors.newCachedThreadExecutor());
     }
 
+    /**
+     * Create an {@link ExecutorRule} with a {@link TestExecutor}.
+     * <p></p>
+     * {@link #executor()} will return the {@link TestExecutor} to allow controlling the executor in tests.
+     *
+     * @return a new {@link ExecutorRule}.
+     */
     public static ExecutorRule<TestExecutor> withTestExecutor() {
         return new ExecutorRule<>(new TestExecutor());
     }
 
+    /**
+     * Create an {@link ExecutorRule} with the specified {@code executor}.
+     *
+     * @param executor The {@link Executor} to use.
+     * @return a new {@link ExecutorRule}.
+     */
     public static ExecutorRule<Executor> withExecutor(Executor executor) {
         return new ExecutorRule<>(executor);
     }
 
+    /**
+     * Create an {@link ExecutorRule} with the default cached thread executor, configured to prefix thread names
+     * with {@code namePrefix}.
+     *
+     * @param namePrefix the name to prefix thread names with.
+     * @return a new {@link ExecutorRule}.
+     */
     public static ExecutorRule<Executor> withNamePrefix(String namePrefix) {
         return new ExecutorRule<>(newCachedThreadExecutor(new DefaultThreadFactory(namePrefix, true, NORM_PRIORITY)));
     }
