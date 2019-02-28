@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,39 +17,44 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.buffer.api.Buffer;
 
-import static io.servicetalk.http.api.DefaultHttpProtocolVersion.httpVersionToBuffer;
-import static java.nio.charset.StandardCharsets.US_ASCII;
-
 /**
  * Provides constant instances of {@link HttpProtocolVersion}, as well as a mechanism for creating new instances if the
  * existing constants are not sufficient.
  */
-public enum HttpProtocolVersions implements HttpProtocolVersion {
-    HTTP_1_0(1, 0),
-    HTTP_1_1(1, 1);
+public final class HttpProtocolVersions {
 
-    private final int major;
-    private final int minor;
-    private final Buffer httpVersion;
-    private final String httpVersionString;
+    /**
+     * HTTP/1.1 version described in <a href="https://tools.ietf.org/html/rfc7230">RFC 7230</a>.
+     */
+    public static final HttpProtocolVersion HTTP_1_1 = new DefaultHttpProtocolVersion(1, 1);
 
-    HttpProtocolVersions(int major, int minor) {
-        this.major = major;
-        this.minor = minor;
-        httpVersion = httpVersionToBuffer(major, minor);
-        httpVersionString = httpVersion.toString(US_ASCII);
+    /**
+     * HTTP/1.0 version described in <a href="https://tools.ietf.org/html/rfc1945">RFC 1945</a>.
+     */
+    public static final HttpProtocolVersion HTTP_1_0 = new DefaultHttpProtocolVersion(1, 0);
+
+    private HttpProtocolVersions() {
+        // No instances
     }
 
     /**
-     * Create a new {@link HttpProtocolVersion} for the specified {@code major} and {@code minor}.
+     * Return a {@link HttpProtocolVersion} for the specified {@code major} and {@code minor}.
      *
      * @param major the <strong>&lt;major&gt;</strong> portion of the
-     *              <a href="https://tools.ietf.org/html/rfc7230.html#section-2.6">HTTP protocol version</a>.
+     * <a href="https://tools.ietf.org/html/rfc7230.html#section-2.6">HTTP protocol version</a>
      * @param minor the <strong>&lt;minor&gt;</strong> portion of the
-     *              <a href="https://tools.ietf.org/html/rfc7230.html#section-2.6">HTTP protocol version</a>.
-     * @return a new {@link HttpProtocolVersion}.
+     * <a href="https://tools.ietf.org/html/rfc7230.html#section-2.6">HTTP protocol version</a>
+     * @return a cached or new {@link HttpProtocolVersion}
      */
-    public static HttpProtocolVersion newProtocolVersion(final int major, final int minor) {
+    public static HttpProtocolVersion getProtocolVersion(final int major, final int minor) {
+        if (major == 1) {
+            if (minor == 1) {
+                return HTTP_1_1;
+            }
+            if (minor == 0) {
+                return HTTP_1_0;
+            }
+        }
         return new DefaultHttpProtocolVersion(major, minor);
     }
 
@@ -58,30 +63,10 @@ public enum HttpProtocolVersions implements HttpProtocolVersion {
      * be parsed to extract {@code major} and {@code minor} components of the version.
      *
      * @param httpVersion a {@link Buffer} representation of the
-     *       <a href="https://tools.ietf.org/html/rfc7230.html#section-2.6">HTTP protocol version</a>
-     * @return a new {@link HttpProtocolVersion}.
+     * <a href="https://tools.ietf.org/html/rfc7230.html#section-2.6">HTTP protocol version</a>
+     * @return a new {@link HttpProtocolVersion}
      */
     public static HttpProtocolVersion newProtocolVersion(final Buffer httpVersion) {
         return new DefaultHttpProtocolVersion(httpVersion);
-    }
-
-    @Override
-    public int majorVersion() {
-        return major;
-    }
-
-    @Override
-    public int minorVersion() {
-        return minor;
-    }
-
-    @Override
-    public void writeHttpVersionTo(final Buffer buffer) {
-        buffer.writeBytes(httpVersion, httpVersion.readerIndex(), httpVersion.readableBytes());
-    }
-
-    @Override
-    public String toString() {
-        return httpVersionString;
     }
 }

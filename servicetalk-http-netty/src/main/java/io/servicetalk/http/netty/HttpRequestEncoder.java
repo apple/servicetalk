@@ -139,7 +139,7 @@ final class HttpRequestEncoder extends HttpObjectEncoder<HttpRequestMetaData> {
             }
         }
 
-        message.version().writeHttpVersionTo(stBuffer);
+        message.version().writeVersionTo(stBuffer);
         stBuffer.writeShort(CRLF_SHORT);
     }
 }
