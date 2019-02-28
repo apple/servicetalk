@@ -20,7 +20,6 @@ import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.HttpProtocolVersion;
 import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.HttpResponseStatus;
-import io.servicetalk.http.api.HttpResponseStatuses;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
@@ -228,7 +227,7 @@ public abstract class AbstractJerseyStreamingHttpServiceTest {
     }
 
     protected StreamingHttpResponse sendAndAssertResponse(final StreamingHttpRequest req,
-                                                          final HttpResponseStatuses expectedStatus,
+                                                          final HttpResponseStatus expectedStatus,
                                                           final CharSequence expectedContentType,
                                                           final String expectedContent,
                                                           final int timeout,

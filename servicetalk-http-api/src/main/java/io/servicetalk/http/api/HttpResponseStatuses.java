@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,335 +20,349 @@ import io.servicetalk.buffer.api.Buffer;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.buffer.api.ReadOnlyBufferAllocators.PREFER_DIRECT_RO_ALLOCATOR;
-import static io.servicetalk.http.api.DefaultHttpResponseStatus.statusCodeToBuffer;
-import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.toStatusClass;
-import static java.nio.charset.StandardCharsets.US_ASCII;
-import static java.util.Objects.requireNonNull;
 
 /**
  * Provides constant instances of {@link HttpResponseStatus}, as well as a mechanism for creating new instances if the
  * existing constants are not sufficient.
  */
-public enum HttpResponseStatuses implements HttpResponseStatus {
+public final class HttpResponseStatuses {
 
     /**
      * 100 Continue
      */
-    CONTINUE(100, PREFER_DIRECT_RO_ALLOCATOR.fromAscii("Continue")),
+    public static final HttpResponseStatus CONTINUE =
+            new DefaultHttpResponseStatus(100, PREFER_DIRECT_RO_ALLOCATOR.fromAscii("Continue"));
 
     /**
      * 101 Switching Protocols
      */
-    SWITCHING_PROTOCOLS(101, PREFER_DIRECT_RO_ALLOCATOR.fromAscii("Switching Protocols")),
+    public static final HttpResponseStatus SWITCHING_PROTOCOLS =
+            new DefaultHttpResponseStatus(101, PREFER_DIRECT_RO_ALLOCATOR.fromAscii("Switching Protocols"));
 
     /**
      * 102 Processing (WebDAV, RFC2518)
      */
-    PROCESSING(102, PREFER_DIRECT_RO_ALLOCATOR.fromAscii("Processing")),
+    public static final HttpResponseStatus PROCESSING =
+            new DefaultHttpResponseStatus(102, PREFER_DIRECT_RO_ALLOCATOR.fromAscii("Processing"));
 
     /**
      * 200 OK
      */
-    OK(200, PREFER_DIRECT_RO_ALLOCATOR.fromAscii("OK")),
+    public static final HttpResponseStatus OK =
+            new DefaultHttpResponseStatus(200, PREFER_DIRECT_RO_ALLOCATOR.fromAscii("OK"));
 
     /**
      * 201 Created
      */
-    CREATED(201, PREFER_DIRECT_RO_ALLOCATOR.fromAscii("Created")),
+    public static final HttpResponseStatus CREATED =
+            new DefaultHttpResponseStatus(201, PREFER_DIRECT_RO_ALLOCATOR.fromAscii("Created"));
 
     /**
      * 202 Accepted
      */
-    ACCEPTED(202, PREFER_DIRECT_RO_ALLOCATOR.fromAscii("Accepted")),
+    public static final HttpResponseStatus ACCEPTED =
+            new DefaultHttpResponseStatus(202, PREFER_DIRECT_RO_ALLOCATOR.fromAscii("Accepted"));
 
     /**
      * 203 Non-Authoritative Information (since HTTP/1.1)
      */
-    NON_AUTHORITATIVE_INFORMATION(203, PREFER_DIRECT_RO_ALLOCATOR.fromAscii("Non-Authoritative Information")),
-
+    public static final HttpResponseStatus NON_AUTHORITATIVE_INFORMATION =
+            new DefaultHttpResponseStatus(203, PREFER_DIRECT_RO_ALLOCATOR.fromAscii("Non-Authoritative Information"));
     /**
      * 204 No Content
      */
-    NO_CONTENT(204, PREFER_DIRECT_RO_ALLOCATOR.fromAscii("No Content")),
+    public static final HttpResponseStatus NO_CONTENT =
+            new DefaultHttpResponseStatus(204, PREFER_DIRECT_RO_ALLOCATOR.fromAscii("No Content"));
 
     /**
      * 205 Reset Content
      */
-    RESET_CONTENT(205, PREFER_DIRECT_RO_ALLOCATOR.fromAscii("Reset Content")),
+    public static final HttpResponseStatus RESET_CONTENT =
+            new DefaultHttpResponseStatus(205, PREFER_DIRECT_RO_ALLOCATOR.fromAscii("Reset Content"));
 
     /**
      * 206 Partial Content
      */
-    PARTIAL_CONTENT(206, PREFER_DIRECT_RO_ALLOCATOR.fromAscii("Partial Content")),
+    public static final HttpResponseStatus PARTIAL_CONTENT =
+            new DefaultHttpResponseStatus(206, PREFER_DIRECT_RO_ALLOCATOR.fromAscii("Partial Content"));
 
     /**
      * 207 Multi-Status (WebDAV, RFC2518)
      */
-    MULTI_STATUS(207, PREFER_DIRECT_RO_ALLOCATOR.fromAscii("Multi-Status")),
+    public static final HttpResponseStatus MULTI_STATUS =
+            new DefaultHttpResponseStatus(207, PREFER_DIRECT_RO_ALLOCATOR.fromAscii("Multi-Status"));
 
     /**
      * 300 Multiple Choices
      */
-    MULTIPLE_CHOICES(300, PREFER_DIRECT_RO_ALLOCATOR.fromAscii("Multiple Choices")),
+    public static final HttpResponseStatus MULTIPLE_CHOICES =
+            new DefaultHttpResponseStatus(300, PREFER_DIRECT_RO_ALLOCATOR.fromAscii("Multiple Choices"));
 
     /**
      * 301 Moved Permanently
      */
-    MOVED_PERMANENTLY(301, PREFER_DIRECT_RO_ALLOCATOR.fromAscii("Moved Permanently")),
+    public static final HttpResponseStatus MOVED_PERMANENTLY =
+            new DefaultHttpResponseStatus(301, PREFER_DIRECT_RO_ALLOCATOR.fromAscii("Moved Permanently"));
 
     /**
      * 302 Found
      */
-    FOUND(302, PREFER_DIRECT_RO_ALLOCATOR.fromAscii("Found")),
+    public static final HttpResponseStatus FOUND =
+            new DefaultHttpResponseStatus(302, PREFER_DIRECT_RO_ALLOCATOR.fromAscii("Found"));
 
     /**
      * 303 See Other (since HTTP/1.1)
      */
-    SEE_OTHER(303, PREFER_DIRECT_RO_ALLOCATOR.fromAscii("See Other")),
+    public static final HttpResponseStatus SEE_OTHER =
+            new DefaultHttpResponseStatus(303, PREFER_DIRECT_RO_ALLOCATOR.fromAscii("See Other"));
 
     /**
      * 304 Not Modified
      */
-    NOT_MODIFIED(304, PREFER_DIRECT_RO_ALLOCATOR.fromAscii("Not Modified")),
+    public static final HttpResponseStatus NOT_MODIFIED =
+            new DefaultHttpResponseStatus(304, PREFER_DIRECT_RO_ALLOCATOR.fromAscii("Not Modified"));
 
     /**
      * 305 Use Proxy (since HTTP/1.1)
      */
-    USE_PROXY(305, PREFER_DIRECT_RO_ALLOCATOR.fromAscii("Use Proxy")),
+    public static final HttpResponseStatus USE_PROXY =
+            new DefaultHttpResponseStatus(305, PREFER_DIRECT_RO_ALLOCATOR.fromAscii("Use Proxy"));
 
     /**
      * 307 Temporary Redirect (since HTTP/1.1)
      */
-    TEMPORARY_REDIRECT(307, PREFER_DIRECT_RO_ALLOCATOR.fromAscii("Temporary Redirect")),
+    public static final HttpResponseStatus TEMPORARY_REDIRECT =
+            new DefaultHttpResponseStatus(307, PREFER_DIRECT_RO_ALLOCATOR.fromAscii("Temporary Redirect"));
 
     /**
      * 308 Permanent Redirect (RFC7538)
      */
-    PERMANENT_REDIRECT(308, PREFER_DIRECT_RO_ALLOCATOR.fromAscii("Permanent Redirect")),
+    public static final HttpResponseStatus PERMANENT_REDIRECT =
+            new DefaultHttpResponseStatus(308, PREFER_DIRECT_RO_ALLOCATOR.fromAscii("Permanent Redirect"));
 
     /**
      * 400 Bad Request
      */
-    BAD_REQUEST(400, PREFER_DIRECT_RO_ALLOCATOR.fromAscii("Bad Request")),
+    public static final HttpResponseStatus BAD_REQUEST =
+            new DefaultHttpResponseStatus(400, PREFER_DIRECT_RO_ALLOCATOR.fromAscii("Bad Request"));
 
     /**
      * 401 Unauthorized
      */
-    UNAUTHORIZED(401, PREFER_DIRECT_RO_ALLOCATOR.fromAscii("Unauthorized")),
+    public static final HttpResponseStatus UNAUTHORIZED =
+            new DefaultHttpResponseStatus(401, PREFER_DIRECT_RO_ALLOCATOR.fromAscii("Unauthorized"));
 
     /**
      * 402 Payment Required
      */
-    PAYMENT_REQUIRED(402, PREFER_DIRECT_RO_ALLOCATOR.fromAscii("Payment Required")),
+    public static final HttpResponseStatus PAYMENT_REQUIRED =
+            new DefaultHttpResponseStatus(402, PREFER_DIRECT_RO_ALLOCATOR.fromAscii("Payment Required"));
 
     /**
      * 403 Forbidden
      */
-    FORBIDDEN(403, PREFER_DIRECT_RO_ALLOCATOR.fromAscii("Forbidden")),
+    public static final HttpResponseStatus FORBIDDEN =
+            new DefaultHttpResponseStatus(403, PREFER_DIRECT_RO_ALLOCATOR.fromAscii("Forbidden"));
 
     /**
      * 404 Not Found
      */
-    NOT_FOUND(404, PREFER_DIRECT_RO_ALLOCATOR.fromAscii("Not Found")),
+    public static final HttpResponseStatus NOT_FOUND =
+            new DefaultHttpResponseStatus(404, PREFER_DIRECT_RO_ALLOCATOR.fromAscii("Not Found"));
 
     /**
      * 405 Method Not Allowed
      */
-    METHOD_NOT_ALLOWED(405, PREFER_DIRECT_RO_ALLOCATOR.fromAscii("Method Not Allowed")),
+    public static final HttpResponseStatus METHOD_NOT_ALLOWED =
+            new DefaultHttpResponseStatus(405, PREFER_DIRECT_RO_ALLOCATOR.fromAscii("Method Not Allowed"));
 
     /**
      * 406 Not Acceptable
      */
-    NOT_ACCEPTABLE(406, PREFER_DIRECT_RO_ALLOCATOR.fromAscii("Not Acceptable")),
+    public static final HttpResponseStatus NOT_ACCEPTABLE =
+            new DefaultHttpResponseStatus(406, PREFER_DIRECT_RO_ALLOCATOR.fromAscii("Not Acceptable"));
 
     /**
      * 407 Proxy Authentication Required
      */
-    PROXY_AUTHENTICATION_REQUIRED(407, PREFER_DIRECT_RO_ALLOCATOR.fromAscii("Proxy Authentication Required")),
-
+    public static final HttpResponseStatus PROXY_AUTHENTICATION_REQUIRED =
+            new DefaultHttpResponseStatus(407, PREFER_DIRECT_RO_ALLOCATOR.fromAscii("Proxy Authentication Required"));
     /**
      * 408 Request Timeout
      */
-    REQUEST_TIMEOUT(408, PREFER_DIRECT_RO_ALLOCATOR.fromAscii("Request Timeout")),
+    public static final HttpResponseStatus REQUEST_TIMEOUT =
+            new DefaultHttpResponseStatus(408, PREFER_DIRECT_RO_ALLOCATOR.fromAscii("Request Timeout"));
 
     /**
      * 409 Conflict
      */
-    CONFLICT(409, PREFER_DIRECT_RO_ALLOCATOR.fromAscii("Conflict")),
+    public static final HttpResponseStatus CONFLICT =
+            new DefaultHttpResponseStatus(409, PREFER_DIRECT_RO_ALLOCATOR.fromAscii("Conflict"));
 
     /**
      * 410 Gone
      */
-    GONE(410, PREFER_DIRECT_RO_ALLOCATOR.fromAscii("Gone")),
+    public static final HttpResponseStatus GONE =
+            new DefaultHttpResponseStatus(410, PREFER_DIRECT_RO_ALLOCATOR.fromAscii("Gone"));
 
     /**
      * 411 Length Required
      */
-    LENGTH_REQUIRED(411, PREFER_DIRECT_RO_ALLOCATOR.fromAscii("Length Required")),
+    public static final HttpResponseStatus LENGTH_REQUIRED =
+            new DefaultHttpResponseStatus(411, PREFER_DIRECT_RO_ALLOCATOR.fromAscii("Length Required"));
 
     /**
      * 412 Precondition Failed
      */
-    PRECONDITION_FAILED(412, PREFER_DIRECT_RO_ALLOCATOR.fromAscii("Precondition Failed")),
+    public static final HttpResponseStatus PRECONDITION_FAILED =
+            new DefaultHttpResponseStatus(412, PREFER_DIRECT_RO_ALLOCATOR.fromAscii("Precondition Failed"));
 
     /**
      * 413 Request Entity Too Large
      */
-    REQUEST_ENTITY_TOO_LARGE(413, PREFER_DIRECT_RO_ALLOCATOR.fromAscii("Request Entity Too Large")),
+    public static final HttpResponseStatus REQUEST_ENTITY_TOO_LARGE =
+            new DefaultHttpResponseStatus(413, PREFER_DIRECT_RO_ALLOCATOR.fromAscii("Request Entity Too Large"));
 
     /**
      * 414 Request-URI Too Long
      */
-    REQUEST_URI_TOO_LONG(414, PREFER_DIRECT_RO_ALLOCATOR.fromAscii("Request-URI Too Long")),
+    public static final HttpResponseStatus REQUEST_URI_TOO_LONG =
+            new DefaultHttpResponseStatus(414, PREFER_DIRECT_RO_ALLOCATOR.fromAscii("Request-URI Too Long"));
 
     /**
      * 415 Unsupported Media Type
      */
-    UNSUPPORTED_MEDIA_TYPE(415, PREFER_DIRECT_RO_ALLOCATOR.fromAscii("Unsupported Media Type")),
+    public static final HttpResponseStatus UNSUPPORTED_MEDIA_TYPE =
+            new DefaultHttpResponseStatus(415, PREFER_DIRECT_RO_ALLOCATOR.fromAscii("Unsupported Media Type"));
 
     /**
      * 416 Requested Range Not Satisfiable
      */
-    REQUESTED_RANGE_NOT_SATISFIABLE(416, PREFER_DIRECT_RO_ALLOCATOR.fromAscii("Requested Range Not Satisfiable")),
-
+    public static final HttpResponseStatus REQUESTED_RANGE_NOT_SATISFIABLE =
+            new DefaultHttpResponseStatus(416, PREFER_DIRECT_RO_ALLOCATOR.fromAscii("Requested Range Not Satisfiable"));
     /**
      * 417 Expectation Failed
      */
-    EXPECTATION_FAILED(417, PREFER_DIRECT_RO_ALLOCATOR.fromAscii("Expectation Failed")),
+    public static final HttpResponseStatus EXPECTATION_FAILED =
+            new DefaultHttpResponseStatus(417, PREFER_DIRECT_RO_ALLOCATOR.fromAscii("Expectation Failed"));
 
     /**
      * 421 Misdirected Request
      * <p>
      * <a href="https://tools.ietf.org/html/draft-ietf-httpbis-http2-15#section-9.1.2">421 Status Code</a>
      */
-    MISDIRECTED_REQUEST(421, PREFER_DIRECT_RO_ALLOCATOR.fromAscii("Misdirected Request")),
+    public static final HttpResponseStatus MISDIRECTED_REQUEST =
+            new DefaultHttpResponseStatus(421, PREFER_DIRECT_RO_ALLOCATOR.fromAscii("Misdirected Request"));
 
     /**
      * 422 Unprocessable Entity (WebDAV, RFC4918)
      */
-    UNPROCESSABLE_ENTITY(422, PREFER_DIRECT_RO_ALLOCATOR.fromAscii("Unprocessable Entity")),
+    public static final HttpResponseStatus UNPROCESSABLE_ENTITY =
+            new DefaultHttpResponseStatus(422, PREFER_DIRECT_RO_ALLOCATOR.fromAscii("Unprocessable Entity"));
 
     /**
      * 423 Locked (WebDAV, RFC4918)
      */
-    LOCKED(423, PREFER_DIRECT_RO_ALLOCATOR.fromAscii("Locked")),
+    public static final HttpResponseStatus LOCKED =
+            new DefaultHttpResponseStatus(423, PREFER_DIRECT_RO_ALLOCATOR.fromAscii("Locked"));
 
     /**
      * 424 Failed Dependency (WebDAV, RFC4918)
      */
-    FAILED_DEPENDENCY(424, PREFER_DIRECT_RO_ALLOCATOR.fromAscii("Failed Dependency")),
+    public static final HttpResponseStatus FAILED_DEPENDENCY =
+            new DefaultHttpResponseStatus(424, PREFER_DIRECT_RO_ALLOCATOR.fromAscii("Failed Dependency"));
 
     /**
      * 425 Unordered Collection (WebDAV, RFC3648)
      */
-    UNORDERED_COLLECTION(425, PREFER_DIRECT_RO_ALLOCATOR.fromAscii("Unordered Collection")),
+    public static final HttpResponseStatus UNORDERED_COLLECTION =
+            new DefaultHttpResponseStatus(425, PREFER_DIRECT_RO_ALLOCATOR.fromAscii("Unordered Collection"));
 
     /**
      * 426 Upgrade Required (RFC2817)
      */
-    UPGRADE_REQUIRED(426, PREFER_DIRECT_RO_ALLOCATOR.fromAscii("Upgrade Required")),
+    public static final HttpResponseStatus UPGRADE_REQUIRED =
+            new DefaultHttpResponseStatus(426, PREFER_DIRECT_RO_ALLOCATOR.fromAscii("Upgrade Required"));
 
     /**
      * 428 Precondition Required (RFC6585)
      */
-    PRECONDITION_REQUIRED(428, PREFER_DIRECT_RO_ALLOCATOR.fromAscii("Precondition Required")),
+    public static final HttpResponseStatus PRECONDITION_REQUIRED =
+            new DefaultHttpResponseStatus(428, PREFER_DIRECT_RO_ALLOCATOR.fromAscii("Precondition Required"));
 
     /**
      * 429 Too Many Requests (RFC6585)
      */
-    TOO_MANY_REQUESTS(429, PREFER_DIRECT_RO_ALLOCATOR.fromAscii("Too Many Requests")),
+    public static final HttpResponseStatus TOO_MANY_REQUESTS =
+            new DefaultHttpResponseStatus(429, PREFER_DIRECT_RO_ALLOCATOR.fromAscii("Too Many Requests"));
 
     /**
      * 431 Request Header Fields Too Large (RFC6585)
      */
-    REQUEST_HEADER_FIELDS_TOO_LARGE(431, PREFER_DIRECT_RO_ALLOCATOR.fromAscii("Request Header Fields Too Large")),
-
+    public static final HttpResponseStatus REQUEST_HEADER_FIELDS_TOO_LARGE =
+            new DefaultHttpResponseStatus(431, PREFER_DIRECT_RO_ALLOCATOR.fromAscii("Request Header Fields Too Large"));
     /**
      * 500 Internal Server Error
      */
-    INTERNAL_SERVER_ERROR(500, PREFER_DIRECT_RO_ALLOCATOR.fromAscii("Internal Server Error")),
+    public static final HttpResponseStatus INTERNAL_SERVER_ERROR =
+            new DefaultHttpResponseStatus(500, PREFER_DIRECT_RO_ALLOCATOR.fromAscii("Internal Server Error"));
 
     /**
      * 501 Not Implemented
      */
-    NOT_IMPLEMENTED(501, PREFER_DIRECT_RO_ALLOCATOR.fromAscii("Not Implemented")),
+    public static final HttpResponseStatus NOT_IMPLEMENTED =
+            new DefaultHttpResponseStatus(501, PREFER_DIRECT_RO_ALLOCATOR.fromAscii("Not Implemented"));
 
     /**
      * 502 Bad Gateway
      */
-    BAD_GATEWAY(502, PREFER_DIRECT_RO_ALLOCATOR.fromAscii("Bad Gateway")),
+    public static final HttpResponseStatus BAD_GATEWAY =
+            new DefaultHttpResponseStatus(502, PREFER_DIRECT_RO_ALLOCATOR.fromAscii("Bad Gateway"));
 
     /**
      * 503 Service Unavailable
      */
-    SERVICE_UNAVAILABLE(503, PREFER_DIRECT_RO_ALLOCATOR.fromAscii("Service Unavailable")),
+    public static final HttpResponseStatus SERVICE_UNAVAILABLE =
+            new DefaultHttpResponseStatus(503, PREFER_DIRECT_RO_ALLOCATOR.fromAscii("Service Unavailable"));
 
     /**
      * 504 Gateway Timeout
      */
-    GATEWAY_TIMEOUT(504, PREFER_DIRECT_RO_ALLOCATOR.fromAscii("Gateway Timeout")),
+    public static final HttpResponseStatus GATEWAY_TIMEOUT =
+            new DefaultHttpResponseStatus(504, PREFER_DIRECT_RO_ALLOCATOR.fromAscii("Gateway Timeout"));
 
     /**
      * 505 HTTP Version Not Supported
      */
-    HTTP_VERSION_NOT_SUPPORTED(505, PREFER_DIRECT_RO_ALLOCATOR.fromAscii("HTTP Version Not Supported")),
+    public static final HttpResponseStatus HTTP_VERSION_NOT_SUPPORTED =
+            new DefaultHttpResponseStatus(505, PREFER_DIRECT_RO_ALLOCATOR.fromAscii("HTTP Version Not Supported"));
 
     /**
      * 506 Variant Also Negotiates (RFC2295)
      */
-    VARIANT_ALSO_NEGOTIATES(506, PREFER_DIRECT_RO_ALLOCATOR.fromAscii("Variant Also Negotiates")),
+    public static final HttpResponseStatus VARIANT_ALSO_NEGOTIATES =
+            new DefaultHttpResponseStatus(506, PREFER_DIRECT_RO_ALLOCATOR.fromAscii("Variant Also Negotiates"));
 
     /**
      * 507 Insufficient Storage (WebDAV, RFC4918)
      */
-    INSUFFICIENT_STORAGE(507, PREFER_DIRECT_RO_ALLOCATOR.fromAscii("Insufficient Storage")),
+    public static final HttpResponseStatus INSUFFICIENT_STORAGE =
+            new DefaultHttpResponseStatus(507, PREFER_DIRECT_RO_ALLOCATOR.fromAscii("Insufficient Storage"));
 
     /**
      * 510 Not Extended (RFC2774)
      */
-    NOT_EXTENDED(510, PREFER_DIRECT_RO_ALLOCATOR.fromAscii("Not Extended")),
+    public static final HttpResponseStatus NOT_EXTENDED =
+            new DefaultHttpResponseStatus(510, PREFER_DIRECT_RO_ALLOCATOR.fromAscii("Not Extended"));
 
     /**
      * 511 Network Authentication Required (RFC6585)
      */
-    NETWORK_AUTHENTICATION_REQUIRED(511, PREFER_DIRECT_RO_ALLOCATOR.fromAscii("Network Authentication Required"));
+    public static final HttpResponseStatus NETWORK_AUTHENTICATION_REQUIRED =
+            new DefaultHttpResponseStatus(511, PREFER_DIRECT_RO_ALLOCATOR.fromAscii("Network Authentication Required"));
 
-    private final int code;
-    private final Buffer reasonPhrase;
-    private final Buffer statusCodeBuffer;
-    private final StatusClass statusClass;
-
-    HttpResponseStatuses(int code, Buffer reasonPhrase) {
-        // No instances.
-        this.code = code;
-        this.reasonPhrase = requireNonNull(reasonPhrase);
-        this.statusClass = toStatusClass(code);
-        this.statusCodeBuffer = statusCodeToBuffer(code);
-    }
-
-    @Override
-    public StatusClass statusClass() {
-        return statusClass;
-    }
-
-    @Override
-    public int code() {
-        return code;
-    }
-
-    @Override
-    public void writeCodeTo(final Buffer buffer) {
-        buffer.writeBytes(statusCodeBuffer, statusCodeBuffer.readerIndex(), statusCodeBuffer.readableBytes());
-    }
-
-    @Override
-    public void writeReasonPhraseTo(final Buffer buffer) {
-        buffer.writeBytes(reasonPhrase, reasonPhrase.readerIndex(), reasonPhrase.readableBytes());
-    }
-
-    @Override
-    public String toString() {
-        return Integer.toString(code) + ' ' + reasonPhrase.toString(US_ASCII);
+    private HttpResponseStatuses() {
+        // No instances
     }
 
     /**
@@ -357,22 +371,22 @@ public enum HttpResponseStatuses implements HttpResponseStatus {
      * otherwise a new instance will be returned.
      *
      * @param statusCode the three digit <a href="https://tools.ietf.org/html/rfc7231#section-6">status-code</a>
-     * indicating status of the response.
+     * indicating status of the response
      * @param reasonPhrase the <a href="https://tools.ietf.org/html/rfc7230.html#section-3.1.2">reason-phrase</a>
-     * portion of the response.
-     * @return a {@link HttpResponseStatus}.
+     * portion of the response
+     * @return a {@link HttpResponseStatus}
      */
     public static HttpResponseStatus getResponseStatus(final int statusCode, final Buffer reasonPhrase) {
-        final HttpResponseStatuses responseStatus = valueOf(statusCode);
-        if (responseStatus != null &&
-                (reasonPhrase.readableBytes() == 0 || responseStatus.reasonPhrase.equals(reasonPhrase))) {
-            return responseStatus;
+        final HttpResponseStatus cached = valueOf(statusCode);
+        if (cached != null && (reasonPhrase.readableBytes() == 0
+                || ((DefaultHttpResponseStatus) cached).equalsReasonPhrase(reasonPhrase))) {
+            return cached;
         }
         return new DefaultHttpResponseStatus(statusCode, reasonPhrase);
     }
 
     @Nullable
-    private static HttpResponseStatuses valueOf(final int statusCode) {
+    private static HttpResponseStatus valueOf(final int statusCode) {
         switch (statusCode) {
             case 100:
                 return CONTINUE;
