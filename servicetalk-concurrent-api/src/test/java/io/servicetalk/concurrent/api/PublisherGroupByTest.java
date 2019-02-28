@@ -37,6 +37,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.LockSupport;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -336,9 +337,10 @@ public class PublisherGroupByTest {
         ExecutorService executorService = Executors.newFixedThreadPool(1);
         try {
             final int totalData = 10000;
+            final Thread writerThread = Thread.currentThread();
+            final AtomicInteger pendingDemand = new AtomicInteger();
             toSource(subscribeToAllGroups(totalData,
-                    () -> new TestPublisherSubscriber.Builder<Integer>()
-                            .disableDemandCheck().build(),
+                    TestPublisherSubscriber::newTestPublisherSubscriber,
                     s -> s)).subscribe(subscriber);
             CountDownLatch latch1 = new CountDownLatch(1);
             CountDownLatch latch2 = new CountDownLatch(1);
@@ -350,7 +352,8 @@ public class PublisherGroupByTest {
                     TestPublisherSubscriber<Integer> groupSub = groupSubRef.get();
                     for (int i = 0; i < totalData; ++i) {
                         groupSub.request(1);
-                        Thread.yield();
+                        pendingDemand.incrementAndGet();
+                        LockSupport.unpark(writerThread);
                     }
                 } catch (InterruptedException e) {
                     throw new RuntimeException(e);
@@ -372,10 +375,16 @@ public class PublisherGroupByTest {
             assertFalse(groupSub.isTerminated());
             latch2.countDown();
 
+            // writerThread
             final int endIndex = totalData - 1;
-            for (int i = 0; i < endIndex; ++i) {
-                source.onNext(1);
-                Thread.yield();
+            int totalDelivered = 0;
+            while (totalDelivered < endIndex) {
+                LockSupport.park();
+                final int currPendingDemand = pendingDemand.getAndSet(0);
+                totalDelivered += currPendingDemand;
+                for (int x = 0; x < currPendingDemand; ++x) {
+                    source.onNext(1);
+                }
             }
 
             f.get();
