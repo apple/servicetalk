@@ -29,11 +29,6 @@ import javax.annotation.Nullable;
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.checkDuplicateSubscription;
 
-/**
- * A single created from a {@link Publisher}.
- *
- * @param <T> Type of items emitted by this {@link Single}.
- */
 final class PubToSingleFirst<T> extends AbstractNoHandleSubscribeSingle<T> {
     private final Publisher<T> source;
 

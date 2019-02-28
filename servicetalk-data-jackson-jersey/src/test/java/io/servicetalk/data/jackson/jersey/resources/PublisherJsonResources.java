@@ -87,6 +87,6 @@ public class PublisherJsonResources {
     @POST
     public Single<Response> postPojoResponse(@QueryParam("fail") final boolean fail,
                                              final Publisher<TestPojo> publisher) {
-        return postPojo(fail, publisher).first().map(m -> accepted(m).build());
+        return postPojo(fail, publisher).toSingleOrError().map(m -> accepted(m).build());
     }
 }

@@ -26,7 +26,6 @@ import org.junit.Test;
 import org.junit.rules.Timeout;
 
 import java.util.NoSuchElementException;
-import java.util.concurrent.ExecutionException;
 
 import static io.servicetalk.concurrent.api.Publisher.just;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
@@ -53,7 +52,7 @@ public class PubToSingleOrErrorTest {
     }
 
     @Test
-    public void asyncSingleItemCompleted() throws ExecutionException, InterruptedException {
+    public void asyncSingleItemCompleted() throws Exception {
         listenerRule.listen(publisher.publisher().toSingleOrError());
         executorRule.executor().submit(() -> {
             publisher.sendItems("hello");
@@ -63,7 +62,7 @@ public class PubToSingleOrErrorTest {
     }
 
     @Test
-    public void asyncMultipleItemCompleted() throws ExecutionException, InterruptedException {
+    public void asyncMultipleItemCompleted() throws Exception {
         listenerRule.listen(publisher.publisher().toSingleOrError());
         executorRule.executor().submit(() -> {
             publisher.sendItems("foo");

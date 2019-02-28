@@ -128,8 +128,8 @@ final class PubToSingleOrError<T> extends AbstractNoHandleSubscribeSingle<T> {
                     subscriber.onError((Throwable) terminal);
                 } else {
                     @SuppressWarnings("unchecked")
-                    final T t = lastValue == NULL_VALUE ? null : (T) lastValue;
-                    subscriber.onSuccess(t);
+                    final T result = lastValue == NULL_VALUE ? null : (T) lastValue;
+                    subscriber.onSuccess(result);
                 }
             } finally {
                 // De-reference the last value to allow for GC.
