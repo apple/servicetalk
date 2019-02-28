@@ -52,7 +52,14 @@ final class PubToSingleOrError<T> extends AbstractNoHandleSubscribeSingle<T> {
     private static final class PubToSingleSubscriber<T> implements PublisherSource.Subscriber<T> {
         private static final Logger LOGGER = LoggerFactory.getLogger(PubToSingleSubscriber.class);
         private static final Object NULL_VALUE = new Object();
+        private static final byte STATE_WAITING_FOR_SUBSCRIBE = 0;
+        /**
+         * We have called {@link PublisherSource.Subscriber#onSubscribe(PublisherSource.Subscription)}.
+         */
         private static final byte STATE_SENT_ON_SUBSCRIBE = 1;
+        /**
+         * We have called {@link PublisherSource.Subscriber#onSubscribe(PublisherSource.Subscription)} and terminated.
+         */
         private static final byte STATE_SENT_ON_SUBSCRIBE_AND_DONE = 2;
 
         private final Subscriber<? super T> subscriber;
@@ -60,7 +67,11 @@ final class PubToSingleOrError<T> extends AbstractNoHandleSubscribeSingle<T> {
         private PublisherSource.Subscription subscription;
         @Nullable
         private Object lastValue;
-        private byte state;
+        /**
+         * Can either be {@link #STATE_WAITING_FOR_SUBSCRIBE}, {@link #STATE_SENT_ON_SUBSCRIBE}, or
+         * {@link #STATE_SENT_ON_SUBSCRIBE_AND_DONE}.
+         */
+        private byte state = STATE_WAITING_FOR_SUBSCRIBE;
 
         PubToSingleSubscriber(final Subscriber<? super T> subscriber) {
             this.subscriber = subscriber;
@@ -71,7 +82,7 @@ final class PubToSingleOrError<T> extends AbstractNoHandleSubscribeSingle<T> {
             if (checkDuplicateSubscription(subscription, s)) {
                 subscription = s;
                 s.request(2); // Request 2 items because we want to see if there are multiple items before termination.
-                if (state != STATE_SENT_ON_SUBSCRIBE_AND_DONE) {
+                if (state == STATE_WAITING_FOR_SUBSCRIBE) {
                     state = STATE_SENT_ON_SUBSCRIBE;
                     subscriber.onSubscribe(s);
                 }
@@ -103,10 +114,9 @@ final class PubToSingleOrError<T> extends AbstractNoHandleSubscribeSingle<T> {
         }
 
         private void terminate(@Nullable Object terminal) {
-            if (isDone()) {
+            if (state == STATE_SENT_ON_SUBSCRIBE_AND_DONE) {
                 return;
-            }
-            if (state == 0) {
+            } else if (state == STATE_WAITING_FOR_SUBSCRIBE) {
                 state = STATE_SENT_ON_SUBSCRIBE_AND_DONE;
                 try {
                     subscriber.onSubscribe(IGNORE_CANCEL);
@@ -135,10 +145,6 @@ final class PubToSingleOrError<T> extends AbstractNoHandleSubscribeSingle<T> {
                 // De-reference the last value to allow for GC.
                 lastValue = null;
             }
-        }
-
-        private boolean isDone() {
-            return state == STATE_SENT_ON_SUBSCRIBE_AND_DONE;
         }
     }
 }

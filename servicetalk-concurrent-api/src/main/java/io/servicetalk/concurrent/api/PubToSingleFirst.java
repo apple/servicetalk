@@ -17,7 +17,6 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
-import io.servicetalk.concurrent.SingleSource.Subscriber;
 import io.servicetalk.concurrent.internal.SignalOffloader;
 
 import org.slf4j.Logger;
@@ -57,16 +56,25 @@ final class PubToSingleFirst<T> extends AbstractNoHandleSubscribeSingle<T> {
     }
 
     private static final class PubToSingleSubscriber<T> implements PublisherSource.Subscriber<T> {
-
         private static final Logger LOGGER = LoggerFactory.getLogger(PubToSingleSubscriber.class);
-
+        private static final byte STATE_WAITING_FOR_SUBSCRIBE = 0;
+        /**
+         * We have called {@link PublisherSource.Subscriber#onSubscribe(PublisherSource.Subscription)}.
+         */
         private static final byte STATE_SENT_ON_SUBSCRIBE = 1;
+        /**
+         * We have called {@link PublisherSource.Subscriber#onSubscribe(PublisherSource.Subscription)} and terminated.
+         */
         private static final byte STATE_SENT_ON_SUBSCRIBE_AND_DONE = 2;
 
         private final Subscriber<? super T> subscriber;
         @Nullable
         private Subscription subscription;
-        private byte state;
+        /**
+         * Can either be {@link #STATE_WAITING_FOR_SUBSCRIBE}, {@link #STATE_SENT_ON_SUBSCRIBE}, or
+         * {@link #STATE_SENT_ON_SUBSCRIBE_AND_DONE}.
+         */
+        private byte state = STATE_WAITING_FOR_SUBSCRIBE;
 
         PubToSingleSubscriber(final Subscriber<? super T> subscriber) {
             this.subscriber = subscriber;
@@ -77,7 +85,7 @@ final class PubToSingleFirst<T> extends AbstractNoHandleSubscribeSingle<T> {
             if (checkDuplicateSubscription(subscription, s)) {
                 subscription = s;
                 s.request(1);
-                if (state != STATE_SENT_ON_SUBSCRIBE_AND_DONE) {
+                if (state == STATE_WAITING_FOR_SUBSCRIBE) {
                     state = STATE_SENT_ON_SUBSCRIBE;
                     subscriber.onSubscribe(s);
                 }
@@ -96,7 +104,7 @@ final class PubToSingleFirst<T> extends AbstractNoHandleSubscribeSingle<T> {
 
         @Override
         public void onComplete() {
-            if (isDone()) {
+            if (state == STATE_SENT_ON_SUBSCRIBE_AND_DONE) {
                 // Avoid creating a new exception if we are already done.
                 return;
             }
@@ -104,10 +112,9 @@ final class PubToSingleFirst<T> extends AbstractNoHandleSubscribeSingle<T> {
         }
 
         private void terminate(Object terminal) {
-            if (isDone()) {
+            if (state == STATE_SENT_ON_SUBSCRIBE_AND_DONE) {
                 return;
-            }
-            if (state == 0) {
+            } else if (state == STATE_WAITING_FOR_SUBSCRIBE) {
                 state = STATE_SENT_ON_SUBSCRIBE_AND_DONE;
                 try {
                     subscriber.onSubscribe(IGNORE_CANCEL);
@@ -134,10 +141,6 @@ final class PubToSingleFirst<T> extends AbstractNoHandleSubscribeSingle<T> {
                 final T t = (T) terminal;
                 subscriber.onSuccess(t);
             }
-        }
-
-        private boolean isDone() {
-            return state == STATE_SENT_ON_SUBSCRIBE_AND_DONE;
         }
     }
 }
