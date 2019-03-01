@@ -45,7 +45,7 @@ import static io.servicetalk.http.api.HttpHeaderNames.SEC_WEBSOCKET_VERSION;
 import static io.servicetalk.http.api.HttpHeaderNames.TRANSFER_ENCODING;
 import static io.servicetalk.http.api.HttpRequestMethods.CONNECT;
 import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.INFORMATIONAL_1XX;
-import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.SUCCESS_2XX;
+import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.SUCCESSFUL_2XX;
 import static io.servicetalk.http.api.HttpResponseStatuses.NOT_MODIFIED;
 import static io.servicetalk.http.api.HttpResponseStatuses.NO_CONTENT;
 import static io.servicetalk.http.api.HttpResponseStatuses.SWITCHING_PROTOCOLS;
@@ -125,7 +125,7 @@ final class HttpResponseEncoder extends HttpObjectEncoder<HttpResponseMetaData> 
                 // See https://tools.ietf.org/html/rfc7230#section-3.3.1
                 headers.remove(TRANSFER_ENCODING);
             }
-        } else if (method == CONNECT && msg.status().statusClass() == SUCCESS_2XX) {
+        } else if (method == CONNECT && msg.status().statusClass() == SUCCESSFUL_2XX) {
             // Stripping Transfer-Encoding:
             // See https://tools.ietf.org/html/rfc7230#section-3.3.1
             msg.headers().remove(TRANSFER_ENCODING);
