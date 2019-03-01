@@ -36,7 +36,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
 
-import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Single.success;
 import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
@@ -102,11 +101,10 @@ public class ConsumeRequestPayloadOnResponsePathTest {
     // TODO: add testResponsePayloadSentAndConsumeRequestPayload when Publisher.merge(Completable) is available
 
     private Completable consumePayloadBody(final StreamingHttpRequest request) {
-        return request.payloadBody().flatMapCompletable(buffer -> {
-            receivedPayload.addBuffer(buffer);
-            return completed();
-        }).doBeforeError(errorRef::set)
-          .doAfterFinally(waitServer::countDown);
+        return request.payloadBody().doBeforeNext(receivedPayload::addBuffer)
+                .ignoreElements()
+                .doBeforeError(errorRef::set)
+                .doAfterFinally(waitServer::countDown);
     }
 
     private void test(final BiFunction<Single<StreamingHttpResponse>, StreamingHttpRequest,
