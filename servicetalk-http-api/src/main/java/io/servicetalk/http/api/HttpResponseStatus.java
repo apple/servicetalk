@@ -91,15 +91,10 @@ public interface HttpResponseStatus {
         SERVER_ERROR_5XX(500, 599),
 
         /**
-         * Unknown. Statuses outside of the defined range of
+         * Unknown. 3-digit status codes outside of the defined range of
          * <a href="https://tools.ietf.org/html/rfc7231#section-6">response status codes</a>.
          */
-        UNKNOWN(0, 0) {
-            @Override
-            public boolean contains(final int statusCode) {
-                return statusCode < 100 || statusCode >= 600;
-            }
-        };
+        UNKNOWN(600, 999);
 
         private final int minStatus;
         private final int maxStatus;
