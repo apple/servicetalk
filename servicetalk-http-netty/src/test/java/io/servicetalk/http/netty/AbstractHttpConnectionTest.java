@@ -64,7 +64,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 /**
- * This tests the common functionality in {@link AbstractStreamingHttpConnection}.
+ * This tests the common functionality in {@link AbstractStreamingHttpConnectionFilter}.
  */
 public final class AbstractHttpConnectionTest {
 
@@ -84,10 +84,10 @@ public final class AbstractHttpConnectionTest {
     private final StreamingHttpRequestResponseFactory reqRespFactory =
             new DefaultStreamingHttpRequestResponseFactory(allocator, headersFactory);
 
-    private class MockStreamingHttpConnection extends AbstractStreamingHttpConnection<NettyConnection<Object, Object>> {
-        protected MockStreamingHttpConnection(final NettyConnection<Object, Object> connection,
-                                              final ReadOnlyHttpClientConfig config) {
-            super(connection, config, ctx, reqRespFactory, defaultStrategy());
+    private class MockStreamingHttpConnectionFilter extends AbstractStreamingHttpConnectionFilter<NettyConnection<Object, Object>> {
+        protected MockStreamingHttpConnectionFilter(final NettyConnection<Object, Object> connection,
+                                                    final ReadOnlyHttpClientConfig config) {
+            super(connection, config, ctx, reqRespFactory);
         }
 
         @Override
@@ -103,7 +103,8 @@ public final class AbstractHttpConnectionTest {
         config.maxPipelinedRequests(101);
         NettyConnection conn = mock(NettyConnection.class);
         when(conn.onClose()).thenReturn(never());
-        http = new MockStreamingHttpConnection(conn, config.asReadOnly());
+        http = StreamingHttpConnection.newStreamingConnectionWorkAroundToBeFixed(
+                new MockStreamingHttpConnectionFilter(conn, config.asReadOnly()), defaultStrategy());
     }
 
     @Test

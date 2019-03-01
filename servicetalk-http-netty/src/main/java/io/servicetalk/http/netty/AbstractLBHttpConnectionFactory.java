@@ -25,7 +25,7 @@ import io.servicetalk.http.api.HttpExecutionStrategy;
 import static io.servicetalk.concurrent.api.AsyncCloseables.emptyAsyncCloseable;
 
 abstract class AbstractLBHttpConnectionFactory<ResolvedAddress>
-        implements ConnectionFactory<ResolvedAddress, LoadBalancedStreamingHttpConnection> {
+        implements ConnectionFactory<ResolvedAddress, LoadBalancedStreamingHttpConnectionFilter> {
     private final HttpConnectionFilterFactory connectionFilterFunction;
     private final ListenableAsyncCloseable close = emptyAsyncCloseable();
     protected final HttpExecutionStrategy defaultStrategy;
@@ -36,11 +36,11 @@ abstract class AbstractLBHttpConnectionFactory<ResolvedAddress>
         this.defaultStrategy = defaultStrategy;
     }
 
-    abstract Single<LoadBalancedStreamingHttpConnection> newConnection(
+    abstract Single<LoadBalancedStreamingHttpConnectionFilter> newConnection(
             ResolvedAddress address, HttpConnectionFilterFactory connectionFilterFunction);
 
     @Override
-    public final Single<LoadBalancedStreamingHttpConnection> newConnection(ResolvedAddress address) {
+    public final Single<LoadBalancedStreamingHttpConnectionFilter> newConnection(ResolvedAddress address) {
         return newConnection(address, connectionFilterFunction);
     }
 

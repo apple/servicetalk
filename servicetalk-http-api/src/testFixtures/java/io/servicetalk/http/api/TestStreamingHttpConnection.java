@@ -19,65 +19,69 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.http.api.StreamingHttpConnection.SettingKey;
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ExecutionContext;
 
 import static io.servicetalk.concurrent.api.AsyncCloseables.emptyAsyncCloseable;
 import static io.servicetalk.concurrent.api.Single.error;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
+import static io.servicetalk.http.api.StreamingHttpConnectionFilter.terminal;
 
-public class TestStreamingHttpConnection extends StreamingHttpConnection {
-    private final ExecutionContext executionContext;
-    private final ConnectionContext connectionContext;
-    private final ListenableAsyncCloseable closeable;
+public final class TestStreamingHttpConnection {
 
-    public TestStreamingHttpConnection(StreamingHttpRequestResponseFactory reqRespFactory,
-                                       ExecutionContext executionContext,
-                                       ConnectionContext connectionContext) {
-        super(reqRespFactory, defaultStrategy());
-        this.executionContext = executionContext;
-        this.connectionContext = connectionContext;
-        closeable = emptyAsyncCloseable();
+    private TestStreamingHttpConnection() {
+        // No instances
     }
 
-    @Override
-    public Completable closeAsync() {
-        return closeable.closeAsync();
-    }
+    public static StreamingHttpConnection from(
+            final StreamingHttpRequestResponseFactory reqRespFactory,
+            final ExecutionContext executionContext,
+            final ConnectionContext connectionContext,
+            final HttpConnectionFilterFactory factory) {
 
-    @Override
-    public Completable closeAsyncGracefully() {
-        return closeable.closeAsyncGracefully();
-    }
+        final StreamingHttpConnectionFilter filterChain = factory
+                .create(new StreamingHttpConnectionFilter(terminal(reqRespFactory)) {
 
-    @Override
-    public Completable onClose() {
-        return closeable.onClose();
-    }
+                    private final ListenableAsyncCloseable closeable = emptyAsyncCloseable();
 
-    @Override
-    public final Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
-        return error(new UnsupportedOperationException());
-    }
+                    @Override
+                    public Completable closeAsync() {
+                        return closeable.closeAsync();
+                    }
 
-    @Override
-    public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
-                                                 final StreamingHttpRequest request) {
-        return error(new UnsupportedOperationException());
-    }
+                    @Override
+                    public Completable closeAsyncGracefully() {
+                        return closeable.closeAsyncGracefully();
+                    }
 
-    @Override
-    public ExecutionContext executionContext() {
-        return executionContext;
-    }
+                    @Override
+                    public Completable onClose() {
+                        return closeable.onClose();
+                    }
 
-    @Override
-    public ConnectionContext connectionContext() {
-        return connectionContext;
-    }
+                    @Override
+                    protected Single<StreamingHttpResponse> request(final StreamingHttpConnectionFilter delegate,
+                                                                    final HttpExecutionStrategy strategy,
+                                                                    final StreamingHttpRequest request) {
+                        return error(new UnsupportedOperationException());
+                    }
 
-    @Override
-    public <T> Publisher<T> settingStream(final SettingKey<T> settingKey) {
-        return Publisher.error(new UnsupportedOperationException());
+                    @Override
+                    public ExecutionContext executionContext() {
+                        return executionContext;
+                    }
+
+                    @Override
+                    public ConnectionContext connectionContext() {
+                        return connectionContext;
+                    }
+
+                    @Override
+                    public <T> Publisher<T> settingStream(final SettingKey<T> settingKey) {
+                        return Publisher.error(new UnsupportedOperationException());
+                    }
+                });
+        return new StreamingHttpConnection(filterChain, defaultStrategy());
     }
 }

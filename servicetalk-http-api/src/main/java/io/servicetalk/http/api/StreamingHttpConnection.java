@@ -16,8 +16,11 @@
 package io.servicetalk.http.api;
 
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
+import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.transport.api.ConnectionContext;
+import io.servicetalk.transport.api.ExecutionContext;
 
 import static java.util.Objects.requireNonNull;
 
@@ -25,24 +28,40 @@ import static java.util.Objects.requireNonNull;
  * The equivalent of {@link HttpConnection} but that accepts {@link StreamingHttpRequest} and returns
  * {@link StreamingHttpResponse}.
  */
-public abstract class StreamingHttpConnection extends StreamingHttpRequester {
+public class StreamingHttpConnection extends StreamingHttpRequester {
+
+    final StreamingHttpConnectionFilter filterChain;
+
     /**
      * Create a new instance.
      *
-     * @param reqRespFactory The {@link StreamingHttpRequestResponseFactory} used to
-     * {@link #newRequest(HttpRequestMethod, String) create new requests} and {@link #httpResponseFactory()}.
      * @param strategy Default {@link HttpExecutionStrategy} to use.
      */
-    protected StreamingHttpConnection(final StreamingHttpRequestResponseFactory reqRespFactory,
-                                      final HttpExecutionStrategy strategy) {
-        super(reqRespFactory, strategy);
+    StreamingHttpConnection(final StreamingHttpConnectionFilter filterChain, final HttpExecutionStrategy strategy) {
+        super(requireNonNull(filterChain).reqRespFactory, requireNonNull(strategy));
+        this.filterChain = filterChain;
+    }
+
+    /**
+     * DUMMY.
+     * @param filterChain DUMMY.
+     * @param strategy DUMMY.
+     * @return DUMMY.
+     */
+    // TODO(jayv) break *HttpConnectionBuilder in buildFilterChain() and implement buildStreaming() as delegate to
+    // pkg-pvt ctor for Client/Connection
+    public static StreamingHttpConnection newStreamingConnectionWorkAroundToBeFixed(
+            final StreamingHttpConnectionFilter filterChain, final HttpExecutionStrategy strategy) {
+        return new StreamingHttpConnection(filterChain, strategy);
     }
 
     /**
      * Get the {@link ConnectionContext}.
      * @return the {@link ConnectionContext}.
      */
-    public abstract ConnectionContext connectionContext();
+    public final ConnectionContext connectionContext() {
+        return filterChain.connectionContext();
+    }
 
     /**
      * Returns a {@link Publisher} that gives the current value of the setting as well as subsequent changes to the
@@ -52,7 +71,9 @@ public abstract class StreamingHttpConnection extends StreamingHttpRequester {
      * @param <T> Type of the setting value.
      * @return {@link Publisher} for the setting values.
      */
-    public abstract <T> Publisher<T> settingStream(SettingKey<T> settingKey);
+    public final <T> Publisher<T> settingStream(SettingKey<T> settingKey) {
+        return filterChain.settingStream(settingKey);
+    }
 
     /**
      * Convert this {@link StreamingHttpConnection} to the {@link HttpConnection} API.
@@ -61,8 +82,10 @@ public abstract class StreamingHttpConnection extends StreamingHttpRequester {
      * filters are implemented using the {@link StreamingHttpConnection} asynchronous API for maximum portability.
      * @return a {@link HttpConnection} representation of this {@link StreamingHttpConnection}.
      */
-    public final HttpConnection asConnection() {
-        return asConnectionInternal();
+    // We don't want the user to be able to override but it cannot be final because we need to override the type.
+    // However the constructor of this class is package private so the user will not be able to override this method.
+    public /* final */ HttpConnection asConnection() {
+        return StreamingHttpConnectionToHttpConnection.transform(this);
     }
 
     /**
@@ -72,8 +95,10 @@ public abstract class StreamingHttpConnection extends StreamingHttpRequester {
      * filters are implemented using the {@link StreamingHttpConnection} asynchronous API for maximum portability.
      * @return a {@link BlockingStreamingHttpConnection} representation of this {@link StreamingHttpConnection}.
      */
-    public final BlockingStreamingHttpConnection asBlockingStreamingConnection() {
-        return asBlockingStreamingConnectionInternal();
+    // We don't want the user to be able to override but it cannot be final because we need to override the type.
+    // However the constructor of this class is package private so the user will not be able to override this method.
+    public /* final */ BlockingStreamingHttpConnection asBlockingStreamingConnection() {
+        return StreamingHttpConnectionToBlockingStreamingHttpConnection.transform(this);
     }
 
     /**
@@ -83,20 +108,36 @@ public abstract class StreamingHttpConnection extends StreamingHttpRequester {
      * filters are implemented using the {@link StreamingHttpConnection} asynchronous API for maximum portability.
      * @return a {@link BlockingHttpConnection} representation of this {@link StreamingHttpConnection}.
      */
-    public final BlockingHttpConnection asBlockingConnection() {
-        return asBlockingConnectionInternal();
-    }
-
-    HttpConnection asConnectionInternal() {
-        return StreamingHttpConnectionToHttpConnection.transform(this);
-    }
-
-    BlockingStreamingHttpConnection asBlockingStreamingConnectionInternal() {
-        return StreamingHttpConnectionToBlockingStreamingHttpConnection.transform(this);
-    }
-
-    BlockingHttpConnection asBlockingConnectionInternal() {
+    // We don't want the user to be able to override but it cannot be final because we need to override the type.
+    // However the constructor of this class is package private so the user will not be able to override this method.
+    public /* final */ BlockingHttpConnection asBlockingConnection() {
         return StreamingHttpConnectionToBlockingHttpConnection.transform(this);
+    }
+
+    @Override
+    public final Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
+                                                       final StreamingHttpRequest request) {
+        return filterChain.request(strategy, request);
+    }
+
+    @Override
+    public final ExecutionContext executionContext() {
+        return filterChain.executionContext();
+    }
+
+    @Override
+    public final Completable onClose() {
+        return filterChain.onClose();
+    }
+
+    @Override
+    public final Completable closeAsync() {
+        return filterChain.closeAsync();
+    }
+
+    @Override
+    public final Completable closeAsyncGracefully() {
+        return filterChain.closeAsyncGracefully();
     }
 
     /**

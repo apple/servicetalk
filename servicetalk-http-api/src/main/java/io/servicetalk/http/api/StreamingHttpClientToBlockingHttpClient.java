@@ -16,7 +16,6 @@
 package io.servicetalk.http.api;
 
 import io.servicetalk.concurrent.BlockingIterable;
-import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.http.api.StreamingHttpClient.ReservedStreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpConnection.SettingKey;
 import io.servicetalk.transport.api.ConnectionContext;
@@ -58,19 +57,14 @@ final class StreamingHttpClientToBlockingHttpClient extends BlockingHttpClient {
     }
 
     static BlockingHttpClient transform(StreamingHttpClient client) {
-        final HttpExecutionStrategy defaultStrategy = client instanceof StreamingHttpClientFilter ?
-                ((StreamingHttpClientFilter) client).effectiveExecutionStrategy(OFFLOAD_NONE_STRATEGY) :
-                OFFLOAD_NONE_STRATEGY;
+        final HttpExecutionStrategy defaultStrategy =
+                client.filterChain.effectiveExecutionStrategy(OFFLOAD_NONE_STRATEGY);
         return new StreamingHttpClientToBlockingHttpClient(client, defaultStrategy);
     }
 
     @Override
-    StreamingHttpClient asStreamingClientInternal() {
+    public StreamingHttpClient asStreamingClient() {
         return client;
-    }
-
-    Completable onClose() {
-        return client.onClose();
     }
 
     static final class ReservedStreamingHttpConnectionToBlocking extends ReservedBlockingHttpConnection {
@@ -115,18 +109,13 @@ final class StreamingHttpClientToBlockingHttpClient extends BlockingHttpClient {
         }
 
         @Override
-        ReservedStreamingHttpConnection asStreamingConnectionInternal() {
+        public ReservedStreamingHttpConnection asStreamingConnection() {
             return connection;
         }
 
-        Completable onClose() {
-            return connection.onClose();
-        }
-
         static ReservedBlockingHttpConnection transform(ReservedStreamingHttpConnection conn) {
-            final HttpExecutionStrategy defaultStrategy = conn instanceof ReservedStreamingHttpConnectionFilter ?
-                    ((ReservedStreamingHttpConnectionFilter) conn).effectiveExecutionStrategy(OFFLOAD_NONE_STRATEGY) :
-                    OFFLOAD_NONE_STRATEGY;
+            final HttpExecutionStrategy defaultStrategy =
+                    conn.filterChain.effectiveExecutionStrategy(OFFLOAD_NONE_STRATEGY);
             return new ReservedStreamingHttpConnectionToBlocking(conn, defaultStrategy);
         }
     }

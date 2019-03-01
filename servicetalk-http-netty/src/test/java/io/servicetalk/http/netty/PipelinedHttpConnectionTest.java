@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -96,8 +96,8 @@ public class PipelinedHttpConnectionTest {
             return publisher.ignoreElements(); // simulate write consuming all
         });
         when(connection.read()).thenReturn(readPublisher1, readPublisher2);
-        pipe = new PipelinedStreamingHttpConnection(connection, config.asReadOnly(), ctx, reqRespFactory,
-                defaultStrategy());
+        pipe = StreamingHttpConnection.newStreamingConnectionWorkAroundToBeFixed(new PipelinedStreamingHttpConnectionFilter(
+                connection, config.asReadOnly(), ctx, reqRespFactory), defaultStrategy());
     }
 
     @Test

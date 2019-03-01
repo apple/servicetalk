@@ -28,12 +28,12 @@ import static io.servicetalk.concurrent.api.Single.error;
 
 final class ConditionalHttpConnectionFilter extends StreamingHttpConnectionFilter {
     private final Predicate<StreamingHttpRequest> predicate;
-    private final StreamingHttpConnection predicatedConnection;
+    private final StreamingHttpConnectionFilter predicatedConnection;
     private final ListenableAsyncCloseable closeable;
 
     ConditionalHttpConnectionFilter(final Predicate<StreamingHttpRequest> predicate,
-                                    final StreamingHttpConnection predicatedConnection,
-                                    final StreamingHttpConnection connection) {
+                                    final StreamingHttpConnectionFilter predicatedConnection,
+                                    final StreamingHttpConnectionFilter connection) {
         super(connection);
         this.predicate = predicate;
         this.predicatedConnection = predicatedConnection;
@@ -44,19 +44,21 @@ final class ConditionalHttpConnectionFilter extends StreamingHttpConnectionFilte
     }
 
     @Override
-    public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy, final StreamingHttpRequest req) {
+    protected Single<StreamingHttpResponse> request(final StreamingHttpConnectionFilter delegate,
+                                                    final HttpExecutionStrategy strategy,
+                                                    final StreamingHttpRequest request) {
         boolean b;
         try {
-            b = predicate.test(req);
+            b = predicate.test(request);
         } catch (Throwable t) {
             return error(t);
         }
 
         if (b) {
-            return predicatedConnection.request(strategy, req);
+            return predicatedConnection.request(strategy, request);
         }
 
-        return delegate().request(strategy, req);
+        return delegate.request(strategy, request);
     }
 
     @Override

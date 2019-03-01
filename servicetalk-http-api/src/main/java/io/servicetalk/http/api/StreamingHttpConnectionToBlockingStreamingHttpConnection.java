@@ -16,14 +16,12 @@
 package io.servicetalk.http.api;
 
 import io.servicetalk.concurrent.BlockingIterable;
-import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.http.api.StreamingHttpConnection.SettingKey;
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ExecutionContext;
 
 import static io.servicetalk.http.api.BlockingUtils.blockingInvocation;
 import static io.servicetalk.http.api.HttpExecutionStrategies.OFFLOAD_SEND_STRATEGY;
-import static java.util.Objects.requireNonNull;
 
 final class StreamingHttpConnectionToBlockingStreamingHttpConnection extends BlockingStreamingHttpConnection {
     private final StreamingHttpConnection connection;
@@ -32,7 +30,7 @@ final class StreamingHttpConnectionToBlockingStreamingHttpConnection extends Blo
                                                                      final HttpExecutionStrategy strategy) {
         super(new StreamingHttpRequestResponseFactoryToBlockingStreamingHttpRequestResponseFactory(
                 connection.reqRespFactory), strategy);
-        this.connection = requireNonNull(connection);
+        this.connection = connection;
     }
 
     @Override
@@ -61,19 +59,14 @@ final class StreamingHttpConnectionToBlockingStreamingHttpConnection extends Blo
         blockingInvocation(connection.closeAsync());
     }
 
-    Completable onClose() {
-        return connection.onClose();
-    }
-
     @Override
-    StreamingHttpConnection asStreamingConnectionInternal() {
+    public StreamingHttpConnection asStreamingConnection() {
         return connection;
     }
 
     static BlockingStreamingHttpConnection transform(StreamingHttpConnection conn) {
-        final HttpExecutionStrategy defaultStrategy = conn instanceof StreamingHttpConnectionFilter ?
-                ((StreamingHttpConnectionFilter) conn).effectiveExecutionStrategy(OFFLOAD_SEND_STRATEGY) :
-                OFFLOAD_SEND_STRATEGY;
+        final HttpExecutionStrategy defaultStrategy =
+                conn.filterChain.effectiveExecutionStrategy(OFFLOAD_SEND_STRATEGY);
         return new StreamingHttpConnectionToBlockingStreamingHttpConnection(conn, defaultStrategy);
     }
 }

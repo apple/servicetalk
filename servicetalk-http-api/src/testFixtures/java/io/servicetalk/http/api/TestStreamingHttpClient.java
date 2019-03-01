@@ -17,6 +17,7 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
+import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.transport.api.ExecutionContext;
 
@@ -24,46 +25,56 @@ import static io.servicetalk.concurrent.api.AsyncCloseables.emptyAsyncCloseable;
 import static io.servicetalk.concurrent.api.Single.error;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 
-public class TestStreamingHttpClient extends StreamingHttpClient {
-    private final ExecutionContext executionContext;
-    private final ListenableAsyncCloseable closeable;
+public final class TestStreamingHttpClient {
 
-    public TestStreamingHttpClient(StreamingHttpRequestResponseFactory reqRespFactory,
-                                   ExecutionContext executionContext) {
-        super(reqRespFactory, defaultStrategy());
-        this.executionContext = executionContext;
-        closeable = emptyAsyncCloseable();
+    private TestStreamingHttpClient() {
+        // no instances
     }
 
-    @Override
-    public Completable closeAsync() {
-        return closeable.closeAsync();
-    }
+    public static StreamingHttpClient from(
+            final StreamingHttpRequestResponseFactory reqRespFactory,
+            final ExecutionContext executionContext,
+            final HttpClientFilterFactory factory) {
+        final StreamingHttpClientFilter filterChain = factory.
+                create(new StreamingHttpClientFilter(StreamingHttpClientFilter.terminal(reqRespFactory)) {
 
-    @Override
-    public Completable closeAsyncGracefully() {
-        return closeable.closeAsyncGracefully();
-    }
+                    private final ListenableAsyncCloseable closeable = emptyAsyncCloseable();
 
-    @Override
-    public Completable onClose() {
-        return closeable.onClose();
-    }
+                    @Override
+                    public Completable closeAsync() {
+                        return closeable.closeAsync();
+                    }
 
-    @Override
-    public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
-                                                 final StreamingHttpRequest request) {
-        return error(new UnsupportedOperationException());
-    }
+                    @Override
+                    public Completable closeAsyncGracefully() {
+                        return closeable.closeAsyncGracefully();
+                    }
 
-    @Override
-    public ExecutionContext executionContext() {
-        return executionContext;
-    }
+                    @Override
+                    public Completable onClose() {
+                        return closeable.onClose();
+                    }
 
-    @Override
-    public Single<ReservedStreamingHttpConnection> reserveConnection(final HttpExecutionStrategy strategy,
-                                                                     final HttpRequestMetaData metaData) {
-        return error(new UnsupportedOperationException());
+                    @Override
+                    protected Single<StreamingHttpResponse> request(final StreamingHttpRequestFunction delegate,
+                                                                    final HttpExecutionStrategy strategy,
+                                                                    final StreamingHttpRequest request) {
+                        return error(new UnsupportedOperationException());
+                    }
+
+                    @Override
+                    public ExecutionContext executionContext() {
+                        return executionContext;
+                    }
+
+                    @Override
+                    protected Single<ReservedStreamingHttpConnectionFilter> reserveConnection(
+                            final StreamingHttpClientFilter delegate,
+                            final HttpExecutionStrategy strategy,
+                            final HttpRequestMetaData metaData) {
+                        return error(new UnsupportedOperationException());
+                    }
+                }, Publisher.empty());
+        return new StreamingHttpClient(filterChain, defaultStrategy());
     }
 }

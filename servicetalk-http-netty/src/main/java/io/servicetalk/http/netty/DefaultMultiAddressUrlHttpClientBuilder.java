@@ -35,11 +35,14 @@ import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.MultiAddressHttpClientBuilder;
 import io.servicetalk.http.api.MultiAddressHttpClientFilterFactory;
+import io.servicetalk.http.api.ReservedStreamingHttpConnectionFilter;
 import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
 import io.servicetalk.http.api.SslConfigProvider;
 import io.servicetalk.http.api.StreamingHttpClient;
-import io.servicetalk.http.api.StreamingHttpConnection;
+import io.servicetalk.http.api.StreamingHttpClientFilter;
+import io.servicetalk.http.api.StreamingHttpConnectionFilter;
 import io.servicetalk.http.api.StreamingHttpRequest;
+import io.servicetalk.http.api.StreamingHttpRequestFunction;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.utils.RedirectingHttpRequesterFilter;
@@ -117,15 +120,16 @@ final class DefaultMultiAddressUrlHttpClientBuilder extends MultiAddressHttpClie
 
             keyFactory = closeables.prepend(new CachingKeyFactory(sslConfigProvider));
 
-            StreamingHttpClient client = closeables.prepend(new StreamingUrlHttpClient(reqRespFactory, clientFactory,
-                    keyFactory, executionContext, clientFactory.builderTemplate.executionStrategy()));
+            StreamingHttpClientFilter filterChain =
+                    closeables.prepend(new StreamingUrlHttpClient(reqRespFactory, clientFactory,
+                            keyFactory, executionContext, clientFactory.builderTemplate.executionStrategy()));
 
             // Need to wrap the top level client (group) in order for non-relative redirects to work
-            client = maxRedirects <= 0 ? client :
-                    new RedirectingHttpRequesterFilter(false, maxRedirects).create(client);
+            filterChain = maxRedirects <= 0 ? filterChain :
+                    new RedirectingHttpRequesterFilter(false, maxRedirects).create(filterChain);
 
-            return new StreamingHttpClientWithDependencies(client, toListenableAsyncCloseable(closeables),
-                    reqRespFactory, clientFactory.builderTemplate.executionStrategy());
+            return StreamingHttpClient.newStreamingClientWorkAroundToBeFixed(new StreamingHttpClientWithDependencies(filterChain,
+                    toListenableAsyncCloseable(closeables)), clientFactory.builderTemplate.executionStrategy());
         } catch (final Throwable t) {
             if (keyFactory != null) {
                 keyFactory.closeAsync().subscribe();
@@ -274,7 +278,7 @@ final class DefaultMultiAddressUrlHttpClientBuilder extends MultiAddressHttpClie
         }
     }
 
-    private static class StreamingUrlHttpClient extends StreamingHttpClient {
+    private static class StreamingUrlHttpClient extends StreamingHttpClientFilter {
 
         private final ClientGroup<UrlKey, StreamingHttpClient> group;
         private final CachingKeyFactory keyFactory;
@@ -284,25 +288,31 @@ final class DefaultMultiAddressUrlHttpClientBuilder extends MultiAddressHttpClie
                                final Function<UrlKey, StreamingHttpClient> clientFactory,
                                final CachingKeyFactory keyFactory,
                                final ExecutionContext executionContext, final HttpExecutionStrategy strategy) {
-            super(reqRespFactory, strategy);
+            super(terminal(reqRespFactory));
             this.group = ClientGroup.from(clientFactory);
             this.keyFactory = keyFactory;
             this.executionContext = executionContext;
         }
 
-        private StreamingHttpClient selectClient(HttpRequestMetaData metaData) {
-            return group.get(keyFactory.apply(metaData));
+        private StreamingHttpClientFilter selectClient(HttpRequestMetaData metaData) {
+            // TODO(jayv) we can remove conversion if clientFactory produces Filters instead of Clients
+            return group.get(keyFactory.apply(metaData)).chainWorkaroundForNow();
         }
 
         @Override
-        public Single<ReservedStreamingHttpConnection> reserveConnection(final HttpExecutionStrategy strategy,
-                                                                         final HttpRequestMetaData metaData) {
+        protected Single<ReservedStreamingHttpConnectionFilter> reserveConnection(
+                final StreamingHttpClientFilter terminalDelegate,
+                final HttpExecutionStrategy strategy,
+                final HttpRequestMetaData metaData) {
+            // Don't call the terminal delegate!
             return defer(() -> selectClient(metaData).reserveConnection(strategy, metaData).subscribeShareContext());
         }
 
         @Override
-        public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
-                                                     final StreamingHttpRequest request) {
+        protected Single<StreamingHttpResponse> request(final StreamingHttpRequestFunction terminalDelegate,
+                                                        final HttpExecutionStrategy strategy,
+                                                        final StreamingHttpRequest request) {
+            // Don't call the terminal delegate!
             return defer(() -> selectClient(request).request(strategy, request).subscribeShareContext());
         }
 
@@ -322,35 +332,14 @@ final class DefaultMultiAddressUrlHttpClientBuilder extends MultiAddressHttpClie
         }
     }
 
-    private static final class StreamingHttpClientWithDependencies extends StreamingHttpClient {
+    private static final class StreamingHttpClientWithDependencies extends StreamingHttpClientFilter {
 
-        private final StreamingHttpClient httpClient;
         private final ListenableAsyncCloseable closeable;
 
-        StreamingHttpClientWithDependencies(final StreamingHttpClient httpClient,
-                                            final ListenableAsyncCloseable closeable,
-                                            final StreamingHttpRequestResponseFactory factory,
-                                            final HttpExecutionStrategy strategy) {
-            super(factory, strategy);
-            this.httpClient = requireNonNull(httpClient);
+        StreamingHttpClientWithDependencies(final StreamingHttpClientFilter next,
+                                            final ListenableAsyncCloseable closeable) {
+            super(requireNonNull(next));
             this.closeable = requireNonNull(closeable);
-        }
-
-        @Override
-        public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
-                                                     final StreamingHttpRequest request) {
-            return httpClient.request(strategy, request);
-        }
-
-        @Override
-        public Single<ReservedStreamingHttpConnection> reserveConnection(final HttpExecutionStrategy strategy,
-                                                                         final HttpRequestMetaData metaData) {
-            return httpClient.reserveConnection(strategy, metaData);
-        }
-
-        @Override
-        public ExecutionContext executionContext() {
-            return httpClient.executionContext();
         }
 
         @Override
@@ -451,7 +440,7 @@ final class DefaultMultiAddressUrlHttpClientBuilder extends MultiAddressHttpClie
 
     @Override
     public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> appendConnectionFactoryFilter(
-            final ConnectionFactoryFilter<InetSocketAddress, StreamingHttpConnection> factory) {
+            final ConnectionFactoryFilter<InetSocketAddress, StreamingHttpConnectionFilter> factory) {
         builderTemplate.appendConnectionFactoryFilter(factory);
         return this;
     }
@@ -512,7 +501,7 @@ final class DefaultMultiAddressUrlHttpClientBuilder extends MultiAddressHttpClie
 
     @Override
     public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> loadBalancerFactory(
-            final LoadBalancerFactory<InetSocketAddress, StreamingHttpConnection> loadBalancerFactory) {
+            final LoadBalancerFactory<InetSocketAddress, StreamingHttpConnectionFilter> loadBalancerFactory) {
         builderTemplate.loadBalancerFactory(loadBalancerFactory);
         return this;
     }

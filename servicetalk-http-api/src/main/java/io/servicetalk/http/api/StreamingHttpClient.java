@@ -23,22 +23,60 @@ import io.servicetalk.http.api.HttpClient.ReservedHttpConnection;
 import io.servicetalk.http.api.StreamingHttpClientToBlockingHttpClient.ReservedStreamingHttpConnectionToBlocking;
 import io.servicetalk.http.api.StreamingHttpClientToBlockingStreamingHttpClient.ReservedStreamingHttpConnectionToBlockingStreaming;
 import io.servicetalk.http.api.StreamingHttpClientToHttpClient.ReservedStreamingHttpConnectionToReservedHttpConnection;
+import io.servicetalk.transport.api.ExecutionContext;
+
+import static java.util.Objects.requireNonNull;
 
 /**
  * The equivalent of {@link HttpClient} but that accepts {@link StreamingHttpRequest} and returns
  * {@link StreamingHttpResponse}.
  */
-public abstract class StreamingHttpClient extends StreamingHttpRequester {
+public final class StreamingHttpClient extends StreamingHttpRequester {
+
+    final StreamingHttpClientFilter filterChain;
+
     /**
      * Create a new instance.
      *
-     * @param reqRespFactory The {@link StreamingHttpRequestResponseFactory} used to
-     * {@link #newRequest(HttpRequestMethod, String) create new requests} and {@link #httpResponseFactory()}.
      * @param strategy Default {@link HttpExecutionStrategy} to use.
      */
-    protected StreamingHttpClient(final StreamingHttpRequestResponseFactory reqRespFactory,
-                                  final HttpExecutionStrategy strategy) {
-        super(reqRespFactory, strategy);
+    StreamingHttpClient(final StreamingHttpClientFilter filterChain,
+                        final HttpExecutionStrategy strategy) {
+        super(requireNonNull(filterChain).reqRespFactory, requireNonNull(strategy));
+        this.filterChain = filterChain;
+    }
+
+    /**
+     * DUMMY.
+     * @param filterChain DUMMY
+     * @param strategy DUMMY
+     * @return DUMMY
+     */
+    // TODO(jayv) break *HttpClientBuilder in buildFilterChain() and implement buildStreaming() as delegate to
+    // pkg-pvt ctor for Client/Connection
+    public static StreamingHttpClient newStreamingClientWorkAroundToBeFixed(final StreamingHttpClientFilter filterChain,
+                                                                            final HttpExecutionStrategy strategy) {
+        return new StreamingHttpClient(filterChain, strategy);
+    }
+
+    /**
+     * DUMMY.
+     * @return DUMMY
+     */
+    // TODO(jayv) remove when DefaultPartitionedHttpClient has Filters factory instead of Clients
+    public StreamingHttpClientFilter chainWorkaroundForNow() {
+        return filterChain;
+    }
+
+    @Override
+    public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
+                                                 final StreamingHttpRequest request) {
+        return filterChain.request(strategy, request);
+    }
+
+    @Override
+    public ExecutionContext executionContext() {
+        return filterChain.executionContext();
     }
 
     /**
@@ -62,8 +100,11 @@ public abstract class StreamingHttpClient extends StreamingHttpRequester {
      * For example this may provide some insight into shard or other info.
      * @return a {@link Single} that provides the {@link ReservedStreamingHttpConnection} upon completion.
      */
-    public abstract Single<ReservedStreamingHttpConnection> reserveConnection(HttpExecutionStrategy strategy,
-                                                                              HttpRequestMetaData metaData);
+    public Single<ReservedStreamingHttpConnection> reserveConnection(HttpExecutionStrategy strategy,
+                                                                           HttpRequestMetaData metaData) {
+        return filterChain.reserveConnection(strategy, metaData)
+                .map(rcf -> new ReservedStreamingHttpConnection(rcf, executionStrategy()));
+    }
 
     /**
      * Convert this {@link StreamingHttpClient} to the {@link HttpClient} API.
@@ -72,8 +113,8 @@ public abstract class StreamingHttpClient extends StreamingHttpRequester {
      * filters are implemented using the {@link StreamingHttpClient} asynchronous API for maximum portability.
      * @return a {@link HttpClient} representation of this {@link StreamingHttpRequester}.
      */
-    public final HttpClient asClient() {
-        return asClientInternal();
+    public HttpClient asClient() {
+        return StreamingHttpClientToHttpClient.transform(this);
     }
 
     /**
@@ -83,8 +124,8 @@ public abstract class StreamingHttpClient extends StreamingHttpRequester {
      * filters are implemented using the {@link StreamingHttpClient} asynchronous API for maximum portability.
      * @return a {@link BlockingStreamingHttpClient} representation of this {@link StreamingHttpClient}.
      */
-    public final BlockingStreamingHttpClient asBlockingStreamingClient() {
-        return asBlockingStreamingClientInternal();
+    public BlockingStreamingHttpClient asBlockingStreamingClient() {
+        return StreamingHttpClientToBlockingStreamingHttpClient.transform(this);
     }
 
     /**
@@ -94,20 +135,23 @@ public abstract class StreamingHttpClient extends StreamingHttpRequester {
      * filters are implemented using the {@link StreamingHttpClient} asynchronous API for maximum portability.
      * @return a {@link BlockingHttpClient} representation of this {@link StreamingHttpClient}.
      */
-    public final BlockingHttpClient asBlockingClient() {
-        return asBlockingClientInternal();
-    }
-
-    HttpClient asClientInternal() {
-        return StreamingHttpClientToHttpClient.transform(this);
-    }
-
-    BlockingStreamingHttpClient asBlockingStreamingClientInternal() {
-        return StreamingHttpClientToBlockingStreamingHttpClient.transform(this);
-    }
-
-    BlockingHttpClient asBlockingClientInternal() {
+    public BlockingHttpClient asBlockingClient() {
         return StreamingHttpClientToBlockingHttpClient.transform(this);
+    }
+
+    @Override
+    public Completable onClose() {
+        return filterChain.onClose();
+    }
+
+    @Override
+    public Completable closeAsync() {
+        return filterChain.closeAsync();
+    }
+
+    @Override
+    public Completable closeAsyncGracefully() {
+        return filterChain.closeAsyncGracefully();
     }
 
     /**
@@ -115,17 +159,19 @@ public abstract class StreamingHttpClient extends StreamingHttpRequester {
      * {@link #reserveConnection(HttpRequestMetaData)} and
      * {@link #reserveConnection(HttpExecutionStrategy, HttpRequestMetaData)}.
      */
-    public abstract static class ReservedStreamingHttpConnection extends StreamingHttpConnection {
+    public static final class ReservedStreamingHttpConnection extends StreamingHttpConnection {
+
+        final ReservedStreamingHttpConnectionFilter filterChain;
+
         /**
          * Create a new instance.
          *
-         * @param reqRespFactory The {@link StreamingHttpRequestResponseFactory} used to
-         * {@link #newRequest(HttpRequestMethod, String) create new requests} and {@link #httpResponseFactory()}.
          * @param strategy Default {@link HttpExecutionStrategy} to use.
          */
-        protected ReservedStreamingHttpConnection(final StreamingHttpRequestResponseFactory reqRespFactory,
-                                                  final HttpExecutionStrategy strategy) {
-            super(reqRespFactory, strategy);
+        ReservedStreamingHttpConnection(final ReservedStreamingHttpConnectionFilter filter,
+                                        final HttpExecutionStrategy strategy) {
+            super(requireNonNull(filter), strategy);
+            filterChain = filter;
         }
 
         /**
@@ -134,7 +180,9 @@ public abstract class StreamingHttpClient extends StreamingHttpRequester {
          *
          * @return the {@code Completable} that is notified on releaseAsync.
          */
-        public abstract Completable releaseAsync();
+        public Completable releaseAsync() {
+            return filterChain.releaseAsync();
+        }
 
         /**
          * Convert this {@link ReservedStreamingHttpConnection} to the {@link ReservedHttpConnection} API.
@@ -145,8 +193,9 @@ public abstract class StreamingHttpClient extends StreamingHttpRequester {
          * @return a {@link ReservedHttpConnection} representation of this
          * {@link ReservedStreamingHttpConnection}.
          */
-        public final ReservedHttpConnection asReservedConnection() {
-            return asConnectionInternal();
+        @Override
+        public ReservedHttpConnection asConnection() {
+            return ReservedStreamingHttpConnectionToReservedHttpConnection.transform(this);
         }
 
         /**
@@ -157,8 +206,9 @@ public abstract class StreamingHttpClient extends StreamingHttpRequester {
          * portability.
          * @return a {@link BlockingStreamingHttpClient} representation of this {@link ReservedStreamingHttpConnection}.
          */
-        public final ReservedBlockingStreamingHttpConnection asReservedBlockingStreamingConnection() {
-            return asBlockingStreamingConnectionInternal();
+        @Override
+        public ReservedBlockingStreamingHttpConnection asBlockingStreamingConnection() {
+            return ReservedStreamingHttpConnectionToBlockingStreaming.transform(this);
         }
 
         /**
@@ -170,22 +220,8 @@ public abstract class StreamingHttpClient extends StreamingHttpRequester {
          * @return a {@link ReservedBlockingHttpConnection} representation of this
          * {@link ReservedStreamingHttpConnection}.
          */
-        public final ReservedBlockingHttpConnection asReservedBlockingConnection() {
-            return asBlockingConnectionInternal();
-        }
-
         @Override
-        ReservedHttpConnection asConnectionInternal() {
-            return ReservedStreamingHttpConnectionToReservedHttpConnection.transform(this);
-        }
-
-        @Override
-        ReservedBlockingStreamingHttpConnection asBlockingStreamingConnectionInternal() {
-            return ReservedStreamingHttpConnectionToBlockingStreaming.transform(this);
-        }
-
-        @Override
-        ReservedBlockingHttpConnection asBlockingConnectionInternal() {
+        public ReservedBlockingHttpConnection asBlockingConnection() {
             return ReservedStreamingHttpConnectionToBlocking.transform(this);
         }
     }

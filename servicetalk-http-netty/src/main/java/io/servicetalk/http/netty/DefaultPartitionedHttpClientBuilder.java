@@ -42,9 +42,12 @@ import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.HttpResponseStatus;
 import io.servicetalk.http.api.PartitionHttpClientBuilderFilterFunction;
 import io.servicetalk.http.api.PartitionedHttpClientBuilder;
+import io.servicetalk.http.api.ReservedStreamingHttpConnectionFilter;
 import io.servicetalk.http.api.StreamingHttpClient;
-import io.servicetalk.http.api.StreamingHttpConnection;
+import io.servicetalk.http.api.StreamingHttpClientFilter;
+import io.servicetalk.http.api.StreamingHttpConnectionFilter;
 import io.servicetalk.http.api.StreamingHttpRequest;
+import io.servicetalk.http.api.StreamingHttpRequestFunction;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.transport.api.ExecutionContext;
@@ -91,25 +94,31 @@ class DefaultPartitionedHttpClientBuilder<U, R> extends PartitionedHttpClientBui
                 new DefaultStreamingHttpRequestResponseFactory(exec.bufferAllocator(),
                         copy.headersFactory());
 
-        PartitionedClientFactory<U, R, StreamingHttpClient>
+        final PartitionedClientFactory<U, R, StreamingHttpClient>
                 clientFactory = (pa, sd) ->
                 clientFilterFunction.apply(pa, copy.copy().serviceDiscoverer(sd))
+                        // TODO(jayv) maybe invoke buildFilterChain(), avoid potential conversion or reaching in
                         .buildStreaming();
 
         @SuppressWarnings("unchecked")
-        Publisher<? extends PartitionedServiceDiscovererEvent<R>> psdEvents =
+        final Publisher<? extends PartitionedServiceDiscovererEvent<R>> psdEvents =
                 (Publisher<? extends PartitionedServiceDiscovererEvent<R>>) copy.serviceDiscoverer().discover(address);
 
-        return new DefaultPartitionedStreamingHttpClient<>(psdEvents, serviceDiscoveryMaxQueueSize, clientFactory,
-                partitionAttributesBuilderFactory, reqRespFactory, exec, partitionMapFactory, copy.executionStrategy());
+        final DefaultPartitionedStreamingHttpClient<U, R> partitionedFilterChain =
+                new DefaultPartitionedStreamingHttpClient<>(psdEvents, serviceDiscoveryMaxQueueSize, clientFactory,
+                        partitionAttributesBuilderFactory, reqRespFactory, exec, partitionMapFactory);
+
+        return StreamingHttpClient.newStreamingClientWorkAroundToBeFixed(partitionedFilterChain, copy.executionStrategy());
     }
 
-    private static final class DefaultPartitionedStreamingHttpClient<U, R> extends StreamingHttpClient {
+    private static final class DefaultPartitionedStreamingHttpClient<U, R> extends StreamingHttpClientFilter {
 
         private static final Function<PartitionAttributes, StreamingHttpClient> PARTITION_CLOSED = pa ->
-                new NoopPartitionClient(new ClosedPartitionException(pa, "Partition closed "));
+                StreamingHttpClient.newStreamingClientWorkAroundToBeFixed(new NoopPartitionClient(
+                        new ClosedPartitionException(pa, "Partition closed ")), defaultStrategy());
         private static final Function<PartitionAttributes, StreamingHttpClient> PARTITION_UNKNOWN = pa ->
-                new NoopPartitionClient(new UnknownPartitionException(pa, "Partition unknown"));
+                StreamingHttpClient.newStreamingClientWorkAroundToBeFixed(new NoopPartitionClient(
+                        new UnknownPartitionException(pa, "Partition unknown")), defaultStrategy());
 
         private final ClientGroup<PartitionAttributes, StreamingHttpClient> group;
         private final Function<HttpRequestMetaData, PartitionAttributesBuilder> pabf;
@@ -122,8 +131,8 @@ class DefaultPartitionedHttpClientBuilder<U, R> extends PartitionedHttpClientBui
                 final Function<HttpRequestMetaData, PartitionAttributesBuilder> pabf,
                 final StreamingHttpRequestResponseFactory reqRespFactory,
                 final ExecutionContext executionContext,
-                final PartitionMapFactory partitionMapFactory, final HttpExecutionStrategy strategy) {
-            super(reqRespFactory, strategy);
+                final PartitionMapFactory partitionMapFactory) {
+            super(terminal(reqRespFactory));
             this.pabf = pabf;
             this.executionContext = executionContext;
             this.group = new DefaultPartitionedClientGroup<>(PARTITION_CLOSED, PARTITION_UNKNOWN, clientFactory,
@@ -131,19 +140,25 @@ class DefaultPartitionedHttpClientBuilder<U, R> extends PartitionedHttpClientBui
         }
 
         @Override
-        public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
-                                                     final StreamingHttpRequest request) {
+        protected Single<StreamingHttpResponse> request(final StreamingHttpRequestFunction terminalDelegate,
+                                                        final HttpExecutionStrategy strategy,
+                                                        final StreamingHttpRequest request) {
+            // Don't call the terminal delegate!
             return defer(() -> selectClient(request).request(strategy, request).subscribeShareContext());
         }
 
         @Nonnull
-        private StreamingHttpClient selectClient(final HttpRequestMetaData metaData) {
-            return group.get(pabf.apply(metaData).build());
+        private StreamingHttpClientFilter selectClient(final HttpRequestMetaData metaData) {
+            // TODO(jayv) we can remove conversion if clientFactory produces Filters instead of Clients
+            return group.get(pabf.apply(metaData).build()).chainWorkaroundForNow();
         }
 
         @Override
-        public Single<ReservedStreamingHttpConnection> reserveConnection(final HttpExecutionStrategy strategy,
-                                                                         final HttpRequestMetaData metaData) {
+        protected Single<ReservedStreamingHttpConnectionFilter> reserveConnection(
+                final StreamingHttpClientFilter terminalDelegate,
+                final HttpExecutionStrategy strategy,
+                final HttpRequestMetaData metaData) {
+            // Don't call the terminal delegate!
             return defer(() -> selectClient(metaData).reserveConnection(strategy, metaData).subscribeShareContext());
         }
 
@@ -163,11 +178,11 @@ class DefaultPartitionedHttpClientBuilder<U, R> extends PartitionedHttpClientBui
         }
     }
 
-    private static class NoopPartitionClient extends StreamingHttpClient {
+    private static class NoopPartitionClient extends StreamingHttpClientFilter {
         private final RuntimeException ex;
 
         NoopPartitionClient(RuntimeException ex) {
-            super(new StreamingHttpRequestResponseFactory() {
+            super(terminal(new StreamingHttpRequestResponseFactory() {
                 @Override
                 public StreamingHttpResponse newResponse(final HttpResponseStatus status) {
                     throw ex;
@@ -177,19 +192,22 @@ class DefaultPartitionedHttpClientBuilder<U, R> extends PartitionedHttpClientBui
                 public StreamingHttpRequest newRequest(final HttpRequestMethod method, final String requestTarget) {
                     throw ex;
                 }
-            }, defaultStrategy());
+            }));
             this.ex = ex;
         }
 
         @Override
-        public Single<ReservedStreamingHttpConnection> reserveConnection(final HttpExecutionStrategy strategy,
-                                                                         final HttpRequestMetaData metaData) {
+        protected Single<ReservedStreamingHttpConnectionFilter> reserveConnection(
+                final StreamingHttpClientFilter delegate,
+                final HttpExecutionStrategy strategy,
+                final HttpRequestMetaData metaData) {
             return error(ex);
         }
 
         @Override
-        public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
-                                                     final StreamingHttpRequest request) {
+        protected Single<StreamingHttpResponse> request(final StreamingHttpRequestFunction delegate,
+                                                        final HttpExecutionStrategy strategy,
+                                                        final StreamingHttpRequest request) {
             return error(ex);
         }
 
@@ -289,7 +307,7 @@ class DefaultPartitionedHttpClientBuilder<U, R> extends PartitionedHttpClientBui
 
     @Override
     public PartitionedHttpClientBuilder<U, R> appendConnectionFactoryFilter(
-            final ConnectionFactoryFilter<R, StreamingHttpConnection> factory) {
+            final ConnectionFactoryFilter<R, StreamingHttpConnectionFilter> factory) {
         builderTemplate.appendConnectionFactoryFilter(factory);
         return this;
     }
@@ -315,7 +333,7 @@ class DefaultPartitionedHttpClientBuilder<U, R> extends PartitionedHttpClientBui
 
     @Override
     public PartitionedHttpClientBuilder<U, R> loadBalancerFactory(
-            final LoadBalancerFactory<R, StreamingHttpConnection> loadBalancerFactory) {
+            final LoadBalancerFactory<R, StreamingHttpConnectionFilter> loadBalancerFactory) {
         builderTemplate.loadBalancerFactory(loadBalancerFactory);
         return this;
     }

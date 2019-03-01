@@ -15,6 +15,9 @@
  */
 package io.servicetalk.http.api;
 
+import io.servicetalk.concurrent.CompletableSource;
+import io.servicetalk.concurrent.api.AsyncCloseable;
+import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.transport.netty.internal.ExecutionContextRule;
@@ -24,11 +27,13 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
 
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiFunction;
 import java.util.function.Predicate;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Single.success;
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.transport.netty.internal.ExecutionContextRule.cached;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
@@ -55,7 +60,19 @@ public abstract class AbstractConditionalHttpFilterTest {
         return req.setHeader(FILTERED_HEADER, "true");
     }
 
+    protected static Completable markClosed(AtomicBoolean closed, Completable completable) {
+        return new Completable() {
+            @Override
+            protected void handleSubscribe(final CompletableSource.Subscriber subscriber) {
+                closed.set(true);
+                toSource(completable).subscribe(subscriber);
+            }
+        };
+    }
+
     protected abstract Single<StreamingHttpResponse> sendTestRequest(StreamingHttpRequest req);
+
+    protected abstract AsyncCloseable returnConditionallyFilteredResource(AtomicBoolean closed);
 
     @Test
     public void predicateAccepts() throws Exception {
@@ -71,5 +88,19 @@ public abstract class AbstractConditionalHttpFilterTest {
         final StreamingHttpRequest req = REQ_RES_FACTORY.get(expectAccepted ? "/accept" : "/reject");
         final StreamingHttpResponse res = sendTestRequest(req).toFuture().get();
         assertThat(res.headers().get(FILTERED_HEADER), is(Boolean.toString(expectAccepted)));
+    }
+
+    @Test
+    public void closeAsyncImpactsBoth() throws Exception {
+        AtomicBoolean closed = new AtomicBoolean();
+        returnConditionallyFilteredResource(closed).closeAsync().toFuture().get();
+        assertThat(closed.get(), is(true));
+    }
+
+    @Test
+    public void closeAsyncGracefullyImpactsBoth() throws Exception {
+        AtomicBoolean closed = new AtomicBoolean();
+        returnConditionallyFilteredResource(closed).closeAsyncGracefully().toFuture().get();
+        assertThat(closed.get(), is(true));
     }
 }

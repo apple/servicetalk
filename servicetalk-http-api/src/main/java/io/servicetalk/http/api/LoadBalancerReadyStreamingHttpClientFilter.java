@@ -30,10 +30,10 @@ import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 
 /**
  * A {@link StreamingHttpClient} filter that will account for transient failures introduced by a {@link LoadBalancer}
- * not being ready for {@link #request(StreamingHttpRequest)} and retry/delay requests until the {@link LoadBalancer}
- * is ready.
+ * not being ready for {@link #request(HttpExecutionStrategy, StreamingHttpRequest)} and retry/delay requests until the
+ * {@link LoadBalancer} is ready.
  */
-public final class LoadBalancerReadyStreamingHttpClient extends StreamingHttpClientFilter {
+public final class LoadBalancerReadyStreamingHttpClientFilter extends StreamingHttpClientFilter {
     private final LoadBalancerReadySubscriber loadBalancerReadySubscriber;
     private final int maxRetryCount;
 
@@ -45,9 +45,9 @@ public final class LoadBalancerReadyStreamingHttpClient extends StreamingHttpCli
      * {@link LoadBalancerReadyEvent} events to trigger retries.
      * @param next The next {@link StreamingHttpClient} in the filter chain.
      */
-    public LoadBalancerReadyStreamingHttpClient(int maxRetryCount,
-                                                Publisher<Object> loadBalancerEvents,
-                                                StreamingHttpClient next) {
+    public LoadBalancerReadyStreamingHttpClientFilter(int maxRetryCount,
+                                                      Publisher<Object> loadBalancerEvents,
+                                                      StreamingHttpClientFilter next) {
         super(next);
         if (maxRetryCount <= 0) {
             throw new IllegalArgumentException("maxRetryCount " + maxRetryCount + " (expected >0)");
@@ -58,17 +58,17 @@ public final class LoadBalancerReadyStreamingHttpClient extends StreamingHttpCli
     }
 
     @Override
-    protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
-                                                    final HttpExecutionStrategy strategy,
-                                                    final StreamingHttpRequest request) {
-        return delegate.request(strategy, request).retryWhen(retryWhenFunction());
+    protected Single<ReservedStreamingHttpConnectionFilter> reserveConnection(final StreamingHttpClientFilter delegate,
+                                                                              final HttpExecutionStrategy strategy,
+                                                                              final HttpRequestMetaData metaData) {
+        return delegate.reserveConnection(strategy, metaData).retryWhen(retryWhenFunction());
     }
 
     @Override
-    protected Single<ReservedStreamingHttpConnection> reserveConnection(final StreamingHttpClient delegate,
-                                                                        final HttpExecutionStrategy strategy,
-                                                                        final HttpRequestMetaData metaData) {
-        return delegate.reserveConnection(strategy, metaData).retryWhen(retryWhenFunction());
+    protected Single<StreamingHttpResponse> request(final StreamingHttpRequestFunction delegate,
+                                                    final HttpExecutionStrategy strategy,
+                                                    final StreamingHttpRequest request) {
+        return delegate.request(strategy, request).retryWhen(retryWhenFunction());
     }
 
     @Override

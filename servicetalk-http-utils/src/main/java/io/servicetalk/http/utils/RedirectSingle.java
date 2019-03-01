@@ -26,6 +26,7 @@ import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequestFactory;
+import io.servicetalk.http.api.StreamingHttpRequestFunction;
 import io.servicetalk.http.api.StreamingHttpRequester;
 import io.servicetalk.http.api.StreamingHttpResponse;
 
@@ -57,7 +58,7 @@ final class RedirectSingle extends SubscribableSingle<StreamingHttpResponse> {
     private final SingleSource<StreamingHttpResponse> originalResponse;
     private final StreamingHttpRequest originalRequest;
     private final int maxRedirects;
-    private final StreamingHttpRequester requester;
+    private final StreamingHttpRequestFunction requester;
     private final boolean onlyRelative;
 
     /**
@@ -77,7 +78,7 @@ final class RedirectSingle extends SubscribableSingle<StreamingHttpResponse> {
                    final Single<StreamingHttpResponse> originalResponse,
                    final StreamingHttpRequest originalRequest,
                    final int maxRedirects,
-                   final StreamingHttpRequester requester,
+                   final StreamingHttpRequestFunction requester,
                    final boolean onlyRelative) {
         this.strategy = strategy;
         this.originalResponse = toSource(originalResponse);

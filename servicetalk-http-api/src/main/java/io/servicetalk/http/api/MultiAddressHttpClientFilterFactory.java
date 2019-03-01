@@ -42,7 +42,7 @@ public interface MultiAddressHttpClientFilterFactory<U> {
      * @param lbEvents the {@link LoadBalancer} events stream
      * @return the filtered {@link StreamingHttpClient}
      */
-    StreamingHttpClientFilter create(U address, StreamingHttpClient client, Publisher<Object> lbEvents);
+    StreamingHttpClientFilter create(U address, StreamingHttpClientFilter client, Publisher<Object> lbEvents);
 
     /**
      * Returns a composed function that first applies the {@code before} function to its input, and then applies
@@ -101,9 +101,9 @@ public interface MultiAddressHttpClientFilterFactory<U> {
      * @return the resulting {@link MultiAddressHttpClientFilterFactory}
      */
     static <U> MultiAddressHttpClientFilterFactory<U> from(
-            BiFunction<U, StreamingHttpClient, StreamingHttpClientFilter> function) {
+            BiFunction<U, StreamingHttpClientFilter, StreamingHttpClientFilter> function) {
         requireNonNull(function);
-        return (address, client, lbEvents) -> function.apply(address, client);
+        return (address, client, __) -> function.apply(address, client);
     }
 
     /**
@@ -115,8 +115,8 @@ public interface MultiAddressHttpClientFilterFactory<U> {
      * @return A {@link HttpClientFilterFactory} that uses the passed filter {@link Function}.
      */
     static <U> MultiAddressHttpClientFilterFactory<U> from(
-            Function<StreamingHttpClient, StreamingHttpClientFilter> function) {
+            Function<StreamingHttpClientFilter, StreamingHttpClientFilter> function) {
         requireNonNull(function);
-        return (address, client, lbEvents) -> function.apply(client);
+        return (__, client, ___) -> function.apply(client);
     }
 }

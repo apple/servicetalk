@@ -29,7 +29,7 @@ public abstract class BlockingStreamingHttpRequester implements BlockingStreamin
     /**
      * Create a new instance.
      * @param reqRespFactory The {@link BlockingStreamingHttpRequestResponseFactory} used to
-     * {@link #newRequest(HttpRequestMethod, String) create new requests} and {@link #httpResponseFactory()}.
+     * {@link #newRequest(HttpRequestMethod, String) create new requests}.
      * @param strategy Default {@link HttpExecutionStrategy} to use.
      */
     BlockingStreamingHttpRequester(final BlockingStreamingHttpRequestResponseFactory reqRespFactory,
@@ -45,8 +45,8 @@ public abstract class BlockingStreamingHttpRequester implements BlockingStreamin
      * @return The response.
      * @throws Exception if an exception occurs during the request processing.
      */
-    public BlockingStreamingHttpResponse request(BlockingStreamingHttpRequest request) throws Exception {
-        return request(executionStrategy(), request);
+    public final BlockingStreamingHttpResponse request(BlockingStreamingHttpRequest request) throws Exception {
+        return request(strategy, request);
     }
 
     /**
@@ -73,14 +73,6 @@ public abstract class BlockingStreamingHttpRequester implements BlockingStreamin
     @Override
     public final BlockingStreamingHttpRequest newRequest(HttpRequestMethod method, String requestTarget) {
         return reqRespFactory.newRequest(method, requestTarget);
-    }
-
-    /**
-     * Get a {@link BlockingStreamingHttpResponseFactory}.
-     * @return a {@link BlockingStreamingHttpResponseFactory}.
-     */
-    public final BlockingStreamingHttpResponseFactory httpResponseFactory() {
-        return reqRespFactory;
     }
 
     /**

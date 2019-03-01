@@ -29,6 +29,7 @@ import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpClientFilter;
 import io.servicetalk.http.api.StreamingHttpRequest;
+import io.servicetalk.http.api.StreamingHttpRequestFunction;
 import io.servicetalk.http.api.StreamingHttpRequester;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.transport.api.HostAndPort;
@@ -111,15 +112,15 @@ public class HttpClientAsyncContextTest {
     private static final class TestStreamingHttpClientFilter extends StreamingHttpClientFilter {
         private final Queue<Throwable> errorQueue;
 
-        TestStreamingHttpClientFilter(final StreamingHttpClient delegate, Queue<Throwable> errorQueue) {
+        TestStreamingHttpClientFilter(final StreamingHttpClientFilter delegate, Queue<Throwable> errorQueue) {
             super(delegate);
             this.errorQueue = errorQueue;
         }
 
         @Override
-        public Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
-                                                     final HttpExecutionStrategy strategy,
-                                                     StreamingHttpRequest request) {
+        protected Single<StreamingHttpResponse> request(final StreamingHttpRequestFunction delegate,
+                                                        final HttpExecutionStrategy strategy,
+                                                        final StreamingHttpRequest request) {
             // The first filter will remove the REQUEST_ID_HEADER and put it into AsyncContext.
             // The second filter will remove the CONSUMED_REQUEST_ID_HEADER and verify the first filter
             // put this value in AsyncContext.
@@ -134,7 +135,7 @@ public class HttpClientAsyncContextTest {
                 }
             }
             final CharSequence requestId = hdrRequestId;
-            request = request.transformRawPayloadBody(pub ->
+            final StreamingHttpRequest requestWithPayloadAssert = request.transformRawPayloadBody(pub ->
                     pub.doAfterSubscriber(() -> new Subscriber<Object>() {
                         @Override
                         public void onSubscribe(final Subscription subscription) {
@@ -156,7 +157,7 @@ public class HttpClientAsyncContextTest {
                             assertAsyncContext(requestId, errorQueue);
                         }
                     }));
-            return delegate.request(strategy, request).map(resp -> {
+            return delegate.request(strategy, requestWithPayloadAssert).map(resp -> {
                 assertAsyncContext(requestId, errorQueue);
                 return resp.transformRawPayloadBody(pub ->
                         pub.doAfterSubscriber(() -> new Subscriber<Object>() {

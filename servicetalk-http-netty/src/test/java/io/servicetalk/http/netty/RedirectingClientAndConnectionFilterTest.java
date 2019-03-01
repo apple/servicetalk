@@ -18,14 +18,18 @@ package io.servicetalk.http.netty;
 import io.servicetalk.concurrent.api.AsyncCloseables;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.CompositeCloseable;
+import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.BlockingHttpRequester;
 import io.servicetalk.http.api.HttpClient;
 import io.servicetalk.http.api.HttpConnection;
+import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpRequest;
+import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.ReservedStreamingHttpConnectionFilter;
 import io.servicetalk.http.api.StreamingHttpClient;
+import io.servicetalk.http.api.StreamingHttpClientFilter;
 import io.servicetalk.http.utils.RedirectingHttpRequesterFilter;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.ServerContext;
@@ -58,6 +62,7 @@ import static org.junit.Assert.assertThat;
  * HttpClient} and {@link HttpConnection} builders.
  */
 @RunWith(Parameterized.class)
+// TODO(jayv) should use AbstractHttpRequesterFilterTest
 public final class RedirectingClientAndConnectionFilterTest {
 
     @Rule
@@ -89,22 +94,31 @@ public final class RedirectingClientAndConnectionFilterTest {
                 CompositeCloseable closeables = AsyncCloseables.newCompositeCloseable();
                 try {
                     StreamingHttpClient client = closeables.prepend(HttpClients.forSingleAddress(serverHostAndPort)
+                            .appendClientFilter((clientFilter, __) -> new StreamingHttpClientFilter(clientFilter) {
+                                @Override
+                                protected Single<ReservedStreamingHttpConnectionFilter> reserveConnection(
+                                        final StreamingHttpClientFilter delegate,
+                                        final HttpExecutionStrategy strategy,
+                                        final HttpRequestMetaData metaData) {
+                                    return delegate.reserveConnection(strategy, metaData).map(r ->
+                                            new ReservedStreamingHttpConnectionFilter(closeables.prepend(r)) {
+                                                @Override
+                                                public Completable closeAsync() {
+                                                    return closeables.closeAsync();
+                                                }
+
+                                                @Override
+                                                public Completable closeAsyncGracefully() {
+                                                    return closeables.closeAsyncGracefully();
+                                                }
+                                            }
+                                    );
+                                }
+                            })
                             .appendClientFilter(r -> r.headers().contains("X-REDIRECT"),
                                     new RedirectingHttpRequesterFilter())
                             .buildStreaming());
-                    return client.reserveConnection(client.get("")).map(r ->
-                            new ReservedStreamingHttpConnectionFilter(closeables.prepend(r)) {
-                                @Override
-                                public Completable closeAsync() {
-                                    return closeables.closeAsync();
-                                }
-
-                                @Override
-                                public Completable closeAsyncGracefully() {
-                                    return closeables.closeAsyncGracefully();
-                                }
-                            }.asBlockingConnection()
-                    ).toFuture().get();
+                    return client.asBlockingClient().reserveConnection(client.get(""));
                 } catch (Throwable t) {
                     closeables.close();
                     throw t;
@@ -167,7 +181,10 @@ public final class RedirectingClientAndConnectionFilterTest {
             assertThat(response.status(), equalTo(OK));
 
             // HTTP/1.0 doesn't support HOST, ensure that we don't get any errors and fallback to redirect
-            response = client.request(client.get("/").version(HTTP_1_0).addHeader("X-REDIRECT", "TRUE"));
+            response = client.request(
+                    client.get("/")
+                            .version(HTTP_1_0)
+                            .addHeader("X-REDIRECT", "TRUE"));
             assertThat(response.status(), equalTo(PERMANENT_REDIRECT));
         }
     }
