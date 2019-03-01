@@ -196,12 +196,22 @@ public class TestPublisherTest {
 
     @Test
     public void testDemandNoRequest() {
-        TestPublisher<String> source = new TestPublisher.Builder<String>()
-                .build();
+        TestPublisher<String> source = new TestPublisher<>();
         source.subscribe(subscriber1);
 
         expected.expect(AssertionError.class);
         expected.expectMessage(startsWith("Demand check failure: No outstanding demand. Ignoring item: "));
+        source.onNext("a");
+    }
+
+    @Test
+    public void testDemandPostCancel() {
+        TestPublisher<String> source = new TestPublisher<>();
+        source.subscribe(subscriber1);
+
+        subscriber1.cancel();
+        expected.expect(AssertionError.class);
+        expected.expectMessage(startsWith("Demand check failure: Subscription is cancelled. Ignoring item: "));
         source.onNext("a");
     }
 
