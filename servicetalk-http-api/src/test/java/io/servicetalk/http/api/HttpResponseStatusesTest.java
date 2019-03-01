@@ -82,7 +82,12 @@ public class HttpResponseStatusesTest {
     }
 
     @Test(expected = IllegalArgumentException.class)
-    public void testNegativeStatusCode() {
-        getResponseStatus(-1, DEFAULT_RO_ALLOCATOR.fromAscii("My Own Status Code"));
+    public void test2DigitStatusCodeIsNotAllowed() {
+        getResponseStatus(99, DEFAULT_RO_ALLOCATOR.fromAscii("My Own Status Code"));
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void test4DigitStatusCodeIsNotAllowed() {
+        getResponseStatus(1000, DEFAULT_RO_ALLOCATOR.fromAscii("My Own Status Code"));
     }
 }

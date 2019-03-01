@@ -134,8 +134,13 @@ public interface HttpResponseStatus {
          *
          * @param statusCode the status code to use for determining the {@link StatusClass}
          * @return one of the {@link StatusClass} enum values
+         * @throws IllegalArgumentException if {@code statusCode} is not a 3-digit integer
          */
         public static StatusClass fromStatusCode(final int statusCode) {
+            if (statusCode < 100 || statusCode > 999) {
+                throw new IllegalArgumentException("Illegal status code: " + statusCode + ", expected [100-999]");
+            }
+
             if (INFORMATIONAL_1XX.contains(statusCode)) {
                 return INFORMATIONAL_1XX;
             }

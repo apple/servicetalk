@@ -375,6 +375,7 @@ public final class HttpResponseStatuses {
      * @param reasonPhrase the <a href="https://tools.ietf.org/html/rfc7230.html#section-3.1.2">reason-phrase</a>
      * portion of the response
      * @return a {@link HttpResponseStatus}
+     * @throws IllegalArgumentException if {@code statusCode} is not a 3-digit integer
      */
     public static HttpResponseStatus getResponseStatus(final int statusCode, final Buffer reasonPhrase) {
         final HttpResponseStatus cached = valueOf(statusCode);

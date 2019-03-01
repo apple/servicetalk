@@ -30,13 +30,10 @@ final class DefaultHttpResponseStatus implements HttpResponseStatus {
     private final StatusClass statusClass;
 
     DefaultHttpResponseStatus(final int statusCode, final Buffer reasonPhrase) {
-        if (statusCode < 0) {
-            throw new IllegalArgumentException("Illegal status code: " + statusCode + ", expected positive value");
-        }
+        this.statusClass = fromStatusCode(statusCode);
         this.statusCode = statusCode;
         this.statusCodeBuffer = statusCodeToBuffer(statusCode);
         this.reasonPhrase = requireNonNull(reasonPhrase);
-        this.statusClass = fromStatusCode(statusCode);
     }
 
     @Override
