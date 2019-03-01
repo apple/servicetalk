@@ -16,72 +16,72 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.PublisherSource;
+import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.internal.SignalOffloader;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.NoSuchElementException;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.checkDuplicateSubscription;
 
-final class PubToSingleOrError<T> extends AbstractNoHandleSubscribeSingle<T> {
-    private final Publisher<T> source;
+abstract class AbstractPubToSingle<T> extends AbstractNoHandleSubscribeSingle<T> {
+    protected final Publisher<T> source;
 
-    PubToSingleOrError(Publisher<T> source) {
-        super(source.executor());
+    AbstractPubToSingle(final Executor executor, Publisher<T> source) {
+        super(executor);
         this.source = source;
     }
 
     @Override
-    void handleSubscribe(final Subscriber<? super T> subscriber, final SignalOffloader signalOffloader,
-                         final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
+    final void handleSubscribe(final Subscriber<? super T> subscriber, final SignalOffloader signalOffloader,
+                               final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
         // We are now subscribing to the original Publisher chain for the first time, re-using the SignalOffloader.
         // Using the special subscribe() method means it will not offload the Subscription (done in the public
         // subscribe() method). So, we use the SignalOffloader to offload subscription if required.
         PublisherSource.Subscriber<? super T> offloadedSubscription = signalOffloader.offloadSubscription(
-                contextProvider.wrapSubscription(new PubToSingleSubscriber<>(subscriber), contextMap));
+                contextProvider.wrapSubscription(newSubscriber(subscriber), contextMap));
         // Since this is converting a Publisher to a Single, we should try to use the same SignalOffloader for
         // subscribing to the original Publisher to avoid thread hop. Since, it is the same source, just viewed as a
         // Single, there is no additional risk of deadlock.
         source.subscribeWithOffloaderAndContext(offloadedSubscription, signalOffloader, contextMap, contextProvider);
     }
 
-    private static final class PubToSingleSubscriber<T> implements PublisherSource.Subscriber<T> {
-        private static final Logger LOGGER = LoggerFactory.getLogger(PubToSingleSubscriber.class);
-        private static final Object NULL_VALUE = new Object();
+    abstract PublisherSource.Subscriber<T> newSubscriber(Subscriber<? super T> original);
+
+    abstract static class AbstractPubToSingleSubscriber<T> implements PublisherSource.Subscriber<T> {
+        private static final Logger LOGGER = LoggerFactory.getLogger(AbstractPubToSingleSubscriber.class);
+        static final Object NULL_VALUE = new Object();
         private static final byte STATE_WAITING_FOR_SUBSCRIBE = 0;
         /**
-         * We have called {@link PublisherSource.Subscriber#onSubscribe(PublisherSource.Subscription)}.
+         * We have called {@link PublisherSource.Subscriber#onSubscribe(Subscription)}.
          */
         private static final byte STATE_SENT_ON_SUBSCRIBE = 1;
         /**
-         * We have called {@link PublisherSource.Subscriber#onSubscribe(PublisherSource.Subscription)} and terminated.
+         * We have called {@link PublisherSource.Subscriber#onSubscribe(Subscription)} and terminated.
          */
         private static final byte STATE_SENT_ON_SUBSCRIBE_AND_DONE = 2;
 
         private final Subscriber<? super T> subscriber;
         @Nullable
-        private PublisherSource.Subscription subscription;
-        @Nullable
-        private Object lastValue;
+        Subscription subscription;
         /**
          * Can either be {@link #STATE_WAITING_FOR_SUBSCRIBE}, {@link #STATE_SENT_ON_SUBSCRIBE}, or
          * {@link #STATE_SENT_ON_SUBSCRIBE_AND_DONE}.
          */
         private byte state = STATE_WAITING_FOR_SUBSCRIBE;
 
-        PubToSingleSubscriber(final Subscriber<? super T> subscriber) {
+        AbstractPubToSingleSubscriber(final Subscriber<? super T> subscriber) {
             this.subscriber = subscriber;
         }
 
         @Override
-        public void onSubscribe(PublisherSource.Subscription s) {
+        public final void onSubscribe(Subscription s) {
             if (checkDuplicateSubscription(subscription, s)) {
                 subscription = s;
-                s.request(2); // Request 2 items because we want to see if there are multiple items before termination.
+                requestFromSubscription(s);
                 if (state == STATE_WAITING_FOR_SUBSCRIBE) {
                     state = STATE_SENT_ON_SUBSCRIBE;
                     subscriber.onSubscribe(s);
@@ -89,31 +89,24 @@ final class PubToSingleOrError<T> extends AbstractNoHandleSubscribeSingle<T> {
             }
         }
 
-        @Override
-        public void onNext(T t) {
-            if (lastValue == null) {
-                lastValue = t == null ? NULL_VALUE : t;
-            } else {
-                try {
-                    assert subscription != null;
-                    subscription.cancel();
-                } finally {
-                    terminate(new IllegalArgumentException("only a single item expected, but saw second value: " + t));
-                }
-            }
-        }
+        abstract void requestFromSubscription(Subscription subscription);
 
         @Override
-        public void onError(Throwable t) {
+        public final void onError(Throwable t) {
             terminate(t);
         }
 
         @Override
-        public void onComplete() {
-            terminate(lastValue == null ? new NoSuchElementException() : null);
+        public final void onComplete() {
+            if (state == STATE_SENT_ON_SUBSCRIBE_AND_DONE) {
+                return;
+            }
+            terminate(terminalSignalForComplete());
         }
 
-        private void terminate(@Nullable Object terminal) {
+        abstract Object terminalSignalForComplete();
+
+        void terminate(Object terminal) {
             if (state == STATE_SENT_ON_SUBSCRIBE_AND_DONE) {
                 return;
             } else if (state == STATE_WAITING_FOR_SUBSCRIBE) {
@@ -133,17 +126,12 @@ final class PubToSingleOrError<T> extends AbstractNoHandleSubscribeSingle<T> {
                 state = STATE_SENT_ON_SUBSCRIBE_AND_DONE;
             }
 
-            try {
-                if (terminal instanceof Throwable) {
-                    subscriber.onError((Throwable) terminal);
-                } else {
-                    @SuppressWarnings("unchecked")
-                    final T result = lastValue == NULL_VALUE ? null : (T) lastValue;
-                    subscriber.onSuccess(result);
-                }
-            } finally {
-                // De-reference the last value to allow for GC.
-                lastValue = null;
+            if (terminal instanceof Throwable) {
+                subscriber.onError((Throwable) terminal);
+            } else {
+                @SuppressWarnings("unchecked")
+                final T t = terminal == NULL_VALUE ? null : (T) terminal;
+                subscriber.onSuccess(t);
             }
         }
     }
