@@ -27,10 +27,10 @@ final class DefaultHttpRequestMethod implements HttpRequestMethod {
     private final Properties properties;
 
     DefaultHttpRequestMethod(final Buffer name, final Properties properties) {
-        this.name = requireNonNull(name);
         if (name.readableBytes() == 0) {
             throw new IllegalArgumentException("Method name cannot be empty");
         }
+        this.name = name;
         this.properties = requireNonNull(properties);
         this.nameString = name.toString(US_ASCII);
     }
