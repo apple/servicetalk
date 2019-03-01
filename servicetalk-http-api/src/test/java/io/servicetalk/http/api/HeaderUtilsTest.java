@@ -86,6 +86,9 @@ public class HeaderUtilsTest {
         assertTrue(HeaderUtils.hasContentType(
                 headersWithContentType(of("image/png")), of("image/png"), null));
 
+        assertFalse(HeaderUtils.hasContentType(
+                headersWithContentType(of("image/png")), APPLICATION_X_WWW_FORM_URLENCODED, null));
+
         assertTrue(HeaderUtils.hasContentType(
                 headersWithContentType(of("image/png;charset=unknown-charset")), of("image/png"), null));
 

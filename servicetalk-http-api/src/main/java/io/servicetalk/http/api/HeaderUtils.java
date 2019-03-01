@@ -39,6 +39,7 @@ import static java.lang.Math.min;
 import static java.lang.System.lineSeparator;
 import static java.nio.charset.Charset.availableCharsets;
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.util.Collections.unmodifiableMap;
 import static java.util.regex.Pattern.CASE_INSENSITIVE;
 import static java.util.regex.Pattern.compile;
 import static java.util.regex.Pattern.quote;
@@ -59,8 +60,8 @@ final class HeaderUtils {
     private static final Map<Charset, Pattern> CHARSET_PATTERNS;
 
     static {
-        CHARSET_PATTERNS = availableCharsets().entrySet().stream()
-                .collect(toMap(Map.Entry::getValue, e -> compileCharsetRegex(e.getKey())));
+        CHARSET_PATTERNS = unmodifiableMap(availableCharsets().entrySet().stream()
+                .collect(toMap(Map.Entry::getValue, e -> compileCharsetRegex(e.getKey()))));
     }
 
     private HeaderUtils() {
@@ -208,41 +209,42 @@ final class HeaderUtils {
      * and optionally the provided charset.
      *
      * @param headers the {@link HttpHeaders} instance
-     * @param contentType the content type to look for, provided as a {@code type/subtype}
-     * @param charset an optional charset constraint.
+     * @param expectedContentType the content type to look for, provided as a {@code type/subtype}
+     * @param expectedCharset an optional charset constraint.
      * @return {@code true} if a {@code Content-Type} header that matches the specified content type, and optionally
      * the provided charset has been found, {@code false} otherwise.
      * @see <a href="https://tools.ietf.org/html/rfc2045#section-5.1">Syntax of the Content-Type Header Field</a>
      */
-    static boolean hasContentType(final HttpHeaders headers, final CharSequence contentType,
-                                  @Nullable final Charset charset) {
+    static boolean hasContentType(final HttpHeaders headers,
+                                  final CharSequence expectedContentType,
+                                  @Nullable final Charset expectedCharset) {
         final CharSequence contentTypeHeader = headers.get(CONTENT_TYPE);
         if (contentTypeHeader == null || contentTypeHeader.length() == 0) {
             return false;
         }
-        if (charset == null) {
-            if (contentEqualsIgnoreCase(contentType, contentTypeHeader)) {
+        if (expectedCharset == null) {
+            if (contentEqualsIgnoreCase(expectedContentType, contentTypeHeader)) {
                 return true;
             }
-            return regionMatches(contentTypeHeader, true, 0, contentType, 0, contentType.length());
-        } else if (!regionMatches(contentTypeHeader, true, 0, contentType, 0, contentType.length())) {
+            return regionMatches(contentTypeHeader, true, 0, expectedContentType, 0, expectedContentType.length());
+        } else if (!regionMatches(contentTypeHeader, true, 0, expectedContentType, 0, expectedContentType.length())) {
             return false;
         }
 
-        if (UTF_8.equals(charset) &&
-                (contentEqualsIgnoreCase(contentType, TEXT_PLAIN) &&
+        if (UTF_8.equals(expectedCharset) &&
+                (contentEqualsIgnoreCase(expectedContentType, TEXT_PLAIN) &&
                         contentEqualsIgnoreCase(contentTypeHeader, TEXT_PLAIN_UTF_8)) ||
-                (contentEqualsIgnoreCase(contentType, APPLICATION_X_WWW_FORM_URLENCODED) &&
+                (contentEqualsIgnoreCase(expectedContentType, APPLICATION_X_WWW_FORM_URLENCODED) &&
                         contentEqualsIgnoreCase(contentTypeHeader, APPLICATION_X_WWW_FORM_URLENCODED_UTF8))) {
             return true;
         }
 
         // None of the fastlane shortcuts have bitten -> use a regex to try to match the charset param wherever it is
-        Pattern pattern = CHARSET_PATTERNS.get(charset);
+        Pattern pattern = CHARSET_PATTERNS.get(expectedCharset);
         if (pattern == null) {
-            pattern = compileCharsetRegex(charset.name());
+            pattern = compileCharsetRegex(expectedCharset.name());
         }
-        return pattern.matcher(contentTypeHeader.subSequence(contentType.length(), contentTypeHeader.length()))
+        return pattern.matcher(contentTypeHeader.subSequence(expectedContentType.length(), contentTypeHeader.length()))
                 .matches();
     }
 
