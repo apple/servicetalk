@@ -32,7 +32,7 @@ public abstract class AbstractConcatWithOrderingTest {
     protected final StringBuilder sb = new StringBuilder();
 
     @Test
-    public void completablesOnly() throws Exception {
+    public final void completablesOnly() throws Exception {
         completable(1)
                 .concatWith(completable(2))
                 .concatWith(completable(3))
@@ -44,7 +44,7 @@ public abstract class AbstractConcatWithOrderingTest {
     }
 
     @Test
-    public void completableSingeCompletables() throws Exception {
+    public final void completableSingeCompletables() throws Exception {
         completable(1)
                 .concatWith(single(2))
                 .concatWith(completable(3))
@@ -56,7 +56,7 @@ public abstract class AbstractConcatWithOrderingTest {
     }
 
     @Test
-    public void completableTwoSingesCompletables() throws Exception {
+    public final void completableTwoSingesCompletables() throws Exception {
         completable(1)
                 .concatWith(single(2))
                 .concatWith(single(3))
@@ -68,7 +68,7 @@ public abstract class AbstractConcatWithOrderingTest {
     }
 
     @Test
-    public void completablePublisherCompletables() throws Exception {
+    public final void completablePublisherCompletables() throws Exception {
         completable(1)
                 .concatWith(publisher(2))
                 .concatWith(completable(3))
@@ -80,7 +80,7 @@ public abstract class AbstractConcatWithOrderingTest {
     }
 
     @Test
-    public void singlesOnly() throws Exception {
+    public final void singlesOnly() throws Exception {
         single(1)
                 .concatWith(single(2))
                 .concatWith(single(3))
@@ -92,7 +92,7 @@ public abstract class AbstractConcatWithOrderingTest {
     }
 
     @Test
-    public void singleCompletableSingles() throws Exception {
+    public final void singleCompletableSingles() throws Exception {
         single(1)
                 .concatWith(completable(2))
                 .concatWith(single(3))
@@ -104,7 +104,7 @@ public abstract class AbstractConcatWithOrderingTest {
     }
 
     @Test
-    public void singleTwoCompletablesSingles() throws Exception {
+    public final void singleTwoCompletablesSingles() throws Exception {
         single(1)
                 .concatWith(completable(2))
                 .concatWith(completable(3))
@@ -116,7 +116,7 @@ public abstract class AbstractConcatWithOrderingTest {
     }
 
     @Test
-    public void singlePublisherSingles() throws Exception {
+    public final void singlePublisherSingles() throws Exception {
         single(1)
                 .concatWith(publisher(2))
                 .concatWith(single(3))
@@ -128,7 +128,7 @@ public abstract class AbstractConcatWithOrderingTest {
     }
 
     @Test
-    public void publishersOnly() throws Exception {
+    public final void publishersOnly() throws Exception {
         publisher(1)
                 .concatWith(publisher(2))
                 .concatWith(publisher(3))
@@ -140,7 +140,7 @@ public abstract class AbstractConcatWithOrderingTest {
     }
 
     @Test
-    public void publisherCompletablePublishers() throws Exception {
+    public final void publisherCompletablePublishers() throws Exception {
         publisher(1)
                 .concatWith(completable(2))
                 .concatWith(publisher(3))
@@ -152,7 +152,7 @@ public abstract class AbstractConcatWithOrderingTest {
     }
 
     @Test
-    public void publisherSinglePublishers() throws Exception {
+    public final void publisherSinglePublishers() throws Exception {
         publisher(1)
                 .concatWith(single(2))
                 .concatWith(publisher(3))
@@ -164,7 +164,7 @@ public abstract class AbstractConcatWithOrderingTest {
     }
 
     @Test
-    public void typeSteps() throws Exception {
+    public final void typeSteps() throws Exception {
         completable(1)
                 .concatWith(single(2))
                 .concatWith(publisher(3))
@@ -176,7 +176,7 @@ public abstract class AbstractConcatWithOrderingTest {
     }
 
     @Test
-    public void typeStepsReverse() throws Exception {
+    public final void typeStepsReverse() throws Exception {
         publisher(1)
                 .concatWith(single(2))
                 .concatWith(completable(3))
@@ -191,9 +191,9 @@ public abstract class AbstractConcatWithOrderingTest {
         assertThat(sb.toString(), is("12345"));
     }
 
-    protected abstract Completable completable(final int number);
+    protected abstract Completable completable(int number);
 
-    protected abstract Single<Integer> single(final int number);
+    protected abstract Single<Integer> single(int number);
 
-    protected abstract Publisher<Integer> publisher(final int number);
+    protected abstract Publisher<Integer> publisher(int number);
 }
