@@ -131,7 +131,7 @@ public class TracingHttpRequesterFilter implements HttpClientFilterFactory, Http
             try {
                 SpanBuilder spanBuilder = tracer.buildSpan(componentName)
                         .withTag(SPAN_KIND.getKey(), SPAN_KIND_CLIENT)
-                        .withTag(HTTP_METHOD.getKey(), request.method().methodName())
+                        .withTag(HTTP_METHOD.getKey(), request.method().name())
                         .withTag(HTTP_URL.getKey(), request.path());
                 Scope currentScope = tracer.scopeManager().active();
                 if (currentScope != null) {

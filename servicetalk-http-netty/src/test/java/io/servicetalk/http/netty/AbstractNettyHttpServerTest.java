@@ -21,8 +21,8 @@ import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Executors;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
-import io.servicetalk.http.api.HttpProtocolVersions;
-import io.servicetalk.http.api.HttpResponseStatuses;
+import io.servicetalk.http.api.HttpProtocolVersion;
+import io.servicetalk.http.api.HttpResponseStatus;
 import io.servicetalk.http.api.HttpServerBuilder;
 import io.servicetalk.http.api.StreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpRequest;
@@ -199,8 +199,8 @@ public abstract class AbstractNettyHttpServerTest {
         return awaitIndefinitelyNonNull(httpConnection.request(request));
     }
 
-    void assertResponse(final StreamingHttpResponse response, final HttpProtocolVersions version,
-                        final HttpResponseStatuses status, final int expectedSize)
+    void assertResponse(final StreamingHttpResponse response, final HttpProtocolVersion version,
+                        final HttpResponseStatus status, final int expectedSize)
             throws ExecutionException, InterruptedException {
         assertEquals(status, response.status());
         assertEquals(version, response.version());
@@ -210,8 +210,8 @@ public abstract class AbstractNettyHttpServerTest {
         assertEquals(expectedSize, size);
     }
 
-    void assertResponse(final StreamingHttpResponse response, final HttpProtocolVersions version,
-                        final HttpResponseStatuses status, final List<String> expectedPayloadChunksAsStrings)
+    void assertResponse(final StreamingHttpResponse response, final HttpProtocolVersion version,
+                        final HttpResponseStatus status, final List<String> expectedPayloadChunksAsStrings)
             throws ExecutionException, InterruptedException {
         assertEquals(status, response.status());
         assertEquals(version, response.version());

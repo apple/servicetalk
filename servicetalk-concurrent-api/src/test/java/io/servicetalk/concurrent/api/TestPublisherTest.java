@@ -99,20 +99,21 @@ public class TestPublisherTest {
 
     @Test
     public void testFanOut() {
-        final AutoOnSubscribeSubscriberFunction<Integer> autoOnSubscribe = new AutoOnSubscribeSubscriberFunction<>();
+        final ConcurrentPublisherSubscriberFunction<Integer> concurrentPublisherSubscriberFunction =
+                new ConcurrentPublisherSubscriberFunction<>();
         TestPublisher<Integer> source = new TestPublisher.Builder<Integer>()
-                .autoOnSubscribe(autoOnSubscribe)
-                .concurrentSubscribers()
+                .disableAutoOnSubscribe()
+                .concurrentSubscribers(concurrentPublisherSubscriberFunction)
                 .build();
 
         FanOut fanOut = new FanOut(2);
         fanOut.consume(source);
 
-        List<Subscription> subscriptions = autoOnSubscribe.subscriptions();
+        List<Subscriber<? super Integer>> subscribers = concurrentPublisherSubscriberFunction.subscribers();
         TestSubscription subscription1 = new TestSubscription();
         TestSubscription subscription2 = new TestSubscription();
-        ((SequentialSubscription) subscriptions.get(0)).switchTo(subscription1);
-        ((SequentialSubscription) subscriptions.get(1)).switchTo(subscription2);
+        subscribers.get(0).onSubscribe(subscription1);
+        subscribers.get(1).onSubscribe(subscription2);
 
         assertEquals(1, subscription1.requested());
         assertEquals(1, subscription2.requested());
@@ -131,9 +132,8 @@ public class TestPublisherTest {
     public void testFanOut2() {
         ConcurrentPublisherSubscriberFunction<Integer> concurrentPublisherSubscriberFunction =
                 new ConcurrentPublisherSubscriberFunction<>();
-        final AutoOnSubscribeSubscriberFunction<Integer> autoOnSubscribe = new AutoOnSubscribeSubscriberFunction<>();
         TestPublisher<Integer> source = new TestPublisher.Builder<Integer>()
-                .autoOnSubscribe(autoOnSubscribe)
+                .disableAutoOnSubscribe()
                 .concurrentSubscribers(concurrentPublisherSubscriberFunction)
                 .build();
 
@@ -141,11 +141,11 @@ public class TestPublisherTest {
         fanOut.consume(source);
         assertEquals(2, concurrentPublisherSubscriberFunction.subscribers().size());
 
-        List<Subscription> subscriptions = autoOnSubscribe.subscriptions();
+        List<Subscriber<? super Integer>> subscribers = concurrentPublisherSubscriberFunction.subscribers();
         TestSubscription subscription1 = new TestSubscription();
         TestSubscription subscription2 = new TestSubscription();
-        ((SequentialSubscription) subscriptions.get(0)).switchTo(subscription1);
-        ((SequentialSubscription) subscriptions.get(1)).switchTo(subscription2);
+        subscribers.get(0).onSubscribe(subscription1);
+        subscribers.get(1).onSubscribe(subscription2);
 
         assertEquals(1, subscription1.requested());
         assertEquals(1, subscription2.requested());
@@ -164,10 +164,8 @@ public class TestPublisherTest {
     public void testFanOut3() {
         ConcurrentPublisherSubscriberFunction<Integer> concurrentPublisherSubscriberFunction =
                 new ConcurrentPublisherSubscriberFunction<>();
-        final AutoOnSubscribeSubscriberFunction<Integer> autoOnSubscribe = new AutoOnSubscribeSubscriberFunction<>();
         TestPublisher<Integer> source = new TestPublisher.Builder<Integer>().build(
                 new DemandCheckingSubscriberFunction<Integer>()
-                        .andThen(autoOnSubscribe)
                         .andThen(concurrentPublisherSubscriberFunction)
         );
 
@@ -175,11 +173,11 @@ public class TestPublisherTest {
         fanOut.consume(source);
         assertEquals(2, concurrentPublisherSubscriberFunction.subscribers().size());
 
-        List<Subscription> subscriptions = autoOnSubscribe.subscriptions();
+        List<Subscriber<? super Integer>> subscribers = concurrentPublisherSubscriberFunction.subscribers();
         TestSubscription subscription1 = new TestSubscription();
         TestSubscription subscription2 = new TestSubscription();
-        ((SequentialSubscription) subscriptions.get(0)).switchTo(subscription1);
-        ((SequentialSubscription) subscriptions.get(1)).switchTo(subscription2);
+        subscribers.get(0).onSubscribe(subscription1);
+        subscribers.get(1).onSubscribe(subscription2);
 
         assertEquals(1, subscription1.requested());
         assertEquals(1, subscription2.requested());
@@ -196,12 +194,22 @@ public class TestPublisherTest {
 
     @Test
     public void testDemandNoRequest() {
-        TestPublisher<String> source = new TestPublisher.Builder<String>()
-                .build();
+        TestPublisher<String> source = new TestPublisher<>();
         source.subscribe(subscriber1);
 
-        expected.expect(IllegalStateException.class);
-        expected.expectMessage("Demand check failure: not enough demand to send a");
+        expected.expect(AssertionError.class);
+        expected.expectMessage(startsWith("Demand check failure: No outstanding demand. Ignoring item: "));
+        source.onNext("a");
+    }
+
+    @Test
+    public void testDemandPostCancel() {
+        TestPublisher<String> source = new TestPublisher<>();
+        source.subscribe(subscriber1);
+
+        subscriber1.cancel();
+        expected.expect(AssertionError.class);
+        expected.expectMessage(startsWith("Demand check failure: Subscription is cancelled. Ignoring item: "));
         source.onNext("a");
     }
 
@@ -216,8 +224,8 @@ public class TestPublisherTest {
 
         assertThat(subscriber1.items(), contains("a", "b"));
 
-        expected.expect(IllegalStateException.class);
-        expected.expectMessage("Demand check failure: not enough demand to send c");
+        expected.expect(AssertionError.class);
+        expected.expectMessage(startsWith("Demand check failure: No outstanding demand. Ignoring item: "));
         source.onNext("c");
     }
 

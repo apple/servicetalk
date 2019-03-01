@@ -23,6 +23,12 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Function;
 
+/**
+ * Allows multiple {@link Subscriber}s to be concurrently subscribed to a {@link TestPublisher}, and multicasts signals
+ * to them all.
+ *
+ * @param <T> Type of items received by the {@code Subscriber}.
+ */
 public final class ConcurrentPublisherSubscriberFunction<T> implements Function<Subscriber<? super T>, Subscriber<? super T>> {
 
     private final List<Subscriber<? super T>> subscribers = new CopyOnWriteArrayList<>();
@@ -62,6 +68,11 @@ public final class ConcurrentPublisherSubscriberFunction<T> implements Function<
         return listSubscriber;
     }
 
+    /**
+     * Returns a list of all {@link Subscriber}s that have subscribed.
+     *
+     * @return a list of all {@link Subscriber}s that have subscribed.
+     */
     public List<Subscriber<? super T>> subscribers() {
         return new ArrayList<>(subscribers);
     }

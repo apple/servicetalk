@@ -20,6 +20,9 @@ import io.servicetalk.concurrent.internal.FlowControlUtil;
 
 import java.util.concurrent.atomic.AtomicLong;
 
+/**
+ * A {@link Subscription} that tracks requests and cancellation.
+ */
 public final class TestSubscription implements Subscription {
 
     private final AtomicLong requested = new AtomicLong();
@@ -35,10 +38,20 @@ public final class TestSubscription implements Subscription {
         cancelled = true;
     }
 
+    /**
+     * Returns the cumulative total of {@code n} from {@link #request(long)}s.
+     *
+     * @return the cumulative total of {@code n} from {@link #request(long)}s.
+     */
     public long requested() {
         return requested.get();
     }
 
+    /**
+     * Returns {@code true} if {@link #cancel()} has been called, {@code false} otherwise.
+     *
+     * @return {@code true} if {@link #cancel()} has been called, {@code false} otherwise.
+     */
     public boolean isCancelled() {
         return cancelled;
     }

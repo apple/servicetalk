@@ -21,10 +21,23 @@ import io.servicetalk.concurrent.PublisherSource.Subscription;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * A {@link Subscriber} that wraps another {@link Subscriber}, logging all signals received by the {@link Subscriber},
+ * or sent via the {@link Subscription}.
+ *
+ * @param <T> Type of items received by the {@code Subscriber}.
+ */
 public class LoggingSubscriber<T> implements Subscriber<T> {
     private final Logger logger;
     private final Subscriber<T> delegate;
 
+    /**
+     * Create a {@link LoggingSubscriber} that wraps the {@code delegate}, and uses the specified {@code name} for
+     * logging.
+     *
+     * @param name the logging name.
+     * @param delegate the {@link Subscriber} to delegate calls to.
+     */
     public LoggingSubscriber(final String name, final Subscriber<T> delegate) {
         this.logger = LoggerFactory.getLogger(name);
         this.delegate = delegate;

@@ -19,6 +19,11 @@ import io.servicetalk.concurrent.PublisherSource.Subscriber;
 
 import java.util.function.Function;
 
+/**
+ * Wraps {@link Subscriber}s in a {@link DemandCheckingSubscriber}.
+ *
+ * @param <T> Type of items received by the {@code Subscriber}.
+ */
 public final class DemandCheckingSubscriberFunction<T> implements Function<Subscriber<? super T>, Subscriber<? super T>> {
 
     @Override
