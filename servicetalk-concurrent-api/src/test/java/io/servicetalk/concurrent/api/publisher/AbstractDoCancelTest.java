@@ -50,7 +50,7 @@ public abstract class AbstractDoCancelTest {
         publisher.onSubscribe(subscription);
         subscriber.request(1);
         publisher.onNext("Hello");
-        assertThat(subscriber.items(), contains("Hello"));
+        assertThat(subscriber.takeItems(), contains("Hello"));
         subscriber.cancel();
         verify(onCancel).run();
         assertTrue(subscription.isCancelled());

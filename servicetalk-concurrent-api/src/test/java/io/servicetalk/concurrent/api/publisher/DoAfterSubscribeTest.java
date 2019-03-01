@@ -25,7 +25,7 @@ import java.util.function.Consumer;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static org.hamcrest.Matchers.hasSize;
-import static org.junit.Assert.assertFalse;
+import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
@@ -38,8 +38,8 @@ public class DoAfterSubscribeTest extends AbstractDoSubscribeTest {
         });
         toSource(src).subscribe(subscriber);
         assertTrue(subscriber.subscriptionReceived());
-        assertThat(subscriber.items(), hasSize(0));
-        assertFalse(subscriber.isTerminated());
+        assertThat(subscriber.takeItems(), hasSize(0));
+        assertThat(subscriber.takeTerminal(), nullValue());
     }
 
     @Override

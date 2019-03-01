@@ -46,7 +46,7 @@ public class DoBeforeFinallyTest extends AbstractDoFinallyTest {
         }).subscribe(subscriber);
         assertFalse(subscription.isCancelled());
         publisher.onComplete();
-        assertThat(subscriber.error(), sameInstance(DELIBERATE_EXCEPTION));
+        assertThat(subscriber.takeError(), sameInstance(DELIBERATE_EXCEPTION));
         assertThat("Unexpected calls to doFinally callback.", invocationCount.get(), is(1));
         assertFalse(subscription.isCancelled());
     }
@@ -61,7 +61,7 @@ public class DoBeforeFinallyTest extends AbstractDoFinallyTest {
             throw exception;
         }).subscribe(subscriber);
         publisher.onError(DELIBERATE_EXCEPTION);
-        assertThat(subscriber.error(), sameInstance(exception));
+        assertThat(subscriber.takeError(), sameInstance(exception));
         assertThat("Unexpected calls to doFinally callback.", invocationCount.get(), is(1));
         assertFalse(subscription.isCancelled());
     }

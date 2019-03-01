@@ -25,9 +25,10 @@ import org.junit.rules.ExpectedException;
 import java.util.function.Consumer;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
+import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
@@ -44,8 +45,8 @@ public abstract class AbstractDoNextTest {
         Consumer<String> onNext = mock(Consumer.class);
         toSource(doNext(Publisher.from("Hello"), onNext)).subscribe(subscriber);
         subscriber.request(1);
-        assertThat(subscriber.items(), contains("Hello"));
-        assertTrue(subscriber.isCompleted());
+        assertThat(subscriber.takeItems(), contains("Hello"));
+        assertThat(subscriber.takeTerminal(), is(complete()));
         verify(onNext).accept("Hello");
     }
 
@@ -55,8 +56,8 @@ public abstract class AbstractDoNextTest {
         Consumer<String> onNext = mock(Consumer.class);
         toSource(doNext(Publisher.from("Hello", "Hello1"), onNext)).subscribe(subscriber);
         subscriber.request(2);
-        assertThat(subscriber.items(), contains("Hello", "Hello1"));
-        assertTrue(subscriber.isCompleted());
+        assertThat(subscriber.takeItems(), contains("Hello", "Hello1"));
+        assertThat(subscriber.takeTerminal(), is(complete()));
         verify(onNext).accept("Hello");
         verify(onNext).accept("Hello1");
     }

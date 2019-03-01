@@ -43,6 +43,6 @@ public class MapPublisherTest {
         subscriber.request(2);
         assertThat(subscription.requested(), is((long) 2));
         source.onNext(1, 2);
-        assertThat(subscriber.items(), contains((Integer) null, null));
+        assertThat(subscriber.takeItems(), contains((Integer) null, null));
     }
 }

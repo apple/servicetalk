@@ -26,10 +26,12 @@ import org.junit.Test;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -62,8 +64,8 @@ public class RetryTest {
         subscriber.request(2);
         source.onNext(1, 2);
         source.onComplete();
-        assertThat(subscriber.items(), contains(1, 2));
-        assertTrue(subscriber.isCompleted());
+        assertThat(subscriber.takeItems(), contains(1, 2));
+        assertThat(subscriber.takeTerminal(), is(complete()));
         verifyZeroInteractions(shouldRetry);
     }
 
@@ -72,8 +74,8 @@ public class RetryTest {
         subscriber.request(2);
         source.onNext(1, 2);
         source.onError(DELIBERATE_EXCEPTION);
-        assertThat(subscriber.items(), contains(1, 2));
-        assertThat(subscriber.error(), sameInstance(DELIBERATE_EXCEPTION));
+        assertThat(subscriber.takeItems(), contains(1, 2));
+        assertThat(subscriber.takeError(), sameInstance(DELIBERATE_EXCEPTION));
         verify(shouldRetry).test(1, DELIBERATE_EXCEPTION);
         verifyNoMoreInteractions(shouldRetry);
     }
@@ -84,13 +86,13 @@ public class RetryTest {
         subscriber.request(3);
         source.onNext(1, 2);
         source.onError(DELIBERATE_EXCEPTION);
-        assertThat(subscriber.items(), contains(1, 2));
+        assertThat(subscriber.takeItems(), contains(1, 2));
         verify(shouldRetry).test(1, DELIBERATE_EXCEPTION);
         assertTrue(source.isSubscribed());
         source.onNext(3);
-        assertThat(subscriber.items(), contains(1, 2, 3));
+        assertThat(subscriber.takeItems(), contains(3));
         assertTrue(subscriber.subscriptionReceived());
-        assertFalse(subscriber.isTerminated());
+        assertThat(subscriber.takeTerminal(), nullValue());
     }
 
     @Test
@@ -99,17 +101,17 @@ public class RetryTest {
         subscriber.request(3);
         source.onNext(1, 2);
         source.onError(DELIBERATE_EXCEPTION);
-        assertThat(subscriber.items(), contains(1, 2));
+        assertThat(subscriber.takeItems(), contains(1, 2));
         assertTrue(subscriber.subscriptionReceived());
-        assertFalse(subscriber.isTerminated());
+        assertThat(subscriber.takeTerminal(), nullValue());
         verify(shouldRetry).test(1, DELIBERATE_EXCEPTION);
         assertTrue(source.isSubscribed());
         source.onNext(3);
         source.onError(DELIBERATE_EXCEPTION);
         verify(shouldRetry).test(2, DELIBERATE_EXCEPTION);
         source.onComplete();
-        assertThat(subscriber.items(), contains(1, 2, 3));
-        assertTrue(subscriber.isCompleted());
+        assertThat(subscriber.takeItems(), contains(3));
+        assertThat(subscriber.takeTerminal(), is(complete()));
     }
 
     @Test
@@ -118,14 +120,14 @@ public class RetryTest {
         subscriber.request(3);
         source.onNext(1, 2);
         source.onError(DELIBERATE_EXCEPTION);
-        assertThat(subscriber.items(), contains(1, 2));
+        assertThat(subscriber.takeItems(), contains(1, 2));
         assertTrue(subscriber.subscriptionReceived());
-        assertFalse(subscriber.isTerminated());
+        assertThat(subscriber.takeTerminal(), nullValue());
         verify(shouldRetry).test(1, DELIBERATE_EXCEPTION);
         shouldRetryValue = false;
         DeliberateException fatal = new DeliberateException();
         source.onError(fatal);
-        assertThat(subscriber.error(), sameInstance(fatal));
+        assertThat(subscriber.takeError(), sameInstance(fatal));
     }
 
     @Test
@@ -134,7 +136,7 @@ public class RetryTest {
         source.onSubscribe(subscription);
         subscriber.request(2);
         source.onNext(1, 2);
-        assertThat(subscriber.items(), contains(1, 2));
+        assertThat(subscriber.takeItems(), contains(1, 2));
         subscriber.cancel();
         source.onError(DELIBERATE_EXCEPTION);
         assertTrue(subscription.isCancelled());
@@ -150,7 +152,7 @@ public class RetryTest {
         })).subscribe(subscriber);
         subscriber.request(1);
         source.onError(DELIBERATE_EXCEPTION);
-        assertThat(subscriber.error(), sameInstance(ex));
+        assertThat(subscriber.takeError(), sameInstance(ex));
         assertEquals(1, ex.getSuppressed().length);
         assertSame(DELIBERATE_EXCEPTION, ex.getSuppressed()[0]);
     }

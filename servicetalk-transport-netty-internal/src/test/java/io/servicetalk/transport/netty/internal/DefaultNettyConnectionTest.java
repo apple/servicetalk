@@ -51,6 +51,7 @@ import static io.servicetalk.concurrent.api.Publisher.just;
 import static io.servicetalk.concurrent.api.Publisher.never;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
 import static io.servicetalk.transport.netty.internal.CloseHandler.UNSUPPORTED_PROTOCOL_CLOSE_HANDLER;
 import static io.servicetalk.transport.netty.internal.CloseHandler.forPipelinedRequestResponse;
 import static io.servicetalk.transport.netty.internal.FlushStrategies.batchFlush;
@@ -66,8 +67,6 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -143,13 +142,13 @@ public class DefaultNettyConnectionTest {
     public void testAsPipelinedConnection() {
         final NettyPipelinedConnection<Buffer, Buffer> c = new DefaultNettyPipelinedConnection<>(conn, 2);
         toSource(c.request(newBuffer("Hello"))).subscribe(subscriber);
-        assertThat(subscriber.items(), hasSize(0));
-        assertFalse(subscriber.isTerminated());
+        assertThat(subscriber.takeItems(), hasSize(0));
+        assertThat(subscriber.takeTerminal(), nullValue());
         subscriber.request(1);
         Buffer expected = newBuffer("Hi");
         channel.writeInbound(expected.duplicate());
-        assertThat(subscriber.items(), contains(expected));
-        assertTrue(subscriber.isCompleted());
+        assertThat(subscriber.takeItems(), contains(expected));
+        assertThat(subscriber.takeTerminal(), is(complete()));
     }
 
     @Test
@@ -343,11 +342,11 @@ public class DefaultNettyConnectionTest {
         toSource(conn.read()).subscribe(subscriber);
         Buffer expected = allocator.fromAscii("data");
         channel.writeInbound(expected.duplicate());
-        assertThat(subscriber.items(), hasSize(0));
-        assertFalse(subscriber.isTerminated());
+        assertThat(subscriber.takeItems(), hasSize(0));
+        assertThat(subscriber.takeTerminal(), nullValue());
         subscriber.request(1);
-        assertThat(subscriber.items(), contains(expected));
-        assertTrue(subscriber.isCompleted());
+        assertThat(subscriber.takeItems(), contains(expected));
+        assertThat(subscriber.takeTerminal(), is(complete()));
     }
 
     @Test
@@ -451,7 +450,7 @@ public class DefaultNettyConnectionTest {
 
         // TODO(scott): EmbeddedChannel doesn't support half closure so we need an alternative approach to fully
         // test half closure.
-        assertThat(subscriber.error(), is(DELIBERATE_EXCEPTION));
+        assertThat(subscriber.takeError(), is(DELIBERATE_EXCEPTION));
     }
 
     @Test
@@ -487,7 +486,7 @@ public class DefaultNettyConnectionTest {
     public void testExceptionWithNoSubscriberIsQueued() throws Exception {
         channel.pipeline().fireExceptionCaught(DELIBERATE_EXCEPTION);
         toSource(conn.read()).subscribe(subscriber);
-        assertThat(subscriber.error(), is(DELIBERATE_EXCEPTION));
+        assertThat(subscriber.takeError(), is(DELIBERATE_EXCEPTION));
         conn.onClose().toFuture().get();
     }
 
@@ -495,7 +494,7 @@ public class DefaultNettyConnectionTest {
     public void testChannelInactiveWithNoSubscriberIsQueued() throws Exception {
         channel.close().get();
         toSource(conn.read()).subscribe(subscriber);
-        assertThat(subscriber.error(), instanceOf(ClosedChannelException.class));
+        assertThat(subscriber.takeError(), instanceOf(ClosedChannelException.class));
         conn.onClose().toFuture().get();
     }
 }

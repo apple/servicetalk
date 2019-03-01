@@ -29,6 +29,7 @@ import org.junit.rules.ExpectedException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.is;
@@ -59,7 +60,7 @@ public abstract class AbstractDoFinallyTest {
         publisher.onSubscribe(subscription);
         subscriber.request(1);
         publisher.onNext("Hello");
-        assertThat(subscriber.items(), contains("Hello"));
+        assertThat(subscriber.takeItems(), contains("Hello"));
         subscriber.cancel();
         verify(doFinally).run();
         assertTrue(subscription.isCancelled());
@@ -103,8 +104,8 @@ public abstract class AbstractDoFinallyTest {
         publisher.onNext("Hello");
         assertFalse(subscription.isCancelled());
         publisher.onComplete();
-        assertThat(subscriber.items(), contains("Hello"));
-        assertTrue(subscriber.isCompleted());
+        assertThat(subscriber.takeItems(), contains("Hello"));
+        assertThat(subscriber.takeTerminal(), is(complete()));
         verify(doFinally).run();
         assertFalse(subscription.isCancelled());
     }
@@ -116,7 +117,7 @@ public abstract class AbstractDoFinallyTest {
         subscriber.request(1);
         assertFalse(subscription.isCancelled());
         publisher.onComplete();
-        assertTrue(subscriber.isCompleted());
+        assertThat(subscriber.takeTerminal(), is(complete()));
         verify(doFinally).run();
         assertFalse(subscription.isCancelled());
     }
@@ -128,8 +129,8 @@ public abstract class AbstractDoFinallyTest {
         subscriber.request(1);
         publisher.onNext("Hello");
         publisher.onError(DELIBERATE_EXCEPTION);
-        assertThat(subscriber.items(), contains("Hello"));
-        assertThat(subscriber.error(), sameInstance(DELIBERATE_EXCEPTION));
+        assertThat(subscriber.takeItems(), contains("Hello"));
+        assertThat(subscriber.takeError(), sameInstance(DELIBERATE_EXCEPTION));
         verify(doFinally).run();
         assertFalse(subscription.isCancelled());
     }
@@ -140,7 +141,7 @@ public abstract class AbstractDoFinallyTest {
         publisher.onSubscribe(subscription);
         subscriber.request(1);
         publisher.onError(DELIBERATE_EXCEPTION);
-        assertThat(subscriber.error(), sameInstance(DELIBERATE_EXCEPTION));
+        assertThat(subscriber.takeError(), sameInstance(DELIBERATE_EXCEPTION));
         verify(doFinally).run();
         assertFalse(subscription.isCancelled());
     }

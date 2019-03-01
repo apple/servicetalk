@@ -35,6 +35,7 @@ import java.util.stream.IntStream;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
 import static java.lang.Integer.MAX_VALUE;
 import static java.lang.Math.ceil;
 import static java.lang.Math.min;
@@ -44,8 +45,8 @@ import static java.util.stream.IntStream.of;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.doAnswer;
@@ -66,13 +67,13 @@ public class FromInputStreamPublisherTest {
     private final byte[] smallBuff = init0toN(10);
     private final byte[] bigBuff = init0toN(37);
 
-    private InputStream is;
+    private InputStream inputStream;
     private Publisher<byte[]> pub;
 
     @Before
     public void setup() {
-        is = mock(InputStream.class);
-        pub = new FromInputStreamPublisher(is);
+        inputStream = mock(InputStream.class);
+        pub = new FromInputStreamPublisher(inputStream);
     }
 
     @Test
@@ -82,22 +83,22 @@ public class FromInputStreamPublisherTest {
         toSource(pub).subscribe(sub1);
 
         toSource(pub).subscribe(sub2);
-        assertThat(sub2.error(), instanceOf(DuplicateSubscribeException.class));
+        assertThat(sub2.takeError(), instanceOf(DuplicateSubscribeException.class));
 
         sub1.request(1);
-        assertTrue(sub1.isCompleted());
+        assertThat(sub1.takeTerminal(), is(complete()));
     }
 
     @Test
     public void noDuplicateSubscriptionAfterError() throws Exception {
-        when(is.available()).thenThrow(IOException.class);
+        when(inputStream.available()).thenThrow(IOException.class);
 
         toSource(pub).subscribe(sub1);
         sub1.request(1);
-        assertThat(sub1.error(), instanceOf(IOException.class));
+        assertThat(sub1.takeError(), instanceOf(IOException.class));
 
         toSource(pub).subscribe(sub2);
-        assertThat(sub2.error(), instanceOf(DuplicateSubscribeException.class));
+        assertThat(sub2.takeError(), instanceOf(DuplicateSubscribeException.class));
     }
 
     @Test
@@ -106,26 +107,26 @@ public class FromInputStreamPublisherTest {
 
         toSource(pub).subscribe(sub1);
         sub1.request(1);
-        assertTrue(sub1.isCompleted());
+        assertThat(sub1.takeTerminal(), is(complete()));
 
         toSource(pub).subscribe(sub2);
-        assertThat(sub2.error(), instanceOf(DuplicateSubscribeException.class));
+        assertThat(sub2.takeError(), instanceOf(DuplicateSubscribeException.class));
     }
 
     @Test
     public void closeStreamOnCancelByDefault() throws Exception {
         toSource(pub).subscribe(sub1);
         sub1.cancel();
-        verify(is).close();
+        verify(inputStream).close();
     }
 
     @Test
     public void streamClosedAndErrorOnInvalidReqN() throws Exception {
         toSource(pub).subscribe(sub1);
         sub1.request(-1);
-        assertThat(sub1.error(), instanceOf(IllegalArgumentException.class));
+        assertThat(sub1.takeError(), instanceOf(IllegalArgumentException.class));
 
-        verify(is).close();
+        verify(inputStream).close();
     }
 
     @Test
@@ -136,8 +137,8 @@ public class FromInputStreamPublisherTest {
         sub1.request(-1);
         sub1.request(10);
 
-        assertThat(sub1.error(), instanceOf(IllegalArgumentException.class));
-        verify(is).close();
+        assertThat(sub1.takeError(), instanceOf(IllegalArgumentException.class));
+        verify(inputStream).close();
     }
 
     @Test
@@ -148,28 +149,28 @@ public class FromInputStreamPublisherTest {
         sub1.request(-1);
         sub1.request(-1);
 
-        assertThat(sub1.error(), instanceOf(IllegalArgumentException.class));
-        verify(is).close();
+        assertThat(sub1.takeError(), instanceOf(IllegalArgumentException.class));
+        verify(inputStream).close();
     }
 
     @Test
     public void streamClosedAndErrorOnAvailableIOError() throws Exception {
-        when(is.available()).thenThrow(IOException.class);
+        when(inputStream.available()).thenThrow(IOException.class);
         toSource(pub).subscribe(sub1);
         sub1.request(1);
-        assertThat(sub1.error(), instanceOf(IOException.class));
-        verify(is).close();
+        assertThat(sub1.takeError(), instanceOf(IOException.class));
+        verify(inputStream).close();
     }
 
     @Test
     public void streamClosedAndErrorOnReadIOError() throws Exception {
-        when(is.available()).thenReturn(10);
-        when(is.read(any(), anyInt(), anyInt())).thenThrow(IOException.class);
+        when(inputStream.available()).thenReturn(10);
+        when(inputStream.read(any(), anyInt(), anyInt())).thenThrow(IOException.class);
 
         toSource(pub).subscribe(sub1);
         sub1.request(1);
-        assertThat(sub1.error(), instanceOf(IOException.class));
-        verify(is).close();
+        assertThat(sub1.takeError(), instanceOf(IOException.class));
+        verify(inputStream).close();
     }
 
     @Test
@@ -188,7 +189,7 @@ public class FromInputStreamPublisherTest {
 
         toSource(pub).subscribe(sub);
 
-        verify(is).close();
+        verify(inputStream).close();
         verify(sub, never()).onComplete();
         verify(sub).onError(DELIBERATE_EXCEPTION);
     }
@@ -215,7 +216,7 @@ public class FromInputStreamPublisherTest {
 
         verify(sub, never()).onComplete();
         verify(sub).onError(DELIBERATE_EXCEPTION);
-        verify(is).close();
+        verify(inputStream).close();
     }
 
     @Test
@@ -237,7 +238,7 @@ public class FromInputStreamPublisherTest {
 
         verify(sub, never()).onComplete();
         verify(sub).onError(DELIBERATE_EXCEPTION);
-        verify(is).close();
+        verify(inputStream).close();
     }
 
     @Test
@@ -247,8 +248,8 @@ public class FromInputStreamPublisherTest {
         AtomicBoolean complete = new AtomicBoolean();
         AtomicReference<Throwable> error = new AtomicReference<>();
 
-        when(is.available()).thenReturn(1);
-        when(is.read(any(), anyInt(), anyInt())).then(inv -> {
+        when(inputStream.available()).thenReturn(1);
+        when(inputStream.read(any(), anyInt(), anyInt())).then(inv -> {
             if (count.incrementAndGet() > 1_000) {
                 return -1;
             }
@@ -291,9 +292,9 @@ public class FromInputStreamPublisherTest {
         initChunkedStream(smallBuff, of(10, 0), of(10, 0));
         toSource(pub).subscribe(sub1);
         sub1.request(1); // smallBuff
-        assertThat(sub1.items(), contains(smallBuff));
+        assertThat(sub1.takeItems(), contains(smallBuff));
         sub1.request(1); // read EOF
-        assertTrue(sub1.isCompleted());
+        assertThat(sub1.takeTerminal(), is(complete()));
     }
 
     @Test
@@ -306,12 +307,12 @@ public class FromInputStreamPublisherTest {
 
         toSource(pub).subscribe(sub1);
         sub1.request(1);
-        assertThat(sub1.items(), contains(first));
+        assertThat(sub1.takeItems(), contains(first));
         sub1.request(1);
-        assertThat(sub1.items(), contains(first, second));
+        assertThat(sub1.takeItems(), contains(second));
         sub1.request(1);
         // read EOF
-        assertTrue(sub1.isCompleted());
+        assertThat(sub1.takeTerminal(), is(complete()));
     }
 
     @Test
@@ -400,8 +401,8 @@ public class FromInputStreamPublisherTest {
     }
 
     private void initEmptyStream() throws IOException {
-        when(is.available()).thenReturn(0);
-        when(is.read(any(), anyInt(), anyInt())).thenReturn(-1);
+        when(inputStream.available()).thenReturn(0);
+        when(inputStream.read(any(), anyInt(), anyInt())).thenReturn(-1);
     }
 
     /**
@@ -415,8 +416,8 @@ public class FromInputStreamPublisherTest {
         OfInt availSizes = avails.iterator();
         OfInt chunkSizes = chunks.iterator();
         try {
-            when(is.available()).then(inv -> availSizes.nextInt());
-            when(is.read(any(), anyInt(), anyInt())).then(inv -> {
+            when(inputStream.available()).then(inv -> availSizes.nextInt());
+            when(inputStream.read(any(), anyInt(), anyInt())).then(inv -> {
                 byte[] b = inv.getArgument(0);
                 int pos = inv.getArgument(1);
                 int len = inv.getArgument(2);

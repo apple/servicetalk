@@ -28,10 +28,11 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
+import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
 import static java.lang.Thread.currentThread;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
-import static org.junit.Assert.assertTrue;
+import static org.hamcrest.Matchers.is;
 
 public class CompletableToSingleTest {
     @Rule
@@ -45,7 +46,7 @@ public class CompletableToSingleTest {
     public void noTerminalSucceeds() {
         toSource(Completable.completed().<String>toSingle()).subscribe(subscriber.forSingle());
         subscriber.request(1);
-        assertTrue(subscriber.isCompleted());
+        assertThat(subscriber.takeTerminal(), is(complete()));
     }
 
     @Test

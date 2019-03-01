@@ -79,8 +79,8 @@ public class FromBlockingIterableTest extends FromInMemoryPublisherAbstractTest 
         InMemorySource source = newSource(1, hashNextConsumer, nextConsumer, () -> cancelled.set(true));
         toSource(source.publisher()).subscribe(subscriber);
         subscriber.request(1);
-        assertThat(subscriber.error(), sameInstance(DELIBERATE_EXCEPTION));
-        assertThat(subscriber.items(), hasSize(0));
+        assertThat(subscriber.takeError(), sameInstance(DELIBERATE_EXCEPTION));
+        assertThat(subscriber.takeItems(), hasSize(0));
         assertTrue(cancelled.get());
     }
 
@@ -95,8 +95,8 @@ public class FromBlockingIterableTest extends FromInMemoryPublisherAbstractTest 
         InMemorySource source = newSource(1, hashNextConsumer, nextConsumer, () -> cancelled.set(true));
         toSource(source.publisher()).subscribe(subscriber);
         subscriber.request(1);
-        assertThat(subscriber.error(), sameInstance(DELIBERATE_EXCEPTION));
-        assertThat(subscriber.items(), hasSize(0));
+        assertThat(subscriber.takeError(), sameInstance(DELIBERATE_EXCEPTION));
+        assertThat(subscriber.takeItems(), hasSize(0));
         assertTrue(cancelled.get());
     }
 }

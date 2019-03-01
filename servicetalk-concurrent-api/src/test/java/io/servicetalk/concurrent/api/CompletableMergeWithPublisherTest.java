@@ -19,8 +19,11 @@ import org.junit.Test;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
@@ -43,8 +46,8 @@ public class CompletableMergeWithPublisherTest {
         subscriber.request(7);
         publisher.onNext("1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12");
         publisher.onComplete();
-        assertThat(subscriber.items(), contains("1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"));
-        assertTrue(subscriber.isCompleted());
+        assertThat(subscriber.takeItems(), contains("1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"));
+        assertThat(subscriber.takeTerminal(), is(complete()));
     }
 
     @Test
@@ -81,7 +84,7 @@ public class CompletableMergeWithPublisherTest {
         assertTrue(subscriber.subscriptionReceived());
         completable.onError(DELIBERATE_EXCEPTION);
         assertTrue(subscription.isCancelled());
-        assertThat(subscriber.error(), sameInstance(DELIBERATE_EXCEPTION));
+        assertThat(subscriber.takeError(), sameInstance(DELIBERATE_EXCEPTION));
     }
 
     @Test
@@ -94,7 +97,7 @@ public class CompletableMergeWithPublisherTest {
         publisher.onError(DELIBERATE_EXCEPTION);
         completable.verifyCancelled();
         assertFalse(subscription.isCancelled());
-        assertThat(subscriber.error(), sameInstance(DELIBERATE_EXCEPTION));
+        assertThat(subscriber.takeError(), sameInstance(DELIBERATE_EXCEPTION));
     }
 
     @Test
@@ -107,8 +110,8 @@ public class CompletableMergeWithPublisherTest {
         assertTrue(subscription.isCancelled());
         completable.verifyCancelled();
         assertTrue(subscriber.subscriptionReceived());
-        assertThat(subscriber.items(), hasSize(0));
-        assertFalse(subscriber.isTerminated());
+        assertThat(subscriber.takeItems(), hasSize(0));
+        assertThat(subscriber.takeTerminal(), nullValue());
     }
 
     @Test
@@ -124,8 +127,8 @@ public class CompletableMergeWithPublisherTest {
         assertThat(subscriber.takeItems(), contains("one", "two"));
         assertTrue(subscription.isCancelled());
         assertTrue(subscriber.subscriptionReceived());
-        assertThat(subscriber.items(), hasSize(0));
-        assertFalse(subscriber.isTerminated());
+        assertThat(subscriber.takeItems(), hasSize(0));
+        assertThat(subscriber.takeTerminal(), nullValue());
     }
 
     @Test
@@ -139,8 +142,8 @@ public class CompletableMergeWithPublisherTest {
         subscriber.cancel();
         assertThat(subscriber.takeItems(), contains("one", "two"));
         assertTrue(subscriber.subscriptionReceived());
-        assertThat(subscriber.items(), hasSize(0));
-        assertFalse(subscriber.isTerminated());
+        assertThat(subscriber.takeItems(), hasSize(0));
+        assertThat(subscriber.takeTerminal(), nullValue());
         completable.verifyCancelled();
     }
 
@@ -153,8 +156,8 @@ public class CompletableMergeWithPublisherTest {
         completable.onComplete();
         publisher.onNext("one", "two");
         publisher.onComplete();
-        assertThat(subscriber.items(), contains("one", "two"));
-        assertTrue(subscriber.isCompleted());
+        assertThat(subscriber.takeItems(), contains("one", "two"));
+        assertThat(subscriber.takeTerminal(), is(complete()));
     }
 
     @Test
@@ -168,8 +171,8 @@ public class CompletableMergeWithPublisherTest {
         completable.onError(DELIBERATE_EXCEPTION);
         assertTrue(subscription.isCancelled());
         publisher.onError(DELIBERATE_EXCEPTION);
-        assertThat(subscriber.items(), contains("one", "two"));
-        assertThat(subscriber.error(), sameInstance(DELIBERATE_EXCEPTION));
+        assertThat(subscriber.takeItems(), contains("one", "two"));
+        assertThat(subscriber.takeError(), sameInstance(DELIBERATE_EXCEPTION));
     }
 
     @Test
@@ -181,8 +184,8 @@ public class CompletableMergeWithPublisherTest {
         publisher.onNext("one", "two");
         publisher.onComplete();
         completable.onError(DELIBERATE_EXCEPTION);
-        assertThat(subscriber.items(), contains("one", "two"));
-        assertThat(subscriber.error(), sameInstance(DELIBERATE_EXCEPTION));
+        assertThat(subscriber.takeItems(), contains("one", "two"));
+        assertThat(subscriber.takeError(), sameInstance(DELIBERATE_EXCEPTION));
     }
 
     @Test
@@ -196,7 +199,7 @@ public class CompletableMergeWithPublisherTest {
         completable.onComplete();
         assertFalse(subscription.isCancelled());
         publisher.onError(DELIBERATE_EXCEPTION);
-        assertThat(subscriber.items(), contains("one", "two"));
-        assertThat(subscriber.error(), sameInstance(DELIBERATE_EXCEPTION));
+        assertThat(subscriber.takeItems(), contains("one", "two"));
+        assertThat(subscriber.takeError(), sameInstance(DELIBERATE_EXCEPTION));
     }
 }

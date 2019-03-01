@@ -32,10 +32,12 @@ import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Publisher.just;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
@@ -73,8 +75,8 @@ public class SpliceFlatStreamToMetaSingleTest {
         payloadSubscriber.request(2);
         upstream.onNext(one, last);
         upstream.onComplete();
-        assertThat(payloadSubscriber.items(), contains(one, last));
-        assertTrue(payloadSubscriber.isCompleted());
+        assertThat(payloadSubscriber.takeItems(), contains(one, last));
+        assertThat(payloadSubscriber.takeTerminal(), is(complete()));
     }
 
     @Test
@@ -112,7 +114,7 @@ public class SpliceFlatStreamToMetaSingleTest {
         Data data = dataSubscriber.verifySuccessAndReturn(Data.class);
         assertThat(data.meta(), equalTo(data.meta()));
         toSource(data.getPayload()).subscribe(payloadSubscriber);
-        assertThat(payloadSubscriber.error(), instanceOf(CancellationException.class));
+        assertThat(payloadSubscriber.takeError(), instanceOf(CancellationException.class));
     }
 
     @Test
@@ -129,8 +131,8 @@ public class SpliceFlatStreamToMetaSingleTest {
         payloadSubscriber.request(3);
         upstream.onNext(one, two, last);
         upstream.onComplete();
-        assertThat(payloadSubscriber.items(), contains(one, two, last));
-        assertTrue(payloadSubscriber.isCompleted());
+        assertThat(payloadSubscriber.takeItems(), contains(one, two, last));
+        assertThat(payloadSubscriber.takeTerminal(), is(complete()));
     }
 
     @Test
@@ -161,8 +163,8 @@ public class SpliceFlatStreamToMetaSingleTest {
         upstream.onNext(one);
         assertFalse(subscription.isCancelled());
         upstream.onError(DELIBERATE_EXCEPTION);
-        assertThat(payloadSubscriber.items(), contains(one));
-        assertThat(payloadSubscriber.error(), sameInstance(DELIBERATE_EXCEPTION));
+        assertThat(payloadSubscriber.takeItems(), contains(one));
+        assertThat(payloadSubscriber.takeError(), sameInstance(DELIBERATE_EXCEPTION));
     }
 
     @Test
@@ -178,8 +180,8 @@ public class SpliceFlatStreamToMetaSingleTest {
         payloadSubscriber.request(3);
         upstream.onNext(one, two, last);
         upstream.onComplete();
-        assertThat(payloadSubscriber.items(), contains(one, two, last));
-        assertTrue(payloadSubscriber.isCompleted());
+        assertThat(payloadSubscriber.takeItems(), contains(one, two, last));
+        assertThat(payloadSubscriber.takeTerminal(), is(complete()));
     }
 
     @Test
@@ -193,7 +195,7 @@ public class SpliceFlatStreamToMetaSingleTest {
         assertThat(data.meta(), equalTo(data.meta()));
         upstream.onComplete();
         toSource(data.getPayload()).subscribe(payloadSubscriber);
-        assertTrue(payloadSubscriber.isCompleted());
+        assertThat(payloadSubscriber.takeTerminal(), is(complete()));
     }
 
     @Test
@@ -209,7 +211,7 @@ public class SpliceFlatStreamToMetaSingleTest {
         assertFalse(subscription.isCancelled());
         upstream.onError(DELIBERATE_EXCEPTION);
         toSource(data.getPayload()).subscribe(payloadSubscriber);
-        assertThat(payloadSubscriber.error(), sameInstance(DELIBERATE_EXCEPTION));
+        assertThat(payloadSubscriber.takeError(), sameInstance(DELIBERATE_EXCEPTION));
     }
 
     @Test
@@ -225,10 +227,10 @@ public class SpliceFlatStreamToMetaSingleTest {
         payloadSubscriber.request(3);
         upstream.onNext(one, two, last);
         toSource(data.getPayload()).subscribe(dupePayloadSubscriber);
-        assertThat(dupePayloadSubscriber.error(), instanceOf(DuplicateSubscribeException.class));
+        assertThat(dupePayloadSubscriber.takeError(), instanceOf(DuplicateSubscribeException.class));
         upstream.onComplete();
-        assertThat(payloadSubscriber.items(), contains(one, two, last));
-        assertTrue(payloadSubscriber.isCompleted());
+        assertThat(payloadSubscriber.takeItems(), contains(one, two, last));
+        assertThat(payloadSubscriber.takeTerminal(), is(complete()));
     }
 
     @Test
@@ -244,10 +246,10 @@ public class SpliceFlatStreamToMetaSingleTest {
         payloadSubscriber.request(3);
         upstream.onNext(one, two, last);
         upstream.onComplete();
-        assertThat(payloadSubscriber.items(), contains(one, two, last));
-        assertTrue(payloadSubscriber.isCompleted());
+        assertThat(payloadSubscriber.takeItems(), contains(one, two, last));
+        assertThat(payloadSubscriber.takeTerminal(), is(complete()));
         toSource(data.getPayload()).subscribe(dupePayloadSubscriber);
-        assertThat(dupePayloadSubscriber.error(), instanceOf(DuplicateSubscribeException.class));
+        assertThat(dupePayloadSubscriber.takeError(), instanceOf(DuplicateSubscribeException.class));
     }
 
     @Test

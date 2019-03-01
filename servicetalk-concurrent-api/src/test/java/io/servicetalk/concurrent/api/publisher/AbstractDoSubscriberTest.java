@@ -26,7 +26,9 @@ import java.util.function.Supplier;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -41,20 +43,20 @@ public abstract class AbstractDoSubscriberTest {
     public void testOnWithOnComplete() {
         toSource(doSubscriber(Publisher.just("Hello"), () -> subscriber)).subscribe(finalSubscriber);
         finalSubscriber.request(1);
-        assertThat(finalSubscriber.items(), contains("Hello"));
-        assertTrue(finalSubscriber.isCompleted());
+        assertThat(finalSubscriber.takeItems(), contains("Hello"));
+        assertThat(finalSubscriber.takeTerminal(), is(complete()));
         assertTrue(subscriber.subscriptionReceived());
-        assertThat(subscriber.items(), contains("Hello"));
-        assertTrue(subscriber.isCompleted());
+        assertThat(subscriber.takeItems(), contains("Hello"));
+        assertThat(subscriber.takeTerminal(), is(complete()));
     }
 
     @Test
     public void testOnWithOnError() {
         toSource(doSubscriber(Publisher.error(DeliberateException.DELIBERATE_EXCEPTION), () -> subscriber))
                 .subscribe(finalSubscriber);
-        assertThat(finalSubscriber.error(), sameInstance(DELIBERATE_EXCEPTION));
+        assertThat(finalSubscriber.takeError(), sameInstance(DELIBERATE_EXCEPTION));
         assertTrue(subscriber.subscriptionReceived());
-        assertThat(subscriber.error(), sameInstance(DELIBERATE_EXCEPTION));
+        assertThat(subscriber.takeError(), sameInstance(DELIBERATE_EXCEPTION));
     }
 
     protected abstract <T> Publisher<T> doSubscriber(Publisher<T> publisher, Supplier<Subscriber<? super T>> subscriberSupplier);

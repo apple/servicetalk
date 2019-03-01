@@ -58,6 +58,26 @@ public final class TestPublisherSubscriber<T> implements Subscriber<T>, Subscrip
     }
 
     /**
+     * Returns {@code true} if {@link #onSubscribe(Subscription)} has been called.
+     *
+     * @return {@code true} if {@link #onSubscribe(Subscription)} has been called, {@code false} otherwise.
+     */
+    public boolean subscriptionReceived() {
+        return collector.subscriptionReceived();
+    }
+
+    /**
+     * Returns the {@link Subscription} received by {@link #onSubscribe(Subscription)}, or {@code null} if no
+     * {@link Subscription} has been received.
+     *
+     * @return the {@link Subscription} received by {@link #onSubscribe(Subscription)}, or {@code null} if no
+     * {@link Subscription} has been received.
+     */
+    public Subscription subscription() {
+        return collector.subscription();
+    }
+
+    /**
      * Get the list of items received through {@link #onNext(Object)}, retaining the internal list.
      *
      * @return the list of items.
@@ -86,6 +106,17 @@ public final class TestPublisherSubscriber<T> implements Subscriber<T>, Subscrip
     }
 
     /**
+     * Get the last {@link TerminalNotification} {@link #onError(Throwable)} or {@link #onComplete()} received, and
+     * clears the internal state.
+     *
+     * @return the {@link TerminalNotification}, or {@code null} if none have been received.
+     */
+    @Nullable
+    public TerminalNotification takeTerminal() {
+        return collector.takeTerminal();
+    }
+
+    /**
      * Get the last {@link Throwable} received by {@link #onError(Throwable)}.
      *
      * @return The {@link Throwable}, or {@code null} if none have been received.
@@ -96,23 +127,13 @@ public final class TestPublisherSubscriber<T> implements Subscriber<T>, Subscrip
     }
 
     /**
-     * Returns {@code true} if {@link #onSubscribe(Subscription)} has been called.
+     * Get the last {@link Throwable} received by {@link #onError(Throwable)}, and clears the internal state.
      *
-     * @return {@code true} if {@link #onSubscribe(Subscription)} has been called, {@code false} otherwise.
+     * @return The {@link Throwable}, or {@code null} if none have been received.
      */
-    public boolean subscriptionReceived() {
-        return collector.subscriptionReceived();
-    }
-
-    /**
-     * Returns the {@link Subscription} received by {@link #onSubscribe(Subscription)}, or {@code null} if no
-     * {@link Subscription} has been received.
-     *
-     * @return the {@link Subscription} received by {@link #onSubscribe(Subscription)}, or {@code null} if no
-     * {@link Subscription} has been received.
-     */
-    public Subscription subscription() {
-        return collector.subscription();
+    @Nullable
+    public Throwable takeError() {
+        return collector.takeError();
     }
 
     /**
@@ -194,15 +215,6 @@ public final class TestPublisherSubscriber<T> implements Subscriber<T>, Subscrip
     // TODO(derek) remove once the single version is ready
     public SingleSource.Subscriber<T> forSingle() {
         return new SingleSubscriber<>(this, this);
-    }
-
-    /**
-     * Clear received items and any terminal signals.
-     * <p>
-     * Does not affect subscribed/subscription state.
-     */
-    public void clear() {
-        collector.clear();
     }
 
     /**

@@ -41,7 +41,7 @@ public class DoBeforeNextTest extends AbstractDoNextTest {
             })).subscribe(subscriber);
             subscriber.request(1);
         } finally {
-            assertThat(subscriber.error(), sameInstance(DELIBERATE_EXCEPTION));
+            assertThat(subscriber.takeError(), sameInstance(DELIBERATE_EXCEPTION));
         }
     }
 }

@@ -30,11 +30,13 @@ import java.util.concurrent.ConcurrentHashMap;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
+import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
 import static java.lang.Long.MAX_VALUE;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.hasProperty;
 import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
@@ -58,7 +60,7 @@ public class TestPublisherTest {
         assertTrue(subscriber1.subscriptionReceived());
 
         source.onComplete();
-        assertTrue(subscriber1.isCompleted());
+        assertThat(subscriber1.takeTerminal(), is(complete()));
 
         source.subscribe(subscriber2);
         expected.expect(RuntimeException.class);
@@ -75,11 +77,11 @@ public class TestPublisherTest {
 
         source.subscribe(subscriber1);
         source.onComplete();
-        assertTrue(subscriber1.isCompleted());
+        assertThat(subscriber1.takeTerminal(), is(complete()));
 
         source.subscribe(subscriber2);
         source.onComplete();
-        assertTrue(subscriber2.isCompleted());
+        assertThat(subscriber2.takeTerminal(), is(complete()));
     }
 
     @Test
@@ -93,8 +95,8 @@ public class TestPublisherTest {
         source.subscribe(subscriber2);
 
         source.onComplete();
-        assertTrue(subscriber1.isCompleted());
-        assertTrue(subscriber2.isCompleted());
+        assertThat(subscriber1.takeTerminal(), is(complete()));
+        assertThat(subscriber2.takeTerminal(), is(complete()));
     }
 
     @Test
@@ -222,7 +224,7 @@ public class TestPublisherTest {
         subscriber1.request(2);
         source.onNext("a", "b");
 
-        assertThat(subscriber1.items(), contains("a", "b"));
+        assertThat(subscriber1.takeItems(), contains("a", "b"));
 
         expected.expect(AssertionError.class);
         expected.expectMessage(startsWith("Demand check failure: No outstanding demand. Ignoring item: "));
@@ -239,7 +241,7 @@ public class TestPublisherTest {
         subscriber1.request(MAX_VALUE);
         source.onNext("a");
 
-        assertThat(subscriber1.items(), contains("a"));
+        assertThat(subscriber1.takeItems(), contains("a"));
     }
 
     private static class FanOut {

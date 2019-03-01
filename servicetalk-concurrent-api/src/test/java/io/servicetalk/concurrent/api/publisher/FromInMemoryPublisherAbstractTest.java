@@ -31,11 +31,14 @@ import javax.annotation.Nullable;
 import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
 import static java.util.Arrays.copyOf;
 import static java.util.Objects.requireNonNull;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
@@ -53,8 +56,8 @@ public abstract class FromInMemoryPublisherAbstractTest {
         InMemorySource source = newSource(5);
         toSource(source.publisher()).subscribe(subscriber);
         subscriber.request(source.values().length);
-        assertThat(subscriber.items(), contains(source.values()));
-        assertTrue(subscriber.isCompleted());
+        assertThat(subscriber.takeItems(), contains(source.values()));
+        assertThat(subscriber.takeTerminal(), is(complete()));
     }
 
     @Test
@@ -64,7 +67,7 @@ public abstract class FromInMemoryPublisherAbstractTest {
         subscriber.request(2);
         subscriber.request(2);
         subscriber.request(6);
-        assertThat(subscriber.items(), contains(source.values()));
+        assertThat(subscriber.takeItems(), contains(source.values()));
     }
 
     @Test
@@ -73,8 +76,8 @@ public abstract class FromInMemoryPublisherAbstractTest {
         InMemorySource source = newPublisher(immediate(), values);
         toSource(source.publisher()).subscribe(subscriber);
         subscriber.request(2);
-        assertThat(subscriber.items(), contains("Hello", null));
-        assertTrue(subscriber.isCompleted());
+        assertThat(subscriber.takeItems(), contains("Hello", null));
+        assertThat(subscriber.takeTerminal(), is(complete()));
     }
 
     @Test
@@ -83,13 +86,12 @@ public abstract class FromInMemoryPublisherAbstractTest {
         InMemorySource source = newSource(5);
         toSource(source.publisher()).subscribe(subscriber);
         subscriber.request(source.values().length);
-        assertThat(subscriber.items(), contains(source.values()));
-        assertTrue(subscriber.isCompleted());
-        subscriber.clear();
+        assertThat(subscriber.takeItems(), contains(source.values()));
+        assertThat(subscriber.takeTerminal(), is(complete()));
         subscriber.request(1);
         assertTrue(subscriber.subscriptionReceived());
-        assertThat(subscriber.items(), hasSize(0));
-        assertFalse(subscriber.isTerminated());
+        assertThat(subscriber.takeItems(), hasSize(0));
+        assertThat(subscriber.takeTerminal(), nullValue());
     }
 
     @Test
@@ -102,13 +104,12 @@ public abstract class FromInMemoryPublisherAbstractTest {
             }
         })).subscribe(subscriber);
         subscriber.request(2);
-        assertThat(subscriber.items(), contains("Hello", null));
-        assertThat(subscriber.error(), sameInstance(DELIBERATE_EXCEPTION));
-        subscriber.clear();
+        assertThat(subscriber.takeItems(), contains("Hello", null));
+        assertThat(subscriber.takeError(), sameInstance(DELIBERATE_EXCEPTION));
         subscriber.request(1);
         assertTrue(subscriber.subscriptionReceived());
-        assertThat(subscriber.items(), hasSize(0));
-        assertFalse(subscriber.isTerminated());
+        assertThat(subscriber.takeItems(), hasSize(0));
+        assertThat(subscriber.takeTerminal(), nullValue());
     }
 
     @Test
@@ -117,7 +118,7 @@ public abstract class FromInMemoryPublisherAbstractTest {
         Publisher<String> p = source.publisher().doBeforeNext(s -> subscriber.request(5));
         toSource(p).subscribe(subscriber);
         subscriber.request(1);
-        assertThat(subscriber.items(), contains(source.values()));
+        assertThat(subscriber.takeItems(), contains(source.values()));
     }
 
     @Test
@@ -128,7 +129,7 @@ public abstract class FromInMemoryPublisherAbstractTest {
         });
         toSource(p).subscribe(subscriber);
         subscriber.request(6);
-        assertThat(subscriber.error(), sameInstance(DELIBERATE_EXCEPTION));
+        assertThat(subscriber.takeError(), sameInstance(DELIBERATE_EXCEPTION));
     }
 
     @Test
@@ -141,15 +142,14 @@ public abstract class FromInMemoryPublisherAbstractTest {
     public void testCancel() {
         InMemorySource source = newSource(6);
         requestItemsAndVerifyEmissions(source);
-        subscriber.clear();
         subscriber.cancel();
         assertTrue(subscriber.subscriptionReceived());
-        assertThat(subscriber.items(), hasSize(0));
-        assertFalse(subscriber.isTerminated());
+        assertThat(subscriber.takeItems(), hasSize(0));
+        assertThat(subscriber.takeTerminal(), nullValue());
         subscriber.request(1);
         assertTrue(subscriber.subscriptionReceived());
-        assertThat(subscriber.items(), hasSize(0));
-        assertFalse(subscriber.isTerminated());
+        assertThat(subscriber.takeItems(), hasSize(0));
+        assertThat(subscriber.takeTerminal(), nullValue());
     }
 
     @Test
@@ -162,8 +162,8 @@ public abstract class FromInMemoryPublisherAbstractTest {
         assertThat(subscriber.takeItems(), contains("Hello0"));
         subscriber.request(1);
         assertTrue(subscriber.subscriptionReceived());
-        assertThat(subscriber.items(), hasSize(0));
-        assertFalse(subscriber.isTerminated());
+        assertThat(subscriber.takeItems(), hasSize(0));
+        assertThat(subscriber.takeTerminal(), nullValue());
     }
 
     @Test
@@ -219,12 +219,11 @@ public abstract class FromInMemoryPublisherAbstractTest {
         InMemorySource source = newSource(1);
         toSource(source.publisher()).subscribe(subscriber);
         subscriber.request(-1);
-        assertThat(subscriber.error(), instanceOf(IllegalArgumentException.class));
-        subscriber.clear();
+        assertThat(subscriber.takeError(), instanceOf(IllegalArgumentException.class));
         subscriber.request(1);
         assertTrue(subscriber.subscriptionReceived());
-        assertThat(subscriber.items(), hasSize(0));
-        assertFalse(subscriber.isTerminated());
+        assertThat(subscriber.takeItems(), hasSize(0));
+        assertThat(subscriber.takeTerminal(), nullValue());
     }
 
     @Test
@@ -232,9 +231,9 @@ public abstract class FromInMemoryPublisherAbstractTest {
         InMemorySource source = newSource(1);
         toSource(source.publisher()).subscribe(subscriber);
         subscriber.request(1);
-        assertTrue(subscriber.isCompleted());
+        assertThat(subscriber.takeTerminal(), is(complete()));
         subscriber.request(-1);
-        assertFalse(subscriber.isErrored());
+        assertThat(subscriber.takeError(), nullValue());
     }
 
     @Test
@@ -298,8 +297,8 @@ public abstract class FromInMemoryPublisherAbstractTest {
     private void requestItemsAndVerifyEmissions(InMemorySource source) {
         toSource(source.publisher()).subscribe(subscriber);
         subscriber.request(3);
-        assertThat(subscriber.items(), contains(copyOf(source.values(), 3)));
-        assertFalse(subscriber.isTerminated());
+        assertThat(subscriber.takeItems(), contains(copyOf(source.values(), 3)));
+        assertThat(subscriber.takeTerminal(), nullValue());
     }
 
     final InMemorySource newSource(int size) {

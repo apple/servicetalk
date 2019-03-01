@@ -25,10 +25,12 @@ import org.junit.Test;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.verify;
@@ -87,8 +89,8 @@ public class FlushTest extends AbstractFlushTest {
         verify(channel).eventLoop();
         verifyZeroInteractions(channel);
         assertTrue(subscriber.subscriptionReceived());
-        assertThat(subscriber.items(), hasSize(0));
-        assertFalse(subscriber.isTerminated());
+        assertThat(subscriber.takeItems(), hasSize(0));
+        assertThat(subscriber.takeTerminal(), nullValue());
 
         assertTrue(subscription.isCancelled());
         strategy.verifyWriteCancelled();
@@ -97,14 +99,14 @@ public class FlushTest extends AbstractFlushTest {
     @Test
     public void testSourceComplete() {
         source.onComplete();
-        assertTrue(subscriber.isCompleted());
+        assertThat(subscriber.takeTerminal(), is(complete()));
         strategy.verifyWriteTerminated();
     }
 
     @Test
     public void testSourceEmitError() {
         source.onError(DELIBERATE_EXCEPTION);
-        assertThat(subscriber.error(), sameInstance(DELIBERATE_EXCEPTION));
+        assertThat(subscriber.takeError(), sameInstance(DELIBERATE_EXCEPTION));
         strategy.verifyWriteTerminated();
     }
 
