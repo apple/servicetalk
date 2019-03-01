@@ -36,55 +36,55 @@ public final class HttpRequestMethods {
      * HTTP <a href="https://tools.ietf.org/html/rfc7231#section-4.3.1">GET</a> method.
      */
     public static final HttpRequestMethod GET =
-            newRequestMethod(PREFER_DIRECT_RO_ALLOCATOR.fromAscii("GET"), SAFE_IDEMPOTENT_CACHEABLE);
+            new DefaultHttpRequestMethod(PREFER_DIRECT_RO_ALLOCATOR.fromAscii("GET"), SAFE_IDEMPOTENT_CACHEABLE);
 
     /**
      * HTTP <a href="https://tools.ietf.org/html/rfc7231#section-4.3.2">HEAD</a> method.
      */
     public static final HttpRequestMethod HEAD =
-            newRequestMethod(PREFER_DIRECT_RO_ALLOCATOR.fromAscii("HEAD"), SAFE_IDEMPOTENT_CACHEABLE);
+            new DefaultHttpRequestMethod(PREFER_DIRECT_RO_ALLOCATOR.fromAscii("HEAD"), SAFE_IDEMPOTENT_CACHEABLE);
 
     /**
      * HTTP <a href="https://tools.ietf.org/html/rfc7231#section-4.3.3">POST</a> method.
      */
     public static final HttpRequestMethod POST =
-            newRequestMethod(PREFER_DIRECT_RO_ALLOCATOR.fromAscii("POST"), CACHEABLE);
+            new DefaultHttpRequestMethod(PREFER_DIRECT_RO_ALLOCATOR.fromAscii("POST"), CACHEABLE);
 
     /**
      * HTTP <a href="https://tools.ietf.org/html/rfc7231#section-4.3.4">PUT</a> method.
      */
     public static final HttpRequestMethod PUT =
-            newRequestMethod(PREFER_DIRECT_RO_ALLOCATOR.fromAscii("PUT"), IDEMPOTENT);
+            new DefaultHttpRequestMethod(PREFER_DIRECT_RO_ALLOCATOR.fromAscii("PUT"), IDEMPOTENT);
 
     /**
      * HTTP <a href="https://tools.ietf.org/html/rfc7231#section-4.3.5">DELETE</a> method.
      */
     public static final HttpRequestMethod DELETE =
-            newRequestMethod(PREFER_DIRECT_RO_ALLOCATOR.fromAscii("DELETE"), IDEMPOTENT);
+            new DefaultHttpRequestMethod(PREFER_DIRECT_RO_ALLOCATOR.fromAscii("DELETE"), IDEMPOTENT);
 
     /**
      * HTTP <a href="https://tools.ietf.org/html/rfc7231#section-4.3.6">CONNECT</a> method.
      */
     public static final HttpRequestMethod CONNECT =
-            newRequestMethod(PREFER_DIRECT_RO_ALLOCATOR.fromAscii("CONNECT"), NONE);
+            new DefaultHttpRequestMethod(PREFER_DIRECT_RO_ALLOCATOR.fromAscii("CONNECT"), NONE);
 
     /**
      * HTTP <a href="https://tools.ietf.org/html/rfc7231#section-4.3.7">OPTIONS</a> method.
      */
     public static final HttpRequestMethod OPTIONS =
-            newRequestMethod(PREFER_DIRECT_RO_ALLOCATOR.fromAscii("OPTIONS"), SAFE_IDEMPOTENT);
+            new DefaultHttpRequestMethod(PREFER_DIRECT_RO_ALLOCATOR.fromAscii("OPTIONS"), SAFE_IDEMPOTENT);
 
     /**
      * HTTP <a href="https://tools.ietf.org/html/rfc7231#section-4.3.8">TRACE</a> method.
      */
     public static final HttpRequestMethod TRACE =
-            newRequestMethod(PREFER_DIRECT_RO_ALLOCATOR.fromAscii("TRACE"), SAFE_IDEMPOTENT);
+            new DefaultHttpRequestMethod(PREFER_DIRECT_RO_ALLOCATOR.fromAscii("TRACE"), SAFE_IDEMPOTENT);
 
     /**
      * HTTP <a href="https://tools.ietf.org/html/rfc5789#section-2">PATCH</a> method.
      */
     public static final HttpRequestMethod PATCH =
-            newRequestMethod(PREFER_DIRECT_RO_ALLOCATOR.fromAscii("PATCH"), NONE);
+            new DefaultHttpRequestMethod(PREFER_DIRECT_RO_ALLOCATOR.fromAscii("PATCH"), NONE);
 
     private HttpRequestMethods() {
         // No instances
