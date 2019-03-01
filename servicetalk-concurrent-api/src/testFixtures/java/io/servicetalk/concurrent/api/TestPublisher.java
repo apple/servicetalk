@@ -174,7 +174,7 @@ public final class TestPublisher<T> extends Publisher<T> implements PublisherSou
         private Function<Subscriber<? super T>, Subscriber<? super T>> demandCheckingSubscriberFunction;
         @Nullable
         private Function<Subscriber<? super T>, Subscriber<? super T>> autoOnSubscribeSubscriberFunction =
-                new AutoOnSubscribeSubscriberFunction<>();
+                new AutoOnSubscribePublisherSubscriberFunction<>();
 
         private Function<Subscriber<? super T>, Subscriber<? super T>> subscriberCardinalityFunction =
                 new SequentialPublisherSubscriberFunction<>();
@@ -286,21 +286,21 @@ public final class TestPublisher<T> extends Publisher<T> implements PublisherSou
          * enabled.
          *
          * @return this.
-         * @see AutoOnSubscribeSubscriberFunction
+         * @see AutoOnSubscribePublisherSubscriberFunction
          */
         public Builder<T> autoOnSubscribe() {
-            autoOnSubscribeSubscriberFunction = new AutoOnSubscribeSubscriberFunction<>();
+            autoOnSubscribeSubscriberFunction = new AutoOnSubscribePublisherSubscriberFunction<>();
             return this;
         }
 
         /**
          * Enable calling {@link Subscriber#onSubscribe(Subscription)} automatically upon subscribe, with the specified
-         * {@link AutoOnSubscribeSubscriberFunction}. The default is enabled.
+         * {@link AutoOnSubscribePublisherSubscriberFunction}. The default is enabled.
          *
-         * @param function the {@link AutoOnSubscribeSubscriberFunction} to use.
+         * @param function the {@link AutoOnSubscribePublisherSubscriberFunction} to use.
          * @return this.
          */
-        public Builder<T> autoOnSubscribe(final AutoOnSubscribeSubscriberFunction<T> function) {
+        public Builder<T> autoOnSubscribe(final AutoOnSubscribePublisherSubscriberFunction<T> function) {
             autoOnSubscribeSubscriberFunction = requireNonNull(function);
             return this;
         }

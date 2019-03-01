@@ -19,7 +19,7 @@ import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.TestPublisher;
-import io.servicetalk.concurrent.api.TestPublisherSubscriber;
+import io.servicetalk.concurrent.api.TestSingleSubscriber;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.DefaultHttpHeadersFactory;
 import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
@@ -40,13 +40,11 @@ import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Completable.never;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
-import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpProtocolVersions.HTTP_1_0;
 import static io.servicetalk.http.api.HttpProtocolVersions.getProtocolVersion;
 import static io.servicetalk.transport.netty.internal.ExecutionContextRule.immediate;
 import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -66,8 +64,8 @@ public class PipelinedHttpConnectionTest {
     @SuppressWarnings("unchecked")
     private final NettyConnection<Object, Object> connection = mock(NettyConnection.class);
 
-    private final TestPublisherSubscriber<StreamingHttpResponse> dataSubscriber1 = new TestPublisherSubscriber<>();
-    private final TestPublisherSubscriber<StreamingHttpResponse> dataSubscriber2 = new TestPublisherSubscriber<>();
+    private final TestSingleSubscriber<StreamingHttpResponse> dataSubscriber1 = new TestSingleSubscriber<>();
+    private final TestSingleSubscriber<StreamingHttpResponse> dataSubscriber2 = new TestSingleSubscriber<>();
 
     private TestPublisher<Object> readPublisher1;
     private TestPublisher<Object> readPublisher2;
@@ -106,16 +104,14 @@ public class PipelinedHttpConnectionTest {
     public void http09RequestShouldReturnOnError() {
         Single<StreamingHttpResponse> request = pipe.request(
                 reqRespFactory.get("/Foo").version(getProtocolVersion(0, 9)));
-        toSource(request).subscribe(dataSubscriber1.forSingle());
-        dataSubscriber1.request(1);
+        toSource(request).subscribe(dataSubscriber1);
         assertThat(dataSubscriber1.takeError(), instanceOf(IllegalArgumentException.class));
     }
 
     @Test
     public void http10RequestShouldReturnOnError() {
         Single<StreamingHttpResponse> request = pipe.request(reqRespFactory.get("/Foo").version(HTTP_1_0));
-        toSource(request).subscribe(dataSubscriber1.forSingle());
-        dataSubscriber1.request(1);
+        toSource(request).subscribe(dataSubscriber1);
         assertThat(dataSubscriber1.takeError(), instanceOf(IllegalArgumentException.class));
     }
 
@@ -128,19 +124,16 @@ public class PipelinedHttpConnectionTest {
         when(connection.read()).thenReturn(Publisher.from(reqRespFactory.ok(), emptyLastChunk));
         Single<StreamingHttpResponse> request = pipe.request(
                 reqRespFactory.get("/Foo"));
-        toSource(request).subscribe(dataSubscriber1.forSingle());
-        dataSubscriber1.request(1);
-        assertThat(dataSubscriber1.takeTerminal(), is(complete()));
+        toSource(request).subscribe(dataSubscriber1);
+        assertTrue(dataSubscriber1.isSuccess());
     }
 
     @Test
     public void ensureRequestsArePipelined() {
         toSource(pipe.request(reqRespFactory.get("/foo").payloadBody(writePublisher1)))
-                .subscribe(dataSubscriber1.forSingle());
-        dataSubscriber1.request(1);
+                .subscribe(dataSubscriber1);
         toSource(pipe.request(reqRespFactory.get("/bar").payloadBody(writePublisher2)))
-                .subscribe(dataSubscriber2.forSingle());
-        dataSubscriber2.request(1);
+                .subscribe(dataSubscriber2);
 
         assertFalse(readPublisher1.isSubscribed());
         assertFalse(readPublisher2.isSubscribed());
@@ -155,13 +148,11 @@ public class PipelinedHttpConnectionTest {
         writePublisher2.onComplete();
 
         readPublisher1.onComplete();
-        dataSubscriber1.request(1);
-        assertThat(dataSubscriber1.terminal(), is(complete()));
+        assertTrue(dataSubscriber1.hasResult());
 
         assertTrue(readPublisher2.isSubscribed());
         readPublisher2.onNext(mockResp);
         readPublisher2.onComplete();
-        dataSubscriber2.request(1);
-        assertThat(dataSubscriber1.takeTerminal(), is(complete()));
+        assertTrue(dataSubscriber2.hasResult());
     }
 }

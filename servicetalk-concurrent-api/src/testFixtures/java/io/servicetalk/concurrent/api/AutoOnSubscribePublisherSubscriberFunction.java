@@ -27,14 +27,14 @@ import java.util.function.Function;
  *
  * @param <T> Type of items received by the {@code Subscriber}.
  */
-public final class AutoOnSubscribeSubscriberFunction<T>
+public final class AutoOnSubscribePublisherSubscriberFunction<T>
         implements Function<Subscriber<? super T>, Subscriber<? super T>> {
 
     @Override
     public Subscriber<? super T> apply(final Subscriber<? super T> subscriber) {
         final SequentialSubscription subscription = new SequentialSubscription();
         subscriber.onSubscribe(subscription);
-        return new DelegatingSubscriber<T>(subscriber) {
+        return new DelegatingPublisherSubscriber<T>(subscriber) {
             @Override
             public void onSubscribe(final Subscription s) {
                 subscription.switchTo(s);
