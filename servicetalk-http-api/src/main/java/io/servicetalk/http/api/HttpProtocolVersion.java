@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,24 +19,33 @@ import io.servicetalk.buffer.api.Buffer;
 
 /**
  * HTTP <a href="https://tools.ietf.org/html/rfc7230.html#section-2.6">protocol versioning</a>.
+ *
+ * @see HttpProtocolVersions
  */
 public interface HttpProtocolVersion {
     /**
-     * Get the <strong>&lt;major&gt;</strong> portion of the <a href="https://tools.ietf.org/html/rfc7230.html#section-2.6">http protocol version</a>.
-     * @return the <strong>&lt;major&gt;</strong> portion of the <a href="https://tools.ietf.org/html/rfc7230.html#section-2.6">http protocol version</a>.
+     * Get the <strong>&lt;major&gt;</strong> portion of the
+     * <a href="https://tools.ietf.org/html/rfc7230.html#section-2.6">http protocol version</a>.
+     *
+     * @return the <strong>&lt;major&gt;</strong> portion of the
+     * <a href="https://tools.ietf.org/html/rfc7230.html#section-2.6">http protocol version</a>
      */
     int majorVersion();
 
     /**
-     * Get the <strong>&lt;minor&gt;</strong> portion of the <a href="https://tools.ietf.org/html/rfc7230.html#section-2.6">http protocol version</a>.
-     * @return the <strong>&lt;minor&gt;</strong> portion of the <a href="https://tools.ietf.org/html/rfc7230.html#section-2.6">http protocol version</a>.
+     * Get the <strong>&lt;minor&gt;</strong> portion of the
+     * <a href="https://tools.ietf.org/html/rfc7230.html#section-2.6">http protocol version</a>.
+     *
+     * @return the <strong>&lt;minor&gt;</strong> portion of the
+     * <a href="https://tools.ietf.org/html/rfc7230.html#section-2.6">http protocol version</a>
      */
     int minorVersion();
 
     /**
      * Write the <a href="https://tools.ietf.org/html/rfc7230.html#section-2.6">HTTP-version</a> to {@code buffer}.
+     *
      * @param buffer The {@link Buffer} to write
-     * <a href="https://tools.ietf.org/html/rfc7230.html#section-2.6">HTTP-version</a>.
+     * <a href="https://tools.ietf.org/html/rfc7230.html#section-2.6">HTTP-version</a>
      */
-    void writeHttpVersionTo(Buffer buffer);
+    void writeVersionTo(Buffer buffer);
 }
