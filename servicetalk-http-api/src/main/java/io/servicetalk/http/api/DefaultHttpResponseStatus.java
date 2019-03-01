@@ -79,7 +79,8 @@ final class DefaultHttpResponseStatus implements HttpResponseStatus {
          *   A client SHOULD ignore the reason-phrase content.
          * https://tools.ietf.org/html/rfc7230#section-3.1.2
          *
-         * - statusClass is ignored for equals/hashCode because its inherited from statusCode
+         * - statusClass is ignored for equals/hashCode because its inherited from statusCode and the relationship is
+         *   idempotent
          */
         return statusCode == that.statusCode;
     }
