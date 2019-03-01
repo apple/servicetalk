@@ -122,7 +122,6 @@ public class ConsumeRequestPayloadOnResponsePathTest {
                 .listenStreamingAndAwait((ctx, request, responseFactory) -> success(responseFactory.ok()
                         .payloadBody(from("Response\n", "Payload\n", "Body\n"), textSerializer())))) {
 
-
             try (BlockingHttpClient client = HttpClients.forSingleAddress(AddressUtils.serverHostAndPort(serverContext))
                     .buildBlocking()) {
                 client.request(client.post("/").payloadBody(EXPECTED_REQUEST_PAYLOAD, textSerializer()));
