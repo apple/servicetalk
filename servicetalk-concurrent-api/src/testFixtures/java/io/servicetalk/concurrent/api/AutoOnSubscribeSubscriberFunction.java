@@ -23,8 +23,8 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Function;
 
-public final class AutoOnSubscribeSubscriberFunction<T> implements Function<Subscriber<? super T>, Subscriber<? super T>> {
-
+public final class AutoOnSubscribeSubscriberFunction<T>
+        implements Function<Subscriber<? super T>, Subscriber<? super T>> {
     private final List<Subscription> subscriptions = new CopyOnWriteArrayList<>();
 
     @Override

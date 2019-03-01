@@ -23,10 +23,11 @@ import java.util.concurrent.atomic.AtomicLong;
 
 public final class DemandCheckingSubscriber<T> implements Subscriber<T> {
 
+    private static final int NO_ON_SUBSCRIBE = -1;
+    private static final int CANCELLED = -2;
     private final Subscriber<? super T> delegate;
 
-    private final AtomicLong pending = new AtomicLong();
-    private boolean subscribed;
+    private final AtomicLong pending = new AtomicLong(NO_ON_SUBSCRIBE);
 
     public DemandCheckingSubscriber(final Subscriber<? super T> delegate) {
         this.delegate = delegate;
@@ -34,18 +35,17 @@ public final class DemandCheckingSubscriber<T> implements Subscriber<T> {
 
     @Override
     public void onSubscribe(final Subscription s) {
-        subscribed = true;
         pending.set(0);
         delegate.onSubscribe(new Subscription() {
             @Override
             public void request(final long n) {
-                pending.accumulateAndGet(n, FlowControlUtil::addWithOverflowProtection);
+                pending.accumulateAndGet(n, FlowControlUtil::addWithOverflowProtectionIfNotNegative);
                 s.request(n);
             }
 
             @Override
             public void cancel() {
-                pending.set(0);
+                pending.set(CANCELLED);
                 s.cancel();
             }
         });
@@ -53,13 +53,18 @@ public final class DemandCheckingSubscriber<T> implements Subscriber<T> {
 
     @Override
     public void onNext(final T t) {
-        if (!subscribed) {
-            throw new IllegalStateException("Demand check failure: not subscribed to receive " + t);
+        long pending = this.pending.getAndAccumulate(-1, FlowControlUtil::addWithOverflowProtectionIfPositive);
+        if (pending > 0) {
+            delegate.onNext(t);
+        } else if (pending == NO_ON_SUBSCRIBE) {
+            throw new AssertionError(
+                    "Demand check failure: No subscription available to check demand. Ignoring item: " + t);
+        } else if (pending == CANCELLED) {
+            throw new AssertionError("Demand check failure: Subscription is cancelled. Ignoring item: " + t);
+        } else {
+            assert pending == 0;
+            throw new AssertionError("Demand check failure: No outstanding demand. Ignoring item: " + t);
         }
-        if (pending.decrementAndGet() < 0) {
-            throw new IllegalStateException("Demand check failure: not enough demand to send " + t);
-        }
-        delegate.onNext(t);
     }
 
     @Override
