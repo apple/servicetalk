@@ -36,7 +36,6 @@ import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
@@ -163,7 +162,7 @@ public class RepeatWhenTest {
         assertThat(subscriber.items(), contains(1, 2));
         subscriber.cancel();
         repeatSignal.verifyCancelled();
-        assertThat(sequentialPublisherSubscriberFunction.subscriptionCount(), is(1));
+        assertFalse(sequentialPublisherSubscriberFunction.isSubscribed());
         verify(shouldRepeat).apply(1);
     }
 

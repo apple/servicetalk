@@ -20,6 +20,12 @@ import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 
+/**
+ * Allows only a single {@link Subscriber} to subscribe to a {@link TestPublisher}. Subsequent attempts to subscribe
+ * will throw an exception.
+ *
+ * @param <T> Type of items received by the {@code Subscriber}.
+ */
 public final class NonResubscribeablePublisherSubscriberFunction<T>
         implements Function<Subscriber<? super T>, Subscriber<? super T>> {
 

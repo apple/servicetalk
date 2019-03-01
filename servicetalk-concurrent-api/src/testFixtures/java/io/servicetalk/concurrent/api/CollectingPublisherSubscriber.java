@@ -25,7 +25,7 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import javax.annotation.Nullable;
 
-public final class CollectingPublisherSubscriber<T> implements Subscriber<T>, Subscription {
+final class CollectingPublisherSubscriber<T> implements Subscriber<T>, Subscription {
 
     private final List<T> items = new CopyOnWriteArrayList<>();
     private final DelayedSubscription subscription = new DelayedSubscription();
@@ -33,11 +33,6 @@ public final class CollectingPublisherSubscriber<T> implements Subscriber<T>, Su
     private volatile TerminalNotification terminal;
     private volatile boolean subscriptionReceived;
 
-    /**
-     * Clear received items and any terminal signals.
-     * <p>
-     * Does not affect subscribed/subscription state.
-     */
     public void clear() {
         items.clear();
         terminal = null;
