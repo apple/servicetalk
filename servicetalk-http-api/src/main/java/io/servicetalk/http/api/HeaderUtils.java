@@ -227,7 +227,8 @@ final class HeaderUtils {
                 return true;
             }
             return regionMatches(contentTypeHeader, true, 0, expectedContentType, 0, expectedContentType.length());
-        } else if (!regionMatches(contentTypeHeader, true, 0, expectedContentType, 0, expectedContentType.length())) {
+        }
+        if (!regionMatches(contentTypeHeader, true, 0, expectedContentType, 0, expectedContentType.length())) {
             return false;
         }
 

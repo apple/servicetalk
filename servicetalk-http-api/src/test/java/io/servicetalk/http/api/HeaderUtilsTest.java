@@ -51,8 +51,8 @@ public class HeaderUtilsTest {
         assertTrue(HeaderUtils.hasContentType(
                 headersWithContentType(TEXT_PLAIN_UTF_8), TEXT_PLAIN, UTF_8));
 
-        assertTrue(HeaderUtils.hasContentType(
-                headersWithContentType(TEXT_PLAIN_UTF_8), TEXT_PLAIN, UTF_8));
+        assertFalse(HeaderUtils.hasContentType(
+                headersWithContentType(TEXT_PLAIN_UTF_8), TEXT_PLAIN, US_ASCII));
 
         assertTrue(HeaderUtils.hasContentType(
                 headersWithContentType(APPLICATION_X_WWW_FORM_URLENCODED_UTF8),
