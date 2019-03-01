@@ -45,6 +45,7 @@ public final class HttpProtocolVersions {
      * @param minor the <strong>&lt;minor&gt;</strong> portion of the
      * <a href="https://tools.ietf.org/html/rfc7230.html#section-2.6">HTTP protocol version</a>
      * @return a cached or new {@link HttpProtocolVersion}
+     * @throws IllegalArgumentException if {@code major} or {@code minor} is not a 1-digit integer
      */
     public static HttpProtocolVersion getProtocolVersion(final int major, final int minor) {
         if (major == 1) {
@@ -65,6 +66,7 @@ public final class HttpProtocolVersions {
      * @param httpVersion a {@link Buffer} representation of the
      * <a href="https://tools.ietf.org/html/rfc7230.html#section-2.6">HTTP protocol version</a>
      * @return a new {@link HttpProtocolVersion}
+     * @throws IllegalArgumentException if {@code httpVersion} format is not {@code HTTP/DIGIT.DIGIT}
      */
     public static HttpProtocolVersion newProtocolVersion(final Buffer httpVersion) {
         return new DefaultHttpProtocolVersion(httpVersion);
