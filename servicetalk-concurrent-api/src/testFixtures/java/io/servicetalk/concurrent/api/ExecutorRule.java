@@ -35,7 +35,7 @@ public final class ExecutorRule<E extends Executor> extends ExternalResource {
     }
 
     /**
-     * Create an {@link ExecutorRule} with the default cached thread executor.
+     * Create an {@link ExecutorRule} with a default executor.
      *
      * @return a new {@link ExecutorRule}.
      */
@@ -65,7 +65,7 @@ public final class ExecutorRule<E extends Executor> extends ExternalResource {
     }
 
     /**
-     * Create an {@link ExecutorRule} with the default cached thread executor, configured to prefix thread names
+     * Create an {@link ExecutorRule} with a default executor, configured to prefix thread names
      * with {@code namePrefix}.
      *
      * @param namePrefix the name to prefix thread names with.

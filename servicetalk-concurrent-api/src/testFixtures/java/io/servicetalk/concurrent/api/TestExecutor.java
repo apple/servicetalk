@@ -123,7 +123,6 @@ public class TestExecutor implements Executor {
      */
     public TestExecutor advanceTimeBy(final long time, final TimeUnit unit) {
         advanceTimeByNoExecuteTasks(time, unit);
-        executeTasks();
         executeScheduledTasks();
         return this;
     }

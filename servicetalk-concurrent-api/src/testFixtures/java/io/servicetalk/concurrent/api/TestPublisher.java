@@ -28,15 +28,20 @@ import javax.annotation.Nullable;
 import static java.util.Objects.requireNonNull;
 
 /**
- * A {@link PublisherSource} whose outgoing signals to its {@link Subscriber}s can be controlled. By default, it
- * allows sequential but not concurrent subscribers, asserts that {@link #onNext(Object[])} is not called without
- * sufficient demand, and sends {@link #onSubscribe(Subscription)} automatically when subscribed to.
+ * A {@link Publisher} &amp; {@link PublisherSource} whose outgoing signals to its {@link Subscriber}s can be
+ * controlled.
  * <p>
  * Behavior beyond simply delegating signals to the {@link Subscriber} is accomplished by a
  * {@link Function Function&lt;Subscriber&lt;? super T&gt;, Subscriber&lt;? super T&gt;&gt;}. This {@link Function} is
  * invoked for every {@link #subscribe(Subscriber)} invocation, and the result is used as the delegate for subsequent
  * {@link #onSubscribe(Subscription)}, {@link #onNext(Object[])}, {@link #onComplete()}, and
  * {@link #onError(Throwable)} calls. See {@link Builder} for more information.
+ * <h3>Defaults</h3>
+ * <ul>
+ *     <li>Allows sequential but not concurrent subscribers.</li>
+ *     <li>Asserts that {@link #onNext(Object[])} is not called without sufficient demand.</li>
+ *     <li>Sends {@link #onSubscribe(Subscription)} automatically when subscribed to.</li>
+ * </ul>
  *
  * @param <T> Type of the items emitted by this {@code TestPublisher}.
  */
@@ -50,7 +55,7 @@ public final class TestPublisher<T> extends Publisher<T> implements PublisherSou
     private volatile Subscriber<? super T> subscriber;
 
     /**
-     * Create a {@code TestPublisher} with the defaults.
+     * Create a {@code TestPublisher} with the defaults. See <b>Defaults</b> section of class javadoc.
      */
     public TestPublisher() {
         this(new Builder<T>().buildSubscriberFunction());
@@ -158,7 +163,8 @@ public final class TestPublisher<T> extends Publisher<T> implements PublisherSou
     }
 
     /**
-     * Allows for creating {@link TestPublisher}s with non-default settings.
+     * Allows for creating {@link TestPublisher}s with non-default settings. For defaults, see <b>Defaults</b> section
+     * of class javadoc.
      *
      * @param <T> Type of the items emitted by the {@code TestPublisher}.
      */

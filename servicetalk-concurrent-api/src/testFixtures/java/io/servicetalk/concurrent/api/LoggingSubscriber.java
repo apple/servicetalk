@@ -22,8 +22,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * A {@link Subscriber} that wraps another, logging all signals received by the {@link Subscriber}, or sent via the
- * {@link Subscription}.
+ * A {@link Subscriber} that wraps another {@link Subscriber}, logging all signals received by the {@link Subscriber},
+ * or sent via the {@link Subscription}.
  *
  * @param <T> Type of items received by the {@code Subscriber}.
  */

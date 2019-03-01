@@ -31,7 +31,7 @@ import static java.util.Objects.requireNonNull;
  * asserts that items are not delivered without sufficient demand. (This can be disabled with
  * {@link Builder#disableDemandCheck()}.)
  * <p>
- * The {@link Subscriber} received by {@link #onSubscribe(Subscription)} is exposed through the {@link Subscription}
+ * The {@link Subscription} received by {@link #onSubscribe(Subscription)} is exposed through the {@link Subscription}
  * interface methods.
  *
  * @param <T> Type of items received by this {@code Subscriber}.
