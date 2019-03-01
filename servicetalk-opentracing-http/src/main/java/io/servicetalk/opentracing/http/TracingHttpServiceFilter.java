@@ -99,7 +99,7 @@ public class TracingHttpServiceFilter implements StreamingHttpRequestHandler {
             try {
                 SpanBuilder spanBuilder = tracer.buildSpan(getOperationName(componentName, request))
                         .withTag(SPAN_KIND.getKey(), SPAN_KIND_SERVER)
-                        .withTag(HTTP_METHOD.getKey(), request.method().methodName())
+                        .withTag(HTTP_METHOD.getKey(), request.method().name())
                         .withTag(HTTP_URL.getKey(), request.path());
                 parentSpanContext = tracer.extract(formatter, request.headers());
                 if (parentSpanContext != null) {
@@ -133,7 +133,7 @@ public class TracingHttpServiceFilter implements StreamingHttpRequestHandler {
      * @return the operation name to build the span with.
      */
     protected String getOperationName(String componentName, HttpRequestMetaData metaData) {
-        return componentName + ' ' + metaData.method().methodName() + ' ' + metaData.requestTarget();
+        return componentName + ' ' + metaData.method().name() + ' ' + metaData.requestTarget();
     }
 
     /**

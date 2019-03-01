@@ -113,7 +113,7 @@ public class TracingHttpRequesterFilterTest {
                 InMemorySpan lastFinishedSpan = spanListener.lastFinishedSpan();
                 assertNotNull(lastFinishedSpan);
                 assertEquals(SPAN_KIND_CLIENT, lastFinishedSpan.tags().get(SPAN_KIND.getKey()));
-                assertEquals(GET.methodName(), lastFinishedSpan.tags().get(HTTP_METHOD.getKey()));
+                assertEquals(GET.name(), lastFinishedSpan.tags().get(HTTP_METHOD.getKey()));
                 assertEquals(requestUrl, lastFinishedSpan.tags().get(HTTP_URL.getKey()));
                 assertEquals(OK.code(), lastFinishedSpan.tags().get(HTTP_STATUS.getKey()));
                 assertFalse(lastFinishedSpan.tags().containsKey(ERROR.getKey()));
@@ -149,7 +149,7 @@ public class TracingHttpRequesterFilterTest {
                     InMemorySpan lastFinishedSpan = spanListener.lastFinishedSpan();
                     assertNotNull(lastFinishedSpan);
                     assertEquals(SPAN_KIND_CLIENT, lastFinishedSpan.tags().get(SPAN_KIND.getKey()));
-                    assertEquals(GET.methodName(), lastFinishedSpan.tags().get(HTTP_METHOD.getKey()));
+                    assertEquals(GET.name(), lastFinishedSpan.tags().get(HTTP_METHOD.getKey()));
                     assertEquals(requestUrl, lastFinishedSpan.tags().get(HTTP_URL.getKey()));
                     assertEquals(OK.code(), lastFinishedSpan.tags().get(HTTP_STATUS.getKey()));
                     assertFalse(lastFinishedSpan.tags().containsKey(ERROR.getKey()));
