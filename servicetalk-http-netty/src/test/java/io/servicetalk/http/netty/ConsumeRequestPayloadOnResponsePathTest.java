@@ -129,7 +129,7 @@ public class ConsumeRequestPayloadOnResponsePathTest {
             }
 
             waitServer.await();
-            assertThat(errorRef.get(), is(nullValue()));
+            assertThat("Request payload body might be consumed by someone else", errorRef.get(), is(nullValue()));
             assertThat(receivedPayload.toString(UTF_8), is(EXPECTED_REQUEST_PAYLOAD));
         }
     }
