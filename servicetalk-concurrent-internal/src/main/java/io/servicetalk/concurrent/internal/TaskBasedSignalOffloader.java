@@ -166,7 +166,7 @@ final class TaskBasedSignalOffloader implements SignalOffloader {
                     requestedUpdater.getAndSet(this, n < TERMINATED ? n : Long.MIN_VALUE) >= 0) ||
                     requestedUpdater.accumulateAndGet(this, n,
                             FlowControlUtil::addWithOverflowProtectionIfNotNegative) > 0) {
-                enqueueTaskIfRequired();
+                enqueueTaskIfRequired(true);
             }
         }
 
@@ -174,12 +174,12 @@ final class TaskBasedSignalOffloader implements SignalOffloader {
         public void cancel() {
             long oldVal = requestedUpdater.getAndSet(this, CANCELLED);
             if (oldVal != CANCELLED) {
-                enqueueTaskIfRequired();
+                enqueueTaskIfRequired(false);
             }
             // duplicate cancel.
         }
 
-        private void enqueueTaskIfRequired() {
+        private void enqueueTaskIfRequired(boolean forRequestN) {
             int oldState = stateUpdater.getAndSet(this, STATE_ENQUEUED);
             if (oldState == STATE_IDLE) {
                 try {
@@ -191,11 +191,18 @@ final class TaskBasedSignalOffloader implements SignalOffloader {
                     // This is an optimistic approach assuming executor rejections are occasional and hence adding
                     // Subscription -> Subscriber dependency for all paths is too costly.
                     // As we do for other cases, we simply invoke the target in the calling thread.
-                    requested = TERMINATED;
-                    LOGGER.error("Failed to execute task on the executor {}. " +
-                                    "Invoking Subscription (cancel()) in the caller thread. Subscription {}. ",
-                            executor, target, t);
-                    target.cancel();
+                    if (forRequestN) {
+                        LOGGER.error("Failed to execute task on the executor {}. " +
+                                        "Invoking Subscription (request()) in the caller thread. Subscription {}. ",
+                                executor, target, t);
+                        target.request(requestedUpdater.getAndSet(this, 0));
+                    } else {
+                        requested = TERMINATED;
+                        LOGGER.error("Failed to execute task on the executor {}. " +
+                                        "Invoking Subscription (cancel()) in the caller thread. Subscription {}. ",
+                                executor, target, t);
+                        target.cancel();
+                    }
                     throw t;
                 }
             }
@@ -695,6 +702,7 @@ final class TaskBasedSignalOffloader implements SignalOffloader {
                 // As a policy, we call the target in the calling thread when the executor is inadequately
                 // provisioned. In the future we could make this configurable.
                 cancellable.cancel();
+                throw t;
             }
         }
     }
