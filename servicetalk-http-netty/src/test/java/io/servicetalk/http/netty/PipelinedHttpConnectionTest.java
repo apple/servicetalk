@@ -42,7 +42,7 @@ import static io.servicetalk.concurrent.api.Completable.never;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpProtocolVersions.HTTP_1_0;
-import static io.servicetalk.http.api.HttpProtocolVersions.newProtocolVersion;
+import static io.servicetalk.http.api.HttpProtocolVersions.getProtocolVersion;
 import static io.servicetalk.transport.netty.internal.ExecutionContextRule.immediate;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertFalse;
@@ -103,7 +103,7 @@ public class PipelinedHttpConnectionTest {
     @Test
     public void http09RequestShouldReturnOnError() {
         Single<StreamingHttpResponse> request = pipe.request(
-                reqRespFactory.get("/Foo").version(newProtocolVersion(0, 9)));
+                reqRespFactory.get("/Foo").version(getProtocolVersion(0, 9)));
         toSource(request).subscribe(dataSubscriber1.forSingle());
         dataSubscriber1.request(1);
         assertThat(dataSubscriber1.error(), instanceOf(IllegalArgumentException.class));

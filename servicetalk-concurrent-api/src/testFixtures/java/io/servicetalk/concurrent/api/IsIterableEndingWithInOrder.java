@@ -26,6 +26,11 @@ import java.util.List;
 
 import static org.hamcrest.core.IsEqual.equalTo;
 
+/**
+ * A {@link Matcher} that matches {@link Collection}s that end with the expected elements.
+ *
+ * @param <T> the type of the elements.
+ */
 public final class IsIterableEndingWithInOrder<T> extends IsIterableContainingInOrder<T> {
 
     private final int expectedCount;
@@ -54,6 +59,13 @@ public final class IsIterableEndingWithInOrder<T> extends IsIterableContainingIn
         return super.matchesSafely(actual, mismatchDescription);
     }
 
+    /**
+     * Creates a {@link Matcher} that matches {@link Collection}s that end with {@code items}.
+     *
+     * @param items the expected items.
+     * @param <E>  the type of the elements.
+     * @return a new {@link Matcher}.
+     */
     @SafeVarargs
     public static <E> Matcher<Iterable<? extends E>> endsWith(E... items) {
         List<Matcher<? super E>> matchers = new ArrayList<>();
@@ -64,6 +76,13 @@ public final class IsIterableEndingWithInOrder<T> extends IsIterableContainingIn
         return new IsIterableEndingWithInOrder<>(matchers);
     }
 
+    /**
+     * Creates a {@link Matcher} that matches {@link Collection}s that end with {@code items}.
+     *
+     * @param items the expected items.
+     * @param <E>  the type of the elements.
+     * @return a new {@link Matcher}.
+     */
     public static <E> Matcher<Iterable<? extends E>> endsWith(List<E> items) {
         List<Matcher<? super E>> matchers = new ArrayList<>();
         for (E item : items) {

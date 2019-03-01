@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,27 +17,23 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.buffer.api.Buffer;
 
-import static io.servicetalk.buffer.api.ReadOnlyBufferAllocators.DEFAULT_RO_ALLOCATOR;
-import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.toStatusClass;
+import static io.servicetalk.buffer.api.ReadOnlyBufferAllocators.PREFER_DIRECT_RO_ALLOCATOR;
+import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.fromStatusCode;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.util.Objects.requireNonNull;
 
 final class DefaultHttpResponseStatus implements HttpResponseStatus {
 
     private final int statusCode;
-    private final Buffer reasonPhrase;
     private final Buffer statusCodeBuffer;
+    private final Buffer reasonPhrase;
     private final StatusClass statusClass;
 
     DefaultHttpResponseStatus(final int statusCode, final Buffer reasonPhrase) {
-        this(statusCode, reasonPhrase, toStatusClass(statusCode));
-    }
-
-    DefaultHttpResponseStatus(final int statusCode, final Buffer reasonPhrase, final StatusClass statusClass) {
+        this.statusClass = fromStatusCode(statusCode);
         this.statusCode = statusCode;
-        this.reasonPhrase = reasonPhrase;
-        this.statusClass = requireNonNull(statusClass);
         this.statusCodeBuffer = statusCodeToBuffer(statusCode);
+        this.reasonPhrase = requireNonNull(reasonPhrase);
     }
 
     @Override
@@ -62,7 +58,7 @@ final class DefaultHttpResponseStatus implements HttpResponseStatus {
 
     @Override
     public String toString() {
-        return Integer.toString(statusCode) + ' ' + reasonPhrase.toString(US_ASCII);
+        return statusCode + (reasonPhrase.readableBytes() > 0 ? ' ' + reasonPhrase.toString(US_ASCII) : "");
     }
 
     @Override
@@ -75,21 +71,27 @@ final class DefaultHttpResponseStatus implements HttpResponseStatus {
         }
 
         final DefaultHttpResponseStatus that = (DefaultHttpResponseStatus) o;
-
         /*
-         * reasonPhrase is ignored for equals/hashCode because the RFC says:
+         * - reasonPhrase is ignored for equals/hashCode because the RFC says:
          *   A client SHOULD ignore the reason-phrase content.
          * https://tools.ietf.org/html/rfc7230#section-3.1.2
+         *
+         * - statusClass is ignored for equals/hashCode because its inherited from statusCode and the relationship is
+         *   idempotent
          */
-        return statusCode == that.statusCode && statusClass.equals(that.statusClass);
+        return statusCode == that.statusCode;
     }
 
     @Override
     public int hashCode() {
-        return 31 * statusCode + statusClass.hashCode();
+        return 31 * statusCode;
     }
 
-    static Buffer statusCodeToBuffer(int status) {
-        return DEFAULT_RO_ALLOCATOR.fromAscii(String.valueOf(status));
+    boolean equalsReasonPhrase(final Buffer reasonPhrase) {
+        return this.reasonPhrase.equals(reasonPhrase);
+    }
+
+    private static Buffer statusCodeToBuffer(int status) {
+        return PREFER_DIRECT_RO_ALLOCATOR.fromAscii(String.valueOf(status));
     }
 }

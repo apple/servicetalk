@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,17 +19,23 @@ import io.servicetalk.buffer.api.Buffer;
 
 /**
  * <a href="https://tools.ietf.org/html/rfc7231#section-6">Response Status Code</a>.
+ *
+ * @see HttpResponseStatuses
  */
 public interface HttpResponseStatus {
     /**
-     * Get the three digit <a href="https://tools.ietf.org/html/rfc7231#section-6">status-code</a> indicating status of the response.
-     * @return the three digit <a href="https://tools.ietf.org/html/rfc7231#section-6">status-code</a> indicating status of the response.
+     * Get the three digit <a href="https://tools.ietf.org/html/rfc7231#section-6">status-code</a> indicating status of
+     * the response.
+     *
+     * @return the three digit <a href="https://tools.ietf.org/html/rfc7231#section-6">status-code</a> indicating status
+     * of the response
      */
     int code();
 
     /**
      * Write the equivalent of {@link #code()} to a {@link Buffer}.
-     * @param buffer The {@link Buffer} to write to.
+     *
+     * @param buffer The {@link Buffer} to write to
      */
     void writeCodeTo(Buffer buffer);
 
@@ -43,55 +49,52 @@ public interface HttpResponseStatus {
      *     more frequently used with interactive text clients.  A client SHOULD
      *     ignore the reason-phrase content.
      * </pre>
-     * @param buffer The {@link Buffer} to write to.
+     *
+     * @param buffer The {@link Buffer} to write to
      */
     void writeReasonPhraseTo(Buffer buffer);
 
     /**
      * Get the {@link StatusClass} for this {@link HttpResponseStatus}.
-     * @return the {@link StatusClass} for this {@link HttpResponseStatus}.
+     *
+     * @return the {@link StatusClass} for this {@link HttpResponseStatus}
      */
     StatusClass statusClass();
 
     /**
-     * The <a href="https://tools.ietf.org/html/rfc7231#section-6">class of response</a>.
+     * The class of <a href="https://tools.ietf.org/html/rfc7231#section-6">response status codes</a>.
      */
     enum StatusClass {
         /**
-         * <a href="https://tools.ietf.org/html/rfc7231#section-6.2">1xx Informational responses</a>.
+         * <a href="https://tools.ietf.org/html/rfc7231#section-6.2">Informational 1xx</a>.
          */
         INFORMATIONAL_1XX(100, 199),
 
         /**
-         * <a href="https://tools.ietf.org/html/rfc7231#section-6.3">2xx Success</a>.
+         * <a href="https://tools.ietf.org/html/rfc7231#section-6.3">Successful 2xx</a>.
          */
-        SUCCESS_2XX(200, 299),
+        SUCCESSFUL_2XX(200, 299),
 
         /**
-         * <a href="https://tools.ietf.org/html/rfc7231#section-6.4">3xx Redirection</a>.
+         * <a href="https://tools.ietf.org/html/rfc7231#section-6.4">Redirection 3xx</a>.
          */
         REDIRECTION_3XX(300, 399),
 
         /**
-         * <a href="https://tools.ietf.org/html/rfc7231#section-6.5">4xx Client errors</a>.
+         * <a href="https://tools.ietf.org/html/rfc7231#section-6.5">Client Error 4xx</a>.
          */
         CLIENT_ERROR_4XX(400, 499),
 
         /**
-         * <a href="https://tools.ietf.org/html/rfc7231#section-6.6">5xx Server errors</a>.
+         * <a href="https://tools.ietf.org/html/rfc7231#section-6.6">Server Error 5xx</a>.
          */
         SERVER_ERROR_5XX(500, 599),
 
         /**
-         * Unknown. Statuses outside of the <a href="https://tools.ietf.org/html/rfc7231#section-6">defined range of
-         * response codes</a>.
+         * Unknown. 3-digit status codes outside of the defined range of
+         * <a href="https://tools.ietf.org/html/rfc7231#section-6">response status codes</a>.
          */
-        UNKNOWN(0, 0) {
-            @Override
-            public boolean contains(final int statusCode) {
-                return statusCode < 100 || statusCode >= 600;
-            }
-        };
+        UNKNOWN(600, 999);
 
         private final int minStatus;
         private final int maxStatus;
@@ -102,18 +105,20 @@ public interface HttpResponseStatus {
         }
 
         /**
-         * Determine if {@code code} falls into this class.
-         * @param statusCode the status code to test.
-         * @return {@code true} if and only if the specified HTTP status code falls into this class.
+         * Determine if {@code code} falls into this {@link StatusClass}.
+         *
+         * @param statusCode the status code to test
+         * @return {@code true} if and only if the specified HTTP status code falls into this class
          */
         public boolean contains(final int statusCode) {
             return minStatus <= statusCode && statusCode <= maxStatus;
         }
 
         /**
-         * Determine if {@code status} code falls into this class.
-         * @param status the status to test.
-         * @return {@code true} if and only if the specified HTTP status code falls into this class.
+         * Determine if {@code status} code falls into this {@link StatusClass}.
+         *
+         * @param status the status to test
+         * @return {@code true} if and only if the specified HTTP status code falls into this class
          */
         public boolean contains(final HttpResponseStatus status) {
             return contains(status.code());
@@ -122,15 +127,20 @@ public interface HttpResponseStatus {
         /**
          * Determines the {@link StatusClass} from the {@code statusCode}.
          *
-         * @param statusCode the status code to use for determining the {@link StatusClass}.
-         * @return One of the {@link StatusClass} enum values.
+         * @param statusCode the status code to use for determining the {@link StatusClass}
+         * @return one of the {@link StatusClass} enum values
+         * @throws IllegalArgumentException if {@code statusCode} is not a 3-digit integer
          */
-        public static StatusClass toStatusClass(final int statusCode) {
+        public static StatusClass fromStatusCode(final int statusCode) {
+            if (statusCode < 100 || statusCode > 999) {
+                throw new IllegalArgumentException("Illegal status code: " + statusCode + ", expected [100-999]");
+            }
+
             if (INFORMATIONAL_1XX.contains(statusCode)) {
                 return INFORMATIONAL_1XX;
             }
-            if (SUCCESS_2XX.contains(statusCode)) {
-                return SUCCESS_2XX;
+            if (SUCCESSFUL_2XX.contains(statusCode)) {
+                return SUCCESSFUL_2XX;
             }
             if (REDIRECTION_3XX.contains(statusCode)) {
                 return REDIRECTION_3XX;

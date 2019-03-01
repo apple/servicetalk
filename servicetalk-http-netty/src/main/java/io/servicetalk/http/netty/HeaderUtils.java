@@ -32,7 +32,7 @@ import static io.servicetalk.http.api.HttpHeaderValues.CHUNKED;
 import static io.servicetalk.http.api.HttpRequestMethods.CONNECT;
 import static io.servicetalk.http.api.HttpRequestMethods.HEAD;
 import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.INFORMATIONAL_1XX;
-import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.SUCCESS_2XX;
+import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.SUCCESSFUL_2XX;
 
 final class HeaderUtils {
 
@@ -73,7 +73,7 @@ final class HeaderUtils {
             // https://tools.ietf.org/html/rfc7230#section-3.3.3
             return;
         }
-        if (requestMethod.equals(CONNECT) && SUCCESS_2XX.contains(statusCode)) {
+        if (requestMethod.equals(CONNECT) && SUCCESSFUL_2XX.contains(statusCode)) {
             // Do not add a transfer-encoding header in this case. See 3.3.3.2:
             // https://tools.ietf.org/html/rfc7230#section-3.3.3
             return;
