@@ -196,12 +196,22 @@ public class TestPublisherTest {
 
     @Test
     public void testDemandNoRequest() {
-        TestPublisher<String> source = new TestPublisher.Builder<String>()
-                .build();
+        TestPublisher<String> source = new TestPublisher<>();
         source.subscribe(subscriber1);
 
-        expected.expect(IllegalStateException.class);
-        expected.expectMessage("Demand check failure: not enough demand to send a");
+        expected.expect(AssertionError.class);
+        expected.expectMessage(startsWith("Demand check failure: No outstanding demand. Ignoring item: "));
+        source.onNext("a");
+    }
+
+    @Test
+    public void testDemandPostCancel() {
+        TestPublisher<String> source = new TestPublisher<>();
+        source.subscribe(subscriber1);
+
+        subscriber1.cancel();
+        expected.expect(AssertionError.class);
+        expected.expectMessage(startsWith("Demand check failure: Subscription is cancelled. Ignoring item: "));
         source.onNext("a");
     }
 
@@ -216,8 +226,8 @@ public class TestPublisherTest {
 
         assertThat(subscriber1.items(), contains("a", "b"));
 
-        expected.expect(IllegalStateException.class);
-        expected.expectMessage("Demand check failure: not enough demand to send c");
+        expected.expect(AssertionError.class);
+        expected.expectMessage(startsWith("Demand check failure: No outstanding demand. Ignoring item: "));
         source.onNext("c");
     }
 
