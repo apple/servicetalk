@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,30 +17,52 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.buffer.api.ByteProcessor;
 
+import java.nio.charset.Charset;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.function.BiFunction;
+import java.util.regex.Pattern;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.http.api.CharSequences.caseInsensitiveHashCode;
 import static io.servicetalk.http.api.CharSequences.contentEquals;
 import static io.servicetalk.http.api.CharSequences.contentEqualsIgnoreCase;
 import static io.servicetalk.http.api.CharSequences.regionMatches;
+import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
+import static io.servicetalk.http.api.HttpHeaderValues.APPLICATION_X_WWW_FORM_URLENCODED;
+import static io.servicetalk.http.api.HttpHeaderValues.APPLICATION_X_WWW_FORM_URLENCODED_UTF8;
+import static io.servicetalk.http.api.HttpHeaderValues.TEXT_PLAIN;
+import static io.servicetalk.http.api.HttpHeaderValues.TEXT_PLAIN_UTF_8;
 import static io.servicetalk.http.api.NetUtil.isValidIpV4Address;
 import static io.servicetalk.http.api.NetUtil.isValidIpV6Address;
 import static java.lang.Math.min;
 import static java.lang.System.lineSeparator;
+import static java.nio.charset.Charset.availableCharsets;
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.util.Collections.unmodifiableMap;
+import static java.util.regex.Pattern.CASE_INSENSITIVE;
+import static java.util.regex.Pattern.compile;
+import static java.util.regex.Pattern.quote;
+import static java.util.stream.Collectors.toMap;
 
 final class HeaderUtils {
     /**
      * Constant used to seed the hash code generation. Could be anything but this was borrowed from murmur3.
      */
     static final int HASH_CODE_SEED = 0xc2b2ae35;
-    static final BiFunction<? super CharSequence, ? super CharSequence, CharSequence> DEFAULT_HEADER_FILTER = (k, v) -> "<filtered>";
+    static final BiFunction<? super CharSequence, ? super CharSequence, CharSequence> DEFAULT_HEADER_FILTER =
+            (k, v) -> "<filtered>";
     private static final ByteProcessor HEADER_NAME_VALIDATOR = value -> {
         validateHeaderNameToken(value);
         return true;
     };
+
+    private static final Map<Charset, Pattern> CHARSET_PATTERNS;
+
+    static {
+        CHARSET_PATTERNS = unmodifiableMap(availableCharsets().entrySet().stream()
+                .collect(toMap(Map.Entry::getValue, e -> compileCharsetRegex(e.getKey()))));
+    }
 
     private HeaderUtils() {
         // no instances
@@ -180,6 +202,55 @@ final class HeaderUtils {
         return regionMatches(requestPath, false, requestPath.charAt(0) == '/' &&
                 !actualStartsWithSlash ? 1 : 0, cookiePath, 0, length) &&
                 (requestPath.length() > cookiePath.length() || cookiePath.charAt(length) == '/');
+    }
+
+    /**
+     * Checks if the provider headers contain a {@code Content-Type} header that matches the specified content type,
+     * and optionally the provided charset.
+     *
+     * @param headers the {@link HttpHeaders} instance
+     * @param expectedContentType the content type to look for, provided as a {@code type/subtype}
+     * @param expectedCharset an optional charset constraint.
+     * @return {@code true} if a {@code Content-Type} header that matches the specified content type, and optionally
+     * the provided charset has been found, {@code false} otherwise.
+     * @see <a href="https://tools.ietf.org/html/rfc2045#section-5.1">Syntax of the Content-Type Header Field</a>
+     */
+    static boolean hasContentType(final HttpHeaders headers,
+                                  final CharSequence expectedContentType,
+                                  @Nullable final Charset expectedCharset) {
+        final CharSequence contentTypeHeader = headers.get(CONTENT_TYPE);
+        if (contentTypeHeader == null || contentTypeHeader.length() == 0) {
+            return false;
+        }
+        if (expectedCharset == null) {
+            if (contentEqualsIgnoreCase(expectedContentType, contentTypeHeader)) {
+                return true;
+            }
+            return regionMatches(contentTypeHeader, true, 0, expectedContentType, 0, expectedContentType.length());
+        }
+        if (!regionMatches(contentTypeHeader, true, 0, expectedContentType, 0, expectedContentType.length())) {
+            return false;
+        }
+
+        if (UTF_8.equals(expectedCharset) &&
+                (contentEqualsIgnoreCase(expectedContentType, TEXT_PLAIN) &&
+                        contentEqualsIgnoreCase(contentTypeHeader, TEXT_PLAIN_UTF_8)) ||
+                (contentEqualsIgnoreCase(expectedContentType, APPLICATION_X_WWW_FORM_URLENCODED) &&
+                        contentEqualsIgnoreCase(contentTypeHeader, APPLICATION_X_WWW_FORM_URLENCODED_UTF8))) {
+            return true;
+        }
+
+        // None of the fastlane shortcuts have bitten -> use a regex to try to match the charset param wherever it is
+        Pattern pattern = CHARSET_PATTERNS.get(expectedCharset);
+        if (pattern == null) {
+            pattern = compileCharsetRegex(expectedCharset.name());
+        }
+        return pattern.matcher(contentTypeHeader.subSequence(expectedContentType.length(), contentTypeHeader.length()))
+                .matches();
+    }
+
+    private static Pattern compileCharsetRegex(String charsetName) {
+        return compile(".*;\\s*charset=\"?" + quote(charsetName) + "\"?\\s*(;.*|$)", CASE_INSENSITIVE);
     }
 
     private static void validateCookieTokenAndHeaderName0(final CharSequence key) {

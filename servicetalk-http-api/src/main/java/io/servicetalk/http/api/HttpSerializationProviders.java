@@ -28,6 +28,7 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 
 import static io.servicetalk.http.api.CharSequences.newAsciiString;
+import static io.servicetalk.http.api.HeaderUtils.hasContentType;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
 import static io.servicetalk.http.api.HttpHeaderValues.APPLICATION_JSON;
 import static io.servicetalk.http.api.HttpHeaderValues.APPLICATION_X_WWW_FORM_URLENCODED;
@@ -110,9 +111,8 @@ public final class HttpSerializationProviders {
      * href="https://url.spec.whatwg.org/#application/x-www-form-urlencoded">x-www-form-urlencoded specification</a>
      */
     public static HttpDeserializer<Map<String, List<String>>> formUrlEncodedDeserializer(Charset charset) {
-        final CharSequence contentType = newAsciiString(APPLICATION_X_WWW_FORM_URLENCODED + "; charset=" +
-                charset.name());
-        return formUrlEncodedDeserializer(charset, headers -> headers.contains(CONTENT_TYPE, contentType));
+        return formUrlEncodedDeserializer(charset,
+                headers -> hasContentType(headers, APPLICATION_X_WWW_FORM_URLENCODED, charset));
     }
 
     /**
@@ -148,8 +148,7 @@ public final class HttpSerializationProviders {
      * @return {@link HttpSerializer} that could serialize from {@link String}.
      */
     public static HttpSerializer<String> textSerializer(Charset charset) {
-        final CharSequence contentType = newAsciiString(TEXT_PLAIN + "; charset=" + charset.name());
-        return textSerializer(charset, headers -> headers.set(CONTENT_TYPE, contentType));
+        return textSerializer(charset, headers -> hasContentType(headers, TEXT_PLAIN, charset));
     }
 
     /**
@@ -181,8 +180,7 @@ public final class HttpSerializationProviders {
      * @return {@link HttpDeserializer} that could deserialize {@link String}.
      */
     public static HttpDeserializer<String> textDeserializer(Charset charset) {
-        final CharSequence contentType = newAsciiString(TEXT_PLAIN + "; charset=" + charset.name());
-        return textDeserializer(charset, headers -> headers.contains(CONTENT_TYPE, contentType));
+        return textDeserializer(charset, headers -> hasContentType(headers, TEXT_PLAIN, charset));
     }
 
     /**
@@ -210,7 +208,7 @@ public final class HttpSerializationProviders {
      */
     public static HttpSerializationProvider jsonSerializer(Serializer serializer) {
         return serializationProvider(serializer, headers -> headers.set(CONTENT_TYPE, APPLICATION_JSON),
-                headers -> headers.contains(CONTENT_TYPE, APPLICATION_JSON));
+                headers -> hasContentType(headers, APPLICATION_JSON, null));
     }
 
     /**
