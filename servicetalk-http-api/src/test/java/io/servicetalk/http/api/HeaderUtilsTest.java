@@ -25,7 +25,7 @@ import static io.netty.util.AsciiString.of;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
 import static io.servicetalk.http.api.HttpHeaderValues.APPLICATION_JSON;
 import static io.servicetalk.http.api.HttpHeaderValues.APPLICATION_X_WWW_FORM_URLENCODED;
-import static io.servicetalk.http.api.HttpHeaderValues.APPLICATION_X_WWW_FORM_URLENCODED_UTF8;
+import static io.servicetalk.http.api.HttpHeaderValues.APPLICATION_X_WWW_FORM_URLENCODED_UTF_8;
 import static io.servicetalk.http.api.HttpHeaderValues.TEXT_PLAIN;
 import static io.servicetalk.http.api.HttpHeaderValues.TEXT_PLAIN_UTF_8;
 import static java.nio.charset.StandardCharsets.US_ASCII;
@@ -55,7 +55,7 @@ public class HeaderUtilsTest {
                 headersWithContentType(TEXT_PLAIN_UTF_8), TEXT_PLAIN, US_ASCII));
 
         assertTrue(HeaderUtils.hasContentType(
-                headersWithContentType(APPLICATION_X_WWW_FORM_URLENCODED_UTF8),
+                headersWithContentType(APPLICATION_X_WWW_FORM_URLENCODED_UTF_8),
                 APPLICATION_X_WWW_FORM_URLENCODED, UTF_8));
 
         assertTrue(HeaderUtils.hasContentType(
