@@ -1959,7 +1959,7 @@ public abstract class Publisher<T> {
      * If the source {@link Publisher} does not emit any item, then the returned {@link Single} will terminate with
      * {@link NoSuchElementException}.
      */
-    public final Single<T> ensureSingleItem() {
+    public final Single<T> firstOrError() {
         return new PubEnsureSingleItem<>(this);
     }
 

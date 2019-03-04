@@ -41,18 +41,18 @@ public class PubEnsureSingleItemTest {
 
     @Test
     public void syncSingleItemCompleted() {
-        listenerRule.listen(just("hello").ensureSingleItem()).verifySuccess("hello");
+        listenerRule.listen(just("hello").firstOrError()).verifySuccess("hello");
     }
 
     @Test
     public void syncMultipleItemCompleted() {
-        listenerRule.listen(Publisher.from("foo", "bar").ensureSingleItem())
+        listenerRule.listen(Publisher.from("foo", "bar").firstOrError())
                 .verifyFailure(IllegalArgumentException.class);
     }
 
     @Test
     public void asyncSingleItemCompleted() throws Exception {
-        listenerRule.listen(publisher.ensureSingleItem());
+        listenerRule.listen(publisher.firstOrError());
         executorRule.executor().submit(() -> {
             publisher.onNext("hello");
             publisher.onComplete();
@@ -62,7 +62,7 @@ public class PubEnsureSingleItemTest {
 
     @Test
     public void asyncMultipleItemCompleted() throws Exception {
-        listenerRule.listen(publisher.ensureSingleItem());
+        listenerRule.listen(publisher.firstOrError());
         executorRule.executor().submit(() -> {
             publisher.onNext("foo", "bar");
             publisher.onComplete();
@@ -72,14 +72,14 @@ public class PubEnsureSingleItemTest {
 
     @Test
     public void singleItemNoComplete() {
-        listenerRule.listen(publisher.ensureSingleItem());
+        listenerRule.listen(publisher.firstOrError());
         publisher.onNext("hello");
         listenerRule.verifyNoEmissions();
     }
 
     @Test
     public void singleItemErrorPropagates() {
-        listenerRule.listen(publisher.ensureSingleItem());
+        listenerRule.listen(publisher.firstOrError());
         publisher.onNext("hello");
         publisher.onError(DELIBERATE_EXCEPTION);
         listenerRule.verifyFailure(DELIBERATE_EXCEPTION);
@@ -87,21 +87,21 @@ public class PubEnsureSingleItemTest {
 
     @Test
     public void noItemsFails() {
-        listenerRule.listen(publisher.ensureSingleItem());
+        listenerRule.listen(publisher.firstOrError());
         publisher.onComplete();
         listenerRule.verifyFailure(NoSuchElementException.class);
     }
 
     @Test
     public void noItemErrorPropagates() {
-        listenerRule.listen(publisher.ensureSingleItem());
+        listenerRule.listen(publisher.firstOrError());
         publisher.onError(DELIBERATE_EXCEPTION);
         listenerRule.verifyFailure(DELIBERATE_EXCEPTION);
     }
 
     @Test
     public void multipleItemsFails() {
-        listenerRule.listen(publisher.ensureSingleItem());
+        listenerRule.listen(publisher.firstOrError());
         publisher.onNext("foo", "bar");
         publisher.onComplete();
         listenerRule.verifyFailure(IllegalArgumentException.class);

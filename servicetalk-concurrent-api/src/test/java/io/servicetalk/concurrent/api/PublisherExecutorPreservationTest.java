@@ -39,7 +39,7 @@ public class PublisherExecutorPreservationTest {
 
     @Test
     public void testPubToSingleOrError() {
-        assertSame(EXEC.executor(), publisher.ensureSingleItem().executor());
+        assertSame(EXEC.executor(), publisher.firstOrError().executor());
     }
 
     @Test

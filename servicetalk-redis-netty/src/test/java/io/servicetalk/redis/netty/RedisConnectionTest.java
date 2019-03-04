@@ -99,7 +99,7 @@ public class RedisConnectionTest extends BaseRedisClientTest {
     @Test
     public void singleCancel() throws Exception {
         assertThat(awaitIndefinitely(getEnv().client.reserveConnection(PING)
-                        .flatMap(cnx -> cnx.request(newRequest(PING)).ensureSingleItem())),
+                        .flatMap(cnx -> cnx.request(newRequest(PING)).firstOrError())),
                 is(PONG));
     }
 
