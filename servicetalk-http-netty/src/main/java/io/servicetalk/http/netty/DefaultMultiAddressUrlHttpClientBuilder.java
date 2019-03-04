@@ -64,6 +64,7 @@ import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseabl
 import static io.servicetalk.concurrent.api.AsyncCloseables.toListenableAsyncCloseable;
 import static io.servicetalk.concurrent.api.Single.defer;
 import static io.servicetalk.http.api.HttpHeaderNames.HOST;
+import static io.servicetalk.http.api.MultiAddressHttpClientFilterFactory.identity;
 import static io.servicetalk.http.api.SslConfigProviders.plainByDefault;
 import static io.servicetalk.transport.api.SslConfigBuilder.forClient;
 import static java.util.Objects.requireNonNull;
@@ -77,7 +78,8 @@ import static java.util.Objects.requireNonNull;
  *
  * @see <a href="https://tools.ietf.org/html/rfc7230#section-5.3.2">absolute-form rfc7230#section-5.3.2</a>
  */
-final class DefaultMultiAddressUrlHttpClientBuilder extends MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> {
+final class DefaultMultiAddressUrlHttpClientBuilder extends MultiAddressHttpClientBuilder<HostAndPort,
+        InetSocketAddress> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DefaultMultiAddressUrlHttpClientBuilder.class);
 
@@ -89,7 +91,7 @@ final class DefaultMultiAddressUrlHttpClientBuilder extends MultiAddressHttpClie
     private final DefaultSingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> builderTemplate;
     private SslConfigProvider sslConfigProvider = plainByDefault();
     private int maxRedirects = DEFAULT_MAX_REDIRECTS;
-    private MultiAddressHttpClientFilterFactory<HostAndPort> clientFilterFunction = MultiAddressHttpClientFilterFactory.identity();
+    private MultiAddressHttpClientFilterFactory<HostAndPort> clientFilterFunction = identity();
     @Nullable
     private Function<HostAndPort, CharSequence> hostHeaderTransformer;
 
@@ -119,7 +121,8 @@ final class DefaultMultiAddressUrlHttpClientBuilder extends MultiAddressHttpClie
                     keyFactory, executionContext, clientFactory.builderTemplate.executionStrategy()));
 
             // Need to wrap the top level client (group) in order for non-relative redirects to work
-            client = maxRedirects <= 0 ? client : new RedirectingHttpRequesterFilter(false, maxRedirects).create(client);
+            client = maxRedirects <= 0 ? client :
+                    new RedirectingHttpRequesterFilter(false, maxRedirects).create(client);
 
             return new StreamingHttpClientWithDependencies(client, toListenableAsyncCloseable(closeables),
                     reqRespFactory, clientFactory.builderTemplate.executionStrategy());
