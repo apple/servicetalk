@@ -86,6 +86,12 @@ public class ConsumeRequestPayloadOnResponsePathTest {
     @Test
     public void testConsumeRequestPayloadAfterResponsePayloadSent() throws Exception {
         test((responseSingle, request) -> responseSingle.flatMap(response -> success(
+                response.transformPayloadBody(payloadBody -> payloadBody.concatWith(consumePayloadBody(request))))));
+    }
+
+    @Test
+    public void testConsumeRequestPayloadAfterTrailersSent() throws Exception {
+        test((responseSingle, request) -> responseSingle.flatMap(response -> success(
                 response.transformRawPayloadBody(payloadBody -> payloadBody.concatWith(consumePayloadBody(request))))));
     }
 
