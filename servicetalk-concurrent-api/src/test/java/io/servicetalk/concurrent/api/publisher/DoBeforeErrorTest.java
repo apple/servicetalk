@@ -27,7 +27,6 @@ import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.api.VerificationTestUtils.verifySuppressed;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static org.hamcrest.Matchers.sameInstance;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 
 public class DoBeforeErrorTest extends AbstractDoErrorTest {
@@ -46,7 +45,6 @@ public class DoBeforeErrorTest extends AbstractDoErrorTest {
         }).subscribe(subscriber);
         subscriber.request(1);
         assertThat(subscriber.error(), sameInstance(srcEx));
-        assertNotNull(subscriber.error());
-        verifySuppressed(subscriber.error(), DELIBERATE_EXCEPTION);
+        verifySuppressed(subscriber.takeError(), DELIBERATE_EXCEPTION);
     }
 }

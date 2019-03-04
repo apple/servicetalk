@@ -37,6 +37,7 @@ import java.util.function.IntUnaryOperator;
 import static io.servicetalk.concurrent.api.BlockingTestUtils.awaitIndefinitelyNonNull;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
+import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -44,7 +45,6 @@ import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -120,12 +120,12 @@ public class DefaultSerializerSerializationTest {
         verify(provider).getSerializer(String.class);
 
         Buffer expected1 = verifySerializedBufferWithSizes(source, "Hello", 1);
-        assertThat(subscriber.items(), contains(expected1));
+        assertThat(subscriber.takeItems(), contains(expected1));
         Buffer expected2 = verifySerializedBufferWithSizes(source, "Hello", 2);
-        assertThat(subscriber.items(), contains(expected1, expected2));
+        assertThat(subscriber.takeItems(), contains(expected2));
 
         source.onComplete();
-        assertTrue(subscriber.isCompleted());
+        assertThat(subscriber.takeTerminal(), is(complete()));
     }
 
     @Test
@@ -140,12 +140,12 @@ public class DefaultSerializerSerializationTest {
         verify(provider).getSerializer(TYPE_FOR_LIST);
 
         Buffer expected1 = verifySerializedBufferWithSizes(source, singletonList("Hello"), 1);
-        assertThat(subscriber.items(), contains(expected1));
+        assertThat(subscriber.takeItems(), contains(expected1));
         Buffer expected2 = verifySerializedBufferWithSizes(source, singletonList("Hello"), 2);
-        assertThat(subscriber.items(), contains(expected1, expected2));
+        assertThat(subscriber.takeItems(), contains(expected2));
 
         source.onComplete();
-        assertTrue(subscriber.isCompleted());
+        assertThat(subscriber.takeTerminal(), is(complete()));
     }
 
     @Test

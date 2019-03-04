@@ -39,11 +39,11 @@ import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static io.servicetalk.concurrent.api.Executors.immediate;
-import static io.servicetalk.concurrent.api.IsIterableEndingWithInOrder.endsWith;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.api.VerificationTestUtils.verifyOriginalAndSuppressedCauses;
 import static io.servicetalk.concurrent.api.VerificationTestUtils.verifySuppressed;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.IntStream.range;
@@ -53,10 +53,10 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
@@ -132,8 +132,8 @@ public class PublisherFlatMapSingleTest {
         subscriber.request(1);
         source.onNext(1);
         source.onComplete();
-        assertThat(subscriber.items(), contains(2));
-        assertTrue(subscriber.isCompleted());
+        assertThat(subscriber.takeItems(), contains(2));
+        assertThat(subscriber.takeTerminal(), is(complete()));
     }
 
     @Test
@@ -142,8 +142,8 @@ public class PublisherFlatMapSingleTest {
         subscriber.request(1);
         source.onNext(1);
         source.onComplete();
-        assertThat(subscriber.items(), contains(new Integer[]{null}));
-        assertTrue(subscriber.isCompleted());
+        assertThat(subscriber.takeItems(), contains(new Integer[]{null}));
+        assertThat(subscriber.takeTerminal(), is(complete()));
     }
 
     @Test
@@ -154,8 +154,8 @@ public class PublisherFlatMapSingleTest {
         source.onNext(1);
         source.onComplete();
         single.onSuccess(2);
-        assertThat(subscriber.items(), contains(2));
-        assertTrue(subscriber.isCompleted());
+        assertThat(subscriber.takeItems(), contains(2));
+        assertThat(subscriber.takeTerminal(), is(complete()));
     }
 
     @Test
@@ -166,8 +166,8 @@ public class PublisherFlatMapSingleTest {
         source.onNext(1);
         single.onSuccess(2);
         source.onComplete();
-        assertThat(subscriber.items(), contains(2));
-        assertTrue(subscriber.isCompleted());
+        assertThat(subscriber.takeItems(), contains(2));
+        assertThat(subscriber.takeTerminal(), is(complete()));
     }
 
     @Test
@@ -176,7 +176,7 @@ public class PublisherFlatMapSingleTest {
                 .subscribe(subscriber);
         subscriber.request(1);
         source.onNext(1);
-        assertThat(subscriber.error(), sameInstance(DELIBERATE_EXCEPTION));
+        assertThat(subscriber.takeError(), sameInstance(DELIBERATE_EXCEPTION));
     }
 
     @Test
@@ -187,7 +187,7 @@ public class PublisherFlatMapSingleTest {
         source.onNext(1);
         source.onComplete();
         single.onError(DELIBERATE_EXCEPTION);
-        assertThat(subscriber.error(), sameInstance(DELIBERATE_EXCEPTION));
+        assertThat(subscriber.takeError(), sameInstance(DELIBERATE_EXCEPTION));
     }
 
     @Test
@@ -195,7 +195,7 @@ public class PublisherFlatMapSingleTest {
         toSource(source.flatMapSingle(integer1 -> Single.success(2), 2)).subscribe(subscriber);
         subscriber.request(1);
         source.onError(DELIBERATE_EXCEPTION);
-        assertThat(subscriber.error(), sameInstance(DELIBERATE_EXCEPTION));
+        assertThat(subscriber.takeError(), sameInstance(DELIBERATE_EXCEPTION));
     }
 
     @Test
@@ -204,8 +204,8 @@ public class PublisherFlatMapSingleTest {
         subscriber.request(1);
         source.onNext(1);
         source.onError(DELIBERATE_EXCEPTION);
-        assertThat(subscriber.items(), contains(2));
-        assertThat(subscriber.error(), sameInstance(DELIBERATE_EXCEPTION));
+        assertThat(subscriber.takeItems(), contains(2));
+        assertThat(subscriber.takeError(), sameInstance(DELIBERATE_EXCEPTION));
     }
 
     @Test
@@ -215,13 +215,12 @@ public class PublisherFlatMapSingleTest {
         subscriber.request(1);
         source.onNext(1);
         source.onError(DELIBERATE_EXCEPTION);
-        assertThat(subscriber.error(), sameInstance(DELIBERATE_EXCEPTION));
+        assertThat(subscriber.takeError(), sameInstance(DELIBERATE_EXCEPTION));
         single.verifyCancelled();
-        subscriber.clear();
         single.onError(new DeliberateException());
         assertTrue(subscriber.subscriptionReceived());
-        assertThat(subscriber.items(), hasSize(0));
-        assertFalse(subscriber.isTerminated());
+        assertThat(subscriber.takeItems(), hasSize(0));
+        assertThat(subscriber.takeTerminal(), nullValue());
     }
 
     @Test
@@ -233,8 +232,8 @@ public class PublisherFlatMapSingleTest {
         subscriber.cancel();
         single.verifyCancelled();
         assertTrue(subscriber.subscriptionReceived());
-        assertThat(subscriber.items(), hasSize(0));
-        assertFalse(subscriber.isTerminated());
+        assertThat(subscriber.takeItems(), hasSize(0));
+        assertThat(subscriber.takeTerminal(), nullValue());
     }
 
     @Test
@@ -248,12 +247,12 @@ public class PublisherFlatMapSingleTest {
         subscriber.cancel();
         single.verifyCancelled();
         assertTrue(subscriber.subscriptionReceived());
-        assertThat(subscriber.items(), hasSize(0));
-        assertFalse(subscriber.isTerminated());
+        assertThat(subscriber.takeItems(), hasSize(0));
+        assertThat(subscriber.takeTerminal(), nullValue());
         single.onSuccess(4);
-        assertThat(subscriber.items(), contains(4));
+        assertThat(subscriber.takeItems(), contains(4));
         source.onComplete();
-        assertTrue(subscriber.isCompleted());
+        assertThat(subscriber.takeTerminal(), is(complete()));
     }
 
     @Test
@@ -265,10 +264,10 @@ public class PublisherFlatMapSingleTest {
         subscriber.cancel();
         single.verifyCancelled();
         assertTrue(subscriber.subscriptionReceived());
-        assertThat(subscriber.items(), hasSize(0));
-        assertFalse(subscriber.isTerminated());
+        assertThat(subscriber.takeItems(), hasSize(0));
+        assertThat(subscriber.takeTerminal(), nullValue());
         single.onError(DELIBERATE_EXCEPTION);
-        assertThat(subscriber.error(), sameInstance(DELIBERATE_EXCEPTION));
+        assertThat(subscriber.takeError(), sameInstance(DELIBERATE_EXCEPTION));
     }
 
     @Test
@@ -287,19 +286,19 @@ public class PublisherFlatMapSingleTest {
         source.onNext(1, 1);
         assertThat("Unexpected number of Singles emitted.", emittedSingles, hasSize(2));
         emittedSingles.remove(0).onSuccess(2);
-        assertThat(subscriber.items(), contains(2));
+        assertThat(subscriber.takeItems(), contains(2));
 
         // Total requested must equal actual requested.
         assertThat(subscription.requested(), is(3L));
 
         emittedSingles.remove(0).onSuccess(3);
-        assertThat(subscriber.items(), endsWith(3));
+        assertThat(subscriber.takeItems(), contains(3));
         source.onNext(1);
         source.onComplete();
         assertThat("Unexpected number of Singles emitted.", emittedSingles, hasSize(1));
         emittedSingles.remove(0).onSuccess(4);
-        assertThat(subscriber.items(), endsWith(4));
-        assertTrue(subscriber.isCompleted());
+        assertThat(subscriber.takeItems(), contains(4));
+        assertThat(subscriber.takeTerminal(), is(complete()));
 
         // Total requested must equal actual requested.
         assertThat(subscription.requested(), is(3L));
@@ -323,7 +322,7 @@ public class PublisherFlatMapSingleTest {
             source.onError(cause);
         }
         assertFalse(subscription.isCancelled());
-        assertThat(subscriber.error(), sameInstance(DELIBERATE_EXCEPTION));
+        assertThat(subscriber.takeError(), sameInstance(DELIBERATE_EXCEPTION));
     }
 
     @Test
@@ -342,7 +341,7 @@ public class PublisherFlatMapSingleTest {
         source.onNext(1, 1);
         assertThat("Unexpected number of Singles emitted.", emittedSingles, hasSize(2));
         emittedSingles.remove(0).onSuccess(2);
-        assertThat(subscriber.items(), contains(2));
+        assertThat(subscriber.takeItems(), contains(2));
 
         // Request enough on completion to reach max concurrency.
         assertThat(subscription.requested(), is(3L));
@@ -350,14 +349,14 @@ public class PublisherFlatMapSingleTest {
         emittedSingles.remove(0).onSuccess(3);
         // Request enough on completion to reach max concurrency.
         assertThat(subscription.requested(), is(4L));
-        assertThat(subscriber.items(), endsWith(3));
+        assertThat(subscriber.takeItems(), contains(3));
 
         source.onNext(1);
         source.onComplete();
         assertThat("Unexpected number of Singles emitted.", emittedSingles, hasSize(1));
         emittedSingles.remove(0).onSuccess(4);
-        assertThat(subscriber.items(), endsWith(4));
-        assertTrue(subscriber.isCompleted());
+        assertThat(subscriber.takeItems(), contains(4));
+        assertThat(subscriber.takeTerminal(), is(complete()));
 
         // Request enough on completion to reach max concurrency.
         assertThat(subscription.requested(), is(6L));
@@ -372,14 +371,13 @@ public class PublisherFlatMapSingleTest {
         assertThat(subscription.requested(), is(2L));
         source.onNext(1); // Request no more than max concurrency.
         assertTrue(subscriber.subscriptionReceived());
-        assertThat(subscriber.items(), hasSize(0));
-        assertFalse(subscriber.isTerminated());
+        assertThat(subscriber.takeItems(), hasSize(0));
+        assertThat(subscriber.takeTerminal(), nullValue());
         assertThat(subscription.requested(), is(3L));
         source.onNext(1); // Request more with 1 single completion.
         assertThat(subscription.requested(), is(3L));
         source.onComplete(); // Stop requesting more.
-        assertNotNull(subscriber.error());
-        verifySuppressed(subscriber.error(), DELIBERATE_EXCEPTION);
+        verifySuppressed(subscriber.takeError(), DELIBERATE_EXCEPTION);
     }
 
     @Test
@@ -389,10 +387,10 @@ public class PublisherFlatMapSingleTest {
         subscriber.request(2);
         assertThat(subscription.requested(), is(2L));
         source.onNext(1, 1);
-        assertThat(subscriber.items(), contains(2, 2));
+        assertThat(subscriber.takeItems(), contains(2, 2));
         subscriber.request(2);
         source.onNext(1, 1);
-        assertThat(subscriber.items(), contains(2, 2, 2, 2));
+        assertThat(subscriber.takeItems(), contains(2, 2));
     }
 
     @Test
@@ -405,8 +403,8 @@ public class PublisherFlatMapSingleTest {
         source.onNext(1, 1);
         source.onNext(1, 1);
         source.onComplete();
-        assertThat(subscriber.items(), contains(2, 2, 2, 2));
-        assertTrue(subscriber.isCompleted());
+        assertThat(subscriber.takeItems(), contains(2, 2, 2, 2));
+        assertThat(subscriber.takeTerminal(), is(complete()));
     }
 
     @Test
@@ -422,9 +420,8 @@ public class PublisherFlatMapSingleTest {
         source.onComplete();
         assertThat("Unexpected emitted error count.", errors, hasSize(2));
         DeliberateException first = errors.remove(0);
-        assertNotNull(subscriber.error());
         for (DeliberateException error : errors) {
-            verifyOriginalAndSuppressedCauses(subscriber.error(), first, error);
+            verifyOriginalAndSuppressedCauses(subscriber.takeError(), first, error);
         }
     }
 

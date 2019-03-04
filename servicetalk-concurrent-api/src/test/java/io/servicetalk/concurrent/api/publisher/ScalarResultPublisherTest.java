@@ -22,10 +22,12 @@ import org.junit.Test;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
@@ -37,27 +39,27 @@ public class ScalarResultPublisherTest {
     public void testJust() {
         toSource(Publisher.just("Hello")).subscribe(subscriber);
         subscriber.request(1);
-        assertThat(subscriber.items(), contains("Hello"));
-        assertTrue(subscriber.isCompleted());
+        assertThat(subscriber.takeItems(), contains("Hello"));
+        assertThat(subscriber.takeTerminal(), is(complete()));
     }
 
     @Test
     public void testError() {
         toSource(Publisher.<String>error(DELIBERATE_EXCEPTION)).subscribe(subscriber);
-        assertThat(subscriber.error(), sameInstance(DELIBERATE_EXCEPTION));
+        assertThat(subscriber.takeError(), sameInstance(DELIBERATE_EXCEPTION));
     }
 
     @Test
     public void testEmpty() {
         toSource(Publisher.<String>empty()).subscribe(subscriber);
-        assertTrue(subscriber.isCompleted());
+        assertThat(subscriber.takeTerminal(), is(complete()));
     }
 
     @Test
     public void testNever() {
         toSource(Publisher.<String>never()).subscribe(subscriber);
         assertTrue(subscriber.subscriptionReceived());
-        assertThat(subscriber.items(), hasSize(0));
-        assertFalse(subscriber.isTerminated());
+        assertThat(subscriber.takeItems(), hasSize(0));
+        assertThat(subscriber.takeTerminal(), nullValue());
     }
 }

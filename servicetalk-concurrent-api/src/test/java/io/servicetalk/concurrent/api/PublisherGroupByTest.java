@@ -41,16 +41,16 @@ import java.util.concurrent.locks.LockSupport;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import static io.servicetalk.concurrent.api.IsIterableEndingWithInOrder.endsWith;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentCaptor.forClass;
 import static org.mockito.ArgumentMatchers.any;
@@ -127,27 +127,27 @@ public class PublisherGroupByTest {
         toSource(subscribeToAllGroups(10)).subscribe(subscriber);
         source.onNext(1);
         assertTrue(subscriber.subscriptionReceived());
-        assertThat(subscriber.items(), hasSize(0));
-        assertFalse(subscriber.isTerminated());
+        assertThat(subscriber.takeItems(), hasSize(0));
+        assertThat(subscriber.takeTerminal(), nullValue());
         subscriber.request(1);
         assertThat("Unexpected group subscribers.", groupSubs, hasSize(1));
         assertTrue(groupSubs.get(0).subscriptionReceived());
-        assertThat(groupSubs.get(0).items(), hasSize(0));
-        assertFalse(groupSubs.get(0).isTerminated());
+        assertThat(groupSubs.get(0).takeItems(), hasSize(0));
+        assertThat(groupSubs.get(0).takeTerminal(), nullValue());
         groupSubs.get(0).request(1);
-        assertThat(groupSubs.get(0).items(), contains(1));
-        assertThat(subscriber.items(), contains(Boolean.FALSE));
+        assertThat(groupSubs.get(0).takeItems(), contains(1));
+        assertThat(subscriber.takeItems(), contains(Boolean.FALSE));
         source.onNext(2);
         assertTrue(subscriber.subscriptionReceived());
-        assertFalse(subscriber.isTerminated());
+        assertThat(subscriber.takeTerminal(), nullValue());
         subscriber.request(Long.MAX_VALUE);
         assertThat("Unexpected group subscribers.", groupSubs, hasSize(2));
-        assertThat(subscriber.items(), endsWith(Boolean.TRUE));
+        assertThat(subscriber.takeItems(), contains(Boolean.TRUE));
         assertTrue(groupSubs.get(1).subscriptionReceived());
-        assertThat(groupSubs.get(1).items(), hasSize(0));
-        assertFalse(groupSubs.get(1).isTerminated());
+        assertThat(groupSubs.get(1).takeItems(), hasSize(0));
+        assertThat(groupSubs.get(1).takeTerminal(), nullValue());
         groupSubs.get(1).request(1);
-        assertThat(groupSubs.get(1).items(), contains(2));
+        assertThat(groupSubs.get(1).takeItems(), contains(2));
     }
 
     @Test
@@ -155,30 +155,30 @@ public class PublisherGroupByTest {
         toSource(subscribeToAllGroups(10)).subscribe(subscriber);
         source.onNext(1);
         assertTrue(subscriber.subscriptionReceived());
-        assertThat(subscriber.items(), hasSize(0));
-        assertFalse(subscriber.isTerminated());
+        assertThat(subscriber.takeItems(), hasSize(0));
+        assertThat(subscriber.takeTerminal(), nullValue());
         subscriber.request(1);
         assertThat("Unexpected group subscribers.", groupSubs, hasSize(1));
         assertTrue(groupSubs.get(0).subscriptionReceived());
-        assertThat(groupSubs.get(0).items(), hasSize(0));
-        assertFalse(groupSubs.get(0).isTerminated());
+        assertThat(groupSubs.get(0).takeItems(), hasSize(0));
+        assertThat(groupSubs.get(0).takeTerminal(), nullValue());
         groupSubs.get(0).request(Long.MAX_VALUE);
-        assertThat(groupSubs.get(0).items(), contains(1));
-        assertThat(subscriber.items(), contains(Boolean.FALSE));
+        assertThat(groupSubs.get(0).takeItems(), contains(1));
+        assertThat(subscriber.takeItems(), contains(Boolean.FALSE));
         source.onNext(2);
         assertTrue(subscriber.subscriptionReceived());
-        assertFalse(subscriber.isTerminated());
+        assertThat(subscriber.takeTerminal(), nullValue());
         assertThat("Unexpected group subscribers.", groupSubs, hasSize(1));
         source.onNext(3);
-        assertThat(groupSubs.get(0).items(), endsWith(3));
+        assertThat(groupSubs.get(0).takeItems(), contains(3));
         subscriber.request(1);
-        assertThat(subscriber.items(), endsWith(Boolean.TRUE));
+        assertThat(subscriber.takeItems(), contains(Boolean.TRUE));
         assertThat("Unexpected group subscribers.", groupSubs, hasSize(2));
         assertTrue(groupSubs.get(1).subscriptionReceived());
-        assertThat(groupSubs.get(1).items(), hasSize(0));
-        assertFalse(groupSubs.get(1).isTerminated());
+        assertThat(groupSubs.get(1).takeItems(), hasSize(0));
+        assertThat(groupSubs.get(1).takeTerminal(), nullValue());
         groupSubs.get(1).request(1);
-        assertThat(groupSubs.get(1).items(), contains(2));
+        assertThat(groupSubs.get(1).takeItems(), contains(2));
     }
 
     @Test
@@ -186,37 +186,37 @@ public class PublisherGroupByTest {
         toSource(subscribeToAllGroups(10)).subscribe(subscriber);
         source.onNext(1);
         assertTrue(subscriber.subscriptionReceived());
-        assertThat(subscriber.items(), hasSize(0));
-        assertFalse(subscriber.isTerminated());
+        assertThat(subscriber.takeItems(), hasSize(0));
+        assertThat(subscriber.takeTerminal(), nullValue());
         subscriber.request(1);
         assertThat("Unexpected group subscribers.", groupSubs, hasSize(1));
         assertTrue(groupSubs.get(0).subscriptionReceived());
-        assertThat(groupSubs.get(0).items(), hasSize(0));
-        assertFalse(groupSubs.get(0).isTerminated());
+        assertThat(groupSubs.get(0).takeItems(), hasSize(0));
+        assertThat(groupSubs.get(0).takeTerminal(), nullValue());
         groupSubs.get(0).request(1);
-        assertThat(groupSubs.get(0).items(), contains(1));
-        assertThat(subscriber.items(), contains(Boolean.FALSE));
+        assertThat(groupSubs.get(0).takeItems(), contains(1));
+        assertThat(subscriber.takeItems(), contains(Boolean.FALSE));
         source.onNext(2);
         source.onNext(3);
         assertTrue(subscriber.subscriptionReceived());
-        assertFalse(subscriber.isTerminated());
+        assertThat(subscriber.takeTerminal(), nullValue());
         assertThat("Unexpected group subscribers.", groupSubs, hasSize(1));
         source.onComplete();
         assertTrue(groupSubs.get(0).subscriptionReceived());
-        assertFalse(groupSubs.get(0).isTerminated());
+        assertThat(groupSubs.get(0).takeTerminal(), nullValue());
         groupSubs.get(0).request(1);
-        assertThat(groupSubs.get(0).items(), endsWith(3));
+        assertThat(groupSubs.get(0).takeItems(), contains(3));
         subscriber.request(1);
-        assertThat(subscriber.items(), endsWith(Boolean.TRUE));
-        assertTrue(subscriber.isCompleted());
+        assertThat(subscriber.takeItems(), contains(Boolean.TRUE));
+        assertThat(subscriber.takeTerminal(), is(complete()));
         assertThat("Unexpected group subscribers.", groupSubs, hasSize(2));
         assertTrue(groupSubs.get(1).subscriptionReceived());
-        assertThat(groupSubs.get(1).items(), hasSize(0));
-        assertFalse(groupSubs.get(1).isTerminated());
+        assertThat(groupSubs.get(1).takeItems(), hasSize(0));
+        assertThat(groupSubs.get(1).takeTerminal(), nullValue());
         groupSubs.get(1).request(1);
-        assertThat(groupSubs.get(1).items(), contains(2));
-        assertTrue(groupSubs.get(1).isCompleted());
-        assertTrue(groupSubs.get(0).isCompleted());
+        assertThat(groupSubs.get(1).takeItems(), contains(2));
+        assertThat(groupSubs.get(1).takeTerminal(), is(complete()));
+        assertThat(groupSubs.get(0).takeTerminal(), is(complete()));
     }
 
     @Test
@@ -224,36 +224,36 @@ public class PublisherGroupByTest {
         toSource(subscribeToAllGroups(10)).subscribe(subscriber);
         source.onNext(1);
         assertTrue(subscriber.subscriptionReceived());
-        assertThat(subscriber.items(), hasSize(0));
-        assertFalse(subscriber.isTerminated());
+        assertThat(subscriber.takeItems(), hasSize(0));
+        assertThat(subscriber.takeTerminal(), nullValue());
         subscriber.request(1);
         assertThat("Unexpected group subscribers.", groupSubs, hasSize(1));
         assertTrue(groupSubs.get(0).subscriptionReceived());
-        assertThat(groupSubs.get(0).items(), hasSize(0));
-        assertFalse(groupSubs.get(0).isTerminated());
+        assertThat(groupSubs.get(0).takeItems(), hasSize(0));
+        assertThat(groupSubs.get(0).takeTerminal(), nullValue());
         groupSubs.get(0).request(1);
-        assertThat(groupSubs.get(0).items(), contains(1));
-        assertThat(subscriber.items(), contains(Boolean.FALSE));
+        assertThat(groupSubs.get(0).takeItems(), contains(1));
+        assertThat(subscriber.takeItems(), contains(Boolean.FALSE));
         source.onNext(2);
         source.onNext(3);
         assertTrue(subscriber.subscriptionReceived());
-        assertFalse(subscriber.isTerminated());
+        assertThat(subscriber.takeTerminal(), nullValue());
         assertThat("Unexpected group subscribers.", groupSubs, hasSize(1));
         source.onError(DELIBERATE_EXCEPTION);
         assertTrue(groupSubs.get(0).subscriptionReceived());
-        assertFalse(groupSubs.get(0).isTerminated());
+        assertThat(groupSubs.get(0).takeTerminal(), nullValue());
         groupSubs.get(0).request(1);
-        assertThat(groupSubs.get(0).items(), endsWith(3));
+        assertThat(groupSubs.get(0).takeItems(), contains(3));
         subscriber.request(1);
-        assertThat(subscriber.items(), endsWith(Boolean.TRUE));
+        assertThat(subscriber.takeItems(), contains(Boolean.TRUE));
         assertThat("Unexpected group subscribers.", groupSubs, hasSize(2));
         assertTrue(groupSubs.get(1).subscriptionReceived());
-        assertThat(groupSubs.get(1).items(), hasSize(0));
-        assertFalse(groupSubs.get(1).isTerminated());
+        assertThat(groupSubs.get(1).takeItems(), hasSize(0));
+        assertThat(groupSubs.get(1).takeTerminal(), nullValue());
         groupSubs.get(1).request(1);
-        assertThat(groupSubs.get(1).items(), contains(2));
-        assertThat(groupSubs.get(1).error(), sameInstance(DELIBERATE_EXCEPTION));
-        assertThat(groupSubs.get(0).error(), sameInstance(DELIBERATE_EXCEPTION));
+        assertThat(groupSubs.get(1).takeItems(), contains(2));
+        assertThat(groupSubs.get(1).takeError(), sameInstance(DELIBERATE_EXCEPTION));
+        assertThat(groupSubs.get(0).takeError(), sameInstance(DELIBERATE_EXCEPTION));
     }
 
     @Test
@@ -264,18 +264,18 @@ public class PublisherGroupByTest {
         source.onSubscribe(subscription);
         source.onNext(1);
         assertTrue(subscriber.subscriptionReceived());
-        assertThat(subscriber.items(), hasSize(0));
-        assertFalse(subscriber.isTerminated());
+        assertThat(subscriber.takeItems(), hasSize(0));
+        assertThat(subscriber.takeTerminal(), nullValue());
         subscriber.request(1);
-        assertThat(subscriber.items(), contains(Boolean.FALSE));
+        assertThat(subscriber.takeItems(), contains(Boolean.FALSE));
         assertThat("Unexpected group subscribers.", groupSubs, hasSize(1));
         assertTrue(groupSubs.get(0).subscriptionReceived());
-        assertThat(groupSubs.get(0).items(), hasSize(0));
-        assertFalse(groupSubs.get(0).isTerminated());
+        assertThat(groupSubs.get(0).takeItems(), hasSize(0));
+        assertThat(groupSubs.get(0).takeTerminal(), nullValue());
         groupSubs.get(0).request(1);
-        assertThat(groupSubs.get(0).items(), contains(1));
+        assertThat(groupSubs.get(0).takeItems(), contains(1));
         assertTrue(subscription.isCancelled());
-        assertThat(groupSubs.get(0).error(), sameInstance(DELIBERATE_EXCEPTION));
+        assertThat(groupSubs.get(0).takeError(), sameInstance(DELIBERATE_EXCEPTION));
     }
 
     @Test
@@ -299,36 +299,36 @@ public class PublisherGroupByTest {
         })).subscribe(subscriber);
         source.onNext(1);
         assertTrue(subscriber.subscriptionReceived());
-        assertThat(subscriber.items(), hasSize(0));
-        assertFalse(subscriber.isTerminated());
+        assertThat(subscriber.takeItems(), hasSize(0));
+        assertThat(subscriber.takeTerminal(), nullValue());
         subscriber.request(1);
-        assertThat(subscriber.items(), contains(Boolean.FALSE));
+        assertThat(subscriber.takeItems(), contains(Boolean.FALSE));
         assertThat("Unexpected group subscribers.", groupSubs, hasSize(1));
         source.onNext(2);
         assertTrue(subscriber.subscriptionReceived());
-        assertFalse(subscriber.isTerminated());
+        assertThat(subscriber.takeTerminal(), nullValue());
         subscriber.request(1);
-        assertThat(subscriber.items(), endsWith(Boolean.TRUE));
+        assertThat(subscriber.takeItems(), contains(Boolean.TRUE));
 
         assertTrue(groupSubs.get(1).subscriptionReceived());
-        assertThat(groupSubs.get(1).items(), hasSize(0));
-        assertFalse(groupSubs.get(1).isTerminated());
+        assertThat(groupSubs.get(1).takeItems(), hasSize(0));
+        assertThat(groupSubs.get(1).takeTerminal(), nullValue());
         groupSubs.get(1).request(1);
-        assertThat(groupSubs.get(1).items(), contains(2));
+        assertThat(groupSubs.get(1).takeItems(), contains(2));
 
         assertTrue(groupSubs.get(0).subscriptionReceived());
-        assertThat(groupSubs.get(0).items(), hasSize(0));
-        assertFalse(groupSubs.get(0).isTerminated());
+        assertThat(groupSubs.get(0).takeItems(), hasSize(0));
+        assertThat(groupSubs.get(0).takeTerminal(), nullValue());
         failOnNext.set(true);
         groupSubs.get(0).request(1);
-        assertThat(groupSubs.get(0).items(), contains(1));
+        assertThat(groupSubs.get(0).takeItems(), contains(1));
 
         // We make a best effort to deliver a terminal event to the groups.
-        assertThat(groupSubs.get(0).error(), sameInstance(DELIBERATE_EXCEPTION));
-        assertThat(groupSubs.get(1).error(), sameInstance(DELIBERATE_EXCEPTION));
+        assertThat(groupSubs.get(0).takeError(), sameInstance(DELIBERATE_EXCEPTION));
+        assertThat(groupSubs.get(1).takeError(), sameInstance(DELIBERATE_EXCEPTION));
         assertTrue(subscriber.subscriptionReceived());
-        assertThat(subscriber.items(), hasSize(2));
-        assertFalse(subscriber.isTerminated());
+        assertThat(subscriber.takeItems(), hasSize(0));
+        assertThat(subscriber.takeTerminal(), nullValue());
     }
 
     @Test
@@ -362,16 +362,16 @@ public class PublisherGroupByTest {
             latch1.await();
             source.onNext(1);
             assertTrue(subscriber.subscriptionReceived());
-            assertThat(subscriber.items(), hasSize(0));
-            assertFalse(subscriber.isTerminated());
+            assertThat(subscriber.takeItems(), hasSize(0));
+            assertThat(subscriber.takeTerminal(), nullValue());
             subscriber.request(1);
-            assertThat(subscriber.items(), contains(Boolean.FALSE));
+            assertThat(subscriber.takeItems(), contains(Boolean.FALSE));
 
             TestPublisherSubscriber<Integer> groupSub = groupSubs.get(0);
             groupSubRef.set(groupSub);
             assertTrue(groupSub.subscriptionReceived());
-            assertThat(groupSub.items(), hasSize(0));
-            assertFalse(groupSub.isTerminated());
+            assertThat(groupSub.takeItems(), hasSize(0));
+            assertThat(groupSub.takeTerminal(), nullValue());
             latch2.countDown();
 
             // writerThread
@@ -388,7 +388,7 @@ public class PublisherGroupByTest {
 
             f.get();
 
-            List<Integer> items = groupSub.items();
+            List<Integer> items = groupSub.takeItems();
             assertThat(items.size(), is(totalData));
             for (Integer item : items) {
                 assertThat(item, is(1));
@@ -407,16 +407,16 @@ public class PublisherGroupByTest {
         })).subscribe(subscriber);
         subscriber.request(5);
         source.onNext(1, 3, 5, 7, 9);
-        assertThat(subscriber.items(), contains(Boolean.FALSE));
+        assertThat(subscriber.takeItems(), contains(Boolean.FALSE));
         assertThat("Unexpected group subscribers.", groupSubs, hasSize(1));
         TestPublisherSubscriber<Integer> sub = groupSubs.remove(0);
         if (requestFromGroupOnSubscribe <= 0) {
             sub.request(1);
         }
-        assertThat(sub.items(), contains(1));
+        assertThat(sub.takeItems(), contains(1));
         sub.cancel();
         assertTrue(sub.subscriptionReceived());
-        assertFalse(sub.isTerminated());
+        assertThat(sub.takeTerminal(), nullValue());
     }
 
     @Test
@@ -424,13 +424,13 @@ public class PublisherGroupByTest {
         toSource(subscribeToAllGroups(10)).subscribe(subscriber);
         subscriber.request(5);
         source.onNext(1, 3, 5, 7, 9);
-        assertThat(subscriber.items(), contains(Boolean.FALSE));
+        assertThat(subscriber.takeItems(), contains(Boolean.FALSE));
         subscriber.cancel();
         assertThat("Unexpected group subscribers.", groupSubs, hasSize(1));
         TestPublisherSubscriber<Integer> sub = groupSubs.remove(0);
         sub.request(5);
-        assertThat(sub.items(), contains(1, 3, 5, 7, 9));
-        assertThat(sub.error(), instanceOf(CancellationException.class));
+        assertThat(sub.takeItems(), contains(1, 3, 5, 7, 9));
+        assertThat(sub.takeError(), instanceOf(CancellationException.class));
     }
 
     @Test
@@ -439,15 +439,15 @@ public class PublisherGroupByTest {
         subscriber.request(1);
         source.onNext(1);
         source.onComplete();
-        assertThat(subscriber.items(), contains(Boolean.TRUE));
-        assertTrue(subscriber.isCompleted());
+        assertThat(subscriber.takeItems(), contains(Boolean.TRUE));
+        assertThat(subscriber.takeTerminal(), is(complete()));
         assertThat("Unexpected groups.", groups, hasSize(1));
         GroupedPublisher<Boolean, Integer> grp = groups.remove(0);
         TestPublisherSubscriber<Integer> subscriber = new TestPublisherSubscriber<>();
         toSource(grp).subscribe(subscriber);
         subscriber.request(1);
-        assertThat(subscriber.items(), contains(1));
-        assertTrue(subscriber.isCompleted());
+        assertThat(subscriber.takeItems(), contains(1));
+        assertThat(subscriber.takeTerminal(), is(complete()));
     }
 
     @Test
@@ -459,15 +459,15 @@ public class PublisherGroupByTest {
             source.onNext(i);
         }
         assertTrue(subscription.isCancelled());
-        assertThat(subscriber.items(), contains(Boolean.TRUE));
-        assertThat(subscriber.error(), instanceOf(QueueFullException.class));
+        assertThat(subscriber.takeItems(), contains(Boolean.TRUE));
+        assertThat(subscriber.takeError(), instanceOf(QueueFullException.class));
         assertThat("Unexpected groups.", groups, hasSize(1));
         GroupedPublisher<Boolean, Integer> grp = groups.remove(0);
         TestPublisherSubscriber<Integer> subscriber = new TestPublisherSubscriber<>();
         toSource(grp).subscribe(subscriber);
         subscriber.request(16);
-        assertThat(subscriber.items(), contains(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15));
-        assertThat(subscriber.error(), instanceOf(QueueFullException.class));
+        assertThat(subscriber.takeItems(), contains(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15));
+        assertThat(subscriber.takeError(), instanceOf(QueueFullException.class));
     }
 
     @Test
@@ -479,13 +479,13 @@ public class PublisherGroupByTest {
             source.onNext(i);
         }
         assertTrue(subscription.isCancelled());
-        assertThat(subscriber.items(), contains(Boolean.TRUE));
-        assertThat(subscriber.error(), instanceOf(QueueFullException.class));
+        assertThat(subscriber.takeItems(), contains(Boolean.TRUE));
+        assertThat(subscriber.takeError(), instanceOf(QueueFullException.class));
         assertThat("Unexpected groups.", groupSubs, hasSize(1));
         TestPublisherSubscriber<Integer> subscriber = groupSubs.remove(0);
         subscriber.request(16);
-        assertThat(subscriber.items(), contains(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15));
-        assertThat(subscriber.error(), instanceOf(QueueFullException.class));
+        assertThat(subscriber.takeItems(), contains(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15));
+        assertThat(subscriber.takeError(), instanceOf(QueueFullException.class));
     }
 
     @Test
@@ -500,12 +500,12 @@ public class PublisherGroupByTest {
         source.onNext(1, 2);
         assertTrue(subscription.isCancelled());
         subscriber.request(1);
-        assertThat(subscriber.items(), contains(Boolean.TRUE));
-        assertThat(subscriber.error(), sameInstance(DELIBERATE_EXCEPTION));
+        assertThat(subscriber.takeItems(), contains(Boolean.TRUE));
+        assertThat(subscriber.takeError(), sameInstance(DELIBERATE_EXCEPTION));
         assertThat("Unexpected group subscribers.", groupSubs, hasSize(1));
         groupSubs.get(0).request(1);
-        assertThat(groupSubs.get(0).items(), contains(1));
-        assertThat(groupSubs.get(0).error(), sameInstance(DELIBERATE_EXCEPTION));
+        assertThat(groupSubs.get(0).takeItems(), contains(1));
+        assertThat(groupSubs.get(0).takeError(), sameInstance(DELIBERATE_EXCEPTION));
     }
 
     @Test
@@ -520,12 +520,12 @@ public class PublisherGroupByTest {
         subscriber.request(1);
         source.onNext(1, 2);
         assertTrue(subscription.isCancelled());
-        assertThat(subscriber.items(), contains(Boolean.TRUE));
-        assertThat(subscriber.error(), sameInstance(DELIBERATE_EXCEPTION));
+        assertThat(subscriber.takeItems(), contains(Boolean.TRUE));
+        assertThat(subscriber.takeError(), sameInstance(DELIBERATE_EXCEPTION));
         assertThat("Unexpected group subscribers.", groupSubs, hasSize(1));
         groupSubs.get(0).request(1);
-        assertThat(groupSubs.get(0).items(), contains(1));
-        assertThat(groupSubs.get(0).error(), sameInstance(DELIBERATE_EXCEPTION));
+        assertThat(groupSubs.get(0).takeItems(), contains(1));
+        assertThat(groupSubs.get(0).takeError(), sameInstance(DELIBERATE_EXCEPTION));
     }
 
     @Test
@@ -550,7 +550,7 @@ public class PublisherGroupByTest {
         subscriber.request(1);
         assertThat(subscription.requested(), is(1L));
         source.onNext(1);
-        assertThat(subscriber.items(), contains(Boolean.FALSE));
+        assertThat(subscriber.takeItems(), contains(Boolean.FALSE));
         assertThat("Unexpected group subscribers.", groupSubs, hasSize(1));
         final TestPublisherSubscriber<Integer> grpSub = groupSubs.remove(0);
         grpSub.request(3);
@@ -558,8 +558,8 @@ public class PublisherGroupByTest {
         source.onNext(3, 5);
         assertThat(subscription.requested(), is(3L));
         source.onComplete();
-        assertThat(grpSub.items(), contains(1, 3, 5));
-        assertTrue(grpSub.isCompleted());
+        assertThat(grpSub.takeItems(), contains(1, 3, 5));
+        assertThat(grpSub.takeTerminal(), is(complete()));
     }
 
     @Test
@@ -568,12 +568,12 @@ public class PublisherGroupByTest {
         subscriber.request(1);
         source.onNext(1, null);
         source.onComplete();
-        assertThat(subscriber.items(), contains(Boolean.FALSE));
-        assertTrue(subscriber.isCompleted());
+        assertThat(subscriber.takeItems(), contains(Boolean.FALSE));
+        assertThat(subscriber.takeTerminal(), is(complete()));
         assertThat("Unexpected group subscribers.", groupSubs, hasSize(1));
         groupSubs.get(0).request(2);
-        assertThat(groupSubs.get(0).items(), contains(1, null));
-        assertTrue(groupSubs.get(0).isCompleted());
+        assertThat(groupSubs.get(0).takeItems(), contains(1, null));
+        assertThat(groupSubs.get(0).takeTerminal(), is(complete()));
     }
 
     private void testGroupOnNextThrows(int requestFromGroupOnSubscribe) {
@@ -600,31 +600,31 @@ public class PublisherGroupByTest {
         source.onComplete();
         assertThat("Unexpected group subscribers.", groupSubs, hasSize(1));
         groupSubs.get(0).request(1);
-        assertThat(groupSubs.get(0).items(), contains(1));
+        assertThat(groupSubs.get(0).takeItems(), contains(1));
     }
 
     private void testGroupOnNextAndError(List<TestPublisherSubscriber<Integer>> groupSubs) {
         subscriber.request(1);
         source.onNext(1, 3);
         source.onError(DELIBERATE_EXCEPTION);
-        assertThat(subscriber.items(), contains(Boolean.FALSE));
-        assertThat(subscriber.error(), sameInstance(DELIBERATE_EXCEPTION));
+        assertThat(subscriber.takeItems(), contains(Boolean.FALSE));
+        assertThat(subscriber.takeError(), sameInstance(DELIBERATE_EXCEPTION));
         assertThat("Unexpected group subscribers.", groupSubs, hasSize(1));
         groupSubs.get(0).request(2);
-        assertThat(groupSubs.get(0).items(), contains(1, 3));
-        assertThat(groupSubs.get(0).error(), sameInstance(DELIBERATE_EXCEPTION));
+        assertThat(groupSubs.get(0).takeItems(), contains(1, 3));
+        assertThat(groupSubs.get(0).takeError(), sameInstance(DELIBERATE_EXCEPTION));
     }
 
     private void testGroupOnNextAndComplete(List<TestPublisherSubscriber<Integer>> groupSubs) {
         subscriber.request(1);
         source.onNext(1, 3);
         source.onComplete();
-        assertThat(subscriber.items(), contains(Boolean.FALSE));
-        assertTrue(subscriber.isCompleted());
+        assertThat(subscriber.takeItems(), contains(Boolean.FALSE));
+        assertThat(subscriber.takeTerminal(), is(complete()));
         assertThat("Unexpected group subscribers.", groupSubs, hasSize(1));
         groupSubs.get(0).request(2);
-        assertThat(groupSubs.get(0).items(), contains(1, 3));
-        assertTrue(groupSubs.get(0).isCompleted());
+        assertThat(groupSubs.get(0).takeItems(), contains(1, 3));
+        assertThat(groupSubs.get(0).takeTerminal(), is(complete()));
     }
 
     private List<GroupedPublisher<Boolean, Integer>> subscribe(int maxBufferPerGroup) {

@@ -30,13 +30,15 @@ import java.util.concurrent.CountDownLatch;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
 import static java.lang.Thread.currentThread;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 public class SingleToPublisherTest {
@@ -52,31 +54,31 @@ public class SingleToPublisherTest {
     public void testSuccessfulFuture() {
         toSource(Single.success("Hello").toPublisher()).subscribe(verifier);
         verifier.request(1);
-        assertThat(verifier.items(), contains("Hello"));
-        assertTrue(verifier.isCompleted());
+        assertThat(verifier.takeItems(), contains("Hello"));
+        assertThat(verifier.takeTerminal(), is(complete()));
     }
 
     @Test
     public void testFailedFuture() {
         toSource(Single.<String>error(DELIBERATE_EXCEPTION).toPublisher()).subscribe(verifier);
         verifier.request(1);
-        assertThat(verifier.error(), sameInstance(DELIBERATE_EXCEPTION));
+        assertThat(verifier.takeError(), sameInstance(DELIBERATE_EXCEPTION));
     }
 
     @Test
     public void testCancelBeforeRequest() {
         toSource(Single.success("Hello").toPublisher()).subscribe(verifier);
         assertTrue(verifier.subscriptionReceived());
-        assertThat(verifier.items(), hasSize(0));
-        assertFalse(verifier.isTerminated());
+        assertThat(verifier.takeItems(), hasSize(0));
+        assertThat(verifier.takeTerminal(), nullValue());
     }
 
     @Test
     public void testCancelAfterRequest() {
         toSource(Single.success("Hello").toPublisher()).subscribe(verifier);
         verifier.request(1);
-        assertThat(verifier.items(), contains("Hello"));
-        assertTrue(verifier.isCompleted());
+        assertThat(verifier.takeItems(), contains("Hello"));
+        assertThat(verifier.takeTerminal(), is(complete()));
         verifier.cancel();
     }
 
@@ -84,7 +86,7 @@ public class SingleToPublisherTest {
     public void testInvalidRequestN() {
         toSource(Single.success("Hello").toPublisher()).subscribe(verifier);
         verifier.request(-1);
-        assertThat(verifier.error(), instanceOf(IllegalArgumentException.class));
+        assertThat(verifier.takeError(), instanceOf(IllegalArgumentException.class));
     }
 
     @Test
@@ -94,8 +96,8 @@ public class SingleToPublisherTest {
         })).subscribe(verifier);
         // The mock behavior must be applied after subscribe, because a new mock is created as part of this process.
         verifier.request(1);
-        assertThat(verifier.items(), contains("Hello"));
-        assertThat(verifier.error(), sameInstance(DELIBERATE_EXCEPTION));
+        assertThat(verifier.takeItems(), contains("Hello"));
+        assertThat(verifier.takeError(), sameInstance(DELIBERATE_EXCEPTION));
     }
 
     @Test

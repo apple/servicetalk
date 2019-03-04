@@ -36,12 +36,16 @@ import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.Publisher.just;
 import static io.servicetalk.concurrent.api.Single.success;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
+import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
 import static io.servicetalk.transport.netty.internal.CloseHandler.UNSUPPORTED_PROTOCOL_CLOSE_HANDLER;
 import static io.servicetalk.transport.netty.internal.FlushStrategies.defaultFlushStrategy;
 import static java.lang.Integer.MAX_VALUE;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -90,15 +94,15 @@ public class DefaultNettyPipelinedConnectionTest {
         writePublisher1.onComplete();
         assertTrue(readSubscriber.subscriptionReceived());
         channel.writeInbound(1);
-        assertThat(readSubscriber.items(), contains(1));
-        assertTrue(readSubscriber.isCompleted());
+        assertThat(readSubscriber.takeItems(), contains(1));
+        assertThat(readSubscriber.takeTerminal(), is(complete()));
         assertTrue(writePublisher2.isSubscribed());
         writePublisher2.onNext(1);
         writePublisher2.onComplete();
         assertTrue(secondReadSubscriber.subscriptionReceived());
         channel.writeInbound(2);
-        assertThat(secondReadSubscriber.items(), contains(2));
-        assertTrue(secondReadSubscriber.isCompleted());
+        assertThat(secondReadSubscriber.takeItems(), contains(2));
+        assertThat(secondReadSubscriber.takeTerminal(), is(complete()));
     }
 
     @Test
@@ -123,15 +127,15 @@ public class DefaultNettyPipelinedConnectionTest {
 
         // The first read completed successfully (after the second read was cancelled). After the first read completes
         // the second read subscriber is swapped in and the cancel state is propagated up which closes the channel.
-        assertThat(secondReadSubscriber.error(), instanceOf(ClosedChannelException.class));
+        assertThat(secondReadSubscriber.takeError(), instanceOf(ClosedChannelException.class));
     }
 
     private void forceReadSubscriberComplete() {
         // We have to simulate some read event in order to complete the first read Subscriber because the
         // NettyChannelPublisher needs to read data to invoke the TerminalPredicate.
         channel.writeInbound(1);
-        assertThat(readSubscriber.items(), contains(1));
-        assertTrue(readSubscriber.isCompleted());
+        assertThat(readSubscriber.takeItems(), contains(1));
+        assertThat(readSubscriber.takeTerminal(), is(complete()));
     }
 
     @Test
@@ -165,12 +169,12 @@ public class DefaultNettyPipelinedConnectionTest {
         writePublisher1.onNext(1);
         writePublisher1.onComplete();
         channel.writeInbound(1);
-        assertTrue(readSubscriber.isCompleted());
+        assertThat(readSubscriber.takeTerminal(), is(complete()));
         writePublisher2.onNext(1);
         writePublisher2.onComplete();
         channel.writeInbound(2);
-        assertThat(secondReadSubscriber.items(), contains(2));
-        assertTrue(secondReadSubscriber.isCompleted());
+        assertThat(secondReadSubscriber.takeItems(), contains(2));
+        assertThat(secondReadSubscriber.takeTerminal(), is(complete()));
     }
 
     @Test
@@ -188,8 +192,8 @@ public class DefaultNettyPipelinedConnectionTest {
         writePublisher2.onNext(1);
         writePublisher2.onComplete();
         channel.writeInbound(1);
-        assertThat(secondReadSubscriber.items(), contains(1));
-        assertTrue(secondReadSubscriber.isCompleted());
+        assertThat(secondReadSubscriber.takeItems(), contains(1));
+        assertThat(secondReadSubscriber.takeTerminal(), is(complete()));
     }
 
     @Test
@@ -204,9 +208,9 @@ public class DefaultNettyPipelinedConnectionTest {
         readSubscriber.cancel();
 
         // The active read subscriber cancelled, this should close the connection and stop all subsequent operations.
-        assertThat(readSubscriber.items(), hasSize(0));
-        assertFalse(readSubscriber.isTerminated());
-        assertTrue(secondReadSubscriber.isTerminated());
+        assertThat(readSubscriber.takeItems(), hasSize(0));
+        assertThat(readSubscriber.takeTerminal(), nullValue());
+        assertThat(secondReadSubscriber.takeTerminal(), notNullValue());
         assertFalse(channel.isOpen());
     }
 
@@ -218,7 +222,7 @@ public class DefaultNettyPipelinedConnectionTest {
         readSubscriber.request(1);
         verify(writer).write();
         channel.writeInbound(1);
-        assertThat(readSubscriber.items(), contains(1));
-        assertTrue(readSubscriber.isCompleted());
+        assertThat(readSubscriber.takeItems(), contains(1));
+        assertThat(readSubscriber.takeTerminal(), is(complete()));
     }
 }

@@ -38,6 +38,7 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
 import static java.lang.Math.max;
 import static java.lang.Math.min;
 import static java.lang.Runtime.getRuntime;
@@ -49,7 +50,6 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.rules.ExpectedException.none;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -87,8 +87,8 @@ public class ConnectableOutputStreamTest {
         cos.close();
         toSource(connect).subscribe(subscriber);
         subscriber.request(1);
-        assertThat(subscriber.items(), contains(new byte[]{1}));
-        assertTrue(subscriber.isCompleted());
+        assertThat(subscriber.takeItems(), contains(new byte[]{1}));
+        assertThat(subscriber.takeTerminal(), is(complete()));
         verify(nextSizeSupplier).applyAsInt(0, 1);
     }
 
@@ -100,8 +100,8 @@ public class ConnectableOutputStreamTest {
         cos.close();
         toSource(connect).subscribe(subscriber);
         subscriber.request(1);
-        assertThat(subscriber.items(), contains(new byte[]{1}));
-        assertTrue(subscriber.isCompleted());
+        assertThat(subscriber.takeItems(), contains(new byte[]{1}));
+        assertThat(subscriber.takeTerminal(), is(complete()));
         verify(nextSizeSupplier).applyAsInt(0, 1);
         cos.close(); // should be idempotent
         verifyNoMoreInteractions(nextSizeSupplier);
@@ -145,7 +145,7 @@ public class ConnectableOutputStreamTest {
         onSubscribe.await();
         assertThat(errorRef.get(), instanceOf(IllegalArgumentException.class));
         toSource(cos.connect()).subscribe(subscriber);
-        assertThat(subscriber.error(), instanceOf(IllegalStateException.class));
+        assertThat(subscriber.takeError(), instanceOf(IllegalStateException.class));
         assertThat(onComplete.getCount(), equalTo(1L));
     }
 
@@ -178,7 +178,7 @@ public class ConnectableOutputStreamTest {
         cos.close();
         onNext.await();
         toSource(cos.connect()).subscribe(subscriber);
-        assertThat(subscriber.error(), instanceOf(IllegalStateException.class));
+        assertThat(subscriber.takeError(), instanceOf(IllegalStateException.class));
         onComplete.await();
     }
 
@@ -208,7 +208,7 @@ public class ConnectableOutputStreamTest {
         cos.close();
         onSubscribe.await();
         toSource(cos.connect()).subscribe(subscriber);
-        assertThat(subscriber.error(), instanceOf(IllegalStateException.class));
+        assertThat(subscriber.takeError(), instanceOf(IllegalStateException.class));
         onComplete.await();
     }
 
@@ -247,7 +247,7 @@ public class ConnectableOutputStreamTest {
         cos.close();
         onError.await();
         toSource(cos.connect()).subscribe(subscriber);
-        assertThat(subscriber.error(), instanceOf(IllegalStateException.class));
+        assertThat(subscriber.takeError(), instanceOf(IllegalStateException.class));
         assertThat(onComplete.getCount(), equalTo(1L));
     }
 
@@ -260,8 +260,8 @@ public class ConnectableOutputStreamTest {
         cos.close();
         toSource(connect).subscribe(subscriber);
         subscriber.request(1);
-        assertThat(subscriber.items(), contains(new byte[]{1}));
-        assertTrue(subscriber.isCompleted());
+        assertThat(subscriber.takeItems(), contains(new byte[]{1}));
+        assertThat(subscriber.takeTerminal(), is(complete()));
     }
 
     @Test
@@ -271,7 +271,7 @@ public class ConnectableOutputStreamTest {
         cos.flush();
         cos.close();
         toSource(cos.connect()).subscribe(subscriber);
-        assertThat(subscriber.error(), instanceOf(IllegalStateException.class));
+        assertThat(subscriber.takeError(), instanceOf(IllegalStateException.class));
     }
 
     @Test
@@ -283,8 +283,8 @@ public class ConnectableOutputStreamTest {
         cos.close();
         toSource(connect).subscribe(subscriber);
         subscriber.request(1);
-        assertThat(subscriber.items(), contains(new byte[]{1}));
-        assertTrue(subscriber.isCompleted());
+        assertThat(subscriber.takeItems(), contains(new byte[]{1}));
+        assertThat(subscriber.takeTerminal(), is(complete()));
     }
 
     @Test
@@ -296,8 +296,8 @@ public class ConnectableOutputStreamTest {
         cos.flush();
         cos.close();
         subscriber.request(1);
-        assertThat(subscriber.items(), contains(new byte[]{1}));
-        assertTrue(subscriber.isCompleted());
+        assertThat(subscriber.takeItems(), contains(new byte[]{1}));
+        assertThat(subscriber.takeTerminal(), is(complete()));
     }
 
     @Test
@@ -309,8 +309,8 @@ public class ConnectableOutputStreamTest {
         verify(nextSizeSupplier).applyAsInt(0, 1);
         cos.flush();
         cos.close();
-        assertThat(subscriber.items(), contains(new byte[]{1}));
-        assertTrue(subscriber.isCompleted());
+        assertThat(subscriber.takeItems(), contains(new byte[]{1}));
+        assertThat(subscriber.takeTerminal(), is(complete()));
     }
 
     @Test
@@ -324,8 +324,8 @@ public class ConnectableOutputStreamTest {
         verify(nextSizeSupplier).applyAsInt(1, 2);
         cos.flush();
         cos.close();
-        assertThat(subscriber.items(), contains(new byte[]{1, 1}));
-        assertTrue(subscriber.isCompleted());
+        assertThat(subscriber.takeItems(), contains(new byte[]{1, 1}));
+        assertThat(subscriber.takeTerminal(), is(complete()));
     }
 
     @Test
@@ -340,8 +340,8 @@ public class ConnectableOutputStreamTest {
         verifyNoMoreInteractions(nextSizeSupplier);
         cos.flush();
         cos.close();
-        assertThat(subscriber.items(), contains(new byte[]{1}, new byte[]{2}));
-        assertTrue(subscriber.isCompleted());
+        assertThat(subscriber.takeItems(), contains(new byte[]{1}, new byte[]{2}));
+        assertThat(subscriber.takeTerminal(), is(complete()));
     }
 
     @Test
@@ -356,8 +356,8 @@ public class ConnectableOutputStreamTest {
         cos.flush();
         cos.close();
         subscriber.request(1);
-        assertThat(subscriber.items(), contains(new byte[]{1, 2}));
-        assertTrue(subscriber.isCompleted());
+        assertThat(subscriber.takeItems(), contains(new byte[]{1, 2}));
+        assertThat(subscriber.takeTerminal(), is(complete()));
     }
 
     @Test
@@ -371,8 +371,8 @@ public class ConnectableOutputStreamTest {
         verify(nextSizeSupplier).applyAsInt(2, 4);
         cos.flush();
         cos.close();
-        assertThat(subscriber.items(), contains(new byte[]{1, 2, 3, 4}));
-        assertTrue(subscriber.isCompleted());
+        assertThat(subscriber.takeItems(), contains(new byte[]{1, 2, 3, 4}));
+        assertThat(subscriber.takeTerminal(), is(complete()));
     }
 
     @Test
@@ -387,8 +387,8 @@ public class ConnectableOutputStreamTest {
         verify(nextSizeSupplier, times(2)).applyAsInt(0, 2);
         verifyNoMoreInteractions(nextSizeSupplier);
         cos.close();
-        assertThat(subscriber.items(), contains(new byte[]{1, 2}, new byte[]{3, 4}));
-        assertTrue(subscriber.isCompleted());
+        assertThat(subscriber.takeItems(), contains(new byte[]{1, 2}, new byte[]{3, 4}));
+        assertThat(subscriber.takeTerminal(), is(complete()));
     }
 
     @Test
@@ -403,8 +403,8 @@ public class ConnectableOutputStreamTest {
         cos.flush();
         cos.close();
         subscriber.request(1);
-        assertThat(subscriber.items(), contains(new byte[]{1, 2, 3, 4}));
-        assertTrue(subscriber.isCompleted());
+        assertThat(subscriber.takeItems(), contains(new byte[]{1, 2, 3, 4}));
+        assertThat(subscriber.takeTerminal(), is(complete()));
     }
 
     @Test
@@ -418,8 +418,8 @@ public class ConnectableOutputStreamTest {
         verify(nextSizeSupplier).applyAsInt(3, 6);
         cos.flush();
         cos.close();
-        assertThat(subscriber.items(), contains(new byte[]{2, 3, 4, 6, 7, 8}));
-        assertTrue(subscriber.isCompleted());
+        assertThat(subscriber.takeItems(), contains(new byte[]{2, 3, 4, 6, 7, 8}));
+        assertThat(subscriber.takeTerminal(), is(complete()));
     }
 
     @Test
@@ -434,8 +434,8 @@ public class ConnectableOutputStreamTest {
         verifyNoMoreInteractions(nextSizeSupplier);
         cos.flush();
         cos.close();
-        assertThat(subscriber.items(), contains(new byte[]{2, 3, 4}, new byte[]{6, 7, 8}));
-        assertTrue(subscriber.isCompleted());
+        assertThat(subscriber.takeItems(), contains(new byte[]{2, 3, 4}, new byte[]{6, 7, 8}));
+        assertThat(subscriber.takeTerminal(), is(complete()));
     }
 
     @Test
@@ -451,8 +451,8 @@ public class ConnectableOutputStreamTest {
         cos.flush();
         cos.close();
         subscriber.request(1);
-        assertThat(subscriber.items(), contains(new byte[]{2, 3, 4, 6, 7}));
-        assertTrue(subscriber.isCompleted());
+        assertThat(subscriber.takeItems(), contains(new byte[]{2, 3, 4, 6, 7}));
+        assertThat(subscriber.takeTerminal(), is(complete()));
     }
 
     @Test

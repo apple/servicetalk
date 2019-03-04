@@ -39,13 +39,12 @@ public final class VerificationTestUtils {
     }
 
     public static void verifySuppressed(@Nullable Throwable holder, Throwable expectedSuppressedCause) {
+        assertNotNull(holder);
         boolean found = false;
-        if (holder != null) {
-            for (Throwable actualSuppressed : holder.getSuppressed()) {
-                if (actualSuppressed == expectedSuppressedCause) {
-                    found = true;
-                    break;
-                }
+        for (Throwable actualSuppressed : holder.getSuppressed()) {
+            if (actualSuppressed == expectedSuppressedCause) {
+                found = true;
+                break;
             }
         }
         assertTrue("couldn't find suppressed cause " + expectedSuppressedCause, found);

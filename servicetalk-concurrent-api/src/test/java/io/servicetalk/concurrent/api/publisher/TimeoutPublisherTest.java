@@ -43,13 +43,15 @@ import javax.annotation.Nullable;
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -88,7 +90,7 @@ public class TimeoutPublisherTest {
         })).subscribe(subscriber);
         publisher.onSubscribe(subscription);
 
-        assertThat(subscriber.error(), sameInstance(DELIBERATE_EXCEPTION));
+        assertThat(subscriber.takeError(), sameInstance(DELIBERATE_EXCEPTION));
         assertTrue(subscription.isCancelled());
     }
 
@@ -98,11 +100,11 @@ public class TimeoutPublisherTest {
 
         subscriber.request(10);
         assertTrue(subscriber.subscriptionReceived());
-        assertThat(subscriber.items(), hasSize(0));
-        assertFalse(subscriber.isTerminated());
+        assertThat(subscriber.takeItems(), hasSize(0));
+        assertThat(subscriber.takeTerminal(), nullValue());
         publisher.onComplete();
 
-        assertTrue(subscriber.isCompleted());
+        assertThat(subscriber.takeTerminal(), is(complete()));
         verify(event.cancellable).cancel();
     }
 
@@ -112,13 +114,13 @@ public class TimeoutPublisherTest {
 
         subscriber.request(10);
         assertTrue(subscriber.subscriptionReceived());
-        assertThat(subscriber.items(), hasSize(0));
-        assertFalse(subscriber.isTerminated());
+        assertThat(subscriber.takeItems(), hasSize(0));
+        assertThat(subscriber.takeTerminal(), nullValue());
         publisher.onNext(1, 2, 3);
-        assertThat(subscriber.items(), contains(1, 2, 3));
+        assertThat(subscriber.takeItems(), contains(1, 2, 3));
         publisher.onComplete();
 
-        assertTrue(subscriber.isCompleted());
+        assertThat(subscriber.takeTerminal(), is(complete()));
         verify(event.cancellable).cancel();
     }
 
@@ -128,11 +130,11 @@ public class TimeoutPublisherTest {
 
         subscriber.request(10);
         assertTrue(subscriber.subscriptionReceived());
-        assertThat(subscriber.items(), hasSize(0));
-        assertFalse(subscriber.isTerminated());
+        assertThat(subscriber.takeItems(), hasSize(0));
+        assertThat(subscriber.takeTerminal(), nullValue());
         publisher.onError(DELIBERATE_EXCEPTION);
 
-        assertThat(subscriber.error(), sameInstance(DELIBERATE_EXCEPTION));
+        assertThat(subscriber.takeError(), sameInstance(DELIBERATE_EXCEPTION));
         verify(event.cancellable).cancel();
     }
 
@@ -142,13 +144,13 @@ public class TimeoutPublisherTest {
 
         subscriber.request(10);
         assertTrue(subscriber.subscriptionReceived());
-        assertThat(subscriber.items(), hasSize(0));
-        assertFalse(subscriber.isTerminated());
+        assertThat(subscriber.takeItems(), hasSize(0));
+        assertThat(subscriber.takeTerminal(), nullValue());
         publisher.onNext(1, 2, 3);
-        assertThat(subscriber.items(), contains(1, 2, 3));
+        assertThat(subscriber.takeItems(), contains(1, 2, 3));
         publisher.onError(DELIBERATE_EXCEPTION);
 
-        assertThat(subscriber.error(), sameInstance(DELIBERATE_EXCEPTION));
+        assertThat(subscriber.takeError(), sameInstance(DELIBERATE_EXCEPTION));
         verify(event.cancellable).cancel();
     }
 
@@ -167,7 +169,7 @@ public class TimeoutPublisherTest {
         // Sleep for at least as much time as the expiration time, because we just subscribed.
         Thread.sleep(1);
         timerSimulator.submit(event.runnable).get();
-        assertThat(subscriber.error(), instanceOf(TimeoutException.class));
+        assertThat(subscriber.takeError(), instanceOf(TimeoutException.class));
         assertTrue(event.delayEquals(1, NANOSECONDS));
         verify(event.cancellable, never()).cancel();
         assertTrue(testExecutor.events.isEmpty());
@@ -178,15 +180,15 @@ public class TimeoutPublisherTest {
         ScheduleEvent event = initSubscriber(2, MILLISECONDS);
         subscriber.request(10);
         assertTrue(subscriber.subscriptionReceived());
-        assertThat(subscriber.items(), hasSize(0));
-        assertFalse(subscriber.isTerminated());
+        assertThat(subscriber.takeItems(), hasSize(0));
+        assertThat(subscriber.takeTerminal(), nullValue());
         publisher.onNext(1, 2, 3);
-        assertThat(subscriber.items(), contains(1, 2, 3));
+        assertThat(subscriber.takeItems(), contains(1, 2, 3));
 
         // Sleep for at least as much time as the expiration time, because we just delivered data.
         Thread.sleep(5);
         timerSimulator.submit(event.runnable).get();
-        assertThat(subscriber.error(), instanceOf(TimeoutException.class));
+        assertThat(subscriber.takeError(), instanceOf(TimeoutException.class));
         assertTrue(event.delayEquals(2, MILLISECONDS));
         verify(event.cancellable, never()).cancel();
         assertTrue(testExecutor.events.isEmpty());
@@ -205,7 +207,7 @@ public class TimeoutPublisherTest {
         assertNotNull(subscriber);
         subscriber.onSubscribe(mockSubscription);
         verify(mockSubscription).cancel();
-        assertThat(this.subscriber.error(), instanceOf(TimeoutException.class));
+        assertThat(this.subscriber.takeError(), instanceOf(TimeoutException.class));
         assertTrue(event.delayEquals(1, NANOSECONDS));
         verify(event.cancellable, never()).cancel();
         assertTrue(testExecutor.events.isEmpty());
@@ -274,7 +276,7 @@ public class TimeoutPublisherTest {
 
         latch.await();
         assertNull(causeRef.get());
-        assertThat(subscriber.error(), instanceOf(TimeoutException.class));
+        assertThat(subscriber.takeError(), instanceOf(TimeoutException.class));
     }
 
     private static void countDownToZero(CountDownLatch latch) {
@@ -301,8 +303,8 @@ public class TimeoutPublisherTest {
         assertNotNull(event);
         if (expectOnSubscribe) {
             assertTrue(subscriber.subscriptionReceived());
-            assertThat(subscriber.items(), hasSize(0));
-            assertFalse(subscriber.isTerminated());
+            assertThat(subscriber.takeItems(), hasSize(0));
+            assertThat(subscriber.takeTerminal(), nullValue());
         }
         return event;
     }

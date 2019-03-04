@@ -47,6 +47,6 @@ public class DoAfterErrorTest extends AbstractDoErrorTest {
         doError(Publisher.<String>error(srcEx), t -> {
             throw DELIBERATE_EXCEPTION;
         }).subscribe(subscriber);
-        assertThat(subscriber.error(), sameInstance(srcEx));
+        assertThat(subscriber.takeError(), sameInstance(srcEx));
     }
 }

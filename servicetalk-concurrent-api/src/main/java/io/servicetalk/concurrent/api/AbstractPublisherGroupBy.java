@@ -45,6 +45,7 @@ import static io.servicetalk.concurrent.internal.SubscriberUtils.SUBSCRIBER_STAT
 import static io.servicetalk.concurrent.internal.SubscriberUtils.SUBSCRIBER_STATE_TERMINATED;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.checkDuplicateSubscription;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.isRequestNValid;
+import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
 import static java.util.Objects.requireNonNull;
 
 abstract class AbstractPublisherGroupBy<Key, T>
@@ -257,7 +258,7 @@ abstract class AbstractPublisherGroupBy<Key, T>
                 }
                 // No need to unlock because we have terminated!
             } else {
-                q.addTerminal(TerminalNotification.complete());
+                q.addTerminal(complete());
                 drainPendingGroupsFromSource(q);
             }
         }

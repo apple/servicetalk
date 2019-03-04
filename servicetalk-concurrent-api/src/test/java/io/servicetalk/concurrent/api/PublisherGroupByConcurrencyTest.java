@@ -39,6 +39,8 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
+import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
+import static io.servicetalk.concurrent.internal.TerminalNotification.error;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.Executors.newCachedThreadPool;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -215,12 +217,12 @@ public final class PublisherGroupByConcurrencyTest {
 
         @Override
         public void onError(Throwable t) {
-            terminalNotification = TerminalNotification.error(t);
+            terminalNotification = error(t);
         }
 
         @Override
         public void onComplete() {
-            terminalNotification = TerminalNotification.complete();
+            terminalNotification = complete();
         }
 
         @Override
@@ -244,7 +246,7 @@ public final class PublisherGroupByConcurrencyTest {
         }
 
         void verifyCompleted() {
-            assertThat("Unexpected terminal state.", terminalNotification, is(TerminalNotification.complete()));
+            assertThat("Unexpected terminal state.", terminalNotification, is(complete()));
         }
 
         void verifyError(Class<? extends Throwable> errorType) {

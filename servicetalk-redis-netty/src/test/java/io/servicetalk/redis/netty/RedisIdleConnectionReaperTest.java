@@ -48,13 +48,14 @@ import java.util.concurrent.atomic.AtomicReference;
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Publisher.just;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
+import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
 import static io.servicetalk.redis.api.RedisData.NULL;
 import static io.servicetalk.redis.api.RedisProtocolSupport.Command.PING;
 import static io.servicetalk.redis.api.RedisRequests.newRequest;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertFalse;
+import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -161,8 +162,8 @@ public class RedisIdleConnectionReaperTest {
         toSource(idleAwareConnection.request(newRequest(PING))).subscribe(requestSubscriber);
         assertTrue(requestSubscriber.subscriptionReceived());
         assertTrue(requestSubscriber.subscriptionReceived());
-        assertThat(requestSubscriber.items(), hasSize(0));
-        assertFalse(requestSubscriber.isTerminated());
+        assertThat(requestSubscriber.takeItems(), hasSize(0));
+        assertThat(requestSubscriber.takeTerminal(), nullValue());
 
         completeTimer();
         completeTimer();
@@ -178,7 +179,7 @@ public class RedisIdleConnectionReaperTest {
         toSource(idleAwareConnection.request(newRequest(PING))).subscribe(requestSubscriber);
         assertTrue(requestSubscriber.subscriptionReceived());
         requestSubscriber.request(1);
-        assertTrue(requestSubscriber.isCompleted());
+        assertThat(requestSubscriber.takeTerminal(), is(complete()));
 
         completeTimer();
         completeTimer();
