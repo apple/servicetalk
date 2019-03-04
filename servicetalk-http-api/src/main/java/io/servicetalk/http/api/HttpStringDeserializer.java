@@ -27,17 +27,16 @@ import java.util.concurrent.TimeoutException;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
-import static io.servicetalk.http.api.HttpHeaderValues.TEXT_PLAIN_UTF_8;
+import static io.servicetalk.http.api.HeaderUtils.hasContentType;
+import static io.servicetalk.http.api.HttpHeaderValues.TEXT_PLAIN;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
  * An {@link HttpDeserializer} that deserializes from {@link String}.
  */
 final class HttpStringDeserializer implements HttpDeserializer<String> {
-
     static final HttpStringDeserializer UTF_8_STRING_DESERIALIZER =
-            new HttpStringDeserializer(UTF_8, headers -> headers.contains(CONTENT_TYPE, TEXT_PLAIN_UTF_8));
+            new HttpStringDeserializer(UTF_8, headers -> hasContentType(headers, TEXT_PLAIN, UTF_8));
 
     private final Charset charset;
     private final Predicate<HttpHeaders> checkContentType;
