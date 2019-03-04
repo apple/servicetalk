@@ -164,7 +164,7 @@ public class ConcatWithOrderingTest {
     }
 
     @Test
-    public void typeSteps() throws Exception {
+    public void completableSinglePublisherSingleCompletable() throws Exception {
         completable(1)
                 .concatWith(single(2))
                 .concatWith(publisher(3))
@@ -176,7 +176,7 @@ public class ConcatWithOrderingTest {
     }
 
     @Test
-    public void typeStepsReverse() throws Exception {
+    public void publisherSingleCompletableSinglePublisher() throws Exception {
         publisher(1)
                 .concatWith(single(2))
                 .concatWith(completable(3))
