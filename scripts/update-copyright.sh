@@ -13,6 +13,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+#
 
 set -eu
 
@@ -107,7 +108,7 @@ while read file <&4; do
         # eg. 2016-2018
         newcopyright="${copyright%-$lastyear}-$year"
     else
-        newcopyright="$copyright,$year"
+        newcopyright="$copyright, $year"
     fi
 
     echo -n "Update copyright ($copyright) to $newcopyright? [y/n]"
@@ -124,4 +125,3 @@ while read file <&4; do
         git add "$file"
     fi
 done
-
