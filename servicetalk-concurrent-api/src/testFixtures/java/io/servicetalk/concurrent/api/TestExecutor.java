@@ -18,6 +18,7 @@ package io.servicetalk.concurrent.api;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.CompletableSource;
 
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Queue;
@@ -28,6 +29,7 @@ import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import javax.annotation.Nullable;
 
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
@@ -42,6 +44,8 @@ public class TestExecutor implements Executor {
     private final ConcurrentNavigableMap<Long, Queue<RunnableWrapper>> scheduledTasksByNano = new ConcurrentSkipListMap<>();
     private long currentNanos = ThreadLocalRandom.current().nextLong();
     private CompletableProcessor closeProcessor = new CompletableProcessor();
+    private AtomicInteger tasksExecuted = new AtomicInteger();
+    private AtomicInteger scheduledTasksExecuted = new AtomicInteger();
 
     @Override
     public Cancellable execute(final Runnable task) throws RejectedExecutionException {
@@ -150,7 +154,7 @@ public class TestExecutor implements Executor {
      * @return this.
      */
     public TestExecutor executeTasks() {
-        execute(tasks);
+        execute(tasks, tasksExecuted);
         return this;
     }
 
@@ -161,7 +165,7 @@ public class TestExecutor implements Executor {
      * @return this.
      */
     public TestExecutor executeNextTask() {
-        if (!executeOne(tasks)) {
+        if (!executeOne(tasks, tasksExecuted)) {
             throw new IllegalStateException("No tasks to execute");
         }
         return this;
@@ -178,7 +182,7 @@ public class TestExecutor implements Executor {
 
         for (Iterator<Map.Entry<Long, Queue<RunnableWrapper>>> i = headMap.entrySet().iterator(); i.hasNext();) {
             final Map.Entry<Long, Queue<RunnableWrapper>> entry = i.next();
-            execute(entry.getValue());
+            execute(entry.getValue(), scheduledTasksExecuted);
             i.remove();
         }
         return this;
@@ -195,7 +199,7 @@ public class TestExecutor implements Executor {
 
         for (Iterator<Map.Entry<Long, Queue<RunnableWrapper>>> i = headMap.entrySet().iterator(); i.hasNext();) {
             final Map.Entry<Long, Queue<RunnableWrapper>> entry = i.next();
-            if (executeOne(entry.getValue())) {
+            if (executeOne(entry.getValue(), scheduledTasksExecuted)) {
                 return this;
             } else {
                 i.remove();
@@ -204,20 +208,58 @@ public class TestExecutor implements Executor {
         throw new IllegalStateException("No scheduled tasks to execute");
     }
 
-    private static void execute(Queue<RunnableWrapper> tasks) {
+    /**
+     * Returns the number of queued ({@code execute}/{@code submit} methods) tasks currently pending.
+     *
+     * @returnthe number of queued ({@code execute}/{@code submit} methods) tasks currently pending.
+     */
+    public int queuedTasksPending() {
+        return tasks.size();
+    }
+
+    /**
+     * Returns the number of scheduled ({@code schedule}/{@code timer} methods) tasks currently pending.
+     *
+     * @returnthe number of scheduled ({@code schedule}/{@code timer} methods) tasks currently pending.
+     */
+    public int scheduledTasksPending() {
+        return scheduledTasksByNano.values().stream().mapToInt(Collection::size).sum();
+    }
+
+    /**
+     * Returns the number of queued ({@code execute}/{@code submit} methods) tasks that have been executed.
+     *
+     * @returnthe number of queued ({@code execute}/{@code submit} methods) tasks that have been executed.
+     */
+    public int queuedTasksExecuted() {
+        return tasksExecuted.get();
+    }
+
+    /**
+     * Returns the number of scheduled ({@code schedule}/{@code timer} methods) tasks that have been executed.
+     *
+     * @returnthe number of scheduled ({@code schedule}/{@code timer} methods) tasks that have been executed.
+     */
+    public int scheduledTasksExecuted() {
+        return scheduledTasksExecuted.get();
+    }
+
+    private static void execute(Queue<RunnableWrapper> tasks, AtomicInteger taskCount) {
         for (Iterator<RunnableWrapper> i = tasks.iterator(); i.hasNext();) {
             final Runnable task = i.next();
             i.remove();
+            taskCount.incrementAndGet();
             task.run();
         }
     }
 
     @Nullable
-    private static boolean executeOne(Queue<RunnableWrapper> tasks) {
+    private static boolean executeOne(Queue<RunnableWrapper> tasks, AtomicInteger taskCount) {
         Iterator<RunnableWrapper> i = tasks.iterator();
         if (i.hasNext()) {
             final Runnable task = i.next();
             i.remove();
+            taskCount.incrementAndGet();
             task.run();
             return true;
         }

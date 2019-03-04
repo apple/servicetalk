@@ -19,51 +19,61 @@ import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.CompletableSource.Subscriber;
 import io.servicetalk.concurrent.api.Completable;
+import io.servicetalk.concurrent.api.Executor;
+import io.servicetalk.concurrent.api.ExecutorRule;
 import io.servicetalk.concurrent.api.MockedCompletableListenerRule;
-import io.servicetalk.concurrent.api.TestSingle;
-import io.servicetalk.concurrent.api.TimeoutTestUtils;
-import io.servicetalk.concurrent.api.TimeoutTestUtils.AbstractTestExecutor;
-import io.servicetalk.concurrent.api.TimeoutTestUtils.ScheduleEvent;
+import io.servicetalk.concurrent.api.TestCancellable;
+import io.servicetalk.concurrent.api.TestExecutor;
+import io.servicetalk.concurrent.api.TestSingle2;
+import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 
-import org.junit.After;
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.Timeout;
 
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 public class TimeoutCompletableTest {
     @Rule
+    public final Timeout timeout = new ServiceTalkTestTimeout();
+    @Rule
     public final MockedCompletableListenerRule listener = new MockedCompletableListenerRule();
+    @Rule
+    public final ExecutorRule<TestExecutor> executorRule = ExecutorRule.withTestExecutor();
 
-    private TestSingle<Integer> source;
-    private final TimeoutTestUtils.ScheduleQueueTestExecutor testExecutor = new TimeoutTestUtils.ScheduleQueueTestExecutor();
-    private java.util.concurrent.ExecutorService timerSimulator;
-
-    @Before
-    public void setUp() throws Exception {
-        timerSimulator = java.util.concurrent.Executors.newFixedThreadPool(1);
-        source = new TestSingle<>(false, false);
-    }
-
-    @After
-    public void teardown() {
-        timerSimulator.shutdown();
-    }
+    private final TestSingle2<Integer> source = new TestSingle2<>();
+    private final TestExecutor testExecutor = executorRule.executor();
 
     @Test
     public void executorScheduleThrows() {
-        listener.listen(source.ignoreResult().timeout(1, NANOSECONDS, new AbstractTestExecutor() {
+        listener.listen(source.ignoreResult().timeout(1, NANOSECONDS, new Executor() {
+            @Override
+            public Completable closeAsync() {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public Completable onClose() {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public Cancellable execute(final Runnable task) throws RejectedExecutionException {
+                throw new UnsupportedOperationException();
+            }
+
             @Override
             public Cancellable schedule(final Runnable task, final long delay, final TimeUnit unit) {
                 throw DELIBERATE_EXCEPTION;
@@ -71,83 +81,72 @@ public class TimeoutCompletableTest {
         }));
 
         listener.verifyFailure(DELIBERATE_EXCEPTION);
-        source.verifyCancelled();
+        TestCancellable cancellable = new TestCancellable();
+        source.onSubscribe(cancellable);
+        assertTrue(cancellable.isCancelled());
     }
 
     @Test
     public void noDataOnCompletionNoTimeout() {
-        ScheduleEvent event = initSubscriber();
+        listener.listen(source.ignoreResult().timeout(1, NANOSECONDS, testExecutor));
 
         listener.verifyNoEmissions();
         source.onSuccess(1);
-
         listener.verifyCompletion();
-        verify(event.cancellable).cancel();
+
+        assertThat(testExecutor.scheduledTasksPending(), is(0));
+        assertThat(testExecutor.scheduledTasksExecuted(), is(0));
     }
 
     @Test
     public void noDataOnErrorNoTimeout() {
-        ScheduleEvent event = initSubscriber();
+        listener.listen(source.ignoreResult().timeout(1, NANOSECONDS, testExecutor));
 
         listener.verifyNoEmissions();
         source.onError(DELIBERATE_EXCEPTION);
-
         listener.verifyFailure(DELIBERATE_EXCEPTION);
-        verify(event.cancellable).cancel();
+
+        assertThat(testExecutor.scheduledTasksPending(), is(0));
+        assertThat(testExecutor.scheduledTasksExecuted(), is(0));
     }
 
     @Test
     public void subscriptionCancelAlsoCancelsTimer() {
-        ScheduleEvent event = initSubscriber();
+        listener.listen(source.ignoreResult().timeout(1, NANOSECONDS, testExecutor));
 
         listener.cancel();
-        verify(event.cancellable).cancel();
+
+        assertThat(testExecutor.scheduledTasksPending(), is(0));
+        assertThat(testExecutor.scheduledTasksExecuted(), is(0));
     }
 
     @Test
-    public void noDataAndTimeout() throws Exception {
-        ScheduleEvent event = initSubscriber();
+    public void noDataAndTimeout() {
+        listener.listen(source.ignoreResult().timeout(1, NANOSECONDS, testExecutor));
 
-        // Sleep for at least as much time as the expiration time, because we just subscribed data.
-        Thread.sleep(1);
-        timerSimulator.submit(event.runnable).get();
+        testExecutor.advanceTimeBy(1, NANOSECONDS);
         listener.verifyFailure(TimeoutException.class);
-        assertTrue(event.delayEquals(1, NANOSECONDS));
-        verify(event.cancellable, never()).cancel();
-        assertTrue(testExecutor.events.isEmpty());
+
+        assertThat(testExecutor.scheduledTasksPending(), is(0));
+        assertThat(testExecutor.scheduledTasksExecuted(), is(1));
     }
 
     @Test
-    public void justSubscribeTimeout() throws Exception {
+    public void justSubscribeTimeout() {
         DelayedOnSubscribeCompletable delayedCompletable = new DelayedOnSubscribeCompletable();
 
-        ScheduleEvent event = initSubscriber(delayedCompletable, false);
-        // Sleep for at least as much time as the expiration time, because we just subscribed data.
-        Thread.sleep(1);
-        timerSimulator.submit(event.runnable).get();
+        listener.listen(delayedCompletable.timeout(1, NANOSECONDS, testExecutor), false);
+        testExecutor.advanceTimeBy(1, NANOSECONDS);
+
         Cancellable mockCancellable = mock(Cancellable.class);
         CompletableSource.Subscriber subscriber = delayedCompletable.subscriber;
         assertNotNull(subscriber);
         subscriber.onSubscribe(mockCancellable);
         verify(mockCancellable).cancel();
         listener.verifyFailure(TimeoutException.class);
-        assertTrue(event.delayEquals(1, NANOSECONDS));
-        verify(event.cancellable, never()).cancel();
-        assertTrue(testExecutor.events.isEmpty());
-    }
 
-    private ScheduleEvent initSubscriber() {
-        return initSubscriber(source.ignoreResult(), true);
-    }
-
-    private ScheduleEvent initSubscriber(Completable completable, boolean expectOnSubscribe) {
-        listener.listen(completable.timeout(1, NANOSECONDS, testExecutor), expectOnSubscribe);
-        ScheduleEvent event = testExecutor.events.poll();
-        assertNotNull(event);
-        if (expectOnSubscribe) {
-            listener.verifyNoEmissions();
-        }
-        return event;
+        assertThat(testExecutor.scheduledTasksPending(), is(0));
+        assertThat(testExecutor.scheduledTasksExecuted(), is(1));
     }
 
     private static final class DelayedOnSubscribeCompletable extends Completable {

@@ -18,22 +18,22 @@ package io.servicetalk.concurrent.api.publisher;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
+import io.servicetalk.concurrent.api.Completable;
+import io.servicetalk.concurrent.api.Executor;
+import io.servicetalk.concurrent.api.ExecutorRule;
 import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.concurrent.api.TestExecutor;
 import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.api.TestPublisherSubscriber;
 import io.servicetalk.concurrent.api.TestSubscription;
-import io.servicetalk.concurrent.api.TimeoutTestUtils.AbstractTestExecutor;
-import io.servicetalk.concurrent.api.TimeoutTestUtils.ScheduleEvent;
-import io.servicetalk.concurrent.api.TimeoutTestUtils.ScheduleQueueTestExecutor;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 
-import org.junit.After;
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
 
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -53,36 +53,41 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
-import static org.testng.Assert.assertNull;
 
 public class TimeoutPublisherTest {
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
+    @Rule
+    public final ExecutorRule<TestExecutor> executorRule = ExecutorRule.withTestExecutor();
 
     private final TestPublisher<Integer> publisher = new TestPublisher<>();
     private final TestPublisherSubscriber<Integer> subscriber = new TestPublisherSubscriber<>();
-    private final ScheduleQueueTestExecutor testExecutor = new ScheduleQueueTestExecutor();
-    private java.util.concurrent.ExecutorService timerSimulator;
-    private TestSubscription subscription = new TestSubscription();
-
-    @Before
-    public void setup() {
-        timerSimulator = java.util.concurrent.Executors.newFixedThreadPool(1);
-    }
-
-    @After
-    public void teardown() {
-        timerSimulator.shutdown();
-    }
+    private final TestSubscription subscription = new TestSubscription();
+    private final TestExecutor testExecutor = executorRule.executor();
 
     @Test
     public void executorScheduleThrows() {
-        toSource(publisher.timeout(1, NANOSECONDS, new AbstractTestExecutor() {
+        toSource(publisher.timeout(1, NANOSECONDS, new Executor() {
+            @Override
+            public Completable closeAsync() {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public Completable onClose() {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public Cancellable execute(final Runnable task) throws RejectedExecutionException {
+                throw new UnsupportedOperationException();
+            }
+
             @Override
             public Cancellable schedule(final Runnable task, final long delay, final TimeUnit unit) {
                 throw DELIBERATE_EXCEPTION;
@@ -96,88 +101,96 @@ public class TimeoutPublisherTest {
 
     @Test
     public void noDataOnCompletionNoTimeout() {
-        ScheduleEvent event = initSubscriber();
+        toSource(publisher.timeout(1, NANOSECONDS, testExecutor)).subscribe(subscriber);
+        assertTrue(subscriber.subscriptionReceived());
 
         subscriber.request(10);
-        assertTrue(subscriber.subscriptionReceived());
         assertThat(subscriber.takeItems(), hasSize(0));
         assertThat(subscriber.takeTerminal(), nullValue());
         publisher.onComplete();
-
         assertThat(subscriber.takeTerminal(), is(complete()));
-        verify(event.cancellable).cancel();
+
+        assertThat(testExecutor.scheduledTasksPending(), is(0));
+        assertThat(testExecutor.scheduledTasksExecuted(), is(0));
     }
 
     @Test
     public void dataOnCompletionNoTimeout() {
-        ScheduleEvent event = initSubscriber();
+        toSource(publisher.timeout(1, NANOSECONDS, testExecutor)).subscribe(subscriber);
+        assertTrue(subscriber.subscriptionReceived());
 
         subscriber.request(10);
-        assertTrue(subscriber.subscriptionReceived());
         assertThat(subscriber.takeItems(), hasSize(0));
         assertThat(subscriber.takeTerminal(), nullValue());
         publisher.onNext(1, 2, 3);
         assertThat(subscriber.takeItems(), contains(1, 2, 3));
         publisher.onComplete();
-
         assertThat(subscriber.takeTerminal(), is(complete()));
-        verify(event.cancellable).cancel();
+
+        assertThat(testExecutor.scheduledTasksPending(), is(0));
+        assertThat(testExecutor.scheduledTasksExecuted(), is(0));
     }
 
     @Test
     public void noDataOnErrorNoTimeout() {
-        ScheduleEvent event = initSubscriber();
+        toSource(publisher.timeout(1, NANOSECONDS, testExecutor)).subscribe(subscriber);
+        assertTrue(subscriber.subscriptionReceived());
 
         subscriber.request(10);
-        assertTrue(subscriber.subscriptionReceived());
         assertThat(subscriber.takeItems(), hasSize(0));
         assertThat(subscriber.takeTerminal(), nullValue());
         publisher.onError(DELIBERATE_EXCEPTION);
-
         assertThat(subscriber.takeError(), sameInstance(DELIBERATE_EXCEPTION));
-        verify(event.cancellable).cancel();
+
+        assertThat(testExecutor.scheduledTasksPending(), is(0));
+        assertThat(testExecutor.scheduledTasksExecuted(), is(0));
     }
 
     @Test
     public void dataOnErrorNoTimeout() {
-        ScheduleEvent event = initSubscriber();
+        toSource(publisher.timeout(1, NANOSECONDS, testExecutor)).subscribe(subscriber);
+        assertTrue(subscriber.subscriptionReceived());
 
         subscriber.request(10);
-        assertTrue(subscriber.subscriptionReceived());
         assertThat(subscriber.takeItems(), hasSize(0));
         assertThat(subscriber.takeTerminal(), nullValue());
         publisher.onNext(1, 2, 3);
         assertThat(subscriber.takeItems(), contains(1, 2, 3));
         publisher.onError(DELIBERATE_EXCEPTION);
-
         assertThat(subscriber.takeError(), sameInstance(DELIBERATE_EXCEPTION));
-        verify(event.cancellable).cancel();
+
+        assertThat(testExecutor.scheduledTasksPending(), is(0));
+        assertThat(testExecutor.scheduledTasksExecuted(), is(0));
     }
 
     @Test
     public void subscriptionCancelAlsoCancelsTimer() {
-        ScheduleEvent event = initSubscriber();
+        toSource(publisher.timeout(1, NANOSECONDS, testExecutor)).subscribe(subscriber);
+        assertTrue(subscriber.subscriptionReceived());
 
         subscriber.cancel();
-        verify(event.cancellable).cancel();
+
+        assertThat(testExecutor.scheduledTasksPending(), is(0));
+        assertThat(testExecutor.scheduledTasksExecuted(), is(0));
     }
 
     @Test
-    public void noDataAndTimeout() throws Exception {
-        ScheduleEvent event = initSubscriber();
+    public void noDataAndTimeout() {
+        toSource(publisher.timeout(1, NANOSECONDS, testExecutor)).subscribe(subscriber);
+        assertTrue(subscriber.subscriptionReceived());
 
-        // Sleep for at least as much time as the expiration time, because we just subscribed.
-        Thread.sleep(1);
-        timerSimulator.submit(event.runnable).get();
+        testExecutor.advanceTimeBy(1, NANOSECONDS);
         assertThat(subscriber.takeError(), instanceOf(TimeoutException.class));
-        assertTrue(event.delayEquals(1, NANOSECONDS));
-        verify(event.cancellable, never()).cancel();
-        assertTrue(testExecutor.events.isEmpty());
+
+        assertThat(testExecutor.scheduledTasksPending(), is(0));
+        assertThat(testExecutor.scheduledTasksExecuted(), is(1));
     }
 
     @Test
-    public void dataAndTimeout() throws Exception {
-        ScheduleEvent event = initSubscriber(2, MILLISECONDS);
+    public void dataAndTimeout() {
+        toSource(publisher.timeout(1, NANOSECONDS, testExecutor)).subscribe(subscriber);
+        assertTrue(subscriber.subscriptionReceived());
+
         subscriber.request(10);
         assertTrue(subscriber.subscriptionReceived());
         assertThat(subscriber.takeItems(), hasSize(0));
@@ -185,32 +198,29 @@ public class TimeoutPublisherTest {
         publisher.onNext(1, 2, 3);
         assertThat(subscriber.takeItems(), contains(1, 2, 3));
 
-        // Sleep for at least as much time as the expiration time, because we just delivered data.
-        Thread.sleep(5);
-        timerSimulator.submit(event.runnable).get();
+        testExecutor.advanceTimeBy(1, NANOSECONDS);
         assertThat(subscriber.takeError(), instanceOf(TimeoutException.class));
-        assertTrue(event.delayEquals(2, MILLISECONDS));
-        verify(event.cancellable, never()).cancel();
-        assertTrue(testExecutor.events.isEmpty());
+
+        assertThat(testExecutor.scheduledTasksPending(), is(0));
+        assertThat(testExecutor.scheduledTasksExecuted(), is(1));
     }
 
     @Test
-    public void justSubscribeTimeout() throws Exception {
+    public void justSubscribeTimeout() {
         DelayedOnSubscribePublisher<Integer> delayedPublisher = new DelayedOnSubscribePublisher<>();
 
-        ScheduleEvent event = initSubscriber(1, NANOSECONDS, delayedPublisher, false);
-        // Sleep for at least as much time as the expiration time, because we just subscribed data.
-        Thread.sleep(1);
-        timerSimulator.submit(event.runnable).get();
+        toSource(delayedPublisher.timeout(1, NANOSECONDS, testExecutor)).subscribe(subscriber);
+        testExecutor.advanceTimeBy(1, NANOSECONDS);
+
         Subscription mockSubscription = mock(Subscription.class);
         Subscriber<? super Integer> subscriber = delayedPublisher.subscriber;
         assertNotNull(subscriber);
         subscriber.onSubscribe(mockSubscription);
         verify(mockSubscription).cancel();
         assertThat(this.subscriber.takeError(), instanceOf(TimeoutException.class));
-        assertTrue(event.delayEquals(1, NANOSECONDS));
-        verify(event.cancellable, never()).cancel();
-        assertTrue(testExecutor.events.isEmpty());
+
+        assertThat(testExecutor.scheduledTasksPending(), is(0));
+        assertThat(testExecutor.scheduledTasksExecuted(), is(1));
     }
 
     @Test
@@ -218,26 +228,16 @@ public class TimeoutPublisherTest {
         CountDownLatch latch = new CountDownLatch(2);
         AtomicReference<Throwable> causeRef = new AtomicReference<>();
 
-        // The timeout operator doesn't expose a way to control the underlying time source and always uses
-        // System.nanoTime(). This was intentional to avoid expanding public API surface when the majority of the time
-        // System.nanoTime() is the correct choice. However that makes testing a bit more challenging here and we resort
-        // to sleep/approximations.
-        // 10 ms -> long enough for the first timeout runnable to first without timing out, so that the second time out
-        // runnable will fire and result in a timeout. This doesn't always work so we just fallback and drain the
-        // CountDownLatch if not.
-        // Sleep for at least enough time for the expiration time to fire before invoking
-        // the run() method.
-        // Just in case the timer fires earlier than expected (after the first timer) we countdown the latch so the
-        // test won't fail.
-        toSource(publisher.timeout(10, MILLISECONDS, new AbstractTestExecutor() {
+        toSource(publisher.timeout(10, MILLISECONDS, new Executor() {
             private final AtomicInteger timerCount = new AtomicInteger();
+
             @Override
-            public Cancellable schedule(final Runnable task, final long delay, final TimeUnit unit) {
+            public Cancellable schedule(final Runnable task, final long delay, final TimeUnit unit) throws RejectedExecutionException {
                 int count = timerCount.incrementAndGet();
                 if (count <= 2) {
                     if (count == 1) {
                         try {
-                            timerSimulator.submit(task).get();
+                            task.run();
                         } catch (Throwable cause) {
                             causeRef.compareAndSet(null, cause);
                             countDownToZero(latch);
@@ -245,18 +245,16 @@ public class TimeoutPublisherTest {
                         latch.countDown();
                     } else {
                         try {
-                            timerSimulator.execute(() -> {
-                                try {
-                                    // Sleep for at least enough time for the expiration time to fire before invoking
-                                    // the run() method.
-                                    Thread.sleep(100);
-                                    task.run();
-                                } catch (Throwable cause) {
-                                    causeRef.compareAndSet(null, cause);
-                                    countDownToZero(latch);
-                                }
-                                latch.countDown();
-                            });
+                            try {
+                                // Sleep for at least enough time for the expiration time to fire before invoking
+                                // the run() method.
+                                Thread.sleep(100);
+                                task.run();
+                            } catch (Throwable cause) {
+                                causeRef.compareAndSet(null, cause);
+                                countDownToZero(latch);
+                            }
+                            latch.countDown();
                         } catch (Throwable cause) {
                             causeRef.compareAndSet(null, cause);
                             countDownToZero(latch);
@@ -264,6 +262,21 @@ public class TimeoutPublisherTest {
                     }
                 }
                 return IGNORE_CANCEL;
+            }
+
+            @Override
+            public Completable closeAsync() {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public Completable onClose() {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public Cancellable execute(final Runnable task) throws RejectedExecutionException {
+                throw new UnsupportedOperationException();
             }
         }).doOnError(cause -> {
             // Just in case the timer fires earlier than expected (after the first timer) we countdown the latch so the
@@ -283,30 +296,6 @@ public class TimeoutPublisherTest {
         while (latch.getCount() > 0) {
             latch.countDown(); // count down an extra time to complete the test early.
         }
-    }
-
-    private ScheduleEvent initSubscriber() {
-        return initSubscriber(1, NANOSECONDS);
-    }
-
-    private ScheduleEvent initSubscriber(long timeout, TimeUnit unit) {
-        return initSubscriber(timeout, unit, publisher, true);
-    }
-
-    private ScheduleEvent initSubscriber(long timeout, TimeUnit unit, Publisher<Integer> publisher,
-                                         boolean expectOnSubscribe) {
-        toSource(publisher.timeout(timeout, unit, testExecutor)).subscribe(subscriber);
-        if (expectOnSubscribe) {
-            assertTrue(subscriber.subscriptionReceived());
-        }
-        ScheduleEvent event = testExecutor.events.poll();
-        assertNotNull(event);
-        if (expectOnSubscribe) {
-            assertTrue(subscriber.subscriptionReceived());
-            assertThat(subscriber.takeItems(), hasSize(0));
-            assertThat(subscriber.takeTerminal(), nullValue());
-        }
-        return event;
     }
 
     private static final class DelayedOnSubscribePublisher<T> extends Publisher<T> {
