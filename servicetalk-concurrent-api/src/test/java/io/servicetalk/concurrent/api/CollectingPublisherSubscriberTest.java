@@ -70,7 +70,6 @@ public class CollectingPublisherSubscriberTest {
 
         assertNull(subscriber.error());
         assertThat(subscriber.terminal(), is(complete()));
-        assertThat(subscriber.terminal(), notNullValue());
     }
 
     @Test

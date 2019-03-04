@@ -151,6 +151,6 @@ public final class TerminalNotification {
 
     @Override
     public String toString() {
-        return "TerminalNotification{" + (this == COMPLETE ? "COMPLETE" : cause) + "}";
+        return "TerminalNotification{" + (this.cause == null ? "COMPLETE" : cause) + "}";
     }
 }
