@@ -48,4 +48,39 @@ public interface HttpProtocolVersion {
      * <a href="https://tools.ietf.org/html/rfc7230.html#section-2.6">HTTP-version</a>
      */
     void writeVersionTo(Buffer buffer);
+
+    /**
+     * Compares the specified object with this {@link HttpProtocolVersion} for equality.
+     * <p>
+     * Returns {@code true} if and only if the specified object is also a {@link HttpProtocolVersion}, and both objects
+     * have the same {@link #majorVersion} and {@link #minorVersion()}.
+     * This definition ensures that the equals method works properly across different implementations of the
+     * {@link HttpProtocolVersion} interface.
+     *
+     * @param o the object to be compared for equality with this {@link HttpProtocolVersion}
+     * @return {@code true} if the specified object is equal to this {@link HttpProtocolVersion}
+     */
+    @Override
+    boolean equals(Object o);
+
+    /**
+     * Returns the hash code value for this {@link HttpProtocolVersion}.
+     * <p>
+     * The hash code of an {@link HttpProtocolVersion} MUST be consistent with {@link #equals(Object)} implementation
+     * and is defined to be the result of the following calculation:
+     * <pre>{@code
+     *     public int hashCode() {
+     *         return 31 * majorVersion() + minorVersion();
+     *     }
+     * }</pre>
+     * This ensures that {@code version1.equals(version2)} implies that
+     * {@code version2.hashCode() == status2.hashCode()} for any two {@link HttpProtocolVersion}s, {@code version1} and
+     * {@code version2}, as required by the general contract of {@link Object#hashCode}.
+     *
+     * @return the hash code value for this {@link HttpResponseStatus}
+     * @see Object#equals(Object)
+     * @see #equals(Object)
+     */
+    @Override
+    int hashCode();
 }

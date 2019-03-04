@@ -74,7 +74,7 @@ public class HttpConnectionEmptyPayloadTest {
                                                                             final StreamingHttpRequest req,
                                                                             final StreamingHttpResponseFactory factory) {
                                     StreamingHttpResponse resp = factory.ok().payloadBody(just(
-                                            req.method() == HEAD ? EMPTY_BUFFER :
+                                            HEAD.name().equals(req.method().name()) ? EMPTY_BUFFER :
                                                     ctx.executionContext().bufferAllocator()
                                                     .newBuffer(expectedContentLength).writeBytes(expectedPayload)));
                                     resp.addHeader(CONTENT_LENGTH, String.valueOf(expectedContentLength));

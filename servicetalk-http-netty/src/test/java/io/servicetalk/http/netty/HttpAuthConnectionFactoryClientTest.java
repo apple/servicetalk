@@ -121,7 +121,7 @@ public class HttpAuthConnectionFactoryClientTest {
                                 return error(new IllegalStateException("failed auth"));
                             })
                             .flatMap(response -> {
-                                if (response.status().equals(OK)) {
+                                if (OK.equals(response.status())) {
                                     // In this test we have not enabled pipelining so we drain this response before
                                     // indicating the connection is usable.
                                     return response.payloadBody().ignoreElements().concatWith(success(cnx));

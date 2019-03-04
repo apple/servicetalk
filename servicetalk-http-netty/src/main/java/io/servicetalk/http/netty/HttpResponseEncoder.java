@@ -113,8 +113,7 @@ final class HttpResponseEncoder extends HttpObjectEncoder<HttpResponseMetaData> 
         HttpRequestMethod method = methodQueue.poll();
         if (isAlwaysEmpty) {
             HttpResponseStatus status = msg.status();
-            if (status.statusClass() == INFORMATIONAL_1XX ||
-                    status.code() == NO_CONTENT.code()) {
+            if (status.statusClass() == INFORMATIONAL_1XX || NO_CONTENT.equals(status)) {
 
                 HttpHeaders headers = msg.headers();
                 // Stripping Content-Length:
@@ -125,7 +124,8 @@ final class HttpResponseEncoder extends HttpObjectEncoder<HttpResponseMetaData> 
                 // See https://tools.ietf.org/html/rfc7230#section-3.3.1
                 headers.remove(TRANSFER_ENCODING);
             }
-        } else if (method == CONNECT && msg.status().statusClass() == SUCCESSFUL_2XX) {
+        } else if (method != null && CONNECT.name().equals(method.name())
+                && msg.status().statusClass() == SUCCESSFUL_2XX) {
             // Stripping Transfer-Encoding:
             // See https://tools.ietf.org/html/rfc7230#section-3.3.1
             msg.headers().remove(TRANSFER_ENCODING);
@@ -139,7 +139,7 @@ final class HttpResponseEncoder extends HttpObjectEncoder<HttpResponseMetaData> 
         HttpResponseStatus status = msg.status();
 
         if (status.statusClass() == INFORMATIONAL_1XX) {
-            if (status.code() == SWITCHING_PROTOCOLS.code()) {
+            if (SWITCHING_PROTOCOLS.equals(status)) {
                 // We need special handling for WebSockets version 00 as it will include an body.
                 // Fortunally this version should not really be used in the wild very often.
                 // See https://tools.ietf.org/html/draft-ietf-hybi-thewebsocketprotocol-00#section-1.2
@@ -147,6 +147,6 @@ final class HttpResponseEncoder extends HttpObjectEncoder<HttpResponseMetaData> 
             }
             return true;
         }
-        return status.code() == NO_CONTENT.code() || status.code() == NOT_MODIFIED.code();
+        return NO_CONTENT.equals(status) || NOT_MODIFIED.equals(status);
     }
 }

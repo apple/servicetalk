@@ -62,6 +62,43 @@ public interface HttpResponseStatus {
     StatusClass statusClass();
 
     /**
+     * Compares the specified object with this {@link HttpResponseStatus} for equality.
+     * <p>
+     * Returns {@code true} if and only if the specified object is also a {@link HttpResponseStatus}, and both objects
+     * have the same {@link #code()} value. A reason-phrase is ignored because a client SHOULD ignore the reason-phrase
+     * content, according to the
+     * <a href="https://tools.ietf.org/html/rfc7230.html#section-3.1.2">RFC 7230, section 3.1.2</a>.
+     * This definition ensures that the equals method works properly across different implementations of the
+     * {@link HttpProtocolVersion} interface.
+     *
+     * @param o the object to be compared for equality with this {@link HttpProtocolVersion}
+     * @return {@code true} if the specified object is equal to this {@link HttpProtocolVersion}
+     */
+    @Override
+    boolean equals(Object o);
+
+    /**
+     * Returns the hash code value for this {@link HttpResponseStatus}.
+     * <p>
+     * The hash code of an {@link HttpResponseStatus} MUST be consistent with {@link #equals(Object)} implementation
+     * and is defined to be the result of the following calculation:
+     * <pre>{@code
+     *     public int hashCode() {
+     *         return 31 * code();
+     *     }
+     * }</pre>
+     * This ensures that {@code status1.equals(status2)} implies that {@code status1.hashCode() == status2.hashCode()}
+     * for any two {@link HttpResponseStatus}es, {@code status1} and {@code status2}, as required by the general
+     * contract of {@link Object#hashCode}.
+     *
+     * @return the hash code value for this {@link HttpResponseStatus}
+     * @see Object#equals(Object)
+     * @see #equals(Object)
+     */
+    @Override
+    int hashCode();
+
+    /**
      * The class of <a href="https://tools.ietf.org/html/rfc7231#section-6">response status codes</a>.
      */
     enum StatusClass {

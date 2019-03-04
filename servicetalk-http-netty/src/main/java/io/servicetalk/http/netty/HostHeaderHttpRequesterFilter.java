@@ -109,7 +109,7 @@ final class HostHeaderHttpRequesterFilter implements HttpClientFilterFactory,
     private Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
                                                   final HttpExecutionStrategy strategy,
                                                   final StreamingHttpRequest request) {
-        if (request.version() == HTTP_1_1 && !request.headers().contains(HOST)) {
+        if (HTTP_1_1.equals(request.version()) && !request.headers().contains(HOST)) {
             request.headers().set(HOST, fallbackHost);
         }
         return delegate.request(strategy, request);

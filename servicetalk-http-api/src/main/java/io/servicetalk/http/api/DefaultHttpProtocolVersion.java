@@ -89,12 +89,12 @@ final class DefaultHttpProtocolVersion implements HttpProtocolVersion {
         if (this == o) {
             return true;
         }
-        if (o == null || getClass() != o.getClass()) {
+        if (!(o instanceof HttpProtocolVersion)) {
             return false;
         }
 
-        final DefaultHttpProtocolVersion that = (DefaultHttpProtocolVersion) o;
-        return major == that.major && minor == that.minor;
+        final HttpProtocolVersion that = (HttpProtocolVersion) o;
+        return major == that.majorVersion() && minor == that.minorVersion();
     }
 
     @Override

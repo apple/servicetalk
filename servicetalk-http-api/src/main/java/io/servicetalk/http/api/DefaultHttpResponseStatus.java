@@ -66,20 +66,12 @@ final class DefaultHttpResponseStatus implements HttpResponseStatus {
         if (this == o) {
             return true;
         }
-        if (o == null || getClass() != o.getClass()) {
+        if (!(o instanceof HttpResponseStatus)) {
             return false;
         }
 
-        final DefaultHttpResponseStatus that = (DefaultHttpResponseStatus) o;
-        /*
-         * - reasonPhrase is ignored for equals/hashCode because the RFC says:
-         *   A client SHOULD ignore the reason-phrase content.
-         * https://tools.ietf.org/html/rfc7230#section-3.1.2
-         *
-         * - statusClass is ignored for equals/hashCode because its inherited from statusCode and the relationship is
-         *   idempotent
-         */
-        return statusCode == that.statusCode;
+        final HttpResponseStatus that = (HttpResponseStatus) o;
+        return statusCode == that.code();
     }
 
     @Override

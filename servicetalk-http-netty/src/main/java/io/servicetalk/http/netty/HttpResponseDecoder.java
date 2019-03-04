@@ -73,7 +73,7 @@ final class HttpResponseDecoder extends HttpObjectDecoder<HttpResponseMetaData> 
         // Don't poll from the queue for informational responses, because the real response is expected next.
         if (msg.status().statusClass() == INFORMATIONAL_1XX) {
             // One exception: Hixie 76 websocket handshake response
-            return !(msg.status() == SWITCHING_PROTOCOLS &&
+            return !(SWITCHING_PROTOCOLS.equals(msg.status()) &&
                     !msg.headers().contains(SEC_WEBSOCKET_ACCEPT) &&
                      msg.headers().contains(UPGRADE, WEBSOCKET, true));
         }
@@ -92,7 +92,8 @@ final class HttpResponseDecoder extends HttpObjectDecoder<HttpResponseMetaData> 
         // We are either switching protocols, and we will no longer process any more HTTP/1.x responses, or the protocol
         // rules prevent a content body. Also 204 and 304 are always empty.
         // https://tools.ietf.org/html/rfc7230#section-3.3.3
-        return method == HEAD || method == CONNECT || msg.status() == NO_CONTENT || msg.status() == NOT_MODIFIED;
+        return (method != null && (HEAD.name().equals(method.name()) || CONNECT.name().equals(method.name())))
+                || NO_CONTENT.equals(msg.status()) || NOT_MODIFIED.equals(msg.status());
     }
 
     private static HttpResponseStatus nettyBufferToHttpStatus(ByteBuf statusCode, ByteBuf reasonPhrase) {
