@@ -21,6 +21,7 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.BlockingHttpClient;
+import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
@@ -33,11 +34,14 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
 
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Single.success;
+import static io.servicetalk.http.api.HttpHeaderNames.TRAILER;
+import static io.servicetalk.http.api.HttpResponseStatuses.OK;
 import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -48,6 +52,7 @@ import static org.junit.Assert.assertThat;
 public class ConsumeRequestPayloadOnResponsePathTest {
 
     private static final String EXPECTED_REQUEST_PAYLOAD = "ExpectedRequestPayload";
+    private static final String X_TOTAL_LENGTH = "X-Total-Length";
 
     @Rule
     public final ServiceTalkTestTimeout timeout = new ServiceTalkTestTimeout();
@@ -65,6 +70,12 @@ public class ConsumeRequestPayloadOnResponsePathTest {
     public void testConsumeRequestPayloadBeforeResponsePayloadSent() throws Exception {
         test((responseSingle, request) -> responseSingle.flatMap(response -> success(
                 response.transformRawPayloadBody(payloadBody -> consumePayloadBody(request).concatWith(payloadBody)))));
+    }
+
+    @Test
+    public void testConsumeRequestPayloadBeforeTrailersSent() throws Exception {
+        test((responseSingle, request) -> responseSingle.flatMap(response -> success(
+                response.transformPayloadBody(payloadBody -> payloadBody.concatWith(consumePayloadBody(request))))));
     }
 
     @Test
@@ -95,10 +106,17 @@ public class ConsumeRequestPayloadOnResponsePathTest {
     @Test
     public void testConsumeRequestPayloadAndResponsePayloadSent() throws Exception {
         test((responseSingle, request) -> responseSingle.flatMap(response -> success(
-                response.transformRawPayloadBody(payloadBody -> consumePayloadBody(request).merge(payloadBody)))));
+                response.transformPayloadBody(payloadBody -> consumePayloadBody(request).merge(payloadBody)))));
     }
 
     // TODO: add testResponsePayloadSentAndConsumeRequestPayload when Publisher.merge(Completable) is available
+
+    @Test
+    public void testConsumeRequestPayloadAndTrailersSent() throws Exception {
+        test((responseSingle, request) -> responseSingle.flatMap(response -> success(
+                response.transformRawPayloadBody(payloadBody -> consumePayloadBody(request).merge(payloadBody)))));
+    }
+    // TODO: add testTrailersSentAndConsumeRequestPayload when Publisher.merge(Completable) is available
 
     private Completable consumePayloadBody(final StreamingHttpRequest request) {
         return request.payloadBody().doBeforeNext(receivedPayload::addBuffer)
@@ -119,17 +137,32 @@ public class ConsumeRequestPayloadOnResponsePathTest {
                         return consumeRequestPayload.apply(delegate().handle(ctx, request, responseFactory), request);
                     }
                 })
-                .listenStreamingAndAwait((ctx, request, responseFactory) -> success(responseFactory.ok()
-                        .payloadBody(from("Response\n", "Payload\n", "Body\n"), textSerializer())))) {
+                .listenStreamingAndAwait((ctx, request, responseFactory) -> {
+                    final StreamingHttpResponse response = responseFactory.ok()
+                            .addHeader(TRAILER, X_TOTAL_LENGTH)
+                            .payloadBody(from("Response\n", "Payload\n", "Body\n"), textSerializer())
+                            .transform(AtomicInteger::new, (chunk, total) -> {
+                                total.addAndGet(chunk.readableBytes());
+                                return chunk;
+                            }, (total, trailers) -> trailers.add(X_TOTAL_LENGTH, String.valueOf(total.get())));
 
+                    return success(response);
+                })) {
+
+            HttpResponse response;
             try (BlockingHttpClient client = HttpClients.forSingleAddress(AddressUtils.serverHostAndPort(serverContext))
                     .buildBlocking()) {
-                client.request(client.post("/").payloadBody(EXPECTED_REQUEST_PAYLOAD, textSerializer()));
+                response = client.request(client.post("/").payloadBody(EXPECTED_REQUEST_PAYLOAD, textSerializer()));
             }
 
             waitServer.await();
+            assertThat(response.status(), is(OK));
             assertThat("Request payload body might be consumed by someone else", errorRef.get(), is(nullValue()));
             assertThat(receivedPayload.toString(UTF_8), is(EXPECTED_REQUEST_PAYLOAD));
+            assertThat(response.headers().contains(TRAILER, X_TOTAL_LENGTH), is(true));
+            assertThat(response.trailers().contains(X_TOTAL_LENGTH), is(true));
+            assertThat(response.trailers().get(X_TOTAL_LENGTH).toString(),
+                    is(Integer.toString(response.payloadBody().readableBytes())));
         }
     }
 }
