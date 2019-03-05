@@ -92,8 +92,7 @@ public class DefaultMultiAddressUrlHttpClientBuilderTest {
     public void buildWithProvidedServiceDiscoverer() throws Exception {
         ServiceDiscoverer<HostAndPort, InetSocketAddress,
                 ServiceDiscovererEvent<InetSocketAddress>> mockedServiceDiscoverer = mock(ServiceDiscoverer.class);
-        StreamingHttpRequester newRequester = HttpClients.forMultiAddressUrl()
-                .serviceDiscoverer(mockedServiceDiscoverer)
+        StreamingHttpRequester newRequester = HttpClients.forMultiAddressUrl(mockedServiceDiscoverer)
                 .ioExecutor(CTX.ioExecutor())
                 .executionStrategy(defaultStrategy(CTX.executor()))
                 .buildStreaming();
