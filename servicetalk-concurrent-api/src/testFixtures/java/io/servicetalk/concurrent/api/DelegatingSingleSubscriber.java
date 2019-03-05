@@ -15,34 +15,31 @@
  */
 package io.servicetalk.concurrent.api;
 
-import io.servicetalk.concurrent.PublisherSource.Subscriber;
-import io.servicetalk.concurrent.PublisherSource.Subscription;
+import io.servicetalk.concurrent.Cancellable;
+import io.servicetalk.concurrent.SingleSource.Subscriber;
 
-public class DelegatingSubscriber<T> implements Subscriber<T> {
+import static java.util.Objects.requireNonNull;
+
+class DelegatingSingleSubscriber<T> implements Subscriber<T> {
 
     private final Subscriber<? super T> delegate;
 
-    public DelegatingSubscriber(final Subscriber<? super T> delegate) {
-        this.delegate = delegate;
+    DelegatingSingleSubscriber(final Subscriber<? super T> delegate) {
+        this.delegate = requireNonNull(delegate);
     }
 
     @Override
-    public void onSubscribe(final Subscription s) {
+    public void onSubscribe(final Cancellable s) {
         delegate.onSubscribe(s);
     }
 
     @Override
-    public void onNext(final T t) {
-        delegate.onNext(t);
+    public void onSuccess(final T result) {
+        delegate.onSuccess(result);
     }
 
     @Override
     public void onError(final Throwable t) {
         delegate.onError(t);
-    }
-
-    @Override
-    public void onComplete() {
-        delegate.onComplete();
     }
 }

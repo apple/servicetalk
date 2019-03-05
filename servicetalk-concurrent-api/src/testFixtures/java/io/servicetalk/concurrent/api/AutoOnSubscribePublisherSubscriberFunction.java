@@ -16,26 +16,35 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
+import io.servicetalk.concurrent.PublisherSource.Subscription;
 
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 
 /**
- * Allows only a single {@link Subscriber} to subscribe to a {@link TestPublisher}. Subsequent attempts to subscribe
- * will throw an exception.
+ * Calls {@link Subscriber#onSubscribe(Subscription)} automatically, sending a delegating {@link Subscription}.
+ * Returns a {@link Subscriber} which, upon receiving {@link Subscriber#onSubscribe(Subscription)}, uses the received
+ * {@link Subscription} to delegate to.
  *
  * @param <T> Type of items received by the {@code Subscriber}.
  */
-public final class NonResubscribeablePublisherSubscriberFunction<T>
+public final class AutoOnSubscribePublisherSubscriberFunction<T>
         implements Function<Subscriber<? super T>, Subscriber<? super T>> {
-
-    private final AtomicBoolean subscribed = new AtomicBoolean();
 
     @Override
     public Subscriber<? super T> apply(final Subscriber<? super T> subscriber) {
-        if (!subscribed.compareAndSet(false, true)) {
-            throw new IllegalStateException("Duplicate subscriber: " + subscriber);
-        }
-        return subscriber;
+        final SequentialSubscription subscription = new SequentialSubscription();
+        subscriber.onSubscribe(subscription);
+        return new DelegatingPublisherSubscriber<T>(subscriber) {
+            @Override
+            public void onSubscribe(final Subscription s) {
+                subscription.switchTo(s);
+            }
+
+            @Override
+            public void onNext(final T t) {
+                subscription.itemReceived();
+                super.onNext(t);
+            }
+        };
     }
 }

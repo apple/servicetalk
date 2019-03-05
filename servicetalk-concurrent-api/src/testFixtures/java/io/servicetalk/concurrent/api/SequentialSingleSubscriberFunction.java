@@ -15,20 +15,20 @@
  */
 package io.servicetalk.concurrent.api;
 
-import io.servicetalk.concurrent.PublisherSource.Subscriber;
-import io.servicetalk.concurrent.PublisherSource.Subscription;
+import io.servicetalk.concurrent.Cancellable;
+import io.servicetalk.concurrent.SingleSource.Subscriber;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
 /**
- * Allows multiple {@link Subscriber}s to be sequentially subscribed to a {@link TestPublisher}. Attempts to subscribe
+ * Allows multiple {@link Subscriber}s to be sequentially subscribed to a {@link TestSingle2}. Attempts to subscribe
  * concurrently will throw an exception.
  *
- * @param <T> Type of items received by the {@code Subscriber}.
+ * @param <T> Type of the result of this {@code Subscriber}.
  */
-public final class SequentialPublisherSubscriberFunction<T>
+public final class SequentialSingleSubscriberFunction<T>
         implements Function<Subscriber<? super T>, Subscriber<? super T>> {
 
     private final AtomicBoolean subscribed = new AtomicBoolean();
@@ -41,20 +41,12 @@ public final class SequentialPublisherSubscriberFunction<T>
             throw new IllegalStateException("Duplicate subscriber: " + subscriber);
         }
         this.subscriber = subscriber;
-        return new DelegatingPublisherSubscriber<T>(subscriber) {
+        return new DelegatingSingleSubscriber<T>(subscriber) {
             @Override
-            public void onSubscribe(final Subscription s) {
-                super.onSubscribe(new Subscription() {
-                    @Override
-                    public void request(final long n) {
-                        s.request(n);
-                    }
-
-                    @Override
-                    public void cancel() {
-                        reset(subscriber);
-                        s.cancel();
-                    }
+            public void onSubscribe(final Cancellable s) {
+                super.onSubscribe(() -> {
+                    reset(subscriber);
+                    s.cancel();
                 });
             }
 
@@ -65,13 +57,13 @@ public final class SequentialPublisherSubscriberFunction<T>
             }
 
             @Override
-            public void onComplete() {
+            public void onSuccess(T result) {
                 reset(subscriber);
-                super.onComplete();
+                super.onSuccess(result);
             }
 
             private void reset(final Subscriber<? super T> subscriber) {
-                if (SequentialPublisherSubscriberFunction.this.subscriber == subscriber) {
+                if (SequentialSingleSubscriberFunction.this.subscriber == subscriber) {
                     subscribed.set(false);
                 }
             }

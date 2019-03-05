@@ -17,7 +17,7 @@ package io.servicetalk.concurrent.api.completable;
 
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.ExecutorRule;
-import io.servicetalk.concurrent.api.TestPublisherSubscriber;
+import io.servicetalk.concurrent.api.TestSingleSubscriber;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 
 import org.junit.Rule;
@@ -28,11 +28,11 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
-import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
 import static java.lang.Thread.currentThread;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
+import static org.junit.Assert.assertTrue;
 
 public class CompletableToSingleTest {
     @Rule
@@ -40,13 +40,13 @@ public class CompletableToSingleTest {
     @Rule
     public final ExecutorRule executorRule = ExecutorRule.newRule();
 
-    private TestPublisherSubscriber<String> subscriber = new TestPublisherSubscriber<>();
+    private TestSingleSubscriber<String> subscriber = new TestSingleSubscriber<>();
 
     @Test
     public void noTerminalSucceeds() {
-        toSource(Completable.completed().<String>toSingle()).subscribe(subscriber.forSingle());
-        subscriber.request(1);
-        assertThat(subscriber.takeTerminal(), is(complete()));
+        toSource(Completable.completed().<String>toSingle()).subscribe(subscriber);
+        assertTrue(subscriber.hasResult());
+        assertThat(subscriber.takeResult(), nullValue());
     }
 
     @Test

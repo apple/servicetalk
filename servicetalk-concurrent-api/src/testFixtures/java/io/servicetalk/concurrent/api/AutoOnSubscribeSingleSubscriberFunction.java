@@ -15,27 +15,31 @@
  */
 package io.servicetalk.concurrent.api;
 
-import io.servicetalk.concurrent.PublisherSource.Subscriber;
+import io.servicetalk.concurrent.Cancellable;
+import io.servicetalk.concurrent.SingleSource.Subscriber;
+import io.servicetalk.concurrent.internal.DelayedCancellable;
 
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 
 /**
- * Allows only a single {@link Subscriber} to subscribe to a {@link TestPublisher}. Subsequent attempts to subscribe
- * will throw an exception.
+ * Calls {@link Subscriber#onSubscribe(Cancellable)} automatically, sending a delegating {@link Cancellable}.
+ * Returns a {@link Subscriber} which, upon receiving {@link Subscriber#onSubscribe(Cancellable)}, uses the received
+ * {@link Cancellable} to delegate to.
  *
- * @param <T> Type of items received by the {@code Subscriber}.
+ * @param <T> Type of the result of the {@code Subscriber}.
  */
-public final class NonResubscribeablePublisherSubscriberFunction<T>
+public final class AutoOnSubscribeSingleSubscriberFunction<T>
         implements Function<Subscriber<? super T>, Subscriber<? super T>> {
-
-    private final AtomicBoolean subscribed = new AtomicBoolean();
 
     @Override
     public Subscriber<? super T> apply(final Subscriber<? super T> subscriber) {
-        if (!subscribed.compareAndSet(false, true)) {
-            throw new IllegalStateException("Duplicate subscriber: " + subscriber);
-        }
-        return subscriber;
+        final DelayedCancellable subscription = new DelayedCancellable();
+        subscriber.onSubscribe(subscription);
+        return new DelegatingSingleSubscriber<T>(subscriber) {
+            @Override
+            public void onSubscribe(final Cancellable s) {
+                subscription.delayedCancellable(s);
+            }
+        };
     }
 }

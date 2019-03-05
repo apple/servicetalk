@@ -18,7 +18,6 @@ package io.servicetalk.concurrent.api;
 import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
-import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.internal.TerminalNotification;
 
 import java.util.List;
@@ -58,7 +57,7 @@ public final class TestPublisherSubscriber<T> implements Subscriber<T>, Subscrip
     }
 
     /**
-     * Returns {@code true} if {@link #onSubscribe(Subscription)} has been called.
+     * Returns {@code true} if {@link #onSubscribe(Subscription)} has been called, {@code false} otherwise.
      *
      * @return {@code true} if {@link #onSubscribe(Subscription)} has been called, {@code false} otherwise.
      */
@@ -78,7 +77,7 @@ public final class TestPublisherSubscriber<T> implements Subscriber<T>, Subscrip
     }
 
     /**
-     * Get the list of items received through {@link #onNext(Object)}, retaining the internal list.
+     * Get the list of items received through {@link #onNext(Object)}.
      *
      * @return the list of items.
      */
@@ -107,7 +106,7 @@ public final class TestPublisherSubscriber<T> implements Subscriber<T>, Subscrip
 
     /**
      * Get the last {@link TerminalNotification} {@link #onError(Throwable)} or {@link #onComplete()} received, and
-     * clears the internal state.
+     * clears the internal value.
      *
      * @return the {@link TerminalNotification}, or {@code null} if none have been received.
      */
@@ -127,7 +126,7 @@ public final class TestPublisherSubscriber<T> implements Subscriber<T>, Subscrip
     }
 
     /**
-     * Get the last {@link Throwable} received by {@link #onError(Throwable)}, and clears the internal state.
+     * Get the last {@link Throwable} received by {@link #onError(Throwable)}, and clears the internal value.
      *
      * @return The {@link Throwable}, or {@code null} if none have been received.
      */
@@ -212,11 +211,6 @@ public final class TestPublisherSubscriber<T> implements Subscriber<T>, Subscrip
         delegate.onComplete();
     }
 
-    // TODO(derek) remove once the single version is ready
-    public SingleSource.Subscriber<T> forSingle() {
-        return new SingleSubscriber<>(this, this);
-    }
-
     /**
      * Allows for creating {@link TestPublisherSubscriber}s with non-default settings.
      *
@@ -290,7 +284,7 @@ public final class TestPublisherSubscriber<T> implements Subscriber<T>, Subscrip
                 delegate = new DemandCheckingSubscriber<>(delegate);
             }
             if (loggingName != null) {
-                delegate = new LoggingSubscriber<>(loggingName, delegate);
+                delegate = new LoggingPublisherSubscriber<>(loggingName, delegate);
             }
 
             return new TestPublisherSubscriber<>(collector, delegate);

@@ -284,7 +284,7 @@ public class PublisherGroupByTest {
         AtomicBoolean failOnNext = new AtomicBoolean();
         toSource(subscribeToAllGroups(10, s -> {
             if (subscriberCount.getAndIncrement() == 0) {
-                return new DelegatingSubscriber<Integer>(s) {
+                return new DelegatingPublisherSubscriber<Integer>(s) {
                     @Override
                     public void onNext(final Integer integer) {
                         super.onNext(integer);
@@ -581,7 +581,7 @@ public class PublisherGroupByTest {
             if (requestFromGroupOnSubscribe > 0) {
                 s.request(requestFromGroupOnSubscribe);
             }
-            return new DelegatingSubscriber<Integer>(s) {
+            return new DelegatingPublisherSubscriber<Integer>(s) {
                 @Override
                 public void onNext(final Integer i) {
                     super.onNext(i);
