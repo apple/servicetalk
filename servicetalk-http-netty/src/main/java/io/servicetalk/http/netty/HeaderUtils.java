@@ -20,7 +20,6 @@ import io.servicetalk.http.api.HttpMetaData;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.HttpResponseMetaData;
-import io.servicetalk.http.api.HttpResponseStatus;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -69,14 +68,14 @@ final class HeaderUtils {
 
     static void addResponseTransferEncodingIfNecessary(final HttpResponseMetaData response,
                                                        final HttpRequestMethod requestMethod) {
-        final HttpResponseStatus status = response.status();
-        if (HEAD.equals(requestMethod) || INFORMATIONAL_1XX.contains(status)
-                || NO_CONTENT.equals(status) || NOT_MODIFIED.equals(status)) {
+        final int statusCode = response.status().code();
+        if (HEAD.equals(requestMethod) || INFORMATIONAL_1XX.contains(statusCode)
+                || statusCode == NO_CONTENT.code() || statusCode == NOT_MODIFIED.code()) {
             // Do not add a transfer-encoding header in this case. See 3.3.3.1:
             // https://tools.ietf.org/html/rfc7230#section-3.3.3
             return;
         }
-        if (CONNECT.equals(requestMethod) && SUCCESSFUL_2XX.contains(status)) {
+        if (CONNECT.equals(requestMethod) && SUCCESSFUL_2XX.contains(statusCode)) {
             // Do not add a transfer-encoding header in this case. See 3.3.3.2:
             // https://tools.ietf.org/html/rfc7230#section-3.3.3
             return;

@@ -112,8 +112,8 @@ final class HttpResponseEncoder extends HttpObjectEncoder<HttpResponseMetaData> 
         // iterate a decoded list it makes some assumptions about the base class ordering of events.
         HttpRequestMethod method = methodQueue.poll();
         if (isAlwaysEmpty) {
-            HttpResponseStatus status = msg.status();
-            if (status.statusClass() == INFORMATIONAL_1XX || NO_CONTENT.equals(status)) {
+            final HttpResponseStatus status = msg.status();
+            if (status.statusClass() == INFORMATIONAL_1XX || status.code() == NO_CONTENT.code()) {
 
                 HttpHeaders headers = msg.headers();
                 // Stripping Content-Length:
@@ -135,10 +135,10 @@ final class HttpResponseEncoder extends HttpObjectEncoder<HttpResponseMetaData> 
     protected boolean isContentAlwaysEmpty(HttpResponseMetaData msg) {
         // Correctly handle special cases as stated in:
         // https://tools.ietf.org/html/rfc7230#section-3.3.3
-        HttpResponseStatus status = msg.status();
+        final HttpResponseStatus status = msg.status();
 
         if (status.statusClass() == INFORMATIONAL_1XX) {
-            if (SWITCHING_PROTOCOLS.equals(status)) {
+            if (status.code() == SWITCHING_PROTOCOLS.code()) {
                 // We need special handling for WebSockets version 00 as it will include an body.
                 // Fortunally this version should not really be used in the wild very often.
                 // See https://tools.ietf.org/html/draft-ietf-hybi-thewebsocketprotocol-00#section-1.2
@@ -146,6 +146,6 @@ final class HttpResponseEncoder extends HttpObjectEncoder<HttpResponseMetaData> 
             }
             return true;
         }
-        return NO_CONTENT.equals(status) || NOT_MODIFIED.equals(status);
+        return status.code() == NO_CONTENT.code() || status.code() == NOT_MODIFIED.code();
     }
 }
