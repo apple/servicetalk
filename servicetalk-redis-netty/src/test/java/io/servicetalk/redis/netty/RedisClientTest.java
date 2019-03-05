@@ -214,7 +214,7 @@ public class RedisClientTest extends BaseRedisClientTest {
 
     @Test
     public void commandWithSubCommand() throws Exception {
-        final RedisData actual = awaitIndefinitely(getEnv().client.request(newRequest(CLIENT, LIST)).toSingleOrError());
+        final RedisData actual = awaitIndefinitely(getEnv().client.request(newRequest(CLIENT, LIST)).firstOrError());
         assertThat(actual,
                 is(redisCompleteBulkStringSize(greaterThan(0))));
         assertThat(awaitIndefinitelyNonNull(getEnv().client.request(newRequest(COMMAND, INFO,
@@ -252,7 +252,7 @@ public class RedisClientTest extends BaseRedisClientTest {
         reqBuf.writeAscii("*2\r\n$6\r\nFOOBAR\r\n$12\r\nbufreq-pong1\r\n");
 
         // We use PING to build the request object, which doesn't matter here: FOOBAR is the actual command sent on the wire
-        assertThat(awaitIndefinitely(getEnv().client.request(newRequest(PING, reqBuf)).toSingleOrError()),
+        assertThat(awaitIndefinitely(getEnv().client.request(newRequest(PING, reqBuf)).firstOrError()),
                 is(redisError(startsWith("ERR"))));
     }
 
