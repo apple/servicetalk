@@ -23,6 +23,7 @@ import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.HttpExecutionStrategies;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpResponseStatus;
+import io.servicetalk.http.api.HttpServerBuilder;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpRequest;
@@ -58,6 +59,7 @@ import static io.servicetalk.http.api.HttpResponseStatuses.OK;
 import static io.servicetalk.http.api.HttpResponseStatuses.SERVICE_UNAVAILABLE;
 import static io.servicetalk.http.netty.HttpClients.forSingleAddress;
 import static io.servicetalk.http.netty.HttpServers.forAddress;
+import static io.servicetalk.transport.api.ConnectionAcceptorFactory.identity;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -99,7 +101,7 @@ public class InsufficientlySizedExecutorHttpTest {
 
     @Test
     public void insufficientClientCapacityStreaming() throws Exception {
-        initClientAndServer(true);
+        initWhenClientUnderProvisioned();
         assert client != null;
         if (threadBased ? capacity <= 1 : capacity == 0) {
             expectedException.expect(instanceOf(ExecutionException.class));
@@ -115,11 +117,21 @@ public class InsufficientlySizedExecutorHttpTest {
 
     @Test
     public void insufficientServerCapacityStreaming() throws Exception {
-        initClientAndServer(false);
+        initWhenServerUnderProvisioned(false);
+        insufficientServerCapacityStreaming0(threadBased && capacity == 0);
+    }
+
+    @Test
+    public void insufficientServerCapacityStreamingWithConnectionAcceptor() throws Exception {
+        initWhenServerUnderProvisioned(true);
+        insufficientServerCapacityStreaming0(capacity == 0);
+    }
+
+    private void insufficientServerCapacityStreaming0(boolean expectChannelClose) throws Exception {
         assert client != null;
         // For task based, we use a queue for the executor
         final HttpResponseStatus expectedResponseStatus = !threadBased && capacity > 0 ? OK : SERVICE_UNAVAILABLE;
-        if (capacity == 0) {
+        if (expectChannelClose) {
             // If there are no threads, we can not start processing.
             // If there is a single thread, it is used by the connection to listen for close events.
             expectedException.expect(instanceOf(ExecutionException.class));
@@ -130,37 +142,42 @@ public class InsufficientlySizedExecutorHttpTest {
         assertThat("Unexpected response code.", response.status(), is(expectedResponseStatus));
     }
 
-    private void initClientAndServer(boolean clientUnderProvisioned) throws Exception {
+    private void initWhenClientUnderProvisioned() throws Exception {
         executor = getExecutorForCapacity(capacity, !threadBased);
-        final HttpExecutionStrategies.Builder strategyBuilder = customStrategyBuilder().offloadAll().executor(executor);
-        final HttpExecutionStrategy strategy = threadBased ? strategyBuilder.offloadWithThreadAffinity().build() :
-                strategyBuilder.build();
-        if (clientUnderProvisioned) {
-            server = forAddress(localAddress(0))
-                    .listenStreamingAndAwait((ctx, request, responseFactory) -> success(responseFactory.ok()));
-            client = forSingleAddress(serverHostAndPort(server))
-                    .executionStrategy(strategy)
-                    .buildStreaming();
-        } else {
-            server = forAddress(localAddress(0))
-                    // TODO(scott): the server use case hangs now that the ConnectionAcceptor induced offloading is
-                    // skipped when there is no ConnectionAcceptor specified.
-                    .appendConnectionAcceptorFilter(original -> original)
-                    .listenStreamingAndAwait(new StreamingHttpService() {
-                        @Override
-                        public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
-                                                                    final StreamingHttpRequest request,
-                                                                    final StreamingHttpResponseFactory respFactory) {
-                            return success(respFactory.ok());
-                        }
+        server = forAddress(localAddress(0))
+                .listenStreamingAndAwait((ctx, request, responseFactory) -> success(responseFactory.ok()));
+        client = forSingleAddress(serverHostAndPort(server))
+                .executionStrategy(newStrategy())
+                .buildStreaming();
+    }
 
-                        @Override
-                        public HttpExecutionStrategy executionStrategy() {
-                            return strategy;
-                        }
-                    });
-            client = forSingleAddress(serverHostAndPort(server)).buildStreaming();
+    private void initWhenServerUnderProvisioned(boolean addConnectionAcceptor) throws Exception {
+        executor = getExecutorForCapacity(capacity, !threadBased);
+        final HttpExecutionStrategy strategy = newStrategy();
+        HttpServerBuilder serverBuilder = forAddress(localAddress(0));
+        if (addConnectionAcceptor) {
+            serverBuilder.appendConnectionAcceptorFilter(identity());
         }
+        server = serverBuilder.listenStreamingAndAwait(new StreamingHttpService() {
+            @Override
+            public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
+                                                        final StreamingHttpRequest request,
+                                                        final StreamingHttpResponseFactory respFactory) {
+                return success(respFactory.ok());
+            }
+
+            @Override
+            public HttpExecutionStrategy executionStrategy() {
+                return strategy;
+            }
+        });
+        client = forSingleAddress(serverHostAndPort(server)).buildStreaming();
+    }
+
+    private HttpExecutionStrategy newStrategy() {
+        final HttpExecutionStrategies.Builder strategyBuilder = customStrategyBuilder().offloadAll().executor(executor);
+        return threadBased ? strategyBuilder.offloadWithThreadAffinity().build() :
+                strategyBuilder.build();
     }
 
     @After

@@ -24,9 +24,10 @@ import org.junit.Test;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
+import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
@@ -40,7 +41,7 @@ public abstract class AbstractDoCompleteTest {
         Runnable onComplete = mock(Runnable.class);
         toSource(doComplete(publisher, onComplete)).subscribe(subscriber);
         publisher.onComplete();
-        assertTrue(subscriber.isCompleted());
+        assertThat(subscriber.takeTerminal(), is(complete()));
         verify(onComplete).run();
     }
 
@@ -52,7 +53,7 @@ public abstract class AbstractDoCompleteTest {
         });
         toSource(src).subscribe(subscriber);
         subscriber.request(1);
-        assertThat(subscriber.error(), sameInstance(srcEx));
+        assertThat(subscriber.takeError(), sameInstance(srcEx));
     }
 
     protected abstract <T> Publisher<T> doComplete(Publisher<T> publisher, Runnable runnable);

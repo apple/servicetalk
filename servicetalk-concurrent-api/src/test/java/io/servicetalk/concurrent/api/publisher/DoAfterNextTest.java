@@ -40,7 +40,7 @@ public class DoAfterNextTest extends AbstractDoNextTest {
             throw DELIBERATE_EXCEPTION;
         })).subscribe(subscriber);
         subscriber.request(1);
-        assertThat(subscriber.items(), contains("Hello"));
-        assertThat(subscriber.error(), sameInstance(DELIBERATE_EXCEPTION));
+        assertThat(subscriber.takeItems(), contains("Hello"));
+        assertThat(subscriber.takeError(), sameInstance(DELIBERATE_EXCEPTION));
     }
 }

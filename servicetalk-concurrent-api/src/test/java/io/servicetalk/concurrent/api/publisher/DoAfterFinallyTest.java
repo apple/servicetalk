@@ -25,11 +25,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 public class DoAfterFinallyTest extends AbstractDoFinallyTest {
@@ -52,7 +52,7 @@ public class DoAfterFinallyTest extends AbstractDoFinallyTest {
             publisher.onComplete();
             fail();
         } finally {
-            assertTrue(subscriber.isCompleted());
+            assertThat(subscriber.takeTerminal(), is(complete()));
             assertThat("Unexpected calls to doFinally callback.", invocationCount.get(), is(1));
             assertFalse(subscription.isCancelled());
         }
@@ -73,7 +73,7 @@ public class DoAfterFinallyTest extends AbstractDoFinallyTest {
             publisher.onError(DELIBERATE_EXCEPTION);
             fail();
         } finally {
-            assertThat(subscriber.error(), sameInstance(DELIBERATE_EXCEPTION));
+            assertThat(subscriber.takeError(), sameInstance(DELIBERATE_EXCEPTION));
             assertThat("Unexpected calls to doFinally callback.", invocationCount.get(), is(1));
             assertFalse(subscription.isCancelled());
         }

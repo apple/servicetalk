@@ -176,7 +176,7 @@ public class SubscribedRedisClientTest extends BaseRedisClientTest {
         assertThat(subscriber.request(1).awaitUntilAtLeastNReceived(1, DEFAULT_TIMEOUT_SECONDS, SECONDS), is(true));
         assertThat(subscriber.received().poll(), is(redisSimpleString("OK")));
 
-        final RedisData pong = awaitIndefinitely(getEnv().client.request(newRequest(PING)).toSingleOrError());
+        final RedisData pong = awaitIndefinitely(getEnv().client.request(newRequest(PING)).firstOrError());
         assertThat(pong, is(redisSimpleString("PONG")));
 
         assertThat(subscriber.request(1).awaitUntilAtLeastNReceived(1, DEFAULT_TIMEOUT_SECONDS, SECONDS), is(true));
@@ -210,7 +210,7 @@ public class SubscribedRedisClientTest extends BaseRedisClientTest {
                 .subscribe(messages);
 
         // Check ping requests are honored with proper responses
-        RedisData pong = awaitIndefinitely(cnx.request(newRequest(PING)).toSingleOrError());
+        RedisData pong = awaitIndefinitely(cnx.request(newRequest(PING)).firstOrError());
         checkValidPing(pong, EMPTY_BUFFER);
 
         pong = awaitIndefinitely(cnx.request(newRequest(PING, new CompleteBulkString(buf("my-pong")))).first());
@@ -263,7 +263,7 @@ public class SubscribedRedisClientTest extends BaseRedisClientTest {
         publishTestMessage("test-channel-3");
 
         // Check ping request get proper response
-        final RedisData pong = awaitIndefinitely(cnx.request(newRequest(PING)).toSingleOrError());
+        final RedisData pong = awaitIndefinitely(cnx.request(newRequest(PING)).firstOrError());
         checkValidPing(pong, EMPTY_BUFFER);
 
         // Subscribe to a pattern on the same connection
@@ -489,7 +489,7 @@ public class SubscribedRedisClientTest extends BaseRedisClientTest {
             // Check that interleaved requests work both with and without "first"
             final RedisData pong;
             if (i % 2 == 0) {
-                pong = awaitIndefinitely(cnx.request(newRequest(PING, new CompleteBulkString(ping))).toSingleOrError());
+                pong = awaitIndefinitely(cnx.request(newRequest(PING, new CompleteBulkString(ping))).firstOrError());
             } else {
                 pong = awaitIndefinitely(cnx.request(newRequest(PING, new CompleteBulkString(ping)))).get(0);
             }

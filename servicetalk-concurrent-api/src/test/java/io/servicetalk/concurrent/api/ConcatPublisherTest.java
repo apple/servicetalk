@@ -19,10 +19,11 @@ import org.junit.Test;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
 
 public class ConcatPublisherTest {
 
@@ -40,8 +41,8 @@ public class ConcatPublisherTest {
         subscriber.request(2);
         second.onNext("Hello3", "Hello4");
         second.onComplete();
-        assertThat(subscriber.items(), contains("Hello1", "Hello2", "Hello3", "Hello4"));
-        assertTrue(subscriber.isCompleted());
+        assertThat(subscriber.takeItems(), contains("Hello1", "Hello2", "Hello3", "Hello4"));
+        assertThat(subscriber.takeTerminal(), is(complete()));
     }
 
     @Test
@@ -51,8 +52,8 @@ public class ConcatPublisherTest {
         subscriber.request(2);
         first.onNext("Hello1", "Hello2");
         first.onError(DELIBERATE_EXCEPTION);
-        assertThat(subscriber.items(), contains("Hello1", "Hello2"));
-        assertThat(subscriber.error(), sameInstance(DELIBERATE_EXCEPTION));
+        assertThat(subscriber.takeItems(), contains("Hello1", "Hello2"));
+        assertThat(subscriber.takeError(), sameInstance(DELIBERATE_EXCEPTION));
     }
 
     @Test
@@ -63,7 +64,7 @@ public class ConcatPublisherTest {
         first.onNext("Hello1", "Hello2");
         first.onComplete();
         second.onError(DELIBERATE_EXCEPTION);
-        assertThat(subscriber.items(), contains("Hello1", "Hello2"));
-        assertThat(subscriber.error(), sameInstance(DELIBERATE_EXCEPTION));
+        assertThat(subscriber.takeItems(), contains("Hello1", "Hello2"));
+        assertThat(subscriber.takeError(), sameInstance(DELIBERATE_EXCEPTION));
     }
 }

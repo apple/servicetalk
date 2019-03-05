@@ -19,6 +19,8 @@ import org.junit.Test;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
+import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.Assert.assertThat;
@@ -37,8 +39,8 @@ public class TakePublisherTest {
         publisher.onSubscribe(subscription);
         subscriber.request(3);
         publisher.onNext("Hello1", "Hello2");
-        assertThat(subscriber.items(), contains("Hello1", "Hello2"));
-        assertTrue(subscriber.isCompleted());
+        assertThat(subscriber.takeItems(), contains("Hello1", "Hello2"));
+        assertThat(subscriber.takeTerminal(), is(complete()));
         assertTrue(subscription.isCancelled());
     }
 
@@ -49,8 +51,8 @@ public class TakePublisherTest {
         subscriber.request(2);
         publisher.onNext("Hello1");
         publisher.onError(DELIBERATE_EXCEPTION);
-        assertThat(subscriber.items(), contains("Hello1"));
-        assertThat(subscriber.error(), sameInstance(DELIBERATE_EXCEPTION));
+        assertThat(subscriber.takeItems(), contains("Hello1"));
+        assertThat(subscriber.takeError(), sameInstance(DELIBERATE_EXCEPTION));
     }
 
     @Test
@@ -60,7 +62,7 @@ public class TakePublisherTest {
         subscriber.request(2);
         publisher.onNext("Hello1");
         publisher.onComplete();
-        assertThat(subscriber.items(), contains("Hello1"));
+        assertThat(subscriber.takeItems(), contains("Hello1"));
     }
 
     @Test
@@ -70,7 +72,7 @@ public class TakePublisherTest {
         publisher.onSubscribe(subscription);
         subscriber.request(3);
         publisher.onNext("Hello1", "Hello2");
-        assertThat(subscriber.items(), contains("Hello1", "Hello2"));
+        assertThat(subscriber.takeItems(), contains("Hello1", "Hello2"));
         subscriber.cancel();
         assertTrue(subscription.isCancelled());
     }

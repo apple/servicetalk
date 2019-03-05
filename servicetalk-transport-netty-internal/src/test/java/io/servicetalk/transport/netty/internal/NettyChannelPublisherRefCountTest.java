@@ -66,7 +66,7 @@ public class NettyChannelPublisherRefCountTest {
         subscriber.request(3);
         ByteBuf buffer = channel.alloc().buffer();
         channel.writeInbound(buffer);
-        assertThat(subscriber.error(), instanceOf(IllegalArgumentException.class));
+        assertThat(subscriber.takeError(), instanceOf(IllegalArgumentException.class));
         assertThat("Buffer not released.", buffer.refCnt(), is(0));
         assertThat("Channel not closed post ref count leaked.", channel.closeFuture().isDone(), is(true));
     }

@@ -148,4 +148,9 @@ public final class TerminalNotification {
     public static TerminalNotification complete() {
         return COMPLETE;
     }
+
+    @Override
+    public String toString() {
+        return "TerminalNotification{" + (this.cause == null ? "COMPLETE" : cause) + "}";
+    }
 }

@@ -19,15 +19,16 @@ import io.servicetalk.concurrent.internal.DeliberateException;
 
 import org.junit.Test;
 
-import static io.servicetalk.concurrent.api.IsIterableEndingWithInOrder.endsWith;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -44,8 +45,8 @@ public final class ResumePublisherTest {
         subscriber.request(1);
         first.onNext(1);
         first.onComplete();
-        assertThat(subscriber.items(), contains(1));
-        assertTrue(subscriber.isCompleted());
+        assertThat(subscriber.takeItems(), contains(1));
+        assertThat(subscriber.takeTerminal(), is(complete()));
     }
 
     @Test
@@ -54,12 +55,12 @@ public final class ResumePublisherTest {
         subscriber.request(1);
         first.onError(DELIBERATE_EXCEPTION);
         assertTrue(subscriber.subscriptionReceived());
-        assertThat(subscriber.items(), hasSize(0));
-        assertFalse(subscriber.isTerminated());
+        assertThat(subscriber.takeItems(), hasSize(0));
+        assertThat(subscriber.takeTerminal(), nullValue());
         second.onNext(1);
         second.onComplete();
-        assertThat(subscriber.items(), contains(1));
-        assertTrue(subscriber.isCompleted());
+        assertThat(subscriber.takeItems(), contains(1));
+        assertThat(subscriber.takeTerminal(), is(complete()));
     }
 
     @Test
@@ -68,10 +69,10 @@ public final class ResumePublisherTest {
         subscriber.request(1);
         first.onError(new DeliberateException());
         assertTrue(subscriber.subscriptionReceived());
-        assertThat(subscriber.items(), hasSize(0));
-        assertFalse(subscriber.isTerminated());
+        assertThat(subscriber.takeItems(), hasSize(0));
+        assertThat(subscriber.takeTerminal(), nullValue());
         second.onError(DELIBERATE_EXCEPTION);
-        assertThat(subscriber.error(), sameInstance(DELIBERATE_EXCEPTION));
+        assertThat(subscriber.takeError(), sameInstance(DELIBERATE_EXCEPTION));
     }
 
     @Test
@@ -83,8 +84,8 @@ public final class ResumePublisherTest {
         subscriber.cancel();
         assertTrue(subscription.isCancelled());
         assertTrue(subscriber.subscriptionReceived());
-        assertThat(subscriber.items(), hasSize(0));
-        assertFalse(subscriber.isTerminated());
+        assertThat(subscriber.takeItems(), hasSize(0));
+        assertThat(subscriber.takeTerminal(), nullValue());
     }
 
     @Test
@@ -96,8 +97,8 @@ public final class ResumePublisherTest {
         second.onSubscribe(subscription);
         assertTrue(second.isSubscribed());
         assertTrue(subscriber.subscriptionReceived());
-        assertThat(subscriber.items(), hasSize(0));
-        assertFalse(subscriber.isTerminated());
+        assertThat(subscriber.takeItems(), hasSize(0));
+        assertThat(subscriber.takeTerminal(), nullValue());
         subscriber.cancel();
         assertTrue(subscription.isCancelled());
     }
@@ -108,12 +109,12 @@ public final class ResumePublisherTest {
         subscriber.request(2);
         first.onNext(1);
         first.onError(DELIBERATE_EXCEPTION);
-        assertThat(subscriber.items(), contains(1));
-        assertFalse(subscriber.isTerminated());
+        assertThat(subscriber.takeItems(), contains(1));
+        assertThat(subscriber.takeTerminal(), nullValue());
         second.onNext(2);
         second.onComplete();
-        assertThat(subscriber.items(), endsWith(2));
-        assertTrue(subscriber.isCompleted());
+        assertThat(subscriber.takeItems(), contains(2));
+        assertThat(subscriber.takeTerminal(), is(complete()));
     }
 
     @Test
@@ -122,12 +123,12 @@ public final class ResumePublisherTest {
         subscriber.request(1);
         first.onError(DELIBERATE_EXCEPTION);
         assertTrue(subscriber.subscriptionReceived());
-        assertThat(subscriber.items(), hasSize(0));
-        assertFalse(subscriber.isTerminated());
+        assertThat(subscriber.takeItems(), hasSize(0));
+        assertThat(subscriber.takeTerminal(), nullValue());
         second.onNext(1);
         second.onComplete();
-        assertThat(subscriber.items(), contains(1));
-        assertTrue(subscriber.isCompleted());
+        assertThat(subscriber.takeItems(), contains(1));
+        assertThat(subscriber.takeTerminal(), is(complete()));
     }
 
     @Test
@@ -138,7 +139,7 @@ public final class ResumePublisherTest {
         })).subscribe(subscriber);
         subscriber.request(1);
         first.onError(DELIBERATE_EXCEPTION);
-        assertThat(subscriber.error(), sameInstance(ex));
+        assertThat(subscriber.takeError(), sameInstance(ex));
         assertEquals(1, ex.getSuppressed().length);
         assertSame(DELIBERATE_EXCEPTION, ex.getSuppressed()[0]);
     }
@@ -148,6 +149,6 @@ public final class ResumePublisherTest {
         toSource(first.onErrorResume(throwable -> null)).subscribe(subscriber);
         subscriber.request(1);
         first.onError(DELIBERATE_EXCEPTION);
-        assertThat(subscriber.error(), instanceOf(NullPointerException.class));
+        assertThat(subscriber.takeError(), instanceOf(NullPointerException.class));
     }
 }

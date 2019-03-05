@@ -15,54 +15,52 @@
  */
 package io.servicetalk.concurrent.api;
 
-import io.servicetalk.concurrent.PublisherSource.Subscriber;
-import io.servicetalk.concurrent.PublisherSource.Subscription;
+import io.servicetalk.concurrent.Cancellable;
+import io.servicetalk.concurrent.SingleSource.Subscriber;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class LoggingSubscriber<T> implements Subscriber<T> {
+/**
+ * A {@link Subscriber} that wraps another {@link Subscriber}, logging all signals received by the {@link Subscriber},
+ * or sent via the {@link Cancellable}.
+ *
+ * @param <T> Type of items received by the {@code Subscriber}.
+ */
+public class LoggingSingleSubscriber<T> implements Subscriber<T> {
     private final Logger logger;
     private final Subscriber<T> delegate;
 
-    public LoggingSubscriber(final String name, final Subscriber<T> delegate) {
+    /**
+     * Create a {@link LoggingSingleSubscriber} that wraps the {@code delegate}, and uses the specified {@code name} for
+     * logging.
+     *
+     * @param name the logging name.
+     * @param delegate the {@link Subscriber} to delegate calls to.
+     */
+    public LoggingSingleSubscriber(final String name, final Subscriber<T> delegate) {
         this.logger = LoggerFactory.getLogger(name);
         this.delegate = delegate;
     }
 
     @Override
-    public void onSubscribe(final Subscription s) {
+    public void onSubscribe(final Cancellable s) {
         logger.info("onSubscribe({})", s);
-        delegate.onSubscribe(new Subscription() {
-            @Override
-            public void request(final long n) {
-                logger.info("request({})", n);
-                s.request(n);
-            }
-
-            @Override
-            public void cancel() {
-                logger.info("cancel()");
-                s.cancel();
-            }
+        delegate.onSubscribe(() -> {
+            logger.info("cancel()");
+            s.cancel();
         });
     }
 
     @Override
-    public void onNext(final T t) {
-        logger.info("onNext({})", t);
-        delegate.onNext(t);
+    public void onSuccess(final T result) {
+        logger.info("onSuccess({})", result);
+        delegate.onSuccess(result);
     }
 
     @Override
     public void onError(final Throwable t) {
         logger.info("onError({})", t, null); // Pass null so that `t` gets treated as an arg to fill the `{}` with.
         delegate.onError(t);
-    }
-
-    @Override
-    public void onComplete() {
-        logger.info("onComplete()");
-        delegate.onComplete();
     }
 }

@@ -22,10 +22,11 @@ import org.junit.Test;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
 
 public class JustPublisherTest {
 
@@ -37,15 +38,15 @@ public class JustPublisherTest {
             throw DELIBERATE_EXCEPTION;
         })).subscribe(subscriber);
         subscriber.request(1);
-        assertThat(subscriber.items(), contains("foo"));
-        assertThat(subscriber.error(), sameInstance(DELIBERATE_EXCEPTION));
+        assertThat(subscriber.takeItems(), contains("foo"));
+        assertThat(subscriber.takeError(), sameInstance(DELIBERATE_EXCEPTION));
     }
 
     @Test
     public void nullInTerminalSucceeds() {
         toSource(Publisher.<String>just(null)).subscribe(subscriber);
         subscriber.request(1);
-        assertThat(subscriber.items(), contains(new String[]{null}));
-        assertTrue(subscriber.isCompleted());
+        assertThat(subscriber.takeItems(), contains(new String[]{null}));
+        assertThat(subscriber.takeTerminal(), is(complete()));
     }
 }

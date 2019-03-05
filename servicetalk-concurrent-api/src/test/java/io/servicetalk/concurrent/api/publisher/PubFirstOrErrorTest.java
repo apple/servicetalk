@@ -30,7 +30,7 @@ import java.util.NoSuchElementException;
 import static io.servicetalk.concurrent.api.Publisher.just;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 
-public class PubToSingleOrErrorTest {
+public class PubFirstOrErrorTest {
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
     @Rule
@@ -41,18 +41,18 @@ public class PubToSingleOrErrorTest {
 
     @Test
     public void syncSingleItemCompleted() {
-        listenerRule.listen(just("hello").toSingleOrError()).verifySuccess("hello");
+        listenerRule.listen(just("hello").firstOrError()).verifySuccess("hello");
     }
 
     @Test
     public void syncMultipleItemCompleted() {
-        listenerRule.listen(Publisher.from("foo", "bar").toSingleOrError())
+        listenerRule.listen(Publisher.from("foo", "bar").firstOrError())
                 .verifyFailure(IllegalArgumentException.class);
     }
 
     @Test
     public void asyncSingleItemCompleted() throws Exception {
-        listenerRule.listen(publisher.toSingleOrError());
+        listenerRule.listen(publisher.firstOrError());
         executorRule.executor().submit(() -> {
             publisher.onNext("hello");
             publisher.onComplete();
@@ -62,7 +62,7 @@ public class PubToSingleOrErrorTest {
 
     @Test
     public void asyncMultipleItemCompleted() throws Exception {
-        listenerRule.listen(publisher.toSingleOrError());
+        listenerRule.listen(publisher.firstOrError());
         executorRule.executor().submit(() -> {
             publisher.onNext("foo", "bar");
             publisher.onComplete();
@@ -72,14 +72,14 @@ public class PubToSingleOrErrorTest {
 
     @Test
     public void singleItemNoComplete() {
-        listenerRule.listen(publisher.toSingleOrError());
+        listenerRule.listen(publisher.firstOrError());
         publisher.onNext("hello");
         listenerRule.verifyNoEmissions();
     }
 
     @Test
     public void singleItemErrorPropagates() {
-        listenerRule.listen(publisher.toSingleOrError());
+        listenerRule.listen(publisher.firstOrError());
         publisher.onNext("hello");
         publisher.onError(DELIBERATE_EXCEPTION);
         listenerRule.verifyFailure(DELIBERATE_EXCEPTION);
@@ -87,21 +87,21 @@ public class PubToSingleOrErrorTest {
 
     @Test
     public void noItemsFails() {
-        listenerRule.listen(publisher.toSingleOrError());
+        listenerRule.listen(publisher.firstOrError());
         publisher.onComplete();
         listenerRule.verifyFailure(NoSuchElementException.class);
     }
 
     @Test
     public void noItemErrorPropagates() {
-        listenerRule.listen(publisher.toSingleOrError());
+        listenerRule.listen(publisher.firstOrError());
         publisher.onError(DELIBERATE_EXCEPTION);
         listenerRule.verifyFailure(DELIBERATE_EXCEPTION);
     }
 
     @Test
     public void multipleItemsFails() {
-        listenerRule.listen(publisher.toSingleOrError());
+        listenerRule.listen(publisher.firstOrError());
         publisher.onNext("foo", "bar");
         publisher.onComplete();
         listenerRule.verifyFailure(IllegalArgumentException.class);

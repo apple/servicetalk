@@ -33,6 +33,12 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+/**
+ * Deprecated.
+ *
+ * @deprecated Use {@link TestSingle2} instead.
+ */
+@Deprecated
 public class TestSingle<T> extends Single<T> implements SingleSource.Subscriber<T> {
     private static final Object NULL = new Object();
     private final AtomicInteger subscribeCount = new AtomicInteger();

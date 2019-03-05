@@ -26,12 +26,14 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static java.util.function.Function.identity;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
@@ -57,8 +59,8 @@ public class PublisherConcatMapIterableTest {
                 (time, unit) -> { }, (time, unit) -> { }, () -> cancelled.set(true)));
         assertThat(subscriber.takeItems(), contains("one"));
         assertTrue(subscriber.subscriptionReceived());
-        assertThat(subscriber.items(), hasSize(0));
-        assertFalse(subscriber.isTerminated());
+        assertThat(subscriber.takeItems(), hasSize(0));
+        assertThat(subscriber.takeTerminal(), nullValue());
         subscriber.cancel();
         assertTrue(cancelled.get());
     }
@@ -97,8 +99,8 @@ public class PublisherConcatMapIterableTest {
         publisher.onNext(singletonList("one"));
         assertThat(subscriber.takeItems(), contains("one"));
         assertTrue(subscriber.subscriptionReceived());
-        assertThat(subscriber.items(), hasSize(0));
-        assertFalse(subscriber.isTerminated());
+        assertThat(subscriber.takeItems(), hasSize(0));
+        assertThat(subscriber.takeTerminal(), nullValue());
 
         verifyTermination(success);
     }
@@ -128,12 +130,12 @@ public class PublisherConcatMapIterableTest {
         }
 
         subscriber.request(1);
-        assertThat(subscriber.items(), contains("two"));
+        assertThat(subscriber.takeItems(), contains("two"));
 
         if (success) {
-            assertTrue(subscriber.isCompleted());
+            assertThat(subscriber.takeTerminal(), is(complete()));
         } else {
-            assertThat(subscriber.error(), sameInstance(DELIBERATE_EXCEPTION));
+            assertThat(subscriber.takeError(), sameInstance(DELIBERATE_EXCEPTION));
         }
         assertFalse(subscription.isCancelled());
     }
@@ -201,7 +203,7 @@ public class PublisherConcatMapIterableTest {
         assertTrue(subscriber.subscriptionReceived());
         subscriber.request(1);
         publisher.onNext(asList("one", "two"));
-        assertThat(subscriber.items(), contains("one"));
+        assertThat(subscriber.takeItems(), contains("one"));
         subscriber.cancel();
         assertTrue(subscription.isCancelled());
     }
@@ -259,10 +261,10 @@ public class PublisherConcatMapIterableTest {
     private void verifyTermination(boolean success) {
         if (success) {
             publisher.onComplete();
-            assertTrue(subscriber.isCompleted());
+            assertThat(subscriber.takeTerminal(), is(complete()));
         } else {
             publisher.onError(DELIBERATE_EXCEPTION);
-            assertThat(subscriber.error(), sameInstance(DELIBERATE_EXCEPTION));
+            assertThat(subscriber.takeError(), sameInstance(DELIBERATE_EXCEPTION));
         }
         assertFalse(subscription.isCancelled());
     }

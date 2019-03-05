@@ -19,13 +19,18 @@ import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
-public final class SequentialPublisherSubscriberFunction<T> implements Function<Subscriber<? super T>, Subscriber<? super T>> {
+/**
+ * Allows multiple {@link Subscriber}s to be sequentially subscribed to a {@link TestPublisher}. Attempts to subscribe
+ * concurrently will throw an exception.
+ *
+ * @param <T> Type of items received by the {@code Subscriber}.
+ */
+public final class SequentialPublisherSubscriberFunction<T>
+        implements Function<Subscriber<? super T>, Subscriber<? super T>> {
 
-    private final AtomicInteger subscriptionCount = new AtomicInteger();
     private final AtomicBoolean subscribed = new AtomicBoolean();
     @Nullable
     private volatile Subscriber<? super T> subscriber;
@@ -36,8 +41,7 @@ public final class SequentialPublisherSubscriberFunction<T> implements Function<
             throw new IllegalStateException("Duplicate subscriber: " + subscriber);
         }
         this.subscriber = subscriber;
-        subscriptionCount.incrementAndGet();
-        return new DelegatingSubscriber<T>(subscriber) {
+        return new DelegatingPublisherSubscriber<T>(subscriber) {
             @Override
             public void onSubscribe(final Subscription s) {
                 super.onSubscribe(new Subscription() {
@@ -74,12 +78,24 @@ public final class SequentialPublisherSubscriberFunction<T> implements Function<
         };
     }
 
+    /**
+     * Returns the most recently subscribed {@link Subscriber}.
+     *
+     * @return the most recently subscribed {@link Subscriber}.
+     */
     @Nullable
     public Subscriber<? super T> subscriber() {
         return subscriber;
     }
 
-    public int subscriptionCount() {
-        return subscriptionCount.get();
+    /**
+     * Returns {@code true} if a {@link Subscriber} is currently active (has been subscribed, and not terminated), or
+     * {@code false} otherwise.
+     *
+     * @return {@code true} if a {@link Subscriber} is currently active (has been subscribed, and not terminated), or
+     * {@code false} otherwise.
+     */
+    public boolean isSubscribed() {
+        return subscribed.get();
     }
 }

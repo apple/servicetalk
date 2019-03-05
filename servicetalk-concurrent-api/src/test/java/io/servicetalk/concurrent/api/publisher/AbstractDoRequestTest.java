@@ -30,8 +30,8 @@ import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
@@ -54,7 +54,7 @@ public abstract class AbstractDoRequestTest {
         subscriber.request(1);
         publisher.onNext("Hello");
         publisher.onComplete();
-        assertThat(subscriber.items(), contains("Hello"));
+        assertThat(subscriber.takeItems(), contains("Hello"));
         verify(onRequest).accept(1L);
     }
 
@@ -66,9 +66,9 @@ public abstract class AbstractDoRequestTest {
         subscriber.request(1);
         subscriber.request(1);
         publisher.onNext("Hello");
-        assertThat(subscriber.items(), contains("Hello"));
+        assertThat(subscriber.takeItems(), contains("Hello"));
         publisher.onNext("Hello1");
-        assertThat(subscriber.items(), contains("Hello", "Hello1"));
+        assertThat(subscriber.takeItems(), contains("Hello1"));
         verify(onRequest, times(2)).accept(1L);
     }
 
@@ -79,8 +79,8 @@ public abstract class AbstractDoRequestTest {
         doRequest(publisher, onRequest).subscribe(subscriber);
         subscriber.request(10);
         assertTrue(subscriber.subscriptionReceived());
-        assertThat(subscriber.items(), hasSize(0));
-        assertFalse(subscriber.isTerminated());
+        assertThat(subscriber.takeItems(), hasSize(0));
+        assertThat(subscriber.takeTerminal(), nullValue());
         verify(onRequest).accept(10L);
     }
 

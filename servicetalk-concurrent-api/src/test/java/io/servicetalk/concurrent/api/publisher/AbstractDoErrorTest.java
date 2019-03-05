@@ -46,7 +46,7 @@ public abstract class AbstractDoErrorTest {
         Consumer<Throwable> onError = mock(Consumer.class);
         doError(publisher, onError).subscribe(subscriber);
         publisher.onError(DELIBERATE_EXCEPTION);
-        assertThat(subscriber.error(), sameInstance(DELIBERATE_EXCEPTION));
+        assertThat(subscriber.takeError(), sameInstance(DELIBERATE_EXCEPTION));
 
         verify(onError).accept(DELIBERATE_EXCEPTION);
     }

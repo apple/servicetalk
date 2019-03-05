@@ -29,8 +29,8 @@ import java.util.concurrent.TimeoutException;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
-import static io.servicetalk.http.api.HttpHeaderValues.APPLICATION_X_WWW_FORM_URLENCODED_UTF8;
+import static io.servicetalk.http.api.HeaderUtils.hasContentType;
+import static io.servicetalk.http.api.HttpHeaderValues.APPLICATION_X_WWW_FORM_URLENCODED;
 import static io.servicetalk.http.api.QueryStringDecoder.decodeParams;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Collections.emptyMap;
@@ -40,7 +40,7 @@ import static java.util.Collections.emptyMap;
  */
 final class FormUrlEncodedHttpDeserializer implements HttpDeserializer<Map<String, List<String>>> {
     static final FormUrlEncodedHttpDeserializer UTF8 = new FormUrlEncodedHttpDeserializer(UTF_8,
-            headers -> headers.contains(CONTENT_TYPE, APPLICATION_X_WWW_FORM_URLENCODED_UTF8));
+            headers -> hasContentType(headers, APPLICATION_X_WWW_FORM_URLENCODED, UTF_8));
 
     private final Charset charset;
     private final Predicate<HttpHeaders> checkContentType;

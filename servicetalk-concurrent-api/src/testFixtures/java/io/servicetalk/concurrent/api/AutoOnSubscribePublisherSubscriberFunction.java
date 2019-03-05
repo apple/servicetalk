@@ -18,21 +18,23 @@ package io.servicetalk.concurrent.api;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Function;
 
-public final class AutoOnSubscribeSubscriberFunction<T>
+/**
+ * Calls {@link Subscriber#onSubscribe(Subscription)} automatically, sending a delegating {@link Subscription}.
+ * Returns a {@link Subscriber} which, upon receiving {@link Subscriber#onSubscribe(Subscription)}, uses the received
+ * {@link Subscription} to delegate to.
+ *
+ * @param <T> Type of items received by the {@code Subscriber}.
+ */
+public final class AutoOnSubscribePublisherSubscriberFunction<T>
         implements Function<Subscriber<? super T>, Subscriber<? super T>> {
-    private final List<Subscription> subscriptions = new CopyOnWriteArrayList<>();
 
     @Override
     public Subscriber<? super T> apply(final Subscriber<? super T> subscriber) {
         final SequentialSubscription subscription = new SequentialSubscription();
-        subscriptions.add(subscription);
         subscriber.onSubscribe(subscription);
-        return new DelegatingSubscriber<T>(subscriber) {
+        return new DelegatingPublisherSubscriber<T>(subscriber) {
             @Override
             public void onSubscribe(final Subscription s) {
                 subscription.switchTo(s);
@@ -44,9 +46,5 @@ public final class AutoOnSubscribeSubscriberFunction<T>
                 super.onNext(t);
             }
         };
-    }
-
-    public List<Subscription> subscriptions() {
-        return new ArrayList<>(subscriptions);
     }
 }

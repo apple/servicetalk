@@ -15,12 +15,14 @@
  */
 package io.servicetalk.concurrent.api;
 
-import io.servicetalk.concurrent.internal.TerminalNotification;
-
 import org.junit.Test;
 
+import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -62,21 +64,19 @@ public class CollectingPublisherSubscriberTest {
 
         assertNull(subscriber.terminal());
         assertFalse(subscriber.isCompleted());
-        assertFalse(subscriber.isTerminated());
+        assertThat(subscriber.terminal(), nullValue());
 
         source.onComplete();
 
-        assertThat(subscriber.terminal(), sameInstance(TerminalNotification.complete()));
         assertNull(subscriber.error());
-        assertTrue(subscriber.isCompleted());
-        assertTrue(subscriber.isTerminated());
+        assertThat(subscriber.terminal(), is(complete()));
     }
 
     @Test
     public void testError() {
         source.subscribe(subscriber);
 
-        assertFalse(subscriber.isTerminated());
+        assertThat(subscriber.terminal(), nullValue());
         assertFalse(subscriber.isErrored());
         assertNull(subscriber.error());
 
@@ -86,7 +86,7 @@ public class CollectingPublisherSubscriberTest {
         assertNotNull(subscriber.terminal());
         assertThat(subscriber.terminal().cause(), sameInstance(error));
         assertThat(subscriber.error(), sameInstance(error));
-        assertTrue(subscriber.isTerminated());
+        assertThat(subscriber.terminal(), notNullValue());
         assertTrue(subscriber.isErrored());
         assertFalse(subscriber.isCompleted());
     }

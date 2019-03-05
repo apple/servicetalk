@@ -223,8 +223,8 @@ public class DefaultSerializerDeserializationTest {
         verify(deSerializer).deserialize(first);
         verify(deSerializer).deserialize(second);
 
-        assertThat(subscriber.items(), contains("Hello1"));
-        assertThat(subscriber.error(), sameInstance(e));
+        assertThat(subscriber.takeItems(), contains("Hello1"));
+        assertThat(subscriber.takeError(), sameInstance(e));
     }
 
     @Test

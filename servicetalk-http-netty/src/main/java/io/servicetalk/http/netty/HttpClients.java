@@ -59,6 +59,26 @@ public final class HttpClients {
     }
 
     /**
+     * Creates a {@link MultiAddressHttpClientBuilder} for clients capable of parsing an <a
+     * href="https://tools.ietf.org/html/rfc7230#section-5.3.2">absolute-form URL</a>, connecting to multiple addresses
+     * with default {@link LoadBalancer} and user provided {@link ServiceDiscoverer}.
+     * <p>
+     * When a <a href="https://tools.ietf.org/html/rfc3986#section-4.2">relative URL</a> is passed in the {@link
+     * StreamingHttpRequest#requestTarget(String)} this client requires a {@link HttpHeaderNames#HOST} present in
+     * order to infer the remote address.
+     *
+     * @param serviceDiscoverer The {@link ServiceDiscoverer} to resolve addresses of remote servers to connect to.
+     * The lifecycle of the provided {@link ServiceDiscoverer} should be managed by the caller.
+     * @return new builder with default configuration
+     */
+    public static MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> forMultiAddressUrl(
+            final ServiceDiscoverer<HostAndPort, InetSocketAddress, ? extends ServiceDiscovererEvent<InetSocketAddress>>
+                    serviceDiscoverer) {
+        return new DefaultMultiAddressUrlHttpClientBuilder(
+                new DefaultSingleAddressHttpClientBuilder<>(serviceDiscoverer));
+    }
+
+    /**
      * Creates a {@link SingleAddressHttpClientBuilder} for an address with default {@link LoadBalancer} and DNS {@link
      * ServiceDiscoverer}.
      *

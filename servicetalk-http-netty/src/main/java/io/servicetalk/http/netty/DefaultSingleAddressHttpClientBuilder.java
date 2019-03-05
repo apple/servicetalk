@@ -88,7 +88,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
         this.serviceDiscoverer = requireNonNull(serviceDiscoverer);
     }
 
-    private DefaultSingleAddressHttpClientBuilder(
+    DefaultSingleAddressHttpClientBuilder(
             final ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>> serviceDiscoverer) {
         address = null; // Unknown address - template builder pending override via: copy(address)
         config = new HttpClientConfig(new TcpClientConfig(false));

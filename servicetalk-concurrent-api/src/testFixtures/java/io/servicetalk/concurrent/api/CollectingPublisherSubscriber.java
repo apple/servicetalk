@@ -25,7 +25,9 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import javax.annotation.Nullable;
 
-public final class CollectingPublisherSubscriber<T> implements Subscriber<T>, Subscription {
+import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
+
+final class CollectingPublisherSubscriber<T> implements Subscriber<T>, Subscription {
 
     private final List<T> items = new CopyOnWriteArrayList<>();
     private final DelayedSubscription subscription = new DelayedSubscription();
@@ -33,14 +35,12 @@ public final class CollectingPublisherSubscriber<T> implements Subscriber<T>, Su
     private volatile TerminalNotification terminal;
     private volatile boolean subscriptionReceived;
 
-    /**
-     * Clear received items and any terminal signals.
-     * <p>
-     * Does not affect subscribed/subscription state.
-     */
-    public void clear() {
-        items.clear();
-        terminal = null;
+    public boolean subscriptionReceived() {
+        return subscriptionReceived;
+    }
+
+    public Subscription subscription() {
+        return subscription;
     }
 
     public List<T> items() {
@@ -59,29 +59,35 @@ public final class CollectingPublisherSubscriber<T> implements Subscriber<T>, Su
     }
 
     @Nullable
+    public TerminalNotification takeTerminal() {
+        TerminalNotification terminal = this.terminal;
+        this.terminal = null;
+        return terminal;
+    }
+
+    @Nullable
     public Throwable error() {
         final TerminalNotification terminal = this.terminal;
         if (terminal == null) {
             return null;
         }
-        return terminal == TerminalNotification.complete() ? null : terminal.cause();
+        return terminal == complete() ? null : terminal.cause();
     }
 
-    public boolean subscriptionReceived() {
-        return subscriptionReceived;
-    }
-
-    public Subscription subscription() {
-        return subscription;
+    @Nullable
+    public Throwable takeError() {
+        final Throwable error = error();
+        this.terminal = null;
+        return error;
     }
 
     public boolean isCompleted() {
-        return terminal == TerminalNotification.complete();
+        return terminal == complete();
     }
 
     public boolean isErrored() {
         final TerminalNotification terminal = this.terminal;
-        return terminal != null && terminal != TerminalNotification.complete();
+        return terminal != null && terminal != complete();
     }
 
     public boolean isTerminated() {
@@ -116,6 +122,6 @@ public final class CollectingPublisherSubscriber<T> implements Subscriber<T>, Su
 
     @Override
     public void onComplete() {
-        terminal = TerminalNotification.complete();
+        terminal = complete();
     }
 }

@@ -34,9 +34,11 @@ import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
 import static io.servicetalk.concurrent.api.Publisher.just;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
@@ -81,8 +83,8 @@ public class RepeatWhenTest {
         subscriber.request(2);
         source.onNext(1, 2);
         source.onError(DELIBERATE_EXCEPTION);
-        assertThat(subscriber.items(), contains(1, 2));
-        assertThat(subscriber.error(), sameInstance(DELIBERATE_EXCEPTION));
+        assertThat(subscriber.takeItems(), contains(1, 2));
+        assertThat(subscriber.takeError(), sameInstance(DELIBERATE_EXCEPTION));
         verifyZeroInteractions(shouldRepeat);
     }
 
@@ -92,9 +94,9 @@ public class RepeatWhenTest {
         subscriber.request(2);
         source.onNext(1, 2);
         source.onComplete();
-        assertThat(subscriber.items(), contains(1, 2));
+        assertThat(subscriber.takeItems(), contains(1, 2));
         repeatSignal.onError(DELIBERATE_EXCEPTION); // stop repeat
-        assertTrue(subscriber.isCompleted());
+        assertThat(subscriber.takeTerminal(), is(complete()));
         verify(shouldRepeat).apply(1);
     }
 
@@ -104,13 +106,13 @@ public class RepeatWhenTest {
         subscriber.request(3);
         source.onNext(1, 2);
         source.onComplete();
-        assertThat(subscriber.items(), contains(1, 2));
+        assertThat(subscriber.takeItems(), contains(1, 2));
         repeatSignal.onComplete(); // trigger repeat
         verify(shouldRepeat).apply(1);
         assertTrue(source.isSubscribed());
         source.onNext(3);
-        assertThat(subscriber.items(), contains(1, 2, 3));
-        assertFalse(subscriber.isTerminated());
+        assertThat(subscriber.takeItems(), contains(3));
+        assertThat(subscriber.takeTerminal(), nullValue());
     }
 
     @Test
@@ -119,8 +121,8 @@ public class RepeatWhenTest {
         subscriber.request(3);
         source.onNext(1, 2);
         source.onComplete();
-        assertThat(subscriber.items(), contains(1, 2));
-        assertFalse(subscriber.isTerminated());
+        assertThat(subscriber.takeItems(), contains(1, 2));
+        assertThat(subscriber.takeTerminal(), nullValue());
         verify(shouldRepeat).apply(1);
         repeatSignal.onComplete(); // trigger repeat
         assertTrue(source.isSubscribed());
@@ -129,8 +131,8 @@ public class RepeatWhenTest {
         verify(shouldRepeat).apply(2);
         repeatSignal.onComplete(); // trigger repeat
         source.onError(DELIBERATE_EXCEPTION);
-        assertThat(subscriber.items(), contains(1, 2, 3));
-        assertThat(subscriber.error(), sameInstance(DELIBERATE_EXCEPTION));
+        assertThat(subscriber.takeItems(), contains(3));
+        assertThat(subscriber.takeError(), sameInstance(DELIBERATE_EXCEPTION));
     }
 
     @Test
@@ -140,13 +142,13 @@ public class RepeatWhenTest {
         source.onNext(1, 2);
         source.onComplete();
         repeatSignal.onComplete(); // trigger repeat
-        assertThat(subscriber.items(), contains(1, 2));
-        assertFalse(subscriber.isTerminated());
+        assertThat(subscriber.takeItems(), contains(1, 2));
+        assertThat(subscriber.takeTerminal(), nullValue());
         verify(shouldRepeat).apply(1);
         assertTrue(source.isSubscribed());
         source.onComplete();
         repeatSignal.verifyListenCalled().onError(DELIBERATE_EXCEPTION); // stop repeat
-        assertTrue(subscriber.isCompleted());
+        assertThat(subscriber.takeTerminal(), is(complete()));
     }
 
     @Test
@@ -160,10 +162,10 @@ public class RepeatWhenTest {
         source.onNext(1, 2);
         source.onComplete();
         repeatSignal.verifyListenCalled();
-        assertThat(subscriber.items(), contains(1, 2));
+        assertThat(subscriber.takeItems(), contains(1, 2));
         subscriber.cancel();
         repeatSignal.verifyCancelled();
-        assertThat(sequentialPublisherSubscriberFunction.subscriptionCount(), is(1));
+        assertFalse(sequentialPublisherSubscriberFunction.isSubscribed());
         verify(shouldRepeat).apply(1);
     }
 
@@ -174,7 +176,7 @@ public class RepeatWhenTest {
         source.onSubscribe(subscription);
         subscriber.request(2);
         source.onNext(1, 2);
-        assertThat(subscriber.items(), contains(1, 2));
+        assertThat(subscriber.takeItems(), contains(1, 2));
         subscriber.cancel();
         source.onComplete();
         assertTrue(subscription.isCancelled());

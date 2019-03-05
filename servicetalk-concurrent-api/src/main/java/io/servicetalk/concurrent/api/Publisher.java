@@ -1949,16 +1949,18 @@ public abstract class Publisher<T> {
     }
 
     /**
-     * Converts this {@link Publisher} to a {@link Single}. If this {@link Publisher} terminates without emitting any
+     * Ensures that this {@link Publisher} emits exactly a single {@link Subscriber#onNext(Object)} to its
+     * {@link Subscriber}. If this {@link Publisher} terminates without emitting any
      * items a {@link NoSuchElementException} will be signaled and if this {@link Publisher} emits more than one item,
-     * an {@link IllegalArgumentException} will be signaled.
+     * an {@link IllegalArgumentException} will be signaled. Any error emitted by this {@link Publisher} will be
+     * forwarded to the returned {@link Single}.
      *
      * @return A {@link Single} that will contain the first item emitted from the this {@link Publisher}.
      * If the source {@link Publisher} does not emit any item, then the returned {@link Single} will terminate with
      * {@link NoSuchElementException}.
      */
-    public final Single<T> toSingleOrError() {
-        return new PubToSingleOrError<>(this);
+    public final Single<T> firstOrError() {
+        return new PubFirstOrError<>(this);
     }
 
     /**
