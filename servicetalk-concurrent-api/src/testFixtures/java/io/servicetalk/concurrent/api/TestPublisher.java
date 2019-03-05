@@ -22,6 +22,8 @@ import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
@@ -47,12 +49,11 @@ import static java.util.Objects.requireNonNull;
  */
 public final class TestPublisher<T> extends Publisher<T> implements PublisherSource<T> {
     private static final Logger LOGGER = LoggerFactory.getLogger(TestPublisher.class);
-
+    private static final AtomicReferenceFieldUpdater<TestPublisher, Subscriber> subscriberUpdater =
+            AtomicReferenceFieldUpdater.newUpdater(TestPublisher.class, Subscriber.class, "subscriber");
     private final Function<Subscriber<? super T>, Subscriber<? super T>> subscriberFunction;
     private final List<Throwable> exceptions = new CopyOnWriteArrayList<>();
-
-    @Nullable
-    private volatile Subscriber<? super T> subscriber;
+    private volatile Subscriber<? super T> subscriber = new WaitingSubscriber<>();
 
     /**
      * Create a {@code TestPublisher} with the defaults. See <b>Defaults</b> section of class javadoc.
@@ -62,7 +63,7 @@ public final class TestPublisher<T> extends Publisher<T> implements PublisherSou
     }
 
     private TestPublisher(final Function<Subscriber<? super T>, Subscriber<? super T>> subscriberFunction) {
-        this.subscriberFunction = subscriberFunction;
+        this.subscriberFunction = requireNonNull(subscriberFunction);
     }
 
     /**
@@ -71,13 +72,24 @@ public final class TestPublisher<T> extends Publisher<T> implements PublisherSou
      * @return {@code true} if this {@link TestPublisher} has been subscribed to, {@code false} otherwise.
      */
     public boolean isSubscribed() {
-        return subscriber != null;
+        return !(subscriber instanceof WaitingSubscriber);
     }
 
     @Override
     protected void handleSubscribe(final Subscriber<? super T> subscriber) {
         try {
-            this.subscriber = requireNonNull(subscriberFunction.apply(subscriber));
+            Subscriber<? super T> newSubscriber = requireNonNull(subscriberFunction.apply(subscriber));
+            for (;;) {
+                Subscriber<? super T> currSubscriber = this.subscriber;
+                if (subscriberUpdater.compareAndSet(this, currSubscriber, newSubscriber)) {
+                    if (currSubscriber instanceof WaitingSubscriber) {
+                        @SuppressWarnings("unchecked")
+                        final WaitingSubscriber<T> waiter = (WaitingSubscriber<T>) currSubscriber;
+                        waiter.realSubscriber(newSubscriber);
+                    }
+                    break;
+                }
+            }
         } catch (final Throwable t) {
             record(t);
         }
@@ -148,10 +160,6 @@ public final class TestPublisher<T> extends Publisher<T> implements PublisherSou
                 exception.addSuppressed(exceptions.get(i));
             }
             throw exception;
-        }
-        final Subscriber<? super T> subscriber = this.subscriber;
-        if (subscriber == null) {
-            throw new IllegalStateException(signal + " without subscriber");
         }
         return subscriber;
     }
@@ -325,7 +333,7 @@ public final class TestPublisher<T> extends Publisher<T> implements PublisherSou
          * @return a new {@link TestPublisher}.
          */
         public TestPublisher<T> build(final Function<Subscriber<? super T>, Subscriber<? super T>> function) {
-            return new TestPublisher<>(requireNonNull(function));
+            return new TestPublisher<>(function);
         }
 
         private Function<Subscriber<? super T>, Subscriber<? super T>> buildSubscriberFunction() {
@@ -357,6 +365,42 @@ public final class TestPublisher<T> extends Publisher<T> implements PublisherSou
                 return first;
             }
             return first.andThen(second);
+        }
+    }
+
+    private static final class WaitingSubscriber<T> implements Subscriber<T> {
+        private final SingleProcessor<Subscriber<? super T>> realSubscriberSingle = new SingleProcessor<>();
+
+        @Override
+        public void onSubscribe(final Subscription subscription) {
+            waitForSubscription().onSubscribe(subscription);
+        }
+
+        @Override
+        public void onNext(@Nullable final T t) {
+            waitForSubscription().onNext(t);
+        }
+
+        @Override
+        public void onError(final Throwable t) {
+            waitForSubscription().onError(t);
+        }
+
+        @Override
+        public void onComplete() {
+            waitForSubscription().onComplete();
+        }
+
+        void realSubscriber(Subscriber<? super T> subscriber) {
+            realSubscriberSingle.onSuccess(subscriber);
+        }
+
+        private Subscriber<? super T> waitForSubscription() {
+            try {
+                return realSubscriberSingle.toFuture().get();
+            } catch (InterruptedException | ExecutionException e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 }
