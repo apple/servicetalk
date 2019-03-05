@@ -44,6 +44,7 @@ public abstract class HttpServerBuilder {
     @Nullable
     private ConnectionAcceptorFactory connectionAcceptorFactory;
     private HttpServiceFilterFactory serviceFilter = identity();
+    private boolean drainRequestPayloadBody = true;
 
     /**
      * Sets the {@link HttpHeadersFactory} to be used for creating {@link HttpHeaders} when decoding requests.
@@ -158,6 +159,21 @@ public abstract class HttpServerBuilder {
      * @see #enableWireLogging(String)
      */
     public abstract HttpServerBuilder disableWireLogging();
+
+    /**
+     * Disables the logic that tries to drain and discard the {@link StreamingHttpRequest#payloadBody() payload body}
+     * of a {@link StreamingHttpRequest} in case some {@link StreamingHttpService} endpoints are not interested in
+     * the request payload body.
+     * <p>
+     * This logic could be disabled when all endpoints and filters use aggregated API of {@link HttpRequest} or
+     * consume/discard the {@link StreamingHttpRequest#payloadBody() payload body} of incoming requests.
+     *
+     * @return {@code this}.
+     */
+    public final HttpServerBuilder disableDrainingRequestPayloadBody() {
+        this.drainRequestPayloadBody = false;
+        return this;
+    }
 
     /**
      * Append the filter to the chain of filters used to decorate the {@link ConnectionAcceptor} used by this builder.
@@ -411,7 +427,7 @@ public abstract class HttpServerBuilder {
         StreamingHttpServiceFilter filterChain = serviceFilter.create(svc);
         HttpExecutionStrategy effectiveStrategy = filterChain.effectiveExecutionStrategy(strategy);
         StreamingHttpServiceFilter finalService = new StreamingHttpServiceFilter(filterChain, effectiveStrategy);
-        return doListen(connectionAcceptor, finalService);
+        return doListen(connectionAcceptor, finalService, drainRequestPayloadBody);
     }
 
     /**
@@ -449,9 +465,12 @@ public abstract class HttpServerBuilder {
      *
      * @param connectionAcceptor {@link ConnectionAcceptor} to use for the server.
      * @param service {@link StreamingHttpService} to use for the server.
+     * @param drainRequestPayloadBody if {@code true} the server implementation should automatically subscribe and
+     * ignore the {@link StreamingHttpRequest#payloadBody() payload body} of incoming requests.
      * @return A {@link Single} that completes when the server is successfully started or terminates with an error if
      * the server could not be started.
      */
     protected abstract Single<ServerContext> doListen(@Nullable ConnectionAcceptor connectionAcceptor,
-                                                      StreamingHttpService service);
+                                                      StreamingHttpService service,
+                                                      boolean drainRequestPayloadBody);
 }

@@ -67,6 +67,7 @@ import javax.net.ssl.SSLSession;
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.concurrent.api.AsyncCloseables.toListenableAsyncCloseable;
 import static io.servicetalk.concurrent.api.Completable.completed;
+import static io.servicetalk.concurrent.api.Completable.error;
 import static io.servicetalk.concurrent.api.Single.success;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderValues.ZERO;
@@ -88,7 +89,8 @@ final class NettyHttpServer {
     static Single<ServerContext> bind(final ExecutionContext executionContext, final ReadOnlyHttpServerConfig config,
                                       final SocketAddress address,
                                       @Nullable final ConnectionAcceptor connectionAcceptor,
-                                      final StreamingHttpService service) {
+                                      final StreamingHttpService service,
+                                      final boolean drainRequestPayloadBody) {
         // This state is read only, so safe to keep a copy across Subscribers
         final ReadOnlyTcpServerConfig tcpServerConfig = config.tcpConfig();
         return TcpServerBinder.bind(address, tcpServerConfig, executionContext, connectionAcceptor,
@@ -102,7 +104,7 @@ final class NettyHttpServer {
                             flushStrategy, new TcpServerChannelInitializer(tcpServerConfig)
                                     .andThen(getChannelInitializer(config, closeHandler)))
                         .map(conn -> new NettyHttpServerConnection(conn, service, flushStrategy,
-                                config.headersFactory()));
+                                config.headersFactory(), drainRequestPayloadBody));
                 },
                 serverConnection -> serverConnection.process().subscribe())
             .map(delegate -> {
@@ -170,11 +172,13 @@ final class NettyHttpServer {
         private final StreamingHttpService service;
         private final NettyConnection<Object, Object> connection;
         private final CompositeFlushStrategy compositeFlushStrategy;
+        private final boolean drainRequestPayloadBody;
 
         NettyHttpServerConnection(final NettyConnection<Object, Object> connection,
                                   final StreamingHttpService service,
                                   final CompositeFlushStrategy compositeFlushStrategy,
-                                  final HttpHeadersFactory headersFactory) {
+                                  final HttpHeadersFactory headersFactory,
+                                  final boolean drainRequestPayloadBody) {
             super(new DefaultHttpResponseFactory(headersFactory, connection.executionContext().bufferAllocator()),
                   new DefaultStreamingHttpResponseFactory(headersFactory,
                           connection.executionContext().bufferAllocator()),
@@ -183,6 +187,7 @@ final class NettyHttpServer {
             this.connection = connection;
             this.service = service;
             this.compositeFlushStrategy = compositeFlushStrategy;
+            this.drainRequestPayloadBody = drainRequestPayloadBody;
         }
 
         Completable process() {
@@ -221,10 +226,8 @@ final class NettyHttpServer {
 
                             @Override
                             public void onError(final Throwable t) {
-                                // After the response payload has terminated, we attempt to subscribe to the request
-                                // payload and drain/discard the content (in case the user forgets to consume the
-                                // stream). However this means we may introduce a duplicate subscribe and this doesn't
-                                // mean the request content has not terminated.
+                                // Multiple subscriptions to the request payload will produce RejectedSubscribeError
+                                // but this doesn't mean the original subscription is terminated.
                                 if (!(t instanceof RejectedSubscribeError)) {
                                     processor.onComplete();
                                 }
@@ -238,11 +241,7 @@ final class NettyHttpServer {
 
                 final HttpRequestMethod requestMethod = request2.method();
                 final HttpKeepAlive keepAlive = HttpKeepAlive.responseKeepAlive(request2);
-                final Completable drainRequestPayloadBody = request2.payloadBody().ignoreElements()
-                        // ignore error about duplicate subscriptions, we are forcing a subscription here and the user
-                        // may also subscribe, so it is OK if we fail here.
-                        .onErrorResume(t -> completed());
-                return service.executionStrategy()
+                Publisher<Object> objectPublisher = service.executionStrategy()
                         .invokeService(executionContext().executor(), request2,
                                 req -> service.handle(NettyHttpServerConnection.this, req, streamingResponseFactory())
                                         .map(response -> {
@@ -250,8 +249,16 @@ final class NettyHttpServer {
                                             keepAlive.addConnectionHeaderIfNecessary(response);
                                             return response;
                                         }),
-                                (cause, executor) -> newErrorResponse(cause, executor, request2.version(), keepAlive))
-                        .concatWith(drainRequestPayloadBody).concatWith(processor);
+                                (cause, executor) -> newErrorResponse(cause, executor, request2.version(), keepAlive));
+
+                if (drainRequestPayloadBody) {
+                    objectPublisher = objectPublisher.concatWith(request2.payloadBody().ignoreElements()
+                            // Ignore error about duplicate subscriptions, we are forcing a subscription here
+                            // and the user may also subscribe, so it is OK to see RejectedSubscribeError here.
+                            .onErrorResume(t -> t instanceof RejectedSubscribeError ? completed() : error(t)));
+                }
+
+                return objectPublisher.concatWith(processor);
             });
             return connection.write(responseObjectPublisher.repeat(val -> true)
                     // We generate synthetic callbacks to WriteEventsListener as there is a single write per connection
