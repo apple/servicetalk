@@ -46,6 +46,8 @@ final class PubToSingleFirst<T> extends AbstractPubToSingle<T> {
             @Override
             public void onNext(T t) {
                 assert subscription != null : "Subscription can not be null.";
+                // Since we are in onNext, if cancel() throws, we will get an onError from the source.
+                // No need to add specific exception handling here.
                 subscription.cancel();
 
                 terminate(t);

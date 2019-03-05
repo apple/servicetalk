@@ -44,6 +44,8 @@ final class PubFirstOrError<T> extends AbstractPubToSingle<T> {
                     lastValue = wrapNull(t);
                 } else {
                     assert subscription != null;
+                    // Since we are in onNext, if cancel() throws, we will get an onError from the source.
+                    // No need to add specific exception handling here.
                     subscription.cancel();
                     terminate(new IllegalArgumentException("only a single item expected, but saw second value: " + t));
                 }
