@@ -16,6 +16,7 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.PublisherSource;
+import io.servicetalk.concurrent.PublisherSource.Subscriber;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,7 +46,7 @@ import static java.util.Objects.requireNonNull;
  *
  * @param <T> Type of the items emitted by this {@code TestPublisher}.
  */
-public final class TestPublisher<T> extends Publisher<T> implements PublisherSource<T> {
+public class TestPublisher<T> extends Publisher<T> implements PublisherSource<T> {
     private static final Logger LOGGER = LoggerFactory.getLogger(TestPublisher.class);
 
     private final Function<Subscriber<? super T>, Subscriber<? super T>> subscriberFunction;
@@ -70,21 +71,31 @@ public final class TestPublisher<T> extends Publisher<T> implements PublisherSou
      *
      * @return {@code true} if this {@link TestPublisher} has been subscribed to, {@code false} otherwise.
      */
-    public boolean isSubscribed() {
+    public final boolean isSubscribed() {
         return subscriber != null;
     }
 
     @Override
-    protected void handleSubscribe(final Subscriber<? super T> subscriber) {
+    protected final void handleSubscribe(final Subscriber<? super T> subscriber) {
         try {
-            this.subscriber = requireNonNull(subscriberFunction.apply(subscriber));
+            initializeSubscriber(subscriber);
         } catch (final Throwable t) {
             record(t);
         }
     }
 
+    /**
+     * Initialize the {@link Subscriber} reference retained by this {@link TestPublisher}. After this method is invoked
+     * the {@link #isSubscribed()} method should return {@code true}.
+     *
+     * @param subscriber a {@link Subscriber} from a {@link #subscribe(Subscriber)} invocation.
+     */
+    protected void initializeSubscriber(final Subscriber<? super T> subscriber) {
+        this.subscriber = requireNonNull(subscriberFunction.apply(subscriber));
+    }
+
     @Override
-    public void subscribe(final Subscriber<? super T> subscriber) {
+    public final void subscribe(final Subscriber<? super T> subscriber) {
         subscribeInternal(subscriber);
     }
 
@@ -96,7 +107,7 @@ public final class TestPublisher<T> extends Publisher<T> implements PublisherSou
      *
      * @param subscription the {@link Subscription}
      */
-    public void onSubscribe(final Subscription subscription) {
+    public final void onSubscribe(final Subscription subscription) {
         final Subscriber<? super T> subscriber = checkSubscriberAndExceptions("onSubscribe");
         subscriber.onSubscribe(subscription);
     }
@@ -124,7 +135,7 @@ public final class TestPublisher<T> extends Publisher<T> implements PublisherSou
      *
      * @see Subscriber#onComplete()
      */
-    public void onComplete() {
+    public final void onComplete() {
         final Subscriber<? super T> subscriber = checkSubscriberAndExceptions("onComplete");
         subscriber.onComplete();
     }
@@ -135,7 +146,7 @@ public final class TestPublisher<T> extends Publisher<T> implements PublisherSou
      * @param t the error to deliver.
      * @see Subscriber#onError(Throwable)
      */
-    public void onError(final Throwable t) {
+    public final void onError(final Throwable t) {
         final Subscriber<? super T> subscriber = checkSubscriberAndExceptions("onError");
         subscriber.onError(t);
     }

@@ -67,8 +67,22 @@ public class NettyHttpServerConnectionTest {
     @Rule
     public final ExecutionContextRule contextRule = immediate();
 
-    public final TestPublisher<Buffer> responsePublisher = new TestPublisher<>();
-    public final TestPublisher<Buffer> responsePublisher2 = new TestPublisher<>();
+    private final CountDownLatch response1PayloadConsumedLatch = new CountDownLatch(1);
+    private final CountDownLatch response2PayloadConsumedLatch = new CountDownLatch(1);
+    private final TestPublisher<Buffer> responsePublisher = new TestPublisher<Buffer>() {
+        @Override
+        protected void initializeSubscriber(final Subscriber<? super Buffer> subscriber) {
+            super.initializeSubscriber(subscriber);
+            response1PayloadConsumedLatch.countDown();
+        }
+    };
+    private final TestPublisher<Buffer> responsePublisher2 = new TestPublisher<Buffer>() {
+        @Override
+        protected void initializeSubscriber(final Subscriber<? super Buffer> subscriber) {
+            super.initializeSubscriber(subscriber);
+            response2PayloadConsumedLatch.countDown();
+        }
+    };
     private HttpExecutionStrategy serverExecutionStrategy;
     private HttpExecutionStrategy clientExecutionStrategy;
     private ServerContext serverContext;
@@ -101,8 +115,6 @@ public class NettyHttpServerConnectionTest {
         customStrategy = new MockFlushStrategy();
         AtomicReference<Cancellable> customCancellableRef = new AtomicReference<>();
         AtomicBoolean handledFirstRequest = new AtomicBoolean();
-        CountDownLatch response1PayloadConsumedLatch = new CountDownLatch(1);
-        CountDownLatch response2PayloadConsumedLatch = new CountDownLatch(1);
 
         serverContext = HttpServers.forAddress(localAddress(0))
                 .ioExecutor(contextRule.ioExecutor())
@@ -118,15 +130,9 @@ public class NettyHttpServerConnectionTest {
                                                                 final StreamingHttpResponseFactory responseFactory) {
                         if (handledFirstRequest.compareAndSet(false, true)) {
                             customStrategy.doAfterFirstWrite(FlushStrategy.FlushSender::flush);
-                            return success(responseFactory.ok().payloadBody(responsePublisher)
-                                    .transformRawPayloadBody(pub -> pub.doAfterSubscribe(subscription -> {
-                                        response1PayloadConsumedLatch.countDown();
-                                    })));
+                            return success(responseFactory.ok().payloadBody(responsePublisher));
                         }
-                        return success(responseFactory.ok().payloadBody(responsePublisher2)
-                                .transformRawPayloadBody(pub -> pub.doAfterSubscribe(subscription -> {
-                                    response2PayloadConsumedLatch.countDown();
-                                })));
+                        return success(responseFactory.ok().payloadBody(responsePublisher2));
                     }
 
                     @Override
