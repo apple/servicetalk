@@ -18,76 +18,90 @@ package io.servicetalk.concurrent.api;
 import io.servicetalk.concurrent.internal.DeliberateException;
 
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 public final class ResumeCompletableTest {
 
-    @Rule
-    public final LegacyMockedCompletableListenerRule listener = new LegacyMockedCompletableListenerRule();
-
-    private LegacyTestCompletable first;
-    private LegacyTestCompletable second;
+    private TestCompletableSubscriber subscriber;
+    private TestCompletable first;
+    private TestCompletable second;
 
     @Before
     public void setUp() {
-        first = new LegacyTestCompletable();
-        second = new LegacyTestCompletable();
-        listener.listen(first.onErrorResume(throwable -> second));
+        subscriber = new TestCompletableSubscriber();
+        first = new TestCompletable();
+        second = new TestCompletable();
+        toSource(first.onErrorResume(throwable -> second)).subscribe(subscriber);
     }
 
     @Test
     public void testFirstComplete() {
         first.onComplete();
-        listener.verifyCompletion();
+        assertThat(subscriber.terminal(), is(complete()));
     }
 
     @Test
     public void testFirstErrorSecondComplete() {
         first.onError(DELIBERATE_EXCEPTION);
-        listener.verifyNoEmissions();
+        assertThat(subscriber.takeTerminal(), nullValue());
         second.onComplete();
-        listener.verifyCompletion();
+        assertThat(subscriber.terminal(), is(complete()));
     }
 
     @Test
     public void testFirstErrorSecondError() {
         first.onError(new DeliberateException());
-        listener.verifyNoEmissions();
+        assertThat(subscriber.takeTerminal(), nullValue());
         second.onError(DELIBERATE_EXCEPTION);
-        listener.verifyFailure(DELIBERATE_EXCEPTION);
+        assertThat(subscriber.error(), is(DELIBERATE_EXCEPTION));
     }
 
     @Test
     public void testCancelFirstActive() {
-        listener.cancel();
-        first.verifyCancelled();
-        listener.verifyNoEmissions();
+        subscriber.cancel();
+        TestCancellable cancellable = new TestCancellable();
+        first.onSubscribe(cancellable);
+        assertTrue(cancellable.isCancelled());
+        assertThat(subscriber.takeTerminal(), nullValue());
     }
 
     @Test
     public void testCancelSecondActive() {
         first.onError(DELIBERATE_EXCEPTION);
-        listener.verifyNoEmissions();
-        listener.cancel();
-        second.verifyCancelled();
-        first.verifyNotCancelled();
+        assertThat(subscriber.takeTerminal(), nullValue());
+        subscriber.cancel();
+
+        TestCancellable secondCancellable = new TestCancellable();
+        second.onSubscribe(secondCancellable);
+        assertTrue(secondCancellable.isCancelled());
+
+        TestCancellable firstCancellable = new TestCancellable();
+        first.onSubscribe(firstCancellable);
+        assertFalse(firstCancellable.isCancelled());
     }
 
     @Test
     public void testErrorSuppressOriginalException() {
-        listener.reset();
+        subscriber = new TestCompletableSubscriber();
+        first = new TestCompletable();
         DeliberateException ex = new DeliberateException();
-        listener.listen(first.onErrorResume(throwable -> {
+        toSource(first.onErrorResume(throwable -> {
             throw ex;
-        }));
+        })).subscribe(subscriber);
 
         first.onError(DELIBERATE_EXCEPTION);
-        listener.verifyFailure(ex);
+        assertThat(subscriber.error(), is(ex));
         assertEquals(1, ex.getSuppressed().length);
         assertSame(DELIBERATE_EXCEPTION, ex.getSuppressed()[0]);
     }

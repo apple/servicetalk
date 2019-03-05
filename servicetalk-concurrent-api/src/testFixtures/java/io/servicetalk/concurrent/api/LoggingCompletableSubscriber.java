@@ -16,7 +16,7 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
-import io.servicetalk.concurrent.SingleSource.Subscriber;
+import io.servicetalk.concurrent.CompletableSource.Subscriber;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,21 +24,19 @@ import org.slf4j.LoggerFactory;
 /**
  * A {@link Subscriber} that wraps another {@link Subscriber}, logging all signals received by the {@link Subscriber},
  * or sent via the {@link Cancellable}.
- *
- * @param <T> Type of items received by the {@code Subscriber}.
  */
-public class LoggingSingleSubscriber<T> implements Subscriber<T> {
+public class LoggingCompletableSubscriber implements Subscriber {
     private final Logger logger;
-    private final Subscriber<T> delegate;
+    private final Subscriber delegate;
 
     /**
-     * Create a {@link LoggingSingleSubscriber} that wraps the {@code delegate}, and uses the specified {@code name} for
+     * Create a {@link LoggingCompletableSubscriber} that wraps the {@code delegate}, and uses the specified {@code name} for
      * logging.
      *
      * @param name the logging name.
      * @param delegate the {@link Subscriber} to delegate calls to.
      */
-    public LoggingSingleSubscriber(final String name, final Subscriber<T> delegate) {
+    public LoggingCompletableSubscriber(final String name, final Subscriber delegate) {
         this.logger = LoggerFactory.getLogger(name);
         this.delegate = delegate;
     }
@@ -53,9 +51,9 @@ public class LoggingSingleSubscriber<T> implements Subscriber<T> {
     }
 
     @Override
-    public void onSuccess(final T result) {
-        logger.info("onSuccess({})", result);
-        delegate.onSuccess(result);
+    public void onComplete() {
+        logger.info("onComplete()");
+        delegate.onComplete();
     }
 
     @Override

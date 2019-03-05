@@ -15,71 +15,85 @@
  */
 package io.servicetalk.concurrent.api.completable;
 
-import io.servicetalk.concurrent.api.LegacyMockedCompletableListenerRule;
-import io.servicetalk.concurrent.api.LegacyTestCompletable;
+import io.servicetalk.concurrent.api.TestCancellable;
+import io.servicetalk.concurrent.api.TestCompletable;
+import io.servicetalk.concurrent.api.TestCompletableSubscriber;
 
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 public class CompletableConcatWithCompletableTest {
 
-    @Rule
-    public final LegacyMockedCompletableListenerRule listener = new LegacyMockedCompletableListenerRule();
-
-    private LegacyTestCompletable source;
-    private LegacyTestCompletable next;
+    private TestCompletableSubscriber subscriber;
+    private TestCompletable source;
+    private TestCompletable next;
 
     @Before
     public void setUp() throws Exception {
-        source = new LegacyTestCompletable();
-        next = new LegacyTestCompletable();
+        subscriber = new TestCompletableSubscriber();
+        source = new TestCompletable();
+        next = new TestCompletable();
     }
 
     @Test
     public void testSourceSuccessNextSuccess() {
-        listener.listen(source.concatWith(next));
+        toSource(source.concatWith(next)).subscribe(subscriber);
         source.onComplete();
-        listener.verifyNoEmissions();
+        assertThat(subscriber.takeTerminal(), nullValue());
         next.onComplete();
-        listener.verifyCompletion();
+        assertThat(subscriber.takeTerminal(), is(complete()));
     }
 
     @Test
     public void testSourceSuccessNextError() {
-        listener.listen(source.concatWith(next));
+        toSource(source.concatWith(next)).subscribe(subscriber);
         source.onComplete();
-        listener.verifyNoEmissions();
+        assertThat(subscriber.takeTerminal(), nullValue());
         next.onError(DELIBERATE_EXCEPTION);
-        listener.verifyFailure(DELIBERATE_EXCEPTION);
+        assertThat(subscriber.takeError(), is(DELIBERATE_EXCEPTION));
     }
 
     @Test
     public void testSourceError() {
-        listener.listen(source.concatWith(next));
+        toSource(source.concatWith(next)).subscribe(subscriber);
         source.onError(DELIBERATE_EXCEPTION);
-        listener.verifyFailure(DELIBERATE_EXCEPTION);
-        next.verifyListenNotCalled();
+        assertThat(subscriber.takeError(), is(DELIBERATE_EXCEPTION));
+        assertFalse(next.isSubscribed());
     }
 
     @Test
     public void testCancelSource() {
-        listener.listen(source.concatWith(next));
-        listener.verifyNoEmissions();
-        listener.cancel();
-        source.verifyCancelled();
-        next.verifyListenNotCalled();
+        toSource(source.concatWith(next)).subscribe(subscriber);
+        assertThat(subscriber.takeTerminal(), nullValue());
+        subscriber.cancel();
+        TestCancellable cancellable = new TestCancellable();
+        source.onSubscribe(cancellable);
+        assertTrue(cancellable.isCancelled());
+        assertFalse(next.isSubscribed());
     }
 
     @Test
     public void testCancelNext() {
-        listener.listen(source.concatWith(next));
+        toSource(source.concatWith(next)).subscribe(subscriber);
         source.onComplete();
-        listener.verifyNoEmissions();
-        listener.cancel();
-        source.verifyNotCancelled();
-        next.verifyCancelled();
+        assertThat(subscriber.takeTerminal(), nullValue());
+        subscriber.cancel();
+
+        TestCancellable sourceCancellable = new TestCancellable();
+        source.onSubscribe(sourceCancellable);
+        assertFalse(sourceCancellable.isCancelled());
+
+        TestCancellable nextCancellable = new TestCancellable();
+        source.onSubscribe(nextCancellable);
+        assertTrue(nextCancellable.isCancelled());
     }
 }
