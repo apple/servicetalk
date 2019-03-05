@@ -15,14 +15,13 @@
  */
 package io.servicetalk.concurrent.api;
 
-import io.servicetalk.concurrent.SingleSource.Subscriber;
 import io.servicetalk.concurrent.internal.SignalOffloader;
 
 final class SingleSubscribeShareContext<T> extends AbstractNoHandleSubscribeSingle<T> {
     private final Single<T> original;
 
     SingleSubscribeShareContext(Single<T> original) {
-        super(original.executor());
+        super(original.executor(), true);
         this.original = original;
     }
 
@@ -33,11 +32,5 @@ final class SingleSubscribeShareContext<T> extends AbstractNoHandleSubscribeSing
         // AsyncContextMap now it is possible that operators downstream in the subscribe call stack may have modified
         // the AsyncContextMap and we don't want to discard those changes by using a different AsyncContextMap.
         original.handleSubscribe(singleSubscriber, signalOffloader, contextMap, contextProvider);
-    }
-
-    @Override
-    void subscribeCaptureContext(Subscriber<? super T> subscriber, AsyncContextProvider provider) {
-        // Instead of making a copy, we want to share the AsyncContext.
-        subscribeWithContext(subscriber, provider.contextMap(), provider);
     }
 }

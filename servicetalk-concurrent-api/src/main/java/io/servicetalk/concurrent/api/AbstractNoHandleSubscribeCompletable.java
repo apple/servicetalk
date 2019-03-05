@@ -33,6 +33,10 @@ abstract class AbstractNoHandleSubscribeCompletable extends Completable implemen
         super(executor);
     }
 
+    AbstractNoHandleSubscribeCompletable(final Executor executor, final boolean shareContextOnSubscribe) {
+        super(executor, shareContextOnSubscribe);
+    }
+
     @Override
     protected final void handleSubscribe(Subscriber subscriber) {
         subscriber.onSubscribe(IGNORE_CANCEL);

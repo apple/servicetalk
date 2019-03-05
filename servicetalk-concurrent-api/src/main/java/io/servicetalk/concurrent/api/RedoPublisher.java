@@ -46,7 +46,7 @@ final class RedoPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
         // For the current subscribe operation we want to use contextMap directly, but in the event a re-subscribe
         // operation occurs we want to restore the original state of the AsyncContext map, so we save a copy upfront.
         original.subscribeWithOffloaderAndContext(new RedoSubscriber<>(new SequentialSubscription(), 0, subscriber,
-                contextMap.copy(), contextProvider, this), signalOffloader, contextMap, contextProvider);
+                contextMap.copy(), contextProvider, this, signalOffloader), signalOffloader, contextMap, contextProvider);
     }
 
     abstract static class AbstractRedoSubscriber<T> implements Subscriber<T> {
@@ -86,14 +86,16 @@ final class RedoPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
         private final RedoPublisher<T> redoPublisher;
         private final AsyncContextMap contextMap;
         private final AsyncContextProvider contextProvider;
+        private final SignalOffloader offloader;
 
         RedoSubscriber(SequentialSubscription subscription, int redoCount, Subscriber<? super T> subscriber,
                        AsyncContextMap contextMap, AsyncContextProvider contextProvider,
-                       RedoPublisher<T> redoPublisher) {
+                       RedoPublisher<T> redoPublisher, SignalOffloader offloader) {
             super(subscription, redoCount, subscriber);
             this.redoPublisher = redoPublisher;
             this.contextMap = contextMap;
             this.contextProvider = contextProvider;
+            this.offloader = offloader;
         }
 
         @Override
@@ -129,9 +131,10 @@ final class RedoPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
                 // For the current subscribe operation we want to use contextMap directly, but in the event a
                 // re-subscribe operation occurs we want to restore the original state of the AsyncContext map, so
                 // we save a copy upfront.
-                redoPublisher.original.subscribeWithContext(new RedoSubscriber<>(subscription, redoCount + 1,
-                        subscriber, contextMap.copy(), contextProvider, redoPublisher), contextMap,
-                        contextProvider);
+                redoPublisher.original.subscribeWithOffloaderAndContext(
+                        new RedoSubscriber<>(subscription, redoCount + 1,
+                        subscriber, contextMap.copy(), contextProvider, redoPublisher, offloader), offloader,
+                        contextMap, contextProvider);
             } else {
                 notification.terminate(subscriber);
             }

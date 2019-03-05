@@ -63,7 +63,7 @@ final class RedoWhenPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
         // For the current subscribe operation we want to use contextMap directly, but in the event a re-subscribe
         // operation occurs we want to restore the original state of the AsyncContext map, so we save a copy upfront.
         original.subscribeWithOffloaderAndContext(new RedoSubscriber<>(new SequentialSubscription(), 0, subscriber,
-                contextMap.copy(), contextProvider, this), signalOffloader, contextMap, contextProvider);
+                contextMap.copy(), contextProvider, this, signalOffloader), signalOffloader, contextMap, contextProvider);
     }
 
     private static final class RedoSubscriber<T> extends RedoPublisher.AbstractRedoSubscriber<T> {
@@ -72,14 +72,16 @@ final class RedoWhenPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
         private final RedoWhenPublisher<T> redoPublisher;
         private final AsyncContextMap contextMap;
         private final AsyncContextProvider contextProvider;
+        private final SignalOffloader signalOffloader;
 
         RedoSubscriber(SequentialSubscription subscription, int redoCount, Subscriber<? super T> subscriber,
                        AsyncContextMap contextMap, AsyncContextProvider contextProvider,
-                       RedoWhenPublisher<T> redoPublisher) {
+                       RedoWhenPublisher<T> redoPublisher, final SignalOffloader signalOffloader) {
             super(subscription, redoCount, subscriber);
             this.redoPublisher = redoPublisher;
             this.contextMap = contextMap;
             this.contextProvider = contextProvider;
+            this.signalOffloader = signalOffloader;
             cancellable = new SequentialCancellable();
         }
 
@@ -138,9 +140,10 @@ final class RedoWhenPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
                     // For the current subscribe operation we want to use contextMap directly, but in the event a
                     // re-subscribe operation occurs we want to restore the original state of the AsyncContext map, so
                     // we save a copy upfront.
-                    redoPublisher.original.subscribeWithContext(new RedoSubscriber<>(subscription, redoCount + 1,
-                        subscriber, contextMap.copy(), contextProvider, redoPublisher), contextMap,
-                            contextProvider);
+                    redoPublisher.original.subscribeWithOffloaderAndContext(
+                            new RedoSubscriber<>(subscription, redoCount + 1, subscriber, contextMap.copy(),
+                                    contextProvider, redoPublisher, signalOffloader), signalOffloader,
+                            contextMap, contextProvider);
                 }
 
                 @Override

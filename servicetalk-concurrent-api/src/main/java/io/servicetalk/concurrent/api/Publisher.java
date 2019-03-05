@@ -78,6 +78,7 @@ public abstract class Publisher<T> {
     private static final Logger LOGGER = LoggerFactory.getLogger(Publisher.class);
 
     private final Executor executor;
+    private final boolean shareContextOnSubscribe;
 
     static {
         AsyncContext.autoEnable();
@@ -96,7 +97,19 @@ public abstract class Publisher<T> {
      * @param executor {@link Executor} to use for this {@link Publisher}.
      */
     Publisher(Executor executor) {
+        this(executor, false);
+    }
+
+    /**
+     * New instance.
+     *
+     * @param executor {@link Executor} to use for this {@link Publisher}.
+     * @param shareContextOnSubscribe When subscribed, a copy of the {@link AsyncContextMap} will not be made. This will
+     * result in sharing {@link AsyncContext} between sources.
+     */
+    Publisher(Executor executor, boolean shareContextOnSubscribe) {
         this.executor = requireNonNull(executor);
+        this.shareContextOnSubscribe = shareContextOnSubscribe;
     }
 
     //
@@ -2210,7 +2223,7 @@ public abstract class Publisher<T> {
      * @param subscriber {@link Subscriber} to subscribe for the result.
      */
     protected final void subscribeInternal(Subscriber<? super T> subscriber) {
-        subscribeCaptureContext(subscriber, AsyncContext.provider());
+        subscribeAndReturnContext(subscriber);
     }
 
     /**
@@ -2395,28 +2408,30 @@ public abstract class Publisher<T> {
     //
 
     /**
-     * Replicating a call to {@link #subscribeInternal(PublisherSource.Subscriber)} but allows an override of the
-     * {@link AsyncContextMap}.
+     * Subscribes to this {@link Single} and returns the {@link AsyncContextMap} associated for this subscribe
+     * operation.
+     *
      * @param subscriber the subscriber.
-     * @param provider the {@link AsyncContextProvider} used to wrap any objects to preserve
-     * {@link AsyncContextMap}.
+     * @return {@link AsyncContextMap} for this subscribe operation.
      */
-    void subscribeCaptureContext(Subscriber<? super T> subscriber, AsyncContextProvider provider) {
-        // Each Subscriber chain should have an isolated AsyncContext due to a new asynchronous scope starting. This is
-        // why we copy the AsyncContext upon external user facing subscribe operations.
-        subscribeWithContext(subscriber, provider.contextMap().copy(), provider);
+    final AsyncContextMap subscribeAndReturnContext(Subscriber<? super T> subscriber) {
+        final AsyncContextMap contextMap = shareContextOnSubscribe ? AsyncContext.current() :
+                AsyncContext.current().copy();
+        subscribeWithContext(subscriber, AsyncContext.provider(), contextMap);
+        return contextMap;
     }
 
     /**
-     * Replicating a call to {@link #subscribeInternal(PublisherSource.Subscriber)} but with a materialized
-     * {@link AsyncContextMap}.
+     * Subscribes to this {@link Single} and shares the current context.
+     *
      * @param subscriber the subscriber.
-     * @param contextMap the {@link AsyncContextMap} to use for this {@link Subscriber}.
-     * @param contextProvider the {@link AsyncContextProvider} used to wrap any objects to preserve
-     * {@link AsyncContextMap}.
      */
-    final void subscribeWithContext(Subscriber<? super T> subscriber, AsyncContextMap contextMap,
-                                    AsyncContextProvider contextProvider) {
+    final void subscribeWithSharedContext(Subscriber<? super T> subscriber) {
+        subscribeWithContext(subscriber, AsyncContext.provider(), AsyncContext.current());
+    }
+
+    private void subscribeWithContext(Subscriber<? super T> subscriber, AsyncContextProvider provider,
+                                      AsyncContextMap contextMap) {
         requireNonNull(subscriber);
         final SignalOffloader signalOffloader;
         final Subscriber<? super T> offloadedSubscriber;
@@ -2426,14 +2441,15 @@ public abstract class Publisher<T> {
             signalOffloader = newOffloaderFor(executor);
             // Since this is a user-driven subscribe (end of the execution chain), offload subscription methods
             // We also want to make sure the AsyncContext is saved/restored for all interactions with the Subscription.
-            offloadedSubscriber = signalOffloader.offloadSubscription(
-                    contextProvider.wrapSubscription(subscriber, contextMap));
+            offloadedSubscriber =
+                    signalOffloader.offloadSubscription(provider.wrapSubscription(subscriber, contextMap));
         } catch (Throwable t) {
             subscriber.onSubscribe(EMPTY_SUBSCRIPTION);
             subscriber.onError(t);
             return;
         }
-        subscribeWithOffloaderAndContext(offloadedSubscriber, signalOffloader, contextMap, contextProvider);
+        signalOffloader.offloadSubscribe(offloadedSubscriber, s ->
+                subscribeWithOffloaderAndContext(s, signalOffloader, contextMap, provider));
     }
 
     /**
@@ -2475,17 +2491,10 @@ public abstract class Publisher<T> {
      */
     void handleSubscribe(Subscriber<? super T> subscriber, SignalOffloader signalOffloader, AsyncContextMap contextMap,
                          AsyncContextProvider contextProvider) {
-        Subscriber<? super T> offloaded = signalOffloader.offloadSubscriber(
-                contextProvider.wrap(subscriber, contextMap));
-        // TODO(scott): we have to wrap this method to preserve AsyncContext, and we also have to wrap the
-        // safeHandleSubscribe method in the event the offloader calls the safeHandleSubscribe method on another thread.
-        // However if the offloader executes the method synchronously the safeHandleSubscribe wrapping is unnecessary.
-        signalOffloader.offloadSubscribe(offloaded, contextProvider.wrap(this::safeHandleSubscribe, contextMap));
-    }
-
-    private void safeHandleSubscribe(Subscriber<? super T> subscriber) {
+        Subscriber<? super T> offloaded =
+                signalOffloader.offloadSubscriber(contextProvider.wrap(subscriber, contextMap));
         try {
-            handleSubscribe(subscriber);
+            handleSubscribe(offloaded);
         } catch (Throwable t) {
             LOGGER.warn("Unexpected exception from subscribe(), assuming no interaction with the Subscriber.", t);
             // At this point we are unsure if any signal was sent to the Subscriber and if it is safe to invoke the

@@ -104,12 +104,12 @@ final class ThreadBasedSignalOffloader implements SignalOffloader, Runnable {
     }
 
     @Override
-    public <T> Subscriber<? super T> offloadSubscriber(Subscriber<? super T> subscriber) {
+    public <T> Subscriber<T> offloadSubscriber(Subscriber<? super T> subscriber) {
         return addOffloadedEntity(new OffloadedSubscriber<>(this, subscriber));
     }
 
     @Override
-    public <T> SingleSource.Subscriber<? super T> offloadSubscriber(SingleSource.Subscriber<? super T> subscriber) {
+    public <T> SingleSource.Subscriber<T> offloadSubscriber(SingleSource.Subscriber<? super T> subscriber) {
         return addOffloadedEntity(new OffloadedSingleSubscriber<>(this, subscriber));
     }
 
@@ -119,12 +119,12 @@ final class ThreadBasedSignalOffloader implements SignalOffloader, Runnable {
     }
 
     @Override
-    public <T> Subscriber<? super T> offloadSubscription(Subscriber<? super T> subscriber) {
+    public <T> Subscriber<T> offloadSubscription(Subscriber<? super T> subscriber) {
         return addOffloadedEntity(new OffloadedSubscription<>(this, subscriber));
     }
 
     @Override
-    public <T> SingleSource.Subscriber<? super T> offloadCancellable(SingleSource.Subscriber<? super T> subscriber) {
+    public <T> SingleSource.Subscriber<T> offloadCancellable(SingleSource.Subscriber<? super T> subscriber) {
         return addOffloadedEntity(new OffloadedSingleCancellable<>(this, subscriber));
     }
 

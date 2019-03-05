@@ -68,12 +68,12 @@ final class TaskBasedSignalOffloader implements SignalOffloader {
     }
 
     @Override
-    public <T> Subscriber<? super T> offloadSubscriber(final Subscriber<? super T> subscriber) {
+    public <T> Subscriber<T> offloadSubscriber(final Subscriber<? super T> subscriber) {
         return new OffloadedSubscriber<>(subscriber, executor, publisherSignalQueueInitialCapacity);
     }
 
     @Override
-    public <T> SingleSource.Subscriber<? super T> offloadSubscriber(final SingleSource.Subscriber<? super T> subscriber) {
+    public <T> SingleSource.Subscriber<T> offloadSubscriber(final SingleSource.Subscriber<? super T> subscriber) {
         return new OffloadedSingleSubscriber<>(executor, subscriber);
     }
 
@@ -83,12 +83,12 @@ final class TaskBasedSignalOffloader implements SignalOffloader {
     }
 
     @Override
-    public <T> Subscriber<? super T> offloadSubscription(final Subscriber<? super T> subscriber) {
+    public <T> Subscriber<T> offloadSubscription(final Subscriber<? super T> subscriber) {
         return new OffloadedSubscriptionSubscriber<>(subscriber, executor);
     }
 
     @Override
-    public <T> SingleSource.Subscriber<? super T> offloadCancellable(final SingleSource.Subscriber<? super T> subscriber) {
+    public <T> SingleSource.Subscriber<T> offloadCancellable(final SingleSource.Subscriber<? super T> subscriber) {
         return new OffloadedCancellableSingleSubscriber<>(subscriber, executor);
     }
 
@@ -578,9 +578,9 @@ final class TaskBasedSignalOffloader implements SignalOffloader {
 
     private static final class OffloadedSingleSubscriber<T> extends AbstractOffloadedSingleValueSubscriber
             implements SingleSource.Subscriber<T> {
-        private final SingleSource.Subscriber<T> target;
+        private final SingleSource.Subscriber<? super T> target;
 
-        OffloadedSingleSubscriber(final Executor executor, final SingleSource.Subscriber<T> target) {
+        OffloadedSingleSubscriber(final Executor executor, final SingleSource.Subscriber<? super T> target) {
             super(executor);
             this.target = requireNonNull(target);
         }
@@ -779,10 +779,10 @@ final class TaskBasedSignalOffloader implements SignalOffloader {
     }
 
     private static final class OffloadedSubscriptionSubscriber<T> implements Subscriber<T> {
-        private final Subscriber<T> subscriber;
+        private final Subscriber<? super T> subscriber;
         private final Executor executor;
 
-        OffloadedSubscriptionSubscriber(final Subscriber<T> subscriber, final Executor executor) {
+        OffloadedSubscriptionSubscriber(final Subscriber<? super T> subscriber, final Executor executor) {
             this.subscriber = requireNonNull(subscriber);
             this.executor = executor;
         }

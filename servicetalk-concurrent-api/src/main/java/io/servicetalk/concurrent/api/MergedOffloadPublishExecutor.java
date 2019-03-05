@@ -60,12 +60,12 @@ final class MergedOffloadPublishExecutor extends DelegatingExecutor implements S
         }
 
         @Override
-        public <T> Subscriber<? super T> offloadSubscriber(final Subscriber<? super T> subscriber) {
+        public <T> Subscriber<T> offloadSubscriber(final Subscriber<? super T> subscriber) {
             return offloader.offloadSubscriber(subscriber);
         }
 
         @Override
-        public <T> SingleSource.Subscriber<? super T> offloadSubscriber(
+        public <T> SingleSource.Subscriber<T> offloadSubscriber(
                 final SingleSource.Subscriber<? super T> subscriber) {
             return offloader.offloadSubscriber(subscriber);
         }
@@ -76,12 +76,12 @@ final class MergedOffloadPublishExecutor extends DelegatingExecutor implements S
         }
 
         @Override
-        public <T> Subscriber<? super T> offloadSubscription(final Subscriber<? super T> subscriber) {
+        public <T> Subscriber<T> offloadSubscription(final Subscriber<? super T> subscriber) {
             return fallback.offloadSubscription(subscriber);
         }
 
         @Override
-        public <T> SingleSource.Subscriber<? super T> offloadCancellable(
+        public <T> SingleSource.Subscriber<T> offloadCancellable(
                 final SingleSource.Subscriber<? super T> subscriber) {
             return fallback.offloadCancellable(subscriber);
         }

@@ -46,11 +46,11 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.api.Single.defer;
 import static io.servicetalk.concurrent.api.Single.success;
 import static io.servicetalk.transport.netty.internal.BuilderUtils.toNettyAddress;
 import static io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutors.toEventLoopAwareNettyIoExecutor;
 import static java.util.Objects.requireNonNull;
-import static java.util.function.Function.identity;
 
 /**
  * Utility class to start a TCP based server.
@@ -107,19 +107,12 @@ public final class TcpServerBinder {
                 if (connectionAcceptor != null) {
                     connectionSingle = connectionSingle
                             .flatMap(conn ->
-                                executionContext.executor().submit(() ->
-                                        connectionAcceptor.accept(conn).concatWith(success(conn))
-                            ).flatMap(identity())
-                            // The defer gives us isolation for AsyncContext. We don't want the Acceptor's AsyncContext
-                            // to leak into the Service's AsyncContext.
-                            // TODO(scott): can we improve this to use less operators?
-                            // .flatMap(conn -> defer(() -> connectionAcceptor.accept(conn))
-                            // TODO(scott): this isn't providing the expected offloading behavior ... fix.
-                            // .subscribeOn(executionContext.executor())
-                            //         .flatMap(result -> result != null && result ? success(conn) :
-                            //                 error(new ConnectionRejectedException(
-                            //                         "connection acceptor rejected a connection")))
-                            ).doOnError(cause -> {
+                                    // Defer is required to isolate context for ConnectionAcceptor#accept and the rest
+                                    // of connection processing.
+                                    defer(() -> connectionAcceptor.accept(conn).concatWith(success(conn)))
+                                            // subscribeOn is required to offload calls to connectionAcceptor#accept
+                                            .subscribeOn(executionContext.executor()))
+                            .doOnError(cause -> {
                                 // Getting the remote-address may involve volatile reads and potentially a
                                 // syscall, so guard it.
                                 if (LOGGER.isDebugEnabled()) {

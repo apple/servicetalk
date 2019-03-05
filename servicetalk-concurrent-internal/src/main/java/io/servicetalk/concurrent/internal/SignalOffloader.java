@@ -46,7 +46,7 @@ public interface SignalOffloader {
      * @param <T> Type of items received by the passed and returned {@link Subscriber}.
      * @return New {@link Subscriber} that will offload signals to the passed {@link Subscriber}.
      */
-    <T> Subscriber<? super T> offloadSubscriber(Subscriber<? super T> subscriber);
+    <T> Subscriber<T> offloadSubscriber(Subscriber<? super T> subscriber);
 
     /**
      * Decorates the passed {@link SingleSource.Subscriber} such that all method calls to it will be offloaded.
@@ -59,7 +59,7 @@ public interface SignalOffloader {
      * @return New {@link SingleSource.Subscriber} that will offload signals to the passed
      * {@link SingleSource.Subscriber}.
      */
-    <T> SingleSource.Subscriber<? super T> offloadSubscriber(SingleSource.Subscriber<? super T> subscriber);
+    <T> SingleSource.Subscriber<T> offloadSubscriber(SingleSource.Subscriber<? super T> subscriber);
 
     /**
      * Decorates the passed {@link CompletableSource.Subscriber} such that all method calls to it will be offloaded.
@@ -84,7 +84,7 @@ public interface SignalOffloader {
      * @param <T> Type of items received by the passed and returned {@link Subscriber}.
      * @return New {@link Subscriber} that will offload signals to the passed {@link Subscriber}.
      */
-    <T> Subscriber<? super T> offloadSubscription(Subscriber<? super T> subscriber);
+    <T> Subscriber<T> offloadSubscription(Subscriber<? super T> subscriber);
 
     /**
      * Decorates the passed {@link SingleSource.Subscriber} such that all method calls to its {@link Cancellable} will
@@ -99,7 +99,7 @@ public interface SignalOffloader {
      * @return New {@link SingleSource.Subscriber} that will offload signals to the passed
      * {@link SingleSource.Subscriber}.
      */
-    <T> SingleSource.Subscriber<? super T> offloadCancellable(SingleSource.Subscriber<? super T> subscriber);
+    <T> SingleSource.Subscriber<T> offloadCancellable(SingleSource.Subscriber<? super T> subscriber);
 
     /**
      * Decorates the passed {@link CompletableSource.Subscriber} such that all method calls to its {@link Cancellable}

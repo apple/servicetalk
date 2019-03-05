@@ -97,7 +97,7 @@ final class CompletableMergeWithPublisher<T> extends AbstractNoHandleSubscribePu
             // Any signal originating from mergeWith Publisher should be offloaded before they are sent to the
             // Subscriber of the resulting Publisher of CompletableMergeWithPublisher as the Executor associated with
             // the original Completable defines the threading semantics for that Subscriber.
-            mergeWith.subscribeWithContext(this, contextMap.copy(), contextProvider);
+            mergeWith.subscribeWithOffloaderAndContext(this, signalOffloader, contextMap.copy(), contextProvider);
         }
 
         @Override

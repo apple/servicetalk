@@ -35,6 +35,10 @@ abstract class AbstractNoHandleSubscribeSingle<T> extends Single<T> implements S
         super(executor);
     }
 
+    AbstractNoHandleSubscribeSingle(final Executor executor, final boolean makeContextCopyOnSubscribe) {
+        super(executor, makeContextCopyOnSubscribe);
+    }
+
     @Override
     protected final void handleSubscribe(Subscriber<? super T> subscriber) {
         subscriber.onSubscribe(IGNORE_CANCEL);

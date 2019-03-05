@@ -111,9 +111,8 @@ final class SingleFlatMapPublisher<T, R> extends AbstractNoHandleSubscribePublis
             // The static AsyncContext should be the same as the original contextMap at this point because we are
             // being notified in the Subscriber path, but we make sure that it is restored after the asynchronous
             // boundary and explicitly use it to subscribe.
-            next.subscribeWithContext((Subscriber<? super R>) signalOffloader.offloadSubscriber(
-                    contextProvider.wrap((Subscriber<R>) this, contextMap)),
-                    contextMap.copy(), contextProvider);
+            next.subscribeInternal(
+                    signalOffloader.offloadSubscriber(contextProvider.wrap((Subscriber<R>) this, contextMap)));
         }
 
         @Override
