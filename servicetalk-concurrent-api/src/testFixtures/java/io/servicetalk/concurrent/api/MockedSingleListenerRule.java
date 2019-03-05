@@ -41,6 +41,12 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
 
+/**
+ * Deprecated.
+ *
+ * @deprecated Use {@link TestSingleSubscriber} instead.
+ */
+@Deprecated
 public class MockedSingleListenerRule<T> implements TestRule {
     @Nullable
     private SingleSource.Subscriber<? super T> subscriber;

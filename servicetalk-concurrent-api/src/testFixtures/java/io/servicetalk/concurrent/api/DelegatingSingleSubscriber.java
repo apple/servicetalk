@@ -18,12 +18,14 @@ package io.servicetalk.concurrent.api;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.SingleSource.Subscriber;
 
+import static java.util.Objects.requireNonNull;
+
 class DelegatingSingleSubscriber<T> implements Subscriber<T> {
 
     private final Subscriber<? super T> delegate;
 
     DelegatingSingleSubscriber(final Subscriber<? super T> delegate) {
-        this.delegate = delegate;
+        this.delegate = requireNonNull(delegate);
     }
 
     @Override

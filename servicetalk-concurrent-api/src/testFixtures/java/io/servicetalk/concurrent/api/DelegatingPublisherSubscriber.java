@@ -18,12 +18,14 @@ package io.servicetalk.concurrent.api;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 
+import static java.util.Objects.requireNonNull;
+
 class DelegatingPublisherSubscriber<T> implements Subscriber<T> {
 
     private final Subscriber<? super T> delegate;
 
     DelegatingPublisherSubscriber(final Subscriber<? super T> delegate) {
-        this.delegate = delegate;
+        this.delegate = requireNonNull(delegate);
     }
 
     @Override

@@ -27,6 +27,11 @@ final class CollectingSingleSubscriber<T> implements Subscriber<T>, Cancellable 
     public static final Object NULL_RESULT = new Object();
 
     private final DelayedCancellable cancellable = new DelayedCancellable();
+
+    // Despite being volatile, `terminal` does not need to be modified atomically.
+    // When written from `Subscriber` methods, RS specifies that these may not be concurrent.
+    // When written from the `take*` methods, anything that would require atomic writes is effectively a race
+    // between test code, and the code under test, so atomic guarantees won't help any.
     @Nullable
     private volatile Object terminal;
     private volatile boolean cancellableReceived;
@@ -65,6 +70,7 @@ final class CollectingSingleSubscriber<T> implements Subscriber<T>, Cancellable 
 
     @Nullable
     public Throwable error() {
+        final Object terminal = this.terminal;
         if (!(terminal instanceof TerminalNotification)) {
             return null;
         }
@@ -73,12 +79,12 @@ final class CollectingSingleSubscriber<T> implements Subscriber<T>, Cancellable 
 
     @Nullable
     public Throwable takeError() {
+        final Object terminal = this.terminal;
         if (!(terminal instanceof TerminalNotification)) {
             return null;
         }
-        final TerminalNotification terminal = (TerminalNotification) this.terminal;
         this.terminal = null;
-        return terminal.cause();
+        return ((TerminalNotification) terminal).cause();
     }
 
     public boolean isSuccess() {

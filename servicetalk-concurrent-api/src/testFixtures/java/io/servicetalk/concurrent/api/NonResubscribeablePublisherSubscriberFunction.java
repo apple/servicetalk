@@ -29,7 +29,7 @@ import java.util.function.Function;
 public final class NonResubscribeablePublisherSubscriberFunction<T>
         implements Function<Subscriber<? super T>, Subscriber<? super T>> {
 
-    private AtomicBoolean subscribed = new AtomicBoolean();
+    private final AtomicBoolean subscribed = new AtomicBoolean();
 
     @Override
     public Subscriber<? super T> apply(final Subscriber<? super T> subscriber) {
