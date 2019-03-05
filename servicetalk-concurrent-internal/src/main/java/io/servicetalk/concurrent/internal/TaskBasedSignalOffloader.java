@@ -193,13 +193,13 @@ final class TaskBasedSignalOffloader implements SignalOffloader {
                     // As we do for other cases, we simply invoke the target in the calling thread.
                     if (forRequestN) {
                         LOGGER.error("Failed to execute task on the executor {}. " +
-                                        "Invoking Subscription (request()) in the caller thread. Subscription {}. ",
+                                        "Invoking Subscription (request()) in the caller thread. Subscription {}.",
                                 executor, target, t);
                         target.request(requestedUpdater.getAndSet(this, 0));
                     } else {
                         requested = TERMINATED;
                         LOGGER.error("Failed to execute task on the executor {}. " +
-                                        "Invoking Subscription (cancel()) in the caller thread. Subscription {}. ",
+                                        "Invoking Subscription (cancel()) in the caller thread. Subscription {}.",
                                 executor, target, t);
                         target.cancel();
                     }
@@ -456,7 +456,7 @@ final class TaskBasedSignalOffloader implements SignalOffloader {
         private static final AtomicIntegerFieldUpdater<AbstractOffloadedSingleValueSubscriber> stateUpdater =
                 newUpdater(AbstractOffloadedSingleValueSubscriber.class, "state");
 
-        private final Executor executor;
+        final Executor executor;
         @Nullable
         // Visibility: Task submitted to executor happens-before task execution.
         private Cancellable cancellable;
@@ -583,6 +583,8 @@ final class TaskBasedSignalOffloader implements SignalOffloader {
 
         @Override
         void terminateOnEnqueueFailure(final Throwable cause) {
+            LOGGER.error("Failed to execute task on the executor {}. " +
+                    "Invoking Subscriber (onError()) in the caller thread. Subscriber {}.", executor, target);
             target.onError(cause);
         }
 
@@ -646,6 +648,8 @@ final class TaskBasedSignalOffloader implements SignalOffloader {
 
         @Override
         void terminateOnEnqueueFailure(final Throwable cause) {
+            LOGGER.error("Failed to execute task on the executor {}. " +
+                            "Invoking Subscriber (onError()) in the caller thread. Subscriber {}.", executor, target);
             target.onError(cause);
         }
 
