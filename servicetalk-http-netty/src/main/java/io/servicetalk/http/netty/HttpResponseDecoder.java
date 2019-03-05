@@ -92,7 +92,7 @@ final class HttpResponseDecoder extends HttpObjectDecoder<HttpResponseMetaData> 
         // We are either switching protocols, and we will no longer process any more HTTP/1.x responses, or the protocol
         // rules prevent a content body. Also 204 and 304 are always empty.
         // https://tools.ietf.org/html/rfc7230#section-3.3.3
-        return (method != null && (HEAD.name().equals(method.name()) || CONNECT.name().equals(method.name())))
+        return HEAD.equals(method) || CONNECT.equals(method)
                 || NO_CONTENT.equals(msg.status()) || NOT_MODIFIED.equals(msg.status());
     }
 

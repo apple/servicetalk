@@ -55,17 +55,17 @@ final class DefaultHttpRequestMethod implements HttpRequestMethod {
         if (this == o) {
             return true;
         }
-        if (o == null || getClass() != o.getClass()) {
+        if (!(o instanceof HttpRequestMethod)) {
             return false;
         }
 
-        final DefaultHttpRequestMethod that = (DefaultHttpRequestMethod) o;
-        return nameString.equals(that.nameString) && properties.equals(that.properties);
+        final HttpRequestMethod that = (HttpRequestMethod) o;
+        return nameString.equals(that.name());
     }
 
     @Override
     public int hashCode() {
-        return 31 * nameString.hashCode() + properties.hashCode();
+        return 31 * nameString.hashCode();
     }
 
     @Override
@@ -105,12 +105,12 @@ final class DefaultHttpRequestMethod implements HttpRequestMethod {
             if (this == o) {
                 return true;
             }
-            if (o == null || getClass() != o.getClass()) {
+            if (!(o instanceof Properties)) {
                 return false;
             }
 
-            final DefaultHttpRequestMethodProperties that = (DefaultHttpRequestMethodProperties) o;
-            return safe == that.safe && idempotent == that.idempotent && cacheable == that.cacheable;
+            final Properties that = (Properties) o;
+            return safe == that.isSafe() && idempotent == that.isIdempotent() && cacheable == that.isCacheable();
         }
 
         @Override

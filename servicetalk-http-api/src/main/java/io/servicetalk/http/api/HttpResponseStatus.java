@@ -71,8 +71,8 @@ public interface HttpResponseStatus {
      * This definition ensures that the equals method works properly across different implementations of the
      * {@link HttpProtocolVersion} interface.
      *
-     * @param o the object to be compared for equality with this {@link HttpProtocolVersion}
-     * @return {@code true} if the specified object is equal to this {@link HttpProtocolVersion}
+     * @param o the object to be compared for equality with this {@link HttpResponseStatus}
+     * @return {@code true} if the specified object is equal to this {@link HttpResponseStatus}
      */
     @Override
     boolean equals(Object o);

@@ -201,9 +201,9 @@ final class RedirectSingle extends SubscribableSingle<StreamingHttpResponse> {
                     // Server should return only 200 status code for TRACE.
                     // We don't see a clear use case for redirect for OPTIONS and CONNECT methods
                     // and will support them later if necessary.
-                    if (TRACE.name().equals(originalMethod.name())
-                            || OPTIONS.name().equals(originalMethod.name())
-                            || CONNECT.name().equals(originalMethod.name())) {
+                    if (TRACE.equals(originalMethod)
+                            || OPTIONS.equals(originalMethod)
+                            || CONNECT.equals(originalMethod)) {
                         return false;
                     }
 
@@ -215,7 +215,7 @@ final class RedirectSingle extends SubscribableSingle<StreamingHttpResponse> {
 
                     if (statusCode == 307 || statusCode == 308) {
                         // TODO: remove these cases when we will support repeatable payload
-                        return GET.name().equals(originalMethod.name()) || HEAD.name().equals(originalMethod.name());
+                        return GET.equals(originalMethod) || HEAD.equals(originalMethod);
                     }
 
                     return true;
@@ -265,7 +265,7 @@ final class RedirectSingle extends SubscribableSingle<StreamingHttpResponse> {
 
             // For 303 (See Other) user agent should perform only a
             // GET or HEAD request: https://tools.ietf.org/html/rfc7231#section-6.4.4
-            return HEAD.name().equals(originalMethod.name()) ? HEAD : GET;
+            return HEAD.equals(originalMethod) ? HEAD : GET;
             // TODO: It also could be originalMethod for 307 & 308, when we will support repeatable payloadBody
         }
     }

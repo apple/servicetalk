@@ -121,7 +121,7 @@ public class MultiAddressUrlHttpClientTest {
                     return success(resp);
                 }
 
-                if (OPTIONS.name().equals(request.method().name()) || CONNECT.name().equals(request.method().name())) {
+                if (OPTIONS.equals(request.method()) || CONNECT.equals(request.method())) {
                     StreamingHttpResponse resp = factory.ok();
                     resp.headers().set(httpHeaders);
                     return success(resp);

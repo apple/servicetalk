@@ -41,7 +41,7 @@ public final class BlockingPojoStreamingServer {
                     if (!"/pojos".equals(request.requestTarget())) {
                         return responseFactory.notFound();
                     }
-                    if (!POST.name().equals(request.method().name())) {
+                    if (!POST.equals(request.method())) {
                         return responseFactory.methodNotAllowed().addHeader(ALLOW, POST.name());
                     }
                     BlockingIterable<CreatePojoRequest> values = request

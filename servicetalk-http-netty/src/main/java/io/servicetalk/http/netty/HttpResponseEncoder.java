@@ -124,8 +124,7 @@ final class HttpResponseEncoder extends HttpObjectEncoder<HttpResponseMetaData> 
                 // See https://tools.ietf.org/html/rfc7230#section-3.3.1
                 headers.remove(TRANSFER_ENCODING);
             }
-        } else if (method != null && CONNECT.name().equals(method.name())
-                && msg.status().statusClass() == SUCCESSFUL_2XX) {
+        } else if (CONNECT.equals(method) && msg.status().statusClass() == SUCCESSFUL_2XX) {
             // Stripping Transfer-Encoding:
             // See https://tools.ietf.org/html/rfc7230#section-3.3.1
             msg.headers().remove(TRANSFER_ENCODING);

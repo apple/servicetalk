@@ -280,7 +280,7 @@ public abstract class AbstractJerseyStreamingHttpServiceTest {
             assertThat(res.headers().contains(CONTENT_LENGTH), is(false));
             if (SUCCESSFUL_2XX.contains(res.status()) && !NO_CONTENT.equals(res.status()) &&
                     // It is OK to omit payload header fields in HEAD responses
-                    !HEAD.name().equals(req.method().name())) {
+                    !HEAD.equals(req.method())) {
                 assertThat(res.headers().get(TRANSFER_ENCODING), is(CHUNKED));
             }
         }
