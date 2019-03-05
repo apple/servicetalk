@@ -32,8 +32,8 @@ public class LoggingPublisherSubscriber<T> implements Subscriber<T> {
     private final Subscriber<T> delegate;
 
     /**
-     * Create a {@link LoggingPublisherSubscriber} that wraps the {@code delegate}, and uses the specified {@code name} for
-     * logging.
+     * Create a {@link LoggingPublisherSubscriber} that wraps the {@code delegate}, and uses the specified {@code name}
+     * for logging.
      *
      * @param name the logging name.
      * @param delegate the {@link Subscriber} to delegate calls to.
