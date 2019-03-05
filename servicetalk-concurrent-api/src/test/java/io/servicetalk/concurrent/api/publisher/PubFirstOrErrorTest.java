@@ -30,7 +30,7 @@ import java.util.NoSuchElementException;
 import static io.servicetalk.concurrent.api.Publisher.just;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 
-public class PubEnsureSingleItemTest {
+public class PubFirstOrErrorTest {
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
     @Rule

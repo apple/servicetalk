@@ -1960,7 +1960,7 @@ public abstract class Publisher<T> {
      * {@link NoSuchElementException}.
      */
     public final Single<T> firstOrError() {
-        return new PubEnsureSingleItem<>(this);
+        return new PubFirstOrError<>(this);
     }
 
     /**

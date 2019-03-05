@@ -16,7 +16,6 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.PublisherSource;
-import io.servicetalk.concurrent.PublisherSource.Subscription;
 
 import java.util.NoSuchElementException;
 
@@ -35,8 +34,8 @@ final class PubToSingleFirst<T> extends AbstractPubToSingle<T> {
     PublisherSource.Subscriber<T> newSubscriber(final Subscriber<? super T> original) {
         return new AbstractPubToSingleSubscriber<T>(original) {
             @Override
-            void requestFromSubscription(final Subscription subscription) {
-                subscription.request(1);
+            int numberOfItemsToRequest() {
+                return 1;
             }
 
             @Override

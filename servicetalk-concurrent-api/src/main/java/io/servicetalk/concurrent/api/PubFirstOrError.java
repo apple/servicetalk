@@ -20,9 +20,9 @@ import io.servicetalk.concurrent.PublisherSource;
 import java.util.NoSuchElementException;
 import javax.annotation.Nullable;
 
-final class PubEnsureSingleItem<T> extends AbstractPubToSingle<T> {
+final class PubFirstOrError<T> extends AbstractPubToSingle<T> {
 
-    PubEnsureSingleItem(Publisher<T> source) {
+    PubFirstOrError(Publisher<T> source) {
         super(source.executor(), source);
     }
 
@@ -33,15 +33,15 @@ final class PubEnsureSingleItem<T> extends AbstractPubToSingle<T> {
             private Object lastValue;
 
             @Override
-            void requestFromSubscription(final PublisherSource.Subscription subscription) {
+            int numberOfItemsToRequest() {
                 // Request 2 items because we want to see if there are multiple items before termination.
-                subscription.request(2);
+                return 2;
             }
 
             @Override
             public void onNext(T t) {
                 if (lastValue == null) {
-                    lastValue = t == null ? NULL_VALUE : t;
+                    lastValue = wrapNull(t);
                 } else {
                     assert subscription != null;
                     subscription.cancel();
