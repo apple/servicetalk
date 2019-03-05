@@ -34,14 +34,14 @@ import static org.junit.Assert.assertTrue;
 public final class ResumeSingleTest {
 
     private TestSingleSubscriber<Integer> subscriber;
-    private TestSingle2<Integer> first;
-    private TestSingle2<Integer> second;
+    private TestSingle<Integer> first;
+    private TestSingle<Integer> second;
 
     @Before
     public void setUp() {
         subscriber = new TestSingleSubscriber<>();
-        first = new TestSingle2<>();
-        second = new TestSingle2<>();
+        first = new TestSingle<>();
+        second = new TestSingle<>();
         toSource(first.onErrorResume(throwable -> second)).subscribe(subscriber);
     }
 
@@ -95,7 +95,7 @@ public final class ResumeSingleTest {
 
     @Test
     public void testErrorSuppressOriginalException() {
-        first = new TestSingle2<>();
+        first = new TestSingle<>();
         subscriber = new TestSingleSubscriber<>();
         DeliberateException ex = new DeliberateException();
         toSource(first.onErrorResume(throwable -> {

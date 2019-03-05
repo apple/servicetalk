@@ -15,10 +15,10 @@
  */
 package io.servicetalk.concurrent.api.single;
 
-import io.servicetalk.concurrent.api.MockedCompletableListenerRule;
+import io.servicetalk.concurrent.api.LegacyMockedCompletableListenerRule;
+import io.servicetalk.concurrent.api.LegacyTestCompletable;
+import io.servicetalk.concurrent.api.LegacyTestSingle;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.concurrent.api.TestCompletable;
-import io.servicetalk.concurrent.api.TestSingle;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -32,15 +32,15 @@ import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_
 public final class SingleFlatMapCompletableTest {
 
     @Rule
-    public final MockedCompletableListenerRule listener = new MockedCompletableListenerRule();
+    public final LegacyMockedCompletableListenerRule listener = new LegacyMockedCompletableListenerRule();
 
-    private TestSingle<String> single;
-    private TestCompletable completable;
+    private LegacyTestSingle<String> single;
+    private LegacyTestCompletable completable;
 
     @Before
     public void setUp() {
-        single = new TestSingle<>();
-        completable = new TestCompletable();
+        single = new LegacyTestSingle<>();
+        completable = new LegacyTestCompletable();
     }
 
     @Test

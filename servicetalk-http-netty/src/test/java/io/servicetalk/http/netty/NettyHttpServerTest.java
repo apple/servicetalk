@@ -18,7 +18,7 @@ package io.servicetalk.http.netty;
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.BlockingIterator;
 import io.servicetalk.concurrent.Cancellable;
-import io.servicetalk.concurrent.api.MockedCompletableListenerRule;
+import io.servicetalk.concurrent.api.LegacyMockedCompletableListenerRule;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
@@ -92,7 +92,7 @@ public class NettyHttpServerTest extends AbstractNettyHttpServerTest {
     @Rule
     public final ExpectedException thrown = ExpectedException.none();
     @Rule
-    public final MockedCompletableListenerRule completableListenerRule = new MockedCompletableListenerRule();
+    public final LegacyMockedCompletableListenerRule completableListenerRule = new LegacyMockedCompletableListenerRule();
     private final StreamingHttpRequestResponseFactory reqRespFactory =
             new DefaultStreamingHttpRequestResponseFactory(DEFAULT_ALLOCATOR, INSTANCE);
 
@@ -334,7 +334,7 @@ public class NettyHttpServerTest extends AbstractNettyHttpServerTest {
     @Test
     public void testCancelGracefulShutdownWhileReadingPayloadAndThenGracefulShutdownAgain() throws Exception {
         when(publisherSupplier.apply(any())).thenReturn(publisher);
-        MockedCompletableListenerRule onCloseListener = completableListenerRule.listen(serverContext().onClose());
+        LegacyMockedCompletableListenerRule onCloseListener = completableListenerRule.listen(serverContext().onClose());
 
         final StreamingHttpRequest request1 = reqRespFactory.newRequest(GET, SVC_TEST_PUBLISHER);
         makeRequest(request1);
@@ -354,7 +354,7 @@ public class NettyHttpServerTest extends AbstractNettyHttpServerTest {
     @Test
     public void testCancelGracefulShutdownWhileReadingPayloadAndThenShutdown() throws Exception {
         when(publisherSupplier.apply(any())).thenReturn(publisher);
-        MockedCompletableListenerRule onCloseListener = completableListenerRule.listen(serverContext().onClose());
+        LegacyMockedCompletableListenerRule onCloseListener = completableListenerRule.listen(serverContext().onClose());
 
         final StreamingHttpRequest request1 = reqRespFactory.newRequest(GET, SVC_TEST_PUBLISHER);
         makeRequest(request1);

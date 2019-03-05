@@ -17,8 +17,8 @@ package io.servicetalk.concurrent.api.publisher;
 
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Executor;
+import io.servicetalk.concurrent.api.LegacyTestCompletable;
 import io.servicetalk.concurrent.api.SequentialPublisherSubscriberFunction;
-import io.servicetalk.concurrent.api.TestCompletable;
 import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.api.TestPublisherSubscriber;
 import io.servicetalk.concurrent.api.TestSubscription;
@@ -54,7 +54,7 @@ public class RepeatWhenTest {
     private final TestPublisherSubscriber<Integer> subscriber = new TestPublisherSubscriber<>();
     private TestPublisher<Integer> source;
     private IntFunction<Completable> shouldRepeat;
-    private TestCompletable repeatSignal;
+    private LegacyTestCompletable repeatSignal;
     private Executor executor;
 
     @After
@@ -190,9 +190,9 @@ public class RepeatWhenTest {
     private void init(TestPublisher<Integer> source) {
         this.source = source;
         shouldRepeat = (IntFunction<Completable>) mock(IntFunction.class);
-        repeatSignal = new TestCompletable();
+        repeatSignal = new LegacyTestCompletable();
         when(shouldRepeat.apply(anyInt())).thenAnswer(invocation -> {
-            repeatSignal = new TestCompletable();
+            repeatSignal = new LegacyTestCompletable();
             return repeatSignal;
         });
         toSource(source.repeatWhen(shouldRepeat)).subscribe(subscriber);

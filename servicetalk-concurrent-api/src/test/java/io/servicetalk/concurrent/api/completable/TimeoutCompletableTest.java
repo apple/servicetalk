@@ -19,8 +19,8 @@ import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.CompletableSource.Subscriber;
 import io.servicetalk.concurrent.api.Completable;
-import io.servicetalk.concurrent.api.MockedCompletableListenerRule;
-import io.servicetalk.concurrent.api.TestSingle;
+import io.servicetalk.concurrent.api.LegacyMockedCompletableListenerRule;
+import io.servicetalk.concurrent.api.LegacyTestSingle;
 import io.servicetalk.concurrent.api.TimeoutTestUtils;
 import io.servicetalk.concurrent.api.TimeoutTestUtils.AbstractTestExecutor;
 import io.servicetalk.concurrent.api.TimeoutTestUtils.ScheduleEvent;
@@ -44,16 +44,16 @@ import static org.mockito.Mockito.verify;
 
 public class TimeoutCompletableTest {
     @Rule
-    public final MockedCompletableListenerRule listener = new MockedCompletableListenerRule();
+    public final LegacyMockedCompletableListenerRule listener = new LegacyMockedCompletableListenerRule();
 
-    private TestSingle<Integer> source;
+    private LegacyTestSingle<Integer> source;
     private final TimeoutTestUtils.ScheduleQueueTestExecutor testExecutor = new TimeoutTestUtils.ScheduleQueueTestExecutor();
     private java.util.concurrent.ExecutorService timerSimulator;
 
     @Before
     public void setUp() throws Exception {
         timerSimulator = java.util.concurrent.Executors.newFixedThreadPool(1);
-        source = new TestSingle<>(false, false);
+        source = new LegacyTestSingle<>(false, false);
     }
 
     @After

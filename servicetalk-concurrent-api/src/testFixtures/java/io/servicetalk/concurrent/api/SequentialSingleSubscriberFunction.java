@@ -23,7 +23,7 @@ import java.util.function.Function;
 import javax.annotation.Nullable;
 
 /**
- * Allows multiple {@link Subscriber}s to be sequentially subscribed to a {@link TestSingle2}. Attempts to subscribe
+ * Allows multiple {@link Subscriber}s to be sequentially subscribed to a {@link TestSingle}. Attempts to subscribe
  * concurrently will throw an exception.
  *
  * @param <T> Type of the result of this {@code Subscriber}.

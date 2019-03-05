@@ -16,7 +16,7 @@
 package io.servicetalk.concurrent.api.completable;
 
 import io.servicetalk.concurrent.api.CompletableProcessor;
-import io.servicetalk.concurrent.api.MockedCompletableListenerRule;
+import io.servicetalk.concurrent.api.LegacyMockedCompletableListenerRule;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -26,9 +26,9 @@ import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_
 public class CompletableProcessorTest {
 
     @Rule
-    public final MockedCompletableListenerRule rule = new MockedCompletableListenerRule();
+    public final LegacyMockedCompletableListenerRule rule = new LegacyMockedCompletableListenerRule();
     @Rule
-    public final MockedCompletableListenerRule rule2 = new MockedCompletableListenerRule();
+    public final LegacyMockedCompletableListenerRule rule2 = new LegacyMockedCompletableListenerRule();
 
     @Test
     public void testCompleteBeforeListen() {

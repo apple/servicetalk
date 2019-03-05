@@ -31,7 +31,7 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-public class TestCompletable extends Completable implements CompletableSource.Subscriber {
+public class LegacyTestCompletable extends Completable implements CompletableSource.Subscriber {
     private final Queue<Subscriber> subscribers = new ConcurrentLinkedQueue<>();
     private final DynamicCompositeCancellable dynamicCancellable = new MapDynamicCompositeCancellable();
     private final boolean invokeListenerPostCancel;
@@ -39,12 +39,12 @@ public class TestCompletable extends Completable implements CompletableSource.Su
     @Nullable
     private TerminalNotification terminalNotification;
 
-    public TestCompletable(boolean invokeListenerPostCancel, boolean deferOnSubscribe) {
+    public LegacyTestCompletable(boolean invokeListenerPostCancel, boolean deferOnSubscribe) {
         this.invokeListenerPostCancel = invokeListenerPostCancel;
         this.deferOnSubscribe = deferOnSubscribe;
     }
 
-    public TestCompletable() {
+    public LegacyTestCompletable() {
         this(false, false);
     }
 
@@ -98,22 +98,22 @@ public class TestCompletable extends Completable implements CompletableSource.Su
         return dynamicCancellable.isCancelled();
     }
 
-    public TestCompletable verifyListenCalled() {
+    public LegacyTestCompletable verifyListenCalled() {
         assertThat("Listen not called.", subscribers, hasSize(greaterThan(0)));
         return this;
     }
 
-    public TestCompletable verifyListenNotCalled() {
+    public LegacyTestCompletable verifyListenNotCalled() {
         assertThat("Listen called.", subscribers, hasSize(0));
         return this;
     }
 
-    public TestCompletable verifyCancelled() {
+    public LegacyTestCompletable verifyCancelled() {
         assertTrue("Subscriber did not cancel.", isCancelled());
         return this;
     }
 
-    public TestCompletable verifyNotCancelled() {
+    public LegacyTestCompletable verifyNotCancelled() {
         assertFalse("Subscriber cancelled.", isCancelled());
         return this;
     }

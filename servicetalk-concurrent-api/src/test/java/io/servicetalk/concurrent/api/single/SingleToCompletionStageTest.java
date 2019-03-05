@@ -16,8 +16,8 @@
 package io.servicetalk.concurrent.api.single;
 
 import io.servicetalk.concurrent.api.ExecutorRule;
+import io.servicetalk.concurrent.api.LegacyTestSingle;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.concurrent.api.TestSingle;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 
 import org.junit.AfterClass;
@@ -65,7 +65,7 @@ public class SingleToCompletionStageTest {
     @Rule
     public final ExpectedException thrown = ExpectedException.none();
 
-    private TestSingle<String> source;
+    private LegacyTestSingle<String> source;
     private static ExecutorService jdkExecutor;
     private static final AtomicInteger threadCount = new AtomicInteger();
     private static final String ST_THREAD_PREFIX_NAME = "st-exec-thread-";
@@ -86,7 +86,7 @@ public class SingleToCompletionStageTest {
 
     @Before
     public void beforeTest() {
-        source = new TestSingle<>(executorRule.executor(), true, true);
+        source = new LegacyTestSingle<>(executorRule.executor(), true, true);
     }
 
     @Test

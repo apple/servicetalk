@@ -37,7 +37,7 @@ public class TestSingleTest {
 
     @Test
     public void testNonResubscribeableSingle() {
-        TestSingle2<String> source = new TestSingle2.Builder<String>()
+        TestSingle<String> source = new TestSingle.Builder<String>()
                 .singleSubscriber()
                 .build();
 
@@ -57,7 +57,7 @@ public class TestSingleTest {
 
     @Test
     public void testSequentialSubscribeSingle() {
-        TestSingle2<String> source = new TestSingle2.Builder<String>()
+        TestSingle<String> source = new TestSingle.Builder<String>()
                 .build();
 
         source.subscribe(subscriber1);
@@ -71,7 +71,7 @@ public class TestSingleTest {
 
     @Test
     public void testConcurrentSubscribeSingle() {
-        TestSingle2<String> source = new TestSingle2.Builder<String>()
+        TestSingle<String> source = new TestSingle.Builder<String>()
                 .concurrentSubscribers()
                 .build();
 

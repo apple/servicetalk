@@ -38,7 +38,7 @@ public class CompletableMergeWithPublisherTest {
 
     @Test
     public void testDelayedPublisherSubscriptionForReqNBuffering() {
-        TestCompletable completable = new TestCompletable();
+        LegacyTestCompletable completable = new LegacyTestCompletable();
         toSource(completable.merge(publisher)).subscribe(subscriber);
         assertTrue(subscriber.subscriptionReceived());
         subscriber.request(5);
@@ -52,7 +52,7 @@ public class CompletableMergeWithPublisherTest {
 
     @Test
     public void testDelayedPublisherSubscriptionForCancelBuffering() {
-        TestCompletable completable = new TestCompletable();
+        LegacyTestCompletable completable = new LegacyTestCompletable();
         toSource(completable.merge(publisher)).subscribe(subscriber);
         assertTrue(subscriber.subscriptionReceived());
         subscriber.request(5);
@@ -64,7 +64,7 @@ public class CompletableMergeWithPublisherTest {
 
     @Test
     public void testDelayedCompletableSubscriptionForCancelBuffering() {
-        TestCompletable completable = new TestCompletable(false, true);
+        LegacyTestCompletable completable = new LegacyTestCompletable(false, true);
         toSource(completable.merge(publisher)).subscribe(subscriber);
         assertTrue(subscriber.subscriptionReceived());
         subscriber.request(5);
@@ -78,7 +78,7 @@ public class CompletableMergeWithPublisherTest {
 
     @Test
     public void testCompletableFailCancelsPublisher() {
-        TestCompletable completable = new TestCompletable();
+        LegacyTestCompletable completable = new LegacyTestCompletable();
         toSource(completable.merge(publisher)).subscribe(subscriber);
         publisher.onSubscribe(subscription);
         assertTrue(subscriber.subscriptionReceived());
@@ -89,7 +89,7 @@ public class CompletableMergeWithPublisherTest {
 
     @Test
     public void testPublisherFailCancelsCompletable() {
-        TestCompletable completable = new TestCompletable();
+        LegacyTestCompletable completable = new LegacyTestCompletable();
         toSource(completable.merge(publisher)).subscribe(subscriber);
         publisher.onSubscribe(subscription);
         assertTrue(subscriber.subscriptionReceived());
@@ -102,7 +102,7 @@ public class CompletableMergeWithPublisherTest {
 
     @Test
     public void testCancelCancelsPendingSourceSubscription() {
-        TestCompletable completable = new TestCompletable();
+        LegacyTestCompletable completable = new LegacyTestCompletable();
         toSource(completable.merge(publisher)).subscribe(subscriber);
         publisher.onSubscribe(subscription);
         assertTrue(subscriber.subscriptionReceived());
@@ -116,7 +116,7 @@ public class CompletableMergeWithPublisherTest {
 
     @Test
     public void testCancelCompletableCompletePublisherPendingCancelsNoMoreInteraction() {
-        TestCompletable completable = new TestCompletable();
+        LegacyTestCompletable completable = new LegacyTestCompletable();
         toSource(completable.merge(publisher)).subscribe(subscriber);
         publisher.onSubscribe(subscription);
         assertTrue(subscriber.subscriptionReceived());
@@ -133,7 +133,7 @@ public class CompletableMergeWithPublisherTest {
 
     @Test
     public void testCancelPublisherCompleteCompletablePendingCancelsNoMoreInteraction() {
-        TestCompletable completable = new TestCompletable();
+        LegacyTestCompletable completable = new LegacyTestCompletable();
         toSource(completable.merge(publisher)).subscribe(subscriber);
         assertTrue(subscriber.subscriptionReceived());
         subscriber.request(2);
@@ -149,7 +149,7 @@ public class CompletableMergeWithPublisherTest {
 
     @Test
     public void testCompletableAndPublisherCompleteSingleCompleteSignal() {
-        TestCompletable completable = new TestCompletable();
+        LegacyTestCompletable completable = new LegacyTestCompletable();
         toSource(completable.merge(publisher)).subscribe(subscriber);
         assertTrue(subscriber.subscriptionReceived());
         subscriber.request(2);
@@ -162,7 +162,7 @@ public class CompletableMergeWithPublisherTest {
 
     @Test
     public void testCompletableAndPublisherFailOnlySingleErrorSignal() {
-        TestCompletable completable = new TestCompletable();
+        LegacyTestCompletable completable = new LegacyTestCompletable();
         toSource(completable.merge(publisher)).subscribe(subscriber);
         publisher.onSubscribe(subscription);
         assertTrue(subscriber.subscriptionReceived());
@@ -177,7 +177,7 @@ public class CompletableMergeWithPublisherTest {
 
     @Test
     public void testCompletableFailsAndPublisherCompletesSingleErrorSignal() {
-        TestCompletable completable = new TestCompletable();
+        LegacyTestCompletable completable = new LegacyTestCompletable();
         toSource(completable.merge(publisher)).subscribe(subscriber);
         assertTrue(subscriber.subscriptionReceived());
         subscriber.request(2);
@@ -190,7 +190,7 @@ public class CompletableMergeWithPublisherTest {
 
     @Test
     public void testPublisherFailsAndCompletableCompletesSingleErrorSignal() {
-        TestCompletable completable = new TestCompletable();
+        LegacyTestCompletable completable = new LegacyTestCompletable();
         toSource(completable.merge(publisher)).subscribe(subscriber);
         publisher.onSubscribe(subscription);
         assertTrue(subscriber.subscriptionReceived());

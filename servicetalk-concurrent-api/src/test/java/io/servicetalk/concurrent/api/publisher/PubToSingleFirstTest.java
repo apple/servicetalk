@@ -18,7 +18,7 @@ package io.servicetalk.concurrent.api.publisher;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.api.DeferredEmptySubscription;
 import io.servicetalk.concurrent.api.ExecutorRule;
-import io.servicetalk.concurrent.api.MockedSingleListenerRule;
+import io.servicetalk.concurrent.api.LegacyMockedSingleListenerRule;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.api.TestSubscription;
@@ -48,7 +48,7 @@ public class PubToSingleFirstTest {
     @Rule
     public final ExecutorRule executorRule = ExecutorRule.newRule();
     @Rule
-    public final MockedSingleListenerRule<String> listenerRule = new MockedSingleListenerRule<>();
+    public final LegacyMockedSingleListenerRule<String> listenerRule = new LegacyMockedSingleListenerRule<>();
 
     private final TestPublisher<String> publisher = new TestPublisher<>();
     private final TestSubscription subscription = new TestSubscription();
@@ -133,7 +133,7 @@ public class PubToSingleFirstTest {
         assertThat("Unexpected errors observed: " + errors, errors, hasSize(0));
     }
 
-    private MockedSingleListenerRule<String> listen(Publisher<String> src) {
+    private LegacyMockedSingleListenerRule<String> listen(Publisher<String> src) {
         return listenerRule.listen(src.first());
     }
 }

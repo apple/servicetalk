@@ -17,7 +17,7 @@ package io.servicetalk.redis.api;
 
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
-import io.servicetalk.concurrent.api.MockedSingleListenerRule;
+import io.servicetalk.concurrent.api.LegacyMockedSingleListenerRule;
 import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.redis.api.RedisData.ArraySize;
 import io.servicetalk.redis.api.RedisData.BulkStringChunk;
@@ -60,9 +60,9 @@ public class RedisRequesterUtilsTest {
     public static final boolean[] RESIZABLE_BUFFER_VALUES = {false, true};
 
     @Rule
-    public MockedSingleListenerRule<Buffer> bufferSubscriber = new MockedSingleListenerRule<>();
+    public LegacyMockedSingleListenerRule<Buffer> bufferSubscriber = new LegacyMockedSingleListenerRule<>();
     @Rule
-    public MockedSingleListenerRule<List<Object>> listSubscriber = new MockedSingleListenerRule<>();
+    public LegacyMockedSingleListenerRule<List<Object>> listSubscriber = new LegacyMockedSingleListenerRule<>();
 
     private final TestPublisher<RedisData> publisher = new TestPublisher<>();
     private RedisRequester requester;

@@ -16,7 +16,7 @@
 package io.servicetalk.concurrent.api.single;
 
 import io.servicetalk.concurrent.api.ExecutorRule;
-import io.servicetalk.concurrent.api.MockedSingleListenerRule;
+import io.servicetalk.concurrent.api.LegacyMockedSingleListenerRule;
 import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.api.TestSubscription;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
@@ -49,7 +49,7 @@ public class ReduceSingleTest {
     public final ExecutorRule executorRule = ExecutorRule.newRule();
 
     @Rule
-    public final MockedSingleListenerRule<String> listenerRule = new MockedSingleListenerRule<>();
+    public final LegacyMockedSingleListenerRule<String> listenerRule = new LegacyMockedSingleListenerRule<>();
 
     @Rule
     public final ReducerRule reducerRule = new ReducerRule();
@@ -156,7 +156,7 @@ public class ReduceSingleTest {
 
     private static class ReducerRule extends Verifier {
 
-        ReducerRule listen(TestPublisher<String> testPublisher, MockedSingleListenerRule<String> listenerRule) {
+        ReducerRule listen(TestPublisher<String> testPublisher, LegacyMockedSingleListenerRule<String> listenerRule) {
             listenerRule.listen(testPublisher.reduce(() -> "", (r, s) -> r + s));
             return this;
         }

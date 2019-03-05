@@ -18,7 +18,7 @@ package io.servicetalk.redis.netty;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.api.CompletableProcessor;
 import io.servicetalk.concurrent.api.Executor;
-import io.servicetalk.concurrent.api.MockedSingleListenerRule;
+import io.servicetalk.concurrent.api.LegacyMockedSingleListenerRule;
 import io.servicetalk.concurrent.api.TestPublisherSubscriber;
 import io.servicetalk.redis.api.RedisConnection;
 import io.servicetalk.redis.api.RedisData;
@@ -72,7 +72,7 @@ public class RedisIdleConnectionReaperTest {
     public final MockitoRule rule = MockitoJUnit.rule();
 
     @Rule
-    public final MockedSingleListenerRule<String> commandSubscriber = new MockedSingleListenerRule<>();
+    public final LegacyMockedSingleListenerRule<String> commandSubscriber = new LegacyMockedSingleListenerRule<>();
 
     @Mock
     private NettyIoExecutor ioExecutor;

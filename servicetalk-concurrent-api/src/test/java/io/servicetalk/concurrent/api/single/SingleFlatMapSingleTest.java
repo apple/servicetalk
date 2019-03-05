@@ -15,8 +15,8 @@
  */
 package io.servicetalk.concurrent.api.single;
 
-import io.servicetalk.concurrent.api.MockedSingleListenerRule;
-import io.servicetalk.concurrent.api.TestSingle;
+import io.servicetalk.concurrent.api.LegacyMockedSingleListenerRule;
+import io.servicetalk.concurrent.api.LegacyTestSingle;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -29,15 +29,15 @@ import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_
 public final class SingleFlatMapSingleTest {
 
     @Rule
-    public final MockedSingleListenerRule<String> listener = new MockedSingleListenerRule<>();
+    public final LegacyMockedSingleListenerRule<String> listener = new LegacyMockedSingleListenerRule<>();
 
-    private TestSingle<String> first;
-    private TestSingle<String> second;
+    private LegacyTestSingle<String> first;
+    private LegacyTestSingle<String> second;
 
     @Before
     public void setUp() {
-        first = new TestSingle<>();
-        second = new TestSingle<>();
+        first = new LegacyTestSingle<>();
+        second = new LegacyTestSingle<>();
     }
 
     @Test

@@ -21,7 +21,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 
 /**
- * Allows only a single {@link Subscriber} to subscribe to a {@link TestSingle2}. Subsequent attempts to subscribe
+ * Allows only a single {@link Subscriber} to subscribe to a {@link TestSingle}. Subsequent attempts to subscribe
  * will throw an exception.
  *
  * @param <T> Type of items received by the {@code Subscriber}.
