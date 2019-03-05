@@ -68,6 +68,7 @@ public final class HttpResponseStatuses {
      */
     public static final HttpResponseStatus NON_AUTHORITATIVE_INFORMATION =
             new DefaultHttpResponseStatus(203, PREFER_DIRECT_RO_ALLOCATOR.fromAscii("Non-Authoritative Information"));
+
     /**
      * 204 No Content
      */
@@ -187,6 +188,7 @@ public final class HttpResponseStatuses {
      */
     public static final HttpResponseStatus PROXY_AUTHENTICATION_REQUIRED =
             new DefaultHttpResponseStatus(407, PREFER_DIRECT_RO_ALLOCATOR.fromAscii("Proxy Authentication Required"));
+
     /**
      * 408 Request Timeout
      */
@@ -240,6 +242,7 @@ public final class HttpResponseStatuses {
      */
     public static final HttpResponseStatus REQUESTED_RANGE_NOT_SATISFIABLE =
             new DefaultHttpResponseStatus(416, PREFER_DIRECT_RO_ALLOCATOR.fromAscii("Requested Range Not Satisfiable"));
+
     /**
      * 417 Expectation Failed
      */
@@ -301,6 +304,7 @@ public final class HttpResponseStatuses {
      */
     public static final HttpResponseStatus REQUEST_HEADER_FIELDS_TOO_LARGE =
             new DefaultHttpResponseStatus(431, PREFER_DIRECT_RO_ALLOCATOR.fromAscii("Request Header Fields Too Large"));
+
     /**
      * 500 Internal Server Error
      */
