@@ -16,7 +16,7 @@
 package io.servicetalk.concurrent.api.single;
 
 import io.servicetalk.concurrent.SingleSource;
-import io.servicetalk.concurrent.api.MockedSingleListenerRule;
+import io.servicetalk.concurrent.api.LegacyMockedSingleListenerRule;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.DeliberateException;
 
@@ -34,7 +34,7 @@ import static org.mockito.Mockito.verify;
 public abstract class AbstractDoSubscriberTest {
 
     @Rule
-    public final MockedSingleListenerRule<String> listener = new MockedSingleListenerRule<>();
+    public final LegacyMockedSingleListenerRule<String> listener = new LegacyMockedSingleListenerRule<>();
 
     private SingleSource.Subscriber<String> subscriber;
 

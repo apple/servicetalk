@@ -47,7 +47,7 @@ import static org.mockito.Mockito.verifyZeroInteractions;
  * @deprecated Use {@link TestSingleSubscriber} instead.
  */
 @Deprecated
-public class MockedSingleListenerRule<T> implements TestRule {
+public class LegacyMockedSingleListenerRule<T> implements TestRule {
     @Nullable
     private SingleSource.Subscriber<? super T> subscriber;
     @Nullable
@@ -65,7 +65,7 @@ public class MockedSingleListenerRule<T> implements TestRule {
         };
     }
 
-    public MockedSingleListenerRule<T> resetSubscriberMock() {
+    public LegacyMockedSingleListenerRule<T> resetSubscriberMock() {
         subscriber = mock(SingleSource.Subscriber.class);
         doAnswer((Answer<Void>) invocation -> {
             onSubscribeResult = invocation.getArgument(0);
@@ -74,7 +74,7 @@ public class MockedSingleListenerRule<T> implements TestRule {
         return this;
     }
 
-    public MockedSingleListenerRule<T> cancel() {
+    public LegacyMockedSingleListenerRule<T> cancel() {
         verifyCancellable();
         Cancellable listenResult = this.onSubscribeResult;
         assert listenResult != null;
@@ -82,13 +82,13 @@ public class MockedSingleListenerRule<T> implements TestRule {
         return this;
     }
 
-    public MockedSingleListenerRule<T> listen(Single<? extends T> src) {
+    public LegacyMockedSingleListenerRule<T> listen(Single<? extends T> src) {
         assert subscriber != null;
         toSource(src).subscribe(subscriber);
         return this;
     }
 
-    public MockedSingleListenerRule<T> verifySuccess(@Nullable T expected) {
+    public LegacyMockedSingleListenerRule<T> verifySuccess(@Nullable T expected) {
         verifyCancellable();
         final InOrder verifier = inOrderVerifier();
         verifier.verify(subscriber).onSuccess(expected);
@@ -105,7 +105,7 @@ public class MockedSingleListenerRule<T> implements TestRule {
         return captor.getValue();
     }
 
-    public MockedSingleListenerRule<T> verifyFailure(Throwable cause) {
+    public LegacyMockedSingleListenerRule<T> verifyFailure(Throwable cause) {
         verifyCancellable();
         final InOrder verifier = inOrderVerifier();
         verifier.verify(subscriber).onError(cause);
@@ -113,7 +113,7 @@ public class MockedSingleListenerRule<T> implements TestRule {
         return this;
     }
 
-    public MockedSingleListenerRule<T> verifyFailure(ArgumentCaptor<Throwable> causeCaptor) {
+    public LegacyMockedSingleListenerRule<T> verifyFailure(ArgumentCaptor<Throwable> causeCaptor) {
         verifyCancellable();
         final InOrder verifier = inOrderVerifier();
         verifier.verify(subscriber).onError(causeCaptor.capture());
@@ -121,7 +121,7 @@ public class MockedSingleListenerRule<T> implements TestRule {
         return this;
     }
 
-    public MockedSingleListenerRule<T> verifyFailure(Class<? extends Throwable> cause) {
+    public LegacyMockedSingleListenerRule<T> verifyFailure(Class<? extends Throwable> cause) {
         verifyCancellable();
         final InOrder verifier = inOrderVerifier();
         verifier.verify(subscriber).onError(any(cause));
@@ -129,14 +129,14 @@ public class MockedSingleListenerRule<T> implements TestRule {
         return this;
     }
 
-    public MockedSingleListenerRule<T> verifyNoEmissions() {
+    public LegacyMockedSingleListenerRule<T> verifyNoEmissions() {
         assert subscriber != null;
         verify(subscriber).onSubscribe(any());
         verifyZeroInteractions(subscriber);
         return this;
     }
 
-    public MockedSingleListenerRule<T> verifySuppressedFailure(Throwable originalCause, Throwable suppressedCause) {
+    public LegacyMockedSingleListenerRule<T> verifySuppressedFailure(Throwable originalCause, Throwable suppressedCause) {
         verifyCancellable();
         final InOrder verifier = inOrderVerifier();
         ArgumentCaptor<Throwable> throwableCaptor = ArgumentCaptor.forClass(Throwable.class);
@@ -147,7 +147,7 @@ public class MockedSingleListenerRule<T> implements TestRule {
         return this;
     }
 
-    public MockedSingleListenerRule<T> verifySuppressedFailure(Throwable suppressedCause) {
+    public LegacyMockedSingleListenerRule<T> verifySuppressedFailure(Throwable suppressedCause) {
         verifyCancellable();
         final InOrder verifier = inOrderVerifier();
         ArgumentCaptor<Throwable> throwableCaptor = ArgumentCaptor.forClass(Throwable.class);
@@ -158,14 +158,14 @@ public class MockedSingleListenerRule<T> implements TestRule {
         return this;
     }
 
-    public MockedSingleListenerRule<T> noMoreInteractions() {
+    public LegacyMockedSingleListenerRule<T> noMoreInteractions() {
         verifyCancellable();
         assert subscriber != null;
         verifyNoMoreInteractions(subscriber);
         return this;
     }
 
-    private MockedSingleListenerRule<T> verifyCancellable() {
+    private LegacyMockedSingleListenerRule<T> verifyCancellable() {
         assertThat("Listen result not found.", onSubscribeResult, is(notNullValue()));
         return this;
     }

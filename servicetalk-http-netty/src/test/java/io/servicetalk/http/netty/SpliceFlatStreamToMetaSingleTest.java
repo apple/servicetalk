@@ -15,7 +15,7 @@
  */
 package io.servicetalk.http.netty;
 
-import io.servicetalk.concurrent.api.MockedSingleListenerRule;
+import io.servicetalk.concurrent.api.LegacyMockedSingleListenerRule;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.api.TestPublisherSubscriber;
@@ -49,7 +49,7 @@ public class SpliceFlatStreamToMetaSingleTest {
     public final ServiceTalkTestTimeout timeout = new ServiceTalkTestTimeout();
 
     @Rule
-    public final MockedSingleListenerRule<Data> dataSubscriber = new MockedSingleListenerRule<>();
+    public final LegacyMockedSingleListenerRule<Data> dataSubscriber = new LegacyMockedSingleListenerRule<>();
 
     private final TestPublisher<Object> upstream = new TestPublisher<>();
     private final MetaData metaData = new MetaData("foo");

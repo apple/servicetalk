@@ -20,10 +20,10 @@ import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.SingleSource.Subscriber;
+import io.servicetalk.concurrent.api.LegacyTestSingle;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.SingleOperator;
 import io.servicetalk.concurrent.api.TestPublisher;
-import io.servicetalk.concurrent.api.TestSingle;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.DefaultHttpHeadersFactory;
 import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
@@ -120,7 +120,7 @@ public class DoBeforeFinallyOnHttpResponseOperatorTest {
 
     @Test
     public void cancelBeforeOnSuccess() throws Exception {
-        TestSingle<StreamingHttpResponse> responseSingle = new TestSingle<>(true);
+        LegacyTestSingle<StreamingHttpResponse> responseSingle = new LegacyTestSingle<>(true);
         final ResponseSubscriber subscriber = new ResponseSubscriber();
         toSource(responseSingle.liftSynchronous(operator)).subscribe(subscriber);
         assertThat("onSubscribe not called.", subscriber.cancellable, is(notNullValue()));
@@ -141,7 +141,7 @@ public class DoBeforeFinallyOnHttpResponseOperatorTest {
 
     @Test
     public void cancelBeforeOnError() {
-        TestSingle<StreamingHttpResponse> responseSingle = new TestSingle<>(true);
+        LegacyTestSingle<StreamingHttpResponse> responseSingle = new LegacyTestSingle<>(true);
         final ResponseSubscriber subscriber = new ResponseSubscriber();
         toSource(responseSingle.liftSynchronous(operator)).subscribe(subscriber);
         assertThat("onSubscribe not called.", subscriber.cancellable, is(notNullValue()));
@@ -157,7 +157,7 @@ public class DoBeforeFinallyOnHttpResponseOperatorTest {
 
     @Test
     public void cancelAfterOnSuccess() {
-        TestSingle<StreamingHttpResponse> responseSingle = new TestSingle<>(true);
+        LegacyTestSingle<StreamingHttpResponse> responseSingle = new LegacyTestSingle<>(true);
         final ResponseSubscriber subscriber = new ResponseSubscriber();
         toSource(responseSingle.liftSynchronous(operator)).subscribe(subscriber);
         assertThat("onSubscribe not called.", subscriber.cancellable, is(notNullValue()));
@@ -177,7 +177,7 @@ public class DoBeforeFinallyOnHttpResponseOperatorTest {
 
     @Test
     public void cancelAfterOnError() {
-        TestSingle<StreamingHttpResponse> responseSingle = new TestSingle<>(true);
+        LegacyTestSingle<StreamingHttpResponse> responseSingle = new LegacyTestSingle<>(true);
         final ResponseSubscriber subscriber = new ResponseSubscriber();
         toSource(responseSingle.liftSynchronous(operator)).subscribe(subscriber);
         assertThat("onSubscribe not called.", subscriber.cancellable, is(notNullValue()));
@@ -196,7 +196,7 @@ public class DoBeforeFinallyOnHttpResponseOperatorTest {
     @Test
     public void payloadComplete() {
         TestPublisher<Buffer> payload = new TestPublisher<>();
-        TestSingle<StreamingHttpResponse> responseSingle = new TestSingle<>(true);
+        LegacyTestSingle<StreamingHttpResponse> responseSingle = new LegacyTestSingle<>(true);
         final ResponseSubscriber subscriber = new ResponseSubscriber();
         toSource(responseSingle.liftSynchronous(operator)).subscribe(subscriber);
         assertThat("onSubscribe not called.", subscriber.cancellable, is(notNullValue()));

@@ -24,12 +24,12 @@ import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.CompletableProcessor;
+import io.servicetalk.concurrent.api.LegacyMockedSingleListenerRule;
+import io.servicetalk.concurrent.api.LegacyTestSingle;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
-import io.servicetalk.concurrent.api.MockedSingleListenerRule;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.TestPublisher;
-import io.servicetalk.concurrent.api.TestSingle;
 import io.servicetalk.concurrent.api.TestSubscription;
 import io.servicetalk.concurrent.internal.DeliberateException;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
@@ -91,7 +91,7 @@ public class RoundRobinLoadBalancerTest {
     public final ExpectedException thrown = ExpectedException.none();
 
     @Rule
-    public final MockedSingleListenerRule<TestLoadBalancedConnection> selectConnectionListener = new MockedSingleListenerRule<>();
+    public final LegacyMockedSingleListenerRule<TestLoadBalancedConnection> selectConnectionListener = new LegacyMockedSingleListenerRule<>();
 
     private final TestPublisher<ServiceDiscovererEvent<String>> serviceDiscoveryPublisher = new TestPublisher<>();
     private final List<TestLoadBalancedConnection> connectionsCreated = new CopyOnWriteArrayList<>();
@@ -392,8 +392,8 @@ public class RoundRobinLoadBalancerTest {
         return new RoundRobinLoadBalancer<>(serviceDiscoveryPublisher, connectionFactory, String::compareTo);
     }
 
-    private TestSingle<TestLoadBalancedConnection> newUnrealizedConnectionSingle(final String address) {
-        final TestSingle<TestLoadBalancedConnection> unrealizedCnx = new TestSingle<>();
+    private LegacyTestSingle<TestLoadBalancedConnection> newUnrealizedConnectionSingle(final String address) {
+        final LegacyTestSingle<TestLoadBalancedConnection> unrealizedCnx = new LegacyTestSingle<>();
         connectionRealizers.offer(() -> unrealizedCnx.onSuccess(newConnection(address)));
         return unrealizedCnx;
     }

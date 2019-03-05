@@ -18,7 +18,7 @@ package io.servicetalk.concurrent.api.publisher;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.api.DeferredEmptySubscription;
 import io.servicetalk.concurrent.api.ExecutorRule;
-import io.servicetalk.concurrent.api.MockedCompletableListenerRule;
+import io.servicetalk.concurrent.api.LegacyMockedCompletableListenerRule;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.concurrent.internal.TerminalNotification;
@@ -42,7 +42,7 @@ public class PubToCompletableTest {
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
     @Rule
-    public final MockedCompletableListenerRule listenerRule = new MockedCompletableListenerRule();
+    public final LegacyMockedCompletableListenerRule listenerRule = new LegacyMockedCompletableListenerRule();
     @Rule
     public final ExecutorRule executorRule = ExecutorRule.newRule();
 
@@ -97,7 +97,7 @@ public class PubToCompletableTest {
         assertThat("Unexpected errors observed: " + errors, errors, hasSize(0));
     }
 
-    private MockedCompletableListenerRule listen(Publisher<String> src) {
+    private LegacyMockedCompletableListenerRule listen(Publisher<String> src) {
         return listenerRule.listen(src.ignoreElements());
     }
 }

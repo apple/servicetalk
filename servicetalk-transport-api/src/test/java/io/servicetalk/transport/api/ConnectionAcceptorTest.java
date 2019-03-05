@@ -16,7 +16,7 @@
 package io.servicetalk.transport.api;
 
 import io.servicetalk.concurrent.api.Completable;
-import io.servicetalk.concurrent.api.MockedCompletableListenerRule;
+import io.servicetalk.concurrent.api.LegacyMockedCompletableListenerRule;
 import io.servicetalk.concurrent.internal.DeliberateException;
 
 import org.junit.Rule;
@@ -42,7 +42,7 @@ public class ConnectionAcceptorTest {
     @Rule
     public final MockitoRule rule = MockitoJUnit.rule();
     @Rule
-    public final MockedCompletableListenerRule listener = new MockedCompletableListenerRule();
+    public final LegacyMockedCompletableListenerRule listener = new LegacyMockedCompletableListenerRule();
 
     @Mock
     private ConnectionContext context;

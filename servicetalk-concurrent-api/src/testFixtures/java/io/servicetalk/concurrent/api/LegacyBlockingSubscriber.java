@@ -44,7 +44,7 @@ import static org.hamcrest.Matchers.notNullValue;
  * A {@link Subscriber} that will block in {@link #onNext(Object)}, {@link #onError(Throwable)} and {@link #onComplete()}
  * unless released via {@link #unblock(Object)} or {@link #unblockAll()}.
  */
-public final class BlockingSubscriber<T> implements Subscriber<T> {
+public final class LegacyBlockingSubscriber<T> implements Subscriber<T> {
 
     @Nullable
     private Subscription s;
@@ -80,14 +80,14 @@ public final class BlockingSubscriber<T> implements Subscriber<T> {
         terminal = complete();
     }
 
-    public BlockingSubscriber<T> request(long request) {
+    public LegacyBlockingSubscriber<T> request(long request) {
         Subscription subscription = s;
         assert subscription != null : "Subscription can not be null.";
         subscription.request(request);
         return this;
     }
 
-    public BlockingSubscriber<T> awaitAndVerifyAwaitingItem(T item) throws InterruptedException {
+    public LegacyBlockingSubscriber<T> awaitAndVerifyAwaitingItem(T item) throws InterruptedException {
         if (awaitingResults.isEmpty()) {
             // Wait for an item and put it back if found. Order does not matter for awaiting items.
             awaitingResults.add(awaitingResults.take());
@@ -98,7 +98,7 @@ public final class BlockingSubscriber<T> implements Subscriber<T> {
     }
 
     @SafeVarargs
-    public final BlockingSubscriber<T> verifyAwaitingItems(T... items) {
+    public final LegacyBlockingSubscriber<T> verifyAwaitingItems(T... items) {
         if (items.length == 0) {
             assertThat("Unexpected blocked state.", awaitingResults, hasSize(0));
         } else {
@@ -108,7 +108,7 @@ public final class BlockingSubscriber<T> implements Subscriber<T> {
         return this;
     }
 
-    public BlockingSubscriber<T> unblockAll() {
+    public LegacyBlockingSubscriber<T> unblockAll() {
         for (Iterator<Result> iterator = awaitingResults.iterator(); iterator.hasNext();) {
             Result awaitingResult = iterator.next();
             iterator.remove();
@@ -117,7 +117,7 @@ public final class BlockingSubscriber<T> implements Subscriber<T> {
         return this;
     }
 
-    public BlockingSubscriber<T> unblock(T item) {
+    public LegacyBlockingSubscriber<T> unblock(T item) {
         requireNonNull(item);
         for (Iterator<Result> iterator = awaitingResults.iterator(); iterator.hasNext();) {
             Result awaitingResult = iterator.next();
@@ -131,7 +131,7 @@ public final class BlockingSubscriber<T> implements Subscriber<T> {
     }
 
     @SafeVarargs
-    public final BlockingSubscriber<T> verifyReceived(T... items) {
+    public final LegacyBlockingSubscriber<T> verifyReceived(T... items) {
         if (items.length == 0) {
             assertThat("Unexpected items received.", received, hasSize(0));
         } else {
@@ -140,13 +140,13 @@ public final class BlockingSubscriber<T> implements Subscriber<T> {
         return this;
     }
 
-    public BlockingSubscriber<T> verifyComplete() {
+    public LegacyBlockingSubscriber<T> verifyComplete() {
         assertThat("onComplete not received.", terminal, is(notNullValue()));
         assertThat("onComplete not received.", terminal, is(complete()));
         return this;
     }
 
-    public BlockingSubscriber<T> verifyError(Matcher<TerminalNotification> matcher) {
+    public LegacyBlockingSubscriber<T> verifyError(Matcher<TerminalNotification> matcher) {
         assertThat("onError not received.", terminal, is(notNullValue()));
         assertThat("onError not received.", terminal, matcher);
         return this;
@@ -154,11 +154,11 @@ public final class BlockingSubscriber<T> implements Subscriber<T> {
 
     private final class Result {
 
-        private final TestSingle<T> single;
+        private final LegacyTestSingle<T> single;
         private final T result;
 
         Result(T result) {
-            this.single = new TestSingle<>();
+            this.single = new LegacyTestSingle<>();
             this.result = result;
         }
 

@@ -15,7 +15,7 @@
  */
 package io.servicetalk.concurrent.api.completable;
 
-import io.servicetalk.concurrent.api.TestCompletable;
+import io.servicetalk.concurrent.api.LegacyTestCompletable;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 
 import org.junit.AfterClass;
@@ -45,7 +45,7 @@ public class CompletableToCompletionStageTest {
 
     private static ExecutorService jdkExecutor;
 
-    private TestCompletable source;
+    private LegacyTestCompletable source;
 
     @BeforeClass
     public static void beforeClass() {
@@ -61,7 +61,7 @@ public class CompletableToCompletionStageTest {
 
     @Before
     public void setUp() throws Exception {
-        source = new TestCompletable();
+        source = new LegacyTestCompletable();
     }
 
     @Test

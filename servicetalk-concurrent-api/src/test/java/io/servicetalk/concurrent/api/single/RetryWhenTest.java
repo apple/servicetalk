@@ -18,10 +18,10 @@ package io.servicetalk.concurrent.api.single;
 import io.servicetalk.concurrent.api.BiIntFunction;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Executor;
-import io.servicetalk.concurrent.api.MockedSingleListenerRule;
+import io.servicetalk.concurrent.api.LegacyMockedSingleListenerRule;
+import io.servicetalk.concurrent.api.LegacyTestCompletable;
+import io.servicetalk.concurrent.api.LegacyTestSingle;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.concurrent.api.TestCompletable;
-import io.servicetalk.concurrent.api.TestSingle;
 import io.servicetalk.concurrent.internal.DeliberateException;
 
 import org.junit.After;
@@ -52,21 +52,21 @@ public class RetryWhenTest {
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
     @Rule
-    public MockedSingleListenerRule<Integer> subscriberRule = new MockedSingleListenerRule<>();
+    public LegacyMockedSingleListenerRule<Integer> subscriberRule = new LegacyMockedSingleListenerRule<>();
 
-    private TestSingle<Integer> source;
+    private LegacyTestSingle<Integer> source;
     private BiIntFunction<Throwable, Completable> shouldRetry;
-    private TestCompletable retrySignal;
+    private LegacyTestCompletable retrySignal;
     private Executor executor;
 
     @SuppressWarnings("unchecked")
     @Before
     public void setUp() throws Exception {
-        source = new TestSingle<>(false, false);
+        source = new LegacyTestSingle<>(false, false);
         shouldRetry = (BiIntFunction<Throwable, Completable>) mock(BiIntFunction.class);
-        retrySignal = new TestCompletable();
+        retrySignal = new LegacyTestCompletable();
         when(shouldRetry.apply(anyInt(), any())).thenAnswer(invocation -> {
-            retrySignal = new TestCompletable();
+            retrySignal = new LegacyTestCompletable();
             return retrySignal;
         });
         subscriberRule.listen(source.retryWhen(shouldRetry));
@@ -164,8 +164,8 @@ public class RetryWhenTest {
     public void exceptionInTerminalCallsOnError() {
         DeliberateException ex = new DeliberateException();
 
-        subscriberRule = new MockedSingleListenerRule<>();
-        source = new TestSingle<>(false, false);
+        subscriberRule = new LegacyMockedSingleListenerRule<>();
+        source = new LegacyTestSingle<>(false, false);
         subscriberRule.resetSubscriberMock().listen(source.retryWhen((times, cause) -> {
             throw ex;
         }));
@@ -177,8 +177,8 @@ public class RetryWhenTest {
 
     @Test
     public void nullInTerminalCallsOnError() {
-        subscriberRule = new MockedSingleListenerRule<>();
-        source = new TestSingle<>(false, false);
+        subscriberRule = new LegacyMockedSingleListenerRule<>();
+        source = new LegacyTestSingle<>(false, false);
         subscriberRule.resetSubscriberMock().listen(source.retryWhen((times, cause) -> null));
         source.onError(DELIBERATE_EXCEPTION);
         subscriberRule.verifyFailure(NullPointerException.class);

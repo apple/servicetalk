@@ -16,9 +16,9 @@
 package io.servicetalk.concurrent.api.single;
 
 import io.servicetalk.concurrent.api.ExecutorRule;
-import io.servicetalk.concurrent.api.MockedSingleListenerRule;
-import io.servicetalk.concurrent.api.TestCompletable;
-import io.servicetalk.concurrent.api.TestSingle;
+import io.servicetalk.concurrent.api.LegacyMockedSingleListenerRule;
+import io.servicetalk.concurrent.api.LegacyTestCompletable;
+import io.servicetalk.concurrent.api.LegacyTestSingle;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 
 import org.junit.Rule;
@@ -33,9 +33,9 @@ public class ConcatWithCompletableTest {
     @Rule
     public final ExecutorRule executorRule = ExecutorRule.newRule();
     @Rule
-    public final MockedSingleListenerRule<String> listener = new MockedSingleListenerRule<>();
-    private TestSingle<String> single = new TestSingle<>();
-    private TestCompletable completable = new TestCompletable();
+    public final LegacyMockedSingleListenerRule<String> listener = new LegacyMockedSingleListenerRule<>();
+    private LegacyTestSingle<String> single = new LegacyTestSingle<>();
+    private LegacyTestCompletable completable = new LegacyTestCompletable();
 
     @Test
     public void concatWaitsForCompletableSuccess() {

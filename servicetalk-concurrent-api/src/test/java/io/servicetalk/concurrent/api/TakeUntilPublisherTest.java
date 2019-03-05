@@ -34,7 +34,7 @@ public class TakeUntilPublisherTest {
 
     @Test
     public void testUntilComplete() {
-        TestCompletable completable = new TestCompletable();
+        LegacyTestCompletable completable = new LegacyTestCompletable();
         Publisher<String> p = publisher.takeUntil(completable);
         toSource(p).subscribe(subscriber);
         publisher.onSubscribe(subscription);
@@ -48,7 +48,7 @@ public class TakeUntilPublisherTest {
 
     @Test
     public void testUntilError() {
-        TestCompletable completable = new TestCompletable();
+        LegacyTestCompletable completable = new LegacyTestCompletable();
         Publisher<String> p = publisher.takeUntil(completable);
         toSource(p).subscribe(subscriber);
         publisher.onSubscribe(subscription);
@@ -62,7 +62,7 @@ public class TakeUntilPublisherTest {
 
     @Test
     public void testEmitsError() {
-        TestCompletable completable = new TestCompletable();
+        LegacyTestCompletable completable = new LegacyTestCompletable();
         Publisher<String> p = publisher.takeUntil(completable);
         toSource(p).subscribe(subscriber);
         subscriber.request(4);
@@ -74,7 +74,7 @@ public class TakeUntilPublisherTest {
 
     @Test
     public void testEmitsComplete() {
-        TestCompletable completable = new TestCompletable();
+        LegacyTestCompletable completable = new LegacyTestCompletable();
         Publisher<String> p = publisher.takeUntil(completable);
         toSource(p).subscribe(subscriber);
         subscriber.request(4);
@@ -85,7 +85,7 @@ public class TakeUntilPublisherTest {
 
     @Test
     public void testSubCancelled() {
-        TestCompletable completable = new TestCompletable();
+        LegacyTestCompletable completable = new LegacyTestCompletable();
         Publisher<String> p = publisher.takeUntil(completable);
         toSource(p).subscribe(subscriber);
         publisher.onSubscribe(subscription);

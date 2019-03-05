@@ -16,8 +16,8 @@
 package io.servicetalk.concurrent.api.single;
 
 import io.servicetalk.concurrent.api.BiIntPredicate;
-import io.servicetalk.concurrent.api.MockedSingleListenerRule;
-import io.servicetalk.concurrent.api.TestSingle;
+import io.servicetalk.concurrent.api.LegacyMockedSingleListenerRule;
+import io.servicetalk.concurrent.api.LegacyTestSingle;
 import io.servicetalk.concurrent.internal.DeliberateException;
 
 import org.junit.Before;
@@ -38,16 +38,16 @@ import static org.mockito.Mockito.when;
 public class RetryTest {
 
     @Rule
-    public MockedSingleListenerRule<Integer> subscriberRule = new MockedSingleListenerRule<>();
+    public LegacyMockedSingleListenerRule<Integer> subscriberRule = new LegacyMockedSingleListenerRule<>();
 
-    private TestSingle<Integer> source;
+    private LegacyTestSingle<Integer> source;
     private BiIntPredicate<Throwable> shouldRetry;
     private boolean shouldRetryValue;
 
     @SuppressWarnings("unchecked")
     @Before
     public void setUp() throws Exception {
-        source = new TestSingle<>(false, false);
+        source = new LegacyTestSingle<>(false, false);
         shouldRetry = (BiIntPredicate<Throwable>) mock(BiIntPredicate.class);
         when(shouldRetry.test(anyInt(), any())).thenAnswer(invocation -> shouldRetryValue);
         subscriberRule.listen(source.retry(shouldRetry));
@@ -102,8 +102,8 @@ public class RetryTest {
     @Test
     public void exceptionInTerminalCallsOnError() {
         DeliberateException ex = new DeliberateException();
-        subscriberRule = new MockedSingleListenerRule<>();
-        source = new TestSingle<>(false, false);
+        subscriberRule = new LegacyMockedSingleListenerRule<>();
+        source = new LegacyTestSingle<>(false, false);
         subscriberRule.resetSubscriberMock().listen(source.retry((times, cause) -> {
             throw ex;
         }));

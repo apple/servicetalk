@@ -16,7 +16,7 @@
 package io.servicetalk.concurrent.api.single;
 
 import io.servicetalk.concurrent.Cancellable;
-import io.servicetalk.concurrent.api.MockedSingleListenerRule;
+import io.servicetalk.concurrent.api.LegacyMockedSingleListenerRule;
 import io.servicetalk.concurrent.api.Single;
 
 import org.junit.Before;
@@ -33,7 +33,7 @@ import static org.mockito.Mockito.verify;
 public abstract class AbstractDoSubscribeTest {
 
     @Rule
-    public final MockedSingleListenerRule<String> listener = new MockedSingleListenerRule<>();
+    public final LegacyMockedSingleListenerRule<String> listener = new LegacyMockedSingleListenerRule<>();
 
     @Rule
     public final ExpectedException thrown = ExpectedException.none();

@@ -21,7 +21,7 @@ import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.SingleSource.Subscriber;
 import io.servicetalk.concurrent.api.Executor;
-import io.servicetalk.concurrent.api.MockedCompletableListenerRule;
+import io.servicetalk.concurrent.api.LegacyMockedCompletableListenerRule;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.TestPublisher;
@@ -78,11 +78,11 @@ public class DefaultNettyConnectionTest {
 
     private TestPublisher<Buffer> publisher;
     @Rule
-    public final MockedCompletableListenerRule writeListener = new MockedCompletableListenerRule();
+    public final LegacyMockedCompletableListenerRule writeListener = new LegacyMockedCompletableListenerRule();
     @Rule
-    public final MockedCompletableListenerRule secondWriteListener = new MockedCompletableListenerRule();
+    public final LegacyMockedCompletableListenerRule secondWriteListener = new LegacyMockedCompletableListenerRule();
     @Rule
-    public final MockedCompletableListenerRule closeListener = new MockedCompletableListenerRule();
+    public final LegacyMockedCompletableListenerRule closeListener = new LegacyMockedCompletableListenerRule();
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
 
