@@ -16,7 +16,6 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.buffer.api.CompositeBuffer;
-import io.servicetalk.buffer.netty.BufferAllocators;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
@@ -32,17 +31,20 @@ import io.servicetalk.transport.netty.internal.AddressUtils;
 
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.Timeout;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
 
+import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Single.success;
 import static io.servicetalk.http.api.HttpHeaderNames.TRAILER;
 import static io.servicetalk.http.api.HttpResponseStatuses.OK;
 import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
+import static io.servicetalk.http.api.StreamingHttpResponses.newResponseWithTrailers;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.Matchers.is;
@@ -55,27 +57,15 @@ public class ConsumeRequestPayloadOnResponsePathTest {
     private static final String X_TOTAL_LENGTH = "X-Total-Length";
 
     @Rule
-    public final ServiceTalkTestTimeout timeout = new ServiceTalkTestTimeout();
+    public final Timeout timeout = new ServiceTalkTestTimeout();
 
     private final CountDownLatch waitServer = new CountDownLatch(1);
     private final AtomicReference<Throwable> errorRef = new AtomicReference<>();
-    private final CompositeBuffer receivedPayload = BufferAllocators.DEFAULT_ALLOCATOR.newCompositeBuffer();
+    private final CompositeBuffer receivedPayload = DEFAULT_ALLOCATOR.newCompositeBuffer();
 
     @Test
     public void testConsumeRequestPayloadBeforeResponseMetaDataSent() throws Exception {
         test((responseSingle, request) -> consumePayloadBody(request).concatWith(responseSingle));
-    }
-
-    @Test
-    public void testConsumeRequestPayloadBeforeResponsePayloadSent() throws Exception {
-        test((responseSingle, request) -> responseSingle.flatMap(response -> success(
-                response.transformRawPayloadBody(payloadBody -> consumePayloadBody(request).concatWith(payloadBody)))));
-    }
-
-    @Test
-    public void testConsumeRequestPayloadBeforeTrailersSent() throws Exception {
-        test((responseSingle, request) -> responseSingle.flatMap(response -> success(
-                response.transformPayloadBody(payloadBody -> payloadBody.concatWith(consumePayloadBody(request))))));
     }
 
     @Test
@@ -84,15 +74,35 @@ public class ConsumeRequestPayloadOnResponsePathTest {
     }
 
     @Test
+    public void testConsumeRequestPayloadBeforeResponsePayloadSent() throws Exception {
+        test((responseSingle, request) -> responseSingle.map(response ->
+                response.transformRawPayloadBody(payloadBody -> consumePayloadBody(request).concatWith(payloadBody))));
+    }
+
+    @Test
     public void testConsumeRequestPayloadAfterResponsePayloadSent() throws Exception {
-        test((responseSingle, request) -> responseSingle.flatMap(response -> success(
-                response.transformPayloadBody(payloadBody -> payloadBody.concatWith(consumePayloadBody(request))))));
+        test((responseSingle, request) -> responseSingle.map(response ->
+                response.transformRawPayloadBody(payloadBody -> payloadBody.concatWith(consumePayloadBody(request)))));
+    }
+
+    @Test
+    public void testConsumeRequestPayloadBeforeTrailersSent() throws Exception {
+        test((responseSingle, request) -> responseSingle.map(response ->
+                response.transformRaw(() -> null, (payloadChunk, __) -> payloadChunk, (__, trailers) -> {
+                    try {
+                        consumePayloadBody(request).toFuture().get();
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                    return trailers;
+                })));
     }
 
     @Test
     public void testConsumeRequestPayloadAfterTrailersSent() throws Exception {
-        test((responseSingle, request) -> responseSingle.flatMap(response -> success(
-                response.transformRawPayloadBody(payloadBody -> payloadBody.concatWith(consumePayloadBody(request))))));
+        test((responseSingle, request) -> responseSingle.map(response ->
+                newResponseWithTrailers(response.status(), response.version(), response.headers(), DEFAULT_ALLOCATOR,
+                        response.payloadBodyAndTrailers().concatWith(consumePayloadBody(request)))));
     }
 
     @Test
@@ -111,17 +121,11 @@ public class ConsumeRequestPayloadOnResponsePathTest {
 
     @Test
     public void testConsumeRequestPayloadAndResponsePayloadSent() throws Exception {
-        test((responseSingle, request) -> responseSingle.flatMap(response -> success(
-                response.transformPayloadBody(payloadBody -> consumePayloadBody(request).merge(payloadBody)))));
+        test((responseSingle, request) -> responseSingle.map(response ->
+                response.transformRawPayloadBody(payloadBody -> consumePayloadBody(request).merge(payloadBody))));
     }
 
     // TODO: add testResponsePayloadSentAndConsumeRequestPayload when Publisher.merge(Completable) is available
-
-    @Test
-    public void testConsumeRequestPayloadAndTrailersSent() throws Exception {
-        test((responseSingle, request) -> responseSingle.flatMap(response -> success(
-                response.transformRawPayloadBody(payloadBody -> consumePayloadBody(request).merge(payloadBody)))));
-    }
     // TODO: add testTrailersSentAndConsumeRequestPayload when Publisher.merge(Completable) is available
 
     private Completable consumePayloadBody(final StreamingHttpRequest request) {
