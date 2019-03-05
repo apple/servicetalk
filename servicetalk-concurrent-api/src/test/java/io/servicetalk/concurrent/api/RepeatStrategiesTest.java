@@ -35,7 +35,7 @@ public class RepeatStrategiesTest extends RedoStrategiesTest {
     public void testBackoff() throws Exception {
         Duration backoff = ofSeconds(1);
         RepeatStrategy strategy = new RepeatStrategy(repeatWithConstantBackoff(2, backoff, timerExecutor));
-        MockedCompletableListenerRule signalListener = strategy.invokeAndListen();
+        LegacyMockedCompletableListenerRule signalListener = strategy.invokeAndListen();
         verify(timerExecutor).timer(backoff.toNanos(), NANOSECONDS);
         timers.take().verifyListenCalled().onComplete();
         signalListener.verifyCompletion();
@@ -52,7 +52,7 @@ public class RepeatStrategiesTest extends RedoStrategiesTest {
     public void testExpBackoff() throws Exception {
         Duration initialDelay = ofSeconds(1);
         RepeatStrategy strategy = new RepeatStrategy(repeatWithExponentialBackoff(2, initialDelay, timerExecutor));
-        MockedCompletableListenerRule signalListener = strategy.invokeAndListen();
+        LegacyMockedCompletableListenerRule signalListener = strategy.invokeAndListen();
         verify(timerExecutor).timer(initialDelay.toNanos(), NANOSECONDS);
         timers.take().verifyListenCalled().onComplete();
         signalListener.verifyCompletion();
@@ -75,7 +75,7 @@ public class RepeatStrategiesTest extends RedoStrategiesTest {
     public void testExpBackoffWithJitter() throws Exception {
         Duration initialDelay = ofSeconds(1);
         RepeatStrategy strategy = new RepeatStrategy(repeatWithExponentialBackoffAndJitter(2, initialDelay, timerExecutor));
-        MockedCompletableListenerRule signalListener = strategy.invokeAndListen();
+        LegacyMockedCompletableListenerRule signalListener = strategy.invokeAndListen();
         verifyDelayWithJitter(initialDelay.toNanos(), 1);
 
         timers.take().verifyListenCalled().onComplete();
@@ -103,7 +103,7 @@ public class RepeatStrategiesTest extends RedoStrategiesTest {
 
     private void testMaxRepeats(IntFunction<Completable> actualStrategy, Runnable verifyTimerProvider) throws Exception {
         RepeatStrategy strategy = new RepeatStrategy(actualStrategy);
-        MockedCompletableListenerRule signalListener = strategy.invokeAndListen();
+        LegacyMockedCompletableListenerRule signalListener = strategy.invokeAndListen();
         verifyTimerProvider.run();
         timers.take().verifyListenCalled().onComplete();
         signalListener.verifyCompletion();
@@ -123,8 +123,8 @@ public class RepeatStrategiesTest extends RedoStrategiesTest {
             this.actual = actual;
         }
 
-        MockedCompletableListenerRule invokeAndListen() {
-            MockedCompletableListenerRule listenerRule = new MockedCompletableListenerRule();
+        LegacyMockedCompletableListenerRule invokeAndListen() {
+            LegacyMockedCompletableListenerRule listenerRule = new LegacyMockedCompletableListenerRule();
             listenerRule.listen(actual.apply(++count));
             return listenerRule;
         }

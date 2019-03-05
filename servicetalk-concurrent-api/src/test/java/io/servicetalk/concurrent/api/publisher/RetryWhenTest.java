@@ -18,8 +18,8 @@ package io.servicetalk.concurrent.api.publisher;
 import io.servicetalk.concurrent.api.BiIntFunction;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Executor;
+import io.servicetalk.concurrent.api.LegacyTestCompletable;
 import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.concurrent.api.TestCompletable;
 import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.api.TestPublisherSubscriber;
 import io.servicetalk.concurrent.api.TestSubscription;
@@ -63,16 +63,16 @@ public class RetryWhenTest {
     private TestPublisher<Integer> source = new TestPublisher<>();
     private TestPublisherSubscriber<Integer> subscriber = new TestPublisherSubscriber<>();
     private BiIntFunction<Throwable, Completable> shouldRetry;
-    private TestCompletable retrySignal;
+    private LegacyTestCompletable retrySignal;
     private Executor executor;
 
     @Before
     @SuppressWarnings("unchecked")
     public void setUp() {
         shouldRetry = (BiIntFunction<Throwable, Completable>) mock(BiIntFunction.class);
-        retrySignal = new TestCompletable();
+        retrySignal = new LegacyTestCompletable();
         when(shouldRetry.apply(anyInt(), any())).thenAnswer(invocation -> {
-            retrySignal = new TestCompletable();
+            retrySignal = new LegacyTestCompletable();
             return retrySignal;
         });
         toSource(source.retryWhen(shouldRetry)).subscribe(subscriber);

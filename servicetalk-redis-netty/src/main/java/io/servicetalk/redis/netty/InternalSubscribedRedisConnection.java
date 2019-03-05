@@ -188,7 +188,7 @@ final class InternalSubscribedRedisConnection extends AbstractRedisConnection {
         // We send a PING with no payload so the response is a fully aggregated PubSubChannelMessage.
         // So, issuing a single request(1) followed by a cancel is enough to consume to overall response,
         // thus the usage of first() and ignoreResult() below.
-        return request0(newRequest(PING)).toSingleOrError().ignoreResult();
+        return request0(newRequest(PING)).firstOrError().ignoreResult();
     }
 
     @Override

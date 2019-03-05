@@ -70,7 +70,7 @@ public class MergeCompletableTest {
         holder.init(1).listen().completeAll().verifyCompletion();
     }
 
-    abstract static class CompletableHolder extends MockedCompletableListenerRule {
+    abstract static class CompletableHolder extends LegacyMockedCompletableListenerRule {
 
         Cancellable[] cancellables;
         Subscriber[] subscribers;

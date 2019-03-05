@@ -38,7 +38,7 @@ public class RetryStrategiesTest extends RedoStrategiesTest {
         Duration backoff = ofSeconds(1);
         RetryStrategy strategy = new RetryStrategy(retryWithConstantBackoff(2, cause -> true, backoff,
                 timerExecutor));
-        MockedCompletableListenerRule signalListener = strategy.invokeAndListen(DELIBERATE_EXCEPTION);
+        LegacyMockedCompletableListenerRule signalListener = strategy.invokeAndListen(DELIBERATE_EXCEPTION);
         verify(timerExecutor).timer(backoff.toNanos(), NANOSECONDS);
         timers.take().verifyListenCalled().onComplete();
         signalListener.verifyCompletion();
@@ -50,7 +50,7 @@ public class RetryStrategiesTest extends RedoStrategiesTest {
         Duration backoff = ofSeconds(1);
         RetryStrategy strategy = new RetryStrategy(retryWithConstantBackoffAndJitter(2, cause -> true,
                 backoff, timerExecutor));
-        MockedCompletableListenerRule signalListener = strategy.invokeAndListen(DELIBERATE_EXCEPTION);
+        LegacyMockedCompletableListenerRule signalListener = strategy.invokeAndListen(DELIBERATE_EXCEPTION);
         verifyDelayWithJitter(backoff.toNanos(), 1);
         timers.take().verifyListenCalled().onComplete();
         signalListener.verifyCompletion();
@@ -74,7 +74,7 @@ public class RetryStrategiesTest extends RedoStrategiesTest {
         Duration initialDelay = ofSeconds(1);
         RetryStrategy strategy = new RetryStrategy(retryWithExponentialBackoff(2, cause -> true, initialDelay,
                 timerExecutor));
-        MockedCompletableListenerRule signalListener = strategy.invokeAndListen(DELIBERATE_EXCEPTION);
+        LegacyMockedCompletableListenerRule signalListener = strategy.invokeAndListen(DELIBERATE_EXCEPTION);
         verify(timerExecutor).timer(initialDelay.toNanos(), NANOSECONDS);
         timers.take().verifyListenCalled().onComplete();
         signalListener.verifyCompletion();
@@ -104,7 +104,7 @@ public class RetryStrategiesTest extends RedoStrategiesTest {
         Duration initialDelay = ofSeconds(1);
         RetryStrategy strategy = new RetryStrategy(retryWithExponentialBackoffAndJitter(2, cause -> true,
                 initialDelay, timerExecutor));
-        MockedCompletableListenerRule signalListener = strategy.invokeAndListen(DELIBERATE_EXCEPTION);
+        LegacyMockedCompletableListenerRule signalListener = strategy.invokeAndListen(DELIBERATE_EXCEPTION);
         verifyDelayWithJitter(initialDelay.toNanos(), 1);
 
         timers.take().verifyListenCalled().onComplete();
@@ -134,7 +134,7 @@ public class RetryStrategiesTest extends RedoStrategiesTest {
 
     private void testCauseFilter(BiIntFunction<Throwable, Completable> actualStrategy) {
         RetryStrategy strategy = new RetryStrategy(actualStrategy);
-        MockedCompletableListenerRule signalListener = strategy.invokeAndListen(DELIBERATE_EXCEPTION);
+        LegacyMockedCompletableListenerRule signalListener = strategy.invokeAndListen(DELIBERATE_EXCEPTION);
         verifyNoMoreInteractions(timerExecutor);
         signalListener.verifyFailure(DELIBERATE_EXCEPTION);
     }
@@ -147,7 +147,7 @@ public class RetryStrategiesTest extends RedoStrategiesTest {
     private void testMaxRetries(BiIntFunction<Throwable, Completable> actualStrategy, Runnable verifyTimerProvider)
             throws Exception {
         RetryStrategy strategy = new RetryStrategy(actualStrategy);
-        MockedCompletableListenerRule signalListener = strategy.invokeAndListen(DELIBERATE_EXCEPTION);
+        LegacyMockedCompletableListenerRule signalListener = strategy.invokeAndListen(DELIBERATE_EXCEPTION);
         verifyTimerProvider.run();
         timers.take().verifyListenCalled().onComplete();
         signalListener.verifyCompletion();
@@ -168,8 +168,8 @@ public class RetryStrategiesTest extends RedoStrategiesTest {
             this.actual = actual;
         }
 
-        MockedCompletableListenerRule invokeAndListen(Throwable cause) {
-            MockedCompletableListenerRule listenerRule = new MockedCompletableListenerRule();
+        LegacyMockedCompletableListenerRule invokeAndListen(Throwable cause) {
+            LegacyMockedCompletableListenerRule listenerRule = new LegacyMockedCompletableListenerRule();
             listenerRule.listen(actual.apply(++count, cause));
             return listenerRule;
         }

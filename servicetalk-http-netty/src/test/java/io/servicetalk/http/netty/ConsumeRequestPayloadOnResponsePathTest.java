@@ -106,7 +106,7 @@ public class ConsumeRequestPayloadOnResponsePathTest {
     public void testConsumeRequestPayloadAndSendResponseMetaData() throws Exception {
         test((responseSingle, request) -> consumePayloadBody(request)
                 // TODO: remove toPublisher() when Completable.merge(Single) is available
-                .merge(responseSingle.toPublisher()).toSingleOrError());
+                .merge(responseSingle.toPublisher()).firstOrError());
     }
 
     @Test

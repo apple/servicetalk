@@ -17,7 +17,7 @@ package io.servicetalk.concurrent.api.completable;
 
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.api.Completable;
-import io.servicetalk.concurrent.api.MockedCompletableListenerRule;
+import io.servicetalk.concurrent.api.LegacyMockedCompletableListenerRule;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -33,7 +33,7 @@ import static org.mockito.Mockito.verify;
 public abstract class AbstractDoSubscribeTest {
 
     @Rule
-    public final MockedCompletableListenerRule listener = new MockedCompletableListenerRule();
+    public final LegacyMockedCompletableListenerRule listener = new LegacyMockedCompletableListenerRule();
 
     @Rule
     public final ExpectedException thrown = ExpectedException.none();

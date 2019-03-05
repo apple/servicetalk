@@ -15,9 +15,9 @@
  */
 package io.servicetalk.concurrent.api.completable;
 
+import io.servicetalk.concurrent.api.LegacyTestCompletable;
 import io.servicetalk.concurrent.api.TestCancellable;
-import io.servicetalk.concurrent.api.TestCompletable;
-import io.servicetalk.concurrent.api.TestSingle2;
+import io.servicetalk.concurrent.api.TestSingle;
 import io.servicetalk.concurrent.api.TestSingleSubscriber;
 
 import org.junit.Before;
@@ -35,14 +35,14 @@ import static org.junit.Assert.assertTrue;
 public class CompletableConcatWithSingleTest {
 
     private TestSingleSubscriber<Integer> subscriber;
-    private TestCompletable source;
-    private TestSingle2<Integer> next;
+    private LegacyTestCompletable source;
+    private TestSingle<Integer> next;
 
     @Before
     public void setUp() throws Exception {
         subscriber = new TestSingleSubscriber<>();
-        source = new TestCompletable();
-        next = new TestSingle2<>();
+        source = new LegacyTestCompletable();
+        next = new TestSingle<>();
         toSource(source.concatWith(next)).subscribe(subscriber);
     }
 

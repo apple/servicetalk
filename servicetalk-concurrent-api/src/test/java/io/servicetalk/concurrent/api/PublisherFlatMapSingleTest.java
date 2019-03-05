@@ -148,7 +148,7 @@ public class PublisherFlatMapSingleTest {
 
     @Test
     public void testSingleItemSourceCompleteFirst() {
-        TestSingle<Integer> single = new TestSingle<>();
+        LegacyTestSingle<Integer> single = new LegacyTestSingle<>();
         toSource(source.flatMapSingle(integer1 -> single, 2)).subscribe(subscriber);
         subscriber.request(1);
         source.onNext(1);
@@ -160,7 +160,7 @@ public class PublisherFlatMapSingleTest {
 
     @Test
     public void testSingleItemSingleCompleteFirst() {
-        TestSingle<Integer> single = new TestSingle<>();
+        LegacyTestSingle<Integer> single = new LegacyTestSingle<>();
         toSource(source.flatMapSingle(integer1 -> single, 2)).subscribe(subscriber);
         subscriber.request(1);
         source.onNext(1);
@@ -181,7 +181,7 @@ public class PublisherFlatMapSingleTest {
 
     @Test
     public void testSingleErrorPostSourceComplete() {
-        TestSingle<Integer> single = new TestSingle<>();
+        LegacyTestSingle<Integer> single = new LegacyTestSingle<>();
         toSource(source.flatMapSingle(integer1 -> single, 2)).subscribe(subscriber);
         subscriber.request(1);
         source.onNext(1);
@@ -210,7 +210,7 @@ public class PublisherFlatMapSingleTest {
 
     @Test
     public void testSourceEmitsErrorPostOnNextsSingleNotCompleted() {
-        TestSingle<Integer> single = new TestSingle<>(true);
+        LegacyTestSingle<Integer> single = new LegacyTestSingle<>(true);
         toSource(source.flatMapSingle(integer1 -> single, 2)).subscribe(subscriber);
         subscriber.request(1);
         source.onNext(1);
@@ -225,7 +225,7 @@ public class PublisherFlatMapSingleTest {
 
     @Test
     public void testSubscriberCancel() {
-        TestSingle<Integer> single = new TestSingle<>();
+        LegacyTestSingle<Integer> single = new LegacyTestSingle<>();
         toSource(source.flatMapSingle(integer1 -> single, 2)).subscribe(subscriber);
         subscriber.request(1);
         source.onNext(1);
@@ -240,7 +240,7 @@ public class PublisherFlatMapSingleTest {
     public void testSingleCompletePostCancel() {
         final TestPublisherSubscriber<Integer> subscriber = new TestPublisherSubscriber.Builder<Integer>()
                 .disableDemandCheck().build();
-        TestSingle<Integer> single = new TestSingle<>(true);
+        LegacyTestSingle<Integer> single = new LegacyTestSingle<>(true);
         toSource(source.flatMapSingle(integer1 -> single, 2)).subscribe(subscriber);
         subscriber.request(1);
         source.onNext(1);
@@ -257,7 +257,7 @@ public class PublisherFlatMapSingleTest {
 
     @Test
     public void testSingleErrorPostCancel() {
-        TestSingle<Integer> single = new TestSingle<>(true);
+        LegacyTestSingle<Integer> single = new LegacyTestSingle<>(true);
         toSource(source.flatMapSingle(integer1 -> single, 2)).subscribe(subscriber);
         subscriber.request(1);
         source.onNext(1);
@@ -272,9 +272,9 @@ public class PublisherFlatMapSingleTest {
 
     @Test
     public void testMaxConcurrency() {
-        List<TestSingle<Integer>> emittedSingles = new ArrayList<>();
+        List<LegacyTestSingle<Integer>> emittedSingles = new ArrayList<>();
         toSource(source.flatMapSingle(integer -> {
-            TestSingle<Integer> s = new TestSingle<>();
+            LegacyTestSingle<Integer> s = new LegacyTestSingle<>();
             emittedSingles.add(s);
             return s;
         }, 2)).subscribe(subscriber);
@@ -327,9 +327,9 @@ public class PublisherFlatMapSingleTest {
 
     @Test
     public void testNoFlowControl() {
-        List<TestSingle<Integer>> emittedSingles = new ArrayList<>();
+        List<LegacyTestSingle<Integer>> emittedSingles = new ArrayList<>();
         toSource(source.flatMapSingle(integer1 -> {
-            TestSingle<Integer> s1 = new TestSingle<>();
+            LegacyTestSingle<Integer> s1 = new LegacyTestSingle<>();
             emittedSingles.add(s1);
             return s1;
         }, 2)).subscribe(subscriber);
@@ -513,10 +513,10 @@ public class PublisherFlatMapSingleTest {
 
     @Test
     public void testEmitFromQueue() throws Exception {
-        List<TestSingle<Integer>> emittedSingles = new ArrayList<>();
-        BlockingSubscriber<Integer> subscriber = new BlockingSubscriber<>();
+        List<LegacyTestSingle<Integer>> emittedSingles = new ArrayList<>();
+        LegacyBlockingSubscriber<Integer> subscriber = new LegacyBlockingSubscriber<>();
         toSource(source.flatMapSingle(integer -> {
-            TestSingle<Integer> s = new TestSingle<>();
+            LegacyTestSingle<Integer> s = new LegacyTestSingle<>();
             emittedSingles.add(s);
             return s;
         }, 2)).subscribe(subscriber);
@@ -524,8 +524,8 @@ public class PublisherFlatMapSingleTest {
         source.onNext(1, 1);
         assertThat("Unexpected number of Singles emitted.", emittedSingles, hasSize(2));
 
-        TestSingle<Integer> single1 = emittedSingles.remove(0);
-        TestSingle<Integer> single2 = emittedSingles.remove(0);
+        LegacyTestSingle<Integer> single1 = emittedSingles.remove(0);
+        LegacyTestSingle<Integer> single2 = emittedSingles.remove(0);
         executorService.execute(() -> {
             single1.onSuccess(2);
             single2.onSuccess(3);

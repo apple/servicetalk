@@ -15,9 +15,9 @@
  */
 package io.servicetalk.concurrent.api.single;
 
-import io.servicetalk.concurrent.api.MockedSingleListenerRule;
+import io.servicetalk.concurrent.api.LegacyMockedSingleListenerRule;
+import io.servicetalk.concurrent.api.LegacyTestSingle;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.concurrent.api.TestSingle;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -32,7 +32,7 @@ import static org.mockito.Mockito.verify;
 public abstract class AbstractDoCancelTest {
 
     @Rule
-    public final MockedSingleListenerRule<String> listener = new MockedSingleListenerRule<>();
+    public final LegacyMockedSingleListenerRule<String> listener = new LegacyMockedSingleListenerRule<>();
 
     @Rule
     public final ExpectedException thrown = ExpectedException.none();
@@ -55,7 +55,7 @@ public abstract class AbstractDoCancelTest {
     public void testCallbackThrowsError() {
         thrown.expect(is(sameInstance(DELIBERATE_EXCEPTION)));
 
-        TestSingle<String> single = new TestSingle<>();
+        LegacyTestSingle<String> single = new LegacyTestSingle<>();
         try {
             listener.listen(doCancel(single, () -> {
                 throw DELIBERATE_EXCEPTION;

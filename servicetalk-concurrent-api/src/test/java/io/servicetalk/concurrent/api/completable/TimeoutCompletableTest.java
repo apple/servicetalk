@@ -21,10 +21,10 @@ import io.servicetalk.concurrent.CompletableSource.Subscriber;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.ExecutorRule;
-import io.servicetalk.concurrent.api.MockedCompletableListenerRule;
+import io.servicetalk.concurrent.api.LegacyMockedCompletableListenerRule;
 import io.servicetalk.concurrent.api.TestCancellable;
 import io.servicetalk.concurrent.api.TestExecutor;
-import io.servicetalk.concurrent.api.TestSingle2;
+import io.servicetalk.concurrent.api.TestSingle;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 
 import org.junit.Rule;
@@ -49,11 +49,11 @@ public class TimeoutCompletableTest {
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
     @Rule
-    public final MockedCompletableListenerRule listener = new MockedCompletableListenerRule();
+    public final LegacyMockedCompletableListenerRule listener = new LegacyMockedCompletableListenerRule();
     @Rule
     public final ExecutorRule<TestExecutor> executorRule = ExecutorRule.withTestExecutor();
 
-    private final TestSingle2<Integer> source = new TestSingle2<>();
+    private final TestSingle<Integer> source = new TestSingle<>();
     private final TestExecutor testExecutor = executorRule.executor();
 
     @Test

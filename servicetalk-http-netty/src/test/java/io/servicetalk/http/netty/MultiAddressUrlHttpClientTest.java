@@ -16,7 +16,7 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.concurrent.api.CompositeCloseable;
-import io.servicetalk.concurrent.api.MockedSingleListenerRule;
+import io.servicetalk.concurrent.api.LegacyMockedSingleListenerRule;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.DefaultHttpHeadersFactory;
@@ -90,7 +90,7 @@ public class MultiAddressUrlHttpClientTest {
     public final Timeout timeout = new ServiceTalkTestTimeout();
 
     @Rule
-    public final MockedSingleListenerRule<StreamingHttpResponse> listener = new MockedSingleListenerRule<>();
+    public final LegacyMockedSingleListenerRule<StreamingHttpResponse> listener = new LegacyMockedSingleListenerRule<>();
 
     private static CompositeCloseable afterClassCloseables;
     private static StreamingHttpService httpService;

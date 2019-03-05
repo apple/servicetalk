@@ -15,7 +15,7 @@
  */
 package io.servicetalk.concurrent.api.single;
 
-import io.servicetalk.concurrent.api.MockedSingleListenerRule;
+import io.servicetalk.concurrent.api.LegacyMockedSingleListenerRule;
 import io.servicetalk.concurrent.api.Single;
 
 import org.junit.Rule;
@@ -26,7 +26,7 @@ import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_
 public class MapSingleTest {
 
     @Rule
-    public final MockedSingleListenerRule<Void> listener = new MockedSingleListenerRule<>();
+    public final LegacyMockedSingleListenerRule<Void> listener = new LegacyMockedSingleListenerRule<>();
 
     @Test
     public void exceptionInTerminalCallsOnError() {

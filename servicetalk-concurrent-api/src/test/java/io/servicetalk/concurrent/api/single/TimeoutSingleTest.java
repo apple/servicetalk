@@ -20,10 +20,10 @@ import io.servicetalk.concurrent.SingleSource.Subscriber;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.ExecutorRule;
+import io.servicetalk.concurrent.api.LegacyTestSingle;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.TestCancellable;
 import io.servicetalk.concurrent.api.TestExecutor;
-import io.servicetalk.concurrent.api.TestSingle;
 import io.servicetalk.concurrent.api.TestSingleSubscriber;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 
@@ -56,7 +56,7 @@ public class TimeoutSingleTest {
     @Rule
     public final ExecutorRule<TestExecutor> executorRule = ExecutorRule.withTestExecutor();
 
-    private TestSingle<Integer> source = new TestSingle<>(false, false);
+    private LegacyTestSingle<Integer> source = new LegacyTestSingle<>(false, false);
     public final TestSingleSubscriber<Integer> subscriber = new TestSingleSubscriber<>();
     private final TestExecutor testExecutor = executorRule.executor();
 

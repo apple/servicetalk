@@ -96,7 +96,7 @@ public class SourceAdaptersTest {
 
     @Test
     public void singleToSourceCancel() {
-        TestSingle<Integer> stSingle = new TestSingle<>();
+        LegacyTestSingle<Integer> stSingle = new LegacyTestSingle<>();
         SingleSource.Subscriber<Integer> subscriber = toSourceAndSubscribe(stSingle);
         stSingle.verifyListenCalled();
         ArgumentCaptor<Cancellable> cancellableCaptor = forClass(Cancellable.class);
@@ -121,7 +121,7 @@ public class SourceAdaptersTest {
 
     @Test
     public void completableToSourceCancel() {
-        TestCompletable stCompletable = new TestCompletable();
+        LegacyTestCompletable stCompletable = new LegacyTestCompletable();
         CompletableSource.Subscriber subscriber = toSourceAndSubscribe(stCompletable);
         stCompletable.verifyListenCalled();
         ArgumentCaptor<Cancellable> cancellableCaptor = forClass(Cancellable.class);

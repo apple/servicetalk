@@ -18,7 +18,7 @@ package io.servicetalk.concurrent.api.single;
 import io.servicetalk.concurrent.api.AsyncContext;
 import io.servicetalk.concurrent.api.AsyncContextMap.Key;
 import io.servicetalk.concurrent.api.ExecutorRule;
-import io.servicetalk.concurrent.api.TestSingle;
+import io.servicetalk.concurrent.api.LegacyTestSingle;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 
 import org.junit.AfterClass;
@@ -53,7 +53,7 @@ public class CompletionStageAsyncContextTest {
     @Rule
     public final ExpectedException thrown = ExpectedException.none();
     private static ExecutorService jdkExecutor;
-    private TestSingle<String> source;
+    private LegacyTestSingle<String> source;
 
     @BeforeClass
     public static void beforeClass() {
@@ -71,7 +71,7 @@ public class CompletionStageAsyncContextTest {
     @Before
     public void beforeTest() {
         AsyncContext.clear();
-        source = new TestSingle<>(executorRule.executor(), true, true);
+        source = new LegacyTestSingle<>(executorRule.executor(), true, true);
     }
 
     @Test

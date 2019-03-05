@@ -16,8 +16,8 @@
 package io.servicetalk.concurrent.api.completable;
 
 import io.servicetalk.concurrent.api.Completable;
-import io.servicetalk.concurrent.api.MockedCompletableListenerRule;
-import io.servicetalk.concurrent.api.TestCompletable;
+import io.servicetalk.concurrent.api.LegacyMockedCompletableListenerRule;
+import io.servicetalk.concurrent.api.LegacyTestCompletable;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -33,7 +33,7 @@ import static org.mockito.Mockito.verify;
 public abstract class AbstractDoFinallyTest {
 
     @Rule
-    public final MockedCompletableListenerRule listener = new MockedCompletableListenerRule();
+    public final LegacyMockedCompletableListenerRule listener = new LegacyMockedCompletableListenerRule();
 
     @Rule
     public final ExpectedException thrown = ExpectedException.none();
@@ -84,7 +84,7 @@ public abstract class AbstractDoFinallyTest {
     public void testCallbackThrowsErrorWhenCancel() {
         thrown.expect(is(sameInstance(DELIBERATE_EXCEPTION)));
 
-        TestCompletable completable = new TestCompletable();
+        LegacyTestCompletable completable = new LegacyTestCompletable();
         try {
             listener.listen(doFinally(completable, () -> {
                 throw DELIBERATE_EXCEPTION;

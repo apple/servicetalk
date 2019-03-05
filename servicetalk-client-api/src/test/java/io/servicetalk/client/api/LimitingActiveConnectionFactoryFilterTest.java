@@ -17,8 +17,8 @@ package io.servicetalk.client.api;
 
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.CompletableProcessor;
+import io.servicetalk.concurrent.api.LegacyMockedSingleListenerRule;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
-import io.servicetalk.concurrent.api.MockedSingleListenerRule;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 
 import org.junit.Before;
@@ -47,7 +47,7 @@ public class LimitingActiveConnectionFactoryFilterTest {
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
     @Rule
-    public final MockedSingleListenerRule<ListenableAsyncCloseable> connectlistener = new MockedSingleListenerRule<>();
+    public final LegacyMockedSingleListenerRule<ListenableAsyncCloseable> connectlistener = new LegacyMockedSingleListenerRule<>();
 
     private ConnectionFactory<String, ListenableAsyncCloseable> original;
     private BlockingQueue<CompletableProcessor> connectionOnClose;

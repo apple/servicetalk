@@ -55,9 +55,9 @@ public class TaskBasedSignalOffloaderExecutorRejectionTests {
     @Rule
     public final ExpectedException expectedException = none();
     @Rule
-    public final MockedSingleListenerRule<Integer> singleSubscriber = new MockedSingleListenerRule<>();
+    public final LegacyMockedSingleListenerRule<Integer> singleSubscriber = new LegacyMockedSingleListenerRule<>();
     @Rule
-    public final MockedCompletableListenerRule completableSubscriber = new MockedCompletableListenerRule();
+    public final LegacyMockedCompletableListenerRule completableSubscriber = new LegacyMockedCompletableListenerRule();
 
     private final AtomicBoolean rejectNextTask = new AtomicBoolean();
     private final AtomicInteger rejectTaskCount = new AtomicInteger();
@@ -153,7 +153,7 @@ public class TaskBasedSignalOffloaderExecutorRejectionTests {
 
     @Test
     public void completableOnCompleteRejects() {
-        completablePublishOnThrows(TestCompletable::onComplete);
+        completablePublishOnThrows(LegacyTestCompletable::onComplete);
     }
 
     @Test
@@ -175,7 +175,7 @@ public class TaskBasedSignalOffloaderExecutorRejectionTests {
 
     @Test
     public void singleCancelRejects() {
-        TestSingle<Integer> single = new TestSingle<>();
+        LegacyTestSingle<Integer> single = new LegacyTestSingle<>();
         singleSubscriber.listen(single.subscribeOn(executor));
 
         rejectNextTask.set(true);
@@ -192,7 +192,7 @@ public class TaskBasedSignalOffloaderExecutorRejectionTests {
 
     @Test
     public void completableCancelRejects() {
-        TestCompletable completable = new TestCompletable();
+        LegacyTestCompletable completable = new LegacyTestCompletable();
         completableSubscriber.listen(completable.subscribeOn(executor));
 
         rejectNextTask.set(true);
@@ -239,8 +239,8 @@ public class TaskBasedSignalOffloaderExecutorRejectionTests {
         verifyRejectedTasks(2, 1);
     }
 
-    private void singlePublishOnThrows(Consumer<TestSingle<Integer>> invokeMethodThatRejects) {
-        TestSingle<Integer> single = new TestSingle<>();
+    private void singlePublishOnThrows(Consumer<LegacyTestSingle<Integer>> invokeMethodThatRejects) {
+        LegacyTestSingle<Integer> single = new LegacyTestSingle<>();
         singleSubscriber.listen(single.publishOn(executor));
         rejectNextTask.set(true);
         invokeMethodThatRejects.accept(single);
@@ -248,8 +248,8 @@ public class TaskBasedSignalOffloaderExecutorRejectionTests {
         verifyRejectedTasks(2, 1);
     }
 
-    private void completablePublishOnThrows(Consumer<TestCompletable> invokeMethodThatRejects) {
-        TestCompletable completable = new TestCompletable();
+    private void completablePublishOnThrows(Consumer<LegacyTestCompletable> invokeMethodThatRejects) {
+        LegacyTestCompletable completable = new LegacyTestCompletable();
         completableSubscriber.listen(completable.publishOn(executor));
         rejectNextTask.set(true);
         invokeMethodThatRejects.accept(completable);
