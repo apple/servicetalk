@@ -69,13 +69,13 @@ final class HeaderUtils {
     static void addResponseTransferEncodingIfNecessary(final HttpResponseMetaData response,
                                                        final HttpRequestMethod requestMethod) {
         final int statusCode = response.status().code();
-        if (HEAD.equals(requestMethod) || INFORMATIONAL_1XX.contains(statusCode)
+        if (HEAD.name().equals(requestMethod.name()) || INFORMATIONAL_1XX.contains(statusCode)
                 || statusCode == NO_CONTENT.code() || statusCode == NOT_MODIFIED.code()) {
             // Do not add a transfer-encoding header in this case. See 3.3.3.1:
             // https://tools.ietf.org/html/rfc7230#section-3.3.3
             return;
         }
-        if (CONNECT.equals(requestMethod) && SUCCESSFUL_2XX.contains(statusCode)) {
+        if (CONNECT.name().equals(requestMethod.name()) && SUCCESSFUL_2XX.contains(statusCode)) {
             // Do not add a transfer-encoding header in this case. See 3.3.3.2:
             // https://tools.ietf.org/html/rfc7230#section-3.3.3
             return;
