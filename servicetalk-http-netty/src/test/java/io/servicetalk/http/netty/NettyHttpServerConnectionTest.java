@@ -19,6 +19,7 @@ import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.TestPublisher;
+import io.servicetalk.concurrent.api.TestSubscription;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpServiceContext;
@@ -42,7 +43,6 @@ import org.junit.runners.Parameterized;
 
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -67,8 +67,10 @@ public class NettyHttpServerConnectionTest {
     @Rule
     public final ExecutionContextRule contextRule = immediate();
 
-    public final TestPublisher<Buffer> responsePublisher = new TestPublisher<>();
-    public final TestPublisher<Buffer> responsePublisher2 = new TestPublisher<>();
+    private final TestPublisher<Buffer> responsePublisher = new TestPublisher.Builder<Buffer>()
+            .disableAutoOnSubscribe().build();
+    private final TestPublisher<Buffer> responsePublisher2 = new TestPublisher.Builder<Buffer>()
+            .disableAutoOnSubscribe().build();
     private HttpExecutionStrategy serverExecutionStrategy;
     private HttpExecutionStrategy clientExecutionStrategy;
     private ServerContext serverContext;
@@ -101,8 +103,6 @@ public class NettyHttpServerConnectionTest {
         customStrategy = new MockFlushStrategy();
         AtomicReference<Cancellable> customCancellableRef = new AtomicReference<>();
         AtomicBoolean handledFirstRequest = new AtomicBoolean();
-        CountDownLatch response1PayloadConsumedLatch = new CountDownLatch(1);
-        CountDownLatch response2PayloadConsumedLatch = new CountDownLatch(1);
 
         serverContext = HttpServers.forAddress(localAddress(0))
                 .ioExecutor(contextRule.ioExecutor())
@@ -118,15 +118,9 @@ public class NettyHttpServerConnectionTest {
                                                                 final StreamingHttpResponseFactory responseFactory) {
                         if (handledFirstRequest.compareAndSet(false, true)) {
                             customStrategy.doAfterFirstWrite(FlushStrategy.FlushSender::flush);
-                            return success(responseFactory.ok().payloadBody(responsePublisher)
-                                    .transformRawPayloadBody(pub -> pub.doAfterSubscribe(subscription -> {
-                                        response1PayloadConsumedLatch.countDown();
-                                    })));
+                            return success(responseFactory.ok().payloadBody(responsePublisher));
                         }
-                        return success(responseFactory.ok().payloadBody(responsePublisher2)
-                                .transformRawPayloadBody(pub -> pub.doAfterSubscribe(subscription -> {
-                                    response2PayloadConsumedLatch.countDown();
-                                })));
+                        return success(responseFactory.ok().payloadBody(responsePublisher2));
                     }
 
                     @Override
@@ -148,8 +142,10 @@ public class NettyHttpServerConnectionTest {
         customStrategy.verifyItemWritten(1);
         customStrategy.verifyNoMoreInteractions();
 
-        response1PayloadConsumedLatch.await();
         String payloadBodyString = "foo";
+        TestSubscription testSubscription1 = new TestSubscription();
+        responsePublisher.onSubscribe(testSubscription1);
+        testSubscription1.waitUntilRequested(1);
         responsePublisher.onNext(DEFAULT_ALLOCATOR.fromAscii(payloadBodyString));
         responsePublisher.onComplete();
         customFlushSender.flush();
@@ -164,7 +160,8 @@ public class NettyHttpServerConnectionTest {
         // Restore the default flush strategy, which should flush on each
         customCancellable.cancel();
         StreamingHttpResponse response2 = client.request(client.newRequest(GET, "/2")).toFuture().get();
-        response2PayloadConsumedLatch.await();
+        TestSubscription testSubscription2 = new TestSubscription();
+        responsePublisher2.onSubscribe(testSubscription2);
         responsePublisher2.onNext(DEFAULT_ALLOCATOR.fromAscii(payloadBodyString));
         responsePublisher2.onComplete();
         responsePayload = response2.payloadBody().reduce(DEFAULT_ALLOCATOR::newBuffer, (results, current) -> {
