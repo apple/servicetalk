@@ -160,7 +160,7 @@ public final class HttpProtocolVersion {
 
         final HttpProtocolVersion that = (HttpProtocolVersion) o;
         /*
-         * - httpVersion Buffer is ignored for equals/hashCode because it is inherited from major & minor and the
+         * - httpVersion Buffer is ignored for equals/hashCode because it is derived from major & minor and the
          *   relationship is idempotent
          */
         return major == that.major() && minor == that.minor();

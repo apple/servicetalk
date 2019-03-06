@@ -139,7 +139,10 @@ public final class RedirectingClientAndConnectionFilterTest {
             assertThat(response.status(), equalTo(OK));
 
             // HTTP/1.0 doesn't support HOST, ensure that we don't get any errors and fallback to redirect
-            response = client.request(client.get("/").version(HTTP_1_0).addHeader("X-REDIRECT", "TRUE"));
+            response = client.request(
+                    client.get("/")
+                            .version(HTTP_1_0)
+                            .addHeader("X-REDIRECT", "TRUE"));
             assertThat(response.status(), equalTo(PERMANENT_REDIRECT));
         }
     }
