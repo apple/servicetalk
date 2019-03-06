@@ -18,6 +18,7 @@ package io.servicetalk.http.netty;
 import io.servicetalk.buffer.api.CompositeBuffer;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.concurrent.internal.PlatformDependent;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.HttpResponse;
@@ -92,7 +93,7 @@ public class ConsumeRequestPayloadOnResponsePathTest {
                     try {
                         consumePayloadBody(request).toFuture().get();
                     } catch (Exception e) {
-                        e.printStackTrace();
+                        PlatformDependent.throwException(e);
                     }
                     return trailers;
                 })));
@@ -101,6 +102,8 @@ public class ConsumeRequestPayloadOnResponsePathTest {
     @Test
     public void testConsumeRequestPayloadAfterTrailersSent() throws Exception {
         test((responseSingle, request) -> responseSingle.map(response ->
+                // It doesn't use the BufferAllocator from HttpServiceContext to simplify the test and avoid using
+                // TriFunction. It doesn't change the behavior of this test.
                 newResponseWithTrailers(response.status(), response.version(), response.headers(), DEFAULT_ALLOCATOR,
                         response.payloadBodyAndTrailers().concatWith(consumePayloadBody(request)))));
     }
