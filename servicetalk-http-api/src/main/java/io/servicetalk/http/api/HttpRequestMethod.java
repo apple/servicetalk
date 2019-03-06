@@ -143,7 +143,7 @@ public final class HttpRequestMethod {
         if (this == o) {
             return true;
         }
-        if (o == null || getClass() != o.getClass()) {
+        if (!(o instanceof HttpRequestMethod)) {
             return false;
         }
 
@@ -265,7 +265,7 @@ public final class HttpRequestMethod {
             if (this == o) {
                 return true;
             }
-            if (o == null || getClass() != o.getClass()) {
+            if (!(o instanceof Properties)) {
                 return false;
             }
 
