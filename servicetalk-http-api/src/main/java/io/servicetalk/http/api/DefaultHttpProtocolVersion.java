@@ -94,6 +94,10 @@ final class DefaultHttpProtocolVersion implements HttpProtocolVersion {
         }
 
         final HttpProtocolVersion that = (HttpProtocolVersion) o;
+        /*
+         * - httpVersion Buffer is ignored for equals/hashCode because it is inherited from major & minor and the
+         *   relationship is idempotent
+         */
         return major == that.majorVersion() && minor == that.minorVersion();
     }
 

@@ -60,6 +60,13 @@ final class DefaultHttpRequestMethod implements HttpRequestMethod {
         }
 
         final HttpRequestMethod that = (HttpRequestMethod) o;
+        /*
+         * - name Buffer is ignored for equals/hashCode because it represents nameString and the relationship is
+         *   idempotent
+         *
+         * - properties is ignored for equals/hashCode because they carry additional information which should not alter
+         *   the meaning of the method name
+         */
         return nameString.equals(that.name());
     }
 

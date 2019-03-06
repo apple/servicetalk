@@ -49,42 +49,6 @@ public interface HttpRequestMethod {
     Properties properties();
 
     /**
-     * Compares the specified object with this {@link HttpRequestMethod} for equality.
-     * <p>
-     * Returns {@code true} if and only if the specified object is also a {@link HttpRequestMethod}, and both objects
-     * have the same {@link #name()} value. {@link Properties} are ignored because they carry additional information
-     * which should not alter the meaning of the method name.
-     * This definition ensures that the equals method works properly across different implementations of the
-     * {@link HttpProtocolVersion} interface.
-     *
-     * @param o the object to be compared for equality with this {@link HttpRequestMethod}
-     * @return {@code true} if the specified object is equal to this {@link HttpRequestMethod}
-     */
-    @Override
-    boolean equals(Object o);
-
-    /**
-     * Returns the hash code value for this {@link HttpRequestMethod}.
-     * <p>
-     * The hash code of an {@link HttpRequestMethod} MUST be consistent with {@link #equals(Object)} implementation
-     * and is defined to be the result of the following calculation:
-     * <pre>{@code
-     *     public int hashCode() {
-     *         return 31 * name();
-     *     }
-     * }</pre>
-     * This ensures that {@code method1.equals(method2)} implies that {@code method1.hashCode() == method2.hashCode()}
-     * for any two {@link HttpRequestMethod}s, {@code method1} and {@code method2}, as required by the general
-     * contract of {@link Object#hashCode}.
-     *
-     * @return the hash code value for this {@link HttpRequestMethod}
-     * @see Object#equals(Object)
-     * @see #equals(Object)
-     */
-    @Override
-    int hashCode();
-
-    /**
      * <a href="https://tools.ietf.org/html/rfc7231#section-4.2">Common HTTP Method Properties</a>.
      *
      * @see HttpRequestMethodProperties

@@ -71,6 +71,17 @@ final class DefaultHttpResponseStatus implements HttpResponseStatus {
         }
 
         final HttpResponseStatus that = (HttpResponseStatus) o;
+        /*
+         * - statusCodeBuffer is ignored for equals/hashCode because it is inherited from statusCode and the
+         *   relationship is idempotent
+         *
+         * - reasonPhrase is ignored for equals/hashCode because the RFC says:
+         *   A client SHOULD ignore the reason-phrase content.
+         * https://tools.ietf.org/html/rfc7230#section-3.1.2
+         *
+         * - statusClass is ignored for equals/hashCode because it is inherited from statusCode and the relationship
+         *   is idempotent
+         */
         return statusCode == that.code();
     }
 
