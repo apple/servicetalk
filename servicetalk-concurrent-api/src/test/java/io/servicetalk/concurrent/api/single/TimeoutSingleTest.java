@@ -92,8 +92,7 @@ public class TimeoutSingleTest {
 
     @Test
     public void noDataOnCompletionNoTimeout() {
-        toSource(source.timeout(1, NANOSECONDS, testExecutor)).subscribe(subscriber);
-        assertTrue(subscriber.cancellableReceived());
+        init();
 
         assertFalse(subscriber.hasResult());
         assertThat(subscriber.error(), nullValue());
@@ -106,8 +105,7 @@ public class TimeoutSingleTest {
 
     @Test
     public void noDataOnErrorNoTimeout() {
-        toSource(source.timeout(1, NANOSECONDS, testExecutor)).subscribe(subscriber);
-        assertTrue(subscriber.cancellableReceived());
+        init();
 
         assertFalse(subscriber.hasResult());
         assertThat(subscriber.error(), nullValue());
@@ -120,8 +118,7 @@ public class TimeoutSingleTest {
 
     @Test
     public void subscriptionCancelAlsoCancelsTimer() {
-        toSource(source.timeout(1, NANOSECONDS, testExecutor)).subscribe(subscriber);
-        assertTrue(subscriber.cancellableReceived());
+        init();
 
         subscriber.cancel();
 
@@ -131,8 +128,7 @@ public class TimeoutSingleTest {
 
     @Test
     public void noDataAndTimeout() {
-        toSource(source.timeout(1, NANOSECONDS, testExecutor)).subscribe(subscriber);
-        assertTrue(subscriber.cancellableReceived());
+        init();
 
         // Sleep for at least as much time as the expiration time, because we just subscribed data.
         testExecutor.advanceTimeBy(1, NANOSECONDS);
@@ -146,8 +142,11 @@ public class TimeoutSingleTest {
     public void justSubscribeTimeout() {
         DelayedOnSubscribeSingle<Integer> delayedSingle = new DelayedOnSubscribeSingle<>();
 
-        toSource(delayedSingle.timeout(1, NANOSECONDS, testExecutor)).subscribe(subscriber);
+        init(delayedSingle, false);
+
         testExecutor.advanceTimeBy(1, NANOSECONDS);
+        assertThat(testExecutor.scheduledTasksPending(), is(0));
+        assertThat(testExecutor.scheduledTasksExecuted(), is(1));
 
         Cancellable mockCancellable = mock(Cancellable.class);
         Subscriber<? super Integer> subscriber = delayedSingle.subscriber;
@@ -155,9 +154,18 @@ public class TimeoutSingleTest {
         subscriber.onSubscribe(mockCancellable);
         verify(mockCancellable).cancel();
         assertThat(this.subscriber.takeError(), instanceOf(TimeoutException.class));
+    }
 
-        assertThat(testExecutor.scheduledTasksPending(), is(0));
-        assertThat(testExecutor.scheduledTasksExecuted(), is(1));
+    private void init() {
+        init(source, true);
+    }
+
+    private void init(final Single<Integer> source, final boolean expectOnSubscribe) {
+        toSource(source.timeout(1, NANOSECONDS, testExecutor)).subscribe(subscriber);
+        assertThat(testExecutor.scheduledTasksPending(), is(1));
+        if (expectOnSubscribe) {
+            assertTrue(subscriber.cancellableReceived());
+        }
     }
 
     private static final class DelayedOnSubscribeSingle<T> extends Single<T> {

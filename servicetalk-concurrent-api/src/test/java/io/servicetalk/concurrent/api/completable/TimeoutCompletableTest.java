@@ -88,9 +88,8 @@ public class TimeoutCompletableTest {
 
     @Test
     public void noDataOnCompletionNoTimeout() {
-        listener.listen(source.ignoreResult().timeout(1, NANOSECONDS, testExecutor));
+        init();
 
-        listener.verifyNoEmissions();
         source.onSuccess(1);
         listener.verifyCompletion();
 
@@ -100,9 +99,8 @@ public class TimeoutCompletableTest {
 
     @Test
     public void noDataOnErrorNoTimeout() {
-        listener.listen(source.ignoreResult().timeout(1, NANOSECONDS, testExecutor));
+        init();
 
-        listener.verifyNoEmissions();
         source.onError(DELIBERATE_EXCEPTION);
         listener.verifyFailure(DELIBERATE_EXCEPTION);
 
@@ -112,7 +110,7 @@ public class TimeoutCompletableTest {
 
     @Test
     public void subscriptionCancelAlsoCancelsTimer() {
-        listener.listen(source.ignoreResult().timeout(1, NANOSECONDS, testExecutor));
+        init();
 
         listener.cancel();
 
@@ -122,7 +120,7 @@ public class TimeoutCompletableTest {
 
     @Test
     public void noDataAndTimeout() {
-        listener.listen(source.ignoreResult().timeout(1, NANOSECONDS, testExecutor));
+        init();
 
         testExecutor.advanceTimeBy(1, NANOSECONDS);
         listener.verifyFailure(TimeoutException.class);
@@ -135,8 +133,11 @@ public class TimeoutCompletableTest {
     public void justSubscribeTimeout() {
         DelayedOnSubscribeCompletable delayedCompletable = new DelayedOnSubscribeCompletable();
 
-        listener.listen(delayedCompletable.timeout(1, NANOSECONDS, testExecutor), false);
+        init(delayedCompletable, false);
+
         testExecutor.advanceTimeBy(1, NANOSECONDS);
+        assertThat(testExecutor.scheduledTasksPending(), is(0));
+        assertThat(testExecutor.scheduledTasksExecuted(), is(1));
 
         Cancellable mockCancellable = mock(Cancellable.class);
         CompletableSource.Subscriber subscriber = delayedCompletable.subscriber;
@@ -144,9 +145,18 @@ public class TimeoutCompletableTest {
         subscriber.onSubscribe(mockCancellable);
         verify(mockCancellable).cancel();
         listener.verifyFailure(TimeoutException.class);
+    }
 
-        assertThat(testExecutor.scheduledTasksPending(), is(0));
-        assertThat(testExecutor.scheduledTasksExecuted(), is(1));
+    private void init() {
+        init(source.ignoreResult(), true);
+    }
+
+    private void init(Completable source, boolean expectOnSubscribe) {
+        listener.listen(source.timeout(1, NANOSECONDS, testExecutor), expectOnSubscribe);
+        assertThat(testExecutor.scheduledTasksPending(), is(1));
+        if (expectOnSubscribe) {
+            listener.verifyNoEmissions();
+        }
     }
 
     private static final class DelayedOnSubscribeCompletable extends Completable {

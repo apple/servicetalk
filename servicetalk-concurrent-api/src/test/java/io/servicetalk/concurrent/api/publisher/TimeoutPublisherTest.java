@@ -101,8 +101,7 @@ public class TimeoutPublisherTest {
 
     @Test
     public void noDataOnCompletionNoTimeout() {
-        toSource(publisher.timeout(1, NANOSECONDS, testExecutor)).subscribe(subscriber);
-        assertTrue(subscriber.subscriptionReceived());
+        init();
 
         subscriber.request(10);
         assertThat(subscriber.takeItems(), hasSize(0));
@@ -116,8 +115,7 @@ public class TimeoutPublisherTest {
 
     @Test
     public void dataOnCompletionNoTimeout() {
-        toSource(publisher.timeout(1, NANOSECONDS, testExecutor)).subscribe(subscriber);
-        assertTrue(subscriber.subscriptionReceived());
+        init();
 
         subscriber.request(10);
         assertThat(subscriber.takeItems(), hasSize(0));
@@ -133,8 +131,7 @@ public class TimeoutPublisherTest {
 
     @Test
     public void noDataOnErrorNoTimeout() {
-        toSource(publisher.timeout(1, NANOSECONDS, testExecutor)).subscribe(subscriber);
-        assertTrue(subscriber.subscriptionReceived());
+        init();
 
         subscriber.request(10);
         assertThat(subscriber.takeItems(), hasSize(0));
@@ -148,8 +145,7 @@ public class TimeoutPublisherTest {
 
     @Test
     public void dataOnErrorNoTimeout() {
-        toSource(publisher.timeout(1, NANOSECONDS, testExecutor)).subscribe(subscriber);
-        assertTrue(subscriber.subscriptionReceived());
+        init();
 
         subscriber.request(10);
         assertThat(subscriber.takeItems(), hasSize(0));
@@ -165,8 +161,7 @@ public class TimeoutPublisherTest {
 
     @Test
     public void subscriptionCancelAlsoCancelsTimer() {
-        toSource(publisher.timeout(1, NANOSECONDS, testExecutor)).subscribe(subscriber);
-        assertTrue(subscriber.subscriptionReceived());
+        init();
 
         subscriber.cancel();
 
@@ -176,8 +171,7 @@ public class TimeoutPublisherTest {
 
     @Test
     public void noDataAndTimeout() {
-        toSource(publisher.timeout(1, NANOSECONDS, testExecutor)).subscribe(subscriber);
-        assertTrue(subscriber.subscriptionReceived());
+        init();
 
         testExecutor.advanceTimeBy(1, NANOSECONDS);
         assertThat(subscriber.takeError(), instanceOf(TimeoutException.class));
@@ -188,8 +182,7 @@ public class TimeoutPublisherTest {
 
     @Test
     public void dataAndTimeout() {
-        toSource(publisher.timeout(1, NANOSECONDS, testExecutor)).subscribe(subscriber);
-        assertTrue(subscriber.subscriptionReceived());
+        init();
 
         subscriber.request(10);
         assertTrue(subscriber.subscriptionReceived());
@@ -209,8 +202,11 @@ public class TimeoutPublisherTest {
     public void justSubscribeTimeout() {
         DelayedOnSubscribePublisher<Integer> delayedPublisher = new DelayedOnSubscribePublisher<>();
 
-        toSource(delayedPublisher.timeout(1, NANOSECONDS, testExecutor)).subscribe(subscriber);
+        init(delayedPublisher, false);
+
         testExecutor.advanceTimeBy(1, NANOSECONDS);
+        assertThat(testExecutor.scheduledTasksPending(), is(0));
+        assertThat(testExecutor.scheduledTasksExecuted(), is(1));
 
         Subscription mockSubscription = mock(Subscription.class);
         Subscriber<? super Integer> subscriber = delayedPublisher.subscriber;
@@ -218,9 +214,6 @@ public class TimeoutPublisherTest {
         subscriber.onSubscribe(mockSubscription);
         verify(mockSubscription).cancel();
         assertThat(this.subscriber.takeError(), instanceOf(TimeoutException.class));
-
-        assertThat(testExecutor.scheduledTasksPending(), is(0));
-        assertThat(testExecutor.scheduledTasksExecuted(), is(1));
     }
 
     @Test
@@ -228,11 +221,22 @@ public class TimeoutPublisherTest {
         CountDownLatch latch = new CountDownLatch(2);
         AtomicReference<Throwable> causeRef = new AtomicReference<>();
 
+        // The timeout operator doesn't expose a way to control the underlying time source and always uses
+        // System.nanoTime(). This was intentional to avoid expanding public API surface when the majority of the time
+        // System.nanoTime() is the correct choice. However that makes testing a bit more challenging here and we resort
+        // to sleep/approximations.
+        // 10 ms -> long enough for the first timeout runnable to first without timing out, so that the second time out
+        // runnable will fire and result in a timeout. This doesn't always work so we just fallback and drain the
+        // CountDownLatch if not.
+        // Sleep for at least enough time for the expiration time to fire before invoking
+        // the run() method.
+        // Just in case the timer fires earlier than expected (after the first timer) we countdown the latch so the
+        // test won't fail.
         toSource(publisher.timeout(10, MILLISECONDS, new Executor() {
             private final AtomicInteger timerCount = new AtomicInteger();
 
             @Override
-            public Cancellable schedule(final Runnable task, final long delay, final TimeUnit unit) throws RejectedExecutionException {
+            public Cancellable schedule(final Runnable task, final long delay, final TimeUnit unit) {
                 int count = timerCount.incrementAndGet();
                 if (count <= 2) {
                     if (count == 1) {
@@ -290,6 +294,18 @@ public class TimeoutPublisherTest {
         latch.await();
         assertNull(causeRef.get());
         assertThat(subscriber.takeError(), instanceOf(TimeoutException.class));
+    }
+
+    private void init() {
+        init(publisher, true);
+    }
+
+    private void init(Publisher<Integer> publisher, boolean expectOnSubscribe) {
+        toSource(publisher.timeout(1, NANOSECONDS, testExecutor)).subscribe(subscriber);
+        assertThat(testExecutor.scheduledTasksPending(), is(1));
+        if (expectOnSubscribe) {
+            assertTrue(subscriber.subscriptionReceived());
+        }
     }
 
     private static void countDownToZero(CountDownLatch latch) {
