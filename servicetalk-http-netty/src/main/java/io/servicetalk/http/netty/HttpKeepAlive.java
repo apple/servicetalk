@@ -21,8 +21,8 @@ import io.servicetalk.http.api.StreamingHttpResponse;
 import static io.servicetalk.http.api.HttpHeaderNames.CONNECTION;
 import static io.servicetalk.http.api.HttpHeaderValues.CLOSE;
 import static io.servicetalk.http.api.HttpHeaderValues.KEEP_ALIVE;
-import static io.servicetalk.http.api.HttpProtocolVersions.HTTP_1_0;
-import static io.servicetalk.http.api.HttpProtocolVersions.HTTP_1_1;
+import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_0;
+import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 
 enum HttpKeepAlive {
 

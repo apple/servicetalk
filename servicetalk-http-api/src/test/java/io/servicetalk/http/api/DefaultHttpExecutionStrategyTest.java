@@ -48,8 +48,8 @@ import static io.servicetalk.concurrent.api.Single.never;
 import static io.servicetalk.concurrent.api.Single.success;
 import static io.servicetalk.http.api.DefaultHttpHeadersFactory.INSTANCE;
 import static io.servicetalk.http.api.HttpExecutionStrategies.customStrategyBuilder;
-import static io.servicetalk.http.api.HttpProtocolVersions.HTTP_1_1;
-import static io.servicetalk.http.api.HttpRequestMethods.GET;
+import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
+import static io.servicetalk.http.api.HttpRequestMethod.GET;
 import static io.servicetalk.http.api.NoOffloadsHttpExecutionStrategy.NO_OFFLOADS;
 import static io.servicetalk.http.api.StreamingHttpRequests.newRequest;
 import static io.servicetalk.http.api.StreamingHttpResponses.newResponse;
@@ -235,7 +235,7 @@ public class DefaultHttpExecutionStrategyTest {
         }
 
         StreamingHttpResponse createNewResponse() {
-            return newResponse(HttpResponseStatuses.OK, HTTP_1_1, INSTANCE.newHeaders(),
+            return newResponse(HttpResponseStatus.OK, HTTP_1_1, INSTANCE.newHeaders(),
                     INSTANCE.newTrailers(), DEFAULT_ALLOCATOR,
                     just(DEFAULT_ALLOCATOR.fromAscii("Hello-Response")));
         }

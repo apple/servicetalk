@@ -51,7 +51,7 @@ import static io.servicetalk.concurrent.internal.ServiceTalkTestTimeout.DEFAULT_
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
 import static io.servicetalk.http.api.HttpHeaderValues.TEXT_PLAIN;
-import static io.servicetalk.http.api.HttpResponseStatuses.OK;
+import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.router.jersey.ExecutionStrategyTest.asFactory;
 import static io.servicetalk.http.router.jersey.TestUtils.newLargePayload;
 import static io.servicetalk.http.router.jersey.resources.CancellableResources.PATH;

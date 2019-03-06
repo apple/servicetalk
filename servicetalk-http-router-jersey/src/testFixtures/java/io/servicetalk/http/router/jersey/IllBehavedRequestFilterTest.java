@@ -29,8 +29,8 @@ import javax.ws.rs.core.Application;
 import javax.ws.rs.ext.Provider;
 
 import static io.servicetalk.http.api.HttpHeaderValues.APPLICATION_JSON;
-import static io.servicetalk.http.api.HttpResponseStatuses.INTERNAL_SERVER_ERROR;
-import static io.servicetalk.http.api.HttpResponseStatuses.OK;
+import static io.servicetalk.http.api.HttpResponseStatus.INTERNAL_SERVER_ERROR;
+import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static java.util.Arrays.asList;
 import static javax.ws.rs.Priorities.AUTHENTICATION;
 import static javax.ws.rs.core.Response.Status.PAYMENT_REQUIRED;

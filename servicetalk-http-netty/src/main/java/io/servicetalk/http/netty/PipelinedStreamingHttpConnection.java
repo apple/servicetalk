@@ -27,7 +27,7 @@ import io.servicetalk.transport.netty.internal.DefaultNettyPipelinedConnection;
 import io.servicetalk.transport.netty.internal.NettyConnection;
 
 import static io.servicetalk.concurrent.api.Single.error;
-import static io.servicetalk.http.api.HttpProtocolVersions.HTTP_1_1;
+import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 
 final class PipelinedStreamingHttpConnection
         extends AbstractStreamingHttpConnection<DefaultNettyPipelinedConnection<Object, Object>> {

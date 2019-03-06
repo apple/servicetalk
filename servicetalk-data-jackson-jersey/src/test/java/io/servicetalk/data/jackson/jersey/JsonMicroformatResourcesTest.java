@@ -28,8 +28,8 @@ import static io.servicetalk.data.jackson.jersey.resources.JsonMicroformatResour
 import static io.servicetalk.data.jackson.jersey.resources.JsonMicroformatResources.PATH;
 import static io.servicetalk.http.api.CharSequences.newAsciiString;
 import static io.servicetalk.http.api.HttpHeaderValues.APPLICATION_JSON;
-import static io.servicetalk.http.api.HttpResponseStatuses.OK;
-import static io.servicetalk.http.api.HttpResponseStatuses.UNSUPPORTED_MEDIA_TYPE;
+import static io.servicetalk.http.api.HttpResponseStatus.OK;
+import static io.servicetalk.http.api.HttpResponseStatus.UNSUPPORTED_MEDIA_TYPE;
 import static java.util.Collections.singleton;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
 
