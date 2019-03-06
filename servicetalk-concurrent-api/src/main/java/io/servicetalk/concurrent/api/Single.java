@@ -123,7 +123,7 @@ public abstract class Single<T> {
      * @return A {@link Single} that ignores error from this {@code Single} and resume with the {@link Single} produced
      * by {@code nextFactory}.
      */
-    public final Single<T> onErrorResume(Function<? super Throwable, Single<? extends T>> nextFactory) {
+    public final Single<T> onErrorResume(Function<? super Throwable, ? extends Single<? extends T>> nextFactory) {
         return new ResumeSingle<>(this, nextFactory, executor);
     }
 
@@ -142,7 +142,7 @@ public abstract class Single<T> {
      * @return New {@link Single} that switches to the {@link Single} returned by {@code next} after this {@link Single}
      * completes successfully.
      */
-    public final <R> Single<R> flatMap(Function<T, Single<R>> next) {
+    public final <R> Single<R> flatMap(Function<T, ? extends Single<R>> next) {
         return new SingleFlatMapSingle<>(this, next, executor);
     }
 
@@ -160,7 +160,7 @@ public abstract class Single<T> {
      * @return New {@link Completable} that switches to the {@link Completable} returned by {@code next} after this
      * {@link Single} completes successfully.
      */
-    public final Completable flatMapCompletable(Function<T, Completable> next) {
+    public final Completable flatMapCompletable(Function<T, ? extends Completable> next) {
         return new SingleFlatMapCompletable<>(this, next, executor);
     }
 
@@ -182,7 +182,7 @@ public abstract class Single<T> {
      * @return New {@link Publisher} that switches to the {@link Publisher} returned by {@code next} after this
      * {@link Single} completes successfully.
      */
-    public final <R> Publisher<R> flatMapPublisher(Function<? super T, Publisher<? extends R>> next) {
+    public final <R> Publisher<R> flatMapPublisher(Function<? super T, ? extends Publisher<? extends R>> next) {
         return new SingleFlatMapPublisher<>(this, next, executor);
     }
 
@@ -501,7 +501,7 @@ public abstract class Single<T> {
      *
      * @see <a href="http://reactivex.io/documentation/operators/retry.html">ReactiveX retry operator.</a>
      */
-    public final Single<T> retryWhen(BiIntFunction<Throwable, Completable> retryWhen) {
+    public final Single<T> retryWhen(BiIntFunction<Throwable, ? extends Completable> retryWhen) {
         return new RetryWhenSingle<>(this, retryWhen, executor);
     }
 
@@ -557,7 +557,7 @@ public abstract class Single<T> {
      *
      * @see <a href="http://reactivex.io/documentation/operators/retry.html">ReactiveX retry operator.</a>
      */
-    public final Publisher<T> repeatWhen(IntFunction<Completable> repeatWhen) {
+    public final Publisher<T> repeatWhen(IntFunction<? extends Completable> repeatWhen) {
         return toPublisher().repeatWhen(repeatWhen);
     }
 
@@ -666,7 +666,7 @@ public abstract class Single<T> {
      * {@link Subscriber} methods <strong>MUST NOT</strong> throw.
      * @return The new {@link Single}.
      */
-    public final Single<T> doBeforeSubscriber(Supplier<Subscriber<? super T>> subscriberSupplier) {
+    public final Single<T> doBeforeSubscriber(Supplier<? extends Subscriber<? super T>> subscriberSupplier) {
         return new DoBeforeSubscriberSingle<>(this, subscriberSupplier, executor);
     }
 
@@ -775,7 +775,7 @@ public abstract class Single<T> {
      * {@link Subscriber} methods <strong>MUST NOT</strong> throw.
      * @return The new {@link Single}.
      */
-    public final Single<T> doAfterSubscriber(Supplier<Subscriber<? super T>> subscriberSupplier) {
+    public final Single<T> doAfterSubscriber(Supplier<? extends Subscriber<? super T>> subscriberSupplier) {
         return new DoAfterSubscriberSingle<>(this, subscriberSupplier, executor);
     }
 

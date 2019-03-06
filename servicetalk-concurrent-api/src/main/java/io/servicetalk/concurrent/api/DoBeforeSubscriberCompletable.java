@@ -16,17 +16,15 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
-import io.servicetalk.concurrent.CompletableSource;
-import io.servicetalk.concurrent.CompletableSource.Subscriber;
 
 import java.util.function.Supplier;
 
 import static java.util.Objects.requireNonNull;
 
 final class DoBeforeSubscriberCompletable extends AbstractSynchronousCompletableOperator {
-    private final Supplier<CompletableSource.Subscriber> subscriberSupplier;
+    private final Supplier<? extends Subscriber> subscriberSupplier;
 
-    DoBeforeSubscriberCompletable(Completable original, Supplier<CompletableSource.Subscriber> subscriberSupplier,
+    DoBeforeSubscriberCompletable(Completable original, Supplier<? extends Subscriber> subscriberSupplier,
                                   Executor executor) {
         super(original, executor);
         this.subscriberSupplier = requireNonNull(subscriberSupplier);
@@ -37,12 +35,12 @@ final class DoBeforeSubscriberCompletable extends AbstractSynchronousCompletable
         return new DoBeforeSubscriberCompletableSubscriber(subscriber, subscriberSupplier.get());
     }
 
-    private static final class DoBeforeSubscriberCompletableSubscriber implements CompletableSource.Subscriber {
-        private final CompletableSource.Subscriber original;
-        private final CompletableSource.Subscriber subscriber;
+    private static final class DoBeforeSubscriberCompletableSubscriber implements Subscriber {
+        private final Subscriber original;
+        private final Subscriber subscriber;
 
-        DoBeforeSubscriberCompletableSubscriber(CompletableSource.Subscriber original,
-                                                CompletableSource.Subscriber subscriber) {
+        DoBeforeSubscriberCompletableSubscriber(Subscriber original,
+                                                Subscriber subscriber) {
             this.original = original;
             this.subscriber = requireNonNull(subscriber);
         }

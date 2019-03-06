@@ -16,7 +16,6 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
-import io.servicetalk.concurrent.CompletableSource.Subscriber;
 import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.internal.SequentialCancellable;
 import io.servicetalk.concurrent.internal.SignalOffloader;
@@ -31,9 +30,9 @@ import static java.util.Objects.requireNonNull;
  */
 final class SingleFlatMapCompletable<T> extends AbstractNoHandleSubscribeCompletable {
     private final Single<T> original;
-    private final Function<T, Completable> nextFactory;
+    private final Function<T, ? extends Completable> nextFactory;
 
-    SingleFlatMapCompletable(Single<T> original, Function<T, Completable> nextFactory, Executor executor) {
+    SingleFlatMapCompletable(Single<T> original, Function<T, ? extends Completable> nextFactory, Executor executor) {
         super(executor);
         this.original = requireNonNull(original);
         this.nextFactory = requireNonNull(nextFactory);
@@ -48,14 +47,14 @@ final class SingleFlatMapCompletable<T> extends AbstractNoHandleSubscribeComplet
 
     private static final class SubscriberImpl<T> implements SingleSource.Subscriber<T>, Subscriber {
         private final Subscriber subscriber;
-        private final Function<T, Completable> nextFactory;
+        private final Function<T, ? extends Completable> nextFactory;
         private final SignalOffloader signalOffloader;
         private final AsyncContextMap contextMap;
         private final AsyncContextProvider contextProvider;
         @Nullable
         private volatile SequentialCancellable sequentialCancellable;
 
-        SubscriberImpl(Subscriber subscriber, Function<T, Completable> nextFactory,
+        SubscriberImpl(Subscriber subscriber, Function<T, ? extends Completable> nextFactory,
                        final SignalOffloader signalOffloader, final AsyncContextMap contextMap,
                        final AsyncContextProvider contextProvider) {
             this.subscriber = subscriber;

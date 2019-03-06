@@ -168,7 +168,7 @@ public abstract class Publisher<T> {
      * produced by {@code nextFactory}.
      * @see <a href="http://reactivex.io/documentation/operators/catch.html">ReactiveX catch operator.</a>
      */
-    public final Publisher<T> onErrorResume(Function<? super Throwable, Publisher<? extends T>> nextFactory) {
+    public final Publisher<T> onErrorResume(Function<? super Throwable, ? extends Publisher<? extends T>> nextFactory) {
         return new ResumePublisher<>(this, nextFactory, executor);
     }
 
@@ -205,7 +205,7 @@ public abstract class Publisher<T> {
      * @see <a href="http://reactivex.io/documentation/operators/flatmap.html">ReactiveX flatMap operator.</a>
      * @see #flatMapSingle(Function, int)
      */
-    public final <R> Publisher<R> flatMapSingle(Function<? super T, Single<? extends R>> mapper) {
+    public final <R> Publisher<R> flatMapSingle(Function<? super T, ? extends Single<? extends R>> mapper) {
         return new PublisherFlatMapSingle<>(this, mapper, false, executor);
     }
 
@@ -242,7 +242,7 @@ public abstract class Publisher<T> {
      *
      * @see <a href="http://reactivex.io/documentation/operators/flatmap.html">ReactiveX flatMap operator.</a>
      */
-    public final <R> Publisher<R> flatMapSingle(Function<? super T, Single<? extends R>> mapper, int maxConcurrency) {
+    public final <R> Publisher<R> flatMapSingle(Function<? super T, ? extends Single<? extends R>> mapper, int maxConcurrency) {
         return new PublisherFlatMapSingle<>(this, mapper, maxConcurrency, false, executor);
     }
 
@@ -292,7 +292,7 @@ public abstract class Publisher<T> {
      * @see <a href="http://reactivex.io/documentation/operators/merge.html">ReactiveX merge operator.</a>
      * @see #flatMapSingleDelayError(Function, int)
      */
-    public final <R> Publisher<R> flatMapSingleDelayError(Function<? super T, Single<? extends R>> mapper) {
+    public final <R> Publisher<R> flatMapSingleDelayError(Function<? super T, ? extends Single<? extends R>> mapper) {
         return new PublisherFlatMapSingle<>(this, mapper, true, executor);
     }
 
@@ -341,7 +341,7 @@ public abstract class Publisher<T> {
      *
      * @see <a href="http://reactivex.io/documentation/operators/merge.html">ReactiveX merge operator.</a>
      */
-    public final <R> Publisher<R> flatMapSingleDelayError(Function<? super T, Single<? extends R>> mapper,
+    public final <R> Publisher<R> flatMapSingleDelayError(Function<? super T, ? extends Single<? extends R>> mapper,
                                                           int maxConcurrency) {
         return new PublisherFlatMapSingle<>(this, mapper, maxConcurrency, true, executor);
     }
@@ -381,7 +381,7 @@ public abstract class Publisher<T> {
      * @see #flatMapCompletable(Function, int)
      * @see #flatMapCompletableDelayError(Function)
      */
-    public final Completable flatMapCompletable(Function<? super T, Completable> mapper) {
+    public final Completable flatMapCompletable(Function<? super T, ? extends Completable> mapper) {
         return flatMapSingle(t -> mapper.apply(t).toSingle()).ignoreElements();
     }
 
@@ -418,7 +418,7 @@ public abstract class Publisher<T> {
      * @see #flatMapCompletable(Function)
      * @see #flatMapCompletableDelayError(Function, int)
      */
-    public final Completable flatMapCompletable(Function<? super T, Completable> mapper, int maxConcurrency) {
+    public final Completable flatMapCompletable(Function<? super T, ? extends Completable> mapper, int maxConcurrency) {
         return flatMapSingle(t -> mapper.apply(t).toSingle(), maxConcurrency).ignoreElements();
     }
 
@@ -464,7 +464,7 @@ public abstract class Publisher<T> {
      * @see <a href="http://reactivex.io/documentation/operators/merge.html">ReactiveX merge operator.</a>
      * @see #flatMapSingleDelayError(Function, int)
      */
-    public final Completable flatMapCompletableDelayError(Function<? super T, Completable> mapper) {
+    public final Completable flatMapCompletableDelayError(Function<? super T, ? extends Completable> mapper) {
         return flatMapSingleDelayError(t -> mapper.apply(t).toSingle()).ignoreElements();
     }
 
@@ -508,7 +508,8 @@ public abstract class Publisher<T> {
      * @see <a href="http://reactivex.io/documentation/operators/merge.html">ReactiveX merge operator.</a>
      * @see #flatMapSingleDelayError(Function, int)
      */
-    public final Completable flatMapCompletableDelayError(Function<? super T, Completable> mapper, int maxConcurrency) {
+    public final Completable flatMapCompletableDelayError(Function<? super T, ? extends Completable> mapper,
+                                                          int maxConcurrency) {
         return flatMapSingleDelayError(t -> mapper.apply(t).toSingle(), maxConcurrency).ignoreElements();
     }
 
@@ -959,7 +960,7 @@ public abstract class Publisher<T> {
      *
      * @see <a href="http://reactivex.io/documentation/operators/retry.html">ReactiveX retry operator.</a>
      */
-    public final Publisher<T> retryWhen(BiIntFunction<Throwable, Completable> retryWhen) {
+    public final Publisher<T> retryWhen(BiIntFunction<Throwable, ? extends Completable> retryWhen) {
         return new RedoWhenPublisher<>(this, (retryCount, notification) -> {
             if (notification.cause() == null) {
                 return Completable.completed();
@@ -1025,7 +1026,7 @@ public abstract class Publisher<T> {
      *
      * @see <a href="http://reactivex.io/documentation/operators/retry.html">ReactiveX retry operator.</a>
      */
-    public final Publisher<T> repeatWhen(IntFunction<Completable> repeatWhen) {
+    public final Publisher<T> repeatWhen(IntFunction<? extends Completable> repeatWhen) {
         return new RedoWhenPublisher<>(this, (retryCount, notification) -> {
             if (notification.cause() != null) {
                 return Completable.completed();
@@ -1520,7 +1521,7 @@ public abstract class Publisher<T> {
      *
      * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
      */
-    public final Publisher<T> doBeforeSubscriber(Supplier<Subscriber<? super T>> subscriberSupplier) {
+    public final Publisher<T> doBeforeSubscriber(Supplier<? extends Subscriber<? super T>> subscriberSupplier) {
         return new DoBeforeSubscriberPublisher<>(this, subscriberSupplier, executor);
     }
 
@@ -1536,7 +1537,7 @@ public abstract class Publisher<T> {
      *
      * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
      */
-    public final Publisher<T> doBeforeSubscription(Supplier<Subscription> subscriptionSupplier) {
+    public final Publisher<T> doBeforeSubscription(Supplier<? extends Subscription> subscriptionSupplier) {
         return new DoSubscriptionPublisher<>(this, subscriptionSupplier, true, executor);
     }
 
@@ -1699,7 +1700,7 @@ public abstract class Publisher<T> {
      *
      * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
      */
-    public final Publisher<T> doAfterSubscriber(Supplier<Subscriber<? super T>> subscriberSupplier) {
+    public final Publisher<T> doAfterSubscriber(Supplier<? extends Subscriber<? super T>> subscriberSupplier) {
         return new DoAfterSubscriberPublisher<>(this, subscriberSupplier, executor);
     }
 
@@ -1715,7 +1716,7 @@ public abstract class Publisher<T> {
      *
      * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
      */
-    public final Publisher<T> doAfterSubscription(Supplier<Subscription> subscriptionSupplier) {
+    public final Publisher<T> doAfterSubscription(Supplier<? extends Subscription> subscriptionSupplier) {
         return new DoSubscriptionPublisher<>(this, subscriptionSupplier, false, executor);
     }
 

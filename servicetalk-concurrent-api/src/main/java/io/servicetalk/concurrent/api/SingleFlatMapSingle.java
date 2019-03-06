@@ -27,9 +27,9 @@ import static java.util.Objects.requireNonNull;
  * {@link Single} as returned by {@link Single#flatMap(Function)}.
  */
 final class SingleFlatMapSingle<T, R> extends AbstractAsynchronousSingleOperator<T, R> {
-    private final Function<T, Single<R>> nextFactory;
+    private final Function<T, ? extends Single<R>> nextFactory;
 
-    SingleFlatMapSingle(Single<T> first, Function<T, Single<R>> nextFactory, Executor executor) {
+    SingleFlatMapSingle(Single<T> first, Function<T, ? extends Single<R>> nextFactory, Executor executor) {
         super(first, executor);
         this.nextFactory = requireNonNull(nextFactory);
     }
@@ -41,11 +41,11 @@ final class SingleFlatMapSingle<T, R> extends AbstractAsynchronousSingleOperator
 
     private static final class SubscriberImpl<T, R> implements Subscriber<T> {
         private final Subscriber<? super R> subscriber;
-        private final Function<T, Single<R>> nextFactory;
+        private final Function<T, ? extends Single<R>> nextFactory;
         @Nullable
         private volatile SequentialCancellable sequentialCancellable;
 
-        SubscriberImpl(Subscriber<? super R> subscriber, Function<T, Single<R>> nextFactory) {
+        SubscriberImpl(Subscriber<? super R> subscriber, Function<T, ? extends Single<R>> nextFactory) {
             this.subscriber = subscriber;
             this.nextFactory = nextFactory;
         }

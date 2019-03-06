@@ -53,16 +53,16 @@ import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater
 final class PublisherFlatMapSingle<T, R> extends AbstractAsynchronousPublisherOperator<T, R> {
     private static final Logger LOGGER = LoggerFactory.getLogger(PublisherFlatMapSingle.class);
 
-    private final Function<? super T, Single<? extends R>> mapper;
+    private final Function<? super T, ? extends Single<? extends R>> mapper;
     private final int maxConcurrency;
     private final boolean delayError;
 
-    PublisherFlatMapSingle(Publisher<T> original, Function<? super T, Single<? extends R>> mapper, boolean delayError,
+    PublisherFlatMapSingle(Publisher<T> original, Function<? super T, ? extends Single<? extends R>> mapper, boolean delayError,
                            Executor executor) {
         this(original, mapper, 16, delayError, executor);
     }
 
-    PublisherFlatMapSingle(Publisher<T> original, Function<? super T, Single<? extends R>> mapper, int maxConcurrency,
+    PublisherFlatMapSingle(Publisher<T> original, Function<? super T, ? extends Single<? extends R>> mapper, int maxConcurrency,
                            boolean delayError, Executor executor) {
         super(original, executor);
         this.mapper = requireNonNull(mapper);

@@ -20,9 +20,10 @@ import java.util.function.Supplier;
 import static java.util.Objects.requireNonNull;
 
 final class DoBeforeSubscriberPublisher<T> extends AbstractSynchronousPublisherOperator<T, T> {
-    private final Supplier<Subscriber<? super T>> subscriberSupplier;
+    private final Supplier<? extends Subscriber<? super T>> subscriberSupplier;
 
-    DoBeforeSubscriberPublisher(Publisher<T> original, Supplier<Subscriber<? super T>> subscriberSupplier, Executor executor) {
+    DoBeforeSubscriberPublisher(Publisher<T> original, Supplier<? extends Subscriber<? super T>> subscriberSupplier,
+                                Executor executor) {
         super(original, executor);
         this.subscriberSupplier = requireNonNull(subscriberSupplier);
     }
