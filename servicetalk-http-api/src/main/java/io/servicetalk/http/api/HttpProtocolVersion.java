@@ -154,7 +154,7 @@ public final class HttpProtocolVersion {
         if (this == o) {
             return true;
         }
-        if (!(o instanceof HttpProtocolVersion)) {
+        if (o == null || getClass() != o.getClass()) {
             return false;
         }
 

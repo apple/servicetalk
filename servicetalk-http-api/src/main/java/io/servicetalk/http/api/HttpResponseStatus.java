@@ -575,7 +575,7 @@ public final class HttpResponseStatus {
         if (this == o) {
             return true;
         }
-        if (!(o instanceof HttpResponseStatus)) {
+        if (o == null || getClass() != o.getClass()) {
             return false;
         }
 
