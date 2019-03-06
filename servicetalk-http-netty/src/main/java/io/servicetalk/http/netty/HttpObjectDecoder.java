@@ -70,7 +70,7 @@ import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_0;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpProtocolVersion.newProtocolVersion;
 import static io.servicetalk.http.api.HttpRequestMethod.GET;
-import static io.servicetalk.http.api.HttpResponseStatuses.SWITCHING_PROTOCOLS;
+import static io.servicetalk.http.api.HttpResponseStatus.SWITCHING_PROTOCOLS;
 import static io.servicetalk.http.netty.HeaderUtils.isTransferEncodingChunked;
 import static io.servicetalk.http.netty.HeaderUtils.setTransferEncodingChunked;
 import static io.servicetalk.http.netty.HttpKeepAlive.shouldClose;
