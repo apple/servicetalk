@@ -163,7 +163,7 @@ public class DefaultAsyncContextProviderTest {
         }).doBeforeFinally(() -> f3.complete(AsyncContext.current().copy()));
 
         AsyncContext.put(K1, "v1.1");
-        completable.toFuture().get();
+        completable.toVoidFuture().get();
 
         assertEquals("v1.2", f1.get().get(K1));
         assertEquals("v1.2", f2.get().get(K1));
@@ -279,7 +279,7 @@ public class DefaultAsyncContextProviderTest {
         }).doBeforeFinally(() -> f3.complete(AsyncContext.current().copy()));
 
         AsyncContext.put(K1, "v1.1");
-        completable.toFuture().get();
+        completable.toVoidFuture().get();
 
         assertEquals("v1.2", f1.get().get(K1));
         assertEquals("v1.2", f2.get().get(K1));

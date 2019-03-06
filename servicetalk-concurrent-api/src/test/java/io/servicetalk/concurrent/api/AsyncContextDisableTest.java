@@ -53,7 +53,7 @@ public class AsyncContextDisableTest {
                 assertEquals(expectedValue, actualValue.get());
                 actualValue.set(null);
                 Completable.completed().publishOn(executor)
-                        .doBeforeComplete(() -> actualValue.set(AsyncContext.get(K1))).toFuture().get();
+                        .doBeforeComplete(() -> actualValue.set(AsyncContext.get(K1))).toVoidFuture().get();
                 assertEquals(expectedValue, actualValue.get());
                 actualValue.set(null);
 
@@ -69,9 +69,9 @@ public class AsyncContextDisableTest {
                 }
             } finally {
                 if (executor2 != null) {
-                    executor2.closeAsync().toFuture().get();
+                    executor2.closeAsync().toVoidFuture().get();
                 }
-                executor.closeAsync().toFuture().get();
+                executor.closeAsync().toVoidFuture().get();
             }
         }
     }
@@ -96,11 +96,11 @@ public class AsyncContextDisableTest {
                     assertNull(actualValue.get());
                     actualValue.set(null);
                     Completable.completed().publishOn(executor)
-                            .doBeforeComplete(() -> actualValue.set(AsyncContext.get(K1))).toFuture().get();
+                            .doBeforeComplete(() -> actualValue.set(AsyncContext.get(K1))).toVoidFuture().get();
                     assertNull(actualValue.get());
                     actualValue.set(null);
                 } finally {
-                    executor.closeAsync().toFuture().get();
+                    executor.closeAsync().toVoidFuture().get();
                 }
             } finally {
                 AsyncContext.enable();

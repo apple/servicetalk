@@ -382,7 +382,7 @@ public abstract class Publisher<T> {
      * @see #flatMapCompletableDelayError(Function)
      */
     public final Completable flatMapCompletable(Function<? super T, Completable> mapper) {
-        return flatMapSingle(t -> mapper.apply(t).toSingle()).ignoreElements();
+        return flatMapSingle(t -> mapper.apply(t).toVoidSingle()).ignoreElements();
     }
 
     /**
@@ -419,7 +419,7 @@ public abstract class Publisher<T> {
      * @see #flatMapCompletableDelayError(Function, int)
      */
     public final Completable flatMapCompletable(Function<? super T, Completable> mapper, int maxConcurrency) {
-        return flatMapSingle(t -> mapper.apply(t).toSingle(), maxConcurrency).ignoreElements();
+        return flatMapSingle(t -> mapper.apply(t).toVoidSingle(), maxConcurrency).ignoreElements();
     }
 
     /**
@@ -465,7 +465,7 @@ public abstract class Publisher<T> {
      * @see #flatMapSingleDelayError(Function, int)
      */
     public final Completable flatMapCompletableDelayError(Function<? super T, Completable> mapper) {
-        return flatMapSingleDelayError(t -> mapper.apply(t).toSingle()).ignoreElements();
+        return flatMapSingleDelayError(t -> mapper.apply(t).toVoidSingle()).ignoreElements();
     }
 
     /**
@@ -509,7 +509,7 @@ public abstract class Publisher<T> {
      * @see #flatMapSingleDelayError(Function, int)
      */
     public final Completable flatMapCompletableDelayError(Function<? super T, Completable> mapper, int maxConcurrency) {
-        return flatMapSingleDelayError(t -> mapper.apply(t).toSingle(), maxConcurrency).ignoreElements();
+        return flatMapSingleDelayError(t -> mapper.apply(t).toVoidSingle(), maxConcurrency).ignoreElements();
     }
 
     /**

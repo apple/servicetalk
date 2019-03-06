@@ -271,7 +271,7 @@ public class BlockingStreamingHttpServiceTest {
             }
         };
         StreamingHttpService asyncService = syncService.asStreamingService();
-        asyncService.closeAsync().toFuture().get();
+        asyncService.closeAsync().toVoidFuture().get();
         assertTrue(closedCalled.get());
     }
 

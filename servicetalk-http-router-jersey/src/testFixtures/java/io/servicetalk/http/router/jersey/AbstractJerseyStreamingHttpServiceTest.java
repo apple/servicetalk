@@ -114,12 +114,12 @@ public abstract class AbstractJerseyStreamingHttpServiceTest {
 
     @After
     public final void closeClient() throws Exception {
-        httpClient.closeAsync().toFuture().get();
+        httpClient.closeAsync().toVoidFuture().get();
     }
 
     @After
     public final void closeServer() throws Exception {
-        serverContext.closeAsync().toFuture().get();
+        serverContext.closeAsync().toVoidFuture().get();
     }
 
     protected abstract Application application();

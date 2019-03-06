@@ -101,7 +101,7 @@ public class DefaultRedisExecutionStrategyTest {
 
     @After
     public void tearDown() throws Exception {
-        executor.closeAsync().toFuture().get();
+        executor.closeAsync().toVoidFuture().get();
     }
 
     @Test

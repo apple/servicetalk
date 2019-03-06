@@ -25,7 +25,7 @@ public class SingleFlatMapCompletableTckTest extends AbstractSingleOperatorTckTe
 
     @Override
     protected Single<Object> composeSingle(Single<Integer> single) {
-        return single.flatMapCompletable(v -> Completable.completed()).toSingle();
+        return single.flatMapCompletable(v -> Completable.completed()).toSingle(Object::new);
     }
 
     @Override

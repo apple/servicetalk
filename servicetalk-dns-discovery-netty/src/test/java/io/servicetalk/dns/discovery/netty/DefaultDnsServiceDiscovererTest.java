@@ -90,9 +90,9 @@ public class DefaultDnsServiceDiscovererTest {
 
     @After
     public void tearDown() throws Exception {
-        discoverer.closeAsync().toFuture().get();
+        discoverer.closeAsync().toVoidFuture().get();
         dnsServer.stop();
-        nettyIoExecutor.closeAsync().toFuture().get();
+        nettyIoExecutor.closeAsync().toVoidFuture().get();
     }
 
     @Test
@@ -122,7 +122,7 @@ public class DefaultDnsServiceDiscovererTest {
             assertThat(subscriber.activeCount(), equalTo(0));
             assertThat(subscriber.inactiveCount(), equalTo(0));
         } finally {
-            discoverer.closeAsync().toFuture().get();
+            discoverer.closeAsync().toVoidFuture().get();
         }
     }
 
@@ -359,7 +359,7 @@ public class DefaultDnsServiceDiscovererTest {
             assertThat(subscriber.activeCount(), equalTo(expectedActiveCount));
             assertThat(subscriber.inactiveCount(), equalTo(expectedInactiveCount));
         } finally {
-            discoverer.closeAsync().toFuture().get();
+            discoverer.closeAsync().toVoidFuture().get();
         }
     }
 
@@ -441,7 +441,7 @@ public class DefaultDnsServiceDiscovererTest {
             assertThat(subscriber.inactiveCount(), equalTo(expectedInactiveCount));
         } finally {
             responseLatch.countDown();
-            discoverer.closeAsync().toFuture().get();
+            discoverer.closeAsync().toVoidFuture().get();
         }
     }
 
@@ -512,7 +512,7 @@ public class DefaultDnsServiceDiscovererTest {
             latchOnSubscribe.await();
         } finally {
             try {
-                discoverer.closeAsync().toFuture().get();
+                discoverer.closeAsync().toVoidFuture().get();
                 fail("Expected exception");
             } catch (ExecutionException e) {
                 assertThat(e.getCause().getCause(), equalTo(DELIBERATE_EXCEPTION));

@@ -56,7 +56,7 @@ public class PubFirstOrErrorTest {
         executorRule.executor().submit(() -> {
             publisher.onNext("hello");
             publisher.onComplete();
-        }).toFuture().get();
+        }).toVoidFuture().get();
         listenerRule.verifySuccess("hello");
     }
 
@@ -66,7 +66,7 @@ public class PubFirstOrErrorTest {
         executorRule.executor().submit(() -> {
             publisher.onNext("foo", "bar");
             publisher.onComplete();
-        }).toFuture().get();
+        }).toVoidFuture().get();
         listenerRule.verifyFailure(IllegalArgumentException.class);
     }
 

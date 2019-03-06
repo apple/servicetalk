@@ -255,7 +255,7 @@ public class HttpPredicateRouterBuilderTest extends BaseHttpPredicateRouterBuild
                 .when((ctx, req) -> true).thenRouteTo(serviceC)
                 .buildStreaming();
 
-        service.closeAsync().toFuture().get();
+        service.closeAsync().toVoidFuture().get();
 
         verify(serviceA).closeAsync();
         verify(serviceB).closeAsync();
@@ -284,7 +284,7 @@ public class HttpPredicateRouterBuilderTest extends BaseHttpPredicateRouterBuild
 
         try {
             final Completable completable = service.closeAsync();
-            completable.toFuture().get();
+            completable.toVoidFuture().get();
             fail("Expected an exception from `await`");
         } catch (final ExecutionException e) {
             assertSame(DELIBERATE_EXCEPTION, e.getCause());

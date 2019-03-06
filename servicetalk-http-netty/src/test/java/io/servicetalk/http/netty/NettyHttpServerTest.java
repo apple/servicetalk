@@ -296,7 +296,7 @@ public class NettyHttpServerTest extends AbstractNettyHttpServerTest {
 
         // Use a very high timeout for the graceful close. It should happen quite quickly because there are no
         // active requests/responses.
-        closeAsyncGracefully(serverContext(), 1000, SECONDS).toFuture().get();
+        closeAsyncGracefully(serverContext(), 1000, SECONDS).toVoidFuture().get();
         assertConnectionClosed();
     }
 
@@ -326,7 +326,7 @@ public class NettyHttpServerTest extends AbstractNettyHttpServerTest {
         final StreamingHttpRequest request1 = reqRespFactory.newRequest(GET, SVC_TEST_PUBLISHER);
         makeRequest(request1);
 
-        serverContext().closeAsync().toFuture().get();
+        serverContext().closeAsync().toVoidFuture().get();
 
         assertConnectionClosed();
     }
@@ -344,7 +344,7 @@ public class NettyHttpServerTest extends AbstractNettyHttpServerTest {
 
         onCloseListener.verifyNoEmissions();
 
-        closeAsyncGracefully(serverContext(), 10, MILLISECONDS).toFuture().get();
+        closeAsyncGracefully(serverContext(), 10, MILLISECONDS).toVoidFuture().get();
 
         onCloseListener.verifyCompletion();
 
@@ -364,7 +364,7 @@ public class NettyHttpServerTest extends AbstractNettyHttpServerTest {
 
         onCloseListener.verifyNoEmissions();
 
-        serverContext().closeAsync().toFuture().get();
+        serverContext().closeAsync().toVoidFuture().get();
 
         onCloseListener.verifyCompletion();
 
@@ -378,7 +378,7 @@ public class NettyHttpServerTest extends AbstractNettyHttpServerTest {
         final StreamingHttpRequest request1 = reqRespFactory.newRequest(GET, SVC_TEST_PUBLISHER);
         makeRequest(request1);
 
-        closeAsyncGracefully(serverContext(), 500, MILLISECONDS).toFuture().get();
+        closeAsyncGracefully(serverContext(), 500, MILLISECONDS).toVoidFuture().get();
 
         assertConnectionClosed();
     }
@@ -393,7 +393,7 @@ public class NettyHttpServerTest extends AbstractNettyHttpServerTest {
         closeAsyncGracefully(serverContext(), 1000, SECONDS).subscribe();
         // Wait 500 millis for the "immediate" close to happen, since there are multiple threads involved.
         // If it takes any longer than that, it probably didn't work, but the graceful close would make the test pass.
-        serverContext().closeAsync().toFuture().get();
+        serverContext().closeAsync().toVoidFuture().get();
 
         assertConnectionClosed();
     }

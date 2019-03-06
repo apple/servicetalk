@@ -91,7 +91,7 @@ public class FlushStrategyOverrideTest {
 
     @After
     public void tearDown() throws Exception {
-        newCompositeCloseable().appendAll(conn, client, serverCtx).closeAsync().toFuture().get();
+        newCompositeCloseable().appendAll(conn, client, serverCtx).closeAsync().toVoidFuture().get();
     }
 
     @Test

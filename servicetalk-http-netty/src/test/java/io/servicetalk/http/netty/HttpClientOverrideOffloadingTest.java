@@ -99,7 +99,7 @@ public class HttpClientOverrideOffloadingTest {
 
     @After
     public void tearDown() throws Exception {
-        newCompositeCloseable().appendAll(client, server, ioExecutor, executor).closeAsync().toFuture().get();
+        newCompositeCloseable().appendAll(client, server, ioExecutor, executor).closeAsync().toVoidFuture().get();
     }
 
     @Test
@@ -110,7 +110,7 @@ public class HttpClientOverrideOffloadingTest {
                 errors.add(new AssertionError("Invalid thread found providing the connection. Thread: "
                         + currentThread()));
             }
-        }).toFuture().get().closeAsync().toFuture().get();
+        }).toFuture().get().closeAsync().toVoidFuture().get();
         assertThat("Unexpected errors: " + errors, errors, hasSize(0));
     }
 

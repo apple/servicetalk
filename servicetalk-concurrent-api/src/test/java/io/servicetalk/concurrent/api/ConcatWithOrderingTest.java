@@ -38,7 +38,7 @@ public class ConcatWithOrderingTest {
                 .concatWith(completable(3))
                 .concatWith(completable(4))
                 .concatWith(completable(5))
-                .toFuture().get();
+                .toVoidFuture().get();
 
         assertResult(sb);
     }

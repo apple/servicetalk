@@ -93,6 +93,6 @@ public abstract class StreamingHttpRequester implements
 
     @Override
     public final void close() {
-        awaitTermination(closeAsyncGracefully().toFuture());
+        awaitTermination(closeAsyncGracefully().toVoidFuture());
     }
 }

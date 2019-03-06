@@ -91,7 +91,7 @@ public class ConsumeRequestPayloadOnResponsePathTest {
         test((responseSingle, request) -> responseSingle.map(response ->
                 response.transformRaw(() -> null, (payloadChunk, __) -> payloadChunk, (__, trailers) -> {
                     try {
-                        consumePayloadBody(request).toFuture().get();
+                        consumePayloadBody(request).toVoidFuture().get();
                     } catch (Exception e) {
                         PlatformDependent.throwException(e);
                     }

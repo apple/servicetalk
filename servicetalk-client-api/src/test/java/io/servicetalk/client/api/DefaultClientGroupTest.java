@@ -34,7 +34,7 @@ public class DefaultClientGroupTest {
     public void requestingClientFromClosedClientGroupShouldNotHang() throws Exception {
         DefaultClientGroup<String, ListenableAsyncCloseable> cg =
                 new DefaultClientGroup<>(s -> emptyAsyncCloseable());
-        cg.closeAsync().toFuture().get();
+        cg.closeAsync().toVoidFuture().get();
 
         try {
             cg.get("foo");

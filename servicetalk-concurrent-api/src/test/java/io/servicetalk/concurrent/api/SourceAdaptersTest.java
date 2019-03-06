@@ -197,7 +197,7 @@ public class SourceAdaptersTest {
             s.onSubscribe(IGNORE_CANCEL);
             s.onComplete();
         };
-        fromSource(src).toFuture().get();
+        fromSource(src).toVoidFuture().get();
     }
 
     @Test
@@ -207,7 +207,7 @@ public class SourceAdaptersTest {
             s.onError(DELIBERATE_EXCEPTION);
         };
 
-        Future<Integer> future = fromSource(src).toFuture();
+        Future<Void> future = fromSource(src).toVoidFuture();
         expectedException.expect(ExecutionException.class);
         expectedException.expectCause(sameInstance(DELIBERATE_EXCEPTION));
         future.get();
@@ -218,7 +218,7 @@ public class SourceAdaptersTest {
         Cancellable srcCancellable = mock(Cancellable.class);
         CompletableSource source = s -> s.onSubscribe(srcCancellable);
 
-        fromSource(source).toFuture().cancel(true);
+        fromSource(source).toVoidFuture().cancel(true);
         verify(srcCancellable).cancel();
     }
 

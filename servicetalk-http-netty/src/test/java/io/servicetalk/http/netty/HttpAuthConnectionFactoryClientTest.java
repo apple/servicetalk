@@ -65,10 +65,10 @@ public class HttpAuthConnectionFactoryClientTest {
     @After
     public void teardown() throws Exception {
         if (client != null) {
-            client.closeAsync().toFuture().get();
+            client.closeAsync().toVoidFuture().get();
         }
         if (serverContext != null) {
-            serverContext.closeAsync().toFuture().get();
+            serverContext.closeAsync().toVoidFuture().get();
         }
     }
 

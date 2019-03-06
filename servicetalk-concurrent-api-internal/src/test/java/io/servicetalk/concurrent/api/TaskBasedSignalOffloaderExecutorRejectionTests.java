@@ -98,7 +98,7 @@ public class TaskBasedSignalOffloaderExecutorRejectionTests {
     @Test
     public void completableSubscribeRejects() throws Exception {
         rejectNextTask.set(true);
-        completed().subscribeOn(executor).toFuture().get();
+        completed().subscribeOn(executor).toVoidFuture().get();
         verifyRejectedTasks(1, 1);
     }
 
@@ -122,7 +122,7 @@ public class TaskBasedSignalOffloaderExecutorRejectionTests {
     public void completableOnSubscribeRejects() throws Exception {
         rejectNextTask.set(true);
         expectRejection();
-        Completable.never().publishOn(executor).toFuture().get();
+        Completable.never().publishOn(executor).toVoidFuture().get();
         verifyRejectedTasks(1, 1);
     }
 

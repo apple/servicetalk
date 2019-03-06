@@ -55,10 +55,10 @@ public final class TcpConnectorTest extends AbstractTcpServerTest {
 
     private static void testWriteAndRead(NettyConnection<Buffer, Buffer> connection)
             throws ExecutionException, InterruptedException {
-        connection.writeAndFlush(connection.executionContext().bufferAllocator().fromAscii("Hello")).toFuture().get();
+        connection.writeAndFlush(connection.executionContext().bufferAllocator().fromAscii("Hello")).toVoidFuture().get();
         String response = connection.read().first().map(buffer -> buffer.toString(defaultCharset())).toFuture().get();
         assertThat("Unexpected response.", response, is("Hello"));
-        connection.onClose().toFuture().get();
+        connection.onClose().toVoidFuture().get();
     }
 
     @Test
@@ -71,7 +71,7 @@ public final class TcpConnectorTest extends AbstractTcpServerTest {
     public void testConnectToUnknownPort() throws Exception {
         thrown.expectCause(anyOf(instanceOf(RetryableConnectException.class),
                 instanceOf(ClosedChannelException.class)));
-        serverContext.closeAsync().toFuture().get();
+        serverContext.closeAsync().toVoidFuture().get();
         // Closing the server to increase probability of finding a port on which no one is listening.
         client.connectBlocking(CLIENT_CTX, serverAddress);
     }
@@ -108,7 +108,7 @@ public final class TcpConnectorTest extends AbstractTcpServerTest {
                             return context;
                         })
                 ).toFuture().get();
-        connection.closeAsync().toFuture().get();
+        connection.closeAsync().toVoidFuture().get();
 
         registeredLatch.await();
         activeLatch.await();

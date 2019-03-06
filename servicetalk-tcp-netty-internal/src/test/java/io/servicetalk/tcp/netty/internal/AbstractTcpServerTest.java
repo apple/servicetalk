@@ -125,6 +125,6 @@ public abstract class AbstractTcpServerTest {
 
     @After
     public void stopServer() throws Exception {
-        serverContext.closeAsync().toFuture().get();
+        serverContext.closeAsync().toVoidFuture().get();
     }
 }

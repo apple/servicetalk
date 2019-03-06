@@ -552,7 +552,7 @@ public abstract class Completable {
      * @see <a href="http://reactivex.io/documentation/operators/retry.html">ReactiveX retry operator.</a>
      */
     public final Completable retry(BiIntPredicate<Throwable> shouldRetry) {
-        return toSingle().retry(shouldRetry).ignoreResult();
+        return toVoidSingle().retry(shouldRetry).ignoreResult();
     }
 
     /**
@@ -592,7 +592,7 @@ public abstract class Completable {
      * @see <a href="http://reactivex.io/documentation/operators/retry.html">ReactiveX retry operator.</a>
      */
     public final Completable retryWhen(BiIntFunction<Throwable, Completable> retryWhen) {
-        return toSingle().retryWhen(retryWhen).ignoreResult();
+        return toVoidSingle().retryWhen(retryWhen).ignoreResult();
     }
 
     /**
@@ -1082,34 +1082,80 @@ public abstract class Completable {
      * Converts this {@code Completable} to a {@link Single}.
      * <p>
      * The return value's {@link SingleSource.Subscriber#onSuccess(Object)} value is undefined. If you need a specific
-     * value you can also use {@link #concatWith(Single)} with a {@link Single#success(Object)}.
-     * @param <T> The value type of the resulting {@link Single}.
+     * value you can also use {@link #toSingle(Supplier)}.
      * @return A {@link Single} that mirrors the terminal signal from this {@link Completable}.
      */
-    public final <T> Single<T> toSingle() {
-        return new CompletableToSingle<>(this, executor);
+    public final Single<Void> toVoidSingle() {
+        return toSingle(() -> null);
+    }
+
+    /**
+     * Converts this {@code Completable} to a {@link Single} that terminates with the value supplied by the
+     * {@code valueSupplier} if this {@link Completable} terminates successfully. If this {@link Completable} terminates
+     * with a failure, the returned {@link Single} will terminate will the same failure.
+     *
+     * @param valueSupplier {@link Supplier} to supply the result of the returned {@link Single} when this
+     * {@link Completable} terminates successfully.
+     * @param <T> The value type of the resulting {@link Single}.
+     * @return A {@link Single} that terminates with the value supplied by the {@code valueSupplier} if this
+     * {@link Completable} terminates successfully. If this {@link Completable} terminates with a failure, the returned
+     * {@link Single} will terminate with the same failure.
+     */
+    public final <T> Single<T> toSingle(Supplier<T> valueSupplier) {
+        return new CompletableToSingle<>(this, executor, valueSupplier);
     }
 
     /**
      * Converts this {@code Completable} to a {@link CompletionStage}.
      * <p>
-     * The {@link CompletionStage}'s value is undefined.
-     * @param <T> The value type of the resulting {@link Single}.
+     * The {@link CompletionStage}'s value is undefined. If you need a specific value you can use
+     * {@link #toCompletionStage(Supplier)}.
      * @return A {@link CompletionStage} that mirrors the terminal signal from this {@link Completable}.
      */
-    public final <T> CompletionStage<T> toCompletionStage() {
-        return this.<T>toSingle().toCompletionStage();
+    public final CompletionStage<Void> toVoidCompletionStage() {
+        return this.toVoidSingle().toCompletionStage();
+    }
+
+    /**
+     * Converts this {@code Completable} to a {@link CompletionStage} that terminates with the value supplied by the
+     * {@code valueSupplier} if this {@link Completable} terminates successfully. If this {@link Completable} terminates
+     * with a failure, the returned {@link CompletionStage} will terminate with the same failure.
+     *
+     * @param valueSupplier {@link Supplier} to supply the result of the returned {@link CompletionStage} when this
+     * {@link Completable} terminates successfully.
+     * @param <T> The value type of the resulting {@link Single}.
+     * @return A {@link CompletionStage}  that terminates with the value supplied by the
+     * {@code valueSupplier} if this {@link Completable} terminates successfully. If this {@link Completable} terminates
+     * with a failure, the returned {@link CompletionStage} will terminate with the same failure.
+     */
+    public final <T> CompletionStage<T> toCompletionStage(Supplier<T> valueSupplier) {
+        return this.toSingle(valueSupplier).toCompletionStage();
     }
 
     /**
      * Converts this {@code Completable} to a {@link Future}.
      * <p>
-     * The {@link Future}'s value is undefined.
-     * @param <T> The value type of the resulting {@link Single}.
+     * The {@link Future}'s value is undefined. If you need a specific value you can use {@link #toFuture(Supplier)}.
      * @return A {@link Future} that mirrors the terminal signal from this {@link Completable}.
      */
-    public final <T> Future<T> toFuture() {
-        return this.<T>toSingle().toFuture();
+    public final Future<Void> toVoidFuture() {
+        return this.toVoidSingle().toFuture();
+    }
+
+    /**
+     * Converts this {@code Completable} to a {@link Future} that terminates with the value supplied by the
+     * {@code valueSupplier} if this {@link Completable} terminates successfully. If this {@link Completable} terminates
+     * with a failure, the returned {@link Future} will terminate with the same failure.
+     *
+     * @param valueSupplier {@link Supplier} to supply the result of the returned {@link Future} when this
+     * {@link Completable} terminates successfully.
+     * @param <T> The value type of the resulting {@link Single}.
+     * @return A {@link Future}  that terminates with the value supplied by the
+     * {@code valueSupplier} if this {@link Completable} terminates successfully. If this {@link Completable} terminates
+     * with a failure, the returned {@link Future} will terminate with the same failure.
+     */
+    public final <T> Future<T> toFuture(Supplier<T> valueSupplier) {
+        return this.toSingle(valueSupplier).toFuture();
     }
 
     //

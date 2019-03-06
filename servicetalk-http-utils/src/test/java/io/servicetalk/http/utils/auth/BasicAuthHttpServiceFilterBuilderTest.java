@@ -355,7 +355,7 @@ public class BasicAuthHttpServiceFilterBuilderTest {
 
         assertFalse(credentialsVerifierClosed.get());
         assertFalse(nextServiceClosed.get());
-        service.closeAsync().toFuture().get();
+        service.closeAsync().toVoidFuture().get();
         assertTrue(credentialsVerifierClosed.get());
         assertTrue(nextServiceClosed.get());
     }

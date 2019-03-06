@@ -117,7 +117,7 @@ public class CommanderUtilsTest {
 
         thrown.expect(ExecutionException.class);
         thrown.expectCause(is(initialException));
-        execCompletable.toFuture().get();
+        execCompletable.toVoidFuture().get();
     }
 
     @Test
@@ -131,7 +131,7 @@ public class CommanderUtilsTest {
         thrown.expect(ExecutionException.class);
         thrown.expectCause(is(initialException));
         thrown.expectCause(hasProperty("suppressed", array(is(releaseException))));
-        execCompletable.toFuture().get();
+        execCompletable.toVoidFuture().get();
     }
 
     private static final class TestCommander {

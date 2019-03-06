@@ -226,8 +226,8 @@ public class TestExecutorTest {
     @Test
     public void testCloseAsync() throws Exception {
         TestExecutor fixture = new TestExecutor();
-        Future<String> closeFuture = fixture.closeAsync().toFuture();
-        Future<String> onCloseFuture = fixture.onClose().toFuture();
+        Future<Void> closeFuture = fixture.closeAsync().toVoidFuture();
+        Future<Void> onCloseFuture = fixture.onClose().toVoidFuture();
 
         assertNull(closeFuture.get());
         assertTrue(closeFuture.isDone());

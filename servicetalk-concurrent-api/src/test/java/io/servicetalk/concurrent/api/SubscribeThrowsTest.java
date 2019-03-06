@@ -112,7 +112,7 @@ public class SubscribeThrowsTest {
         };
         expectedException.expect(instanceOf(ExecutionException.class));
         expectedException.expectCause(is(DELIBERATE_EXCEPTION));
-        c.toFuture().get();
+        c.toVoidFuture().get();
     }
 
     @Test

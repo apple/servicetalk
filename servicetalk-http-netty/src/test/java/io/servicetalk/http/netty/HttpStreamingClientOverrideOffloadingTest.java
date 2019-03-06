@@ -106,7 +106,7 @@ public class HttpStreamingClientOverrideOffloadingTest {
 
     @After
     public void tearDown() throws Exception {
-        newCompositeCloseable().appendAll(client, server, ioExecutor, executor).closeAsync().toFuture().get();
+        newCompositeCloseable().appendAll(client, server, ioExecutor, executor).closeAsync().toVoidFuture().get();
     }
 
     @Test
@@ -116,7 +116,7 @@ public class HttpStreamingClientOverrideOffloadingTest {
                 throw new AssertionError("Invalid thread found providing the connection. Thread: "
                         + currentThread());
             }
-        }).toFuture().get().closeAsync().toFuture().get();
+        }).toFuture().get().closeAsync().toVoidFuture().get();
     }
 
     @Test

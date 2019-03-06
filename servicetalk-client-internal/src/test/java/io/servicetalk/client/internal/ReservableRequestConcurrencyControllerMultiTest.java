@@ -48,7 +48,7 @@ public class ReservableRequestConcurrencyControllerMultiTest extends AbstractReq
             // Test coldness
             assertFalse(controller.tryReserve());
 
-            release.toFuture().get();
+            release.toVoidFuture().get();
         }
     }
 

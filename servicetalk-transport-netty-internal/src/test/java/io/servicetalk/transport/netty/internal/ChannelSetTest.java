@@ -149,7 +149,7 @@ public class ChannelSetTest {
         // closeAsyncGracefully must complete.
         closeAsyncGracefullyCompletable.onComplete();
 
-        fixture.onClose().toFuture().get();
+        fixture.onClose().toVoidFuture().get();
 
         subscriberRule1.verifyCompletion();
         subscriberRule2.verifyCompletion();
@@ -166,7 +166,7 @@ public class ChannelSetTest {
         subscriberRule1.listen(gracefulCompletable);
         verify(nettyConnection, never()).closeAsyncGracefully();
 
-        fixture.onClose().toFuture().get();
+        fixture.onClose().toVoidFuture().get();
 
         subscriberRule1.verifyCompletion();
         subscriberRule2.verifyCompletion();
@@ -189,7 +189,7 @@ public class ChannelSetTest {
 
         listener.operationComplete(channelCloseFuture);
 
-        fixture.onClose().toFuture().get();
+        fixture.onClose().toVoidFuture().get();
 
         subscriberRule1.verifyCompletion();
         subscriberRule2.verifyCompletion();
@@ -206,7 +206,7 @@ public class ChannelSetTest {
         subscriberRule2.listen(gracefulCompletable2);
         verify(nettyConnection, times(1)).closeAsyncGracefully();
 
-        gracefulCompletable1.toFuture().get();
+        gracefulCompletable1.toVoidFuture().get();
         subscriberRule2.verifyCompletion();
         verify(channel).close();
     }
@@ -222,7 +222,7 @@ public class ChannelSetTest {
         subscriberRule2.listen(closeCompletable2);
         verify(channel, times(1)).close();
 
-        fixture.onClose().toFuture().get();
+        fixture.onClose().toVoidFuture().get();
 
         subscriberRule1.verifyCompletion();
         subscriberRule2.verifyCompletion();
@@ -234,7 +234,7 @@ public class ChannelSetTest {
         Completable completable = closeAsyncGracefully(fixture, 100, MILLISECONDS);
         subscriberRule1.listen(completable);
         verify(nettyConnection).closeAsyncGracefully();
-        fixture.onClose().toFuture().get();
+        fixture.onClose().toVoidFuture().get();
         verify(channel).close();
         subscriberRule1.verifyCompletion();
     }

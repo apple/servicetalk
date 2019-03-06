@@ -73,7 +73,7 @@ public class NoOffloadsStrategyTest {
         if (context != null) {
             closeables.append(context);
         }
-        closeables.append(ioExecutor).closeAsync().toFuture().get();
+        closeables.append(ioExecutor).closeAsync().toVoidFuture().get();
     }
 
     @Test

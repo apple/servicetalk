@@ -71,7 +71,7 @@ public abstract class AbstractEchoServerBasedHttpRequesterTest {
 
     @AfterClass
     public static void stopServer() throws Exception {
-        serverContext.closeAsync().toFuture().get();
+        serverContext.closeAsync().toVoidFuture().get();
     }
 
     private static class EchoServiceStreaming extends StreamingHttpService {
@@ -122,7 +122,7 @@ public abstract class AbstractEchoServerBasedHttpRequesterTest {
             assertThat(headers.get("test-req-header-transfer-encoding"), equalTo(CHUNKED));
             assertThat(respBody.toFuture().get(), equalTo("Testing123"));
         } finally {
-            requester.closeAsync().toFuture().get();
+            requester.closeAsync().toVoidFuture().get();
         }
     }
 }

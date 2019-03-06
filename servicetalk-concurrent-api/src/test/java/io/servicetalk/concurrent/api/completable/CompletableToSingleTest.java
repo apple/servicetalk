@@ -28,10 +28,13 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
+import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static java.lang.Thread.currentThread;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
+import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.Assert.assertTrue;
 
 public class CompletableToSingleTest {
@@ -43,10 +46,24 @@ public class CompletableToSingleTest {
     private TestSingleSubscriber<String> subscriber = new TestSingleSubscriber<>();
 
     @Test
-    public void noTerminalSucceeds() {
-        toSource(Completable.completed().<String>toSingle()).subscribe(subscriber);
+    public void valueSupplier() {
+        toSource(Completable.completed().toSingle(() -> "foo")).subscribe(subscriber);
         assertTrue(subscriber.hasResult());
-        assertThat(subscriber.takeResult(), nullValue());
+        assertThat(subscriber.takeResult(), is("foo"));
+    }
+
+    @Test
+    public void valueSupplierThrows() {
+        toSource(Completable.completed().<String>toSingle(() -> {
+            throw DELIBERATE_EXCEPTION;
+        })).subscribe(subscriber);
+        assertTrue(subscriber.isErrored());
+        assertThat(subscriber.takeError(), sameInstance(DELIBERATE_EXCEPTION));
+    }
+
+    @Test
+    public void noTerminalSucceeds() throws Exception {
+        assertThat(Completable.completed().toVoidSingle().toFuture().get(), nullValue());
     }
 
     @Test
@@ -60,7 +77,7 @@ public class CompletableToSingleTest {
                         currentThread()));
             }
             analyzed.countDown();
-        }).subscribeOn(executorRule.executor()).toSingle().subscribe(__ -> { }).cancel();
+        }).subscribeOn(executorRule.executor()).toVoidSingle().subscribe(__ -> { }).cancel();
         analyzed.await();
         assertThat("Unexpected errors observed: " + errors, errors, hasSize(0));
     }

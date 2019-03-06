@@ -455,11 +455,11 @@ public class HttpRequestEncoderTest {
 
             StreamingHttpRequest request = reqRespFactory.post("/closeme");
 
-            serverCloseTrigger.toFuture().get();
+            serverCloseTrigger.toVoidFuture().get();
             Completable write = conn.write(from(request, allocator.fromAscii("Bye"), EmptyHttpHeaders.INSTANCE));
 
             try {
-                write.toFuture().get();
+                write.toVoidFuture().get();
                 fail("Should not complete normally");
             } catch (ExecutionException e) {
                 CloseHandler closeHandler = closeHandlerRef.get();

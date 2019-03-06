@@ -200,7 +200,7 @@ public final class BlockingTestUtils {
      * @throws InterruptedException if the thread was interrupted while waiting for termination.
      */
     public static void awaitIndefinitely(Completable source) throws ExecutionException, InterruptedException {
-        source.toFuture().get();
+        source.toVoidFuture().get();
     }
 
     /**
@@ -231,7 +231,7 @@ public final class BlockingTestUtils {
      */
     public static void await(Completable source, long timeout, TimeUnit timeoutUnit)
             throws ExecutionException, InterruptedException, TimeoutException {
-        source.toFuture().get(timeout, timeoutUnit);
+        source.toVoidFuture().get(timeout, timeoutUnit);
     }
 
     private static <T> T enforceNonNull(@Nullable T result, NullPointerException npe) throws ExecutionException {

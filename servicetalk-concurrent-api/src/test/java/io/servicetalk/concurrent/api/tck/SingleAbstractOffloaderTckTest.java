@@ -35,7 +35,7 @@ abstract class SingleAbstractOffloaderTckTest extends AbstractSingleOperatorTckT
 
     @AfterMethod
     public void tearDown() throws Exception {
-        executor.closeAsync().toFuture().get();
+        executor.closeAsync().toVoidFuture().get();
     }
 
     @Override

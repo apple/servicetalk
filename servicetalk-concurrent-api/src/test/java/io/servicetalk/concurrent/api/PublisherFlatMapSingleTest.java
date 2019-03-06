@@ -80,7 +80,7 @@ public class PublisherFlatMapSingleTest {
 
     @AfterClass
     public static void afterClass() throws Exception {
-        executor.closeAsync().toFuture().get();
+        executor.closeAsync().toVoidFuture().get();
     }
 
     @Test

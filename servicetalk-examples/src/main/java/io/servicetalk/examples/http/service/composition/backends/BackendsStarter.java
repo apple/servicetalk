@@ -82,7 +82,7 @@ public final class BackendsStarter {
             allServicesOnClose = allServicesOnClose.merge(ratingService.onClose());
 
             // Await termination of all backends started by this class.
-            allServicesOnClose.toFuture().get();
+            allServicesOnClose.toVoidFuture().get();
         }
     }
 }

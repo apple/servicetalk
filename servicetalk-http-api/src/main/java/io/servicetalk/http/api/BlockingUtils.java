@@ -148,7 +148,7 @@ final class BlockingUtils {
         // It is assumed that users will always apply timeouts at the StreamingHttpService layer (e.g. via filter). So
         // we don't apply any explicit timeout here and just wait forever.
         try {
-            source.toFuture().get();
+            source.toVoidFuture().get();
         } catch (final ExecutionException e) {
             throwException(e.getCause());
         }

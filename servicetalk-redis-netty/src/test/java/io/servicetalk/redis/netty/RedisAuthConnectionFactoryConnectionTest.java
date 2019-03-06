@@ -67,7 +67,7 @@ public class RedisAuthConnectionFactoryConnectionTest {
                     connection.closeAsync().onErrorResume(cause -> completed()).concatWith(success(connection)))
                     .ignoreResult()
                     .onErrorResume(cause -> completed())
-                    .concatWith(ioExecutor.closeAsync()).toFuture().get();
+                    .concatWith(ioExecutor.closeAsync()).toVoidFuture().get();
         }
     }
 

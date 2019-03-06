@@ -368,7 +368,7 @@ public class DefaultNettyConnectionTest {
         CloseHandler closeHandler = forPipelinedRequestResponse(true, channel.config());
         setupWithCloseHandler(closeHandler);
         closeListener.listen(conn.onClosing());
-        conn.closeAsyncGracefully().toFuture().get();
+        conn.closeAsyncGracefully().toVoidFuture().get();
         closeListener.verifyCompletion();
     }
 
@@ -377,7 +377,7 @@ public class DefaultNettyConnectionTest {
         CloseHandler closeHandler = forPipelinedRequestResponse(true, channel.config());
         setupWithCloseHandler(closeHandler);
         closeListener.listen(conn.onClosing());
-        conn.closeAsync().toFuture().get();
+        conn.closeAsync().toVoidFuture().get();
         closeListener.verifyCompletion();
     }
 
@@ -487,7 +487,7 @@ public class DefaultNettyConnectionTest {
         channel.pipeline().fireExceptionCaught(DELIBERATE_EXCEPTION);
         toSource(conn.read()).subscribe(subscriber);
         assertThat(subscriber.takeError(), is(DELIBERATE_EXCEPTION));
-        conn.onClose().toFuture().get();
+        conn.onClose().toVoidFuture().get();
     }
 
     @Test
@@ -495,6 +495,6 @@ public class DefaultNettyConnectionTest {
         channel.close().get();
         toSource(conn.read()).subscribe(subscriber);
         assertThat(subscriber.takeError(), instanceOf(ClosedChannelException.class));
-        conn.onClose().toFuture().get();
+        conn.onClose().toVoidFuture().get();
     }
 }

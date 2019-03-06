@@ -270,7 +270,7 @@ public class SignalOffloaderPublisherTest {
 
         void shutdown() {
             try {
-                executor.closeAsync().toFuture().get();
+                executor.closeAsync().toVoidFuture().get();
             } catch (Exception e) {
                 LOGGER.warn("Failed to close the executor {}.", executor, e);
             }
@@ -279,7 +279,7 @@ public class SignalOffloaderPublisherTest {
         OffloaderHolder awaitTermination() throws Exception {
             // Submit a task, since we use a single thread executor, this means all previous tasks have been
             // completed.
-            executor.submit(() -> { }).toFuture().get();
+            executor.submit(() -> { }).toVoidFuture().get();
             return this;
         }
 

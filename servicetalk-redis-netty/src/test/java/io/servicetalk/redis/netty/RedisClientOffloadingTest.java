@@ -152,7 +152,7 @@ public class RedisClientOffloadingTest {
         subscribeTo(RedisTestEnvironment::isInClientEventLoop, errors,
                 connection.settingStream(MAX_CONCURRENCY).doAfterFinally(terminated::countDown),
                 "Client settings stream: ");
-        connection.closeAsyncGracefully().toFuture().get();
+        connection.closeAsyncGracefully().toVoidFuture().get();
         terminated.await();
         assertThat("Unexpected errors.", errors, is(empty()));
     }
@@ -175,7 +175,7 @@ public class RedisClientOffloadingTest {
 
     @Test
     public void onCloseIsOffloaded() throws Exception {
-        connectionContext.closeAsync().toFuture().get();
+        connectionContext.closeAsync().toVoidFuture().get();
         subscribeTo(RedisTestEnvironment::isInClientEventLoop, errors,
                 connectionContext.onClose().doAfterFinally(terminated::countDown));
         terminated.await();

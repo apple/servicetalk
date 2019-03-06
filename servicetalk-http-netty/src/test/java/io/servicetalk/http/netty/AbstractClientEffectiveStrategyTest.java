@@ -94,7 +94,7 @@ public class AbstractClientEffectiveStrategyTest {
 
     @After
     public void tearDown() throws Exception {
-        newCompositeCloseable().appendAll(client, context, ioExecutor).closeAsync().toFuture().get();
+        newCompositeCloseable().appendAll(client, context, ioExecutor).closeAsync().toVoidFuture().get();
     }
 
     protected void assertNoOffload(final ClientOffloadPoint offloadPoint) {

@@ -89,7 +89,7 @@ public class PredicateRouterOffloadingTest {
         if (context != null) {
             closeable.append(context);
         }
-        closeable.closeAsync().toFuture().get();
+        closeable.closeAsync().toVoidFuture().get();
     }
 
     @Test

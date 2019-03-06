@@ -105,7 +105,7 @@ final class DefaultCompositeCloseable implements CompositeCloseable {
     @Override
     public void close() throws Exception {
         try {
-            closeAsync().toFuture().get();
+            closeAsync().toVoidFuture().get();
         } catch (final ExecutionException e) {
             final Throwable cause = e.getCause();
             if (cause != null) {

@@ -92,7 +92,7 @@ public class SignalOffloaderConcurrentCompletableTest {
             results[i] = pairs[i].sendResult();
         }
 
-        completed().mergeDelayError(results).toFuture().get();
+        completed().mergeDelayError(results).toVoidFuture().get();
         state.awaitTermination();
 
         for (int i = 0; i < entityCount; i++) {
@@ -115,7 +115,7 @@ public class SignalOffloaderConcurrentCompletableTest {
 
         void shutdown() {
             try {
-                executor.closeAsync().toFuture().get();
+                executor.closeAsync().toVoidFuture().get();
                 emitters.shutdownNow();
             } catch (Exception e) {
                 LOGGER.warn("Failed to close the executor {}.", executor, e);
@@ -125,7 +125,7 @@ public class SignalOffloaderConcurrentCompletableTest {
         void awaitTermination() throws Exception {
             // Submit a task, since we use a single thread executor, this means all previous tasks have been
             // completed.
-            executor.submit(() -> { }).toFuture().get();
+            executor.submit(() -> { }).toVoidFuture().get();
         }
 
         SubscriberCancellablePair newPair() {

@@ -343,7 +343,7 @@ public class BufferRedisCommanderTest extends BaseRedisClientTest {
         Future<String> value2 = tcc.set(key("a-key"), buf("a-value3"));
         Future<Buffer> value3 = tcc.ping(buf("in-transac"));
         Future<Buffer> value4 = tcc.get(key("a-key"));
-        tcc.exec().toFuture().get();
+        tcc.exec().toVoidFuture().get();
         postReleaseLatch.await();
         assertThat(value1.get(), is(1L));
         assertThat(value2.get(), is("OK"));
@@ -408,7 +408,7 @@ public class BufferRedisCommanderTest extends BaseRedisClientTest {
                 asList(buf("1000"), buf("100000000")));
 
         Future<Buffer> pingFuture = tcc.ping(buf("in-transac"));
-        tcc.exec().toFuture().cancel(true);
+        tcc.exec().toVoidFuture().cancel(true);
         postCloseLatch.await();
 
         assertThrowsClosedChannelException(pingFuture::get);
@@ -427,7 +427,7 @@ public class BufferRedisCommanderTest extends BaseRedisClientTest {
                 asList(buf("1000"), buf("100000000"))).toFuture();
 
         Future<Buffer> pingFuture = tcc.ping(buf("in-transac"));
-        tcc.exec().toFuture().cancel(true);
+        tcc.exec().toVoidFuture().cancel(true);
         postCloseLatch.await();
 
         assertThrowsClosedChannelException(pingFuture::get);
@@ -477,7 +477,7 @@ public class BufferRedisCommanderTest extends BaseRedisClientTest {
     public void transactionCloseAsync() throws Exception {
         final TransactedBufferRedisCommander tcc = awaitIndefinitelyNonNull(commandClient.multi());
 
-        tcc.closeAsync().toFuture().get();
+        tcc.closeAsync().toVoidFuture().get();
 
         thrown.expect(ExecutionException.class);
         thrown.expectCause(is(instanceOf(ClosedChannelException.class)));

@@ -46,11 +46,11 @@ public interface ServerContext extends ListenableAsyncCloseable, AutoCloseable {
      * This method will return when {@link #onClose()} terminates either successfully or unsuccessfully.
      */
     default void awaitShutdown() {
-        awaitTermination(onClose().toFuture());
+        awaitTermination(onClose().toVoidFuture());
     }
 
     @Override
     default void close() {
-        awaitTermination(closeAsyncGracefully().toFuture());
+        awaitTermination(closeAsyncGracefully().toVoidFuture());
     }
 }

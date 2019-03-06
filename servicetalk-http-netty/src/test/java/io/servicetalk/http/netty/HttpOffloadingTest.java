@@ -221,7 +221,7 @@ public class HttpOffloadingTest {
 
     @Test
     public void serverOnCloseIsOffloaded() throws Exception {
-        serverContext.closeAsync().toFuture().get();
+        serverContext.closeAsync().toVoidFuture().get();
         subscribeTo(inEventLoop(), errors, serverContext.onClose());
         terminated.await();
         assertThat("Unexpected errors.", errors, is(empty()));
@@ -232,7 +232,7 @@ public class HttpOffloadingTest {
         subscribeTo(inEventLoop(), errors,
                 httpConnection.settingStream(MAX_CONCURRENCY).doAfterFinally(terminated::countDown),
                 "Client settings stream: ");
-        httpConnection.closeAsyncGracefully().toFuture().get();
+        httpConnection.closeAsyncGracefully().toVoidFuture().get();
         terminated.await();
         assertThat("Unexpected errors.", errors, is(empty()));
     }
@@ -253,7 +253,7 @@ public class HttpOffloadingTest {
 
     @Test
     public void clientOnCloseIsOffloaded() throws Exception {
-        connectionContext.closeAsync().toFuture().get();
+        connectionContext.closeAsync().toVoidFuture().get();
         subscribeTo(inEventLoop(), errors, connectionContext.onClose());
         terminated.await();
         assertThat("Unexpected errors.", errors, is(empty()));

@@ -43,20 +43,20 @@ public class CollectTest {
 
     @Test
     public void collectVarArgSuccess() throws Exception {
-        collect(completed(), completed()).toFuture().get();
+        collect(completed(), completed()).toVoidFuture().get();
     }
 
     @Test
     public void collectVarArgMaxConcurrencySuccess() throws Exception {
         // Just testing that the method works. As it uses existing operators, we don't require elaborate tests
-        collect(1, completed(), completed()).toFuture().get();
+        collect(1, completed(), completed()).toVoidFuture().get();
     }
 
     @Test
     public void collectVarArgFailure() throws Exception {
         AtomicBoolean secondSubscribed = new AtomicBoolean();
         Future<Void> future = collect(error(DELIBERATE_EXCEPTION),
-                completed().doBeforeSubscribe(__ -> secondSubscribed.set(true))).toFuture();
+                completed().doBeforeSubscribe(__ -> secondSubscribed.set(true))).toVoidFuture();
         try {
             future.get();
             fail();
@@ -70,7 +70,7 @@ public class CollectTest {
     public void collectVarArgDelayError() throws Exception {
         AtomicBoolean secondSubscribed = new AtomicBoolean();
         Future<Void> future = collectDelayError(error(DELIBERATE_EXCEPTION),
-                completed().doBeforeSubscribe(__ -> secondSubscribed.set(true))).toFuture();
+                completed().doBeforeSubscribe(__ -> secondSubscribed.set(true))).toVoidFuture();
         try {
             future.get();
             fail();
@@ -85,7 +85,7 @@ public class CollectTest {
     public void collectVarArgDelayErrorMaxConcurrency() throws Exception {
         AtomicBoolean secondSubscribed = new AtomicBoolean();
         Future<Void> future = collectDelayError(1, error(DELIBERATE_EXCEPTION),
-                completed().doBeforeSubscribe(__ -> secondSubscribed.set(true))).toFuture();
+                completed().doBeforeSubscribe(__ -> secondSubscribed.set(true))).toVoidFuture();
         try {
             future.get();
             fail();
@@ -98,20 +98,20 @@ public class CollectTest {
 
     @Test
     public void collectIterableSuccess() throws Exception {
-        collect(asList(completed(), completed())).toFuture().get();
+        collect(asList(completed(), completed())).toVoidFuture().get();
     }
 
     @Test
     public void collectIterableMaxConcurrencySuccess() throws Exception {
         // Just testing that the method works. As it uses existing operators, we don't require elaborate tests
-        collect(asList(completed(), completed()), 1).toFuture().get();
+        collect(asList(completed(), completed()), 1).toVoidFuture().get();
     }
 
     @Test
     public void collectIterableFailure() throws Exception {
         AtomicBoolean secondSubscribed = new AtomicBoolean();
         Future<Void> future = collect(asList(error(DELIBERATE_EXCEPTION),
-                completed().doBeforeSubscribe(__ -> secondSubscribed.set(true)))).toFuture();
+                completed().doBeforeSubscribe(__ -> secondSubscribed.set(true)))).toVoidFuture();
         try {
             future.get();
             fail();
@@ -125,7 +125,7 @@ public class CollectTest {
     public void collectIterableDelayError() throws Exception {
         AtomicBoolean secondSubscribed = new AtomicBoolean();
         Future<Void> future = collectDelayError(asList(error(DELIBERATE_EXCEPTION),
-                completed().doBeforeSubscribe(__ -> secondSubscribed.set(true)))).toFuture();
+                completed().doBeforeSubscribe(__ -> secondSubscribed.set(true)))).toVoidFuture();
         try {
             future.get();
             fail();
@@ -140,7 +140,7 @@ public class CollectTest {
     public void collectIterableDelayErrorMaxConcurrency() throws Exception {
         AtomicBoolean secondSubscribed = new AtomicBoolean();
         Future<Void> future = collectDelayError(asList(error(DELIBERATE_EXCEPTION),
-                completed().doBeforeSubscribe(__ -> secondSubscribed.set(true))), 1).toFuture();
+                completed().doBeforeSubscribe(__ -> secondSubscribed.set(true))), 1).toVoidFuture();
         try {
             future.get();
             fail();

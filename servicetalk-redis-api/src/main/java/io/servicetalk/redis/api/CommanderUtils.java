@@ -59,7 +59,7 @@ final class CommanderUtils {
                     Single.class.getSimpleName() + " cannot be subscribed to after the transaction has completed.");
         }
         // Currently, we do not offload subscribes for `connection.request()` hence the order of subscribes is the
-        // order of writes, so using `toFuture()` is sufficient. When we have the ability to override `Executor` per
+        // order of writes, so using `toVoidFuture()` is sufficient. When we have the ability to override `Executor` per
         // request, we will use that to make sure subscribes are not offloaded.
         final SingleProcessor<T> single = new SingleProcessor<>();
         singles.add(single);

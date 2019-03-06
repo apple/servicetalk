@@ -147,7 +147,7 @@ public class TcpServerBinderConnectionAcceptorTest extends AbstractTcpServerTest
         try {
             NettyConnection<Buffer, Buffer> connection = client.connectBlocking(CLIENT_CTX, serverAddress);
             final Buffer buffer = connection.executionContext().bufferAllocator().fromAscii("Hello");
-            connection.writeAndFlush(buffer).toFuture().get();
+            connection.writeAndFlush(buffer).toVoidFuture().get();
             Single<Buffer> read = connection.read().first();
             Buffer responseBuffer = awaitIndefinitelyNonNull(read);
             assertEquals("Did not receive response payload echoing request",

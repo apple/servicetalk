@@ -54,7 +54,7 @@ public class DefaultMultiAddressUrlHttpClientBuilderTest {
                 .executionStrategy(defaultStrategy(CTX.executor()))
                 .buildStreaming();
         assertNotNull(newRequester);
-        newRequester.closeAsync().toFuture().get();
+        newRequester.closeAsync().toVoidFuture().get();
     }
 
     @Test
@@ -64,7 +64,7 @@ public class DefaultMultiAddressUrlHttpClientBuilderTest {
                 .executionStrategy(defaultStrategy(CTX.executor()))
                 .build();
         assertNotNull(newAggregatedRequester);
-        newAggregatedRequester.closeAsync().toFuture().get();
+        newAggregatedRequester.closeAsync().toVoidFuture().get();
     }
 
     @Test
@@ -96,7 +96,7 @@ public class DefaultMultiAddressUrlHttpClientBuilderTest {
                 .ioExecutor(CTX.ioExecutor())
                 .executionStrategy(defaultStrategy(CTX.executor()))
                 .buildStreaming();
-        newRequester.closeAsync().toFuture().get();
+        newRequester.closeAsync().toVoidFuture().get();
         verify(mockedServiceDiscoverer, never()).closeAsync();
     }
 }

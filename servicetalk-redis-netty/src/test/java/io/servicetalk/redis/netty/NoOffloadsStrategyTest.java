@@ -47,7 +47,7 @@ public class NoOffloadsStrategyTest {
     @After
     public void tearDown() throws Exception {
         if (client != null) {
-            client.closeAsync().toFuture().get();
+            client.closeAsync().toVoidFuture().get();
         }
     }
 
@@ -56,7 +56,7 @@ public class NoOffloadsStrategyTest {
         String testThread = currentThread().getName();
         client = builder.executionStrategy(noOffloadsStrategy()).build();
         final AtomicReference<Thread> executorThread = new AtomicReference<>();
-        client.executionContext().executor().submit(() -> executorThread.set(currentThread())).toFuture().get();
+        client.executionContext().executor().submit(() -> executorThread.set(currentThread())).toVoidFuture().get();
         assertThat("Unexpected thread for the server executor.", executorThread.get().getName(),
                 not(startsWith(testThread)));
     }
@@ -71,7 +71,7 @@ public class NoOffloadsStrategyTest {
             }
         }).build();
         final AtomicReference<Thread> executorThread = new AtomicReference<>();
-        client.executionContext().executor().submit(() -> executorThread.set(currentThread())).toFuture().get();
+        client.executionContext().executor().submit(() -> executorThread.set(currentThread())).toVoidFuture().get();
         assertThat("Unexpected thread for the server executor.", executorThread.get().getName(),
                 startsWith(testThread));
     }

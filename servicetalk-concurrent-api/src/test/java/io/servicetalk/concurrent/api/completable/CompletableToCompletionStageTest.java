@@ -35,6 +35,8 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.sameInstance;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertSame;
 
 public class CompletableToCompletionStageTest {
@@ -76,7 +78,7 @@ public class CompletableToCompletionStageTest {
 
     private void verifyComplete(boolean completeBeforeListen) throws InterruptedException {
         CountDownLatch latch = new CountDownLatch(1);
-        CompletionStage<String> stage = source.toCompletionStage();
+        CompletionStage<Void> stage = source.toVoidCompletionStage();
         if (completeBeforeListen) {
             source.onComplete();
             stage.thenRun(latch::countDown);
@@ -85,6 +87,24 @@ public class CompletableToCompletionStageTest {
             source.onComplete();
         }
         latch.await();
+    }
+
+    @Test
+    public void withValueSupplier() throws Exception {
+        CompletionStage<String> stage = source.toCompletionStage(() -> "foo");
+        source.onComplete();
+        assertEquals(stage.toCompletableFuture().get(), "foo");
+    }
+
+    @Test
+    public void valueSupplierThrows() throws Exception {
+        CompletionStage<String> stage = source.toCompletionStage(() -> {
+            throw DELIBERATE_EXCEPTION;
+        });
+        source.onComplete();
+        thrown.expect(ExecutionException.class);
+        thrown.expectCause(sameInstance(DELIBERATE_EXCEPTION));
+        stage.toCompletableFuture().get();
     }
 
     @Test
@@ -100,7 +120,7 @@ public class CompletableToCompletionStageTest {
     private void verifyError(boolean errorBeforeListen) throws InterruptedException {
         CountDownLatch latch = new CountDownLatch(1);
         AtomicReference<Throwable> causeRef = new AtomicReference<>();
-        CompletionStage<String> stage = source.toCompletionStage();
+        CompletionStage<Void> stage = source.toVoidCompletionStage();
         if (errorBeforeListen) {
             source.onError(DELIBERATE_EXCEPTION);
             stage.exceptionally(cause -> {
@@ -121,15 +141,33 @@ public class CompletableToCompletionStageTest {
     }
 
     @Test
+    public void withValueSupplierFuture() throws Exception {
+        Future<String> future = source.toFuture(() -> "foo");
+        source.onComplete();
+        assertEquals(future.get(), "foo");
+    }
+
+    @Test
+    public void valueSupplierFutureThrows() throws Exception {
+        Future<String> future = source.toFuture(() -> {
+            throw DELIBERATE_EXCEPTION;
+        });
+        source.onComplete();
+        thrown.expect(ExecutionException.class);
+        thrown.expectCause(sameInstance(DELIBERATE_EXCEPTION));
+        future.get();
+    }
+
+    @Test
     public void futureComplete() throws Exception {
-        Future<String> f = source.toFuture();
+        Future<Void> f = source.toVoidFuture();
         jdkExecutor.execute(source::onComplete);
         f.get();
     }
 
     @Test
     public void futureFail() throws Exception {
-        Future<String> f = source.toFuture();
+        Future<Void> f = source.toVoidFuture();
         jdkExecutor.execute(() -> source.onError(DELIBERATE_EXCEPTION));
         thrown.expect(ExecutionException.class);
         thrown.expectCause(is(DELIBERATE_EXCEPTION));

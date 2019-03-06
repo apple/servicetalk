@@ -49,7 +49,7 @@ public class ReservableRequestConcurrencyControllerOnlySingleTest
             // Test coldness
             assertFalse(controller.tryReserve());
 
-            release.toFuture().get();
+            release.toVoidFuture().get();
         }
     }
 

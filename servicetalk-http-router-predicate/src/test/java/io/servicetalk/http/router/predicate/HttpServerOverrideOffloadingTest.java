@@ -83,7 +83,7 @@ public class HttpServerOverrideOffloadingTest {
 
     @After
     public void tearDown() throws Exception {
-        newCompositeCloseable().appendAll(client, server, ioExecutor, executor).closeAsync().toFuture().get();
+        newCompositeCloseable().appendAll(client, server, ioExecutor, executor).closeAsync().toVoidFuture().get();
     }
 
     private static boolean isInServerEventLoop(Thread thread) {

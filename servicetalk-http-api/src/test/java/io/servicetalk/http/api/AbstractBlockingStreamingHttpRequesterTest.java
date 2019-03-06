@@ -201,7 +201,7 @@ public abstract class AbstractBlockingStreamingHttpRequesterTest {
             throw new IllegalStateException("shouldn't be called!");
         });
         StreamingHttpRequester asyncRequester = toStreamingRequester(syncRequester);
-        asyncRequester.closeAsync().toFuture().get();
+        asyncRequester.closeAsync().toVoidFuture().get();
         assertTrue(((TestHttpRequester) syncRequester).isClosed());
     }
 

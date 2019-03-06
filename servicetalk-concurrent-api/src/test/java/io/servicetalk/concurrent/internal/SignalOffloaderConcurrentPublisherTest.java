@@ -100,7 +100,7 @@ public class SignalOffloaderConcurrentPublisherTest {
             results[i] = pairs[i].sendItems((i + 1) * 100);
         }
 
-        completed().mergeDelayError(results).toFuture().get();
+        completed().mergeDelayError(results).toVoidFuture().get();
         state.awaitTermination();
 
         for (int i = 0; i < entityCount; i++) {
@@ -112,7 +112,7 @@ public class SignalOffloaderConcurrentPublisherTest {
     @Test
     public void concurrentSignalsFromSubscriberAndSubscription() throws Exception {
         OffloaderHolder.SubscriberSubscriptionPair pair = state.newPair(10_000);
-        pair.sendItems(10_000).toFuture().get();
+        pair.sendItems(10_000).toVoidFuture().get();
         state.awaitTermination();
         pair.subscriber.verifyNoErrors();
         pair.subscription.verifyRequested(10_000);
@@ -132,7 +132,7 @@ public class SignalOffloaderConcurrentPublisherTest {
 
         void shutdown() {
             try {
-                executor.closeAsync().toFuture().get();
+                executor.closeAsync().toVoidFuture().get();
                 emitters.shutdownNow();
             } catch (Exception e) {
                 LOGGER.warn("Failed to close the executor {}.", executor, e);
@@ -142,7 +142,7 @@ public class SignalOffloaderConcurrentPublisherTest {
         void awaitTermination() throws Exception {
             // Submit a task, since we use a single thread executor, this means all previous tasks have been
             // completed.
-            executor.submit(() -> { }).toFuture().get();
+            executor.submit(() -> { }).toVoidFuture().get();
         }
 
         SubscriberSubscriptionPair newPair(int expectedItems) {

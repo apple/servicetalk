@@ -241,6 +241,6 @@ public abstract class AbstractNettyHttpServerTest {
     }
 
     void assertConnectionClosed() throws Exception {
-        httpConnection.onClose().toFuture().get();
+        httpConnection.onClose().toVoidFuture().get();
     }
 }

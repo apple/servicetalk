@@ -92,7 +92,7 @@ public final class ExecutorRule<E extends Executor> extends ExternalResource {
     @Override
     protected void after() {
         try {
-            executor.closeAsync().toFuture().get();
+            executor.closeAsync().toVoidFuture().get();
         } catch (ExecutionException | InterruptedException e) {
             throw new RuntimeException(e);
         }

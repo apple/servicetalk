@@ -85,7 +85,7 @@ public abstract class HttpRequester implements HttpRequestFactory, ListenableAsy
 
     @Override
     public final void close() {
-        awaitTermination(closeAsyncGracefully().toFuture());
+        awaitTermination(closeAsyncGracefully().toVoidFuture());
     }
 
     /**

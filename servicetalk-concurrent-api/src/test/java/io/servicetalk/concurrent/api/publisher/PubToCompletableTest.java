@@ -92,7 +92,7 @@ public class PubToCompletableTest {
                         currentThread()));
             }
             analyzed.countDown();
-        }).subscribeOn(executorRule.executor()).ignoreElements().toFuture().get();
+        }).subscribeOn(executorRule.executor()).ignoreElements().toVoidFuture().get();
         analyzed.await();
         assertThat("Unexpected errors observed: " + errors, errors, hasSize(0));
     }

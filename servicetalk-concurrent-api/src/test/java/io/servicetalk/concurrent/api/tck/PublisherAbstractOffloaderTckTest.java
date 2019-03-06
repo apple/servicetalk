@@ -35,7 +35,7 @@ abstract class PublisherAbstractOffloaderTckTest extends AbstractPublisherOperat
 
     @AfterMethod
     public void tearDown() throws Exception {
-        executor.closeAsync().toFuture().get();
+        executor.closeAsync().toVoidFuture().get();
     }
 
     @Override

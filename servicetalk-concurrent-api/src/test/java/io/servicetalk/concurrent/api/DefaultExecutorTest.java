@@ -183,12 +183,12 @@ public final class DefaultExecutorTest {
 
     @Test
     public void timerRaw() throws Exception {
-        executor.timer(1, NANOSECONDS).toFuture().get();
+        executor.timer(1, NANOSECONDS).toVoidFuture().get();
     }
 
     @Test
     public void timerDuration() throws Exception {
-        executor.timer(ofNanos(1)).toFuture().get();
+        executor.timer(ofNanos(1)).toVoidFuture().get();
     }
 
     @Test
@@ -236,7 +236,7 @@ public final class DefaultExecutorTest {
         Executor executor = from(new RejectAllScheduler());
         expected.expect(ExecutionException.class);
         expected.expectCause(instanceOf(RejectedExecutionException.class));
-        executor.timer(1, NANOSECONDS).toFuture().get();
+        executor.timer(1, NANOSECONDS).toVoidFuture().get();
     }
 
     @Test
@@ -244,13 +244,13 @@ public final class DefaultExecutorTest {
         Executor executor = from(new RejectAllScheduler());
         expected.expect(ExecutionException.class);
         expected.expectCause(instanceOf(RejectedExecutionException.class));
-        executor.timer(ofNanos(1)).toFuture().get();
+        executor.timer(ofNanos(1)).toVoidFuture().get();
     }
 
     @Test
     public void submitRunnable() throws Throwable {
         Task submitted = new Task();
-        executor.submit(submitted).toFuture().get();
+        executor.submit(submitted).toVoidFuture().get();
         submitted.awaitDone();
     }
 
@@ -260,9 +260,9 @@ public final class DefaultExecutorTest {
         Task submitted2 = new Task();
         AtomicBoolean returnedSubmitted1 = new AtomicBoolean();
         Supplier<Runnable> runnableSupplier = () -> returnedSubmitted1.getAndSet(true) ? submitted2 : submitted1;
-        executor.submitRunnable(runnableSupplier).toFuture().get();
+        executor.submitRunnable(runnableSupplier).toVoidFuture().get();
         submitted1.awaitDone();
-        executor.submitRunnable(runnableSupplier).toFuture().get();
+        executor.submitRunnable(runnableSupplier).toVoidFuture().get();
         submitted2.awaitDone();
     }
 
@@ -271,7 +271,7 @@ public final class DefaultExecutorTest {
         Executor executor = from(new RejectAllExecutor());
         expected.expect(ExecutionException.class);
         expected.expectCause(instanceOf(RejectedExecutionException.class));
-        executor.submit(() -> { }).toFuture().get();
+        executor.submit(() -> { }).toVoidFuture().get();
     }
 
     @Test
@@ -279,7 +279,7 @@ public final class DefaultExecutorTest {
         Executor executor = from(new RejectAllExecutor());
         expected.expect(ExecutionException.class);
         expected.expectCause(instanceOf(RejectedExecutionException.class));
-        executor.submitRunnable(() -> () -> { }).toFuture().get();
+        executor.submitRunnable(() -> () -> { }).toVoidFuture().get();
     }
 
     @Test
@@ -288,7 +288,7 @@ public final class DefaultExecutorTest {
         expected.expectCause(instanceOf(DeliberateException.class));
         executor.submit((Runnable) () -> {
             throw DELIBERATE_EXCEPTION;
-        }).toFuture().get();
+        }).toVoidFuture().get();
     }
 
     @Test
@@ -297,7 +297,7 @@ public final class DefaultExecutorTest {
         expected.expectCause(instanceOf(DeliberateException.class));
         executor.submitRunnable(() -> () -> {
             throw DELIBERATE_EXCEPTION;
-        }).toFuture().get();
+        }).toVoidFuture().get();
     }
 
     @Test

@@ -100,7 +100,7 @@ public class AbstractServerEffectiveStrategyTest {
         if (context != null) {
             closeable.append(context);
         }
-        closeable.appendAll(serviceExecutor, ioExecutor).closeAsync().toFuture().get();
+        closeable.appendAll(serviceExecutor, ioExecutor).closeAsync().toVoidFuture().get();
     }
 
     protected BlockingHttpClient context(ServerContext context) {

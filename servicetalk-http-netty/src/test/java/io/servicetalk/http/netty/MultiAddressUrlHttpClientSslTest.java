@@ -134,10 +134,10 @@ public class MultiAddressUrlHttpClientSslTest {
     @AfterClass
     public static void afterClass() throws Exception {
         if (serverCtx != null) {
-            serverCtx.closeAsync().toFuture().get();
+            serverCtx.closeAsync().toVoidFuture().get();
         }
         if (secureServerCtx != null) {
-            secureServerCtx.closeAsync().toFuture().get();
+            secureServerCtx.closeAsync().toVoidFuture().get();
         }
     }
 

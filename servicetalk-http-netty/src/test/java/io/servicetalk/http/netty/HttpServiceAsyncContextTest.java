@@ -326,7 +326,7 @@ public class HttpServiceAsyncContextTest {
         StreamingHttpResponse response = connection.request(request).toFuture().get();
         assertEquals(OK, response.status());
         assertTrue(request.headers().contains(REQUEST_ID_HEADER, requestId));
-        response.payloadBodyAndTrailers().ignoreElements().toFuture().get();
+        response.payloadBodyAndTrailers().ignoreElements().toVoidFuture().get();
     }
 
     private static void assertAsyncContext(@Nullable CharSequence requestId, Queue<Throwable> errorQueue) {

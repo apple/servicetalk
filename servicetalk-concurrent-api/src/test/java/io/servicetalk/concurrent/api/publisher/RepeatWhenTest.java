@@ -60,7 +60,7 @@ public class RepeatWhenTest {
     @After
     public void tearDown() throws Exception {
         if (executor != null) {
-            executor.closeAsync().toFuture().get();
+            executor.closeAsync().toVoidFuture().get();
         }
     }
 

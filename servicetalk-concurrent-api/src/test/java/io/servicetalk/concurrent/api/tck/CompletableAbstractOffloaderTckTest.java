@@ -35,7 +35,7 @@ abstract class CompletableAbstractOffloaderTckTest extends AbstractCompletableOp
 
     @AfterMethod
     public void tearDown() throws Exception {
-        executor.closeAsync().toFuture().get();
+        executor.closeAsync().toVoidFuture().get();
     }
 
     @Override

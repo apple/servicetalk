@@ -357,7 +357,7 @@ public class PartitionedHttpClientTest {
 
         @Override
         public void close() throws Exception {
-            newCompositeCloseable().prependAll(udClient, clients).closeAsync().toFuture().get();
+            newCompositeCloseable().prependAll(udClient, clients).closeAsync().toVoidFuture().get();
         }
     }
 }

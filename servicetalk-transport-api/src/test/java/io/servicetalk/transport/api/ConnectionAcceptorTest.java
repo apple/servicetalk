@@ -59,7 +59,7 @@ public class ConnectionAcceptorTest {
         f.append(original -> new OrderVerifyingConnectionAcceptorAdapter(original, order, 1))
                 .append(original -> new OrderVerifyingConnectionAcceptorAdapter(original, order, 2))
                 .append(original -> new OrderVerifyingConnectionAcceptorAdapter(original, order, 3))
-                .create(ACCEPT_ALL).accept(context).toFuture().get();
+                .create(ACCEPT_ALL).accept(context).toVoidFuture().get();
         assertThat("Unexpected filter order.", order, contains(1, 2, 3));
     }
 
