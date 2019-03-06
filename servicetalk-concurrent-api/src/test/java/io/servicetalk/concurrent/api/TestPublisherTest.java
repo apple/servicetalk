@@ -200,7 +200,7 @@ public class TestPublisherTest {
         source.subscribe(subscriber1);
 
         expected.expect(AssertionError.class);
-        expected.expectMessage(startsWith("Demand check failure: No outstanding demand. Ignoring item: "));
+        expected.expectMessage(startsWith("Demand check failure: Invalid outstanding demand"));
         source.onNext("a");
     }
 
@@ -211,7 +211,7 @@ public class TestPublisherTest {
 
         subscriber1.cancel();
         expected.expect(AssertionError.class);
-        expected.expectMessage(startsWith("Demand check failure: Subscription is cancelled. Ignoring item: "));
+        expected.expectMessage(startsWith("Demand check failure: Invalid outstanding demand"));
         source.onNext("a");
     }
 
@@ -227,7 +227,7 @@ public class TestPublisherTest {
         assertThat(subscriber1.takeItems(), contains("a", "b"));
 
         expected.expect(AssertionError.class);
-        expected.expectMessage(startsWith("Demand check failure: No outstanding demand. Ignoring item: "));
+        expected.expectMessage(startsWith("Demand check failure: Invalid outstanding demand"));
         source.onNext("c");
     }
 

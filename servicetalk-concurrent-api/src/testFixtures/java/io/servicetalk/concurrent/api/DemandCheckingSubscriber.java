@@ -28,8 +28,7 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public final class DemandCheckingSubscriber<T> implements Subscriber<T> {
 
-    private static final int NO_ON_SUBSCRIBE = -1;
-    private static final int CANCELLED = -2;
+    private static final long NO_ON_SUBSCRIBE = Long.MIN_VALUE;
     private final Subscriber<? super T> delegate;
 
     private final AtomicLong pending = new AtomicLong(NO_ON_SUBSCRIBE);
@@ -49,13 +48,17 @@ public final class DemandCheckingSubscriber<T> implements Subscriber<T> {
         delegate.onSubscribe(new Subscription() {
             @Override
             public void request(final long n) {
-                pending.accumulateAndGet(n, FlowControlUtil::addWithOverflowProtectionIfNotNegative);
+                if (n == NO_ON_SUBSCRIBE) {
+                    // NO_ON_SUBSCRIBE is special value and not eligible to use because it signals a condition.
+                    pending.set(NO_ON_SUBSCRIBE + 1);
+                } else {
+                    pending.accumulateAndGet(n, FlowControlUtil::addWithOverflowProtectionIfNotNegative);
+                }
                 s.request(n);
             }
 
             @Override
             public void cancel() {
-                pending.set(CANCELLED);
                 s.cancel();
             }
         });
@@ -69,11 +72,9 @@ public final class DemandCheckingSubscriber<T> implements Subscriber<T> {
         } else if (pending == NO_ON_SUBSCRIBE) {
             throw new AssertionError(
                     "Demand check failure: No subscription available to check demand. Ignoring item: " + t);
-        } else if (pending == CANCELLED) {
-            throw new AssertionError("Demand check failure: Subscription is cancelled. Ignoring item: " + t);
         } else {
-            assert pending == 0;
-            throw new AssertionError("Demand check failure: No outstanding demand. Ignoring item: " + t);
+            throw new AssertionError("Demand check failure: Invalid outstanding demand " + pending +
+                    ". Ignoring item: " + t);
         }
     }
 
