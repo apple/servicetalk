@@ -1139,6 +1139,20 @@ public abstract class Completable {
     }
 
     /**
+     * Subscribe to this {@link Completable} and log any {@link Subscriber#onError(Throwable)}. Passed {@link Runnable}
+     * is invoked when this {@link Completable} terminates successfully.
+     *
+     * @param onComplete {@link Runnable} to invoke when this {@link Completable} terminates successfully.
+     * @return {@link Cancellable} used to invoke {@link Cancellable#cancel()} on the parameter of
+     * {@link Subscriber#onSubscribe(Cancellable)} for this {@link Completable}.
+     */
+    public final Cancellable subscribe(Runnable onComplete) {
+        SimpleCompletableSubscriber subscriber = new SimpleCompletableSubscriber(onComplete);
+        subscribeInternal(subscriber);
+        return subscriber;
+    }
+
+    /**
      * Handles a subscriber to this {@code Completable}.
      * <p>
      * This method is invoked internally by {@link Completable} for every call to the
