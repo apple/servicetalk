@@ -23,6 +23,8 @@ import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
@@ -46,12 +48,11 @@ import static java.util.Objects.requireNonNull;
  */
 public final class TestCompletable extends Completable implements CompletableSource {
     private static final Logger LOGGER = LoggerFactory.getLogger(TestCompletable.class);
-
+    private static final AtomicReferenceFieldUpdater<TestCompletable, Subscriber> subscriberUpdater =
+            AtomicReferenceFieldUpdater.newUpdater(TestCompletable.class, Subscriber.class, "subscriber");
     private final Function<Subscriber, Subscriber> subscriberFunction;
     private final List<Throwable> exceptions = new CopyOnWriteArrayList<>();
-
-    @Nullable
-    private volatile Subscriber subscriber;
+    private volatile Subscriber subscriber = new WaitingSubscriber();
 
     /**
      * Create a {@code TestCompletable} with the defaults. See <b>Defaults</b> section of class javadoc.
@@ -61,7 +62,7 @@ public final class TestCompletable extends Completable implements CompletableSou
     }
 
     private TestCompletable(final Function<Subscriber, Subscriber> subscriberFunction) {
-        this.subscriberFunction = subscriberFunction;
+        this.subscriberFunction = requireNonNull(subscriberFunction);
     }
 
     /**
@@ -70,13 +71,24 @@ public final class TestCompletable extends Completable implements CompletableSou
      * @return {@code true} if this {@link TestCompletable} has been subscribed to, {@code false} otherwise.
      */
     public boolean isSubscribed() {
-        return subscriber != null;
+        return !(subscriber instanceof WaitingSubscriber);
     }
 
     @Override
     protected void handleSubscribe(final Subscriber subscriber) {
         try {
-            this.subscriber = requireNonNull(subscriberFunction.apply(subscriber));
+            Subscriber newSubscriber = requireNonNull(subscriberFunction.apply(subscriber));
+            for (;;) {
+                Subscriber currSubscriber = this.subscriber;
+                if (subscriberUpdater.compareAndSet(this, currSubscriber, newSubscriber)) {
+                    if (currSubscriber instanceof WaitingSubscriber) {
+                        @SuppressWarnings("unchecked")
+                        final WaitingSubscriber waiter = (WaitingSubscriber) currSubscriber;
+                        waiter.realSubscriber(newSubscriber);
+                    }
+                    break;
+                }
+            }
         } catch (final Throwable t) {
             record(t);
         }
@@ -96,7 +108,7 @@ public final class TestCompletable extends Completable implements CompletableSou
      * @param cancellable the {@link Cancellable}
      */
     public void onSubscribe(final Cancellable cancellable) {
-        final Subscriber subscriber = checkSubscriberAndExceptions("onSubscribe");
+        final Subscriber subscriber = checkSubscriberAndExceptions();
         subscriber.onSubscribe(cancellable);
     }
 
@@ -106,7 +118,7 @@ public final class TestCompletable extends Completable implements CompletableSou
      * @see Subscriber#onComplete()
      */
     public void onComplete() {
-        final Subscriber subscriber = checkSubscriberAndExceptions("onComplete");
+        final Subscriber subscriber = checkSubscriberAndExceptions();
         subscriber.onComplete();
     }
 
@@ -117,11 +129,11 @@ public final class TestCompletable extends Completable implements CompletableSou
      * @see Subscriber#onError(Throwable)
      */
     public void onError(final Throwable t) {
-        final Subscriber subscriber = checkSubscriberAndExceptions("onError");
+        final Subscriber subscriber = checkSubscriberAndExceptions();
         subscriber.onError(t);
     }
 
-    private Subscriber checkSubscriberAndExceptions(final String signal) {
+    private Subscriber checkSubscriberAndExceptions() {
         if (!exceptions.isEmpty()) {
             final RuntimeException exception = new RuntimeException("Unexpected exception(s) encountered",
                     exceptions.get(0));
@@ -129,10 +141,6 @@ public final class TestCompletable extends Completable implements CompletableSou
                 exception.addSuppressed(exceptions.get(i));
             }
             throw exception;
-        }
-        final Subscriber subscriber = this.subscriber;
-        if (subscriber == null) {
-            throw new IllegalStateException(signal + " without subscriber");
         }
         return subscriber;
     }
@@ -269,7 +277,7 @@ public final class TestCompletable extends Completable implements CompletableSou
          * @return a new {@link TestCompletable}.
          */
         public TestCompletable build(final Function<Subscriber, Subscriber> function) {
-            return new TestCompletable(requireNonNull(function));
+            return new TestCompletable(function);
         }
 
         private Function<Subscriber, Subscriber> buildSubscriberFunction() {
@@ -300,6 +308,37 @@ public final class TestCompletable extends Completable implements CompletableSou
                 return first;
             }
             return first.andThen(second);
+        }
+    }
+
+    private static final class WaitingSubscriber implements Subscriber {
+        private final SingleProcessor<Subscriber> realSubscriberSingle = new SingleProcessor<>();
+
+        @Override
+        public void onSubscribe(final Cancellable cancellable) {
+            waitForSubscription().onSubscribe(cancellable);
+        }
+
+        @Override
+        public void onComplete() {
+            waitForSubscription().onComplete();
+        }
+
+        @Override
+        public void onError(final Throwable t) {
+            waitForSubscription().onError(t);
+        }
+
+        void realSubscriber(Subscriber subscriber) {
+            realSubscriberSingle.onSuccess(subscriber);
+        }
+
+        private Subscriber waitForSubscription() {
+            try {
+                return realSubscriberSingle.toFuture().get();
+            } catch (InterruptedException | ExecutionException e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 }

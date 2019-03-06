@@ -23,6 +23,8 @@ import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
@@ -47,12 +49,11 @@ import static java.util.Objects.requireNonNull;
  */
 public final class TestSingle<T> extends Single<T> implements SingleSource<T> {
     private static final Logger LOGGER = LoggerFactory.getLogger(TestSingle.class);
-
+    private static final AtomicReferenceFieldUpdater<TestSingle, Subscriber> subscriberUpdater =
+            AtomicReferenceFieldUpdater.newUpdater(TestSingle.class, Subscriber.class, "subscriber");
     private final Function<Subscriber<? super T>, Subscriber<? super T>> subscriberFunction;
     private final List<Throwable> exceptions = new CopyOnWriteArrayList<>();
-
-    @Nullable
-    private volatile Subscriber<? super T> subscriber;
+    private volatile Subscriber<? super T> subscriber = new WaitingSubscriber<>();
 
     /**
      * Create a {@code TestSingle} with the defaults. See <b>Defaults</b> section of class javadoc.
@@ -62,7 +63,7 @@ public final class TestSingle<T> extends Single<T> implements SingleSource<T> {
     }
 
     private TestSingle(final Function<Subscriber<? super T>, Subscriber<? super T>> subscriberFunction) {
-        this.subscriberFunction = subscriberFunction;
+        this.subscriberFunction = requireNonNull(subscriberFunction);
     }
 
     /**
@@ -71,13 +72,24 @@ public final class TestSingle<T> extends Single<T> implements SingleSource<T> {
      * @return {@code true} if this {@link TestSingle} has been subscribed to, {@code false} otherwise.
      */
     public boolean isSubscribed() {
-        return subscriber != null;
+        return !(subscriber instanceof WaitingSubscriber);
     }
 
     @Override
     protected void handleSubscribe(final Subscriber<? super T> subscriber) {
         try {
-            this.subscriber = requireNonNull(subscriberFunction.apply(subscriber));
+            Subscriber<? super T> newSubscriber = requireNonNull(subscriberFunction.apply(subscriber));
+            for (;;) {
+                Subscriber<? super T> currSubscriber = this.subscriber;
+                if (subscriberUpdater.compareAndSet(this, currSubscriber, newSubscriber)) {
+                    if (currSubscriber instanceof WaitingSubscriber) {
+                        @SuppressWarnings("unchecked")
+                        final WaitingSubscriber<T> waiter = (WaitingSubscriber<T>) currSubscriber;
+                        waiter.realSubscriber(newSubscriber);
+                    }
+                    break;
+                }
+            }
         } catch (final Throwable t) {
             record(t);
         }
@@ -97,7 +109,7 @@ public final class TestSingle<T> extends Single<T> implements SingleSource<T> {
      * @param cancellable the {@link Cancellable}
      */
     public void onSubscribe(final Cancellable cancellable) {
-        final Subscriber<? super T> subscriber = checkSubscriberAndExceptions("onSubscribe");
+        final Subscriber<? super T> subscriber = checkSubscriberAndExceptions();
         subscriber.onSubscribe(cancellable);
     }
 
@@ -108,7 +120,7 @@ public final class TestSingle<T> extends Single<T> implements SingleSource<T> {
      * @see Subscriber#onSuccess(Object)
      */
     public void onSuccess(@Nullable final T result) {
-        final Subscriber<? super T> subscriber = checkSubscriberAndExceptions("onSuccess");
+        final Subscriber<? super T> subscriber = checkSubscriberAndExceptions();
         subscriber.onSuccess(result);
     }
 
@@ -119,11 +131,11 @@ public final class TestSingle<T> extends Single<T> implements SingleSource<T> {
      * @see Subscriber#onError(Throwable)
      */
     public void onError(final Throwable t) {
-        final Subscriber<? super T> subscriber = checkSubscriberAndExceptions("onError");
+        final Subscriber<? super T> subscriber = checkSubscriberAndExceptions();
         subscriber.onError(t);
     }
 
-    private Subscriber<? super T> checkSubscriberAndExceptions(final String signal) {
+    private Subscriber<? super T> checkSubscriberAndExceptions() {
         if (!exceptions.isEmpty()) {
             final RuntimeException exception = new RuntimeException("Unexpected exception(s) encountered",
                     exceptions.get(0));
@@ -131,10 +143,6 @@ public final class TestSingle<T> extends Single<T> implements SingleSource<T> {
                 exception.addSuppressed(exceptions.get(i));
             }
             throw exception;
-        }
-        final Subscriber<? super T> subscriber = this.subscriber;
-        if (subscriber == null) {
-            throw new IllegalStateException(signal + " without subscriber");
         }
         return subscriber;
     }
@@ -273,7 +281,7 @@ public final class TestSingle<T> extends Single<T> implements SingleSource<T> {
          * @return a new {@link TestSingle}.
          */
         public TestSingle<T> build(final Function<Subscriber<? super T>, Subscriber<? super T>> function) {
-            return new TestSingle<>(requireNonNull(function));
+            return new TestSingle<>(function);
         }
 
         private Function<Subscriber<? super T>, Subscriber<? super T>> buildSubscriberFunction() {
@@ -304,6 +312,37 @@ public final class TestSingle<T> extends Single<T> implements SingleSource<T> {
                 return first;
             }
             return first.andThen(second);
+        }
+    }
+
+    private static final class WaitingSubscriber<T> implements Subscriber<T> {
+        private final SingleProcessor<Subscriber<? super T>> realSubscriberSingle = new SingleProcessor<>();
+
+        @Override
+        public void onSubscribe(final Cancellable cancellable) {
+            waitForSubscription().onSubscribe(cancellable);
+        }
+
+        @Override
+        public void onSuccess(@Nullable final T t) {
+            waitForSubscription().onSuccess(t);
+        }
+
+        @Override
+        public void onError(final Throwable t) {
+            waitForSubscription().onError(t);
+        }
+
+        void realSubscriber(Subscriber<? super T> subscriber) {
+            realSubscriberSingle.onSuccess(subscriber);
+        }
+
+        private Subscriber<? super T> waitForSubscription() {
+            try {
+                return realSubscriberSingle.toFuture().get();
+            } catch (InterruptedException | ExecutionException e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 }
