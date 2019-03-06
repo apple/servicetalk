@@ -28,9 +28,9 @@ import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.DefaultHttpHeadersFactory;
 import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
+import io.servicetalk.http.api.DelegatingHttpExecutionStrategy;
 import io.servicetalk.http.api.HttpConnection;
 import io.servicetalk.http.api.HttpExecutionStrategy;
-import io.servicetalk.http.api.HttpExecutionStrategyAdapter;
 import io.servicetalk.http.api.HttpHeaderNames;
 import io.servicetalk.http.api.HttpRequester;
 import io.servicetalk.http.api.HttpResponse;
@@ -98,7 +98,7 @@ public class ConcurrentRequestsHttpConnectionFilterTest {
 
     // TODO(jayv) Temporary workaround until DefaultNettyConnection leverages strategy.offloadReceive()
     private static final HttpExecutionStrategy FULLY_NO_OFFLOAD_STRATEGY =
-            new HttpExecutionStrategyAdapter(noOffloadsStrategy()) {
+            new DelegatingHttpExecutionStrategy(noOffloadsStrategy()) {
         @Override
         public Executor executor() {
             return immediate();
