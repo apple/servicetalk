@@ -221,7 +221,7 @@ public class CancellationTest {
         // The handler method uses OutputStream APIs which are blocking. So we need to call handle and subscribe on
         // different threads because the write operation will block on the Subscriber creating requestN demand.
         if (enableOffload) {
-            Single<StreamingHttpResponse> respSingle =EXEC.executor().submit(() ->
+            Single<StreamingHttpResponse> respSingle = EXEC.executor().submit(() ->
                     jerseyRouter.handle(ctx, req, HTTP_REQ_RES_FACTORY)
             ).flatMap(identity())
              .doBeforeError(errorRef::set)
@@ -239,7 +239,7 @@ public class CancellationTest {
                         errorRef.compareAndSet(null, new NullPointerException("result == null not expected."));
                         cancelledLatch.countDown();
                     } else {
-                        result.payloadBody().ignoreElements().doAfterFinally(cancelledLatch::countDown);
+                        result.payloadBody().ignoreElements().doAfterFinally(cancelledLatch::countDown).subscribe();
                     }
                 }
 

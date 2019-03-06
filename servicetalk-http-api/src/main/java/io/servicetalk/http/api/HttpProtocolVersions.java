@@ -62,7 +62,7 @@ public final class HttpProtocolVersions {
     /**
      * Create a new {@link HttpProtocolVersion} from its {@link Buffer} representation. The passed {@link Buffer} will
      * be parsed to extract {@code major} and {@code minor} components of the version.
-     *TaskBasedSignalOffloader
+     *
      * @param httpVersion a {@link Buffer} representation of the
      * <a href="https://tools.ietf.org/html/rfc7230.html#section-2.6">HTTP protocol version</a>
      * @return a new {@link HttpProtocolVersion}

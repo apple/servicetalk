@@ -19,7 +19,6 @@ import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.internal.DuplicateSubscribeException;
-import io.servicetalk.concurrent.internal.FlowControlUtil;
 import io.servicetalk.concurrent.internal.TerminalNotification;
 import io.servicetalk.oio.api.PayloadWriter;
 
@@ -33,6 +32,7 @@ import java.util.concurrent.locks.LockSupport;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Publisher.error;
+import static io.servicetalk.concurrent.internal.FlowControlUtil.addWithOverflowProtection;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverTerminalFromSource;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.handleExceptionFromOnSubscribe;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.isRequestNValid;
@@ -46,6 +46,8 @@ import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater
  * @param <T> The type of data for the {@link PayloadWriter}.
  */
 public final class ConnectablePayloadWriter<T> implements PayloadWriter<T> {
+    private static final long REQUESTN_ABOUT_TO_PARK = Long.MIN_VALUE;
+    private static final long REQUESTN_TERMINATED = REQUESTN_ABOUT_TO_PARK + 1;
     private static final AtomicLongFieldUpdater<ConnectablePayloadWriter> requestedUpdater =
             AtomicLongFieldUpdater.newUpdater(ConnectablePayloadWriter.class, "requested");
     private static final AtomicReferenceFieldUpdater<ConnectablePayloadWriter, TerminalNotification> closedUpdater =
@@ -59,6 +61,7 @@ public final class ConnectablePayloadWriter<T> implements PayloadWriter<T> {
      * <ul>
      * <li>{@link State#DISCONNECTED} - waiting for {@link #connect()} to be called</li>
      * <li>{@link State#CONNECTING} - {@link #connect()} has been called, but no {@link Subscriber} yet.</li>
+     * <li>{@link State#WAITING_FOR_CONNECTED} - the writer thread is waiting for the {@link Subscriber}.</li>
      * <li>{@link State#CONNECTED} - {@link Publisher} created, logically connected but awaiting {@link Subscriber}</li>
      * <li>{@link Subscriber} - connected to the {@link Subscriber}, waiting for items to be emitted or termination</li>
      * <li>{@link State#TERMINATING} - we have {@link #close()}, but not yet delivered to the {@link Subscriber}</li>
@@ -69,18 +72,27 @@ public final class ConnectablePayloadWriter<T> implements PayloadWriter<T> {
     private volatile long requested;
     @Nullable
     private volatile TerminalNotification closed;
+    /**
+     * The writer thread that maybe blocked on {@link LockSupport#park()}.
+     * This does not need to be volatile because visibility is provided by modifications to {@link #state} or
+     * {@link #requested}.
+     */
     @Nullable
-    private volatile Thread writerThread;
+    private Thread writerThread;
 
     @Override
     public void write(final T t) throws IOException {
         verifyOpen();
-        // This can only be called from a single thread, so optimistically decrement and not worry about underflow
-        // because there will be no other thread decrementing this value. If we go negative we increment and wait.
-        final long currRequested = requestedUpdater.decrementAndGet(this);
-        if (currRequested < 0) {
-            requestedUpdater.incrementAndGet(this);
-            waitForRequestNDemand();
+        for (;;) {
+            final long requested = this.requested;
+            if (requested > 0) {
+                if (requestedUpdater.compareAndSet(this, requested, requested - 1)) {
+                    break;
+                }
+            } else {
+                waitForRequestNDemand();
+                break;
+            }
         }
 
         final Subscriber<? super T> s = waitForSubscriber();
@@ -115,6 +127,7 @@ public final class ConnectablePayloadWriter<T> implements PayloadWriter<T> {
                         break;
                     }
                 } else if (stateUpdater.compareAndSet(this, currState, State.TERMINATING)) {
+                    assert currState != State.WAITING_FOR_CONNECTED;
                     break;
                 }
             }
@@ -153,55 +166,72 @@ public final class ConnectablePayloadWriter<T> implements PayloadWriter<T> {
 
     private void waitForRequestNDemand() throws IOException {
         writerThread = Thread.currentThread();
-        // After we set the writerThread, and before we park we have to check if there has been some requested demand in
-        // the mean time or else we may deadlock because the Subscription thread may not have seen the writerThread.
-        if (requested > 0) {
-            writerThread = null;
-            // There will only ever be a single thread decrementing, so no need to use a CaS, we can just decrement.
-            requestedUpdater.decrementAndGet(this);
+        final long oldRequested = requestedUpdater.getAndSet(this, REQUESTN_ABOUT_TO_PARK);
+        if (oldRequested > 0) {
+            waitForRequestNDemandAvoidPark(oldRequested);
         } else {
             for (;;) {
                 LockSupport.park();
-                // There will only ever be a single thread decrementing, so no need to use a CaS, we can just decrement.
-                final long currRequested = requestedUpdater.decrementAndGet(this);
-                if (currRequested >= 0) {
-                    writerThread = null;
-                    break;
-                } else {
-                    requestedUpdater.incrementAndGet(this);
-                    // While we are waiting for interaction with the Subscription, if the Subscription contract is
-                    // violated that may result in a terminal notification, which doesn't require any demand to deliver.
-                    TerminalNotification currClosed = closed;
-                    if (currClosed != null) {
+                final long requested = this.requested;
+                if (requested > 0) {
+                    if (requestedUpdater.compareAndSet(this, requested,
+                            addWithOverflowProtection(oldRequested - 1, requested))) {
                         writerThread = null;
-                        final Subscriber<? super T> s = waitForSubscriber();
-                        state = State.TERMINATED;
-                        currClosed.terminate(s);
-                        throw new IOException("Already closed " + currClosed);
+                        break;
                     }
+                } else if (requested != REQUESTN_ABOUT_TO_PARK) {
+                    writerThread = null;
+                    // we have been closed some how, either cancelled or invalid requestN. Process the closed event.
+                    verifyOpen();
+                    break;
                 }
+            }
+        }
+    }
+
+    private void waitForRequestNDemandAvoidPark(final long oldRequested) throws IOException {
+        writerThread = null;
+        for (;;) {
+            final long requested = this.requested;
+            if (requested == REQUESTN_ABOUT_TO_PARK) {
+                if (requestedUpdater.compareAndSet(this, REQUESTN_ABOUT_TO_PARK, oldRequested - 1)) {
+                    break;
+                }
+            } else if (requested < 0) {
+                // we have been closed some how, either cancelled or invalid requestN. Process the closed event.
+                verifyOpen();
+                break;
+            } else if (requestedUpdater.compareAndSet(this, requested,
+                    addWithOverflowProtection(oldRequested - 1, requested))) {
+                break;
             }
         }
     }
 
     @SuppressWarnings("unchecked")
     private Subscriber<? super T> waitForSubscriber() throws IOException {
-        Object currState = state;
-        if (!(currState instanceof Subscriber)) {
-            writerThread = Thread.currentThread();
-            for (;;) {
+        final Object currState = state;
+        return currState instanceof Subscriber ? (Subscriber<? super T>) currState : waitForSubscriberSlowPath();
+    }
+
+    @SuppressWarnings("unchecked")
+    private Subscriber<? super T> waitForSubscriberSlowPath() throws IOException {
+        writerThread = Thread.currentThread();
+        for (;;) {
+            final Object currState = state;
+            if (currState instanceof Subscriber) {
+                writerThread = null;
+                return (Subscriber<? super T>) currState;
+            } else if (currState == State.TERMINATED || currState == State.TERMINATING) {
+                // If the subscriber is not handed off the the writer thread then the writer thread is not responsible
+                // for delivering the terminal event to the Subscriber (because it never has a reference to it), and
+                // the thread processing the subscribe(..) call will terminate the Subscriber instead of handing it off.
+                writerThread = null;
+                throw new IOException("Already closed " + closed);
+            } else if (stateUpdater.compareAndSet(this, currState, State.WAITING_FOR_CONNECTED)) {
                 LockSupport.park();
-                currState = state;
-                if (currState instanceof Subscriber) {
-                    writerThread = null;
-                    break;
-                } else if (currState == State.TERMINATED) {
-                    writerThread = null;
-                    throw new IOException("Already closed " + closed);
-                }
             }
         }
-        return (Subscriber<? super T>) currState;
     }
 
     private static final class ConnectedPublisher<T> extends Publisher<T> {
@@ -228,11 +258,23 @@ public final class ConnectablePayloadWriter<T> implements PayloadWriter<T> {
                     @Override
                     public void request(final long n) {
                         if (isRequestNValid(n)) {
-                            requestedUpdater.accumulateAndGet(outer, n, FlowControlUtil::addWithOverflowProtection);
-                            unparkWriterThread();
+                            for (;;) {
+                                final long requested = outer.requested;
+                                if (requested >= 0) {
+                                    if (requestedUpdater.compareAndSet(outer, requested,
+                                            addWithOverflowProtection(requested, n))) {
+                                        break;
+                                    }
+                                } else {
+                                    if (requested == REQUESTN_ABOUT_TO_PARK) {
+                                        wakeupWriterThread(n);
+                                    }
+                                    break;
+                                }
+                            }
                         } else if (closedUpdater.compareAndSet(outer, null,
                                 TerminalNotification.error(newExceptionForInvalidRequestN(n)))) {
-                            unparkWriterThread();
+                            terminateRequestN();
                         } else {
                             LOGGER.warn("invalid request({}), but already closed.", n);
                         }
@@ -241,7 +283,7 @@ public final class ConnectablePayloadWriter<T> implements PayloadWriter<T> {
                     @Override
                     public void cancel() {
                         if (closedUpdater.compareAndSet(outer, null, TerminalNotification.complete())) {
-                            unparkWriterThread();
+                            terminateRequestN();
                         }
                     }
                 });
@@ -250,28 +292,50 @@ public final class ConnectablePayloadWriter<T> implements PayloadWriter<T> {
             } finally {
                 // Make the Subscriber available after this thread is done interacting with it to avoid concurrent
                 // invocation.
-                if (stateUpdater.compareAndSet(outer, State.CONNECTED, subscriber)) {
-                    // We need to unpark the writer thread here because it is possible there was synchronous
-                    // calls on the Subscription above, and those wakeups would be interpreted as spurious because the
-                    // Subscriber was not made available to the writer thread yet.
-                    unparkWriterThread();
-                } else {
-                    TerminalNotification currClosed = outer.closed;
-                    assert currClosed != null;
-                    currClosed.terminate(subscriber);
+                for (;;) {
+                    final Object currState = outer.state;
+                    if (currState == State.CONNECTED) {
+                        if (stateUpdater.compareAndSet(outer, State.CONNECTED, subscriber)) {
+                            break;
+                        }
+                    } else if (currState == State.WAITING_FOR_CONNECTED) {
+                        if (stateUpdater.compareAndSet(outer, State.WAITING_FOR_CONNECTED, subscriber)) {
+                            final Thread writerThread = outer.writerThread;
+                            assert writerThread != null;
+                            LockSupport.unpark(writerThread);
+                            break;
+                        }
+                    } else {
+                        TerminalNotification currClosed = outer.closed;
+                        assert currClosed != null;
+                        currClosed.terminate(subscriber);
+                        break;
+                    }
                 }
             }
         }
 
-        private void unparkWriterThread() {
-            final Thread maybeWriterThread = outer.writerThread;
-            if (maybeWriterThread != null) {
-                LockSupport.unpark(maybeWriterThread);
+        private void terminateRequestN() {
+            for (;;) {
+                final long requested = outer.requested;
+                if (requested == REQUESTN_ABOUT_TO_PARK) {
+                    wakeupWriterThread(REQUESTN_TERMINATED);
+                    break;
+                } else if (requestedUpdater.compareAndSet(outer, requested, REQUESTN_TERMINATED)) {
+                    break;
+                }
             }
+        }
+
+        private void wakeupWriterThread(long requestN) {
+            final Thread writerThread = outer.writerThread;
+            assert writerThread != null;
+            outer.requested = requestN; // make the requestN visible to writerThread, before unpark.
+            LockSupport.unpark(writerThread);
         }
     }
 
     private enum State {
-        DISCONNECTED, CONNECTING, CONNECTED, TERMINATING, TERMINATED
+        DISCONNECTED, CONNECTING, WAITING_FOR_CONNECTED, CONNECTED, TERMINATING, TERMINATED
     }
 }

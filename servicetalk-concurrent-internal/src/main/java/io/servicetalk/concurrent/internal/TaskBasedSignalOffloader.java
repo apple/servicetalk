@@ -233,7 +233,7 @@ final class TaskBasedSignalOffloader implements SignalOffloader {
                     }
                     return; // No more signals are required to be sent.
                 } else if (r == TERMINATED) {
-                    return; // we want to hard return to avoid resetting state in the finally block.
+                    return; // we want to hard return to avoid resetting state.
                 } else if (r != 0) {
                     // Invalid request-n
                     //
