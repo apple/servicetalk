@@ -19,8 +19,6 @@ import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.internal.FlowControlUtil;
 
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.concurrent.locks.LockSupport;
 
 /**
  * A {@link Subscription} that tracks requests and cancellation.
@@ -28,25 +26,19 @@ import java.util.concurrent.locks.LockSupport;
 public final class TestSubscription implements Subscription {
 
     private final AtomicLong requested = new AtomicLong();
-    private final AtomicReference<Thread> waitingThreadRef = new AtomicReference<>();
+    private final Object waitingLock = new Object();
     private volatile boolean cancelled;
 
     @Override
     public void request(final long n) {
         requested.accumulateAndGet(n, FlowControlUtil::addWithOverflowProtection);
-        Thread waitingThread = waitingThreadRef.get();
-        if (waitingThread != null) {
-            LockSupport.unpark(waitingThread);
-        }
+        wakeupWaiters();
     }
 
     @Override
     public void cancel() {
         cancelled = true;
-        Thread waitingThread = waitingThreadRef.get();
-        if (waitingThread != null) {
-            LockSupport.unpark(waitingThread);
-        }
+        wakeupWaiters();
     }
 
     /**
@@ -73,31 +65,53 @@ public final class TestSubscription implements Subscription {
      * @param amount the amount to wait for.
      */
     public void waitUntilRequested(long amount) {
-        if (!waitingThreadRef.compareAndSet(null, Thread.currentThread())) {
-            throw new IllegalStateException("only a single waiter thread at a time is supported");
+        if (requested.get() >= amount) {
+            return;
         }
 
-        // Before we park we must check the condition to avoid deadlock, so no do/while.
-        while (requested.get() < amount) {
-            LockSupport.park();
-        }
+        boolean interrupted = false;
+        do {
+            synchronized (waitingLock) {
+                try {
+                    waitingLock.wait();
+                } catch (InterruptedException e) {
+                    interrupted = true;
+                }
+            }
+        } while (requested.get() < amount);
 
-        waitingThreadRef.set(null);
+        if (interrupted) {
+            Thread.currentThread().interrupt();
+        }
     }
 
     /**
      * Wait until {@link #cancel()} is called.
      */
     public void waitUntilCancelled() {
-        if (!waitingThreadRef.compareAndSet(null, Thread.currentThread())) {
-            throw new IllegalStateException("only a single waiter thread at a time is supported");
+        if (cancelled) {
+            return;
         }
 
-        // Before we park we must check the condition to avoid deadlock, so no do/while.
-        while (!cancelled) {
-            LockSupport.park();
-        }
+        boolean interrupted = false;
+        do {
+            synchronized (waitingLock) {
+                try {
+                    waitingLock.wait();
+                } catch (InterruptedException e) {
+                    interrupted = true;
+                }
+            }
+        } while (!cancelled);
 
-        waitingThreadRef.set(null);
+        if (interrupted) {
+            Thread.currentThread().interrupt();
+        }
+    }
+
+    private void wakeupWaiters() {
+        synchronized (waitingLock) {
+            waitingLock.notifyAll();
+        }
     }
 }
