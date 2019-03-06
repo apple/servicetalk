@@ -400,7 +400,8 @@ public interface Serializer {
      * {@link CloseableIterable#iterator()}. In such a case, all deserialized data will first be returned from the
      * {@link CloseableIterator}.
      *
-     * @param serializedData A {@link Buffer} containing serialized representation of one or more instances of {@link T}.
+     * @param serializedData A {@link Buffer} containing serialized representation of one or more instances of
+     * {@link T}.
      * @param typeHolder {@link TypeHolder} holding the {@link ParameterizedType} to be deserialized.
      * @param <T> The data type to deserialize.
      *

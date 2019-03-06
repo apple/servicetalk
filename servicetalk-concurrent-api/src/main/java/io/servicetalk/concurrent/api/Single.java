@@ -1486,8 +1486,8 @@ public abstract class Single<T> {
     }
 
     /**
-     * Replicating a call to {@link #subscribeInternal(SingleSource.Subscriber)} but with a materialized {@link SignalOffloader}
-     * and {@link AsyncContextMap}.
+     * Replicating a call to {@link #subscribeInternal(SingleSource.Subscriber)} but with a materialized
+     * {@link SignalOffloader} and {@link AsyncContextMap}.
      * @param subscriber the subscriber.
      * @param signalOffloader {@link SignalOffloader} to use for this {@link SingleSource.Subscriber}.
      * @param contextMap the {@link AsyncContextMap} to use for this {@link SingleSource.Subscriber}.

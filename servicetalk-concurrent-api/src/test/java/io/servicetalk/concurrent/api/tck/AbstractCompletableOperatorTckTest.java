@@ -22,7 +22,8 @@ import io.servicetalk.concurrent.api.Publisher;
  * Abstract base class for testing operators provided by {@link Completable} for compliance with the
  * <a href="https://github.com/reactive-streams/reactive-streams-jvm/tree/v1.0.1/tck">Reactive Streams TCK</a>.
  * <p>
- * If you need the flexibility to create the {@link Completable} by yourselfyou may need to extend {@link AbstractCompletableTckTest} directly.
+ * If you need the flexibility to create the {@link Completable} by yourself you may need to extend
+ * {@link AbstractCompletableTckTest} directly.
  */
 public abstract class AbstractCompletableOperatorTckTest extends AbstractCompletableTckTest {
 

@@ -70,9 +70,10 @@ public final class BuilderUtils {
      * @return {@code true} if native transport should be used
      */
     public static boolean useEpoll(EventLoopGroup group) {
-        // Check if we should use the epoll transport. This is true if either the EpollEventLoopGroup is used directly or if
-        // the passed group is a EventLoop and it's parent is an EpollEventLoopGroup.
-        return group instanceof EpollEventLoopGroup || (group instanceof EventLoop && ((EventLoop) group).parent() instanceof EpollEventLoopGroup);
+        // Check if we should use the epoll transport. This is true if either the EpollEventLoopGroup is used directly
+        // or if the passed group is a EventLoop and it's parent is an EpollEventLoopGroup.
+        return group instanceof EpollEventLoopGroup || (group instanceof EventLoop &&
+                ((EventLoop) group).parent() instanceof EpollEventLoopGroup);
     }
 
     /**
@@ -82,9 +83,10 @@ public final class BuilderUtils {
      * @return {@code true} if native transport should be used
      */
     public static boolean useKQueue(EventLoopGroup group) {
-        // Check if we should use the kqueue transport. This is true if either the KQueueEventLoopGroup is used directly or if
-        // the passed group is a EventLoop and it's parent is an KQueueEventLoopGroup.
-        return group instanceof KQueueEventLoopGroup || (group instanceof EventLoop && ((EventLoop) group).parent() instanceof KQueueEventLoopGroup);
+        // Check if we should use the kqueue transport. This is true if either the KQueueEventLoopGroup is used directly
+        // or if the passed group is a EventLoop and it's parent is an KQueueEventLoopGroup.
+        return group instanceof KQueueEventLoopGroup || (group instanceof EventLoop &&
+                ((EventLoop) group).parent() instanceof KQueueEventLoopGroup);
     }
 
     /**
@@ -94,11 +96,14 @@ public final class BuilderUtils {
      * @param addressClass The class of the address that the server socket will be bound to.
      * @return the class that should be used for bootstrapping
      */
-    public static Class<? extends ServerChannel> serverChannel(EventLoopGroup group, Class<? extends SocketAddress> addressClass) {
+    public static Class<? extends ServerChannel> serverChannel(EventLoopGroup group,
+                                                               Class<? extends SocketAddress> addressClass) {
         if (useEpoll(group)) {
-            return DomainSocketAddress.class.isAssignableFrom(addressClass) ? EpollServerDomainSocketChannel.class : EpollServerSocketChannel.class;
+            return DomainSocketAddress.class.isAssignableFrom(addressClass) ? EpollServerDomainSocketChannel.class :
+                    EpollServerSocketChannel.class;
         } else if (useKQueue(group)) {
-            return DomainSocketAddress.class.isAssignableFrom(addressClass) ? KQueueServerDomainSocketChannel.class : KQueueServerSocketChannel.class;
+            return DomainSocketAddress.class.isAssignableFrom(addressClass) ? KQueueServerDomainSocketChannel.class :
+                    KQueueServerSocketChannel.class;
         } else {
             return NioServerSocketChannel.class;
         }
@@ -111,11 +116,14 @@ public final class BuilderUtils {
      * @param addressClass The class of the address that to connect to.
      * @return the class that should be used for bootstrapping
      */
-    public static Class<? extends Channel> socketChannel(EventLoopGroup group, Class<? extends SocketAddress> addressClass) {
+    public static Class<? extends Channel> socketChannel(EventLoopGroup group,
+                                                         Class<? extends SocketAddress> addressClass) {
         if (useEpoll(group)) {
-            return DomainSocketAddress.class.isAssignableFrom(addressClass) ? EpollDomainSocketChannel.class : EpollSocketChannel.class;
+            return DomainSocketAddress.class.isAssignableFrom(addressClass) ? EpollDomainSocketChannel.class :
+                    EpollSocketChannel.class;
         } else if (useKQueue(group)) {
-            return DomainSocketAddress.class.isAssignableFrom(addressClass) ? KQueueDomainSocketChannel.class : KQueueSocketChannel.class;
+            return DomainSocketAddress.class.isAssignableFrom(addressClass) ? KQueueDomainSocketChannel.class :
+                    KQueueSocketChannel.class;
         } else {
             return NioSocketChannel.class;
         }
@@ -146,8 +154,9 @@ public final class BuilderUtils {
      * @return an address that Netty understands.
      */
     public static SocketAddress toNettyAddress(Object address) {
-        // The order of the instance of checks is important because `DomainSocketAddress` is also of type `SocketAddress`,
-        // and we want to identify the more specific types before returning the fallback `SocketAddress` type.
+        // The order of the instance of checks is important because `DomainSocketAddress` is also of type
+        // `SocketAddress`, and we want to identify the more specific types before returning the fallback
+        // `SocketAddress` type.
         if (address instanceof io.servicetalk.transport.api.DomainSocketAddress) {
             return new DomainSocketAddress(((io.servicetalk.transport.api.DomainSocketAddress) address).getPath());
         }
@@ -212,7 +221,8 @@ public final class BuilderUtils {
             channelOpts.put(ChannelOption.CONNECT_TIMEOUT_MILLIS, value);
         } else if (option == ServiceTalkSocketOptions.WRITE_BUFFER_THRESHOLD) {
             Integer writeBufferThreshold = (Integer) value;
-            channelOpts.put(ChannelOption.WRITE_BUFFER_WATER_MARK, new WriteBufferWaterMark(writeBufferThreshold >>> 1, writeBufferThreshold));
+            channelOpts.put(ChannelOption.WRITE_BUFFER_WATER_MARK, new WriteBufferWaterMark(writeBufferThreshold >>> 1,
+                    writeBufferThreshold));
         } else {
             throw new IllegalArgumentException("SocketOption " + option + " not supported");
         }

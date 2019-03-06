@@ -114,13 +114,16 @@ abstract class AbstractPublisherGroupBy<Key, T>
         }
 
         /**
-         * Process incoming data. It is expected {@link #onNextGroup(Object, Object)} will be used after the keys are extracted.
+         * Process incoming data. It is expected {@link #onNextGroup(Object, Object)} will be used after the keys are
+         * extracted.
+         *
          * @param t The incoming data.
          */
         abstract void onNext0(@Nullable T t);
 
         /**
          * Get the maximum size of the queue for the group level {@link Subscriber}.
+         *
          * @return the maximum size of the queue for the group level {@link Subscriber}.
          */
         abstract int groupQueueSize();
@@ -134,7 +137,8 @@ abstract class AbstractPublisherGroupBy<Key, T>
                     try {
                         groupSinkQueueSize = ((QueueSizeProvider) key).calculateMaxQueueSize(groupQueueSize());
                         if (groupSinkQueueSize < 0) {
-                            throw new IllegalStateException("groupSinkQueueSize: " + groupSinkQueueSize + " (expected >=0)");
+                            throw new IllegalStateException("groupSinkQueueSize: " + groupSinkQueueSize +
+                                    " (expected >=0)");
                         }
                     } catch (Throwable cause) {
                         cancelSourceFromSource(false, cause);
@@ -151,19 +155,22 @@ abstract class AbstractPublisherGroupBy<Key, T>
                         cancelSourceFromSource(false, new QueueFullException("global", groupQueueSize()), groupQueue);
                     }
                     drainPendingGroupsFromSource(groupQueue);
-                } else if (subscriberStateUpdater.compareAndSet(this, SUBSCRIBER_STATE_IDLE, SUBSCRIBER_STATE_ON_NEXT)) {
-                    // The queue is empty, and we acquired the lock so we can try to directly deliver to target (assuming there is request(n) demand).
+                } else if (subscriberStateUpdater.compareAndSet(this, SUBSCRIBER_STATE_IDLE,
+                        SUBSCRIBER_STATE_ON_NEXT)) {
+                    // The queue is empty, and we acquired the lock so we can try to directly deliver to target
+                    // (assuming there is request(n) demand).
                     try {
                         for (;;) {
                             final long groupRequested = this.groupRequested;
                             if (groupRequested == 0) {
                                 if (groupQueue == null) {
-                                    // There will only ever be a single thread generating data. It is safe to lazy-create the groupQueue
-                                    // without using atomic operations.
+                                    // There will only ever be a single thread generating data. It is safe to
+                                    // lazy-create the groupQueue without using atomic operations.
                                     this.groupQueue = groupQueue = new SpscQueue<>(groupQueueSize());
                                 }
                                 if (!groupQueue.offerNext(groupSink.groupedPublisher)) {
-                                    cancelSourceFromSource(true, new QueueFullException("global", groupQueueSize()), groupQueue);
+                                    cancelSourceFromSource(true, new QueueFullException("global", groupQueueSize()),
+                                            groupQueue);
                                 }
                                 break;
                             }
@@ -171,7 +178,8 @@ abstract class AbstractPublisherGroupBy<Key, T>
                                 try {
                                     target.onNext(groupSink.groupedPublisher);
                                 } catch (Throwable cause) {
-                                    cancelSourceFromSource(true, new IllegalStateException("Unexpected exception thrown from onNext", cause), groupQueue);
+                                    cancelSourceFromSource(true, new IllegalStateException(
+                                            "Unexpected exception thrown from onNext", cause), groupQueue);
                                 }
                                 break;
                             }
@@ -181,7 +189,8 @@ abstract class AbstractPublisherGroupBy<Key, T>
                         if (cause == null) {
                             this.subscriberState = SUBSCRIBER_STATE_IDLE;
                             cause = cancelCause;
-                            if (cause != null && subscriberStateUpdater.compareAndSet(this, SUBSCRIBER_STATE_IDLE, SUBSCRIBER_STATE_ON_NEXT)) {
+                            if (cause != null && subscriberStateUpdater.compareAndSet(this, SUBSCRIBER_STATE_IDLE,
+                                    SUBSCRIBER_STATE_ON_NEXT)) {
                                 sendErrorToAllGroups(cause);
                                 this.subscriberState = SUBSCRIBER_STATE_IDLE;
                             }
@@ -196,15 +205,16 @@ abstract class AbstractPublisherGroupBy<Key, T>
                         groupQueue = this.groupQueue;
                     }
                     if (groupQueue != null && !groupQueue.isEmpty()) {
-                        // After we release the lock we have to try to drain from the queue in case there was any additional
-                        // request(n) calls, or additional data was added in a re-entry fashion.
+                        // After we release the lock we have to try to drain from the queue in case there was any
+                        // additional request(n) calls, or additional data was added in a re-entry fashion.
                         drainPendingGroupsFromSource(groupQueue);
                     }
                 } else {
-                    // If we failed to acquired the lock there is concurrency with request(n) and we have to go through the queue.
+                    // If we failed to acquired the lock there is concurrency with request(n) and we have to go through
+                    // the queue.
                     if (groupQueue == null) {
-                        // There will only ever be a single thread generating data. It is safe to lazy-create the groupQueue
-                        // without using atomic operations.
+                        // There will only ever be a single thread generating data. It is safe to lazy-create the
+                        // groupQueue without using atomic operations.
                         this.groupQueue = groupQueue = new SpscQueue<>(groupQueueSize());
                     }
                     if (!groupQueue.offerNext(groupSink.groupedPublisher)) {
@@ -232,7 +242,8 @@ abstract class AbstractPublisherGroupBy<Key, T>
                 return;
             }
             SpscQueue<GroupedPublisher<Key, T>> q = groupQueue;
-            if (q == null || q.isEmpty() && subscriberStateUpdater.compareAndSet(this, SUBSCRIBER_STATE_IDLE, SUBSCRIBER_STATE_TERMINATED)) {
+            if (q == null || q.isEmpty() && subscriberStateUpdater.compareAndSet(this, SUBSCRIBER_STATE_IDLE,
+                    SUBSCRIBER_STATE_TERMINATED)) {
                 // If there is no queue, there is no concurrency for emission to Subscriber, so we can safely emit.
                 try {
                     target.onError(t);
@@ -249,7 +260,8 @@ abstract class AbstractPublisherGroupBy<Key, T>
         @Override
         public final void onComplete() {
             SpscQueue<GroupedPublisher<Key, T>> q = groupQueue;
-            if (q == null || q.isEmpty() && subscriberStateUpdater.compareAndSet(this, SUBSCRIBER_STATE_IDLE, SUBSCRIBER_STATE_TERMINATED)) {
+            if (q == null || q.isEmpty() && subscriberStateUpdater.compareAndSet(this, SUBSCRIBER_STATE_IDLE,
+                    SUBSCRIBER_STATE_TERMINATED)) {
                 // If there is no queue, there is no concurrency for emission to Subscriber, so we can safely emit.
                 try {
                     target.onComplete();
@@ -333,7 +345,8 @@ abstract class AbstractPublisherGroupBy<Key, T>
             if (pendingGroupsQ != null && !pendingGroupsQ.isEmpty()) {
                 pendingGroupsQ.addTerminal(TerminalNotification.error(throwable));
                 drainPendingGroupsFromSource(pendingGroupsQ);
-            } else if (subscriberLockAcquired || subscriberStateUpdater.compareAndSet(this, SUBSCRIBER_STATE_IDLE, SUBSCRIBER_STATE_ON_NEXT)) {
+            } else if (subscriberLockAcquired || subscriberStateUpdater.compareAndSet(this, SUBSCRIBER_STATE_IDLE,
+                    SUBSCRIBER_STATE_ON_NEXT)) {
                 try {
                     target.onError(throwable);
                 } catch (Throwable onErrorError) {
@@ -342,8 +355,8 @@ abstract class AbstractPublisherGroupBy<Key, T>
                     sendErrorToAllGroups(throwable);
                     if (!subscriberLockAcquired) {
                         this.subscriberState = SUBSCRIBER_STATE_IDLE;
-                        // No need to drain the queue because we are in the Subscriber's thread and nothing else will be queued
-                        // because the Subscriber is the only producer for the queue.
+                        // No need to drain the queue because we are in the Subscriber's thread and nothing else will be
+                        // queued because the Subscriber is the only producer for the queue.
                     }
                 }
             } else {
@@ -367,8 +380,8 @@ abstract class AbstractPublisherGroupBy<Key, T>
             sendErrorToAllGroups(cause);
 
             // To simplify concurrency and state management in this case we just log an error instead of trying to
-            // synchronize state and deliver an error to the Subscriber. ReactiveStreams specification allows for this in [1].
-            // [1] https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.1/README.md#2.13
+            // synchronize state and deliver an error to the Subscriber. ReactiveStreams specification allows for this
+            // in https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.1/README.md#2.13
             LOGGER.error("Unexpected exception thrown from subscriber", cause);
         }
 
@@ -380,8 +393,10 @@ abstract class AbstractPublisherGroupBy<Key, T>
             return drainPendingGroups(q, this::cancelSourceFromSubscription);
         }
 
-        private long drainPendingGroups(SpscQueue<GroupedPublisher<Key, T>> q, Consumer<Throwable> nonTerminalErrorConsumer) {
-            return drainToSubscriber(q, target, subscriberStateUpdater, () -> groupRequestedUpdater.get(this), terminalNotification -> {
+        private long drainPendingGroups(SpscQueue<GroupedPublisher<Key, T>> q,
+                                        Consumer<Throwable> nonTerminalErrorConsumer) {
+            return drainToSubscriber(q, target, subscriberStateUpdater, () -> groupRequestedUpdater.get(this),
+                    terminalNotification -> {
                         Throwable cause = terminalNotification.cause();
                         if (cause == null) {
                             sendCompleteToAllGroups();
@@ -433,8 +448,8 @@ abstract class AbstractPublisherGroupBy<Key, T>
                         subscriber.onError(new DuplicateSubscribeException(target, subscriber));
                         return;
                     }
-                    // We have to call onSubscribe before we set groupSinkTarget, because otherwise we may deliver data to the
-                    // Subscriber before we call onSubscribe.
+                    // We have to call onSubscribe before we set groupSinkTarget, because otherwise we may deliver data
+                    // to the Subscriber before we call onSubscribe.
                     subscriber.onSubscribe(GroupSink.this);
                     GroupSink.this.target = subscriber;
                     // We must read this after we set the subscriber and call onSubscribe.

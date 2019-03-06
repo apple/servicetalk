@@ -91,7 +91,8 @@ import static java.util.stream.Collectors.toList;
  * @param <ResolvedAddress> The resolved address type.
  * @param <C> The type of connection.
  */
-public final class RoundRobinLoadBalancer<ResolvedAddress, C extends ListenableAsyncCloseable> implements LoadBalancer<C> {
+public final class RoundRobinLoadBalancer<ResolvedAddress, C extends ListenableAsyncCloseable>
+        implements LoadBalancer<C> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RoundRobinLoadBalancer.class);
     private static final IllegalStateException LB_CLOSED_SELECT_CNX_EXCEPTION =
@@ -437,7 +438,8 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends ListenableA
                                     // Check if sendOnComplete was called but the Subscriber was not visible, and then
                                     // deliver the terminal notification if we change the event to COMPLETED.
                                     if (subscriberState == SUBSCRIBER_STATE_TERMINATED &&
-                                        eventUpdater.compareAndSet(PublisherProcessorSingle.this, REQUESTED, COMPLETED)) {
+                                        eventUpdater.compareAndSet(PublisherProcessorSingle.this, REQUESTED,
+                                                COMPLETED)) {
                                         subscriber.onComplete();
                                     }
                                     break;
@@ -450,7 +452,8 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends ListenableA
                                 for (;;) {
                                     Object event = PublisherProcessorSingle.this.event;
                                     if (event == null || event == REQUESTED || event == DELIVERED) {
-                                        if (eventUpdater.compareAndSet(PublisherProcessorSingle.this, event, COMPLETED)) {
+                                        if (eventUpdater.compareAndSet(PublisherProcessorSingle.this, event,
+                                                COMPLETED)) {
                                             subscriber.onError(cause);
                                             break;
                                         }

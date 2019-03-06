@@ -36,8 +36,8 @@ abstract class AbstractLBHttpConnectionFactory<ResolvedAddress>
         this.defaultStrategy = defaultStrategy;
     }
 
-    abstract Single<LoadBalancedStreamingHttpConnection> newConnection(ResolvedAddress address,
-                                                                       HttpConnectionFilterFactory connectionFilterFunction);
+    abstract Single<LoadBalancedStreamingHttpConnection> newConnection(
+            ResolvedAddress address, HttpConnectionFilterFactory connectionFilterFunction);
 
     @Override
     public final Single<LoadBalancedStreamingHttpConnection> newConnection(ResolvedAddress address) {

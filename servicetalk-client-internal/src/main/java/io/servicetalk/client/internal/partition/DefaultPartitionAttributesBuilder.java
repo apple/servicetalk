@@ -31,9 +31,10 @@ import static java.util.Arrays.copyOf;
 /**
  * Default implementation of {@link PartitionAttributesBuilder}.
  * <p>
- * This class provides a relatively low memory overhead (when compared to {@link TreeMap}) for a {@link PartitionAttributes}.
- * The goals are to provide fast {@link Object#equals(Object)} and {@link Object#hashCode()} which
- * do not require intermediate object allocation and pointer traversal (e.g. {@link Iterator}).
+ * This class provides a relatively low memory overhead (when compared to {@link TreeMap}) for a
+ * {@link PartitionAttributes}. The goals are to provide fast {@link Object#equals(Object)} and
+ * {@link Object#hashCode()} which do not require intermediate object allocation and pointer traversal
+ * (e.g. {@link Iterator}).
  */
 public final class DefaultPartitionAttributesBuilder implements PartitionAttributesBuilder {
     private static final int PARENT_MASK = ~0x1;
@@ -43,7 +44,8 @@ public final class DefaultPartitionAttributesBuilder implements PartitionAttribu
     /**
      * Create a new instance.
      *
-     * @param initialSize The anticipated number of key/value pairs that will be added via {@link #add add(Key&lt;T&gt; key, T value)}.
+     * @param initialSize The anticipated number of key/value pairs that will be added via
+     * {@link #add add(Key&lt;T&gt; key, T value)}.
      */
     public DefaultPartitionAttributesBuilder(int initialSize) {
         keyValueArray = new Object[initialSize << 1];
@@ -70,7 +72,8 @@ public final class DefaultPartitionAttributesBuilder implements PartitionAttribu
             } else if (cmp == 0) {
                 // We maintain a max heap during insertion, note that we do a best effort check for duplicates here
                 // but it is not reliable because of the heap data structure.
-                throw new DuplicateAttributeException(key, "duplicate key [" + key + "] with values: [" + value + ", " + keyValueArray[parentKeyIndex + 1] + "]");
+                throw new DuplicateAttributeException(key, "duplicate key [" + key + "] with values: [" + value + ", " +
+                        keyValueArray[parentKeyIndex + 1] + "]");
             }
 
             // Bubble down the parent.
@@ -88,10 +91,12 @@ public final class DefaultPartitionAttributesBuilder implements PartitionAttribu
 
     @Override
     public PartitionAttributes build() {
-        return new SortedArrayPartitionAttributes(nextIndex == this.keyValueArray.length ? this.keyValueArray : copyOf(this.keyValueArray, nextIndex));
+        return new SortedArrayPartitionAttributes(nextIndex == this.keyValueArray.length ? this.keyValueArray :
+                copyOf(this.keyValueArray, nextIndex));
     }
 
-    private static final class SortedArrayPartitionAttributes implements PartitionAttributes, Comparable<SortedArrayPartitionAttributes> {
+    private static final class SortedArrayPartitionAttributes
+            implements PartitionAttributes, Comparable<SortedArrayPartitionAttributes> {
         private final Object[] keyValueArray;
         private final int hashCode;
 
@@ -148,7 +153,8 @@ public final class DefaultPartitionAttributesBuilder implements PartitionAttribu
 
         @Override
         public boolean equals(Object o) {
-            return (o instanceof SortedArrayPartitionAttributes) && Arrays.equals(keyValueArray, ((SortedArrayPartitionAttributes) o).keyValueArray);
+            return (o instanceof SortedArrayPartitionAttributes) && Arrays.equals(keyValueArray,
+                    ((SortedArrayPartitionAttributes) o).keyValueArray);
         }
 
         @Override
@@ -200,7 +206,9 @@ public final class DefaultPartitionAttributesBuilder implements PartitionAttribu
             if (endKeyIndex <= originalEndKeyIndex - 2) {
                 final Key duplicateCheckKey = (Key) keyValueArray[endKeyIndex];
                 if (duplicateCheckKey.equals(keyValueArray[endKeyIndex + 2])) {
-                    throw new DuplicateAttributeException(duplicateCheckKey, "duplicate key [" + duplicateCheckKey + "] with values: [" + keyValueArray[endKeyIndex] + ", " + keyValueArray[endKeyIndex + 3] + "]");
+                    throw new DuplicateAttributeException(duplicateCheckKey, "duplicate key [" + duplicateCheckKey +
+                            "] with values: [" + keyValueArray[endKeyIndex] + ", " + keyValueArray[endKeyIndex + 3] +
+                            "]");
                 }
             }
 
@@ -215,12 +223,14 @@ public final class DefaultPartitionAttributesBuilder implements PartitionAttribu
                 Key childKey = (Key) keyValueArray[childKeyIndex];
                 final int rightChildKeyIndex = (keyIndex << 1) + 4;
                 final Key rightChildKey;
-                if (rightChildKeyIndex <= endKeyIndex && childKey.compareTo((rightChildKey = (Key) keyValueArray[rightChildKeyIndex])) < 0) {
+                if (rightChildKeyIndex <= endKeyIndex && childKey.compareTo((rightChildKey =
+                        (Key) keyValueArray[rightChildKeyIndex])) < 0) {
                     childKey = rightChildKey;
                     childKeyIndex = rightChildKeyIndex;
                 }
 
-                // If the child is less than or equal to the bubble key then we are done because the max heap criteria is satisfied.
+                // If the child is less than or equal to the bubble key then we are done because the max heap criteria
+                // is satisfied.
                 if (childKey.compareTo(bubbleKey) <= 0) {
                     break;
                 }

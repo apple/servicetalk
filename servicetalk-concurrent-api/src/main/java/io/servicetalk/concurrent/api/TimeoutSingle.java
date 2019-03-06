@@ -16,7 +16,6 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
-import io.servicetalk.concurrent.SingleSource.Subscriber;
 import io.servicetalk.concurrent.internal.SignalOffloader;
 
 import java.time.Duration;
@@ -142,8 +141,8 @@ final class TimeoutSingle<T> extends AbstractNoHandleSubscribeSingle<T> {
                 try {
                     stopTimer();
                 } finally {
-                    // oldCancellable can't be null here, because we don't give out this object to onSubscribe unless the
-                    // cancellable is set.
+                    // oldCancellable can't be null here, because we don't give out this object to onSubscribe unless
+                    // the cancellable is set.
                     oldCancellable.cancel();
                 }
             }

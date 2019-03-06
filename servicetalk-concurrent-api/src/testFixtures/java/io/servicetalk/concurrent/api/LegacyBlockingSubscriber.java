@@ -41,8 +41,8 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 
 /**
- * A {@link Subscriber} that will block in {@link #onNext(Object)}, {@link #onError(Throwable)} and {@link #onComplete()}
- * unless released via {@link #unblock(Object)} or {@link #unblockAll()}.
+ * A {@link Subscriber} that will block in {@link #onNext(Object)}, {@link #onError(Throwable)} and
+ * {@link #onComplete()} unless released via {@link #unblock(Object)} or {@link #unblockAll()}.
  */
 public final class LegacyBlockingSubscriber<T> implements Subscriber<T> {
 

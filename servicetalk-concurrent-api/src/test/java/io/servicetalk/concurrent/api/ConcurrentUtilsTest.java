@@ -126,7 +126,8 @@ public final class ConcurrentUtilsTest {
             while (!currentTask.executeAfter.await(50, MILLISECONDS)) {
                 if (currentTask.running.await(50, MILLISECONDS)) {
                     if (runningIndex != -1) {
-                        throw new AssertionError("index: " + i + " and runningIndex: " + runningIndex + " are both running");
+                        throw new AssertionError("index: " + i + " and runningIndex: " + runningIndex +
+                                " are both running");
                     }
                     runningIndex = i;
                     break;

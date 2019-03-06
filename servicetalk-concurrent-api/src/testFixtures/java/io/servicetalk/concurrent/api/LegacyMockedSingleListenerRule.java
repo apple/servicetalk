@@ -136,7 +136,8 @@ public class LegacyMockedSingleListenerRule<T> implements TestRule {
         return this;
     }
 
-    public LegacyMockedSingleListenerRule<T> verifySuppressedFailure(Throwable originalCause, Throwable suppressedCause) {
+    public LegacyMockedSingleListenerRule<T> verifySuppressedFailure(Throwable originalCause,
+                                                                     Throwable suppressedCause) {
         verifyCancellable();
         final InOrder verifier = inOrderVerifier();
         ArgumentCaptor<Throwable> throwableCaptor = ArgumentCaptor.forClass(Throwable.class);

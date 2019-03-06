@@ -382,7 +382,8 @@ final class ReadStreamSplitter {
                 handleNonSubscribeCommand(pubSubChannelMessage, keyType);
                 return Key.IGNORE_GROUP; // Special value to signal ignore
             }
-            final String pChannel = keyType == Pattern ? pubSubChannelMessage.pattern() : pubSubChannelMessage.channel();
+            final String pChannel = keyType == Pattern ? pubSubChannelMessage.pattern() :
+                    pubSubChannelMessage.channel();
             assert pChannel != null;
             Key key = pChannelToKey.get(pChannel);
             if (key == null) {

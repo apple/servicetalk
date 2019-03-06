@@ -170,7 +170,8 @@ public class RedisRequestsTest {
         writer.accept(buffer);
         assertThat(buffer.toString(UTF_8), equalTo(expected));
         int expectedLength = expected.length();
-        assertThat("lengthProvider did not calculate provide length", lengthProvider.getAsInt(), equalTo(expectedLength));
+        assertThat("lengthProvider did not calculate provide length", lengthProvider.getAsInt(),
+                equalTo(expectedLength));
         assertThat("buffer.readableBytes() was not as expected", buffer.readableBytes(), equalTo(expectedLength));
         assertThat("buffer capacity was not as expected", buffer.capacity(), equalTo(expectedLength));
     }

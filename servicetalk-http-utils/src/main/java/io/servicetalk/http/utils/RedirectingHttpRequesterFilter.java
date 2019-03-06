@@ -174,7 +174,8 @@ public final class RedirectingHttpRequesterFilter implements HttpClientFilterFac
             @Override
             public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
                                                          final StreamingHttpRequest request) {
-                return RedirectingHttpRequesterFilter.this.request(delegate(), strategy, request, onlyRelativeConnection);
+                return RedirectingHttpRequesterFilter.this.request(delegate(), strategy, request,
+                        onlyRelativeConnection);
             }
 
             @Override

@@ -71,23 +71,26 @@ public final class DefaultSerializer implements Serializer {
     }
 
     @Override
-    public <T> Publisher<Buffer> serialize(final Publisher<T> source, final BufferAllocator allocator, final Class<T> type) {
+    public <T> Publisher<Buffer> serialize(final Publisher<T> source, final BufferAllocator allocator,
+                                           final Class<T> type) {
         return serialize(source, allocator, type, DEFAULT_SIZE_ESTIMATOR);
     }
 
     @Override
-    public <T> Iterable<Buffer> serialize(final Iterable<T> source, final BufferAllocator allocator, final Class<T> type) {
+    public <T> Iterable<Buffer> serialize(final Iterable<T> source, final BufferAllocator allocator,
+                                          final Class<T> type) {
         return serialize(source, allocator, type, DEFAULT_SIZE_ESTIMATOR);
     }
 
     @Override
-    public <T> BlockingIterable<Buffer> serialize(final BlockingIterable<T> source, final BufferAllocator allocator, final Class<T> type) {
+    public <T> BlockingIterable<Buffer> serialize(final BlockingIterable<T> source, final BufferAllocator allocator,
+                                                  final Class<T> type) {
         return serialize(source, allocator, type, DEFAULT_SIZE_ESTIMATOR);
     }
 
     @Override
-    public <T> Publisher<Buffer> serialize(final Publisher<T> source, final BufferAllocator allocator, final Class<T> type,
-                                           final IntUnaryOperator bytesEstimator) {
+    public <T> Publisher<Buffer> serialize(final Publisher<T> source, final BufferAllocator allocator,
+                                           final Class<T> type, final IntUnaryOperator bytesEstimator) {
         return new SubscribablePublisher<Buffer>() {
             @Override
             protected void handleSubscribe(final Subscriber<? super Buffer> subscriber) {
@@ -98,35 +101,38 @@ public final class DefaultSerializer implements Serializer {
     }
 
     @Override
-    public <T> Iterable<Buffer> serialize(final Iterable<T> source, final BufferAllocator allocator, final Class<T> type,
-                                          final IntUnaryOperator bytesEstimator) {
+    public <T> Iterable<Buffer> serialize(final Iterable<T> source, final BufferAllocator allocator,
+                                          final Class<T> type, final IntUnaryOperator bytesEstimator) {
         return applySerializer0(allocator, bytesEstimator, source, serializationProvider.getSerializer(type));
     }
 
     @Override
-    public <T> BlockingIterable<Buffer> serialize(final BlockingIterable<T> source, final BufferAllocator allocator, final Class<T> type,
-                                                  final IntUnaryOperator bytesEstimator) {
+    public <T> BlockingIterable<Buffer> serialize(final BlockingIterable<T> source, final BufferAllocator allocator,
+                                                  final Class<T> type, final IntUnaryOperator bytesEstimator) {
         return applySerializer0(allocator, bytesEstimator, source, serializationProvider.getSerializer(type));
     }
 
     @Override
-    public <T> Publisher<Buffer> serialize(final Publisher<T> source, final BufferAllocator allocator, final TypeHolder<T> typeHolder) {
+    public <T> Publisher<Buffer> serialize(final Publisher<T> source, final BufferAllocator allocator,
+                                           final TypeHolder<T> typeHolder) {
         return serialize(source, allocator, typeHolder, DEFAULT_SIZE_ESTIMATOR);
     }
 
     @Override
-    public <T> Iterable<Buffer> serialize(final Iterable<T> source, final BufferAllocator allocator, final TypeHolder<T> typeHolder) {
+    public <T> Iterable<Buffer> serialize(final Iterable<T> source, final BufferAllocator allocator,
+                                          final TypeHolder<T> typeHolder) {
         return serialize(source, allocator, typeHolder, DEFAULT_SIZE_ESTIMATOR);
     }
 
     @Override
-    public <T> BlockingIterable<Buffer> serialize(final BlockingIterable<T> source, final BufferAllocator allocator, final TypeHolder<T> typeHolder) {
+    public <T> BlockingIterable<Buffer> serialize(final BlockingIterable<T> source, final BufferAllocator allocator,
+                                                  final TypeHolder<T> typeHolder) {
         return serialize(source, allocator, typeHolder, DEFAULT_SIZE_ESTIMATOR);
     }
 
     @Override
-    public <T> Publisher<Buffer> serialize(final Publisher<T> source, final BufferAllocator allocator, final TypeHolder<T> typeHolder,
-                                           final IntUnaryOperator bytesEstimator) {
+    public <T> Publisher<Buffer> serialize(final Publisher<T> source, final BufferAllocator allocator,
+                                           final TypeHolder<T> typeHolder, final IntUnaryOperator bytesEstimator) {
         return new SubscribablePublisher<Buffer>() {
             @Override
             protected void handleSubscribe(final Subscriber<? super Buffer> subscriber) {
@@ -137,14 +143,15 @@ public final class DefaultSerializer implements Serializer {
     }
 
     @Override
-    public <T> Iterable<Buffer> serialize(final Iterable<T> source, final BufferAllocator allocator, final TypeHolder<T> typeHolder,
-                                          final IntUnaryOperator bytesEstimator) {
+    public <T> Iterable<Buffer> serialize(final Iterable<T> source, final BufferAllocator allocator,
+                                          final TypeHolder<T> typeHolder, final IntUnaryOperator bytesEstimator) {
         final StreamingSerializer serializer = serializationProvider.getSerializer(typeHolder);
         return applySerializer0(allocator, bytesEstimator, source, serializer);
     }
 
     @Override
-    public <T> BlockingIterable<Buffer> serialize(final BlockingIterable<T> source, final BufferAllocator allocator, final TypeHolder<T> typeHolder,
+    public <T> BlockingIterable<Buffer> serialize(final BlockingIterable<T> source, final BufferAllocator allocator,
+                                                  final TypeHolder<T> typeHolder,
                                                   final IntUnaryOperator bytesEstimator) {
         return applySerializer0(allocator, bytesEstimator, source, serializationProvider.getSerializer(typeHolder));
     }

@@ -101,7 +101,8 @@ public class SubscriberUtilsTest {
         emitted = Long.MAX_VALUE - 4;
         requestN = Long.MAX_VALUE;
         sourceRequested = Long.MAX_VALUE - 3;
-        assertEquals(3, calculateSourceRequested(requestNUpdater, sourceRequestedUpdater, emittedUpdater, Integer.MAX_VALUE, this));
+        assertEquals(3, calculateSourceRequested(requestNUpdater, sourceRequestedUpdater, emittedUpdater,
+                Integer.MAX_VALUE, this));
         assertEquals(Long.MAX_VALUE - 4, emitted);
         assertEquals(Long.MAX_VALUE, requestN);
         assertEquals(Long.MAX_VALUE, sourceRequested);
@@ -112,45 +113,50 @@ public class SubscriberUtilsTest {
         emitted = Long.MAX_VALUE - Integer.MAX_VALUE;
         requestN = Long.MAX_VALUE;
         sourceRequested = Long.MAX_VALUE - Integer.MAX_VALUE;
-        assertEquals(Integer.MAX_VALUE, calculateSourceRequested(requestNUpdater, sourceRequestedUpdater, emittedUpdater, Integer.MAX_VALUE, this));
+        assertEquals(Integer.MAX_VALUE, calculateSourceRequested(requestNUpdater, sourceRequestedUpdater,
+                emittedUpdater, Integer.MAX_VALUE, this));
         assertEquals(Long.MAX_VALUE - Integer.MAX_VALUE, emitted);
         assertEquals(Long.MAX_VALUE, requestN);
         assertEquals(Long.MAX_VALUE, sourceRequested);
     }
 
     @Test
-    public void calculateSourceRequestedConcurrentA() throws InterruptedException, ExecutionException, BrokenBarrierException {
+    public void calculateSourceRequestedConcurrentA() throws Exception {
         calculateSourceRequestedConcurrentLoop(1000, 1, 3, 10, 10);
     }
 
     @Test
-    public void calculateSourceRequestedConcurrentB() throws InterruptedException, ExecutionException, BrokenBarrierException {
+    public void calculateSourceRequestedConcurrentB() throws Exception {
         calculateSourceRequestedConcurrentLoop(100, 10, 6, 100, 123456);
     }
 
     @Test
-    public void calculateSourceRequestedConcurrentC() throws InterruptedException, ExecutionException, BrokenBarrierException {
+    public void calculateSourceRequestedConcurrentC() throws Exception {
         calculateSourceRequestedConcurrentLoop(20, 1, 3, 2, 900103);
     }
 
     @Test
-    public void calculateSourceRequestedConcurrentD() throws InterruptedException, ExecutionException, BrokenBarrierException {
+    public void calculateSourceRequestedConcurrentD() throws Exception {
         calculateSourceRequestedConcurrentLoop(1000, 1, 5635, 483, 800026);
     }
 
     @Ignore("Test is flaky on CI")
     @Test
-    public void calculateSourceRequestedConcurrentE() throws InterruptedException, ExecutionException, BrokenBarrierException {
+    public void calculateSourceRequestedConcurrentE() throws Exception {
         calculateSourceRequestedConcurrentLoop(1000, 7, 512, Integer.MAX_VALUE, 1000001);
     }
 
-    private void calculateSourceRequestedConcurrentLoop(final int iterations, final int consumerThreads, final int limit, final int maxRequest, final int totalExpectedCount) throws ExecutionException, InterruptedException, BrokenBarrierException {
+    private void calculateSourceRequestedConcurrentLoop(
+            final int iterations, final int consumerThreads, final int limit, final int maxRequest,
+            final int totalExpectedCount) throws ExecutionException, InterruptedException, BrokenBarrierException {
         for (int i = 0; i < iterations; ++i) {
             calculateSourceRequestedConcurrent(consumerThreads, limit, maxRequest, totalExpectedCount);
         }
     }
 
-    private void calculateSourceRequestedConcurrent(final int consumerThreads, final int limit, final int maxRequest, final int totalExpectedCount) throws ExecutionException, InterruptedException, BrokenBarrierException {
+    private void calculateSourceRequestedConcurrent(final int consumerThreads, final int limit, final int maxRequest,
+                                                    final int totalExpectedCount)
+            throws ExecutionException, InterruptedException, BrokenBarrierException {
         assert consumerThreads > 0;
         requestN = 0;
         sourceRequested = 0;
@@ -180,7 +186,8 @@ public class SubscriberUtilsTest {
                         produced += localProduced;
                     }
                     requestNUpdater.addAndGet(this, localProduced);
-                    int amount = calculateSourceRequested(requestNUpdater, sourceRequestedUpdater, emittedUpdater, limit, this);
+                    int amount = calculateSourceRequested(requestNUpdater, sourceRequestedUpdater, emittedUpdater,
+                            limit, this);
                     assertTrue("invalid increment: " + amount, amount <= limit && amount >= 0);
                     totalCount.addAndGet(amount);
                     totalCountNotConsumed.addAndGet(amount);
@@ -207,13 +214,15 @@ public class SubscriberUtilsTest {
                                 continue;
                             }
                             localConsumed = random.nextInt(totalNotConsumed) + 1;
-                            if (totalCountNotConsumed.compareAndSet(totalNotConsumed, totalNotConsumed - localConsumed)) {
+                            if (totalCountNotConsumed.compareAndSet(totalNotConsumed,
+                                    totalNotConsumed - localConsumed)) {
                                 break;
                             }
                         }
                         totalCountConsumed.addAndGet(localConsumed);
                         emittedUpdater.addAndGet(this, localConsumed);
-                        int amount = calculateSourceRequested(requestNUpdater, sourceRequestedUpdater, emittedUpdater, limit, this);
+                        int amount = calculateSourceRequested(requestNUpdater, sourceRequestedUpdater, emittedUpdater,
+                                limit, this);
                         assertTrue("invalid decrement: " + amount, amount <= limit && amount >= 0);
                         totalCount.addAndGet(amount);
                         totalCountNotConsumed.addAndGet(amount);

@@ -469,7 +469,8 @@ public class PublisherFlatMapSingleTest {
         Queue<String> resultsQueue = new ConcurrentLinkedQueue<>();
         AtomicReference<Throwable> causeRef = new AtomicReference<>();
         CountDownLatch latch = new CountDownLatch(1);
-        final Integer[] expectedNumbers = new Integer[1000000]; // big enough to trigger stack overflow if we are not careful.
+        final Integer[] expectedNumbers = new Integer[1000000];
+        // big enough to trigger stack overflow if we are not careful.
         for (int i = 0; i < expectedNumbers.length; ++i) {
             expectedNumbers[i] = i;
         }

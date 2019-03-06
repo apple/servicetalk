@@ -16,7 +16,6 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
-import io.servicetalk.concurrent.SingleSource.Subscriber;
 
 import static java.util.Objects.requireNonNull;
 
@@ -46,7 +45,8 @@ final class DoCancellableSingle<T> extends AbstractSynchronousSingleOperator<T, 
 
         @Override
         public void onSubscribe(Cancellable originalCancellable) {
-            original.onSubscribe(parent.before ? new DoBeforeCancellable(parent.cancellable, originalCancellable) : new DoBeforeCancellable(originalCancellable, parent.cancellable));
+            original.onSubscribe(parent.before ? new DoBeforeCancellable(parent.cancellable, originalCancellable) :
+                    new DoBeforeCancellable(originalCancellable, parent.cancellable));
         }
 
         @Override

@@ -23,4 +23,5 @@
   <suppress checks="JavadocPackage" files=".*[\\/]src[\\/]jmh[\\/].*"/>
   <suppress checks="JavadocType" files=".*[\\/]src[\\/]jmh[\\/].*"/>
   <suppress checks="VisibilityModifier" files=".*[\\/]src[\\/]jmh[\\/].*"/>
+  <suppress checks="LineLength" files=".*[\\/]src[\\/]jmh[\\/].*"/>
 </suppressions>

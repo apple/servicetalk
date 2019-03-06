@@ -57,13 +57,13 @@ final class PublisherFlatMapSingle<T, R> extends AbstractAsynchronousPublisherOp
     private final int maxConcurrency;
     private final boolean delayError;
 
-    PublisherFlatMapSingle(Publisher<T> original, Function<? super T, ? extends Single<? extends R>> mapper, boolean delayError,
-                           Executor executor) {
+    PublisherFlatMapSingle(Publisher<T> original, Function<? super T, ? extends Single<? extends R>> mapper,
+                           boolean delayError, Executor executor) {
         this(original, mapper, 16, delayError, executor);
     }
 
-    PublisherFlatMapSingle(Publisher<T> original, Function<? super T, ? extends Single<? extends R>> mapper, int maxConcurrency,
-                           boolean delayError, Executor executor) {
+    PublisherFlatMapSingle(Publisher<T> original, Function<? super T, ? extends Single<? extends R>> mapper,
+                           int maxConcurrency, boolean delayError, Executor executor) {
         super(original, executor);
         this.mapper = requireNonNull(mapper);
         if (maxConcurrency <= 0) {

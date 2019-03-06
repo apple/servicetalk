@@ -78,7 +78,8 @@ final class ServiceTalkBufferAllocator extends AbstractByteBufAllocator implemen
 
     @Override
     public Buffer fromUtf8(CharSequence data, boolean direct) {
-        return data.length() == 0 ? EMPTY_BUFFER : new NettyBuffer<>(ByteBufUtil.writeUtf8(direct ? forceDirectAllocator : forceHeapAllocator, data));
+        return data.length() == 0 ? EMPTY_BUFFER : new NettyBuffer<>(ByteBufUtil.writeUtf8(direct ?
+                forceDirectAllocator : forceHeapAllocator, data));
     }
 
     @Override
@@ -88,7 +89,8 @@ final class ServiceTalkBufferAllocator extends AbstractByteBufAllocator implemen
 
     @Override
     public Buffer fromAscii(CharSequence data, boolean direct) {
-        return data.length() == 0 ? EMPTY_BUFFER : new NettyBuffer<>(ByteBufUtil.writeAscii(direct ? forceDirectAllocator : forceHeapAllocator, data));
+        return data.length() == 0 ? EMPTY_BUFFER : new NettyBuffer<>(ByteBufUtil.writeAscii(direct ?
+                forceDirectAllocator : forceHeapAllocator, data));
     }
 
     @Override
@@ -99,7 +101,8 @@ final class ServiceTalkBufferAllocator extends AbstractByteBufAllocator implemen
 
     @Override
     public Buffer fromSequence(CharSequence data, Charset charset, boolean direct) {
-        return data.length() == 0 ? EMPTY_BUFFER : new NettyBuffer<>(ByteBufUtil.encodeString(direct ? forceDirectAllocator : forceHeapAllocator,
+        return data.length() == 0 ? EMPTY_BUFFER : new NettyBuffer<>(ByteBufUtil.encodeString(direct ?
+                        forceDirectAllocator : forceHeapAllocator,
                 data instanceof CharBuffer ? (CharBuffer) data : CharBuffer.wrap(data), charset));
     }
 
@@ -125,7 +128,8 @@ final class ServiceTalkBufferAllocator extends AbstractByteBufAllocator implemen
 
     @Override
     public Buffer wrap(byte[] bytes) {
-        return bytes.length == 0 ? EMPTY_BUFFER : new NettyBuffer<>(new UnreleasableHeapByteBuf(this, bytes, bytes.length));
+        return bytes.length == 0 ? EMPTY_BUFFER : new NettyBuffer<>(new UnreleasableHeapByteBuf(this, bytes,
+                bytes.length));
     }
 
     @Override

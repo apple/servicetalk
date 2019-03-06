@@ -30,7 +30,8 @@ public class PublisherSubscribeOnTckTest extends PublisherAbstractOffloaderTckTe
 
     @Override
     @Test(enabled = false,
-            description = "when requested from onSubscribe, synchronous sources MAY emit data in a different thread than onSubscribe.")
+            description = "when requested from onSubscribe, synchronous sources MAY emit data in a different thread " +
+                    "than onSubscribe.")
     public void stochastic_spec103_mustSignalOnMethodsSequentially() throws Throwable {
         super.stochastic_spec103_mustSignalOnMethodsSequentially();
     }

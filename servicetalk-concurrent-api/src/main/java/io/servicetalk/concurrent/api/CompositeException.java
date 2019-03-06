@@ -22,8 +22,9 @@ import static io.servicetalk.concurrent.internal.ConcurrentUtils.drainSingleCons
 import static io.servicetalk.concurrent.internal.PlatformDependent.newUnboundedMpscQueue;
 
 /**
- * A {@link RuntimeException} that allows to add {@link Throwable} instances at a lower cost than {@link #addSuppressed(Throwable)}.
- * {@link #addAllPendingSuppressed()} will add all pending {@link Throwable}s as {@link #addSuppressed(Throwable)}.
+ * A {@link RuntimeException} that allows to add {@link Throwable} instances at a lower cost than
+ * {@link #addSuppressed(Throwable)}. {@link #addAllPendingSuppressed()} will add all pending {@link Throwable}s as
+ * {@link #addSuppressed(Throwable)}.
  */
 final class CompositeException extends RuntimeException {
     private static final long serialVersionUID = 7827495486030277692L;
@@ -45,7 +46,8 @@ final class CompositeException extends RuntimeException {
     }
 
     /**
-     * Add a {@link Throwable} to be added as {@link #addSuppressed(Throwable)} on the next call to {@link #addAllPendingSuppressed()}.
+     * Add a {@link Throwable} to be added as {@link #addSuppressed(Throwable)} on the next call to
+     * {@link #addAllPendingSuppressed()}.
      *
      * @param toAdd {@link Throwable} to finally add as {@link #addSuppressed(Throwable)}.
      */
@@ -56,7 +58,8 @@ final class CompositeException extends RuntimeException {
     }
 
     /**
-     * Adds all {@link Throwable}s added using {@link #add(Throwable)} to this {@link CompositeException} using {@link #addSuppressed(Throwable)}.
+     * Adds all {@link Throwable}s added using {@link #add(Throwable)} to this {@link CompositeException} using
+     * {@link #addSuppressed(Throwable)}.
      */
     void addAllPendingSuppressed() {
         drainSingleConsumerQueueDelayThrow(suppressed, this::addSuppressed, drainingUpdater, this);

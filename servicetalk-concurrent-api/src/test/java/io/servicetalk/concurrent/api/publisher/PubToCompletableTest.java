@@ -76,7 +76,8 @@ public class PubToCompletableTest {
         listen(new Publisher<String>() {
             @Override
             protected void handleSubscribe(final Subscriber<? super String> subscriber) {
-                subscriber.onSubscribe(new DeferredEmptySubscription(subscriber, TerminalNotification.error(DELIBERATE_EXCEPTION)));
+                subscriber.onSubscribe(new DeferredEmptySubscription(subscriber,
+                        TerminalNotification.error(DELIBERATE_EXCEPTION)));
             }
         }).verifyFailure(DELIBERATE_EXCEPTION);
     }

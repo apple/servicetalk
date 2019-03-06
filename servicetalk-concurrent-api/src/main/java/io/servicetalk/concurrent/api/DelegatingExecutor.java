@@ -45,7 +45,8 @@ public abstract class DelegatingExecutor implements Executor {
     }
 
     @Override
-    public Cancellable schedule(final Runnable task, final long delay, final TimeUnit unit) throws RejectedExecutionException {
+    public Cancellable schedule(final Runnable task, final long delay, final TimeUnit unit)
+            throws RejectedExecutionException {
         return delegate.schedule(task, delay, unit);
     }
 

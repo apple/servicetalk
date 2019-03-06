@@ -194,7 +194,8 @@ public final class ServiceTalkTestTimeout extends Timeout {
                     sb.append(" on ").append(info.getLockName());
                 }
                 if (info.getLockOwnerName() != null) {
-                    sb.append(" owned by \"").append(info.getLockOwnerName()).append("\" #").append(info.getLockOwnerId());
+                    sb.append(" owned by \"").append(info.getLockOwnerName()).append("\" #")
+                            .append(info.getLockOwnerId());
                 }
                 if (info.isSuspended()) {
                     sb.append(" (suspended)");

@@ -22,7 +22,8 @@ import java.util.function.Supplier;
 
 public class DoAfterSubscriberTest extends AbstractDoSubscriberTest {
     @Override
-    protected <T> Publisher<T> doSubscriber(Publisher<T> publisher, Supplier<Subscriber<? super T>> subscriberSupplier) {
+    protected <T> Publisher<T> doSubscriber(Publisher<T> publisher,
+                                            Supplier<Subscriber<? super T>> subscriberSupplier) {
         return publisher.doAfterSubscriber(subscriberSupplier);
     }
 }

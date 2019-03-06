@@ -30,8 +30,8 @@ public class LoggingCompletableSubscriber implements Subscriber {
     private final Subscriber delegate;
 
     /**
-     * Create a {@link LoggingCompletableSubscriber} that wraps the {@code delegate}, and uses the specified {@code name} for
-     * logging.
+     * Create a {@link LoggingCompletableSubscriber} that wraps the {@code delegate}, and uses the specified
+     * {@code name} for logging.
      *
      * @param name the logging name.
      * @param delegate the {@link Subscriber} to delegate calls to.

@@ -150,9 +150,9 @@ public final class PlatformDependent {
      * <p>
      * Some reasons to use this queue as opposed to {@link #newUnboundedMpscQueue()} include the following:
      * <ul>
-     *     <li>Lower Initial Memory Overhead - Currently the linked queues consume 392 bytes vs 568 for the array based queues.
-     *     Also consider the JDK based {@link ConcurrentLinkedQueue} only has 24 bytes of initial overhead so this maybe
-     *     a viable alternative if memory pressure exists and the size is expected to be small.</li>
+     *     <li>Lower Initial Memory Overhead - Currently the linked queues consume 392 bytes vs 568 for the array based
+     *     queues. Also consider the JDK based {@link ConcurrentLinkedQueue} only has 24 bytes of initial overhead so
+     *     this maybe a viable alternative if memory pressure exists and the size is expected to be small.</li>
      *     <li>{@link Queue#remove(Object)} support - Current only the linked variants support this operation.</li>
      * </ul>
      * @param <T> The data type of the queue.
@@ -238,7 +238,8 @@ public final class PlatformDependent {
 
         static <T> Queue<T> newUnboundedMpscQueue(int initialCapacity) {
             return USE_UNSAFE_QUEUES ? new MpscUnboundedArrayQueue<>(max(MIN_ALLOWED_MPSC_CHUNK_SIZE, initialCapacity))
-                                     : new MpscUnboundedAtomicArrayQueue<>(max(MIN_ALLOWED_MPSC_CHUNK_SIZE, initialCapacity));
+                                     : new MpscUnboundedAtomicArrayQueue<>(
+                                             max(MIN_ALLOWED_MPSC_CHUNK_SIZE, initialCapacity));
         }
 
         static <T> Queue<T> newUnboundedLinkedMpscQueue() {

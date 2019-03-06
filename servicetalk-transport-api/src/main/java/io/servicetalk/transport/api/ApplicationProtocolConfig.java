@@ -55,7 +55,8 @@ public final class ApplicationProtocolConfig {
      * @param supportedProtocols The order of iteration determines the preference of support for protocols.
      */
     public ApplicationProtocolConfig(Protocol protocol, SelectorFailureBehavior selectorBehavior,
-                                     SelectedListenerFailureBehavior selectedBehavior, Iterable<String> supportedProtocols) {
+                                     SelectedListenerFailureBehavior selectedBehavior,
+                                     Iterable<String> supportedProtocols) {
         this(protocol, selectorBehavior, selectedBehavior, toList(supportedProtocols));
     }
 

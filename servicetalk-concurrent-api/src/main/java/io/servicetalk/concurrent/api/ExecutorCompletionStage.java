@@ -1020,7 +1020,8 @@ abstract class ExecutorCompletionStage<T> implements CompletionStage<T>, Future<
         }
 
         @Override
-        void completeFuture(final ExecutorCompletionStage<V> stage, @Nullable final T tValue, @Nullable final U uValue) {
+        void completeFuture(final ExecutorCompletionStage<V> stage, @Nullable final T tValue,
+                            @Nullable final U uValue) {
             executor.execute(() -> CombineOnListener.completeFuture(stage, tValue, uValue, fn));
         }
 

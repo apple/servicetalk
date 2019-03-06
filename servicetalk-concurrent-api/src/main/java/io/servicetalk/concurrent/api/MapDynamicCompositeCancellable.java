@@ -27,8 +27,10 @@ import static io.servicetalk.concurrent.internal.ConcurrentUtils.CONCURRENT_IDLE
 import static io.servicetalk.concurrent.internal.ConcurrentUtils.drainSingleConsumerCollectionDelayThrow;
 
 /**
- * A {@link Cancellable} that contains other {@link Cancellable}s. <p>
- *     {@link Cancellable#cancel()} is propagated to all active {@link Cancellable}s. Any new {@link Cancellable} added after that will be immediately cancelled.
+ * A {@link Cancellable} that contains other {@link Cancellable}s.
+ * <p>
+ * {@link Cancellable#cancel()} is propagated to all active {@link Cancellable}s. Any new {@link Cancellable} added
+ * after that will be immediately cancelled.
  */
 final class MapDynamicCompositeCancellable implements DynamicCompositeCancellable {
 

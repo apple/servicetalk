@@ -54,7 +54,8 @@ public class MergeCompletableDelayErrorTest {
 
     @Test
     public void testFailMiddleEvent() {
-        holder.init(2).listen().complete(0).verifyNoEmissions().fail(1).verifyNoEmissions().complete(2).verifyFailure(DELIBERATE_EXCEPTION);
+        holder.init(2).listen().complete(0).verifyNoEmissions().fail(1).verifyNoEmissions().complete(2)
+                .verifyFailure(DELIBERATE_EXCEPTION);
     }
 
     @Test

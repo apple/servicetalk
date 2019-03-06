@@ -72,7 +72,8 @@ final class TakeWhilePublisher<T> extends AbstractSynchronousPublisherOperator<T
             // its subscriber and cancel the subscription.
             if (!predicate.test(t)) {
                 this.subscription = CANCELLED;
-                // This is guarded in our Subscription implementation with a CAS operation as we use ConcurrentSubscription.
+                // This is guarded in our Subscription implementation with a CAS operation as we use
+                // ConcurrentSubscription.
                 subscription.cancel();
                 subscriber.onComplete();
             } else {
