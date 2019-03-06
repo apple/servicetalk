@@ -29,23 +29,6 @@ import static java.lang.System.arraycopy;
  */
 public final class ConnectableOutputStream extends OutputStream {
     private final ConnectablePayloadWriter<byte[]> payloadWriter = new ConnectablePayloadWriter<>();
-    private final boolean forceCopy;
-
-    /**
-     * Create a new instance.
-     */
-    public ConnectableOutputStream() {
-        this(true);
-    }
-
-    /**
-     * Create a new instance.
-     * @param forceCopy {@code true} if all {@code byte[]} objects will be copied before writing, {@code false} a best
-     * effort will be made to use the original {@code byte[]}.
-     */
-    public ConnectableOutputStream(boolean forceCopy) {
-        this.forceCopy = forceCopy;
-    }
 
     @Override
     public void write(final int b) throws IOException {
@@ -54,13 +37,7 @@ public final class ConnectableOutputStream extends OutputStream {
 
     @Override
     public void write(final byte[] b) throws IOException {
-        if (forceCopy) {
-            final byte[] result = new byte[b.length];
-            arraycopy(b, 0, result, 0, result.length);
-            payloadWriter.write(result);
-        } else {
-            payloadWriter.write(b);
-        }
+        payloadWriter.write(b);
     }
 
     @Override
@@ -72,7 +49,7 @@ public final class ConnectableOutputStream extends OutputStream {
             return;
         }
 
-        if (!forceCopy && len == b.length) {
+        if (len == b.length) {
             assert off == 0; // offset has to be 0 because len is maxed out and we checked bounds previously.
             payloadWriter.write(b);
         } else {
