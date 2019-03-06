@@ -717,8 +717,9 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
         HttpHeaders h = message.headers();
         if (message instanceof HttpRequestMetaData) {
             HttpRequestMetaData req = (HttpRequestMetaData) message;
-            // Note that we are using ServiceTalk types here, and assume the decoders will also use ServiceTalk types.
-            if (GET.name().equals(req.method().name()) &&
+            // Note that we are using ServiceTalk constants for HttpRequestMethod here, and assume the decoders will
+            // also use ServiceTalk constants which allows us to use reference check here:
+            if (req.method() == GET &&
                     h.contains(SEC_WEBSOCKET_KEY1) &&
                     h.contains(SEC_WEBSOCKET_KEY2)) {
                 return 8;
