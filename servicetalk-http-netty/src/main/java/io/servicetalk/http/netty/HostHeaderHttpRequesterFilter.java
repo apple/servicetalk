@@ -34,7 +34,7 @@ import static io.netty.util.NetUtil.isValidIpV6Address;
 import static io.netty.util.NetUtil.toSocketAddressString;
 import static io.servicetalk.http.api.CharSequences.newAsciiString;
 import static io.servicetalk.http.api.HttpHeaderNames.HOST;
-import static io.servicetalk.http.api.HttpProtocolVersions.HTTP_1_1;
+import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static java.util.Objects.requireNonNull;
 
 /**

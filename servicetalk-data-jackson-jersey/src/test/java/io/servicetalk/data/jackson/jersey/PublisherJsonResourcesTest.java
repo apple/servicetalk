@@ -21,7 +21,7 @@ import org.junit.Ignore;
 
 import static io.servicetalk.data.jackson.jersey.resources.PublisherJsonResources.PATH;
 import static io.servicetalk.http.api.HttpHeaderValues.APPLICATION_JSON;
-import static io.servicetalk.http.api.HttpResponseStatuses.OK;
+import static io.servicetalk.http.api.HttpResponseStatus.OK;
 
 public class PublisherJsonResourcesTest extends AbstractStreamingJsonResourcesTest {
     @Override

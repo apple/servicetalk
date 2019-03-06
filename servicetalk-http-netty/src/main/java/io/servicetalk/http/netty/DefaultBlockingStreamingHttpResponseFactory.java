@@ -22,7 +22,7 @@ import io.servicetalk.http.api.BlockingStreamingHttpResponses;
 import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.api.HttpResponseStatus;
 
-import static io.servicetalk.http.api.HttpProtocolVersions.HTTP_1_1;
+import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 
 final class DefaultBlockingStreamingHttpResponseFactory implements BlockingStreamingHttpResponseFactory {
     private final HttpHeadersFactory headersFactory;

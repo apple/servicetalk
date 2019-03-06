@@ -15,14 +15,14 @@
  */
 package io.servicetalk.http.utils.auth;
 
-import io.servicetalk.http.api.HttpResponseStatuses;
+import io.servicetalk.http.api.HttpResponseStatus;
 
 import static java.util.Objects.requireNonNull;
 
 /**
  * An authentication exception, which indicates that access was denied and usually converts to
- * {@link HttpResponseStatuses#UNAUTHORIZED 401 (Unauthorized)} or
- * {@link HttpResponseStatuses#PROXY_AUTHENTICATION_REQUIRED 407 (Proxy Authentication Required)} response.
+ * {@link HttpResponseStatus#UNAUTHORIZED 401 (Unauthorized)} or
+ * {@link HttpResponseStatus#PROXY_AUTHENTICATION_REQUIRED 407 (Proxy Authentication Required)} response.
  */
 public class AuthenticationException extends RuntimeException {
 

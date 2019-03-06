@@ -21,28 +21,28 @@ import io.servicetalk.buffer.netty.BufferAllocators;
 import org.junit.Test;
 
 import static io.servicetalk.buffer.api.ReadOnlyBufferAllocators.DEFAULT_RO_ALLOCATOR;
-import static io.servicetalk.http.api.HttpProtocolVersions.HTTP_1_0;
-import static io.servicetalk.http.api.HttpProtocolVersions.HTTP_1_1;
-import static io.servicetalk.http.api.HttpProtocolVersions.getProtocolVersion;
-import static io.servicetalk.http.api.HttpProtocolVersions.newProtocolVersion;
+import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_0;
+import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
+import static io.servicetalk.http.api.HttpProtocolVersion.getProtocolVersion;
+import static io.servicetalk.http.api.HttpProtocolVersion.newProtocolVersion;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertSame;
 
-public class HttpProtocolVersionsTest {
+public class HttpProtocolVersionTest {
 
     @Test
     public void testHttp11Constant() {
-        assertEquals(1, HTTP_1_1.majorVersion());
-        assertEquals(1, HTTP_1_1.minorVersion());
+        assertEquals(1, HTTP_1_1.major());
+        assertEquals(1, HTTP_1_1.minor());
         assertEquals("HTTP/1.1", HTTP_1_1.toString());
         assertWriteToBuffer("HTTP/1.1", HTTP_1_1);
     }
 
     @Test
     public void testHttp10Constant() {
-        assertEquals(1, HTTP_1_0.majorVersion());
-        assertEquals(0, HTTP_1_0.minorVersion());
+        assertEquals(1, HTTP_1_0.major());
+        assertEquals(0, HTTP_1_0.minor());
         assertEquals("HTTP/1.0", HTTP_1_0.toString());
         assertWriteToBuffer("HTTP/1.0", HTTP_1_0);
     }
@@ -67,8 +67,8 @@ public class HttpProtocolVersionsTest {
     @Test
     public void testCreateNewProtocolVersionFromMajorAndMinor() {
         HttpProtocolVersion version98 = getProtocolVersion(9, 8);
-        assertEquals(9, version98.majorVersion());
-        assertEquals(8, version98.minorVersion());
+        assertEquals(9, version98.major());
+        assertEquals(8, version98.minor());
         assertEquals("HTTP/9.8", version98.toString());
         assertWriteToBuffer("HTTP/9.8", version98);
     }
@@ -76,8 +76,8 @@ public class HttpProtocolVersionsTest {
     @Test
     public void testCreateNewProtocolVersionFromBuffer() {
         HttpProtocolVersion version98 = newProtocolVersion(DEFAULT_RO_ALLOCATOR.fromAscii("HTTP/9.8"));
-        assertEquals(9, version98.majorVersion());
-        assertEquals(8, version98.minorVersion());
+        assertEquals(9, version98.major());
+        assertEquals(8, version98.minor());
         assertEquals("HTTP/9.8", version98.toString());
         assertWriteToBuffer("HTTP/9.8", version98);
     }
@@ -90,8 +90,8 @@ public class HttpProtocolVersionsTest {
         assertEquals(fromMajorAndMinor, fromBuffer);
         assertEquals(fromMajorAndMinor.hashCode(), fromBuffer.hashCode());
 
-        assertEquals(fromMajorAndMinor.majorVersion(), fromBuffer.majorVersion());
-        assertEquals(fromMajorAndMinor.minorVersion(), fromBuffer.minorVersion());
+        assertEquals(fromMajorAndMinor.major(), fromBuffer.major());
+        assertEquals(fromMajorAndMinor.minor(), fromBuffer.minor());
 
         assertEquals(fromMajorAndMinor.toString(), fromBuffer.toString());
         assertWriteToBuffer(fromMajorAndMinor.toString(), fromBuffer);
