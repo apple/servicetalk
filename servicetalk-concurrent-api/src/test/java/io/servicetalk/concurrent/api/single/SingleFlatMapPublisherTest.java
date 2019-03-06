@@ -16,11 +16,11 @@
 package io.servicetalk.concurrent.api.single;
 
 import io.servicetalk.concurrent.api.ExecutorRule;
+import io.servicetalk.concurrent.api.LegacyTestSingle;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.api.TestPublisherSubscriber;
-import io.servicetalk.concurrent.api.TestSingle;
 import io.servicetalk.concurrent.api.TestSubscription;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 
@@ -57,7 +57,7 @@ public final class SingleFlatMapPublisherTest {
     private final TestPublisherSubscriber<String> subscriber = new TestPublisherSubscriber<>();
     private final TestPublisher<String> publisher = new TestPublisher.Builder<String>()
             .disableAutoOnSubscribe().build();
-    private final TestSingle<String> single = new TestSingle<>();
+    private final LegacyTestSingle<String> single = new LegacyTestSingle<>();
     private final TestSubscription subscription = new TestSubscription();
 
     @Test

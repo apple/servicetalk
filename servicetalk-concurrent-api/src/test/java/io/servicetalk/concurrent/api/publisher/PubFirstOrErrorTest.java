@@ -16,7 +16,7 @@
 package io.servicetalk.concurrent.api.publisher;
 
 import io.servicetalk.concurrent.api.ExecutorRule;
-import io.servicetalk.concurrent.api.MockedSingleListenerRule;
+import io.servicetalk.concurrent.api.LegacyMockedSingleListenerRule;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
@@ -34,7 +34,7 @@ public class PubFirstOrErrorTest {
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
     @Rule
-    public final MockedSingleListenerRule<String> listenerRule = new MockedSingleListenerRule<>();
+    public final LegacyMockedSingleListenerRule<String> listenerRule = new LegacyMockedSingleListenerRule<>();
     @Rule
     public final ExecutorRule executorRule = ExecutorRule.newRule();
     private final TestPublisher<String> publisher = new TestPublisher<>();

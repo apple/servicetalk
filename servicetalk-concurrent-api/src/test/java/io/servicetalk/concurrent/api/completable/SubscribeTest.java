@@ -16,19 +16,19 @@
 package io.servicetalk.concurrent.api.completable;
 
 import io.servicetalk.concurrent.Cancellable;
-import io.servicetalk.concurrent.api.TestCompletable;
+import io.servicetalk.concurrent.api.LegacyTestCompletable;
 
 import org.junit.Before;
 import org.junit.Test;
 
 public final class SubscribeTest {
 
-    private TestCompletable source;
+    private LegacyTestCompletable source;
     private Cancellable cancellable;
 
     @Before
     public void setUp() {
-        source = new TestCompletable();
+        source = new LegacyTestCompletable();
         cancellable = source.subscribe();
     }
 

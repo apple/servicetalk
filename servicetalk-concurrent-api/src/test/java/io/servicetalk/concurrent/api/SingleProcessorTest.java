@@ -24,18 +24,18 @@ import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_
 
 public class SingleProcessorTest {
     @Rule
-    public final MockedSingleListenerRule<?> rule = new MockedSingleListenerRule<>();
+    public final LegacyMockedSingleListenerRule<?> rule = new LegacyMockedSingleListenerRule<>();
     @Rule
-    public final MockedSingleListenerRule<?> rule2 = new MockedSingleListenerRule<>();
+    public final LegacyMockedSingleListenerRule<?> rule2 = new LegacyMockedSingleListenerRule<>();
 
     @SuppressWarnings("unchecked")
-    private <T> MockedSingleListenerRule<T> rule() {
-        return (MockedSingleListenerRule<T>) rule;
+    private <T> LegacyMockedSingleListenerRule<T> rule() {
+        return (LegacyMockedSingleListenerRule<T>) rule;
     }
 
     @SuppressWarnings("unchecked")
-    private <T> MockedSingleListenerRule<T> rule2() {
-        return (MockedSingleListenerRule<T>) rule2;
+    private <T> LegacyMockedSingleListenerRule<T> rule2() {
+        return (LegacyMockedSingleListenerRule<T>) rule2;
     }
 
     @Test

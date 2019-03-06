@@ -16,7 +16,7 @@
 package io.servicetalk.concurrent.api.single;
 
 import io.servicetalk.concurrent.Cancellable;
-import io.servicetalk.concurrent.api.TestSingle;
+import io.servicetalk.concurrent.api.LegacyTestSingle;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -29,14 +29,14 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 public final class SubscribeTest {
 
-    private TestSingle<Integer> source;
+    private LegacyTestSingle<Integer> source;
     private Consumer<Integer> resultConsumer;
     private Cancellable cancellable;
 
     @SuppressWarnings("unchecked")
     @Before
     public void setUp() {
-        source = new TestSingle<>();
+        source = new LegacyTestSingle<>();
         resultConsumer = (Consumer<Integer>) mock(Consumer.class);
         cancellable = source.subscribe(resultConsumer);
     }

@@ -17,8 +17,8 @@ package io.servicetalk.redis.netty;
 
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Executor;
+import io.servicetalk.concurrent.api.LegacyTestCompletable;
 import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.concurrent.api.TestCompletable;
 import io.servicetalk.redis.api.RedisData;
 import io.servicetalk.redis.api.RedisProtocolSupport;
 import io.servicetalk.redis.api.RedisRequest;
@@ -51,7 +51,7 @@ import static org.mockito.Mockito.when;
 
 public final class AbstractRedisConnectionTest {
 
-    private ConcurrentLinkedQueue<TestCompletable> timers;
+    private ConcurrentLinkedQueue<LegacyTestCompletable> timers;
     private Connection connection;
 
     @Before
@@ -63,7 +63,7 @@ public final class AbstractRedisConnectionTest {
         config.maxPipelinedRequests(10);
         Executor pingTimerProvider = mock(Executor.class);
         when(pingTimerProvider.timer(anyLong(), ArgumentMatchers.any(TimeUnit.class))).thenAnswer(inv -> {
-            TestCompletable timer = new TestCompletable();
+            LegacyTestCompletable timer = new LegacyTestCompletable();
             timers.add(timer);
             return timer;
         });
@@ -126,7 +126,7 @@ public final class AbstractRedisConnectionTest {
         private final ConnectionContext context = mock(ConnectionContext.class);
         private final AtomicInteger pingCount = new AtomicInteger();
         private final AtomicBoolean closed = new AtomicBoolean();
-        private final ConcurrentLinkedQueue<TestCompletable> pings = new ConcurrentLinkedQueue<>();
+        private final ConcurrentLinkedQueue<LegacyTestCompletable> pings = new ConcurrentLinkedQueue<>();
 
         protected Connection(Executor pingTimerProvider,
                              ExecutionContext executionContext,
@@ -141,7 +141,7 @@ public final class AbstractRedisConnectionTest {
 
         @Override
         Completable sendPing() {
-            TestCompletable response = new TestCompletable();
+            LegacyTestCompletable response = new LegacyTestCompletable();
             pings.add(response);
             return response.doBeforeSubscribe(cancellable -> pingCount.incrementAndGet());
         }

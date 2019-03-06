@@ -41,7 +41,7 @@ public class RedoStrategiesTest {
     @Rule
     public final ServiceTalkTestTimeout timeout = new ServiceTalkTestTimeout();
 
-    protected LinkedBlockingQueue<TestCompletable> timers;
+    protected LinkedBlockingQueue<LegacyTestCompletable> timers;
     protected Executor timerExecutor;
 
     @SuppressWarnings("unchecked")
@@ -50,7 +50,7 @@ public class RedoStrategiesTest {
         timers = new LinkedBlockingQueue<>();
         timerExecutor = mock(Executor.class);
         when(timerExecutor.timer(anyLong(), any(TimeUnit.class))).thenAnswer(invocation -> {
-            TestCompletable completable = new TestCompletable();
+            LegacyTestCompletable completable = new LegacyTestCompletable();
             timers.add(completable);
             return completable;
         });

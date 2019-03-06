@@ -18,9 +18,9 @@ package io.servicetalk.transport.netty.internal;
 import io.servicetalk.concurrent.api.AsyncCloseable;
 import io.servicetalk.concurrent.api.AsyncCloseables;
 import io.servicetalk.concurrent.api.Completable;
+import io.servicetalk.concurrent.api.LegacyMockedCompletableListenerRule;
+import io.servicetalk.concurrent.api.LegacyTestCompletable;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
-import io.servicetalk.concurrent.api.MockedCompletableListenerRule;
-import io.servicetalk.concurrent.api.TestCompletable;
 import io.servicetalk.transport.api.ServerContext;
 
 import io.netty.channel.Channel;
@@ -49,10 +49,10 @@ public class NettyServerContextTest {
     @Rule
     public final MockitoRule rule = MockitoJUnit.rule();
     @Rule
-    public final MockedCompletableListenerRule subscriberRule = new MockedCompletableListenerRule();
+    public final LegacyMockedCompletableListenerRule subscriberRule = new LegacyMockedCompletableListenerRule();
 
-    TestCompletable closeBeforeCloseAsyncCompletable = new TestCompletable();
-    TestCompletable closeBeforeCloseAsyncGracefulCompletable = new TestCompletable();
+    LegacyTestCompletable closeBeforeCloseAsyncCompletable = new LegacyTestCompletable();
+    LegacyTestCompletable closeBeforeCloseAsyncGracefulCompletable = new LegacyTestCompletable();
     AsyncCloseable closeBefore = new AsyncCloseable() {
         @Override
         public Completable closeAsync() {
@@ -64,8 +64,8 @@ public class NettyServerContextTest {
             return closeBeforeCloseAsyncGracefulCompletable;
         }
     };
-    TestCompletable closeBeforeBeforeCloseAsyncCompletable = new TestCompletable();
-    TestCompletable closeBeforeBeforeCloseAsyncGracefulCompletable = new TestCompletable();
+    LegacyTestCompletable closeBeforeBeforeCloseAsyncCompletable = new LegacyTestCompletable();
+    LegacyTestCompletable closeBeforeBeforeCloseAsyncGracefulCompletable = new LegacyTestCompletable();
     AsyncCloseable closeBeforeBefore = new AsyncCloseable() {
         @Override
         public Completable closeAsync() {
@@ -77,8 +77,8 @@ public class NettyServerContextTest {
             return closeBeforeBeforeCloseAsyncGracefulCompletable;
         }
     };
-    TestCompletable channelSetCloseAsyncCompletable = new TestCompletable();
-    TestCompletable channelSetCloseAsyncGracefulCompletable = new TestCompletable();
+    LegacyTestCompletable channelSetCloseAsyncCompletable = new LegacyTestCompletable();
+    LegacyTestCompletable channelSetCloseAsyncGracefulCompletable = new LegacyTestCompletable();
     @Mock
     Channel channel;
     @Mock

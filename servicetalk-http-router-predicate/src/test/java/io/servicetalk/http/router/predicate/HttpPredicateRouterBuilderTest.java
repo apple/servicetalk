@@ -18,8 +18,8 @@ package io.servicetalk.http.router.predicate;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.CompletableSource.Subscriber;
 import io.servicetalk.concurrent.api.Completable;
+import io.servicetalk.concurrent.api.LegacyTestCompletable;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.concurrent.api.TestCompletable;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpService;
 
@@ -303,7 +303,7 @@ public class HttpPredicateRouterBuilderTest extends BaseHttpPredicateRouterBuild
         completableC.verifyListenCalled();
     }
 
-    public static class CompleteTestCompletable extends TestCompletable {
+    public static class CompleteTestCompletable extends LegacyTestCompletable {
         @Override
         public void handleSubscribe(final Subscriber subscriber) {
             super.handleSubscribe(subscriber);
@@ -311,7 +311,7 @@ public class HttpPredicateRouterBuilderTest extends BaseHttpPredicateRouterBuild
         }
     }
 
-    public static class FailCompletable extends TestCompletable {
+    public static class FailCompletable extends LegacyTestCompletable {
         @Override
         public void handleSubscribe(final Subscriber subscriber) {
             super.handleSubscribe(subscriber);

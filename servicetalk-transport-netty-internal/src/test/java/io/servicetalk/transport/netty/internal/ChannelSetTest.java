@@ -17,7 +17,7 @@ package io.servicetalk.transport.netty.internal;
 
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.CompletableProcessor;
-import io.servicetalk.concurrent.api.MockedCompletableListenerRule;
+import io.servicetalk.concurrent.api.LegacyMockedCompletableListenerRule;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 
 import io.netty.channel.Channel;
@@ -58,11 +58,11 @@ public class ChannelSetTest {
     @Rule
     public final MockitoRule rule = MockitoJUnit.rule();
     @Rule
-    public final MockedCompletableListenerRule subscriberRule1 = new MockedCompletableListenerRule();
+    public final LegacyMockedCompletableListenerRule subscriberRule1 = new LegacyMockedCompletableListenerRule();
     @Rule
-    public final MockedCompletableListenerRule subscriberRule2 = new MockedCompletableListenerRule();
+    public final LegacyMockedCompletableListenerRule subscriberRule2 = new LegacyMockedCompletableListenerRule();
     @Rule
-    public final MockedCompletableListenerRule subscriberRule3 = new MockedCompletableListenerRule();
+    public final LegacyMockedCompletableListenerRule subscriberRule3 = new LegacyMockedCompletableListenerRule();
 
     @Mock
     private Channel channel;

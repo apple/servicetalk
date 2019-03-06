@@ -17,9 +17,9 @@ package io.servicetalk.concurrent.api.single;
 
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.SingleSource.Subscriber;
-import io.servicetalk.concurrent.api.MockedSingleListenerRule;
+import io.servicetalk.concurrent.api.LegacyMockedSingleListenerRule;
+import io.servicetalk.concurrent.api.LegacyTestSingle;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.concurrent.api.TestSingle;
 import io.servicetalk.concurrent.api.TimeoutTestUtils.AbstractTestExecutor;
 import io.servicetalk.concurrent.api.TimeoutTestUtils.ScheduleEvent;
 import io.servicetalk.concurrent.api.TimeoutTestUtils.ScheduleQueueTestExecutor;
@@ -47,16 +47,16 @@ public class TimeoutSingleTest {
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
     @Rule
-    public final MockedSingleListenerRule<Integer> subscriberRule = new MockedSingleListenerRule<>();
+    public final LegacyMockedSingleListenerRule<Integer> subscriberRule = new LegacyMockedSingleListenerRule<>();
 
-    private TestSingle<Integer> source;
+    private LegacyTestSingle<Integer> source;
     private final ScheduleQueueTestExecutor testExecutor = new ScheduleQueueTestExecutor();
     private java.util.concurrent.ExecutorService timerSimulator;
 
     @Before
     public void setUp() throws Exception {
         timerSimulator = java.util.concurrent.Executors.newFixedThreadPool(1);
-        source = new TestSingle<>(false, false);
+        source = new LegacyTestSingle<>(false, false);
     }
 
     @After

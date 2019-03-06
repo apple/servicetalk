@@ -24,7 +24,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Function;
 
 /**
- * Allows multiple {@link Subscriber}s to be concurrently subscribed to a {@link TestSingle2}, and multicasts signals
+ * Allows multiple {@link Subscriber}s to be concurrently subscribed to a {@link TestSingle}, and multicasts signals
  * to them all.
  *
  * @param <T> Type of items received by the {@code Subscriber}.

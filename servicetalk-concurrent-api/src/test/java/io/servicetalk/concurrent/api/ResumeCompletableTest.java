@@ -28,15 +28,15 @@ import static org.junit.Assert.assertSame;
 public final class ResumeCompletableTest {
 
     @Rule
-    public final MockedCompletableListenerRule listener = new MockedCompletableListenerRule();
+    public final LegacyMockedCompletableListenerRule listener = new LegacyMockedCompletableListenerRule();
 
-    private TestCompletable first;
-    private TestCompletable second;
+    private LegacyTestCompletable first;
+    private LegacyTestCompletable second;
 
     @Before
     public void setUp() {
-        first = new TestCompletable();
-        second = new TestCompletable();
+        first = new LegacyTestCompletable();
+        second = new LegacyTestCompletable();
         listener.listen(first.onErrorResume(throwable -> second));
     }
 
