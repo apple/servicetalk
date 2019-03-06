@@ -205,8 +205,15 @@ public class TestExecutorTest {
 
     @Test
     public void testExecuteNextScheduledTask() {
-        TestExecutor fixture = new TestExecutor();
+        testExecuteNextScheduledTask(new TestExecutor());
+    }
 
+    @Test
+    public void testScheduleDoesNotOverflow() {
+        testExecuteNextScheduledTask(new TestExecutor(Long.MAX_VALUE - 1));
+    }
+
+    private void testExecuteNextScheduledTask(TestExecutor fixture) {
         AtomicInteger i = new AtomicInteger();
 
         fixture.schedule(i::incrementAndGet, 1000, NANOSECONDS);
