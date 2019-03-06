@@ -26,7 +26,7 @@ import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.netty.internal.DefaultNettyPipelinedConnection;
 import io.servicetalk.transport.netty.internal.NettyConnection;
 
-import static io.servicetalk.http.api.HttpProtocolVersions.HTTP_1_1;
+import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 
 final class PipelinedStreamingHttpConnection
         extends AbstractStreamingHttpConnection<DefaultNettyPipelinedConnection<Object, Object>> {
@@ -43,8 +43,8 @@ final class PipelinedStreamingHttpConnection
     @Override
     public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy, StreamingHttpRequest request) {
         HttpProtocolVersion version = request.version();
-        if (version != HTTP_1_1 && (version.majorVersion() != HTTP_1_1.majorVersion()
-                || version.minorVersion() != HTTP_1_1.minorVersion())) {
+        if (version != HTTP_1_1 && (version.major() != HTTP_1_1.major()
+                || version.minor() != HTTP_1_1.minor())) {
             return Single.error(new IllegalArgumentException(
                     "Pipelining unsupported in protocol version: " + request.version()));
         }

@@ -37,8 +37,8 @@ import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Publisher.just;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
-import static io.servicetalk.http.api.HttpResponseStatuses.NOT_FOUND;
-import static io.servicetalk.http.api.HttpResponseStatuses.NO_CONTENT;
+import static io.servicetalk.http.api.HttpResponseStatus.NOT_FOUND;
+import static io.servicetalk.http.api.HttpResponseStatus.NO_CONTENT;
 
 final class TestServiceStreaming extends StreamingHttpService {
 

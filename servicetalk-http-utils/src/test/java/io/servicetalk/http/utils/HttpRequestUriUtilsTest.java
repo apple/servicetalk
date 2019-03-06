@@ -31,8 +31,8 @@ import org.mockito.junit.MockitoRule;
 import javax.net.ssl.SSLSession;
 
 import static io.servicetalk.http.api.HttpHeaderNames.HOST;
-import static io.servicetalk.http.api.HttpRequestMethods.CONNECT;
-import static io.servicetalk.http.api.HttpRequestMethods.OPTIONS;
+import static io.servicetalk.http.api.HttpRequestMethod.CONNECT;
+import static io.servicetalk.http.api.HttpRequestMethod.OPTIONS;
 import static io.servicetalk.http.utils.HttpRequestUriUtils.getBaseRequestUri;
 import static io.servicetalk.http.utils.HttpRequestUriUtils.getEffectiveRequestUri;
 import static java.net.InetSocketAddress.createUnresolved;

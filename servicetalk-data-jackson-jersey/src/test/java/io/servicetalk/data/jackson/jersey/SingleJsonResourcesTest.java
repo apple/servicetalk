@@ -19,7 +19,7 @@ import org.junit.Test;
 
 import static io.servicetalk.data.jackson.jersey.resources.SingleJsonResources.PATH;
 import static io.servicetalk.http.api.HttpHeaderValues.APPLICATION_JSON;
-import static io.servicetalk.http.api.HttpResponseStatuses.BAD_REQUEST;
+import static io.servicetalk.http.api.HttpResponseStatus.BAD_REQUEST;
 
 public class SingleJsonResourcesTest extends AbstractStreamingJsonResourcesTest {
     @Override

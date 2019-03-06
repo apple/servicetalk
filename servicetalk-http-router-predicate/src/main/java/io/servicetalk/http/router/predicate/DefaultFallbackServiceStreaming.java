@@ -26,7 +26,7 @@ import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
 import static io.servicetalk.http.api.HttpHeaderValues.TEXT_PLAIN;
 import static io.servicetalk.http.api.HttpHeaderValues.ZERO;
-import static io.servicetalk.http.api.HttpResponseStatuses.NOT_FOUND;
+import static io.servicetalk.http.api.HttpResponseStatus.NOT_FOUND;
 
 final class DefaultFallbackServiceStreaming extends StreamingHttpService {
 

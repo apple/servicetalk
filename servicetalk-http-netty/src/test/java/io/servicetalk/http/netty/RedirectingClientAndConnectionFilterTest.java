@@ -22,7 +22,6 @@ import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.BlockingHttpRequester;
 import io.servicetalk.http.api.HttpClient;
 import io.servicetalk.http.api.HttpConnection;
-import io.servicetalk.http.api.HttpProtocolVersions;
 import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.ReservedStreamingHttpConnectionFilter;
@@ -42,8 +41,9 @@ import java.net.InetSocketAddress;
 
 import static io.servicetalk.http.api.HttpHeaderNames.HOST;
 import static io.servicetalk.http.api.HttpHeaderNames.LOCATION;
-import static io.servicetalk.http.api.HttpResponseStatuses.OK;
-import static io.servicetalk.http.api.HttpResponseStatuses.PERMANENT_REDIRECT;
+import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_0;
+import static io.servicetalk.http.api.HttpResponseStatus.OK;
+import static io.servicetalk.http.api.HttpResponseStatus.PERMANENT_REDIRECT;
 import static io.servicetalk.http.netty.RedirectingClientAndConnectionFilterTest.Type.Client;
 import static io.servicetalk.http.netty.RedirectingClientAndConnectionFilterTest.Type.Connection;
 import static io.servicetalk.http.netty.RedirectingClientAndConnectionFilterTest.Type.Reserved;
@@ -139,10 +139,7 @@ public final class RedirectingClientAndConnectionFilterTest {
             assertThat(response.status(), equalTo(OK));
 
             // HTTP/1.0 doesn't support HOST, ensure that we don't get any errors and fallback to redirect
-            response = client.request(
-                    client.get("/")
-                            .version(HttpProtocolVersions.HTTP_1_0)
-                            .addHeader("X-REDIRECT", "TRUE"));
+            response = client.request(client.get("/").version(HTTP_1_0).addHeader("X-REDIRECT", "TRUE"));
             assertThat(response.status(), equalTo(PERMANENT_REDIRECT));
         }
     }
@@ -167,10 +164,7 @@ public final class RedirectingClientAndConnectionFilterTest {
             assertThat(response.status(), equalTo(OK));
 
             // HTTP/1.0 doesn't support HOST, ensure that we don't get any errors and fallback to redirect
-            response = client.request(
-                    client.get("/")
-                            .version(HttpProtocolVersions.HTTP_1_0)
-                            .addHeader("X-REDIRECT", "TRUE"));
+            response = client.request(client.get("/").version(HTTP_1_0).addHeader("X-REDIRECT", "TRUE"));
             assertThat(response.status(), equalTo(PERMANENT_REDIRECT));
         }
     }
