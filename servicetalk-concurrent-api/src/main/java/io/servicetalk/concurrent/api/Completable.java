@@ -609,16 +609,14 @@ public abstract class Completable {
      *
      * @param shouldRepeat {@link IntPredicate} that given the repeat count determines if the operation should be
      * repeated
-     * @param valueSupplier {@link Supplier} that is called every time this {@link Completable} completes. The value
-     * returned is emitted from the returned {@link Publisher}
      * @param <T> Type of items provided by the passed {@link Supplier} and emitted by the returned {@link Publisher}.
      * @return A {@link Publisher} that emits the value returned by the passed {@link Supplier} everytime this
      * {@link Completable} completes.
      *
      * @see <a href="http://reactivex.io/documentation/operators/repeat.html">ReactiveX repeat operator.</a>
      */
-    public final <T> Publisher<T> repeat(IntPredicate shouldRepeat, Supplier<? extends T> valueSupplier) {
-        return toSingle().<T>map(__ -> valueSupplier.get()).repeat(shouldRepeat);
+    public final <T> Publisher<T> repeat(IntPredicate shouldRepeat) {
+        return this.<T>toSingle().repeat(shouldRepeat);
     }
 
     /**
@@ -643,16 +641,13 @@ public abstract class Completable {
      * @param repeatWhen {@link IntFunction} that given the repeat count returns a {@link Completable}.
      * If this {@link Completable} emits an error repeat is terminated, otherwise, original {@link Completable} is
      * re-subscribed when this {@link Completable} completes.
-     * @param valueSupplier {@link Supplier} that is called every time this {@link Completable} completes. The value
-     * returned is emitted from the returned {@link Publisher}
      * @param <T> Type of items provided by the passed {@link Supplier} and emitted by the returned {@link Publisher}.
      * @return A {@link Completable} that completes after all re-subscriptions completes.
      *
      * @see <a href="http://reactivex.io/documentation/operators/retry.html">ReactiveX retry operator.</a>
      */
-    public final <T> Publisher<T> repeatWhen(IntFunction<? extends Completable> repeatWhen,
-                                             Supplier<? extends T> valueSupplier) {
-        return toSingle().<T>map(__ -> valueSupplier.get()).repeatWhen(repeatWhen);
+    public final <T> Publisher<T> repeatWhen(IntFunction<? extends Completable> repeatWhen) {
+        return this.<T>toSingle().repeatWhen(repeatWhen);
     }
 
     /**

@@ -18,7 +18,7 @@ package io.servicetalk.concurrent.api.completable;
 import org.junit.Test;
 
 import java.util.Collection;
-import java.util.function.Supplier;
+import java.util.function.Function;
 
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Completable.error;
@@ -30,11 +30,11 @@ public class RepeatTest {
 
     @Test
     public void repeatValueSupplier() throws Exception {
-        Collection<Integer> repeats = completed().repeat(count -> count < 2, new Supplier<Integer>() {
+        Collection<Integer> repeats = completed().repeat(count -> count < 2).map(new Function<Object, Integer>() {
             private int count;
 
             @Override
-            public Integer get() {
+            public Integer apply(final Object o) {
                 return ++count;
             }
         }).toFuture().get();
@@ -44,15 +44,14 @@ public class RepeatTest {
     @Test
     public void repeatWhenValueSupplier() throws Exception {
         Collection<Integer> repeats = completed().repeatWhen(count ->
-                        count < 2 ? completed() : error(DELIBERATE_EXCEPTION),
-                new Supplier<Integer>() {
-                    private int count;
-
-                    @Override
-                    public Integer get() {
-                        return ++count;
-                    }
-                }).toFuture().get();
+                        count < 2 ? completed() : error(DELIBERATE_EXCEPTION)).map(
+            new Function<Object, Integer>() {
+                private int count;
+            @Override
+            public Integer apply(final Object o) {
+                return ++count;
+            }
+        }).toFuture().get();
         assertThat("Unexpected items received.", repeats, contains(1, 2));
     }
 }
