@@ -18,6 +18,7 @@ package io.servicetalk.concurrent.api;
 import java.time.Duration;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.IntFunction;
+import java.util.function.Supplier;
 
 import static io.servicetalk.concurrent.api.Completable.error;
 import static java.util.Objects.requireNonNull;
@@ -25,7 +26,7 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
 /**
  * A set of strategies to use for repeating with {@link Publisher#repeatWhen(IntFunction)}, {@link Single#repeatWhen(IntFunction)}
- * and {@link Completable#repeatWhen(IntFunction)} or in general.
+ * and {@link Completable#repeatWhen(IntFunction, Supplier)} or in general.
  */
 public final class RepeatStrategies {
 
