@@ -82,7 +82,7 @@ public final class ConnectablePayloadWriter<T> implements PayloadWriter<T> {
 
     @Override
     public void write(final T t) throws IOException {
-        verifyOpen();
+        // We don't need to call verifyOpen here because it is checked in both wait* methods.
         for (;;) {
             final long requested = this.requested;
             if (requested > 0) {
@@ -118,7 +118,7 @@ public final class ConnectablePayloadWriter<T> implements PayloadWriter<T> {
         // terminate the Subscriber.
         if (closedUpdater.compareAndSet(this, null, TerminalNotification.complete())) {
             for (;;) {
-                Object currState = state;
+                final Object currState = state;
                 if (currState == State.TERMINATED || currState == State.CONNECTED) {
                     break;
                 } else if (currState instanceof Subscriber) {
@@ -156,41 +156,51 @@ public final class ConnectablePayloadWriter<T> implements PayloadWriter<T> {
     private void verifyOpen() throws IOException {
         TerminalNotification currClosed = closed;
         if (currClosed != null) {
-            Object currState = stateUpdater.getAndSet(this, State.TERMINATED);
-            if (currState instanceof Subscriber) {
-                currClosed.terminate((Subscriber<?>) currState);
-            }
-            throw new IOException("Already closed " + currClosed);
+            processClosed(currClosed);
         }
+    }
+
+    private void processClosed() throws IOException {
+        TerminalNotification currClosed = closed;
+        assert currClosed != null;
+        processClosed(currClosed);
+    }
+
+    private void processClosed(TerminalNotification currClosed) throws IOException {
+        Object currState = stateUpdater.getAndSet(this, State.TERMINATED);
+        if (currState instanceof Subscriber) {
+            currClosed.terminate((Subscriber<?>) currState);
+        }
+        throw new IOException("Already closed " + currClosed);
     }
 
     private void waitForRequestNDemand() throws IOException {
         writerThread = Thread.currentThread();
         final long oldRequested = requestedUpdater.getAndSet(this, REQUESTN_ABOUT_TO_PARK);
-        if (oldRequested > 0) {
-            waitForRequestNDemandAvoidPark(oldRequested);
-        } else {
+        if (oldRequested == 0) {
             for (;;) {
                 LockSupport.park();
                 final long requested = this.requested;
                 if (requested > 0) {
-                    if (requestedUpdater.compareAndSet(this, requested,
-                            addWithOverflowProtection(oldRequested - 1, requested))) {
+                    if (requestedUpdater.compareAndSet(this, requested, requested - 1)) {
                         writerThread = null;
                         break;
                     }
                 } else if (requested != REQUESTN_ABOUT_TO_PARK) {
                     writerThread = null;
-                    // we have been closed some how, either cancelled or invalid requestN. Process the closed event.
-                    verifyOpen();
-                    break;
+                    processClosed();
                 }
             }
+        } else if (oldRequested > 0) {
+            writerThread = null;
+            waitForRequestNDemandAvoidPark(oldRequested);
+        } else {
+            writerThread = null;
+            processClosed();
         }
     }
 
     private void waitForRequestNDemandAvoidPark(final long oldRequested) throws IOException {
-        writerThread = null;
         for (;;) {
             final long requested = this.requested;
             if (requested == REQUESTN_ABOUT_TO_PARK) {
@@ -198,9 +208,7 @@ public final class ConnectablePayloadWriter<T> implements PayloadWriter<T> {
                     break;
                 }
             } else if (requested < 0) {
-                // we have been closed some how, either cancelled or invalid requestN. Process the closed event.
-                verifyOpen();
-                break;
+                processClosed();
             } else if (requestedUpdater.compareAndSet(this, requested,
                     addWithOverflowProtection(oldRequested - 1, requested))) {
                 break;
