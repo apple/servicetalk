@@ -336,16 +336,16 @@ public class BlockingBufferRedisCommanderTest extends BaseRedisClientTest {
     @Test
     public void transactionExec() throws Exception {
         BlockingTransactedBufferRedisCommander tcc = commandClient.multi();
-        Future<Long> value1 = tcc.del(key("a-key"));
-        Future<String> value2 = tcc.set(key("a-key"), buf("a-value3"));
-        Future<Buffer> value3 = tcc.ping(buf("in-transac"));
-        Future<Buffer> value4 = tcc.get(key("a-key"));
+        Future<String> value1 = tcc.set(key("a-key"), buf("a-value3"));
+        Future<Buffer> value2 = tcc.get(key("a-key"));
+        Future<Long> value3 = tcc.del(key("a-key"));
+        Future<Buffer> value4 = tcc.ping(buf("in-transac"));
         tcc.exec();
         postReleaseLatch.await();
-        assertThat(value1.get(), is(1L));
-        assertThat(value2.get(), is("OK"));
-        assertThat(value3.get(), is(buf("in-transac")));
-        assertThat(value4.get(), is(buf("a-value3")));
+        assertThat(value1.get(), is("OK"));
+        assertThat(value2.get(), is(buf("a-value3")));
+        assertThat(value3.get(), is(1L));
+        assertThat(value4.get(), is(buf("in-transac")));
     }
 
     @Test
