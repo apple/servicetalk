@@ -22,6 +22,8 @@ import io.servicetalk.concurrent.internal.SequentialCancellable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static java.util.Objects.requireNonNull;
+
 final class SimpleCompletableSubscriber extends SequentialCancellable implements CompletableSource.Subscriber {
 
     private static final Runnable NOOP_RUNNABLE = () -> { };
@@ -34,7 +36,7 @@ final class SimpleCompletableSubscriber extends SequentialCancellable implements
 
     SimpleCompletableSubscriber(final Runnable onComplete) {
         super();
-        this.onComplete = onComplete;
+        this.onComplete = requireNonNull(onComplete);
     }
 
     @Override
