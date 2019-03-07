@@ -28,15 +28,15 @@ import static java.util.Objects.requireNonNull;
  * @param <T> Type of items emitted by this {@link Publisher}.
  */
 final class PublisherDefer<T> extends Publisher<T> implements PublisherSource<T> {
-    private final Supplier<? extends Publisher<T>> publisherFactory;
+    private final Supplier<? extends Publisher<? extends T>> publisherFactory;
 
-    PublisherDefer(Supplier<? extends Publisher<T>> publisherFactory) {
+    PublisherDefer(Supplier<? extends Publisher<? extends T>> publisherFactory) {
         this.publisherFactory = requireNonNull(publisherFactory);
     }
 
     @Override
     protected void handleSubscribe(Subscriber<? super T> subscriber) {
-        final Publisher<T> publisher;
+        final Publisher<? extends T> publisher;
         try {
             publisher = requireNonNull(publisherFactory.get());
         } catch (Throwable cause) {

@@ -59,7 +59,7 @@ public class CollectTest {
     @Test
     public void collectVarArgFailure() throws Exception {
         AtomicBoolean secondSubscribed = new AtomicBoolean();
-        Future<Collection<Integer>> future = collect(error(DELIBERATE_EXCEPTION),
+        Future<? extends Collection<Integer>> future = collect(error(DELIBERATE_EXCEPTION),
                 success(2).doBeforeSubscribe(__ -> secondSubscribed.set(true))).toFuture();
         try {
             future.get();
@@ -73,7 +73,7 @@ public class CollectTest {
     @Test
     public void collectVarArgDelayError() throws Exception {
         AtomicBoolean secondSubscribed = new AtomicBoolean();
-        Future<Collection<Integer>> future = collectDelayError(error(DELIBERATE_EXCEPTION),
+        Future<? extends Collection<Integer>> future = collectDelayError(error(DELIBERATE_EXCEPTION),
                 success(2).doBeforeSubscribe(__ -> secondSubscribed.set(true))).toFuture();
         try {
             future.get();
@@ -88,7 +88,7 @@ public class CollectTest {
     @Test
     public void collectVarArgDelayErrorMaxConcurrency() throws Exception {
         AtomicBoolean secondSubscribed = new AtomicBoolean();
-        Future<Collection<Integer>> future = collectDelayError(1, error(DELIBERATE_EXCEPTION),
+        Future<? extends Collection<Integer>> future = collectDelayError(1, error(DELIBERATE_EXCEPTION),
                 success(2).doBeforeSubscribe(__ -> secondSubscribed.set(true))).toFuture();
         try {
             future.get();
@@ -116,7 +116,7 @@ public class CollectTest {
     @Test
     public void collectIterableFailure() throws Exception {
         AtomicBoolean secondSubscribed = new AtomicBoolean();
-        Future<Collection<Integer>> future = collect(asList(error(DELIBERATE_EXCEPTION),
+        Future<? extends Collection<Integer>> future = collect(asList(error(DELIBERATE_EXCEPTION),
                 success(2).doBeforeSubscribe(__ -> secondSubscribed.set(true)))).toFuture();
         try {
             future.get();
@@ -130,7 +130,7 @@ public class CollectTest {
     @Test
     public void collectIterableDelayError() throws Exception {
         AtomicBoolean secondSubscribed = new AtomicBoolean();
-        Future<Collection<Integer>> future = collectDelayError(asList(error(DELIBERATE_EXCEPTION),
+        Future<? extends Collection<Integer>> future = collectDelayError(asList(error(DELIBERATE_EXCEPTION),
                 success(2).doBeforeSubscribe(__ -> secondSubscribed.set(true)))).toFuture();
         try {
             future.get();
@@ -145,7 +145,7 @@ public class CollectTest {
     @Test
     public void collectIterableDelayErrorMaxConcurrency() throws Exception {
         AtomicBoolean secondSubscribed = new AtomicBoolean();
-        Future<Collection<Integer>> future = collectDelayError(asList(error(DELIBERATE_EXCEPTION),
+        Future<? extends Collection<Integer>> future = collectDelayError(asList(error(DELIBERATE_EXCEPTION),
                 success(2).doBeforeSubscribe(__ -> secondSubscribed.set(true))), 1).toFuture();
         try {
             future.get();

@@ -32,11 +32,11 @@ import static java.util.Objects.requireNonNull;
 final class FromBlockingIterablePublisher<T> extends AbstractSynchronousPublisher<T> {
     private static final Logger LOGGER = LoggerFactory.getLogger(FromBlockingIterablePublisher.class);
 
-    private final BlockingIterable<T> iterable;
+    private final BlockingIterable<? extends T> iterable;
     private final LongSupplier timeoutSupplier;
     private final TimeUnit unit;
 
-    FromBlockingIterablePublisher(final BlockingIterable<T> iterable,
+    FromBlockingIterablePublisher(final BlockingIterable<? extends T> iterable,
                                   final LongSupplier timeoutSupplier,
                                   final TimeUnit unit) {
         this.iterable = requireNonNull(iterable);
@@ -54,10 +54,10 @@ final class FromBlockingIterablePublisher<T> extends AbstractSynchronousPublishe
     }
 
     private static final class FromBlockingIterableSubscription<T> extends
-                                                         FromIterableSubscription<T, BlockingIterator<T>> {
+                                                         FromIterableSubscription<T, BlockingIterator<? extends T>> {
         private final FromBlockingIterablePublisher<T> iterablePublisher;
 
-        FromBlockingIterableSubscription(final BlockingIterator<T> iterator,
+        FromBlockingIterableSubscription(final BlockingIterator<? extends T> iterator,
                                          final Subscriber<? super T> subscriber,
                                          final FromBlockingIterablePublisher<T> iterablePublisher) {
             super(iterator, subscriber);
@@ -65,13 +65,13 @@ final class FromBlockingIterablePublisher<T> extends AbstractSynchronousPublishe
         }
 
         @Override
-        boolean hasNext(final BlockingIterator<T> iterator) throws TimeoutException {
+        boolean hasNext(final BlockingIterator<? extends T> iterator) throws TimeoutException {
             return iterator.hasNext(iterablePublisher.timeoutSupplier.getAsLong(), iterablePublisher.unit);
         }
 
         @Nullable
         @Override
-        T next(final BlockingIterator<T> iterator) throws TimeoutException {
+        T next(final BlockingIterator<? extends T> iterator) throws TimeoutException {
             return iterator.next(iterablePublisher.timeoutSupplier.getAsLong(), iterablePublisher.unit);
         }
     }

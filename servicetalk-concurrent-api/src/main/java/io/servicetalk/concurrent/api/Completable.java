@@ -433,7 +433,7 @@ public abstract class Completable {
      *
      * @see <a href="http://reactivex.io/documentation/operators/merge.html">ReactiveX merge operator.</a>
      */
-    public final <T> Publisher<T> merge(Publisher<T> mergeWith) {
+    public final <T> Publisher<T> merge(Publisher<? extends T> mergeWith) {
         return new CompletableMergeWithPublisher<>(this, mergeWith, executor);
     }
 

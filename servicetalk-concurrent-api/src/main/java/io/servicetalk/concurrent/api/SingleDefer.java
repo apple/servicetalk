@@ -28,15 +28,15 @@ import static java.util.Objects.requireNonNull;
  * @param <T> Type of result of this {@link Single}.
  */
 final class SingleDefer<T> extends Single<T> implements SingleSource<T> {
-    private final Supplier<? extends Single<T>> singleFactory;
+    private final Supplier<? extends Single<? extends T>> singleFactory;
 
-    SingleDefer(Supplier<? extends Single<T>> singleFactory) {
+    SingleDefer(Supplier<? extends Single<? extends T>> singleFactory) {
         this.singleFactory = requireNonNull(singleFactory);
     }
 
     @Override
     protected void handleSubscribe(Subscriber<? super T> subscriber) {
-        final Single<T> single;
+        final Single<? extends T> single;
         try {
             single = requireNonNull(singleFactory.get());
         } catch (Throwable cause) {

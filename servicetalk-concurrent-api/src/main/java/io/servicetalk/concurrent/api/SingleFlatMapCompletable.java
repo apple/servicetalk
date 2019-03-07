@@ -30,9 +30,9 @@ import static java.util.Objects.requireNonNull;
  */
 final class SingleFlatMapCompletable<T> extends AbstractNoHandleSubscribeCompletable {
     private final Single<T> original;
-    private final Function<T, ? extends Completable> nextFactory;
+    private final Function<? super T, ? extends Completable> nextFactory;
 
-    SingleFlatMapCompletable(Single<T> original, Function<T, ? extends Completable> nextFactory, Executor executor) {
+    SingleFlatMapCompletable(Single<T> original, Function<? super T, ? extends Completable> nextFactory, Executor executor) {
         super(executor);
         this.original = requireNonNull(original);
         this.nextFactory = requireNonNull(nextFactory);

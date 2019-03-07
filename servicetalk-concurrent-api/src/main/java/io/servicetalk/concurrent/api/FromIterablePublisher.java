@@ -30,9 +30,9 @@ import static java.util.Objects.requireNonNull;
 final class FromIterablePublisher<T> extends AbstractSynchronousPublisher<T> {
     private static final Logger LOGGER = LoggerFactory.getLogger(FromIterablePublisher.class);
 
-    private final Iterable<T> iterable;
+    private final Iterable<? extends T> iterable;
 
-    FromIterablePublisher(Iterable<T> iterable) {
+    FromIterablePublisher(Iterable<? extends T> iterable) {
         this.iterable = requireNonNull(iterable);
     }
 
@@ -45,7 +45,7 @@ final class FromIterablePublisher<T> extends AbstractSynchronousPublisher<T> {
         }
     }
 
-    static class FromIterableSubscription<T, I extends Iterator<T>> implements Subscription {
+    static class FromIterableSubscription<T, I extends Iterator<? extends T>> implements Subscription {
         private final I iterator;
         private final Subscriber<? super T> subscriber;
         private long requestN;

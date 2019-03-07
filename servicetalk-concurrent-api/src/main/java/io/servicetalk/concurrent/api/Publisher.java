@@ -144,7 +144,7 @@ public abstract class Publisher<T> {
      *
      * @see <a href="http://reactivex.io/documentation/operators/filter.html">ReactiveX filter operator.</a>
      */
-    public final Publisher<T> filter(Predicate<T> predicate) {
+    public final Publisher<T> filter(Predicate<? super T> predicate) {
         return new FilterPublisher<>(this, predicate, executor);
     }
 
@@ -242,7 +242,8 @@ public abstract class Publisher<T> {
      *
      * @see <a href="http://reactivex.io/documentation/operators/flatmap.html">ReactiveX flatMap operator.</a>
      */
-    public final <R> Publisher<R> flatMapSingle(Function<? super T, ? extends Single<? extends R>> mapper, int maxConcurrency) {
+    public final <R> Publisher<R> flatMapSingle(Function<? super T, ? extends Single<? extends R>> mapper,
+                                                int maxConcurrency) {
         return new PublisherFlatMapSingle<>(this, mapper, maxConcurrency, false, executor);
     }
 
@@ -606,7 +607,7 @@ public abstract class Publisher<T> {
      * @see #doBeforeNext(Consumer)
      * @see #doAfterNext(Consumer)
      */
-    public final Publisher<T> doOnNext(Consumer<T> onNext) {
+    public final Publisher<T> doOnNext(Consumer<? super T> onNext) {
         return doAfterNext(onNext);
     }
 
@@ -1088,7 +1089,7 @@ public abstract class Publisher<T> {
      *
      * @see <a href="http://reactivex.io/documentation/operators/takewhile.html">ReactiveX takeWhile operator.</a>
      */
-    public final Publisher<T> takeWhile(Predicate<T> predicate) {
+    public final Publisher<T> takeWhile(Predicate<? super T> predicate) {
         return new TakeWhilePublisher<>(this, predicate, executor);
     }
 
@@ -1168,7 +1169,7 @@ public abstract class Publisher<T> {
      *
      * @see <a href="http://reactivex.io/documentation/operators/groupby.html">ReactiveX groupBy operator.</a>
      */
-    public final <Key> Publisher<GroupedPublisher<Key, T>> groupBy(Function<T, Key> keySelector,
+    public final <Key> Publisher<GroupedPublisher<Key, T>> groupBy(Function<? super T, ? extends Key> keySelector,
                                                                    int groupMaxQueueSize) {
         return new PublisherGroupBy<>(this, keySelector, groupMaxQueueSize, executor);
     }
@@ -1225,8 +1226,8 @@ public abstract class Publisher<T> {
      * {@code keySelector} {@link Function}.
      * @see <a href="http://reactivex.io/documentation/operators/groupby.html">ReactiveX groupBy operator.</a>
      */
-    public final <Key> Publisher<GroupedPublisher<Key, T>> groupBy(Function<T, Key> keySelector, int groupMaxQueueSize,
-                                                                   int expectedGroupCountHint) {
+    public final <Key> Publisher<GroupedPublisher<Key, T>> groupBy(Function<? super T, ? extends Key> keySelector,
+                                                                   int groupMaxQueueSize, int expectedGroupCountHint) {
         return new PublisherGroupBy<>(this, keySelector, groupMaxQueueSize, expectedGroupCountHint, executor);
     }
 
@@ -1260,8 +1261,8 @@ public abstract class Publisher<T> {
      * {@code keySelector} {@link Function}.
      * @see #groupBy(Function, int)
      */
-    public final <Key> Publisher<GroupedPublisher<Key, T>> groupByMulti(Function<T, Iterator<Key>> keySelector,
-                                                                        int groupMaxQueueSize) {
+    public final <Key> Publisher<GroupedPublisher<Key, T>> groupByMulti(
+            Function<? super T, ? extends Iterator<? extends Key>> keySelector, int groupMaxQueueSize) {
         return new PublisherGroupByMulti<>(this, keySelector, groupMaxQueueSize, executor);
     }
 
@@ -1297,9 +1298,9 @@ public abstract class Publisher<T> {
      * {@code keySelector} {@link Function}.
      * @see #groupBy(Function, int)
      */
-    public final <Key> Publisher<GroupedPublisher<Key, T>> groupByMulti(Function<T, Iterator<Key>> keySelector,
-                                                                        int groupMaxQueueSize,
-                                                                        int expectedGroupCountHint) {
+    public final <Key> Publisher<GroupedPublisher<Key, T>> groupByMulti(
+            Function<? super T, ? extends Iterator<? extends Key>> keySelector, int groupMaxQueueSize,
+            int expectedGroupCountHint) {
         return new PublisherGroupByMulti<>(this, keySelector, groupMaxQueueSize, expectedGroupCountHint, executor);
     }
 
@@ -1374,7 +1375,7 @@ public abstract class Publisher<T> {
      *
      * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
      */
-    public final Publisher<T> doBeforeSubscribe(Consumer<Subscription> onSubscribe) {
+    public final Publisher<T> doBeforeSubscribe(Consumer<? super Subscription> onSubscribe) {
         return doBeforeSubscriber(doOnSubscribeSupplier(onSubscribe));
     }
 
@@ -1397,7 +1398,7 @@ public abstract class Publisher<T> {
      *
      * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
      */
-    public final Publisher<T> doBeforeNext(Consumer<T> onNext) {
+    public final Publisher<T> doBeforeNext(Consumer<? super T> onNext) {
         return doBeforeSubscriber(doOnNextSupplier(onNext));
     }
 
@@ -1553,7 +1554,7 @@ public abstract class Publisher<T> {
      *
      * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
      */
-    public final Publisher<T> doAfterSubscribe(Consumer<Subscription> onSubscribe) {
+    public final Publisher<T> doAfterSubscribe(Consumer<? super Subscription> onSubscribe) {
         return doAfterSubscriber(doOnSubscribeSupplier(onSubscribe));
     }
 
@@ -1576,7 +1577,7 @@ public abstract class Publisher<T> {
      *
      * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
      */
-    public final Publisher<T> doAfterNext(Consumer<T> onNext) {
+    public final Publisher<T> doAfterNext(Consumer<? super T> onNext) {
         return doAfterSubscriber(doOnNextSupplier(onNext));
     }
 
@@ -1736,7 +1737,7 @@ public abstract class Publisher<T> {
      * @return {@link Cancellable} used to invoke {@link Subscription#cancel()} on the parameter of
      * {@link Subscriber#onSubscribe(PublisherSource.Subscription)} for this {@link Publisher}.
      * */
-    public final Cancellable forEach(Consumer<T> forEach) {
+    public final Cancellable forEach(Consumer<? super T> forEach) {
         ForEachSubscriber<T> subscriber = new ForEachSubscriber<>(forEach);
         subscribeInternal(subscriber);
         return subscriber;
@@ -1990,7 +1991,8 @@ public abstract class Publisher<T> {
      *
      * @see <a href="http://reactivex.io/documentation/operators/reduce.html">ReactiveX reduce operator.</a>
      */
-    public final <R> Single<R> reduce(Supplier<R> resultFactory, BiFunction<R, ? super T, R> reducer) {
+    public final <R> Single<R> reduce(Supplier<? extends R> resultFactory,
+                                      BiFunction<? super R, ? super T, R> reducer) {
         return new ReduceSingle<>(this, resultFactory, reducer);
     }
 
@@ -2020,7 +2022,8 @@ public abstract class Publisher<T> {
      * @return a {@link Future} of type {@link R} which represents all elements of this {@link Publisher} upon
      * successful termination.
      */
-    public final <R> Future<R> toFuture(Supplier<R> resultFactory, BiFunction<R, ? super T, R> reducer) {
+    public final <R> Future<R> toFuture(Supplier<? extends R> resultFactory,
+                                        BiFunction<? super R, ? super T, R> reducer) {
         return reduce(resultFactory, reducer).toFuture();
     }
 
@@ -2050,8 +2053,8 @@ public abstract class Publisher<T> {
      * @return a {@link CompletionStage} of type {@link R} which represents all elements of this {@link Publisher} upon
      * successful termination.
      */
-    public final <R> CompletionStage<R> toCompletionStage(Supplier<R> resultFactory,
-                                                          BiFunction<R, ? super T, R> reducer) {
+    public final <R> CompletionStage<R> toCompletionStage(Supplier<? extends R> resultFactory,
+                                                          BiFunction<? super R, ? super T, R> reducer) {
         return reduce(resultFactory, reducer).toCompletionStage();
     }
 
@@ -2082,7 +2085,7 @@ public abstract class Publisher<T> {
      * {@link Publisher} terminates with an error, same error is thrown (wrapped in an {@link IOException}) from the
      * returned {@link InputStream}s read methods after emitting all received data.
      */
-    public final InputStream toInputStream(Function<T, byte[]> serializer) {
+    public final InputStream toInputStream(Function<? super T, byte[]> serializer) {
         return new CloseableIteratorAsInputStream<>(new PublisherAsBlockingIterable<>(this).iterator(), serializer);
     }
 
@@ -2114,7 +2117,7 @@ public abstract class Publisher<T> {
      * {@link Publisher} terminates with an error, same error is thrown (wrapped in an {@link IOException}) from the
      * returned {@link InputStream}s read methods after emitting all received data.
      */
-    public final InputStream toInputStream(Function<T, byte[]> serializer, int queueCapacity) {
+    public final InputStream toInputStream(Function<? super T, byte[]> serializer, int queueCapacity) {
         return new CloseableIteratorAsInputStream<>(new PublisherAsBlockingIterable<>(this, queueCapacity).iterator(),
                 serializer);
     }
@@ -2272,7 +2275,7 @@ public abstract class Publisher<T> {
      * @return a new {@link Publisher} that when subscribed will get an {@link Iterator} via {@link Iterable#iterator()}
      * and emit all values to the {@link Subscriber} and then {@link Subscriber#onComplete()}.
      */
-    public static <T> Publisher<T> from(Iterable<T> iterable) {
+    public static <T> Publisher<T> from(Iterable<? extends T> iterable) {
         return new FromIterablePublisher<>(iterable);
     }
 
@@ -2298,7 +2301,8 @@ public abstract class Publisher<T> {
      * {@link BlockingIterable#iterator()} and emit all values to the {@link Subscriber} and then
      * {@link Subscriber#onComplete()}.
      */
-    public static <T> Publisher<T> from(BlockingIterable<T> iterable, LongSupplier timeoutSupplier, TimeUnit unit) {
+    public static <T> Publisher<T> from(BlockingIterable<? extends T> iterable, LongSupplier timeoutSupplier,
+                                        TimeUnit unit) {
         return new FromBlockingIterablePublisher<>(iterable, timeoutSupplier, unit);
     }
 
@@ -2378,7 +2382,7 @@ public abstract class Publisher<T> {
      *
      * @see <a href="http://reactivex.io/documentation/operators/defer.html">ReactiveX defer operator.</a>
      */
-    public static <T> Publisher<T> defer(Supplier<? extends Publisher<T>> publisherSupplier) {
+    public static <T> Publisher<T> defer(Supplier<? extends Publisher<? extends T>> publisherSupplier) {
         return new PublisherDefer<>(publisherSupplier);
     }
 

@@ -27,17 +27,17 @@ import static java.util.Objects.requireNonNull;
  * @param <T> Type of elements emitted by the {@link GroupedPublisher}s emitted by this {@link Publisher}.
  */
 final class PublisherGroupByMulti<Key, T> extends AbstractPublisherGroupBy<Key, T> {
-    private final Function<T, Iterator<Key>> keySelector;
+    private final Function<? super T, ? extends Iterator<? extends Key>> keySelector;
     private final Executor executor;
 
-    PublisherGroupByMulti(Publisher<T> original, Function<T, Iterator<Key>> keySelector, int groupQueueSize,
+    PublisherGroupByMulti(Publisher<T> original, Function<? super T, ? extends Iterator<? extends Key>> keySelector, int groupQueueSize,
                           Executor executor) {
         super(original, groupQueueSize, executor);
         this.keySelector = requireNonNull(keySelector);
         this.executor = executor;
     }
 
-    PublisherGroupByMulti(Publisher<T> original, Function<T, Iterator<Key>> keySelector, int groupQueueSize,
+    PublisherGroupByMulti(Publisher<T> original, Function<? super T, ? extends Iterator<? extends Key>> keySelector, int groupQueueSize,
                           int expectedGroupCountHint, Executor executor) {
         super(original, groupQueueSize, expectedGroupCountHint, executor);
         this.keySelector = requireNonNull(keySelector);
@@ -60,7 +60,7 @@ final class PublisherGroupByMulti<Key, T> extends AbstractPublisherGroupBy<Key, 
 
         @Override
         void onNext0(@Nullable T t) {
-            final Iterator<Key> keys;
+            final Iterator<? extends Key> keys;
             try {
                 keys = requireNonNull(source.keySelector.apply(t));
             } catch (Throwable throwable) {

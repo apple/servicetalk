@@ -33,7 +33,7 @@ import static java.util.Objects.requireNonNull;
  */
 final class CloseableIteratorAsInputStream<T> extends AbstractCloseableIteratorAsInputStream<T> {
     private static final byte[] CLOSED = new byte[0];
-    private final Function<T, byte[]> serializer;
+    private final Function<? super T, byte[]> serializer;
 
     @Nullable
     private byte[] leftover;
@@ -44,7 +44,7 @@ final class CloseableIteratorAsInputStream<T> extends AbstractCloseableIteratorA
      * @param source The {@link CloseableIterator} providing data.
      * @param serializer A means to serialize the data from {@code source} to bytes.
      */
-    CloseableIteratorAsInputStream(final CloseableIterator<T> source, final Function<T, byte[]> serializer) {
+    CloseableIteratorAsInputStream(final CloseableIterator<T> source, final Function<? super T, byte[]> serializer) {
         super(source);
         this.serializer = requireNonNull(serializer);
     }

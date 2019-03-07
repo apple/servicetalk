@@ -37,9 +37,9 @@ import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
 final class CompletableMergeWithPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
 
     private final Completable original;
-    private final Publisher<T> mergeWith;
+    private final Publisher<? extends T> mergeWith;
 
-    CompletableMergeWithPublisher(Completable original, Publisher<T> mergeWith, Executor executor) {
+    CompletableMergeWithPublisher(Completable original, Publisher<? extends T> mergeWith, Executor executor) {
         super(executor);
         this.mergeWith = mergeWith;
         this.original = original;
