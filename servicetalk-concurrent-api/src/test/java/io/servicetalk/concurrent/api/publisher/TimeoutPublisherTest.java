@@ -19,6 +19,7 @@ import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.api.Completable;
+import io.servicetalk.concurrent.api.DelegatingExecutor;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.ExecutorRule;
 import io.servicetalk.concurrent.api.Publisher;
@@ -72,22 +73,7 @@ public class TimeoutPublisherTest {
 
     @Test
     public void executorScheduleThrows() {
-        toSource(publisher.timeout(1, NANOSECONDS, new Executor() {
-            @Override
-            public Completable closeAsync() {
-                throw new UnsupportedOperationException();
-            }
-
-            @Override
-            public Completable onClose() {
-                throw new UnsupportedOperationException();
-            }
-
-            @Override
-            public Cancellable execute(final Runnable task) throws RejectedExecutionException {
-                throw new UnsupportedOperationException();
-            }
-
+        toSource(publisher.timeout(1, NANOSECONDS, new DelegatingExecutor(testExecutor) {
             @Override
             public Cancellable schedule(final Runnable task, final long delay, final TimeUnit unit) {
                 throw DELIBERATE_EXCEPTION;
