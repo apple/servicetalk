@@ -31,6 +31,12 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+/**
+ * Deprecated.
+ *
+ * @deprecated Use {@link TestCompletable} instead.
+ */
+@Deprecated
 public class LegacyTestCompletable extends Completable implements CompletableSource.Subscriber {
     private final Queue<Subscriber> subscribers = new ConcurrentLinkedQueue<>();
     private final DynamicCompositeCancellable dynamicCancellable = new MapDynamicCompositeCancellable();

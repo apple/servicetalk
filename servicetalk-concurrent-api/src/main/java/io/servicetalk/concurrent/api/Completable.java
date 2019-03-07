@@ -608,13 +608,17 @@ public abstract class Completable {
      * }</pre>
      *
      * @param shouldRepeat {@link IntPredicate} that given the repeat count determines if the operation should be
-     * repeated.
-     * @return A {@link Completable} that completes after all re-subscriptions completes.
+     * repeated
+     * @param valueSupplier {@link Supplier} that is called every time this {@link Completable} completes. The value
+     * returned is emitted from the returned {@link Publisher}
+     * @param <T> Type of items provided by the passed {@link Supplier} and emitted by the returned {@link Publisher}.
+     * @return A {@link Publisher} that emits the value returned by the passed {@link Supplier} everytime this
+     * {@link Completable} completes.
      *
      * @see <a href="http://reactivex.io/documentation/operators/repeat.html">ReactiveX repeat operator.</a>
      */
-    public final Completable repeat(IntPredicate shouldRepeat) {
-        return toPublisher().repeat(shouldRepeat).ignoreElements();
+    public final <T> Publisher<T> repeat(IntPredicate shouldRepeat, Supplier<T> valueSupplier) {
+        return toSingle().map(__ -> valueSupplier.get()).repeat(shouldRepeat);
     }
 
     /**
@@ -639,13 +643,16 @@ public abstract class Completable {
      * @param repeatWhen {@link IntFunction} that given the repeat count returns a {@link Completable}.
      * If this {@link Completable} emits an error repeat is terminated, otherwise, original {@link Completable} is
      * re-subscribed when this {@link Completable} completes.
-     *
+     * @param valueSupplier {@link Supplier} that is called every time this {@link Completable} completes. The value
+     * returned is emitted from the returned {@link Publisher}
+     * @param <T> Type of items provided by the passed {@link Supplier} and emitted by the returned {@link Publisher}.
      * @return A {@link Completable} that completes after all re-subscriptions completes.
      *
      * @see <a href="http://reactivex.io/documentation/operators/retry.html">ReactiveX retry operator.</a>
      */
-    public final Completable repeatWhen(IntFunction<? extends Completable> repeatWhen) {
-        return toPublisher().repeatWhen(repeatWhen).ignoreElements();
+    public final <T> Publisher<T> repeatWhen(IntFunction<? extends Completable> repeatWhen,
+                                             Supplier<? extends T> valueSupplier) {
+        return toSingle().<T>map(__ -> valueSupplier.get()).repeatWhen(repeatWhen);
     }
 
     /**
@@ -1134,6 +1141,20 @@ public abstract class Completable {
      */
     public final Cancellable subscribe() {
         SimpleCompletableSubscriber subscriber = new SimpleCompletableSubscriber();
+        subscribeInternal(subscriber);
+        return subscriber;
+    }
+
+    /**
+     * Subscribe to this {@link Completable} and log any {@link Subscriber#onError(Throwable)}. Passed {@link Runnable}
+     * is invoked when this {@link Completable} terminates successfully.
+     *
+     * @param onComplete {@link Runnable} to invoke when this {@link Completable} terminates successfully.
+     * @return {@link Cancellable} used to invoke {@link Cancellable#cancel()} on the parameter of
+     * {@link Subscriber#onSubscribe(Cancellable)} for this {@link Completable}.
+     */
+    public final Cancellable subscribe(Runnable onComplete) {
+        SimpleCompletableSubscriber subscriber = new SimpleCompletableSubscriber(onComplete);
         subscribeInternal(subscriber);
         return subscriber;
     }
