@@ -519,8 +519,8 @@ public abstract class Single<T> {
      * }</pre>
      * @param shouldRepeat {@link IntPredicate} that given the repeat count determines if the operation should be
      * repeated.
-     * @return A {@link Single} that emits all items from this {@link Single} and from all re-subscriptions whenever the
-     * operation is repeated.
+     * @return A {@link Publisher} that emits all items from this {@link Single} and from all re-subscriptions whenever
+     * the operation is repeated.
      *
      * @see <a href="http://reactivex.io/documentation/operators/repeat.html">ReactiveX repeat operator.</a>
      */
