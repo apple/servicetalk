@@ -27,7 +27,7 @@ import static java.util.Objects.requireNonNull;
  * A {@link ConnectionContext} implementation that delegates all calls to a provided {@link ConnectionContext}. Any of
  * the methods can be overridden by implementations to change the behavior.
  */
-public class ConnectionContextAdapter implements ConnectionContext {
+public class DelegatingConnectionContext implements ConnectionContext {
 
     private final ConnectionContext delegate;
 
@@ -36,7 +36,7 @@ public class ConnectionContextAdapter implements ConnectionContext {
      *
      * @param delegate {@link ConnectionContext} to delegate all calls.
      */
-    public ConnectionContextAdapter(final ConnectionContext delegate) {
+    public DelegatingConnectionContext(final ConnectionContext delegate) {
         this.delegate = requireNonNull(delegate);
     }
 

@@ -21,9 +21,9 @@ import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.transport.api.ConnectionContext;
-import io.servicetalk.transport.api.ConnectionContextAdapter;
+import io.servicetalk.transport.api.DelegatingConnectionContext;
+import io.servicetalk.transport.api.DelegatingExecutionContext;
 import io.servicetalk.transport.api.ExecutionContext;
-import io.servicetalk.transport.api.ExecutionContextAdapter;
 
 import org.glassfish.jersey.internal.util.collection.Ref;
 import org.glassfish.jersey.message.internal.OutboundJaxrsResponse;
@@ -338,14 +338,14 @@ final class EndpointEnhancingRequestFilter implements ContainerRequestFilter {
         }
     }
 
-    private static final class ExecutorOverrideConnectionContext extends ConnectionContextAdapter {
+    private static final class ExecutorOverrideConnectionContext extends DelegatingConnectionContext {
         private final ExecutionContext execCtx;
 
         private ExecutorOverrideConnectionContext(final ConnectionContext original,
                                                   final Executor executor) {
             super(original);
 
-            this.execCtx = new ExecutionContextAdapter(original.executionContext()) {
+            this.execCtx = new DelegatingExecutionContext(original.executionContext()) {
                 @Override
                 public Executor executor() {
                     return executor;
