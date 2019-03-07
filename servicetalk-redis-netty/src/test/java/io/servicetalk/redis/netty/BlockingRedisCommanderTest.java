@@ -27,13 +27,17 @@ import io.servicetalk.redis.api.IllegalTransactionStateException;
 import io.servicetalk.redis.api.PubSubRedisMessage;
 import io.servicetalk.redis.api.PubSubRedisMessage.ChannelPubSubRedisMessage;
 import io.servicetalk.redis.api.PubSubRedisMessage.PatternPubSubRedisMessage;
-import io.servicetalk.redis.api.RedisProtocolSupport;
 import io.servicetalk.redis.api.RedisProtocolSupport.BitfieldOperations.Get;
 import io.servicetalk.redis.api.RedisProtocolSupport.BitfieldOperations.Incrby;
 import io.servicetalk.redis.api.RedisProtocolSupport.BitfieldOperations.Overflow;
 import io.servicetalk.redis.api.RedisProtocolSupport.BitfieldOperations.Set;
 import io.servicetalk.redis.api.RedisProtocolSupport.ExpireDuration;
+import io.servicetalk.redis.api.RedisProtocolSupport.FieldValue;
+import io.servicetalk.redis.api.RedisProtocolSupport.KeyValue;
 import io.servicetalk.redis.api.RedisProtocolSupport.LongitudeLatitudeMember;
+import io.servicetalk.redis.api.RedisProtocolSupport.OffsetCount;
+import io.servicetalk.redis.api.RedisProtocolSupport.SortOrder;
+import io.servicetalk.redis.api.RedisProtocolSupport.SortSorting;
 import io.servicetalk.redis.api.RedisServerException;
 import io.servicetalk.redis.api.TransactionAbortedException;
 
@@ -152,8 +156,8 @@ public class BlockingRedisCommanderTest extends BaseRedisClientTest {
         assertThat(commandClient.mset(key("key0"), "val0"), is("OK"));
         assertThat(commandClient.mset(key("key1"), "val1", key("key2"), "val2", key("key3"), "val3"), is("OK"));
 
-        final List<RedisProtocolSupport.KeyValue> keyValues = IntStream.range(4, 10)
-                .mapToObj(i -> new RedisProtocolSupport.KeyValue(key("key" + i), "val" + i))
+        final List<KeyValue> keyValues = IntStream.range(4, 10)
+                .mapToObj(i -> new KeyValue(key("key" + i), "val" + i))
                 .collect(toList());
         assertThat(commandClient.mset(keyValues), is("OK"));
 
@@ -269,10 +273,10 @@ public class BlockingRedisCommanderTest extends BaseRedisClientTest {
     public void testHGetAll() throws Exception {
         String testKey = "key";
         commandClient.del(testKey);
-        List<RedisProtocolSupport.FieldValue> fields = new ArrayList<>(3);
-        fields.add(new RedisProtocolSupport.FieldValue("f", "v"));
-        fields.add(new RedisProtocolSupport.FieldValue("f1", "v1"));
-        fields.add(new RedisProtocolSupport.FieldValue("f2", "v2"));
+        List<FieldValue> fields = new ArrayList<>(3);
+        fields.add(new FieldValue("f", "v"));
+        fields.add(new FieldValue("f1", "v1"));
+        fields.add(new FieldValue("f2", "v2"));
         commandClient.hmset(testKey, fields);
         final List<String> result = commandClient.hgetall(testKey);
         assertThat(new HashSet<>(toFieldValues(result)), is(new HashSet<>(fields)));
@@ -284,18 +288,18 @@ public class BlockingRedisCommanderTest extends BaseRedisClientTest {
     public void testHMGet() throws Exception {
         String testKey = "key";
         commandClient.del(testKey);
-        List<RedisProtocolSupport.FieldValue> fields = new ArrayList<>(11);
-        fields.add(new RedisProtocolSupport.FieldValue("f", "v"));
-        fields.add(new RedisProtocolSupport.FieldValue("f1", "v1"));
-        fields.add(new RedisProtocolSupport.FieldValue("f2", "v2"));
-        fields.add(new RedisProtocolSupport.FieldValue("f3", "v3"));
-        fields.add(new RedisProtocolSupport.FieldValue("f4", "v4"));
-        fields.add(new RedisProtocolSupport.FieldValue("f5", "v5"));
-        fields.add(new RedisProtocolSupport.FieldValue("f6", "v6"));
-        fields.add(new RedisProtocolSupport.FieldValue("f7", "v7"));
-        fields.add(new RedisProtocolSupport.FieldValue("f8", "v8"));
-        fields.add(new RedisProtocolSupport.FieldValue("f9", "v9"));
-        fields.add(new RedisProtocolSupport.FieldValue("f10", "v10"));
+        List<FieldValue> fields = new ArrayList<>(11);
+        fields.add(new FieldValue("f", "v"));
+        fields.add(new FieldValue("f1", "v1"));
+        fields.add(new FieldValue("f2", "v2"));
+        fields.add(new FieldValue("f3", "v3"));
+        fields.add(new FieldValue("f4", "v4"));
+        fields.add(new FieldValue("f5", "v5"));
+        fields.add(new FieldValue("f6", "v6"));
+        fields.add(new FieldValue("f7", "v7"));
+        fields.add(new FieldValue("f8", "v8"));
+        fields.add(new FieldValue("f9", "v9"));
+        fields.add(new FieldValue("f10", "v10"));
         commandClient.hmset(testKey, fields);
         final List<String> values = commandClient.hmget(testKey, asList("f", "f1", "f2", "f3", "f4", "f5", "f6", "f7", "f8", "f9", "f10"));
         assertThat(values, is(fields.stream().map(fv -> fv.value).collect(toList())));
@@ -309,13 +313,13 @@ public class BlockingRedisCommanderTest extends BaseRedisClientTest {
         commandClient.set("1-score", "1");
         commandClient.set("1-ᕈгø⨯у", "proxy");
 
-        assertThat(commandClient.sort(testKey, "*-score", new RedisProtocolSupport.OffsetCount(0, 1), singletonList("*-ᕈгø⨯у"), RedisProtocolSupport.SortOrder.ASC, RedisProtocolSupport.SortSorting.ALPHA),
+        assertThat(commandClient.sort(testKey, "*-score", new OffsetCount(0, 1), singletonList("*-ᕈгø⨯у"), SortOrder.ASC, SortSorting.ALPHA),
                 is(singletonList("proxy")));
-        assertThat(commandClient.sort(testKey, null, new RedisProtocolSupport.OffsetCount(0, 1), singletonList("*-ᕈгø⨯у"), RedisProtocolSupport.SortOrder.ASC, RedisProtocolSupport.SortSorting.ALPHA),
+        assertThat(commandClient.sort(testKey, null, new OffsetCount(0, 1), singletonList("*-ᕈгø⨯у"), SortOrder.ASC, SortSorting.ALPHA),
                 is(singletonList("proxy")));
-        assertThat(commandClient.sort(testKey, null, null, singletonList("*-ᕈгø⨯у"), RedisProtocolSupport.SortOrder.ASC, RedisProtocolSupport.SortSorting.ALPHA),
+        assertThat(commandClient.sort(testKey, null, null, singletonList("*-ᕈгø⨯у"), SortOrder.ASC, SortSorting.ALPHA),
                 is(singletonList("proxy")));
-        assertThat(commandClient.sort(testKey, null, null, singletonList("*-ᕈгø⨯у"), null, RedisProtocolSupport.SortSorting.ALPHA),
+        assertThat(commandClient.sort(testKey, null, null, singletonList("*-ᕈгø⨯у"), null, SortSorting.ALPHA),
                 is(singletonList("proxy")));
         assertThat(commandClient.sort(testKey, null, null, singletonList("*-ᕈгø⨯у"), null, null),
                 is(singletonList("proxy")));

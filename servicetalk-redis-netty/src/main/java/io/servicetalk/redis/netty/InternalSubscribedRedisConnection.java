@@ -28,7 +28,7 @@ import io.servicetalk.concurrent.internal.QueueFullAndRejectedSubscribeException
 import io.servicetalk.concurrent.internal.RejectedSubscribeException;
 import io.servicetalk.redis.api.RedisConnection;
 import io.servicetalk.redis.api.RedisData;
-import io.servicetalk.redis.api.RedisProtocolSupport;
+import io.servicetalk.redis.api.RedisProtocolSupport.Command;
 import io.servicetalk.redis.api.RedisRequest;
 import io.servicetalk.redis.netty.SubscribedChannelReadStream.PubSubChannelMessage;
 import io.servicetalk.transport.api.ConnectionContext;
@@ -93,7 +93,7 @@ final class InternalSubscribedRedisConnection extends AbstractRedisConnection {
 
     @Override
     Publisher<RedisData> handleRequest(RedisRequest request) {
-        final RedisProtocolSupport.Command command = request.command();
+        final Command command = request.command();
         if (!isSubscribeModeCommand(command) && command != PING && command != QUIT && command != AUTH) {
             return Publisher.error(new IllegalArgumentException("Invalid command: " + command
                     + ". This command is not allowed in subscribe mode."));
@@ -103,7 +103,7 @@ final class InternalSubscribedRedisConnection extends AbstractRedisConnection {
     }
 
     private Publisher<RedisData> request0(RedisRequest request) {
-        final RedisProtocolSupport.Command command = request.command();
+        final Command command = request.command();
         final Publisher<ByteBuf> reqContent = RedisUtils.encodeRequestContent(request,
                 connection.executionContext().bufferAllocator());
         return new SubscribablePublisher<RedisData>() {
@@ -248,7 +248,7 @@ final class InternalSubscribedRedisConnection extends AbstractRedisConnection {
             this.maxPendingWrites = maxPendingWrites;
         }
 
-        Completable write(Completable toWrite, RedisProtocolSupport.Command command) {
+        Completable write(Completable toWrite, Command command) {
             return new SubscribableCompletable() {
                 @Override
                 protected void handleSubscribe(CompletableSource.Subscriber subscriber) {
@@ -304,7 +304,7 @@ final class InternalSubscribedRedisConnection extends AbstractRedisConnection {
             @SuppressWarnings("unused")
             volatile int taskCalledPostTerm;
 
-            WriteTask(RedisProtocolSupport.Command command, Completable write,
+            WriteTask(Command command, Completable write,
                       CompletableSource.Subscriber subscriber) {
                 this.isSubscribedCommand = command == PSUBSCRIBE || command == SUBSCRIBE;
                 this.write = toSource(write);
@@ -373,8 +373,8 @@ final class InternalSubscribedRedisConnection extends AbstractRedisConnection {
      * subscription command can't be cancelled before writing to Redis.
      *
      * @param queuedWrite the {@link Completable} tracking writing the enqueued
-     *                    {@link RedisProtocolSupport.Command#SUBSCRIBE} or
-     *                    {@link RedisProtocolSupport.Command#PSUBSCRIBE} commands to Redis
+     *                    {@link Command#SUBSCRIBE} or
+     *                    {@link Command#PSUBSCRIBE} commands to Redis
      * @param next the {@link PubSubChannelMessage} producer to subscribe to after completing the original
      * {@link Completable}
      * @return the composite operator

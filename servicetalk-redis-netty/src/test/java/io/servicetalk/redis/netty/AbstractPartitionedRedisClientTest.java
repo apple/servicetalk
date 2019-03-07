@@ -25,7 +25,8 @@ import io.servicetalk.client.internal.partition.DefaultPartitionAttributesBuilde
 import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.redis.api.PartitionedRedisClient;
-import io.servicetalk.redis.api.RedisData;
+import io.servicetalk.redis.api.RedisData.BulkStringChunk;
+import io.servicetalk.redis.api.RedisData.CompleteBulkString;
 import io.servicetalk.redis.api.RedisPartitionAttributesBuilder;
 import io.servicetalk.redis.api.RedisProtocolSupport.Command;
 import io.servicetalk.transport.netty.internal.NettyIoExecutor;
@@ -152,8 +153,8 @@ public abstract class AbstractPartitionedRedisClientTest {
         partitionAttributesBuilder.add(MASTER_KEY, true);
         final String serverInfo = awaitIndefinitely(
                 client.request(partitionAttributesBuilder.build(), newRequest(INFO,
-                        new RedisData.CompleteBulkString(buf("SERVER"))))
-                        .filter(d -> d instanceof RedisData.BulkStringChunk)
+                        new CompleteBulkString(buf("SERVER"))))
+                        .filter(d -> d instanceof BulkStringChunk)
                         .reduce(StringBuilder::new, (sb, d) -> sb.append(d.bufferValue().toString(US_ASCII))))
                 .toString();
 

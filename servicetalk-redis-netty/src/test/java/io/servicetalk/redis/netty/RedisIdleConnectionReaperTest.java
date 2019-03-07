@@ -22,8 +22,9 @@ import io.servicetalk.concurrent.api.LegacyMockedSingleListenerRule;
 import io.servicetalk.concurrent.api.TestPublisherSubscriber;
 import io.servicetalk.redis.api.RedisConnection;
 import io.servicetalk.redis.api.RedisData;
+import io.servicetalk.redis.api.RedisData.SimpleString;
 import io.servicetalk.redis.api.RedisExecutionStrategy;
-import io.servicetalk.redis.api.RedisProtocolSupport;
+import io.servicetalk.redis.api.RedisProtocolSupport.Command;
 import io.servicetalk.redis.api.RedisRequest;
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ExecutionContext;
@@ -195,9 +196,9 @@ public class RedisIdleConnectionReaperTest {
     public void commanderRequestsAreInstrumented() {
         when(delegateConnection.request(any(RedisExecutionStrategy.class), any(RedisRequest.class)))
                 .thenAnswer(invocation -> {
-                    RedisProtocolSupport.Command cmd = ((RedisRequest) invocation.getArgument(1)).command();
+                    Command cmd = ((RedisRequest) invocation.getArgument(1)).command();
                     if ((cmd == PING)) {
-                        return just(new RedisData.SimpleString("pong"));
+                        return just(new SimpleString("pong"));
                     }
                     throw new IllegalArgumentException("Unknown command: " + cmd);
                 });
