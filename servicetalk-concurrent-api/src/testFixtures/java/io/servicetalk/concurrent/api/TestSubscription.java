@@ -65,10 +65,6 @@ public final class TestSubscription implements Subscription {
      * @param amount the amount to wait for.
      */
     public void waitUntilRequested(long amount) {
-        if (requested.get() >= amount) {
-            return;
-        }
-
         boolean interrupted = false;
         synchronized (waitingLock) {
             while (requested.get() < amount) {
@@ -89,10 +85,6 @@ public final class TestSubscription implements Subscription {
      * Wait until {@link #cancel()} is called.
      */
     public void waitUntilCancelled() {
-        if (cancelled) {
-            return;
-        }
-
         boolean interrupted = false;
         synchronized (waitingLock) {
             while (!cancelled) {
