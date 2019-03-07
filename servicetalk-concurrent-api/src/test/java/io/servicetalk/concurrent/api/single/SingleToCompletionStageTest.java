@@ -70,6 +70,7 @@ public class SingleToCompletionStageTest {
     private static final AtomicInteger threadCount = new AtomicInteger();
     private static final String ST_THREAD_PREFIX_NAME = "st-exec-thread-";
     private static final String JDK_THREAD_NAME_PREFIX = "jdk-thread-";
+    private static final String JDK_FORK_JOIN_THREAD_NAME_PREFIX = "ForkJoinPool";
 
     @BeforeClass
     public static void beforeClass() {
@@ -129,12 +130,13 @@ public class SingleToCompletionStageTest {
 
     @Test
     public void thenApplyNull() throws Exception {
-        thenApply(source.toCompletionStage().thenApplyAsync(SingleToCompletionStageTest::strLenStThread), null);
+        thenApply(source.toCompletionStage().thenApplyAsync(SingleToCompletionStageTest::strLenJdkForkJoinThread),
+                null);
     }
 
     @Test
     public void thenApplyAsync() throws Exception {
-        thenApply(source.toCompletionStage().thenApplyAsync(SingleToCompletionStageTest::strLenStThread),
+        thenApply(source.toCompletionStage().thenApplyAsync(SingleToCompletionStageTest::strLenJdkForkJoinThread),
                 "thenApplyAsync");
     }
 
@@ -160,7 +162,7 @@ public class SingleToCompletionStageTest {
 
         String expected2 = "one two";
         CompletionStage<String> stage2 = stage1.thenApply(in -> {
-            verifyInStExecutorThread();
+            verifyInJUnitThread();
             return in + " two";
         });
         assertEquals(expected2, stage2.toCompletableFuture().get());
@@ -168,7 +170,7 @@ public class SingleToCompletionStageTest {
 
     @Test
     public void thenApplyTransformData() throws Exception {
-        thenApplyTransformData(stage1 -> stage1.thenApply(SingleToCompletionStageTest::strLenStThread));
+        thenApplyTransformData(stage1 -> stage1.thenApply(SingleToCompletionStageTest::strLenJUnitThread));
     }
 
     @Test
@@ -241,7 +243,7 @@ public class SingleToCompletionStageTest {
     @Test
     public void thenAcceptAsync() throws Exception {
         AtomicReference<String> stringRef = new AtomicReference<>();
-        thenAccept(source.toCompletionStage().thenAcceptAsync(stThread(stringRef)), stringRef, "thenAcceptAsync");
+        thenAccept(source.toCompletionStage().thenAcceptAsync(jdkForkJoinThread(stringRef)), stringRef, "thenAcceptAsync");
     }
 
     @Test
@@ -261,7 +263,7 @@ public class SingleToCompletionStageTest {
 
     @Test
     public void thenAcceptConsumeData() throws Exception {
-        thenAcceptConsumeData((stage1, ref) -> stage1.thenAccept(stThread(ref)));
+        thenAcceptConsumeData((stage1, ref) -> stage1.thenAccept(junitThread(ref)));
     }
 
     @Test
@@ -293,7 +295,7 @@ public class SingleToCompletionStageTest {
     @Test
     public void thenRunAsync() throws Exception {
         AtomicBoolean aBoolean = new AtomicBoolean();
-        thenRun(source.toCompletionStage().thenRunAsync(trueStThread(aBoolean)), aBoolean, "thenRunAsync");
+        thenRun(source.toCompletionStage().thenRunAsync(trueJdkForkJoinThread(aBoolean)), aBoolean, "thenRunAsync");
     }
 
     @Test
@@ -313,7 +315,7 @@ public class SingleToCompletionStageTest {
 
     @Test
     public void thenRunAfterData() throws Exception {
-        thenRunAfterData((stage1, ref) -> stage1.thenRun(trueStThread(ref)));
+        thenRunAfterData((stage1, ref) -> stage1.thenRun(trueJUnitThread(ref)));
     }
 
     @Test
@@ -351,7 +353,8 @@ public class SingleToCompletionStageTest {
     @Test
     public void thenCombineAsync() throws Exception {
         CompletableFuture<Double> other = new CompletableFuture<>();
-        thenCombine(other, source.toCompletionStage().thenCombineAsync(other, strLenDoubleStThread()), "foo", 123);
+        thenCombine(other, source.toCompletionStage().thenCombineAsync(other, strLenDoubleJdkForkJoinThread()), "foo",
+                123);
     }
 
     @Test
@@ -399,7 +402,7 @@ public class SingleToCompletionStageTest {
         AtomicReference<Long> lngRef = new AtomicReference<>();
         CompletableFuture<Long> other = new CompletableFuture<>();
         thenAcceptBoth(other, source.toCompletionStage().thenAcceptBothAsync(other, (str, lng) -> {
-            verifyInStExecutorThread();
+            verifyInJdkForkJoinThread();
             strRef.set(str);
             lngRef.set(lng);
         }), "foo", 13434L, strRef, lngRef);
@@ -431,43 +434,38 @@ public class SingleToCompletionStageTest {
 
     @Test
     public void runAfterBoth() throws Exception {
-        CountDownLatch latch = new CountDownLatch(1);
         CompletableFuture<Long> other = new CompletableFuture<>();
-        runAfterBoth(other, source.toCompletionStage().runAfterBoth(other, countDownInStThread(latch)), "foo", 123L,
-                latch);
+        runAfterBoth(other, source.toCompletionStage().runAfterBoth(other,
+                SingleToCompletionStageTest::verifyInStExecutorThread), "foo", 123L);
     }
 
     @Test
     public void runAfterBothNull() throws Exception {
-        CountDownLatch latch = new CountDownLatch(1);
         CompletableFuture<Long> other = new CompletableFuture<>();
-        runAfterBoth(other, source.toCompletionStage().runAfterBoth(other, countDownInStThread(latch)), null, 1223L,
-                latch);
+        runAfterBoth(other, source.toCompletionStage().runAfterBoth(other,
+                SingleToCompletionStageTest::verifyInStExecutorThread), null, 1223L);
     }
 
     @Test
     public void runAfterBothAsync() throws Exception {
-        CountDownLatch latch = new CountDownLatch(1);
         CompletableFuture<Long> other = new CompletableFuture<>();
-        runAfterBoth(other, source.toCompletionStage().runAfterBothAsync(other, countDownInStThread(latch)), "bar",
-                123L, latch);
+        runAfterBoth(other, source.toCompletionStage().runAfterBothAsync(other,
+                SingleToCompletionStageTest::verifyInJdkForkJoinThread), "bar", 123L);
     }
 
     @Test
     public void runAfterBothAsyncExecutor() throws Exception {
-        CountDownLatch latch = new CountDownLatch(1);
         CompletableFuture<Long> other = new CompletableFuture<>();
-        runAfterBoth(other, source.toCompletionStage().runAfterBothAsync(other, countDownInJdkThread(latch),
-                jdkExecutor), "bar", 123L, latch);
+        runAfterBoth(other, source.toCompletionStage().runAfterBothAsync(other,
+                SingleToCompletionStageTest::verifyInJdkExecutorThread, jdkExecutor), "bar", 123L);
     }
 
     private void runAfterBoth(CompletableFuture<Long> other, CompletionStage<Void> result,
-                              @Nullable String expectedS, long expectedL, CountDownLatch latch)
+                              @Nullable String expectedS, long expectedL)
             throws ExecutionException, InterruptedException {
         jdkExecutor.execute(() -> other.complete(expectedL));
         jdkExecutor.execute(() -> source.onSuccess(expectedS));
 
-        latch.await();
         assertNull(result.toCompletableFuture().get());
     }
 
@@ -475,21 +473,21 @@ public class SingleToCompletionStageTest {
     public void applyToEither() throws Exception {
         CompletableFuture<String> other = new CompletableFuture<>();
         applyToEither(other, source.toCompletionStage().applyToEither(other,
-                SingleToCompletionStageTest::strLenStThread), "foo", "bar");
+                SingleToCompletionStageTest::strLenJdkThread), "foo", "bar");
     }
 
     @Test
     public void applyToEitherNull() throws Exception {
         CompletableFuture<String> other = new CompletableFuture<>();
         applyToEither(other, source.toCompletionStage().applyToEither(other,
-                SingleToCompletionStageTest::strLenStThread), null, null);
+                SingleToCompletionStageTest::strLenJdkThread), null, null);
     }
 
     @Test
     public void applyToEitherAsync() throws Exception {
         CompletableFuture<String> other = new CompletableFuture<>();
         applyToEither(other, source.toCompletionStage().applyToEitherAsync(other,
-                SingleToCompletionStageTest::strLenStThread), "foo", "bar");
+                SingleToCompletionStageTest::strLenJdkForkJoinThread), "foo", "bar");
     }
 
     @Test
@@ -512,22 +510,22 @@ public class SingleToCompletionStageTest {
     public void acceptEither() throws Exception {
         CompletableFuture<String> other = new CompletableFuture<>();
         AtomicReference<String> strRef = new AtomicReference<>();
-        acceptEither(other, source.toCompletionStage().acceptEither(other, stThread(strRef)), strRef, "foo", "bar");
+        acceptEither(other, source.toCompletionStage().acceptEither(other, jdkThread(strRef)), strRef, "foo", "bar");
     }
 
     @Test
     public void acceptEitherNull() throws Exception {
         CompletableFuture<String> other = new CompletableFuture<>();
         AtomicReference<String> strRef = new AtomicReference<>();
-        acceptEither(other, source.toCompletionStage().acceptEither(other, stThread(strRef)), strRef, null, null);
+        acceptEither(other, source.toCompletionStage().acceptEither(other, jdkThread(strRef)), strRef, null, null);
     }
 
     @Test
     public void acceptEitherAsync() throws Exception {
         CompletableFuture<String> other = new CompletableFuture<>();
         AtomicReference<String> strRef = new AtomicReference<>();
-        acceptEither(other, source.toCompletionStage().acceptEitherAsync(other, stThread(strRef)), strRef, "what",
-                "the");
+        acceptEither(other, source.toCompletionStage().acceptEitherAsync(other, jdkForkJoinThread(strRef)), strRef,
+                "what", "the");
     }
 
     @Test
@@ -552,42 +550,37 @@ public class SingleToCompletionStageTest {
     @Test
     public void runAfterEither() throws Exception {
         CompletableFuture<String> other = new CompletableFuture<>();
-        CountDownLatch latch = new CountDownLatch(1);
-        runAfterEither(other, source.toCompletionStage().runAfterEither(other, countDownInStThread(latch)), latch,
-                "foo", "bar");
+        runAfterEither(other, source.toCompletionStage().runAfterEither(other,
+                SingleToCompletionStageTest::verifyInJdkExecutorThread), "foo", "bar");
     }
 
     @Test
     public void runAfterEitherNull() throws Exception {
         CompletableFuture<String> other = new CompletableFuture<>();
-        CountDownLatch latch = new CountDownLatch(1);
-        runAfterEither(other, source.toCompletionStage().runAfterEither(other, countDownInStThread(latch)), latch,
-                null, null);
+        runAfterEither(other, source.toCompletionStage().runAfterEither(other,
+                SingleToCompletionStageTest::verifyInJdkExecutorThread), null, null);
     }
 
     @Test
     public void runAfterEitherAsync() throws Exception {
         CompletableFuture<String> other = new CompletableFuture<>();
-        CountDownLatch latch = new CountDownLatch(1);
-        runAfterEither(other, source.toCompletionStage().runAfterEitherAsync(other, countDownInStThread(latch)), latch,
-                "foo", null);
+        runAfterEither(other, source.toCompletionStage().runAfterEitherAsync(other,
+                SingleToCompletionStageTest::verifyInJdkForkJoinThread), "foo", null);
     }
 
     @Test
     public void runAfterEitherAsyncExecutor() throws Exception {
         CompletableFuture<String> other = new CompletableFuture<>();
-        CountDownLatch latch = new CountDownLatch(1);
-        runAfterEither(other, source.toCompletionStage().runAfterEitherAsync(other, countDownInJdkThread(latch),
-                jdkExecutor), latch, "foo", null);
+        runAfterEither(other, source.toCompletionStage().runAfterEitherAsync(other,
+                SingleToCompletionStageTest::verifyInJdkExecutorThread, jdkExecutor), "foo", null);
     }
 
-    private void runAfterEither(CompletableFuture<String> other, CompletionStage<Void> result, CountDownLatch latch,
+    private void runAfterEither(CompletableFuture<String> other, CompletionStage<Void> result,
                                 @Nullable String expected, @Nullable String otherExpected)
             throws ExecutionException, InterruptedException {
         jdkExecutor.execute(() -> other.complete(otherExpected));
         jdkExecutor.execute(() -> source.onSuccess(expected));
 
-        latch.await();
         assertNull(result.toCompletableFuture().get());
     }
 
@@ -618,7 +611,7 @@ public class SingleToCompletionStageTest {
         CompletableFuture<Integer> other = new CompletableFuture<>();
         AtomicReference<String> strRef = new AtomicReference<>();
         thenCompose(other, source.toCompletionStage().thenComposeAsync(str -> {
-            verifyInStExecutorThread();
+            verifyInJdkForkJoinThread();
             strRef.set(str);
             return other;
         }), strRef, "bar", 1234);
@@ -666,113 +659,95 @@ public class SingleToCompletionStageTest {
     @Test
     public void whenComplete() throws Exception {
         AtomicReference<String> strRef = new AtomicReference<>();
-        CountDownLatch latch = new CountDownLatch(1);
         whenComplete(source.toCompletionStage().whenComplete((s, t) -> {
             verifyInStExecutorThread();
             strRef.set(s);
-            latch.countDown();
-        }), "foo", strRef, latch);
+        }), "foo", strRef);
     }
 
     @Test
     public void whenCompleteNull() throws Exception {
         AtomicReference<String> strRef = new AtomicReference<>();
-        CountDownLatch latch = new CountDownLatch(1);
         whenComplete(source.toCompletionStage().whenComplete((s, t) -> {
             verifyInStExecutorThread();
             strRef.set(s);
-            latch.countDown();
-        }), null, strRef, latch);
+        }), null, strRef);
     }
 
     @Test
     public void whenCompleteAsync() throws Exception {
         AtomicReference<String> strRef = new AtomicReference<>();
-        CountDownLatch latch = new CountDownLatch(1);
         whenComplete(source.toCompletionStage().whenCompleteAsync((s, t) -> {
-            verifyInStExecutorThread();
+            verifyInJdkForkJoinThread();
             strRef.set(s);
-            latch.countDown();
-        }), "foo", strRef, latch);
+        }), "foo", strRef);
     }
 
     @Test
     public void whenCompleteAsyncExecutor() throws Exception {
         AtomicReference<String> strRef = new AtomicReference<>();
-        CountDownLatch latch = new CountDownLatch(1);
         whenComplete(source.toCompletionStage().whenCompleteAsync((s, t) -> {
             verifyInJdkExecutorThread();
             strRef.set(s);
-            latch.countDown();
-        }, jdkExecutor), "foo", strRef, latch);
+        }, jdkExecutor), "foo", strRef);
     }
 
     private void whenComplete(CompletionStage<String> result, @Nullable String expected,
-                              AtomicReference<String> strRef, CountDownLatch latch)
+                              AtomicReference<String> strRef)
             throws ExecutionException, InterruptedException {
         jdkExecutor.execute(() -> source.onSuccess(expected));
 
-        latch.await();
-        assertEquals(expected, strRef.get());
         assertEquals(expected, result.toCompletableFuture().get());
+        assertEquals(expected, strRef.get());
     }
 
     @Test
     public void handle() throws Exception {
         AtomicReference<String> strRef = new AtomicReference<>();
-        CountDownLatch latch = new CountDownLatch(1);
         handle(source.toCompletionStage().handle((s, t) -> {
             verifyInStExecutorThread();
             strRef.set(s);
-            latch.countDown();
             return strLen(s);
-        }), "foo", strRef, latch);
+        }), "foo", strRef);
     }
 
     @Test
     public void handleNull() throws Exception {
         AtomicReference<String> strRef = new AtomicReference<>();
-        CountDownLatch latch = new CountDownLatch(1);
         handle(source.toCompletionStage().handle((s, t) -> {
             verifyInStExecutorThread();
             strRef.set(s);
-            latch.countDown();
             return strLen(s);
-        }), null, strRef, latch);
+        }), null, strRef);
     }
 
     @Test
     public void handleAsync() throws Exception {
         AtomicReference<String> strRef = new AtomicReference<>();
-        CountDownLatch latch = new CountDownLatch(1);
         handle(source.toCompletionStage().handleAsync((s, t) -> {
-            verifyInStExecutorThread();
+            verifyInJdkForkJoinThread();
             strRef.set(s);
-            latch.countDown();
             return strLen(s);
-        }), null, strRef, latch);
+        }), null, strRef);
     }
 
     @Test
     public void handleAsyncExecutor() throws Exception {
         AtomicReference<String> strRef = new AtomicReference<>();
-        CountDownLatch latch = new CountDownLatch(1);
         handle(source.toCompletionStage().handleAsync((s, t) -> {
             verifyInJdkExecutorThread();
             strRef.set(s);
-            latch.countDown();
             return strLen(s);
-        }, jdkExecutor), null, strRef, latch);
+        }, jdkExecutor), null, strRef);
     }
 
     private void handle(CompletionStage<Integer> result, @Nullable String expected,
-                        AtomicReference<String> strRef, CountDownLatch latch)
+                        AtomicReference<String> strRef)
             throws ExecutionException, InterruptedException {
         jdkExecutor.execute(() -> source.onSuccess(expected));
 
-        latch.await();
-        assertEquals(expected, strRef.get());
         assertEquals(strLen(expected), result.toCompletableFuture().get().intValue());
+        assertEquals(expected, strRef.get());
     }
 
     @Test
@@ -786,7 +761,6 @@ public class SingleToCompletionStageTest {
             latch.countDown();
         });
         assertTrue(latch.await(100, MILLISECONDS));
-        source.verifyListenCalled(); // We eagerly subscribe
     }
 
     @Test
@@ -803,7 +777,6 @@ public class SingleToCompletionStageTest {
         assertTrue(latch.await(100, MILLISECONDS));
         assertTrue(future.isCancelled());
         assertTrue(future.isDone());
-        source.verifyListenCalled(); // We eagerly subscribe
         thrown.expect(CancellationException.class);
         future.get();
     }
@@ -1006,7 +979,7 @@ public class SingleToCompletionStageTest {
         // Derived stages from thenApplyAsync with a jdkExecutor should invoke listeners on the same jdkExecutor too!
         stage.thenCompose(v -> {
             CompletableFuture<Void> result = new CompletableFuture<>();
-            if (currentThread().getName().startsWith(JDK_THREAD_NAME_PREFIX)) {
+            if (currentThread().getName().startsWith(ServiceTalkTestTimeout.THREAD_PREFIX)) {
                 result.complete(null);
             } else {
                 result.completeExceptionally(
@@ -1028,6 +1001,18 @@ public class SingleToCompletionStageTest {
         }
     }
 
+    private static void verifyInJdkForkJoinThread() {
+        if (!currentThread().getName().startsWith(JDK_FORK_JOIN_THREAD_NAME_PREFIX)) {
+            throw new IllegalStateException("unexpected thread: " + currentThread());
+        }
+    }
+
+    private static void verifyInJUnitThread() {
+        if (!currentThread().getName().startsWith(ServiceTalkTestTimeout.THREAD_PREFIX)) {
+            throw new IllegalStateException("unexpected thread: " + currentThread());
+        }
+    }
+
     private static int strLen(@Nullable String str) {
         return str == null ? -1 : str.length();
     }
@@ -1042,6 +1027,16 @@ public class SingleToCompletionStageTest {
         return strLen(str);
     }
 
+    private static int strLenJdkForkJoinThread(@Nullable String str) {
+        verifyInJdkForkJoinThread();
+        return strLen(str);
+    }
+
+    private static int strLenJUnitThread(@Nullable String str) {
+        verifyInJUnitThread();
+        return strLen(str);
+    }
+
     private static Consumer<? super String> stThread(AtomicReference<String> ref) {
         return val -> {
             verifyInStExecutorThread();
@@ -1052,6 +1047,20 @@ public class SingleToCompletionStageTest {
     private static Consumer<? super String> jdkThread(AtomicReference<String> ref) {
         return val -> {
             verifyInJdkExecutorThread();
+            ref.set(val);
+        };
+    }
+
+    private static Consumer<? super String> jdkForkJoinThread(AtomicReference<String> ref) {
+        return val -> {
+            verifyInJdkForkJoinThread();
+            ref.set(val);
+        };
+    }
+
+    private static Consumer<? super String> junitThread(AtomicReference<String> ref) {
+        return val -> {
+            verifyInJUnitThread();
             ref.set(val);
         };
     }
@@ -1070,6 +1079,20 @@ public class SingleToCompletionStageTest {
         };
     }
 
+    private static Runnable trueJdkForkJoinThread(AtomicBoolean ref) {
+        return () -> {
+            verifyInJdkForkJoinThread();
+            ref.set(true);
+        };
+    }
+
+    private static Runnable trueJUnitThread(AtomicBoolean ref) {
+        return () -> {
+            verifyInJUnitThread();
+            ref.set(true);
+        };
+    }
+
     private static BiFunction<? super String, ? super Double, ? extends Integer> strLenDoubleStThread() {
         return (str, dbl) -> {
             verifyInStExecutorThread();
@@ -1084,17 +1107,10 @@ public class SingleToCompletionStageTest {
         };
     }
 
-    private static Runnable countDownInStThread(CountDownLatch latch) {
-        return () -> {
-            verifyInStExecutorThread();
-            latch.countDown();
-        };
-    }
-
-    private static Runnable countDownInJdkThread(CountDownLatch latch) {
-        return () -> {
-            verifyInJdkExecutorThread();
-            latch.countDown();
+    private static BiFunction<? super String, ? super Double, ? extends Integer> strLenDoubleJdkForkJoinThread() {
+        return (str, dbl) -> {
+            verifyInJdkForkJoinThread();
+            return (int) (strLen(str) + dbl);
         };
     }
 }

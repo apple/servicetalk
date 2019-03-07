@@ -26,6 +26,7 @@ import org.slf4j.LoggerFactory;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -43,7 +44,7 @@ import static io.servicetalk.concurrent.api.NeverSingle.neverSingle;
 import static io.servicetalk.concurrent.api.SingleDoOnUtils.doOnErrorSupplier;
 import static io.servicetalk.concurrent.api.SingleDoOnUtils.doOnSubscribeSupplier;
 import static io.servicetalk.concurrent.api.SingleDoOnUtils.doOnSuccessSupplier;
-import static io.servicetalk.concurrent.api.SingleToCompletionStage.createAndSubscribe;
+import static io.servicetalk.concurrent.api.SingleToCompletableFuture.createAndSubscribe;
 import static io.servicetalk.concurrent.internal.SignalOffloaders.newOffloaderFor;
 import static java.util.Objects.requireNonNull;
 import static java.util.function.Function.identity;
@@ -1009,9 +1010,7 @@ public abstract class Single<T> {
     public final CompletionStage<T> toCompletionStage() {
         AsyncContextProvider provider = AsyncContext.provider();
         AsyncContextMap contextMap = provider.contextMap().copy();
-        return provider.wrap(
-                (CompletionStage<T>) createAndSubscribe(this, provider.unwrap(executor), provider, contextMap),
-                contextMap);
+        return provider.wrap((CompletableFuture<T>) createAndSubscribe(this, provider, contextMap), contextMap);
     }
 
     /**
@@ -1022,7 +1021,7 @@ public abstract class Single<T> {
     public final Future<T> toFuture() {
         AsyncContextProvider provider = AsyncContext.provider();
         AsyncContextMap contextMap = provider.contextMap().copy();
-        return createAndSubscribe(this, executor, provider, contextMap);
+        return createAndSubscribe(this, provider, contextMap);
     }
 
     //

@@ -19,7 +19,7 @@ import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.SingleSource;
 
-import java.util.concurrent.CompletionStage;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
@@ -45,11 +45,6 @@ final class DefaultAsyncContextProvider implements AsyncContextProvider {
     @Override
     public void contextMap(AsyncContextMap newContextMap) {
         contextLocal.set(newContextMap);
-    }
-
-    @Override
-    public AsyncContextMap newContextMap() {
-        return AsyncContextMapThreadLocal.newContextMap();
     }
 
     @Override
@@ -110,18 +105,13 @@ final class DefaultAsyncContextProvider implements AsyncContextProvider {
     }
 
     @Override
-    public io.servicetalk.concurrent.api.Executor unwrap(final io.servicetalk.concurrent.api.Executor executor) {
-        return ContextPreservingStExecutor.unwrap(executor);
-    }
-
-    @Override
     public io.servicetalk.concurrent.Executor unwrap(final io.servicetalk.concurrent.Executor executor) {
         return ContextPreservingStExecutor.unwrap(executor);
     }
 
     @Override
-    public <T> CompletionStage<T> wrap(final CompletionStage<T> stage, AsyncContextMap current) {
-        return new ContextPreservingCompletionStage<>(stage, current);
+    public <T> CompletableFuture<T> wrap(final CompletableFuture<T> future, AsyncContextMap current) {
+        return ContextPreservingCompletableFuture.newInstance(future, current);
     }
 
     @Override

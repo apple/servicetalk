@@ -21,7 +21,7 @@ import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.SingleSource;
 
-import java.util.concurrent.CompletionStage;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.function.BiConsumer;
@@ -48,12 +48,6 @@ interface AsyncContextProvider {
      * @param newContextMap The current context.
      */
     void contextMap(AsyncContextMap newContextMap);
-
-    /**
-     * Create a {@link AsyncContextMap} that is empty.
-     * @return a {@link AsyncContextMap} that is empty.
-     */
-    AsyncContextMap newContextMap();
 
     /**
      * Wrap the {@link Cancellable} to ensure it is able to track
@@ -154,23 +148,15 @@ interface AsyncContextProvider {
      * @param executor The executor to unwrap.
      * @return The result of the unwrap attempt.
      */
-    Executor unwrap(Executor executor);
-
-    /**
-     * Make a best effort to unwrap a {@link Executor} so that it no longer tracks
-     * {@link AsyncContext}.
-     * @param executor The executor to unwrap.
-     * @return The result of the unwrap attempt.
-     */
     io.servicetalk.concurrent.Executor unwrap(io.servicetalk.concurrent.Executor executor);
 
     /**
-     * Wrap a {@link CompletionStage} so that {@link AsyncContext} is preserved from listener methods.
-     * @param stage The stage to wrap.
-     * @param <T> The type of data for {@link CompletionStage}.
-     * @return the wrapped {@link CompletionStage}.
+     * Wrap a {@link CompletableFuture} so that {@link AsyncContext} is preserved from listener methods.
+     * @param future The future to wrap.
+     * @param <T> The type of data for {@link CompletableFuture}.
+     * @return the wrapped {@link CompletableFuture}.
      */
-    <T> CompletionStage<T> wrap(CompletionStage<T> stage, AsyncContextMap current);
+    <T> CompletableFuture<T> wrap(CompletableFuture<T> future, AsyncContextMap current);
 
     /**
      * Wrap a {@link ScheduledExecutorService} to ensure it is able to track {@link AsyncContext} correctly.
