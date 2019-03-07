@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 /**
- * The HTTP API package.
+ * The OIO API package.
  */
 @ElementsAreNonnullByDefault
 package io.servicetalk.oio.api;
