@@ -20,8 +20,9 @@ import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.redis.api.RedisClient;
 import io.servicetalk.redis.api.RedisClient.ReservedRedisConnection;
 import io.servicetalk.redis.api.RedisData.CompleteBulkString;
-import io.servicetalk.redis.api.RedisProtocolSupport;
+import io.servicetalk.redis.api.RedisProtocolSupport.BufferFieldValue;
 import io.servicetalk.redis.api.RedisProtocolSupport.Command;
+import io.servicetalk.redis.api.RedisProtocolSupport.FieldValue;
 
 import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
@@ -169,20 +170,20 @@ public abstract class BaseRedisClientTest {
                 contains(redisInteger(either(is(0L)).or(is(1L)))));
     }
 
-    List<RedisProtocolSupport.FieldValue> toFieldValues(final List<String> values) {
-        final List<RedisProtocolSupport.FieldValue> result = new ArrayList<>(3);
+    List<FieldValue> toFieldValues(final List<String> values) {
+        final List<FieldValue> result = new ArrayList<>(3);
         final Iterator<String> iterator = values.iterator();
         while (iterator.hasNext()) {
-            result.add(new RedisProtocolSupport.FieldValue(iterator.next(), iterator.next()));
+            result.add(new FieldValue(iterator.next(), iterator.next()));
         }
         return result;
     }
 
-    List<RedisProtocolSupport.BufferFieldValue> toBufferFieldValues(final List<Buffer> values) {
-        final List<RedisProtocolSupport.BufferFieldValue> result = new ArrayList<>(3);
+    List<BufferFieldValue> toBufferFieldValues(final List<Buffer> values) {
+        final List<BufferFieldValue> result = new ArrayList<>(3);
         final Iterator<Buffer> iterator = values.iterator();
         while (iterator.hasNext()) {
-            result.add(new RedisProtocolSupport.BufferFieldValue(iterator.next(), iterator.next()));
+            result.add(new BufferFieldValue(iterator.next(), iterator.next()));
         }
         return result;
     }

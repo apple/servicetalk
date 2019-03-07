@@ -24,7 +24,7 @@ import io.servicetalk.redis.api.RedisData.DefaultBulkStringChunk;
 import io.servicetalk.redis.api.RedisData.DefaultFirstBulkStringChunk;
 import io.servicetalk.redis.api.RedisData.RequestRedisData;
 import io.servicetalk.redis.api.RedisData.SimpleString;
-import io.servicetalk.redis.api.RedisProtocolSupport;
+import io.servicetalk.redis.api.RedisProtocolSupport.Command;
 import io.servicetalk.redis.api.RedisRequest;
 
 import io.netty.buffer.ByteBuf;
@@ -91,7 +91,7 @@ public class RedisUtilsTest {
         return new RedisRequest() {
 
             @Override
-            public RedisProtocolSupport.Command command() {
+            public Command command() {
                 throw new UnsupportedOperationException();
             }
 

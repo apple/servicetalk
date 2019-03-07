@@ -18,6 +18,7 @@ package io.servicetalk.redis.api;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.redis.api.RedisData.CompleteBulkString;
 
 import org.junit.After;
 import org.junit.Test;
@@ -158,7 +159,7 @@ public class DefaultRedisExecutionStrategyTest {
         }
 
         Publisher<RedisData> createNewResponse() {
-            return just(DEFAULT_ALLOCATOR.fromAscii("Hello-Response")).map(RedisData.CompleteBulkString::new);
+            return just(DEFAULT_ALLOCATOR.fromAscii("Hello-Response")).map(CompleteBulkString::new);
         }
 
         RedisRequest instrumentedRequest(RedisRequest request) {

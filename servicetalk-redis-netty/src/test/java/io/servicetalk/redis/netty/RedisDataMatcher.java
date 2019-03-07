@@ -18,6 +18,12 @@ package io.servicetalk.redis.netty;
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.redis.api.DefaultBaseRedisData;
 import io.servicetalk.redis.api.RedisData;
+import io.servicetalk.redis.api.RedisData.Array;
+import io.servicetalk.redis.api.RedisData.ArraySize;
+import io.servicetalk.redis.api.RedisData.BulkStringChunk;
+import io.servicetalk.redis.api.RedisData.CompleteBulkString;
+import io.servicetalk.redis.api.RedisData.DefaultFirstBulkStringChunk;
+import io.servicetalk.redis.api.RedisData.SimpleString;
 
 import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
@@ -48,7 +54,7 @@ final class RedisDataMatcher extends BaseMatcher<RedisData> {
     }
 
     static RedisDataMatcher redisSimpleString(final Matcher<String> valueMatcher) {
-        return new RedisDataMatcher(RedisData.SimpleString.class, data -> data.charSequenceValue().toString(), valueMatcher);
+        return new RedisDataMatcher(SimpleString.class, data -> data.charSequenceValue().toString(), valueMatcher);
     }
 
     static RedisDataMatcher redisInteger(final long value) {
@@ -64,7 +70,7 @@ final class RedisDataMatcher extends BaseMatcher<RedisData> {
     }
 
     static RedisDataMatcher redisBulkStringChunk(final Matcher<Buffer> bufMatcher) {
-        return new RedisDataMatcher(RedisData.BulkStringChunk.class, RedisData::bufferValue, bufMatcher);
+        return new RedisDataMatcher(BulkStringChunk.class, RedisData::bufferValue, bufMatcher);
     }
 
     static RedisDataMatcher redisFirstBulkStringChunk(final Buffer buf) {
@@ -72,11 +78,11 @@ final class RedisDataMatcher extends BaseMatcher<RedisData> {
     }
 
     static RedisDataMatcher redisFirstBulkStringChunk(final Matcher<Buffer> bufMatcher) {
-        return new RedisDataMatcher(RedisData.DefaultFirstBulkStringChunk.class, RedisData::bufferValue, bufMatcher);
+        return new RedisDataMatcher(DefaultFirstBulkStringChunk.class, RedisData::bufferValue, bufMatcher);
     }
 
     static RedisDataMatcher redisFirstBulkStringChunkSize(final Matcher<Integer> sizeMatcher) {
-        return new RedisDataMatcher(RedisData.DefaultFirstBulkStringChunk.class, rd -> rd.bufferValue().readableBytes(), sizeMatcher);
+        return new RedisDataMatcher(DefaultFirstBulkStringChunk.class, rd -> rd.bufferValue().readableBytes(), sizeMatcher);
     }
 
     static RedisDataMatcher redisCompleteBulkString(final Buffer buf) {
@@ -84,11 +90,11 @@ final class RedisDataMatcher extends BaseMatcher<RedisData> {
     }
 
     static RedisDataMatcher redisCompleteBulkString(final Matcher<Buffer> bufMatcher) {
-        return new RedisDataMatcher(RedisData.CompleteBulkString.class, RedisData::bufferValue, bufMatcher);
+        return new RedisDataMatcher(CompleteBulkString.class, RedisData::bufferValue, bufMatcher);
     }
 
     static RedisDataMatcher redisCompleteBulkStringSize(final Matcher<Integer> sizeMatcher) {
-        return new RedisDataMatcher(RedisData.CompleteBulkString.class, rd -> rd.bufferValue().readableBytes(), sizeMatcher);
+        return new RedisDataMatcher(CompleteBulkString.class, rd -> rd.bufferValue().readableBytes(), sizeMatcher);
     }
 
     static RedisDataMatcher redisArraySize(final long size) {
@@ -96,7 +102,7 @@ final class RedisDataMatcher extends BaseMatcher<RedisData> {
     }
 
     static RedisDataMatcher redisArraySize(final Matcher<Long> sizeMatcher) {
-        return new RedisDataMatcher(RedisData.ArraySize.class, RedisData::longValue, sizeMatcher);
+        return new RedisDataMatcher(ArraySize.class, RedisData::longValue, sizeMatcher);
     }
 
     static RedisDataMatcher redisArray(final RedisData... content) {
@@ -104,7 +110,7 @@ final class RedisDataMatcher extends BaseMatcher<RedisData> {
     }
 
     static RedisDataMatcher redisArray(final Matcher<Iterable<? extends RedisData>> contentMatcher) {
-        return new RedisDataMatcher(RedisData.Array.class, RedisData::listValue, contentMatcher);
+        return new RedisDataMatcher(Array.class, RedisData::listValue, contentMatcher);
     }
 
     static RedisDataMatcher redisError(final String msg) {
