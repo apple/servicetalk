@@ -43,7 +43,7 @@ import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
 import static io.servicetalk.http.api.HttpHeaderValues.APPLICATION_JSON;
-import static io.servicetalk.http.api.HttpResponseStatuses.OK;
+import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.router.jersey.ExecutionStrategyTest.TestExecutorStrategy.DEFAULT;
 import static io.servicetalk.http.router.jersey.ExecutionStrategyTest.TestExecutorStrategy.EXEC;
 import static io.servicetalk.http.router.jersey.ExecutionStrategyTest.TestExecutorStrategy.NO_OFFLOADS;

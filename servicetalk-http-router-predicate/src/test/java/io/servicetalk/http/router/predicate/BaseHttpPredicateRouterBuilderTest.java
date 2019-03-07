@@ -45,7 +45,7 @@ import java.util.Spliterator;
 
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Executors.immediate;
-import static io.servicetalk.http.api.HttpProtocolVersions.HTTP_1_1;
+import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static java.util.Arrays.asList;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;

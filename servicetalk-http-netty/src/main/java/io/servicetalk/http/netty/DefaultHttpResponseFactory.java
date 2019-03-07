@@ -22,7 +22,7 @@ import io.servicetalk.http.api.HttpResponseFactory;
 import io.servicetalk.http.api.HttpResponseStatus;
 import io.servicetalk.http.api.HttpResponses;
 
-import static io.servicetalk.http.api.HttpProtocolVersions.HTTP_1_1;
+import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 
 final class DefaultHttpResponseFactory implements HttpResponseFactory {
     private final HttpHeadersFactory headersFactory;

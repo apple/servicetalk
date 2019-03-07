@@ -66,8 +66,8 @@ final class PubToCompletable<T> extends AbstractNoHandleSubscribeCompletable {
         @Override
         public void onSubscribe(final Subscription s) {
             final ConcurrentSubscription cs = wrap(s);
-            subscriber.onSubscribe(cs::cancel);
-            s.request(Long.MAX_VALUE);
+            subscriber.onSubscribe(cs);
+            cs.request(Long.MAX_VALUE);
         }
 
         @Override

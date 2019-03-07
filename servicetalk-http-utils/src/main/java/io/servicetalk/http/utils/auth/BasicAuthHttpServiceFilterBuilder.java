@@ -50,8 +50,8 @@ import static io.servicetalk.http.api.HttpHeaderNames.PROXY_AUTHENTICATE;
 import static io.servicetalk.http.api.HttpHeaderNames.PROXY_AUTHORIZATION;
 import static io.servicetalk.http.api.HttpHeaderNames.WWW_AUTHENTICATE;
 import static io.servicetalk.http.api.HttpHeaderValues.ZERO;
-import static io.servicetalk.http.api.HttpResponseStatuses.PROXY_AUTHENTICATION_REQUIRED;
-import static io.servicetalk.http.api.HttpResponseStatuses.UNAUTHORIZED;
+import static io.servicetalk.http.api.HttpResponseStatus.PROXY_AUTHENTICATION_REQUIRED;
+import static io.servicetalk.http.api.HttpResponseStatus.UNAUTHORIZED;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Objects.requireNonNull;
 

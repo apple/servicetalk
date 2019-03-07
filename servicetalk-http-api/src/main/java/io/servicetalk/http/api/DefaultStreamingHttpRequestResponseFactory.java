@@ -17,7 +17,7 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.buffer.api.BufferAllocator;
 
-import static io.servicetalk.http.api.HttpProtocolVersions.HTTP_1_1;
+import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static java.util.Objects.requireNonNull;
 
 /**

@@ -43,12 +43,12 @@ import static io.netty.handler.codec.http.HttpConstants.SP;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderNames.SEC_WEBSOCKET_VERSION;
 import static io.servicetalk.http.api.HttpHeaderNames.TRANSFER_ENCODING;
-import static io.servicetalk.http.api.HttpRequestMethods.CONNECT;
+import static io.servicetalk.http.api.HttpRequestMethod.CONNECT;
+import static io.servicetalk.http.api.HttpResponseStatus.NOT_MODIFIED;
+import static io.servicetalk.http.api.HttpResponseStatus.NO_CONTENT;
+import static io.servicetalk.http.api.HttpResponseStatus.SWITCHING_PROTOCOLS;
 import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.INFORMATIONAL_1XX;
 import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.SUCCESSFUL_2XX;
-import static io.servicetalk.http.api.HttpResponseStatuses.NOT_MODIFIED;
-import static io.servicetalk.http.api.HttpResponseStatuses.NO_CONTENT;
-import static io.servicetalk.http.api.HttpResponseStatuses.SWITCHING_PROTOCOLS;
 import static io.servicetalk.transport.netty.internal.CloseHandler.UNSUPPORTED_PROTOCOL_CLOSE_HANDLER;
 import static java.util.Objects.requireNonNull;
 

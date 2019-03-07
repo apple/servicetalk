@@ -20,7 +20,7 @@ import io.servicetalk.concurrent.CompletableSource;
 
 import java.util.Collection;
 import java.util.Iterator;
-import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Queue;
 import java.util.SortedMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -41,11 +41,25 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
 public class TestExecutor implements Executor {
 
     private final Queue<RunnableWrapper> tasks = new ConcurrentLinkedQueue<>();
-    private final ConcurrentNavigableMap<Long, Queue<RunnableWrapper>> scheduledTasksByNano = new ConcurrentSkipListMap<>();
-    private long currentNanos = ThreadLocalRandom.current().nextLong();
+    private final ConcurrentNavigableMap<Long, Queue<RunnableWrapper>> scheduledTasksByNano =
+            new ConcurrentSkipListMap<>();
+    private final long nanoOffset;
+    private long currentNanos;
     private CompletableProcessor closeProcessor = new CompletableProcessor();
     private AtomicInteger tasksExecuted = new AtomicInteger();
     private AtomicInteger scheduledTasksExecuted = new AtomicInteger();
+
+    /**
+     * Create a new instance.
+     */
+    public TestExecutor() {
+        this(ThreadLocalRandom.current().nextLong());
+    }
+
+    TestExecutor(final long epochNanos) {
+        currentNanos = epochNanos;
+        nanoOffset = epochNanos - Long.MIN_VALUE;
+    }
 
     @Override
     public Cancellable execute(final Runnable task) throws RejectedExecutionException {
@@ -58,14 +72,15 @@ public class TestExecutor implements Executor {
     public Cancellable schedule(final Runnable task, final long delay, final TimeUnit unit)
             throws RejectedExecutionException {
         final RunnableWrapper wrappedTask = new RunnableWrapper(task);
-        final long scheduledNanos = currentNanos() + unit.toNanos(delay);
-
+        final long scheduledNanos = currentScheduledNanos() + unit.toNanos(delay);
         final Queue<RunnableWrapper> tasksForNanos = scheduledTasksByNano.computeIfAbsent(scheduledNanos,
                 k -> new ConcurrentLinkedQueue<>());
         tasksForNanos.add(wrappedTask);
 
         return () -> scheduledTasksByNano.computeIfPresent(scheduledNanos, (k, tasks) -> {
-            tasks.remove(wrappedTask);
+            if (tasks.remove(wrappedTask) && tasks.isEmpty()) {
+                removedScheduledQueue(scheduledNanos);
+            }
             return tasks;
         });
     }
@@ -84,6 +99,27 @@ public class TestExecutor implements Executor {
                 closeProcessor.onComplete();
             }
         };
+    }
+
+    /**
+     * What we want to accomplish is using a {@link ConcurrentNavigableMap} and leverage the strict ordering to obtain
+     * the next scheduled task. We therefore shift the valid set of numbers for long such that the starting value
+     * (aka epoch) maps to {@code 0}. Use the set of {@code long} numbers above, lets assume the epoch is
+     * {@code MAX_VALUE-1}. That results in the following re-mapping.
+     * <pre>
+     *   MIN_VALUE, MIN_VALUE+1, ... 0, 1, 2, ... MAX_VALUE-1, MAX_VALUE <- valid long numbers
+     *   MAX_VALUE-1, MAX_VALUE, MIN_VALUE, MIN_VALUE+1, ... -1, 0, 1, MAX_VALUE-2 <- remapped
+     * </pre>
+     * So if the {@link #currentNanos()} time is {@code MIN_VALUE+1} that means we overflowed
+     * (which is OK and expected), however the adjusted time for scheduling should be {@code MIN_VALUE+3}.
+     * {@code (MIN_VALUE+1) - epoch - MIN_VALUE} translates to
+     * {@code (MIN_VALUE+1) - (MAX_VALUE-1) - MIN_VALUE = (MIN_VALUE+3)}. The {@code epoch - MIN_VALUE} is computed
+     * upfront as {@link #nanoOffset}.
+     *
+     * @return the time used for scheduling and interaction with {@link #scheduledTasksByNano}.
+     */
+    private long currentScheduledNanos() {
+        return currentNanos() - nanoOffset;
     }
 
     /**
@@ -178,10 +214,9 @@ public class TestExecutor implements Executor {
      * @return this.
      */
     public TestExecutor executeScheduledTasks() {
-        SortedMap<Long, Queue<RunnableWrapper>> headMap = scheduledTasksByNano.headMap(currentNanos + 1);
-
-        for (Iterator<Map.Entry<Long, Queue<RunnableWrapper>>> i = headMap.entrySet().iterator(); i.hasNext();) {
-            final Map.Entry<Long, Queue<RunnableWrapper>> entry = i.next();
+        SortedMap<Long, Queue<RunnableWrapper>> headMap = scheduledTasksByNano.headMap(currentScheduledNanos(), true);
+        for (Iterator<Entry<Long, Queue<RunnableWrapper>>> i = headMap.entrySet().iterator(); i.hasNext();) {
+            final Entry<Long, Queue<RunnableWrapper>> entry = i.next();
             execute(entry.getValue(), scheduledTasksExecuted);
             i.remove();
         }
@@ -195,15 +230,14 @@ public class TestExecutor implements Executor {
      * @return this.
      */
     public TestExecutor executeNextScheduledTask() {
-        SortedMap<Long, Queue<RunnableWrapper>> headMap = scheduledTasksByNano.headMap(currentNanos + 1);
-
-        for (Iterator<Map.Entry<Long, Queue<RunnableWrapper>>> i = headMap.entrySet().iterator(); i.hasNext();) {
-            final Map.Entry<Long, Queue<RunnableWrapper>> entry = i.next();
-            if (executeOne(entry.getValue(), scheduledTasksExecuted)) {
-                return this;
-            } else {
-                i.remove();
+        ConcurrentNavigableMap<Long, Queue<RunnableWrapper>> headMap =
+                scheduledTasksByNano.headMap(currentScheduledNanos(), true);
+        Entry<Long, Queue<RunnableWrapper>> entry = headMap.firstEntry();
+        if (entry != null && executeOne(entry.getValue(), scheduledTasksExecuted)) {
+            if (entry.getValue().isEmpty()) {
+                removedScheduledQueue(entry.getKey());
             }
+            return this;
         }
         throw new IllegalStateException("No scheduled tasks to execute");
     }
@@ -211,7 +245,7 @@ public class TestExecutor implements Executor {
     /**
      * Returns the number of queued ({@code execute}/{@code submit} methods) tasks currently pending.
      *
-     * @returnthe number of queued ({@code execute}/{@code submit} methods) tasks currently pending.
+     * @return the number of queued ({@code execute}/{@code submit} methods) tasks currently pending.
      */
     public int queuedTasksPending() {
         return tasks.size();
@@ -220,7 +254,7 @@ public class TestExecutor implements Executor {
     /**
      * Returns the number of scheduled ({@code schedule}/{@code timer} methods) tasks currently pending.
      *
-     * @returnthe number of scheduled ({@code schedule}/{@code timer} methods) tasks currently pending.
+     * @return the number of scheduled ({@code schedule}/{@code timer} methods) tasks currently pending.
      */
     public int scheduledTasksPending() {
         return scheduledTasksByNano.values().stream().mapToInt(Collection::size).sum();
@@ -229,7 +263,7 @@ public class TestExecutor implements Executor {
     /**
      * Returns the number of queued ({@code execute}/{@code submit} methods) tasks that have been executed.
      *
-     * @returnthe number of queued ({@code execute}/{@code submit} methods) tasks that have been executed.
+     * @return the number of queued ({@code execute}/{@code submit} methods) tasks that have been executed.
      */
     public int queuedTasksExecuted() {
         return tasksExecuted.get();
@@ -238,10 +272,24 @@ public class TestExecutor implements Executor {
     /**
      * Returns the number of scheduled ({@code schedule}/{@code timer} methods) tasks that have been executed.
      *
-     * @returnthe number of scheduled ({@code schedule}/{@code timer} methods) tasks that have been executed.
+     * @return the number of scheduled ({@code schedule}/{@code timer} methods) tasks that have been executed.
      */
     public int scheduledTasksExecuted() {
         return scheduledTasksExecuted.get();
+    }
+
+    private void removedScheduledQueue(Long scheduledNanos) {
+        final Queue<RunnableWrapper> removedQueue = scheduledTasksByNano.remove(scheduledNanos);
+
+        // There maybe concurrent access to this Executor and other tasks schedule, so if in the mean time
+        // someone inserts something into the queue we should attempt to add it back to the Map.
+        if (!removedQueue.isEmpty()) {
+            final Queue<RunnableWrapper> existingQueue =
+                    scheduledTasksByNano.putIfAbsent(scheduledNanos, removedQueue);
+            if (existingQueue != null) {
+                existingQueue.addAll(removedQueue);
+            }
+        }
     }
 
     private static void execute(Queue<RunnableWrapper> tasks, AtomicInteger taskCount) {

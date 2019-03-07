@@ -49,7 +49,7 @@ import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderNames.TRANSFER_ENCODING;
 import static io.servicetalk.http.api.HttpHeaderValues.CHUNKED;
 import static io.servicetalk.http.api.HttpHeaderValues.ZERO;
-import static io.servicetalk.http.api.HttpResponseStatuses.getResponseStatus;
+import static io.servicetalk.http.api.HttpResponseStatus.getResponseStatus;
 import static io.servicetalk.http.router.jersey.CharSequenceUtils.asCharSequence;
 import static io.servicetalk.http.router.jersey.internal.RequestProperties.getRequestCancellable;
 import static io.servicetalk.http.router.jersey.internal.RequestProperties.getResponseBufferPublisher;

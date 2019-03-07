@@ -18,6 +18,7 @@ package io.servicetalk.transport.netty.internal;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.api.TestPublisherSubscriber;
+import io.servicetalk.concurrent.api.TestSubscription;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.transport.netty.internal.NettyConnection.TerminalPredicate;
 
@@ -29,7 +30,6 @@ import org.junit.rules.Timeout;
 import org.mockito.stubbing.Answer;
 
 import java.nio.channels.ClosedChannelException;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Executors.immediate;
@@ -179,15 +179,18 @@ public class DefaultNettyPipelinedConnectionTest {
 
     @Test
     public void testWriteCancelAndThenWrite() {
-        AtomicBoolean writePublisher1Cancelled = new AtomicBoolean();
-        toSource(requester.request(writePublisher1
-                .doBeforeCancel(() -> writePublisher1Cancelled.set(true)))
-        ).subscribe(readSubscriber);
+        writePublisher1 = new TestPublisher.Builder<Integer>().disableAutoOnSubscribe().build();
+        toSource(requester.request(writePublisher1)).subscribe(readSubscriber);
         readSubscriber.request(1);
+        // We have to request before we call onSubscribe currently because of a conversion from CompletableToPublisher
+        // internally which waits for demand before subscribing, and the TestPublisher will block on onSubscribe until
+        // a subscribe operation.
+        TestSubscription testSubscription = new TestSubscription();
+        writePublisher1.onSubscribe(testSubscription);
         toSource(requester.request(writePublisher2)).subscribe(secondReadSubscriber);
         secondReadSubscriber.request(1);
         readSubscriber.cancel();
-        assertTrue(writePublisher1Cancelled.get());
+        testSubscription.waitUntilCancelled();
         assertTrue(writePublisher2.isSubscribed());
         writePublisher2.onNext(1);
         writePublisher2.onComplete();

@@ -31,11 +31,11 @@ import java.util.regex.Pattern;
 import javax.net.ssl.SSLSession;
 
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
-import static io.servicetalk.http.api.HttpProtocolVersions.HTTP_1_0;
-import static io.servicetalk.http.api.HttpProtocolVersions.HTTP_1_1;
-import static io.servicetalk.http.api.HttpRequestMethods.GET;
-import static io.servicetalk.http.api.HttpRequestMethods.POST;
-import static io.servicetalk.http.api.HttpRequestMethods.PUT;
+import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_0;
+import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
+import static io.servicetalk.http.api.HttpRequestMethod.GET;
+import static io.servicetalk.http.api.HttpRequestMethod.POST;
+import static io.servicetalk.http.api.HttpRequestMethod.PUT;
 import static java.util.regex.Pattern.CASE_INSENSITIVE;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertSame;
