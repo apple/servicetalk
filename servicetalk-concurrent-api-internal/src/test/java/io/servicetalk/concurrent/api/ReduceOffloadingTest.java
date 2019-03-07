@@ -28,6 +28,7 @@ import static io.servicetalk.concurrent.api.Executors.from;
 import static io.servicetalk.concurrent.api.Executors.newFixedSizeExecutor;
 import static io.servicetalk.concurrent.internal.SignalOffloaders.threadBasedOffloaderFactory;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.Assert.assertThat;
 
 public class ReduceOffloadingTest {
@@ -45,6 +46,10 @@ public class ReduceOffloadingTest {
         int sum = Publisher.from(1, 2, 3, 4).publishAndSubscribeOn(wrapped)
                 .reduce(() -> 0, (cumulative, integer) -> cumulative + integer).toFuture().get();
         assertThat("Unexpected sum.", sum, is(10));
-        assertThat("Unexpected tasks submitted.", taskCount.get(), is(1));
+        // The Subscriber chain will execute one task, and  Future conversion may also execute another task if the
+        // Future is completed by the time we add a listener to the future (e.g. blocking get in the JUnit thread).
+        assertThat("Unexpected tasks submitted.", taskCount.get(), lessThanOrEqualTo(2));
+        wrapped.closeAsync().toFuture().get();
+        executor.closeAsync().toFuture().get();
     }
 }
