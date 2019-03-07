@@ -327,16 +327,16 @@ public class RedisCommanderTest extends BaseRedisClientTest {
     public void transactionExec() throws Exception {
         commandClient.set(key("a-key"), "prior").toFuture().get();
         final TransactedRedisCommander tcc = awaitIndefinitelyNonNull(commandClient.multi());
-        Future<Long> value1 = tcc.del(key("a-key"));
-        Future<String> value2 = tcc.set(key("a-key"), "a-value3");
-        Future<String> value3 = tcc.ping("in-transac");
-        Future<String> value4 = tcc.get(key("a-key"));
+        Future<String> value1 = tcc.set(key("a-key"), "a-value3");
+        Future<String> value2 = tcc.get(key("a-key"));
+        Future<Long> value3 = tcc.del(key("a-key"));
+        Future<String> value4 = tcc.ping("in-transac");
         tcc.exec().toFuture().get();
         postReleaseLatch.await();
-        assertThat(value1.get(), is(1L));
-        assertThat(value2.get(), is("OK"));
-        assertThat(value3.get(), is("in-transac"));
-        assertThat(value4.get(), is("a-value3"));
+        assertThat(value1.get(), is("OK"));
+        assertThat(value2.get(), is("a-value3"));
+        assertThat(value3.get(), is(1L));
+        assertThat(value4.get(), is("in-transac"));
     }
 
     @Test
