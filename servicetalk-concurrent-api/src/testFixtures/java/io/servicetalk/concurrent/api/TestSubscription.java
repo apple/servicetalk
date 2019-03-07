@@ -70,15 +70,15 @@ public final class TestSubscription implements Subscription {
         }
 
         boolean interrupted = false;
-        do {
-            synchronized (waitingLock) {
+        synchronized (waitingLock) {
+            while (requested.get() < amount) {
                 try {
                     waitingLock.wait();
                 } catch (InterruptedException e) {
                     interrupted = true;
                 }
             }
-        } while (requested.get() < amount);
+        }
 
         if (interrupted) {
             Thread.currentThread().interrupt();
@@ -94,15 +94,15 @@ public final class TestSubscription implements Subscription {
         }
 
         boolean interrupted = false;
-        do {
-            synchronized (waitingLock) {
+        synchronized (waitingLock) {
+            while (!cancelled) {
                 try {
                     waitingLock.wait();
                 } catch (InterruptedException e) {
                     interrupted = true;
                 }
             }
-        } while (!cancelled);
+        }
 
         if (interrupted) {
             Thread.currentThread().interrupt();
