@@ -36,7 +36,6 @@ import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.api.HttpMetaData;
 import io.servicetalk.http.api.HttpProtocolVersion;
 import io.servicetalk.http.api.HttpRequestMetaData;
-import io.servicetalk.http.api.HttpRequestMethods;
 import io.servicetalk.http.api.HttpResponseMetaData;
 import io.servicetalk.transport.netty.internal.ByteToMessageDecoder;
 import io.servicetalk.transport.netty.internal.CloseHandler;
@@ -67,10 +66,11 @@ import static io.servicetalk.http.api.HttpHeaderNames.SEC_WEBSOCKET_KEY2;
 import static io.servicetalk.http.api.HttpHeaderNames.SEC_WEBSOCKET_LOCATION;
 import static io.servicetalk.http.api.HttpHeaderNames.SEC_WEBSOCKET_ORIGIN;
 import static io.servicetalk.http.api.HttpHeaderNames.UPGRADE;
-import static io.servicetalk.http.api.HttpProtocolVersions.HTTP_1_0;
-import static io.servicetalk.http.api.HttpProtocolVersions.HTTP_1_1;
-import static io.servicetalk.http.api.HttpProtocolVersions.newProtocolVersion;
-import static io.servicetalk.http.api.HttpResponseStatuses.SWITCHING_PROTOCOLS;
+import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_0;
+import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
+import static io.servicetalk.http.api.HttpProtocolVersion.newProtocolVersion;
+import static io.servicetalk.http.api.HttpRequestMethod.GET;
+import static io.servicetalk.http.api.HttpResponseStatus.SWITCHING_PROTOCOLS;
 import static io.servicetalk.http.netty.HeaderUtils.isTransferEncodingChunked;
 import static io.servicetalk.http.netty.HeaderUtils.setTransferEncodingChunked;
 import static io.servicetalk.http.netty.HttpKeepAlive.shouldClose;
@@ -474,7 +474,7 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
      * Returns true if the server switched to a different protocol than HTTP/1.0 or HTTP/1.1, e.g. HTTP/2 or Websocket.
      * Returns false if the upgrade happened in a different layer, e.g. upgrade from HTTP/1.1 to HTTP/1.1 over TLS.
      */
-    private boolean isSwitchingToNonHttp1Protocol(HttpResponseMetaData msg) {
+    private static boolean isSwitchingToNonHttp1Protocol(HttpResponseMetaData msg) {
         if (msg.status().code() != SWITCHING_PROTOCOLS.code()) {
             return false;
         }
@@ -717,15 +717,16 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
         HttpHeaders h = message.headers();
         if (message instanceof HttpRequestMetaData) {
             HttpRequestMetaData req = (HttpRequestMetaData) message;
-            // Note that we are using ServiceTalk types here, and assume the decoders will also use ServiceTalk types.
-            if (HttpRequestMethods.GET.equals(req.method()) &&
+            // Note that we are using ServiceTalk constants for HttpRequestMethod here, and assume the decoders will
+            // also use ServiceTalk constants which allows us to use reference check here:
+            if (req.method() == GET &&
                     h.contains(SEC_WEBSOCKET_KEY1) &&
                     h.contains(SEC_WEBSOCKET_KEY2)) {
                 return 8;
             }
         } else if (message instanceof HttpResponseMetaData) {
             HttpResponseMetaData res = (HttpResponseMetaData) message;
-            if (res.status().code() == 101 &&
+            if (res.status().code() == SWITCHING_PROTOCOLS.code() &&
                     h.contains(SEC_WEBSOCKET_ORIGIN) &&
                     h.contains(SEC_WEBSOCKET_LOCATION)) {
                 return 16;

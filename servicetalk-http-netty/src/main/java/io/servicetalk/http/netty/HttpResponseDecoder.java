@@ -29,14 +29,14 @@ import static io.servicetalk.buffer.netty.BufferUtil.newBufferFrom;
 import static io.servicetalk.http.api.HttpHeaderNames.SEC_WEBSOCKET_ACCEPT;
 import static io.servicetalk.http.api.HttpHeaderNames.UPGRADE;
 import static io.servicetalk.http.api.HttpHeaderValues.WEBSOCKET;
-import static io.servicetalk.http.api.HttpRequestMethods.CONNECT;
-import static io.servicetalk.http.api.HttpRequestMethods.HEAD;
+import static io.servicetalk.http.api.HttpRequestMethod.CONNECT;
+import static io.servicetalk.http.api.HttpRequestMethod.HEAD;
 import static io.servicetalk.http.api.HttpResponseMetaDataFactory.newResponseMetaData;
+import static io.servicetalk.http.api.HttpResponseStatus.NOT_MODIFIED;
+import static io.servicetalk.http.api.HttpResponseStatus.NO_CONTENT;
+import static io.servicetalk.http.api.HttpResponseStatus.SWITCHING_PROTOCOLS;
 import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.INFORMATIONAL_1XX;
-import static io.servicetalk.http.api.HttpResponseStatuses.NOT_MODIFIED;
-import static io.servicetalk.http.api.HttpResponseStatuses.NO_CONTENT;
-import static io.servicetalk.http.api.HttpResponseStatuses.SWITCHING_PROTOCOLS;
-import static io.servicetalk.http.api.HttpResponseStatuses.getResponseStatus;
+import static io.servicetalk.http.api.HttpResponseStatus.getResponseStatus;
 import static io.servicetalk.transport.netty.internal.CloseHandler.UNSUPPORTED_PROTOCOL_CLOSE_HANDLER;
 import static java.lang.Integer.parseInt;
 import static java.nio.charset.StandardCharsets.US_ASCII;
@@ -73,7 +73,7 @@ final class HttpResponseDecoder extends HttpObjectDecoder<HttpResponseMetaData> 
         // Don't poll from the queue for informational responses, because the real response is expected next.
         if (msg.status().statusClass() == INFORMATIONAL_1XX) {
             // One exception: Hixie 76 websocket handshake response
-            return !(msg.status() == SWITCHING_PROTOCOLS &&
+            return !(msg.status().code() == SWITCHING_PROTOCOLS.code() &&
                     !msg.headers().contains(SEC_WEBSOCKET_ACCEPT) &&
                      msg.headers().contains(UPGRADE, WEBSOCKET, true));
         }
@@ -92,7 +92,10 @@ final class HttpResponseDecoder extends HttpObjectDecoder<HttpResponseMetaData> 
         // We are either switching protocols, and we will no longer process any more HTTP/1.x responses, or the protocol
         // rules prevent a content body. Also 204 and 304 are always empty.
         // https://tools.ietf.org/html/rfc7230#section-3.3.3
-        return method == HEAD || method == CONNECT || msg.status() == NO_CONTENT || msg.status() == NOT_MODIFIED;
+        // Note that we are using ServiceTalk constants for HttpRequestMethod here, and assume the decoders will
+        // also use ServiceTalk constants which allows us to use reference check here:
+        return method == HEAD || method == CONNECT
+                || msg.status().code() == NO_CONTENT.code() || msg.status().code() == NOT_MODIFIED.code();
     }
 
     private static HttpResponseStatus nettyBufferToHttpStatus(ByteBuf statusCode, ByteBuf reasonPhrase) {

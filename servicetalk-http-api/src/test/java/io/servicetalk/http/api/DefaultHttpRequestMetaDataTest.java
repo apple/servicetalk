@@ -18,8 +18,8 @@ package io.servicetalk.http.api;
 import java.util.List;
 import java.util.Map;
 
-import static io.servicetalk.http.api.HttpProtocolVersions.HTTP_1_1;
-import static io.servicetalk.http.api.HttpRequestMethods.GET;
+import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
+import static io.servicetalk.http.api.HttpRequestMethod.GET;
 
 public class DefaultHttpRequestMetaDataTest extends AbstractHttpRequestMetaDataTest<DefaultHttpRequestMetaData> {
 

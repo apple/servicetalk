@@ -41,7 +41,7 @@ import javax.ws.rs.ext.ExceptionMapper;
 import static io.servicetalk.buffer.api.EmptyBuffer.EMPTY_BUFFER;
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Single.success;
-import static io.servicetalk.http.api.HttpResponseStatuses.getResponseStatus;
+import static io.servicetalk.http.api.HttpResponseStatus.getResponseStatus;
 import static io.servicetalk.http.router.jersey.ExceptionMapperTest.ExceptionResponseType.BUF;
 import static io.servicetalk.http.router.jersey.ExceptionMapperTest.ExceptionResponseType.MAP;
 import static io.servicetalk.http.router.jersey.ExceptionMapperTest.ExceptionResponseType.SBUF;

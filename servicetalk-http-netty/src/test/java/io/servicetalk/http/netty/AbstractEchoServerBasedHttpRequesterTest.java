@@ -44,7 +44,8 @@ import static io.servicetalk.concurrent.api.Publisher.just;
 import static io.servicetalk.concurrent.api.RetryStrategies.retryWithExponentialBackoff;
 import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
 import static io.servicetalk.http.api.HttpHeaderValues.CHUNKED;
-import static io.servicetalk.http.api.HttpRequestMethods.GET;
+import static io.servicetalk.http.api.HttpRequestMethod.GET;
+import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.ExecutionContextRule.immediate;
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -108,7 +109,7 @@ public abstract class AbstractEchoServerBasedHttpRequesterTest {
                     retryWithExponentialBackoff(10, t -> true, Duration.ofMillis(100),
                             CTX.executor())));
 
-            assertThat(resp.status().code(), equalTo(200));
+            assertThat(resp.status(), equalTo(OK));
 
             Single<String> respBody = resp.payloadBody().reduce(StringBuilder::new, (sb, buf) -> {
                 sb.append(buf.toString(UTF_8));

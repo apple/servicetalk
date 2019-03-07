@@ -24,7 +24,7 @@ import io.servicetalk.http.netty.HttpServers;
 import java.util.concurrent.ThreadLocalRandom;
 
 import static io.servicetalk.http.api.HttpHeaderNames.ALLOW;
-import static io.servicetalk.http.api.HttpRequestMethods.POST;
+import static io.servicetalk.http.api.HttpRequestMethod.POST;
 import static io.servicetalk.http.api.HttpSerializationProviders.jsonSerializer;
 
 public final class BlockingPojoServer {
@@ -36,7 +36,7 @@ public final class BlockingPojoServer {
                     if (!"/pojos".equals(request.requestTarget())) {
                         return responseFactory.notFound();
                     }
-                    if (request.method() != POST) {
+                    if (!POST.equals(request.method())) {
                         return responseFactory.methodNotAllowed().addHeader(ALLOW, POST.name());
                     }
                     CreatePojoRequest req = request.payloadBody(serializer.deserializerFor(CreatePojoRequest.class));

@@ -22,7 +22,7 @@ import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.api.StreamingHttpResponses;
 
-import static io.servicetalk.http.api.HttpProtocolVersions.HTTP_1_1;
+import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 
 final class DefaultStreamingHttpResponseFactory implements StreamingHttpResponseFactory {
     private final HttpHeadersFactory headersFactory;

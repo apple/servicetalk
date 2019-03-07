@@ -58,7 +58,7 @@ import static io.servicetalk.concurrent.api.Publisher.just;
 import static io.servicetalk.concurrent.api.Single.success;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
-import static io.servicetalk.http.api.HttpResponseStatuses.OK;
+import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.api.StreamingHttpConnection.SettingKey.MAX_CONCURRENCY;
 import static io.servicetalk.http.netty.HttpClients.forSingleAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
@@ -144,7 +144,7 @@ public class HttpOffloadingTest {
                     errors.add(new AssertionError("Client response is null."));
                     return;
                 }
-                if (result.status() != OK) {
+                if (!OK.equals(result.status())) {
                     errors.add(new AssertionError("Invalid response status: " + result.status()));
                     return;
                 }

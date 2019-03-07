@@ -24,7 +24,7 @@ import io.servicetalk.transport.api.ServerContext;
 import org.junit.Test;
 import org.mockito.InOrder;
 
-import static io.servicetalk.http.api.HttpResponseStatuses.OK;
+import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.netty.HttpClients.forSingleAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;

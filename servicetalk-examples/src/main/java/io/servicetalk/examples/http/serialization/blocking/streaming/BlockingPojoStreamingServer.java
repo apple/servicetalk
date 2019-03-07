@@ -29,7 +29,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static io.servicetalk.http.api.HttpHeaderNames.ALLOW;
-import static io.servicetalk.http.api.HttpRequestMethods.POST;
+import static io.servicetalk.http.api.HttpRequestMethod.POST;
 import static io.servicetalk.http.api.HttpSerializationProviders.jsonSerializer;
 
 public final class BlockingPojoStreamingServer {
@@ -41,7 +41,7 @@ public final class BlockingPojoStreamingServer {
                     if (!"/pojos".equals(request.requestTarget())) {
                         return responseFactory.notFound();
                     }
-                    if (request.method() != POST) {
+                    if (!POST.equals(request.method())) {
                         return responseFactory.methodNotAllowed().addHeader(ALLOW, POST.name());
                     }
                     BlockingIterable<CreatePojoRequest> values = request

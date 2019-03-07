@@ -39,11 +39,11 @@ import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderNames.HOST;
 import static io.servicetalk.http.api.HttpHeaderNames.LOCATION;
 import static io.servicetalk.http.api.HttpHeaderValues.ZERO;
-import static io.servicetalk.http.api.HttpRequestMethods.CONNECT;
-import static io.servicetalk.http.api.HttpRequestMethods.GET;
-import static io.servicetalk.http.api.HttpRequestMethods.HEAD;
-import static io.servicetalk.http.api.HttpRequestMethods.OPTIONS;
-import static io.servicetalk.http.api.HttpRequestMethods.TRACE;
+import static io.servicetalk.http.api.HttpRequestMethod.CONNECT;
+import static io.servicetalk.http.api.HttpRequestMethod.GET;
+import static io.servicetalk.http.api.HttpRequestMethod.HEAD;
+import static io.servicetalk.http.api.HttpRequestMethod.OPTIONS;
+import static io.servicetalk.http.api.HttpRequestMethod.TRACE;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -201,7 +201,9 @@ final class RedirectSingle extends SubscribableSingle<StreamingHttpResponse> {
                     // Server should return only 200 status code for TRACE.
                     // We don't see a clear use case for redirect for OPTIONS and CONNECT methods
                     // and will support them later if necessary.
-                    if (originalMethod == TRACE || originalMethod == OPTIONS || originalMethod == CONNECT) {
+                    if (TRACE.name().equals(originalMethod.name())
+                            || OPTIONS.name().equals(originalMethod.name())
+                            || CONNECT.name().equals(originalMethod.name())) {
                         return false;
                     }
 
@@ -213,7 +215,7 @@ final class RedirectSingle extends SubscribableSingle<StreamingHttpResponse> {
 
                     if (statusCode == 307 || statusCode == 308) {
                         // TODO: remove these cases when we will support repeatable payload
-                        return originalMethod == GET || originalMethod == HEAD;
+                        return GET.name().equals(originalMethod.name()) || HEAD.name().equals(originalMethod.name());
                     }
 
                     return true;
@@ -263,7 +265,7 @@ final class RedirectSingle extends SubscribableSingle<StreamingHttpResponse> {
 
             // For 303 (See Other) user agent should perform only a
             // GET or HEAD request: https://tools.ietf.org/html/rfc7231#section-6.4.4
-            return originalMethod == HEAD ? HEAD : GET;
+            return HEAD.name().equals(originalMethod.name()) ? HEAD : GET;
             // TODO: It also could be originalMethod for 307 & 308, when we will support repeatable payloadBody
         }
     }

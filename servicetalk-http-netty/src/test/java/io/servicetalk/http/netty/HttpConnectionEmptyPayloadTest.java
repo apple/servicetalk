@@ -43,8 +43,8 @@ import static io.servicetalk.concurrent.api.Single.success;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
-import static io.servicetalk.http.api.HttpRequestMethods.HEAD;
-import static io.servicetalk.http.api.HttpResponseStatuses.OK;
+import static io.servicetalk.http.api.HttpRequestMethod.HEAD;
+import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.ExecutionContextRule.immediate;
 import static java.lang.Integer.parseInt;
@@ -74,7 +74,7 @@ public class HttpConnectionEmptyPayloadTest {
                                                                             final StreamingHttpRequest req,
                                                                             final StreamingHttpResponseFactory factory) {
                                     StreamingHttpResponse resp = factory.ok().payloadBody(just(
-                                            req.method() == HEAD ? EMPTY_BUFFER :
+                                            HEAD.equals(req.method()) ? EMPTY_BUFFER :
                                                     ctx.executionContext().bufferAllocator()
                                                     .newBuffer(expectedContentLength).writeBytes(expectedPayload)));
                                     resp.addHeader(CONTENT_LENGTH, String.valueOf(expectedContentLength));

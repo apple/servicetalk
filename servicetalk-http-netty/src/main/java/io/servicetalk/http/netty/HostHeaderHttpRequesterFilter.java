@@ -34,7 +34,7 @@ import static io.netty.util.NetUtil.isValidIpV6Address;
 import static io.netty.util.NetUtil.toSocketAddressString;
 import static io.servicetalk.http.api.CharSequences.newAsciiString;
 import static io.servicetalk.http.api.HttpHeaderNames.HOST;
-import static io.servicetalk.http.api.HttpProtocolVersions.HTTP_1_1;
+import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -109,7 +109,7 @@ final class HostHeaderHttpRequesterFilter implements HttpClientFilterFactory,
     private Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
                                                   final HttpExecutionStrategy strategy,
                                                   final StreamingHttpRequest request) {
-        if (request.version() == HTTP_1_1 && !request.headers().contains(HOST)) {
+        if (HTTP_1_1.equals(request.version()) && !request.headers().contains(HOST)) {
             request.headers().set(HOST, fallbackHost);
         }
         return delegate.request(strategy, request);

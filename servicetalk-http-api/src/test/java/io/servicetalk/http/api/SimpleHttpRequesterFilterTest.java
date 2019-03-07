@@ -271,7 +271,7 @@ public class SimpleHttpRequesterFilterTest extends AbstractHttpRequesterFilterTe
             return; // Clients don't carry SSL Context
         }
 
-        assertThat(resp.status(), equalTo(HttpResponseStatuses.UNAUTHORIZED));
+        assertThat(resp.status(), equalTo(HttpResponseStatus.UNAUTHORIZED));
     }
 
     @Test
@@ -289,9 +289,9 @@ public class SimpleHttpRequesterFilterTest extends AbstractHttpRequesterFilterTe
         }
 
         if (security == Insecure) {
-            assertThat(resp.status(), equalTo(HttpResponseStatuses.UNAUTHORIZED));
+            assertThat(resp.status(), equalTo(HttpResponseStatus.UNAUTHORIZED));
         } else {
-            assertThat(resp.status(), equalTo(HttpResponseStatuses.OK));
+            assertThat(resp.status(), equalTo(HttpResponseStatus.OK));
         }
     }
 }

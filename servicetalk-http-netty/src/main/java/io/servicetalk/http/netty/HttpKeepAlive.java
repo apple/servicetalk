@@ -21,9 +21,8 @@ import io.servicetalk.http.api.StreamingHttpResponse;
 import static io.servicetalk.http.api.HttpHeaderNames.CONNECTION;
 import static io.servicetalk.http.api.HttpHeaderValues.CLOSE;
 import static io.servicetalk.http.api.HttpHeaderValues.KEEP_ALIVE;
-import static io.servicetalk.http.api.HttpProtocolVersions.HTTP_1_0;
-import static io.servicetalk.http.api.HttpProtocolVersions.HTTP_1_1;
-import static io.servicetalk.http.netty.HttpProtocolVersionUtils.isSameVersion;
+import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_0;
+import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 
 enum HttpKeepAlive {
 
@@ -43,10 +42,10 @@ enum HttpKeepAlive {
     // In the interest of performance we are not accommodating for the spec allowing multiple header fields
     // or comma-separated values for the Connection header. See: https://tools.ietf.org/html/rfc7230#section-3.2.2
     static HttpKeepAlive responseKeepAlive(final HttpMetaData metaData) {
-        if (isSameVersion(HTTP_1_1, metaData.version())) {
+        if (HTTP_1_1.equals(metaData.version())) {
             return metaData.headers().contains(CONNECTION, CLOSE, true) ?
                     CLOSE_ADD_HEADER : KEEP_ALIVE_NO_HEADER;
-        } else if (isSameVersion(HTTP_1_0, metaData.version())) {
+        } else if (HTTP_1_0.equals(metaData.version())) {
             return metaData.headers().contains(CONNECTION, KEEP_ALIVE, true) ?
                     KEEP_ALIVE_ADD_HEADER : CLOSE_NO_HEADER;
         } else {
