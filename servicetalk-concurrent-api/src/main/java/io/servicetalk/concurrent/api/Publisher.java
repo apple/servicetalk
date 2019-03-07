@@ -168,7 +168,7 @@ public abstract class Publisher<T> {
      * produced by {@code nextFactory}.
      * @see <a href="http://reactivex.io/documentation/operators/catch.html">ReactiveX catch operator.</a>
      */
-    public final Publisher<T> onErrorResume(Function<? super Throwable, ? extends Publisher<? extends T>> nextFactory) {
+    public final Publisher<T> onErrorResume(Function<Throwable, ? extends Publisher<? extends T>> nextFactory) {
         return new ResumePublisher<>(this, nextFactory, executor);
     }
 

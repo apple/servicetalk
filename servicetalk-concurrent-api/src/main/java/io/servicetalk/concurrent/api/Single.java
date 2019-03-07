@@ -123,7 +123,7 @@ public abstract class Single<T> {
      * @return A {@link Single} that ignores error from this {@code Single} and resume with the {@link Single} produced
      * by {@code nextFactory}.
      */
-    public final Single<T> onErrorResume(Function<? super Throwable, ? extends Single<? extends T>> nextFactory) {
+    public final Single<T> onErrorResume(Function<Throwable, ? extends Single<? extends T>> nextFactory) {
         return new ResumeSingle<>(this, nextFactory, executor);
     }
 

@@ -101,7 +101,7 @@ public abstract class Completable {
      * @param nextFactory Returns the next {@link Completable}, if this {@link Completable} emits an error.
      * @return The new {@link Completable}.
      */
-    public final Completable onErrorResume(Function<? super Throwable, ? extends Completable> nextFactory) {
+    public final Completable onErrorResume(Function<Throwable, ? extends Completable> nextFactory) {
         return new ResumeCompletable(this, nextFactory, executor);
     }
 

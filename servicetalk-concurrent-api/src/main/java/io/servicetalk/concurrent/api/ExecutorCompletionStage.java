@@ -1087,10 +1087,10 @@ abstract class ExecutorCompletionStage<T> implements CompletionStage<T>, Future<
     private static final class JdkExecutorHandleListener<T, U> extends Listener<T> {
         private final Executor executor;
         private final ExecutorCompletionStage<U> stage;
-        private final BiFunction<? super T, ? super Throwable, ? extends U> fn;
+        private final BiFunction<? super T, Throwable, ? extends U> fn;
 
         JdkExecutorHandleListener(final Executor executor, final ExecutorCompletionStage<U> stage,
-                                  BiFunction<? super T, ? super Throwable, ? extends U> fn) {
+                                  BiFunction<? super T, Throwable, ? extends U> fn) {
             this.executor = executor;
             this.stage = stage;
             this.fn = fn;
@@ -1107,7 +1107,7 @@ abstract class ExecutorCompletionStage<T> implements CompletionStage<T>, Future<
         }
 
         static <T, U> void completeFuture(ExecutorCompletionStage<U> stage, Object result,
-                                          BiFunction<? super T, ? super Throwable, ? extends U> fn, Executor executor) {
+                                          BiFunction<? super T, Throwable, ? extends U> fn, Executor executor) {
             if (result instanceof ErrorResult) {
                 executor.execute(() -> HandleListener.handleError(stage, ((ErrorResult) result).cause, fn));
             } else {
@@ -1118,10 +1118,10 @@ abstract class ExecutorCompletionStage<T> implements CompletionStage<T>, Future<
 
     private static final class HandleListener<T, U> extends Listener<T> {
         private final ExecutorCompletionStage<U> stage;
-        private final BiFunction<? super T, ? super Throwable, ? extends U> fn;
+        private final BiFunction<? super T, Throwable, ? extends U> fn;
 
         HandleListener(ExecutorCompletionStage<U> stage,
-                       BiFunction<? super T, ? super Throwable, ? extends U> fn) {
+                       BiFunction<? super T, Throwable, ? extends U> fn) {
             this.stage = stage;
             this.fn = fn;
         }
@@ -1137,7 +1137,7 @@ abstract class ExecutorCompletionStage<T> implements CompletionStage<T>, Future<
         }
 
         static <T, U> void handleSuccess(ExecutorCompletionStage<U> stage, @Nullable T value,
-                                         BiFunction<? super T, ? super Throwable, ? extends U> fn) {
+                                         BiFunction<? super T, Throwable, ? extends U> fn) {
             final U uValue;
             try {
                 uValue = fn.apply(value, null);
@@ -1149,7 +1149,7 @@ abstract class ExecutorCompletionStage<T> implements CompletionStage<T>, Future<
         }
 
         static <T, U> void handleError(ExecutorCompletionStage<U> stage, Throwable cause,
-                                       BiFunction<? super T, ? super Throwable, ? extends U> fn) {
+                                       BiFunction<? super T, Throwable, ? extends U> fn) {
             final U uValue;
             try {
                 uValue = fn.apply(null, cause);
@@ -1161,7 +1161,7 @@ abstract class ExecutorCompletionStage<T> implements CompletionStage<T>, Future<
         }
 
         static <T, U> void completeFuture(ExecutorCompletionStage<U> stage, Object result,
-                                          BiFunction<? super T, ? super Throwable, ? extends U> fn,
+                                          BiFunction<? super T, Throwable, ? extends U> fn,
                                           io.servicetalk.concurrent.Executor executor) {
             if (executor == immediate()) {
                 if (result instanceof ErrorResult) {
