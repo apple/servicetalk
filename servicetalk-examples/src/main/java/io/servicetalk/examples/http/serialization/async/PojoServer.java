@@ -37,7 +37,7 @@ public final class PojoServer {
                     if (!"/pojos".equals(request.requestTarget())) {
                         return success(responseFactory.notFound());
                     }
-                    if (request.method() != POST) {
+                    if (!POST.equals(request.method())) {
                         return success(responseFactory.methodNotAllowed().addHeader(ALLOW, POST.name()));
                     }
                     CreatePojoRequest req = request.payloadBody(serializer.deserializerFor(CreatePojoRequest.class));

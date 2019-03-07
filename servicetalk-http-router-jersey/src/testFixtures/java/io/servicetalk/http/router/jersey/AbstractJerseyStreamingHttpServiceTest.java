@@ -63,6 +63,8 @@ import static io.servicetalk.http.api.HttpRequestMethod.HEAD;
 import static io.servicetalk.http.api.HttpRequestMethod.OPTIONS;
 import static io.servicetalk.http.api.HttpRequestMethod.POST;
 import static io.servicetalk.http.api.HttpRequestMethod.PUT;
+import static io.servicetalk.http.api.HttpResponseStatus.NO_CONTENT;
+import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.SUCCESSFUL_2XX;
 import static io.servicetalk.http.router.jersey.TestUtils.getContentAsString;
 import static io.servicetalk.transport.netty.internal.AddressUtils.hostHeader;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
@@ -276,9 +278,9 @@ public abstract class AbstractJerseyStreamingHttpServiceTest {
                     .forEachRemaining(h -> assertThat(h.toString(), equalToIgnoringCase("chunked")));
         } else {
             assertThat(res.headers().contains(CONTENT_LENGTH), is(false));
-            if (res.status().code() >= 200 && res.status().code() != 204 &&
+            if (SUCCESSFUL_2XX.contains(res.status()) && !NO_CONTENT.equals(res.status()) &&
                     // It is OK to omit payload header fields in HEAD responses
-                    !req.method().equals(HEAD)) {
+                    !HEAD.equals(req.method())) {
                 assertThat(res.headers().get(TRANSFER_ENCODING), is(CHUNKED));
             }
         }
@@ -297,7 +299,7 @@ public abstract class AbstractJerseyStreamingHttpServiceTest {
 
             assertThat(res.version(), is(expectedHttpVersion));
             final HttpResponseStatus status = res.status();
-            assertThat(status.code(), is(expectedStatus.code()));
+            assertThat(status, is(expectedStatus));
             final Buffer reasonPhrase = DEFAULT_ALLOCATOR.newBuffer();
             status.writeReasonPhraseTo(reasonPhrase);
             final Buffer expectedReasonPhrase = DEFAULT_ALLOCATOR.newBuffer();

@@ -18,7 +18,7 @@ package io.servicetalk.transport.api;
 import static java.util.Objects.requireNonNull;
 
 /**
- * A factory of {@link ConnectionAcceptorAdapter}.
+ * A factory of {@link DelegatingConnectionAcceptor}.
  */
 @FunctionalInterface
 public interface ConnectionAcceptorFactory {

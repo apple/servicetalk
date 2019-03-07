@@ -15,8 +15,8 @@
  */
 package io.servicetalk.concurrent.api.completable;
 
-import io.servicetalk.concurrent.api.LegacyTestCompletable;
 import io.servicetalk.concurrent.api.TestCancellable;
+import io.servicetalk.concurrent.api.TestCompletable;
 import io.servicetalk.concurrent.api.TestSingle;
 import io.servicetalk.concurrent.api.TestSingleSubscriber;
 
@@ -35,13 +35,13 @@ import static org.junit.Assert.assertTrue;
 public class CompletableConcatWithSingleTest {
 
     private TestSingleSubscriber<Integer> subscriber;
-    private LegacyTestCompletable source;
+    private TestCompletable source;
     private TestSingle<Integer> next;
 
     @Before
     public void setUp() throws Exception {
         subscriber = new TestSingleSubscriber<>();
-        source = new LegacyTestCompletable();
+        source = new TestCompletable();
         next = new TestSingle<>();
         toSource(source.concatWith(next)).subscribe(subscriber);
     }
@@ -76,7 +76,9 @@ public class CompletableConcatWithSingleTest {
         assertThat(subscriber.result(), nullValue());
         assertThat(subscriber.error(), nullValue());
         subscriber.cancel();
-        source.verifyCancelled();
+        TestCancellable cancellable = new TestCancellable();
+        source.onSubscribe(cancellable);
+        assertTrue(cancellable.isCancelled());
         assertFalse(next.isSubscribed());
     }
 
@@ -86,9 +88,11 @@ public class CompletableConcatWithSingleTest {
         assertThat(subscriber.result(), nullValue());
         assertThat(subscriber.error(), nullValue());
         subscriber.cancel();
-        source.verifyNotCancelled();
-        TestCancellable cancellable = new TestCancellable();
-        next.onSubscribe(cancellable);
-        assertTrue(cancellable.isCancelled());
+        TestCancellable sourceCancellable = new TestCancellable();
+        source.onSubscribe(sourceCancellable);
+        assertFalse(sourceCancellable.isCancelled());
+        TestCancellable nextCancellable = new TestCancellable();
+        next.onSubscribe(nextCancellable);
+        assertTrue(nextCancellable.isCancelled());
     }
 }

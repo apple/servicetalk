@@ -31,6 +31,8 @@ import static io.servicetalk.http.api.HttpHeaderNames.TRANSFER_ENCODING;
 import static io.servicetalk.http.api.HttpHeaderValues.CHUNKED;
 import static io.servicetalk.http.api.HttpRequestMethod.CONNECT;
 import static io.servicetalk.http.api.HttpRequestMethod.HEAD;
+import static io.servicetalk.http.api.HttpResponseStatus.NOT_MODIFIED;
+import static io.servicetalk.http.api.HttpResponseStatus.NO_CONTENT;
 import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.INFORMATIONAL_1XX;
 import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.SUCCESSFUL_2XX;
 
@@ -67,13 +69,13 @@ final class HeaderUtils {
     static void addResponseTransferEncodingIfNecessary(final HttpResponseMetaData response,
                                                        final HttpRequestMethod requestMethod) {
         final int statusCode = response.status().code();
-        if (requestMethod.equals(HEAD) || INFORMATIONAL_1XX.contains(statusCode)
-                || statusCode == 204 || statusCode == 304) {
+        if (HEAD.name().equals(requestMethod.name()) || INFORMATIONAL_1XX.contains(statusCode)
+                || statusCode == NO_CONTENT.code() || statusCode == NOT_MODIFIED.code()) {
             // Do not add a transfer-encoding header in this case. See 3.3.3.1:
             // https://tools.ietf.org/html/rfc7230#section-3.3.3
             return;
         }
-        if (requestMethod.equals(CONNECT) && SUCCESSFUL_2XX.contains(statusCode)) {
+        if (CONNECT.name().equals(requestMethod.name()) && SUCCESSFUL_2XX.contains(statusCode)) {
             // Do not add a transfer-encoding header in this case. See 3.3.3.2:
             // https://tools.ietf.org/html/rfc7230#section-3.3.3
             return;

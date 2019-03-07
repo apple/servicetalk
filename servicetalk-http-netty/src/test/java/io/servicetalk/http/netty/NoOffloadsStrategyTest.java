@@ -20,8 +20,8 @@ import io.servicetalk.concurrent.api.DefaultThreadFactory;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.BlockingHttpClient;
+import io.servicetalk.http.api.DelegatingHttpExecutionStrategy;
 import io.servicetalk.http.api.HttpExecutionStrategy;
-import io.servicetalk.http.api.HttpExecutionStrategyAdapter;
 import io.servicetalk.http.api.HttpServerBuilder;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StreamingHttpRequest;
@@ -88,7 +88,7 @@ public class NoOffloadsStrategyTest {
     @Test
     public void turnOffAllExecutors() throws Exception {
         StreamingHttpServiceImpl svc =
-                new StreamingHttpServiceImpl(new HttpExecutionStrategyAdapter(noOffloadsStrategy()) {
+                new StreamingHttpServiceImpl(new DelegatingHttpExecutionStrategy(noOffloadsStrategy()) {
                     @Override
                     public Executor executor() {
                         return immediate();

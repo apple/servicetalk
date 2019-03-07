@@ -22,6 +22,7 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.HttpExecutionStrategies;
 import io.servicetalk.http.api.HttpExecutionStrategy;
+import io.servicetalk.http.api.HttpResponseStatus;
 import io.servicetalk.http.api.HttpServerBuilder;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StreamingHttpClient;
@@ -102,7 +103,7 @@ public class InsufficientlySizedExecutorHttpTest {
     public void insufficientClientCapacityStreaming() throws Exception {
         initWhenClientUnderProvisioned();
         assert client != null;
-        if (threadBased && capacity <= 1 || !threadBased && capacity == 0) {
+        if (threadBased ? capacity <= 1 : capacity == 0) {
             expectedException.expect(instanceOf(ExecutionException.class));
             expectedException.expectCause(anyOf(instanceOf(RejectedExecutionException.class),
                     // If we do not have enough threads to offload onClose then we will close the connection immediately
@@ -111,7 +112,7 @@ public class InsufficientlySizedExecutorHttpTest {
         }
         StreamingHttpResponse response = client.request(client.get("/")).toFuture().get();
         // As server isn't under provisioned, if we get a response, it should be OK.
-        assertThat("Unexpected response code.", response.status().code(), is(OK.code()));
+        assertThat("Unexpected response code.", response.status(), is(OK));
     }
 
     @Test
@@ -129,7 +130,7 @@ public class InsufficientlySizedExecutorHttpTest {
     private void insufficientServerCapacityStreaming0(boolean expectChannelClose) throws Exception {
         assert client != null;
         // For task based, we use a queue for the executor
-        int expectedResponseCode = !threadBased && capacity > 0 ? OK.code() : SERVICE_UNAVAILABLE.code();
+        final HttpResponseStatus expectedResponseStatus = !threadBased && capacity > 0 ? OK : SERVICE_UNAVAILABLE;
         if (expectChannelClose) {
             // If there are no threads, we can not start processing.
             // If there is a single thread, it is used by the connection to listen for close events.
@@ -138,7 +139,7 @@ public class InsufficientlySizedExecutorHttpTest {
                     instanceOf(IOException.class)));
         }
         StreamingHttpResponse response = client.request(client.get("/")).toFuture().get();
-        assertThat("Unexpected response code.", response.status().code(), is(expectedResponseCode));
+        assertThat("Unexpected response code.", response.status(), is(expectedResponseStatus));
     }
 
     private void initWhenClientUnderProvisioned() throws Exception {

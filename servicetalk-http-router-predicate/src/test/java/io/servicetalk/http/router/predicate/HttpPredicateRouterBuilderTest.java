@@ -217,7 +217,7 @@ public class HttpPredicateRouterBuilderTest extends BaseHttpPredicateRouterBuild
     @Test
     public void testWhenPredicate() {
         final StreamingHttpService service = new HttpPredicateRouterBuilder()
-                .when(req -> req.version() == HTTP_1_1).thenRouteTo(serviceA)
+                .when(req -> HTTP_1_1.equals(req.version())).thenRouteTo(serviceA)
                 .when((ctx, req) -> true).thenRouteTo(fallbackService)
                 .buildStreaming();
 

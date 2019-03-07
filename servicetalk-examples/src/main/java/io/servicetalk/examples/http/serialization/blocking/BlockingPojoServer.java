@@ -36,7 +36,7 @@ public final class BlockingPojoServer {
                     if (!"/pojos".equals(request.requestTarget())) {
                         return responseFactory.notFound();
                     }
-                    if (request.method() != POST) {
+                    if (!POST.equals(request.method())) {
                         return responseFactory.methodNotAllowed().addHeader(ALLOW, POST.name());
                     }
                     CreatePojoRequest req = request.payloadBody(serializer.deserializerFor(CreatePojoRequest.class));

@@ -112,9 +112,8 @@ final class HttpResponseEncoder extends HttpObjectEncoder<HttpResponseMetaData> 
         // iterate a decoded list it makes some assumptions about the base class ordering of events.
         HttpRequestMethod method = methodQueue.poll();
         if (isAlwaysEmpty) {
-            HttpResponseStatus status = msg.status();
-            if (status.statusClass() == INFORMATIONAL_1XX ||
-                    status.code() == NO_CONTENT.code()) {
+            final HttpResponseStatus status = msg.status();
+            if (status.statusClass() == INFORMATIONAL_1XX || status.code() == NO_CONTENT.code()) {
 
                 HttpHeaders headers = msg.headers();
                 // Stripping Content-Length:
@@ -125,7 +124,8 @@ final class HttpResponseEncoder extends HttpObjectEncoder<HttpResponseMetaData> 
                 // See https://tools.ietf.org/html/rfc7230#section-3.3.1
                 headers.remove(TRANSFER_ENCODING);
             }
-        } else if (method == CONNECT && msg.status().statusClass() == SUCCESSFUL_2XX) {
+        } else if (method != null && CONNECT.name().equals(method.name())
+                && msg.status().statusClass() == SUCCESSFUL_2XX) {
             // Stripping Transfer-Encoding:
             // See https://tools.ietf.org/html/rfc7230#section-3.3.1
             msg.headers().remove(TRANSFER_ENCODING);
@@ -136,7 +136,7 @@ final class HttpResponseEncoder extends HttpObjectEncoder<HttpResponseMetaData> 
     protected boolean isContentAlwaysEmpty(HttpResponseMetaData msg) {
         // Correctly handle special cases as stated in:
         // https://tools.ietf.org/html/rfc7230#section-3.3.3
-        HttpResponseStatus status = msg.status();
+        final HttpResponseStatus status = msg.status();
 
         if (status.statusClass() == INFORMATIONAL_1XX) {
             if (status.code() == SWITCHING_PROTOCOLS.code()) {

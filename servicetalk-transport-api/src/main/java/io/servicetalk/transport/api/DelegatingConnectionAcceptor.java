@@ -22,7 +22,7 @@ import static java.util.Objects.requireNonNull;
 /**
  * An implementation of {@link ConnectionAcceptor} that delegates all methods to another {@link ConnectionAcceptor}.
  */
-public class ConnectionAcceptorAdapter implements ConnectionAcceptor {
+public class DelegatingConnectionAcceptor implements ConnectionAcceptor {
 
     private final ConnectionAcceptor delegate;
 
@@ -31,7 +31,7 @@ public class ConnectionAcceptorAdapter implements ConnectionAcceptor {
      *
      * @param delegate {@link ConnectionAcceptor} to delegate all calls to.
      */
-    public ConnectionAcceptorAdapter(final ConnectionAcceptor delegate) {
+    public DelegatingConnectionAcceptor(final ConnectionAcceptor delegate) {
         this.delegate = requireNonNull(delegate);
     }
 

@@ -144,7 +144,7 @@ public class HttpOffloadingTest {
                     errors.add(new AssertionError("Client response is null."));
                     return;
                 }
-                if (result.status() != OK) {
+                if (!OK.equals(result.status())) {
                     errors.add(new AssertionError("Invalid response status: " + result.status()));
                     return;
                 }

@@ -24,7 +24,7 @@ import static java.util.Objects.requireNonNull;
  * An {@link ExecutionContext} implementation that delegates all calls to a provided {@link ExecutionContext}. Any of
  * the methods can be overridden by implementations to change the behavior.
  */
-public class ExecutionContextAdapter implements ExecutionContext {
+public class DelegatingExecutionContext implements ExecutionContext {
 
     private final ExecutionContext delegate;
 
@@ -33,7 +33,7 @@ public class ExecutionContextAdapter implements ExecutionContext {
      *
      * @param delegate {@link ExecutionContext} to delegate all calls.
      */
-    public ExecutionContextAdapter(final ExecutionContext delegate) {
+    public DelegatingExecutionContext(final ExecutionContext delegate) {
         this.delegate = requireNonNull(delegate);
     }
 
