@@ -49,7 +49,7 @@ import io.servicetalk.transport.netty.internal.FlushStrategy;
 import io.servicetalk.transport.netty.internal.NettyConnection;
 import io.servicetalk.transport.netty.internal.NettyConnection.TerminalPredicate;
 import io.servicetalk.transport.netty.internal.NettyConnectionContext;
-import io.servicetalk.transport.netty.internal.NoOpWriteEventsListener;
+import io.servicetalk.transport.netty.internal.NoopWriteEventsListener;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -366,12 +366,9 @@ final class NettyHttpServer {
          */
         private static final class CompositeFlushStrategy implements FlushStrategy, FlushStrategy.WriteEventsListener {
 
-            private static final WriteEventsListener INIT = new NoOpWriteEventsListener() {
-            };
-            private static final WriteEventsListener CANCELLED = new NoOpWriteEventsListener() {
-            };
-            private static final WriteEventsListener TERMINATED = new NoOpWriteEventsListener() {
-            };
+            private static final WriteEventsListener INIT = new NoopWriteEventsListener() { };
+            private static final WriteEventsListener CANCELLED = new NoopWriteEventsListener() { };
+            private static final WriteEventsListener TERMINATED = new NoopWriteEventsListener() { };
 
             private static final AtomicReferenceFieldUpdater<CompositeFlushStrategy, FlushStrategy>
                     flushStrategyUpdater = newUpdater(CompositeFlushStrategy.class, FlushStrategy.class,
