@@ -41,6 +41,12 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 
+/**
+ * Deprecated.
+ *
+ * @deprecated Use {@link TestCompletableSubscriber} instead.
+ */
+@Deprecated
 public class LegacyMockedCompletableListenerRule implements TestRule {
     @Nullable
     private CompletableSource.Subscriber subscriber;
