@@ -115,13 +115,13 @@ public class MultiAddressUrlHttpClientTest {
             public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
                                                         final StreamingHttpRequest request,
                                                         final StreamingHttpResponseFactory factory) {
-                if (request.version() == HTTP_1_1 && !request.headers().contains(HOST)) {
+                if (HTTP_1_1.equals(request.version()) && !request.headers().contains(HOST)) {
                     StreamingHttpResponse resp = factory.newResponse(BAD_REQUEST);
                     resp.headers().set(httpHeaders);
                     return success(resp);
                 }
 
-                if (request.method() == OPTIONS || request.method() == CONNECT) {
+                if (OPTIONS.equals(request.method()) || CONNECT.equals(request.method())) {
                     StreamingHttpResponse resp = factory.ok();
                     resp.headers().set(httpHeaders);
                     return success(resp);

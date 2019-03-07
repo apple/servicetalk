@@ -38,7 +38,7 @@ public final class PojoStreamingServer {
                     if (!"/pojos".equals(request.requestTarget())) {
                         return success(responseFactory.notFound());
                     }
-                    if (request.method() != POST) {
+                    if (!POST.equals(request.method())) {
                         return success(responseFactory.methodNotAllowed().addHeader(ALLOW, POST.name()));
                     }
                     AtomicInteger newId = new AtomicInteger(ThreadLocalRandom.current().nextInt(100));

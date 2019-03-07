@@ -196,7 +196,7 @@ public class RedirectingHttpRequesterFilterTest {
 
         StreamingHttpResponse response = redirectingRequester.request(request).toFuture().get();
         assertNotNull(response);
-        assertEquals(requestedStatus.code(), response.status().code());
+        assertEquals(requestedStatus, response.status());
         assertEquals(requestedLocation, response.headers().get(LOCATION));
         verify(httpClient).request(any(), any());
         clearInvocations(httpClient);
